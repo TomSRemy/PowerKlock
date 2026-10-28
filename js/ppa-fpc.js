@@ -178,7 +178,8 @@
         pts.forEach((p, i) => { if (inS(+p.d.slice(5, 7))) w += V[i] * p.v; });   // the output's value in the season, hour by hour
         if (cs == null || !(w > 0)) return; c += w * cs; ws += w; });
       c = ws > 0 ? c / ws : cannibOf(y);
-      return { y, cal, fwdCost: f, cannib: c, capture: cal * (1 + f + c), rate: 1 + f + c,
+      const bias = o.biasOf ? o.biasOf('fpc', y) : 0;   // the method's past bias (scripts/ppa_bias.py), where it helps
+      return { y, cal, fwdCost: f, cannib: c, bias, capture: cal * (1 + f + c - bias), rate: 1 + f + c - bias,
         months: Array.from({ length: 12 }, (_, m) => mean(pts.filter(p => +p.d.slice(5, 7) === m + 1).map(p => p.v))) };
     });
     // value and premium: the same weights as the step-by-step method; the premium from the spread of the yearly cannibalisation

@@ -52,7 +52,7 @@
   // ── Reference data ────────────────────────────────────────────────
   async function load() {
     if (D) return D;
-    const [cap, mkt, goCsv, capa, chain, imbc, ccap, hcan, fcst, fwm] = await Promise.all([get('history/fr_capture.json'), get('fr_market.json'), fetch(DATA_BASE + 'go_prices.csv').then(r => r.ok ? r.text() : '').catch(() => ''), get('history/capacity.json'), get('history/fr_market_calchain.json'), get('history/fr_imbalance_cost.json'), get('history/country_capture.json'), get('history/hourly_cannib.json'), get('history/ppa_forecast.json'), get('history/fr_forward_monthly.json')]);
+    const [cap, mkt, goCsv, capa, chain, imbc, ccap, hcan, fcst, fwm, pbias] = await Promise.all([get('history/fr_capture.json'), get('fr_market.json'), fetch(DATA_BASE + 'go_prices.csv').then(r => r.ok ? r.text() : '').catch(() => ''), get('history/capacity.json'), get('history/fr_market_calchain.json'), get('history/fr_imbalance_cost.json'), get('history/country_capture.json'), get('history/hourly_cannib.json'), get('history/ppa_forecast.json'), get('history/fr_forward_monthly.json'), get('history/ppa_bias.json')]);
     const fwd = {};
     ((mkt && mkt.forwardCurve) || []).forEach(r => { const m = /Cal\s?(\d{4})/.exec(r.contract || ''); if (m && r.value != null) fwd[+m[1]] = r.value; });
     // GO: latest Commerg mid per production year (AIB renewable)
@@ -71,7 +71,7 @@
     if (imbc && imbc.months) ['solar', 'wind'].forEach(k => { const ms = Object.keys(imbc.months).filter(m => imbc.months[m][k]).sort().slice(-12); let c = 0, e = 0; ms.forEach(m => { c += imbc.months[m][k].costEur; e += imbc.months[m][k].mwh; }); if (ms.length >= 3 && e > 0) imbCost[k] = { v: c / e, n: ms.length, from: ms[0], to: ms[ms.length - 1] }; });
     const fwdRows = ((mkt && mkt.forwardCurve) || []).filter(r => r.value != null).map(r => ({ contract: r.contract, value: r.value }));
     D = { hc: hcan || null, cc: (ccap && ccap.countries) || null, fwdRows, imbCost, cap: (cap && cap.days) || [], ix, profile: (cap && cap.profile) || {}, capGW, fwd, fwdDate: mkt && mkt.forwardCurve && mkt.forwardCurve[0] && mkt.forwardCurve[0].date, go, fwdVol, fwdVolN,
-      fcst: fcst || null, fwRatio: (fwm && fwm.ratios && fwm.ratios.year) || null, fwM: (fwm && fwm.months) || null };
+      fcst: fcst || null, fwRatio: (fwm && fwm.ratios && fwm.ratios.year) || null, fwM: (fwm && fwm.months) || null, bias: pbias || null };
     // hours with a day-ahead price at or below zero, per year (YTD annualised): the hours the PPA Dashboard convention leaves unpaid
     const negH = {}, ix2 = D.ix;
     D.cap.forEach(r => { const y = +r[0].slice(0, 4), e = negH[y] || (negH[y] = { h: 0, d: 0 }); e.h += (r[ix2.pN] - r[ix2.pNPos]) / 4; e.d++; });
@@ -81,6 +81,15 @@
   }
 
   const FRDOC = () => !window.PKI18n || PKI18n.lang !== 'en';
+  // one sentence on the method's past-bias correction (scripts/ppa_bias.py), in the page's language
+  function biasLine(o, k) {
+    if (!o || !o.biasOf) return '';
+    const v = o.tenor.map(y => [y, o.biasOf(k, y)]).filter(([, b]) => b);
+    const fr = FRDOC(), p = b => (b > 0 ? '−' : '+') + (Math.abs(b) * 100).toFixed(1).replace('.', fr ? ',' : '.') + (fr ? ' pt' : ' pts');
+    if (!v.length) return fr ? ' Pas de correction de biais pour cette méthode ici : sur les erreurs passées, elle n’améliorait pas ses prix (scripts/ppa_bias.py).' : ' No bias correction for this method here: on its past errors it did not improve its prices (scripts/ppa_bias.py).';
+    return fr ? ` Correction de biais : sa capture est corrigée de son erreur moyenne passée, à la même distance du dernier exercice complet (années livrées 2018–2025 hors 2022, pricées avec les seules années connues alors) : ${v.map(([y, b]) => y + ' ' + p(b)).join(', ')} ; au rejeu 2024–2026, cette correction réduit son erreur moyenne sur 1 à 3 ans (scripts/ppa_bias.py).`
+      : ` Bias correction: its capture is corrected by its mean past error at the same distance from the last complete year (delivery years 2018–2025 without 2022, priced with only the years known then): ${v.map(([y, b]) => y + ' ' + p(b)).join(', ')}; on the 2024–2026 replay this lowers its mean error over 1 to 3 years (scripts/ppa_bias.py).`;
+  }
   // the methodology of the European price model, in the page's language
   function euDoc(o) {
     const caps = o.eu ? o.eu.map(x => `${x.y} ${pc(x.capture)}`).join(', ') : null;
@@ -89,12 +98,14 @@
 <li><b>Prix horaires.</b> Le prix de chaque heure ÷ la moyenne du mois, en fonction de la charge résiduelle de la France, de l’Allemagne, de la Belgique et de l’Espagne ensemble (consommation − solaire − éolien − nucléaire, ÷ consommation), par saison × moment de la journée, appris sur les cinq dernières années complètes (banc d’essai, scripts/ppa_lab.py). Le parc de chaque année de livraison est posé sur chaque année météo passée : la cannibalisation sort des prix horaires, pas d’une tendance.</li>
 <li><b>Capture des années du ténor</b>, mois par mois (data/history/ppa_forecast.json, mis à jour chaque dimanche), pondérée par la production de chaque mois (× sa part payée quand la production est arrêtée aux prix ≤ 0) et par le forward de chaque mois ÷ Cal (mois coté, sinon trimestre, saison, puis Cal découpé par l’historique) : ${caps || 'pas de prévision pour ce ténor (le banc d’essai s’arrête en 2030)'}.</li>
 <li><b>Prix du PPA</b> = Σ poids × forward Cal × capture − la prime de risque de la tendance de capacité (même Monte Carlo, ${f2(o.premium)} €/MWh) − décote additionnelle − écarts + GO − marge${o.eu ? ` = <code>${f2(o.ppaEu)} €/MWh</code>` : ''}, pour comparer les méthodes à l’identique.</li>
+<li><b>Correction de biais.</b>${biasLine(o, 'regional')}</li>
 <li><b>Limites.</b> Aucune croissance du stockage ni de la demande flexible n’est modélisée et les voisins progressent à leur rythme récent : à partir de 2028 environ, la région sature à midi dans tous les scénarios et la capacité française ne fait presque plus bouger cette méthode. Pricée 1, 2 et 3 ans à l’avance sur 2024–2026, elle tient mieux que les méthodes de tendance à 3 ans (scripts/ppa_horizon_test.py).</li>
 </ol>` : `<h4>European price model</h4>
 <ol>
 <li><b>Hourly prices.</b> The price of each hour ÷ the month’s average, as a function of the residual load of France, Germany, Belgium and Spain together (consumption − solar − wind − nuclear, ÷ consumption), by season × time of day, learnt on the last five complete years (test bench, scripts/ppa_lab.py). The fleet of each delivery year is put over every past weather year, so cannibalisation comes out of the hourly prices, not out of a trend.</li>
 <li><b>Capture of the tenor years</b>, month by month (data/history/ppa_forecast.json, updated every Sunday), weighted by each month’s output (× its paid share when output stops at prices ≤ 0) and by each month’s forward ÷ Cal (the month quoted, else its quarter, season, then the Cal shaped by history): ${caps || 'no forecast for this tenor (the test bench stops in 2030)'}.</li>
 <li><b>PPA price</b> = Σ weight × Cal forward × capture − the capacity trend’s risk premium (same Monte Carlo, ${f2(o.premium)} €/MWh) − additional discount − imbalance + GO − margin${o.eu ? ` = <code>${f2(o.ppaEu)} €/MWh</code>` : ''}, so the methods compare like for like.</li>
+<li><b>Bias correction.</b>${biasLine(o, 'regional')}</li>
 <li><b>Limits.</b> No growth of storage or flexible demand is modelled and the neighbours grow at their recent pace: from about 2028 the region is saturated at midday in every scenario and France’s own capacity barely moves this method. Priced 1, 2 and 3 years ahead on 2024–2026, it holds better than the trend methods at 3 years (scripts/ppa_horizon_test.py).</li>
 </ol>`;
   }
@@ -191,7 +202,8 @@
         num += w * (q ? q[m - 1] : ratio[m] / rn) * (e[fld] + gap); den += w;
       }
       if (!(den > 0)) return null;
-      out.push({ y, capture: num / den });
+      const b = o.biasOf ? o.biasOf('regional', y) : 0;
+      out.push({ y, capture: num / den - b, bias: b });
     }
     return out;
   }
@@ -360,16 +372,21 @@
     const now = nowFrac();
     // the level month by month, as the common framework says: the yearly capture × the quoted-shape factor
     const kq = shapeFactors({ tenor }, st);
+    // each method's past bias, learnt on its own errors (scripts/ppa_bias.py): taken off its capture where the test
+    // showed it helps (data/history/ppa_bias.json 'adopt'); the delivery year's horizon after the last complete year, 1 to 3
+    const biasOf = (k, y) => { const B = D.bias, conv = st.conv === 'all' ? 'all' : st.conv === 'curt' ? 'curt' : null;
+      if (!B || !B.bias || !conv || !((B.adopt[st.tech] || {})[conv] || []).includes(k)) return 0;
+      const e = ((B.bias[st.tech] || {})[k] || {})[conv], v = e && e[String(Math.min(3, Math.max(1, y - B.lastYear)))]; return v ? v.value : 0; };
     // a year delivered only in part: its share of the year's output, and its months' value against the whole year's
     const part = partFactors(tenor, monthsOf, st);
     const years = tenor.map((y, i) => { const ns = negShare(y), M = monthsOf(y), ev = volume * Math.pow(1 - degr, i) * part[i].sh * (st.conv !== 'all' && ns != null ? 1 - ns : 1),
-      df = Math.pow(1 + disc, -Math.max(0, y + (M[0] - 1 + M[M.length - 1]) / 24 - now)), fsd = proj(y), cpY = fwds[i] * kq[i] * part[i].g * (1 - fsd);
-      return { y, months: M, fwd: fwds[i], kq: kq[i], g: part[i].g, sh: part[i].sh, ev, df, fsd, cp: cpY, go: goY[i], w: ev * df, sig: sigT(y - lastYr), negH: negHours(y), negShare: ns }; });
+      df = Math.pow(1 + disc, -Math.max(0, y + (M[0] - 1 + M[M.length - 1]) / 24 - now)), bs = biasOf('step', y), fsd = proj(y) + bs / Math.max(0.05, kq[i] * part[i].g), cpY = fwds[i] * kq[i] * part[i].g * (1 - fsd);
+      return { y, months: M, fwd: fwds[i], kq: kq[i], bias: bs, g: part[i].g, sh: part[i].sh, ev, df, fsd, cp: cpY, go: goY[i], w: ev * df, sig: sigT(y - lastYr), negH: negHours(y), negShare: ns }; });
     const W = years.reduce((a, r) => a + r.w, 0) || 1;
     years.forEach(r => { r.wt = r.w / W; });
     const wavg = k => years.reduce((a, r) => a + r.wt * r[k], 0);
     const refW = wavg('fwd'), fair = wavg('cp'), goW = wavg('go'), sdW = wavg('fsd');
-    const o = { st, nat, ast, hist, useAsset, complete, monthsOf, m0, m1, sel: fitRows.map(x => x.year), histSd, reg, lastYr, anchor, proj, fitLine, model, cfit, capOff, capPath: cp, excluded, sig0, sigT,
+    const o = { st, biasOf, nat, ast, hist, useAsset, complete, monthsOf, m0, m1, sel: fitRows.map(x => x.year), histSd, reg, lastYr, anchor, proj, fitLine, model, cfit, capOff, capPath: cp, excluded, sig0, sigT,
       tenor, negHours, negShare, nhReg, nhFitYears, shLast, fwds, fwdAuto, ref, refW, goVal, goMkt, goW, fair, sdW, volume, mw, lf, degr, disc, imb, margin, add, volRisk, priceRisk, alpha, volStress, spotStress, sigV, sigF, rho, years, auto };
     // Monte Carlo: the realised value of one MWh of the contract, 10,000 trajectories
     if (!st.noMC) o.mc = simulate(o, st);
@@ -1214,7 +1231,7 @@
     const el = $('pp-wx'); if (!el) return;
     const w = o.m4;
     if (!w) { el.innerHTML = '<b>How this method works.</b> Thousands of possible years are simulated: the weather, then the national solar and wind production on the capacity projected for each delivery year, then the hourly prices that this production causes. Open this tab to run it (a few seconds).'; return; }
-    el.innerHTML = `<b>How this method works.</b> ${w.N} years are simulated for each delivery year. Each day draws sun and wind from what that month has really seen (with the persistence of real weather, so calm or sunny spells last), puts it on the capacity installed that year (${f0(w.capS[0])} GW of solar and ${f0(w.capW[0])} GW of wind in ${o.tenor[0]}), and takes consumption and nuclear from a recent real day. The price of each hour follows from what is left to produce once solar, wind and nuclear are counted (the net residual load): the lower it is, the lower the price, as measured on ${w.recent.join(' and ')}. Each simulated year then averages exactly its Cal. ${w.sigModel ? `On top of the weather, each simulated delivery carries a model-risk deviation of ± ${(w.sigModel * 100).toFixed(1)} capture-rate points, the size of this method’s errors in the historical replay (Compare tab): weather alone gives a band far too narrow. ` : ''}<b>Correlated</b> uses the prices of the same simulated year, <b>decorrelated</b> the prices of another one: the gap is the cannibalisation.`;
+    el.innerHTML = `<b>How this method works.</b> ${w.N} years are simulated for each delivery year. Each day draws sun and wind from what that month has really seen (with the persistence of real weather, so calm or sunny spells last), puts it on the capacity installed that year (${f0(w.capS[0])} GW of solar and ${f0(w.capW[0])} GW of wind in ${o.tenor[0]}), and takes consumption and nuclear from a recent real day. The price of each hour follows from what is left to produce once solar, wind and nuclear are counted (the net residual load): the lower it is, the lower the price, as measured on ${w.recent.join(' and ')}. Each simulated year then averages exactly its Cal. ${w.sigModel ? `On top of the weather, each simulated delivery carries a model-risk deviation of ± ${(w.sigModel * 100).toFixed(1)} capture-rate points, the size of this method’s errors in the historical replay (Compare tab): weather alone gives a band far too narrow. ` : ''}<b>Correlated</b> uses the prices of the same simulated year, <b>decorrelated</b> the prices of another one: the gap is the cannibalisation.${biasLine(o, 'weather')}`;
     const L = w.years.map(r => String(r.y));
     _fuelChart('pp-wx-rates', { type: 'bar', data: { labels: L, datasets: [
       { label: 'P10–P90 of the simulated years', data: w.years.map(r => [+(r.p10 * 100).toFixed(1), +(r.p90 * 100).toFixed(1)]), backgroundColor: 'rgba(127,200,248,.35)', borderColor: '#7FC8F8', borderWidth: 1, barPercentage: 0.4, grouped: false },
@@ -1495,9 +1512,9 @@
     { const fr = FRDOC(), yrs = m3.years.join(', '), gaps = Object.entries(m3.calGap || {}).filter(([, g]) => Math.abs(g) > 0.05), f2c = v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(2).replace('.', fr ? ',' : '.');
       const tech = fr ? (S.tech === 'solar' ? 'solaire' : 'éolien') : S.tech;
       const conv = S.conv === 'pos' ? (fr ? 'heures à prix ≤ 0 retirées de (1) et (3)' : 'hours with a price ≤ 0 left out of (1) and (3)') : S.conv === 'curt' ? (fr ? 'production arrêtée et non payée aux prix ≤ 0, baseload sur toutes les heures' : 'output stopped and not paid at prices ≤ 0, baseload on every hour') : (fr ? 'toutes les heures payées' : 'every hour paid');
-      $('pp-fpc-note').innerHTML = fr
+      $('pp-fpc-note').innerHTML = (fr
         ? `${m3.asset ? 'Production : la courbe du parc (années ' + yrs + ').' : 'Production : ' + tech + ' national (RTE), années ' + yrs + '.'} Coefficients de mise en forme (mois, type de jour, heure) moyennés sur ces années${m3.half ? ', en penchant vers les plus récentes (poids divisé par deux chaque année en arrière)' : ''}. La FPC est calée sur ${m3.used.join(', ') || 'aucune cotation'} : les mois d’abord, puis trimestres et saisons (une période déjà fixée ne bouge plus), puis chaque année est remise à l’échelle pour valoir exactement son Cal${gaps.map(([y, g]) => ` (${y} : les cotations plus courtes donnaient ${f2c(g)} €/MWh par rapport au Cal)`).join('')}. Cannibalisation = historique (1) − décorrélé (3), année par année et par saison (avril–septembre, octobre–mars), ${m3.flat ? 'à plat à sa moyenne ' + pc(m3.meanC) : 'projetée avec la capacité installée (log), ancrée sur ' + H[H.length - 1].y}, puis pondérée par la valeur de la production de chaque saison · dispersion ± ${(m3.sigC * 100).toFixed(1)} pts. Convention : ${conv}. Au walk-forward 2024–2026 (réglages choisis sur 2019–2023, arrêt aux prix ≤ 0), ces deux choix font passer l’erreur de 7,64 à 5,84 €/MWh en solaire et de 6,23 à 4,94 en éolien ; en toutes heures, éolien −6 %, solaire +2 % (scripts/ppa_fpc_variants.py).`
-        : `${m3.asset ? 'Production: the asset’s curve (years ' + yrs + ').' : 'Production: national ' + tech + ' (RTE), years ' + yrs + '.'} Shaping coefficients (month, day type, hour) averaged on the same years${m3.half ? ', leaning towards the recent ones (the weight halves every year back)' : ''}. The FPC is calibrated on ${m3.used.join(', ') || 'no quote'}: months first, then quarters and seasons (a period already set is not changed), then each year is rescaled so that it averages exactly its Cal${gaps.map(([y, g]) => ` (${y}: the shorter quotes gave ${f2c(g)} €/MWh vs the Cal)`).join('')}. Cannibalisation = historical (1) − decorrelated (3), year by year and per season (April–September, October–March), ${m3.flat ? 'flat at its average ' + pc(m3.meanC) : 'projected with installed capacity (log), anchored on ' + H[H.length - 1].y}, then weighted by the value of the output in each season · spread ± ${(m3.sigC * 100).toFixed(1)} pts. Convention: ${conv}. On the 2024–2026 walk-forward (settings chosen on 2019–2023, output stopped at prices ≤ 0), these two choices take the error from 7.64 to 5.84 €/MWh for solar and from 6.23 to 4.94 for wind; with every hour paid, wind −6 %, solar +2 % (scripts/ppa_fpc_variants.py).`; }
+        : `${m3.asset ? 'Production: the asset’s curve (years ' + yrs + ').' : 'Production: national ' + tech + ' (RTE), years ' + yrs + '.'} Shaping coefficients (month, day type, hour) averaged on the same years${m3.half ? ', leaning towards the recent ones (the weight halves every year back)' : ''}. The FPC is calibrated on ${m3.used.join(', ') || 'no quote'}: months first, then quarters and seasons (a period already set is not changed), then each year is rescaled so that it averages exactly its Cal${gaps.map(([y, g]) => ` (${y}: the shorter quotes gave ${f2c(g)} €/MWh vs the Cal)`).join('')}. Cannibalisation = historical (1) − decorrelated (3), year by year and per season (April–September, October–March), ${m3.flat ? 'flat at its average ' + pc(m3.meanC) : 'projected with installed capacity (log), anchored on ' + H[H.length - 1].y}, then weighted by the value of the output in each season · spread ± ${(m3.sigC * 100).toFixed(1)} pts. Convention: ${conv}. On the 2024–2026 walk-forward (settings chosen on 2019–2023, output stopped at prices ≤ 0), these two choices take the error from 7.64 to 5.84 €/MWh for solar and from 6.23 to 4.94 for wind; with every hour paid, wind −6 %, solar +2 % (scripts/ppa_fpc_variants.py).`) + biasLine(o, 'fpc'); }
   }
 
   // ── Methodology (with the proposed updates) ──
@@ -1513,6 +1530,7 @@ Incertitude : ${(o.sig0 * 100).toFixed(1).replace('.', ',')} pts × √années a
 Projection from the last year used (${o.lastYr}): ${MODEL_T[o.model]}.${o.cfit ? ` Capacity model: capture rate = a + b × ln(installed GW), fitted on ${o.cfit.use.join(', ')} (b = ${(o.cfit.sl * 100).toFixed(1)} pts per ln GW, R² ${o.cfit.r2.toFixed(2)}), installed capacity going in a straight line to the PPE3 targets (${Object.entries(PPE3[S.tech]).map(([y, g]) => y + ': ' + g + ' GW').join(', ')}), anchored on ${o.lastYr}.` : ''}
 Uncertainty: ${(o.sig0 * 100).toFixed(1)} pts × √years after ${o.lastYr} (the bands of the chart).</li>`}
 <li><b>Capture value</b> ${FRDOC() ? `= Σ poids × forward Cal × k × (1 − décote de profil projetée) = <code>${f2(o.fair)} €/MWh</code>. <b>k</b>, le facteur des mois cotés, met le niveau au mois comme le reste de l’outil : la valeur de la production sur les forwards des mois (mois coté, sinon trimestre, saison, puis Cal découpé par l’historique, data/history/fr_forward_monthly.json) ÷ sa valeur sur le Cal avec la forme saisonnière historique, que porte la capture annuelle. k = ${o.years.map(r => r.y + ' ' + (r.kq || 1).toFixed(3).replace('.', ',')).join(' ; ')} (1 quand rien n’est coté sous le Cal).${o.years.some(r => r.g !== 1) ? ` Livraison sur une partie d’année : la capture annuelle est ramenée aux mois livrés par <b>g</b> = valeur d’un MWh sur ces mois ÷ sur l’année entière (forward des mois × capture mensuelle prévue × production de chaque mois), et le volume à leur part de la production annuelle : ${o.years.filter(r => r.g !== 1).map(r => r.y + ' g ' + r.g.toFixed(3).replace('.', ',') + ', ' + Math.round(r.sh * 100) + ' % du volume').join(' ; ')}.` : ''}` : `= Σ weight × Cal forward × k × (1 − projected shape discount) = <code>${f2(o.fair)} €/MWh</code>. <b>k</b>, the quoted-month factor, puts the level month by month as the rest of the tool does: the output's value on the months' forwards (the month quoted, else its quarter, season, then the Cal shaped by history, data/history/fr_forward_monthly.json) ÷ its value on the Cal with the historical seasonal shape that the yearly capture carries. k = ${o.years.map(r => r.y + ' ' + (r.kq || 1).toFixed(3)).join(', ')} (1 when nothing below the Cal is quoted).${o.years.some(r => r.g !== 1) ? ` A year delivered in part: the yearly capture is brought to the months delivered by <b>g</b> = value of one MWh on those months ÷ on the whole year (months' forwards × forecast monthly capture × each month's output), and the volume to their share of the year's output: ${o.years.filter(r => r.g !== 1).map(r => r.y + ' g ' + r.g.toFixed(3) + ', ' + Math.round(r.sh * 100) + ' % of the volume').join('; ')}.` : ''}`}</li>
+<li><b>${FRDOC() ? 'Correction de biais' : 'Bias correction'}.</b>${biasLine(o, 'step')}</li>
 <li><b>Risk premium.</b> Monte Carlo (10,000 trajectories, see the Risk section): value earned per MWh, hedge included; the price is the ${o.alpha}th percentile of that value, so the chance of loss before margin is ${o.alpha} %. Premium = capture value − that percentile = <code>${f2(o.premium)} €/MWh</code>.</li>
 <li><b>PPA price</b> = value at risk − additional discount − imbalance + GO − margin = <code>${f2(o.ppaBuild)} €/MWh</code>. The margin is what the buyer keeps, so it is deducted.</li>
 </ol>

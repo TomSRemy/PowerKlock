@@ -39,6 +39,8 @@ jobs:
         run: python scripts/ppa_walkforward.py || echo "::warning::walk-forward not updated"
       - name: Capture fan
         run: python scripts/build_ppa_fan.py
+      - name: Each method's past bias (the pricer takes it off where it helps)
+        run: python scripts/ppa_bias.py || echo "::warning::methods' bias not updated"
       - name: Production forecast backtest
         run: python scripts/fcst_backtest.py || echo "::warning::forecast backtest not updated"
       - name: Production forecast vs ENTSO-E, France
@@ -53,7 +55,7 @@ jobs:
         run: |
           git config user.name "PowerDesk Bot"
           git config user.email "bot@powerdesk.local"
-          git add data/history/region_hourly data/history/ppa_backtest_detail.json data/history/ppa_lab.json data/history/ppa_forecast.json data/history/ppa_walkforward.json data/history/fr_regional_capture.json data/history/ppa_fan.json data/history/fcst_backtest.json data/history/fcst_calib.json data/history/fcst_national.json data/history/fr_prod_model.json data/history/ppa_factors.json data/history/fcst_neighbours.json
+          git add data/history/region_hourly data/history/ppa_backtest_detail.json data/history/ppa_lab.json data/history/ppa_forecast.json data/history/ppa_walkforward.json data/history/fr_regional_capture.json data/history/ppa_fan.json data/history/fcst_backtest.json data/history/fcst_calib.json data/history/fcst_national.json data/history/fr_prod_model.json data/history/ppa_factors.json data/history/fcst_neighbours.json data/history/ppa_bias.json
           if git diff --staged --quiet; then echo "No change"; exit 0; fi
           git commit -m "data: PPA test bench $(date -u '+%Y-%m-%d')"
           for i in 1 2 3 4 5; do git pull -q --rebase -X theirs origin main && git push && exit 0; git rebase --abort 2>/dev/null || true; sleep 5; done
