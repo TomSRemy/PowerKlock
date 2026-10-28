@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Weights of the four methods in the published PPA price: each method weighs by the inverse of its past error.
 
-For each technology and convention, a method's error is its mean absolute error on 2024–2026, one, two and three
+For each technology and convention, a method's error is its mean absolute error on the complete delivery years from 2024, one, two and three
 years ahead, AFTER its bias correction where that correction is adopted (data/history/ppa_bias_test.json, the
 'all' variant for an adopted cell, 'none' otherwise; data/history/ppa_bias.json says which). Weight = 1 / error,
 normalised to 1. Applied where it lowered the mean error of the average in the published convention (decided by

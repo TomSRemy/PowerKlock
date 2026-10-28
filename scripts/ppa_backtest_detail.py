@@ -62,6 +62,7 @@ def m_step(t, Y, train, V, conv):
     return r[-1] + b * (math.log(B.cap_guess(t, Y, last)) - math.log(B.CAP[t][last]))
 
 
+FPC_DRIVER = 's'                    # the fleet whose growth drives the cannibalisation term
 FPC_HALF = {'s': 1, 'w': None}      # solar: skeleton weights halve every year back; wind: plain average
 SUMMER = set(range(4, 10))
 
@@ -123,9 +124,10 @@ def m_fpc(t, Y, train, V, conv):
         for y in train:
             k = (yr == y) & np.isin(mo, list(months))
             cs.append(rate(k, V, P, conv) - rate(k, V, fulls[y], conv))
-        b = B.logfit([B.CAP[t][y] for y in train], cs) if len(train) >= 3 else 0
+        # driven by the solar fleet, for wind too (scripts/ppa_fpc_driver_test.py: wind curt 1.64 → 1.31 €/MWh, complete years)
+        b = B.logfit([B.CAP[FPC_DRIVER][y] for y in train], cs) if len(train) >= 3 else 0
         for m in months:
-            cterm[m] = cs[-1] + b * (math.log(B.cap_guess(t, Y, last)) - math.log(B.CAP[t][last]))
+            cterm[m] = cs[-1] + b * (math.log(B.cap_guess(FPC_DRIVER, Y, last)) - math.log(B.CAP[FPC_DRIVER][last]))
     # the year's term: each season's, weighted by the output's value on the skeleton in that season
     wv = {m: (pv[mm == m] * sk[mm == m]).sum() for m in range(1, 13)}
     c = sum(wv[m] * cterm[m] for m in wv) / sum(wv.values())
