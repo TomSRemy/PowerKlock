@@ -1314,6 +1314,34 @@
     const sub = $('pp-fanm-sub');
     if (sub) sub.textContent = (fr ? `${NAMES[FANM]} · ${S.tech === 'wind' ? 'éolien' : 'solaire'} · P10 et P90 : 1 chance sur 10 d’être en dessous / au-dessus` : `${NAMES[FANM]} · ${S.tech === 'wind' ? 'wind' : 'solar'} · P10 and P90: 1 chance in 10 of being below / above`);
   }
+  // Each method against what was realised: every delivery year priced 1, 2 or 3 years ahead with only the years known
+  // then (scripts/ppa_horizon_test.py → ppa_vs_actual.py), at the prices that came, so only the capture forecast differs
+  let VSA = null, VSH = '1';
+  const vsaLoad = () => VSA || (VSA = fetch(DATA_BASE + 'history/ppa_vs_actual.json').then(r => r.ok ? r.json() : null).catch(() => null));
+  function renderVsActual() {
+    const cv = $('pp-vsa'); if (!cv) return;
+    vsaLoad().then(j => {
+      const fr = FRDOC(), t = S.tech === 'wind' ? 'wind' : 'solar', c = S.conv === 'all' ? 'all' : 'curt';
+      const D = j && j.tech && j.tech[t] && j.tech[t][c] && j.tech[t][c][VSH]; if (!D) return;
+      const ys = Object.keys(D).sort(), n2 = v => v == null ? '–' : fr ? f2(v).replace('.', ',') : f2(v);
+      const M = [['step', fr ? 'Tendance de capacité' : 'Capacity trend', '#14D3A9'], ['fpc', fr ? 'Forme forward' : 'Forward shape', '#FBBF24'],
+        ['weather', fr ? 'Simulation météo' : 'Weather simulation', '#A87DC4'], ['regional', fr ? 'Modèle européen' : 'European price model', '#5B9BD5'], ['avg4', fr ? 'Moyenne des 4' : 'Average of 4', '#8A99A6']];
+      const lbl = y => y + (D[y].partial ? (fr ? ' (à date)' : ' (to date)') : '');
+      const ds = [{ label: fr ? 'Réalisé' : 'Realised', data: ys.map(y => D[y].actual), borderColor: '#E6EDF3', backgroundColor: '#E6EDF3', borderWidth: 3.2, pointRadius: 4, fill: false, tension: 0 }]
+        .concat(M.map(([k, n, col]) => ({ label: n, data: ys.map(y => D[y][k]), borderColor: col, backgroundColor: col, borderWidth: k === 'avg4' ? 2.4 : 1.6, borderDash: k === 'avg4' ? [5, 4] : [], pointRadius: 2.5, fill: false, tension: 0 })));
+      _fuelChart('pp-vsa', { type: 'line', data: { labels: ys.map(lbl), datasets: ds }, options: _fuelOpts({
+        plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 8 } },
+          tooltip: { callbacks: { label: x => x.raw == null ? null : ` ${x.dataset.label}: ${n2(x.raw)} €/MWh` } } },
+        scales: { x: Object.assign(_fuelXAxis(), { grid: { display: false } }), y: _fuelAxis(fr ? 'valeur d’un MWh produit, €/MWh' : 'value of one MWh produced, €/MWh') } }) }, 'ppa-methods-vs-actual');
+      const done = ys.filter(y => +y >= 2024), mae = k => { const e = done.map(y => D[y][k] == null ? null : Math.abs(D[y][k] - D[y].actual)).filter(v => v != null); return e.length ? e.reduce((a, b) => a + b, 0) / e.length : null; };
+      const bias = k => { const e = done.map(y => D[y][k] == null ? null : D[y][k] - D[y].actual).filter(v => v != null); return e.length ? e.reduce((a, b) => a + b, 0) / e.length : null; };
+      const tb = $('pp-vsa-table');
+      if (tb) tb.innerHTML = `<div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">${fr ? 'Méthode' : 'Method'}</th><th>${fr ? 'Erreur moyenne 2024–2026' : 'Mean error 2024–2026'}</th><th>${fr ? 'Biais (+ = trop haut)' : 'Bias (+ = too high)'}</th></tr></thead><tbody>` +
+        M.map(([k, n]) => `<tr><td style="text-align:left">${n}</td><td><b>${n2(mae(k))} €</b></td><td>${bias(k) == null ? '–' : (bias(k) >= 0 ? '+' : '−') + n2(Math.abs(bias(k))) + ' €'}</td></tr>`).join('') + '</tbody></table></div>';
+      const sub = $('pp-vsa-sub');
+      if (sub) sub.textContent = fr ? `${t === 'wind' ? 'Éolien' : 'Solaire'} · chaque année pricée ${VSH} an${VSH === '1' ? '' : 's'} à l’avance avec les seules années connues alors, aux prix réalisés · profil national` : `${t === 'wind' ? 'Wind' : 'Solar'} · each year priced ${VSH} year${VSH === '1' ? '' : 's'} ahead with only the years known then, at the realised prices · national profile`;
+    });
+  }
   function renderCompare(o) {
     const host = $('pp-compare'); if (!host) return;
     const m3c = o.m3, mc = o.mc;
@@ -1364,6 +1392,7 @@
         scales: { x: Object.assign(_fuelXAxis(), { grid: { display: false } }), y: _fuelAxis(tr('capture rate, % of the Cal')) } }) }, 'ppa-cannibalisation-by-method');
     })();
     renderFanM(o);
+    renderVsActual();
     const m3 = o.m3, m4 = o.m4, Y = o.years, a = Y[0], z = Y[Y.length - 1];
     const col = (lbl, cur) => `<th${cur ? ' class="pp-cur"' : ''}>${lbl}${cur ? ' ✓' : ''}</th>`;
     const W4 = m4 ? m4.years : null;
@@ -1617,6 +1646,7 @@ ${FRDOC() ? `<p>RTE éCO2mix (production nationale, 15 min) · prix day-ahead EN
     const pdm = $('pp-pdmode'); if (pdm) pdm.addEventListener('change', e => { S.pdMode = e.target.value; run(); });
     const pdy = $('pp-pdyears'); if (pdy) pdy.addEventListener('change', e => { S.pdYears = +e.target.value; run(); });
     const fu = $('pp-fanm-unit'); if (fu) fu.addEventListener('change', () => renderFanM(S.last));
+    const vh = $('pp-vsa-h'); if (vh) vh.addEventListener('change', () => { VSH = vh.value; renderVsActual(); });
     // first and last month delivered (January → December by default: whole calendar years)
     ['pp-m0', 'pp-m1'].forEach(id => { const el = $(id); if (el) el.addEventListener('change', e => { S[id === 'pp-m0' ? 'm0' : 'm1'] = +e.target.value; run(); }); });
     $('pp-pct').addEventListener('input', e => { $('pp-pct-v').textContent = 'P' + e.target.value; });
