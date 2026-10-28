@@ -3590,3 +3590,14 @@ html[data-theme="light"] #page-boa .boa-f3 code { color: #1D4E89; } html[data-th
 
 /* Analysis: the finding of a chart in one line */
 .ma-finding { font:600 14px/1.35 'Outfit',sans-serif; color:var(--text); margin:4px 0 2px; text-wrap:balance; }
+
+/* 1024–1180 px fixes, bridge-cse, 28 Oct. */
+/* the section meta line wraps instead of being cut with an ellipsis (titles and units wrap, never cut) */
+@media (min-width: 761px) {
+  .pk-hs-meta { white-space: normal; overflow: visible; text-overflow: clip; }
+}
+/* short labels that were cut with an ellipsis at 1024–1180 px wrap instead (their rules are injected by the page
+   scripts, hence html body): power map legend, forecast tiles, the morning tiles' comparison line, map credits */
+html body .pm-o-l, html body .pkf-t-l, html body .mrn2-tc { white-space: normal; overflow: visible; text-overflow: clip; }
+html body .leaflet-container .leaflet-bottom.leaflet-right { max-width: 100%; }
+html body .leaflet-container .leaflet-control-attribution { white-space: normal; }
