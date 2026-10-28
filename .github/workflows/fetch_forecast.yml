@@ -36,7 +36,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       # after another job: run only if the forecast is due (tomorrow missing from 7:00 Paris, or older than 3 h)
       - name: Due?
         id: due
@@ -52,7 +52,7 @@ jobs:
           due = (now.hour >= 7 and tm not in (j.get('days') or {})) or age > 3
           print('run=' + ('yes' if due and 6 <= now.hour <= 22 else 'no'))
           PY
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         if: steps.due.outputs.run == 'yes'
         with:
           python-version: '3.12'

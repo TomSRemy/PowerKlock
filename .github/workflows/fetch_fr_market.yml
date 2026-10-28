@@ -32,14 +32,14 @@ jobs:
       contents: write
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       - name: Fetched less than 20 minutes ago? (a late run catching up with the next slot)
         id: due
         run: |
           AGE=$(python3 -c "import json,datetime as d;t=json.load(open('data/fr_market.json')).get('lastUpdate');print(int((d.datetime.now(d.timezone.utc)-d.datetime.fromisoformat(t)).total_seconds()//60) if t else 9999)" 2>/dev/null || echo 9999)
           if [ "${{ github.event_name }}" = "schedule" ] && [ "$AGE" -lt 20 ]; then echo "run=false" >> "$GITHUB_OUTPUT"; echo "fetched $AGE min ago"; else echo "run=true" >> "$GITHUB_OUTPUT"; fi
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.11'
       - name: Install dependencies
