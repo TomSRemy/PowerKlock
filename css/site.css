@@ -3599,3 +3599,6 @@ html[data-theme="light"] #page-boa .boa-f3 code { color: #1D4E89; } html[data-th
 /* short labels that were cut with an ellipsis at 1024–1180 px wrap instead (their rules are injected by the page
    scripts, hence html body): power map legend, forecast tiles, the morning tiles' comparison line */
 html body .pm-o-l, html body .pkf-t-l, html body .mrn2-tc { white-space: normal; overflow: visible; text-overflow: clip; }
+
+#page-boa .boa-chk { display:flex; gap:8px; align-items:flex-start; margin:8px 0 2px; font-size:12.5px; color:var(--text2); cursor:pointer; }
+#page-boa .boa-chk input { accent-color:#7FC8F8; margin-top:2px; }
