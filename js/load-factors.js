@@ -97,8 +97,8 @@
   const NOTE = scope => scope === 'region'
     ? T('Facteur de charge publié par RTE pour chaque région (production ÷ puissance installée), moyenne des quarts d’heure de l’année, données consolidées (ODRÉ).',
         'Load factor published by RTE for each region (output ÷ installed capacity), mean of the year’s quarter-hours, consolidated data (ODRÉ).')
-    : T('Production de l’année ÷ puissance installée (moyenne des fins d’année avant et après), Energy-Charts. Années complètes seulement. Hydraulique : avec le pompage-turbinage, dont la production dépend des pompages ; fossile : gaz, charbon, lignite, fioul.',
-        'The year’s output ÷ installed capacity (mean of the year-ends before and after), Energy-Charts. Full years only. Hydro includes pumped storage, whose output depends on pumping; fossil: gas, hard coal, lignite, oil.');
+    : T('Production de l’année ÷ puissance installée (moyenne des fins d’année avant et après), Energy-Charts (France, solaire et éolien : RTE). Années complètes seulement. Hydraulique : avec le pompage-turbinage, dont la production dépend des pompages ; fossile : gaz, charbon, lignite, fioul.',
+        'The year’s output ÷ installed capacity (mean of the year-ends before and after), Energy-Charts (France, solar and wind: RTE). Full years only. Hydro includes pumped storage, whose output depends on pumping; fossil: gas, hard coal, lignite, oil.');
 
   // ── converter page ──
   function page() {
