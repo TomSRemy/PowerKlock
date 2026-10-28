@@ -6,13 +6,18 @@
 //               solar ↔ wind link (scripts/prod_model.py → fr_prod_model.json)
 //   production  × the installed capacity projected for the delivery year
 //               (PPE3 path), hourly shape of a real day with a close output
-//   demand      consumption and nuclear availability of a recent real day of
-//               the same month and day type
+//   demand      consumption and nuclear availability of a real day of the same
+//               month and day type: the last complete year for solar, the last
+//               two for wind
 //   price       month level of the forward curve × the effect of the net
 //               residual load (consumption − solar − wind − nuclear available),
 //               measured on the last two complete years by season and time of
-//               day, × a residual drawn from the same years; then the whole
-//               year is rescaled to its Cal exactly
+//               day, × (solar only) a residual drawn from the same years; then
+//               the whole year is rescaled to its Cal exactly
+// Per technology as the test bench (scripts/ppa_backtest_detail.py WX_NOISE /
+// WX_DEMAND2, scripts/ppa_wx_align_test.py: mean error over 1–3 years, curt,
+// solar 3.82 → 2.44 with the residual, wind 2.95 → 2.70 with two years of demand),
+// so the method's bias correction (scripts/ppa_bias.py) is measured on this version
 // Correlated: production and prices of the same simulated year. Decorrelated:
 // production of one year, prices of another. The gap is the cannibalisation.
 // ════════════════════════════════════════════════════════════════════
@@ -95,8 +100,9 @@
     const complete = B.ys.filter(y => y !== 2022 && B.days.filter(d => d.y === y).length > 330);
     const recent = complete.slice(-2);
     const PC = priceCurve(B, recent);
-    const recentDays = {}; B.days.filter(d => recent.includes(d.y)).forEach(d => { const k = d.m + '|' + d.t; (recentDays[k] = recentDays[k] || []).push(d); });
     const tech = st.tech === 'solar' ? 'S' : 'W', pos = st.conv !== 'all', baseAll = st.conv === 'curt';
+    const demYears = tech === 'S' ? recent.slice(-1) : recent;   // demand days: the last complete year for solar, two for wind
+    const recentDays = {}; B.days.filter(d => demYears.includes(d.y)).forEach(d => { const k = d.m + '|' + d.t; (recentDays[k] = recentDays[k] || []).push(d); });
     const AF = o.useAsset ? fitAsset(st, B, tech) : null;
     const meanCF = {}; for (let m = 1; m <= 12; m++) { const q = B.model.months[String(m)][tech === 'S' ? 's' : 'w']; meanCF[m] = mean(q); }
     let eA = 0;
@@ -129,7 +135,7 @@
           for (let h = 0; h < 24; h++) {
             const s = cS * aS.shS[h] * capS * 1000, w = cW * aW.shW[h] * capW * 1000;
             const net = (dem.L[h] - s - w - dem.nav) / 1000, g = summer(m) * 3 + block(h);
-            const rs = PC.res[g], noise = rs && rs.length ? rs[Math.floor(R() * rs.length)] : 1;
+            const rs = tech === 'S' ? PC.res[g] : null, noise = rs && rs.length ? rs[Math.floor(R() * rs.length)] : 1;   // the residual: solar only
             const k = di * 24 + h;
             P[k] = lvl * lookup(PC.T, g, Math.round(net)) * noise;
             V[k] = (tech === 'S' ? cS * aS.shS[h] : cW * aW.shW[h]) * aDay;

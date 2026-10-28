@@ -137,6 +137,12 @@ def m_fpc(t, Y, train, V, conv):
     return 1 + f + c, {m: 1 + fm[m] + cterm[m] for m in range(1, 13)}, shape
 
 
+WX_NOISE = {'s': True, 'w': False}    # solar: each hour's price scattered by a residual of the recent years
+WX_DEMAND2 = {'s': False, 'w': True}   # wind: consumption and nuclear drawn from the last two complete years
+# (scripts/ppa_wx_align_test.py, mean error over 1–3 years, curt: solar 3.82 → 2.44 with the noise, wind 2.95 → 2.70
+#  with the two-year demand; the other choice made each worse); js/ppa-wx.js applies the same rule
+
+
 def m_weather(t, Y, train, V, n_sims):
     """yearly and monthly capture rates for both conventions, from the same simulated years"""
     recent = train[-2:]
@@ -150,6 +156,15 @@ def m_weather(t, Y, train, V, n_sims):
             if i.sum() >= 20:
                 tab[(g, int(b))] = float((P[i] / B.mavg[i]).mean())
 
+    res = {}
+    if WX_NOISE[t]:
+        for g in range(6):
+            i = tr & (grp == g)
+            for v, bb in zip(P[i] / B.mavg[i], net[i]):
+                f = tab.get((g, int(bb)))
+                if f is not None and f > 0.05:
+                    res.setdefault(g, []).append(float(v / f))
+
     def look(g, b):
         k = 0
         while (g, b) not in tab and k < 150:
@@ -160,7 +175,7 @@ def m_weather(t, Y, train, V, n_sims):
     sims = PM.simulate(model, days, n_sims, seed=Y, year=Y)
     last = train[-1]
     cs, cw = B.cap_guess('s', Y, last) * 1000, B.cap_guess('w', Y, last) * 1000
-    i_last = yr == last
+    i_last = np.isin(yr, train[-2:]) if WX_DEMAND2[t] else yr == last
     dem = {}
     for o_ in np.unique(DAY[i_last]):
         j = i_last & (DAY == o_)
@@ -190,6 +205,8 @@ def m_weather(t, Y, train, V, n_sims):
                 s_, w_ = hs[h] * cs, hw[h] * cw
                 g = (1 if 4 <= m <= 9 else 0) * 3 + (0 if h < 9 else 1 if h < 17 else 2)
                 pr = look(g, int(round((Ld[h] - s_ - w_ - nav) / 1000)))
+                if res.get(g):
+                    pr *= res[g][R.randrange(len(res[g]))]
                 prs.append(pr)
                 v = hs[h] if t == 's' else hw[h]
                 for ix in (0, m):
