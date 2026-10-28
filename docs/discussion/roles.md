@@ -23,6 +23,9 @@
 6. What changes a published figure or its definition (the PPA benchmark, the BESS index) waits for Tom's decision.
 
 ## Practical rules
+- Never rebase or merge `main` with `-X theirs` / `-X ours`: it silently drops the other session's work. The
+  translation files (`assets/i18n_fr.json`, `assets/i18n_fr_tpl.json`) are one JSON line: resolve a conflict as a
+  key union (load both sides, merge), never by taking a side (lesson of 28 Oct., 01:10).
 - Tests on separate ports: bridge-cse keeps the default (`SMOKE_PORT` 8799), powerklock-78 uses `SMOKE_PORT=8850`.
 - Separate worktrees; never edit another session's worktree.
 - Messages between sessions for anything urgent; this folder for anything Tom should read.
