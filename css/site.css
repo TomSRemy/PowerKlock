@@ -3604,3 +3604,6 @@ html body .pm-o-l, html body .pkf-t-l, html body .mrn2-tc { white-space: normal;
 
 #page-boa .boa-chk { display:flex; gap:8px; align-items:flex-start; margin:8px 0 2px; font-size:12.5px; color:var(--text2); cursor:pointer; }
 #page-boa .boa-chk input { accent-color:#7FC8F8; margin-top:2px; }
+
+/* Production forecast: a hidden field stays hidden (.cf-field sets display:flex, which beat the hidden attribute: wind fields showed in solar mode) */
+#page-fcst [hidden] { display: none !important; }

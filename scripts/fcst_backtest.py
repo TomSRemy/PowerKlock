@@ -26,6 +26,14 @@ Steps compared (each adds to the previous one)
       their average and their disagreement as features; recent months weigh more
       (half-life 6 months) so the correction follows the fleet as it changes
 
+  v3h the regional fleet mode of the tool: v1 + v3's shape relearned with recent months
+      weighing more (half-life 6 months; tested 6, 12, 24 months and none: 6 is best on the
+      last 6 months in 6 of 7 cases)
+
+Truth after RTE's definitive regional data ends (31 Aug. 2026 today) comes from its real-time
+regional data (eco2mix-regional-tr), so the correction is relearned every week up to yesterday;
+the regional installed capacity is read from the same real-time data (output ÷ load factor).
+
 Writes data/history/fcst_backtest.json and data/history/fcst_calib.json (the solar
 correction by month × hour the tool applies, learned on hours priced above 10 €/MWh,
 so the curtailment at negative prices does not leak into it)
@@ -37,14 +45,17 @@ import os
 import time
 import urllib.parse
 import urllib.request
-from datetime import date
+from datetime import date, datetime, timedelta
+from zoneinfo import ZoneInfo
 
 import numpy as np
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CACHE = os.environ.get('PK_FC_CACHE', os.path.join(ROOT, '.cache', 'fcst'))
 OUT = os.path.join(ROOT, 'data', 'history', 'fcst_backtest.json')
-START, END = '2024-02-20', '2026-08-31'
+START = '2024-02-20'
+END = os.environ.get('PK_FC_END') or (datetime.now(ZoneInfo('Europe/Paris')).date() - timedelta(days=1)).isoformat()   # learnt up to yesterday (PK_FC_END: a fixed end, to rerun on a cache)
+HALF_LIFE = 6.0   # months: the regional fleet's correction follows the fleet as it changes
 REGIONS = {   # name in éCO2mix → (lat min, lat max, lon min, lon max), techs tested
     'Occitanie': ((42.6, 44.8, 0.0, 4.4), ('solar', 'wind')),
     'Nouvelle-Aquitaine': ((43.4, 46.8, -1.3, 2.2), ('solar',)),
@@ -80,9 +91,11 @@ def cached(name, fn):
 def truth(region):
     def fetch():
         out = {}
-        for y0, y1 in (('2024-02-19', '2024-12-31'), ('2025-01-01', '2025-12-31'), ('2026-01-01', '2026-09-01')):
-            w = f'libelle_region="{region}" and date_heure>="{y0}" and date_heure<"{y1}T23:59:59"'
-            url = ('https://odre.opendatasoft.com/api/explore/v2.1/catalog/datasets/eco2mix-regional-cons-def/exports/json?'
+        spans = [('eco2mix-regional-cons-def', f'{y}-01-01' if y > 2024 else '2024-02-19', f'{y}-12-31') for y in range(2024, int(END[:4]) + 1)]
+        spans.append(('eco2mix-regional-tr', '2026-08-31', END))   # the real-time data start where the definitive ones stop
+        for ds, y0, y1 in spans:
+            w = f'libelle_region="{region}" and date_heure>="{y0}" and date_heure<="{y1}T23:59:59"'
+            url = (f'https://odre.opendatasoft.com/api/explore/v2.1/catalog/datasets/{ds}/exports/json?'
                    + urllib.parse.urlencode({'select': 'date_heure,tch_solaire,tch_eolien', 'where': w, 'timezone': 'Europe/Paris'}))
             for r in get(url):
                 k = r['date_heure'][:13]
@@ -92,7 +105,23 @@ def truth(region):
                 if r.get('tch_eolien') is not None:
                     o[2] += r['tch_eolien']; o[3] += 1
         return {k: [v[0] / v[1] / 100 if v[1] else None, v[2] / v[3] / 100 if v[3] else None] for k, v in out.items()}
-    return cached('truth_' + region.replace(' ', '_').replace("'", ''), fetch)
+    return cached(f'truth_{END}_' + region.replace(' ', '_').replace("'", ''), fetch)
+
+
+def capacity(region):
+    """installed solar and wind MW of the region, last 30 days of RTE real-time data: median of output ÷ load factor"""
+    def fetch():
+        d0 = (date.today() - timedelta(days=30)).isoformat()   # today's fleet, whatever END is
+        w = f'libelle_region="{region}" and date_heure>="{d0}"'
+        url = ('https://odre.opendatasoft.com/api/explore/v2.1/catalog/datasets/eco2mix-regional-tr/exports/json?'
+               + urllib.parse.urlencode({'select': 'solaire,eolien,tch_solaire,tch_eolien', 'where': w}))
+        rows = get(url)
+        out = {}
+        for tech, prod, tch in (('solar', 'solaire', 'tch_solaire'), ('wind', 'eolien', 'tch_eolien')):
+            v = [r[prod] / (r[tch] / 100) for r in rows if r.get(prod) is not None and r.get(tch) is not None and r[tch] > 5]
+            out[tech] = round(float(np.median(v))) if len(v) >= 20 else None
+        return out
+    return cached(f'cap_{END}_' + region.replace(' ', '_').replace("'", ''), fetch)
 
 
 # ── weather: day-ahead forecasts at the grid points ───────────────────────
@@ -112,7 +141,7 @@ def weather(region, box):
         res = get(url)
         res = res if isinstance(res, list) else [res]
         return [{'time': r['hourly']['time'], **{x: r['hourly'][x + '_previous_day1'] for x in v}} for r in res]
-    return pts, cached('wx_' + region.replace(' ', '_').replace("'", ''), fetch)
+    return pts, cached(f'wx_{END}_' + region.replace(' ', '_').replace("'", ''), fetch)
 
 
 MODELS = {'solar': ('meteofrance_seamless', 'icon_seamless', 'gfs_seamless'), 'wind': ('icon_seamless', 'gfs_seamless')}
@@ -127,7 +156,7 @@ def weather_models(region, box, tech):
         res = get(url)
         res = res if isinstance(res, list) else [res]
         return [{m: r['hourly'].get(var + '_' + m) for m in MODELS[tech]} for r in res]
-    return cached(f'wxm_{tech}_' + region.replace(' ', '_').replace("'", ''), fetch)
+    return cached(f'wxm_{tech}_{END}_' + region.replace(' ', '_').replace("'", ''), fetch)
 
 
 # ── the tool's generic model (same as js/tool-forecast.js) ─────────────────
@@ -226,6 +255,58 @@ def frame(region, box, tech):
     return rows
 
 
+def month_no(ym):
+    return int(ym[:4]) * 12 + int(ym[5:7])
+
+
+def fleet_fit(tr, tech, ref):
+    """the regional fleet's correction learned on the rows tr, month weights halving every HALF_LIFE months
+    before the month ref ('YYYY-MM'); hours at prices ≤ 0 are kept: the fleet's curtailment there is part of what
+    it produces (leaving them out made the solar forecast 0.4–0.9 points worse and biased it upward)
+      solar  factor by month × hour of day (actual ÷ grid model), else by month, else overall
+      wind   empirical power curve: mean actual load factor by 0.5 m/s bin of the grid-mean forecast wind"""
+    w = {r['ym']: 0.5 ** ((month_no(ref) - month_no(r['ym'])) / HALF_LIFE) for r in tr}
+    if tech == 'solar':
+        f, fm, tot = {}, {}, [0.0, 0.0]
+        for r in tr:
+            if r['cs'] <= 0:
+                continue
+            k = w[r['ym']]
+            for d, key in ((f, (r['m'], r['h'])), (fm, r['m'])):
+                a = d.setdefault(key, [0.0, 0.0]); a[0] += k * r['y']; a[1] += k * r['v1']
+            tot[0] += k * r['y']; tot[1] += k * r['v1']
+        s = tot[0] / max(1e-9, tot[1])
+        return {'s': min(3.0, s), 'f': {f'{m}|{h}': min(3.0, a[0] / a[1]) for (m, h), a in f.items() if a[1] > 0.3},
+                'fm': {str(m): min(3.0, a[0] / a[1]) for m, a in fm.items() if a[1] > 1}}
+    acc = {}
+    for r in tr:
+        b = int(r['ws'] * 2); a = acc.setdefault(b, [0.0, 0.0, 0]); k = w[r['ym']]
+        a[0] += k * r['y']; a[1] += k; a[2] += 1
+    lf = {b: a[0] / a[1] for b, a in acc.items() if a[2] >= 15}
+    top = max(lf) if lf else 0
+    return {'step': 0.5, 'lf': [round(lf[b], 4) if b in lf else None for b in range(top + 1)]}
+
+
+def fleet_apply(model, r, tech):
+    if tech == 'solar':
+        if r['cs'] <= 0:
+            return 0.0
+        k = model['f'].get(f"{r['m']}|{r['h']}", model['fm'].get(str(r['m']), model['s']))
+        return min(1.0, max(0.0, r['v1'] * k))
+    c = model['lf']
+    if not c:
+        return r['v1']
+    b = min(len(c) - 1, int(r['ws'] * 2))
+    lo = b
+    while lo > 0 and c[lo] is None:
+        lo -= 1
+    hi = b
+    while hi < len(c) - 1 and c[hi] is None:
+        hi += 1
+    v = c[lo] if c[lo] is not None else c[hi]
+    return float(v if v is not None else r['v1'])
+
+
 def walk(rows, tech):
     """add v2, v3, v4 predictions, each month learned on the months before it (≥ 6)"""
     months = sorted({r['ym'] for r in rows})
@@ -234,7 +315,7 @@ def walk(rows, tech):
         test = by[m]
         if k < 6:
             for r in test:
-                r['v2'] = r['v3'] = r['v4'] = r['v5'] = r['v6'] = None
+                r['v2'] = r['v3'] = r['v3h'] = r['v4'] = r['v5'] = r['v6'] = None
             continue
         tr = [r for mm in months[:k] for r in by[mm]]
         if tech == 'solar':
@@ -264,6 +345,10 @@ def walk(rows, tech):
                     r['v3'] = float(means[b])
                 else:
                     near = min(keys, key=lambda q: abs(q - b)); r['v3'] = float(means[near])
+        # v3h: the tool's regional fleet mode, the same shape relearned with recent months weighing more
+        fm_ = fleet_fit([r for mm in months[:k] for r in by[mm]], tech, m)
+        for r in test:
+            r['v3h'] = fleet_apply(fm_, r, tech)
         # v4: MOS regression on forecast features
         def feats(r):
             if tech == 'solar':
@@ -335,15 +420,25 @@ def score(rows, key, tech):
 
 def main():
     out = {'protocol': __doc__.split('Steps')[0].strip(), 'period': [START, END], 'results': {}, 'samples': {}}
-    calib = {}
+    calib, fleet = {}, {}
     for region, (box, techs) in REGIONS.items():
+        cap = capacity(region)
         for tech in techs:
             rows = walk(frame(region, box, tech), tech)
+            # the regional fleet mode of the tool: the correction learned on every month up to yesterday, its
+            # walk-forward error over the last 6 complete months (v1 = grid alone, v3h = what the tool shows)
+            last = max(r['ym'] for r in rows)
+            nxt = f'{int(last[:4]) + (last[5:7] == "12")}-{int(last[5:7]) % 12 + 1:02d}'
+            recent = sorted({r['ym'] for r in rows if r['ym'] < last})[-6:]
+            rr = [r for r in rows if r['ym'] in recent]
+            fleet.setdefault(region, {'box': box})[tech] = {
+                'learnedTo': max(r['t'] for r in rows)[:10], 'capacityMW': cap.get(tech), 'model': fleet_fit(rows, tech, nxt),
+                'error': {'months': [recent[0], recent[-1]] if recent else None, **{v: score(rr, v, tech) for v in ('v1', 'v3h')}}}
             if tech == 'solar':
                 for r in rows:
                     if r['cs'] > 0 and r.get('p') is not None and r['p'] > 10:
                         a = calib.setdefault(f"{r['m']}|{r['h']}", [0.0, 0.0]); a[0] += r['y']; a[1] += r['mm'][0] if False else r['v1']
-            res = {v: score(rows, v, tech) for v in ('v0', 'v1', 'v2', 'v3', 'v4', 'v5', 'v6')}
+            res = {v: score(rows, v, tech) for v in ('v0', 'v1', 'v2', 'v3', 'v3h', 'v4', 'v5', 'v6')}
             neg = [r for r in rows if r.get('v5') is not None and r.get('p') is not None and r['p'] <= 0 and (tech != 'solar' or r['cs'] > 0)]
             if neg:
                 res['neg_hours'] = {v: float(np.mean([abs(r[v] - r['y']) for r in neg])) for v in ('v4', 'v5', 'v6')}
@@ -364,7 +459,12 @@ def main():
     fac = {m: round(min(1.4, max(0.7, a[0] / a[1])), 3) for m, a in mon.items() if a[1] > 2}
     with open(os.path.join(ROOT, 'data', 'history', 'fcst_calib.json'), 'w') as f:
         json.dump({'source': 'scripts/fcst_backtest.py: actual ÷ modelled solar load factor, RTE regional data (Occitanie, Nouvelle-Aquitaine, PACA) vs Open-Meteo day-ahead, hours above 10 €/MWh',
-                   'period': [START, END], 'solar_month': fac}, f, separators=(',', ':'))
+                   'period': [START, END], 'solar_month': fac,
+                   'regional': {'note': 'Tools › Production forecast, regional fleet mode: Open-Meteo best model on a 3 × 3 grid of the region, '
+                                        'generic model (tilt 30°, south; medium-wind curve at 120 m), then this correction (solar: actual ÷ model by '
+                                        'month × hour; wind: actual load factor by 0.5 m/s bin of the grid-mean wind), months weighing half as much '
+                                        'every 6 months back; × the installed capacity (RTE real-time, output ÷ load factor)',
+                                'halfLifeMonths': HALF_LIFE, 'regions': fleet}}, f, separators=(',', ':'))
 
 
 if __name__ == '__main__':

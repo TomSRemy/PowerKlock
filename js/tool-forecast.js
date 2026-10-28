@@ -14,11 +14,14 @@
 //   fcst_backtest.py, data/history/fcst_backtest.json): average of several
 //   weather models, monthly solar correction learned on French production,
 //   curtailment at prices ≤ 0, calibration on the site's own metered output
+//   regional fleet mode: a region's whole fleet, generic model on a 3 × 3 grid, then the correction
+//   relearned every week on RTE's regional output (data/history/fcst_calib.json, scripts/
+//   fcst_backtest.py, v3h), × the region's installed capacity
 // ════════════════════════════════════════════════════════════════════
 (function () {
   'use strict';
   const $ = id => document.getElementById(id);
-  const S = { useP50: false, tech: 'solar', lat: 49.44, lon: 1.10, mw: 10, tilt: 30, az: 0, lossS: 14, hub: 120, cls: 'medium', lossW: 12, zone: 'FR', calFr: false, curt: false, cal: {}, inj: '', p50: '', p50cache: {} };
+  const S = { scope: 'site', useP50: false, tech: 'solar', lat: 49.44, lon: 1.10, mw: 10, tilt: 30, az: 0, lossS: 14, hub: 120, cls: 'medium', lossW: 12, zone: 'FR', calFr: false, curt: false, cal: {}, inj: '', p50: '', p50cache: {} };
   try { Object.assign(S, JSON.parse(localStorage.getItem('pk-fcst') || '{}')); } catch (_) {}
   const save = () => { try { localStorage.setItem('pk-fcst', JSON.stringify(S)); } catch (_) {} };
   const f1 = v => v == null || !isFinite(v) ? '–' : v.toLocaleString('en-GB', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
@@ -74,6 +77,54 @@
     const [zl, a] = L[L.length - 1]; return a[i] * Math.pow(S.hub / zl, 0.14);
   }
 
+  // ── regional fleet mode (same model as scripts/fcst_backtest.py v1 + v3h) ──
+  const TT = (f, e) => !window.PKI18n || PKI18n.lang !== 'en' ? f : e;
+  const pct1 = v => v == null ? '–' : (v * 100).toFixed(1).replace('.', TT(',', '.'));
+  const fleetLF = {
+    solar: (g, t) => { if (g == null) return null; const tc = (t == null ? 15 : t) + g * 25 / 800; return Math.max(0, Math.min(1, g / 1000 * (1 - 0.004 * (tc - 25)) * 0.86)); },
+    wind: v => { const c = curve(v, 'medium'); return c == null ? null : c * 0.88; },
+  };
+  const fleetOf = C => { const R = S.scope && S.scope !== 'site' && C && C.regional && C.regional.regions && C.regional.regions[S.scope];
+    return R && R[S.tech] && R[S.tech].capacityMW ? { name: S.scope, box: R.box, m: R[S.tech] } : null; };
+  const gridPts = b => { const out = []; for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) out.push([+(b[0] + (b[1] - b[0]) * i / 2).toFixed(3), +(b[2] + (b[3] - b[2]) * j / 2).toFixed(3)]); return out; };
+  function fleetCorr(M, t, v1, ws) {
+    if (S.tech === 'solar') { if (!(v1 > 0)) return 0; const m = +t.slice(5, 7), h = +t.slice(11, 13), k = M.f[m + '|' + h] != null ? M.f[m + '|' + h] : M.fm[String(m)] != null ? M.fm[String(m)] : M.s; return Math.min(1, Math.max(0, v1 * k)); }
+    const c = M.lf; if (!c || !c.length) return v1;
+    const b = Math.min(c.length - 1, Math.floor(ws * 2)); let lo = b, hi = b;
+    while (lo > 0 && c[lo] == null) lo--; while (hi < c.length - 1 && c[hi] == null) hi++;
+    const v = c[lo] != null ? c[lo] : c[hi]; return v != null ? v : v1;
+  }
+  async function runFleet(F, st) {
+    const pts = gridPts(F.box), cap = F.m.capacityMW;
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${pts.map(p => p[0]).join(',')}&longitude=${pts.map(p => p[1]).join(',')}&timezone=Europe%2FParis&wind_speed_unit=ms&forecast_days=16&past_days=2&hourly=`
+      + (S.tech === 'solar' ? 'global_tilted_irradiance,temperature_2m&tilt=30&azimuth=0' : 'wind_speed_120m');
+    let J; try { J = await getJSON(url); } catch (e) { if (st) st.textContent = TT('Prévision météo indisponible : ', 'Weather forecast not available: ') + e.message; return; }
+    J = Array.isArray(J) ? J : [J];
+    const T = J[0].hourly.time, n = T.length;
+    const P = T.map((t, i) => {
+      if (S.tech === 'solar') { const v = J.map(x => fleetLF.solar(x.hourly.global_tilted_irradiance[i], x.hourly.temperature_2m[i])); if (v.some(x => x == null)) return null; return cap * fleetCorr(F.m.model, t, v.reduce((a, b) => a + b, 0) / v.length); }
+      const w = J.map(x => x.hourly.wind_speed_120m[i]); if (w.some(x => x == null)) return null;
+      const v1 = w.map(fleetLF.wind).reduce((a, b) => a + b, 0) / w.length;
+      return cap * fleetCorr(F.m.model, t, v1, w.reduce((a, b) => a + b, 0) / w.length);
+    });
+    const band = { lo: new Array(n).fill(null), hi: new Array(n).fill(null) };
+    const now = new Date(), nowKey = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Paris', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', hour12: false }).format(now).replace(' ', 'T').slice(0, 13) + ':00';
+    render({ T, P, band, iNow: T.indexOf(nowKey), cap });
+    const tech = S.tech === 'solar' ? TT('Solaire', 'Solar') : TT('Éolien', 'Wind'), E = F.m.error || {}, e3 = E.v3h, e1 = E.v1;
+    if (st) st.textContent = TT(`${tech} · parc régional ${F.name} · ${f0(cap)} MW installés (RTE) · grille de 9 points, correction apprise jusqu’au ${F.m.learnedTo} · prévision du ${now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' })}`,
+      `${tech} · regional fleet ${F.name} · ${f0(cap)} MW installed (RTE) · 9-point grid, correction learnt up to ${F.m.learnedTo} · fetched ${now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' })}`);
+    const fi = $('fc-fleetinfo');
+    if (fi) fi.innerHTML = e3 && E.months ? TT(`<b>Fiabilité de ce mode</b>, ${E.months[0]} → ${E.months[1]} (chaque mois prévu avec la prévision de la veille et une correction apprise sur les mois d’avant) : erreur horaire <b>${pct1(e3.nmae)} %</b> de la puissance installée${S.tech === 'solar' ? ' (heures de jour)' : ''}, contre ${pct1(e1 && e1.nmae)} % avec la grille seule ; biais ${e3.bias >= 0 ? '+' : '−'}${pct1(Math.abs(e3.bias))} % ; erreur sur l’énergie du jour ${pct1(e3.nmae_day)} %. Pas de bande P10–P90 dans ce mode.`,
+      `<b>How good this mode is</b>, ${E.months[0]} → ${E.months[1]} (each month predicted with the day-before forecast and a correction learnt on the months before): hourly error <b>${pct1(e3.nmae)} %</b> of installed capacity${S.tech === 'solar' ? ' (daylight hours)' : ''}, against ${pct1(e1 && e1.nmae)} % with the grid alone; bias ${e3.bias >= 0 ? '+' : '−'}${pct1(Math.abs(e3.bias))} %; error on the day's energy ${pct1(e3.nmae_day)} %. No P10–P90 band in this mode.`) : '';
+  }
+  function fleetOptions(C) {
+    const sel = $('fc-scope'); if (!sel) return;
+    const regs = C && C.regional && C.regional.regions ? Object.keys(C.regional.regions).filter(r => C.regional.regions[r][S.tech] && C.regional.regions[r][S.tech].capacityMW) : [];
+    if (S.scope !== 'site' && !regs.includes(S.scope)) S.scope = 'site';
+    sel.innerHTML = `<option value="site">${TT('Votre parc (coordonnées)', 'Your park (coordinates)')}</option>` + regs.map(r => `<option value="${r}">${TT('Parc régional · ', 'Regional fleet · ')}${r}</option>`).join('');
+    sel.value = S.scope;
+  }
+
   async function getJSON(url) { const r = await fetch(url); if (!r.ok) throw new Error('weather service ' + r.status); return r.json(); }
   const today = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris' }).format(new Date());
   const addDay = (iso, n) => { const [y, m, d] = iso.split('-').map(Number); return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10); };
@@ -90,6 +141,8 @@
     priceSite();
     const st = $('fc-status'); if (st) st.textContent = 'Fetching the weather forecast…';
     save();
+    const fi = $('fc-fleetinfo'); if (fi) fi.innerHTML = '';
+    if (S.scope !== 'site') { const F = fleetOf(await calFr()); if (F) return runFleet(F, st); S.scope = 'site'; vis(); }
     const base = `latitude=${S.lat}&longitude=${S.lon}&timezone=Europe%2FParis&wind_speed_unit=ms&forecast_days=16`;
     const det = S.tech === 'solar'
       ? `https://api.open-meteo.com/v1/forecast?${base}&past_days=2&hourly=global_tilted_irradiance,shortwave_radiation,temperature_2m&tilt=${S.tilt}&azimuth=${S.az}`
@@ -179,13 +232,13 @@
     const fut = daily.filter(x => !x.past);
     const wk = fut.slice(0, 7), e7 = wk.reduce((s, x) => s + x.p, 0), e7lo = wk.reduce((s, x) => s + x.lo, 0), e7hi = wk.reduce((s, x) => s + x.hi, 0);
     const dT = daily.find(x => x.d === t1) || {}, dN = daily.find(x => x.d === t0) || {};
-    const cf7 = S.mw ? e7 / (S.mw * 24 * wk.length) : null;
-    const kpi = $('fc-kpis');
+    const capR = R.cap || S.mw, cf7 = capR ? e7 / (capR * 24 * wk.length) : null;
+    const kpi = $('fc-kpis'), hasBand = band.hi.some(v => v != null);
     if (kpi) kpi.innerHTML = [
-      _fuelKpi('Today', f1(dN.p), 'MWh', `band ${f1(dN.lo)}–${f1(dN.hi)} MWh`),
-      _fuelKpi('Tomorrow', f1(dT.p), 'MWh', `band ${f1(dT.lo)}–${f1(dT.hi)} MWh`),
-      _fuelKpi('Next 7 days', f0(e7), 'MWh', `band ${f0(e7lo)}–${f0(e7hi)} MWh`),
-      _fuelKpi('Load factor, 7 days', cf7 == null ? '–' : (cf7 * 100).toFixed(1), '%', `${f1(S.mw)} MW`),
+      _fuelKpi('Today', f1(dN.p), 'MWh', hasBand ? `band ${f1(dN.lo)}–${f1(dN.hi)} MWh` : ''),
+      _fuelKpi('Tomorrow', f1(dT.p), 'MWh', hasBand ? `band ${f1(dT.lo)}–${f1(dT.hi)} MWh` : ''),
+      _fuelKpi('Next 7 days', f0(e7), 'MWh', hasBand ? `band ${f0(e7lo)}–${f0(e7hi)} MWh` : ''),
+      _fuelKpi('Load factor, 7 days', cf7 == null ? '–' : (cf7 * 100).toFixed(1), '%', `${f1(capR)} MW`),
     ].join('');
     // every hour of the forecast, kept for the CSV download (MW, P10 / forecast / P90)
     S.csvRows = T.map((t, i) => [t, P[i], band.lo[i], band.hi[i]]).filter(r => r[1] != null);
@@ -298,6 +351,8 @@
     const tt = $('fc-tech-tabs'), syncTabs = () => tt && tt.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === S.tech));
     if (tt) tt.addEventListener('click', e => { const b = e.target.closest('.tab-btn'); const t = $('fc-tech'); if (!b || !t || b.dataset.tab === S.tech) return; t.value = b.dataset.tab; t.dispatchEvent(new Event('change')); syncTabs(); });
     syncTabs();
+    const sc = $('fc-scope'); if (sc) sc.addEventListener('change', () => { S.scope = sc.value; vis(); run(); });
+    calFr().then(fleetOptions);
     vis(); calInfo(); run(); backtest(); drawMap();
     ['fc-lat', 'fc-lon'].forEach(id => { const e = $(id); if (e) e.addEventListener('change', () => setTimeout(drawMap, 0)); });
   }
@@ -428,12 +483,19 @@
   function vis() {
     document.querySelectorAll('#page-fcst .fc-solar').forEach(e => { e.hidden = S.tech !== 'solar'; });
     document.querySelectorAll('#page-fcst .fc-wind').forEach(e => { e.hidden = S.tech !== 'wind'; });
+    // regional fleet: the settings of a single park do not apply
+    const fleet = S.scope !== 'site';
+    if (fleet) document.querySelectorAll('#page-fcst .fc-site').forEach(e => { e.hidden = true; });
+    else document.querySelectorAll('#page-fcst .fc-site').forEach(e => { if (!e.classList.contains('fc-solar') && !e.classList.contains('fc-wind')) e.hidden = false; });
+    if (CAL) CAL.then(fleetOptions);
+    if (fleet) { const m = $('fc-method'); if (m) m.innerHTML = TT(`Parc régional : prévision Open-Meteo (meilleur modèle) en 9 points de la région, modèle générique (solaire : plan incliné à 30° plein sud ; éolien : courbe de classe moyenne à 120 m), puis la correction apprise chaque semaine sur la production régionale de RTE (solaire : réel ÷ modèle par mois × heure ; éolien : facteur de charge réel par tranche de 0,5 m/s du vent moyen prévu), les mois récents pesant plus (demi-vie 6 mois) ; × la puissance installée de la région (RTE, temps réel). Les réglages d’un parc (coordonnées, puissance, calage) ne s’appliquent pas.`,
+      `Regional fleet: Open-Meteo forecast (best model) at 9 points of the region, generic model (solar: 30° south-facing plane; wind: medium-class curve at 120 m), then the correction relearnt every week on RTE's regional output (solar: actual ÷ model by month × hour; wind: actual load factor by 0.5 m/s bin of the mean forecast wind), recent months weighing more (half-life 6 months); × the region's installed capacity (RTE, real time). A park's settings (coordinates, capacity, calibration) do not apply.`); return; }
     const m = $('fc-method'); if (m) m.innerHTML = S.tech === 'solar'
       ? `Irradiance on the panel plane (tilt ${S.tilt}°, azimuth ${S.az}°, 0 = south, −90 = east, 90 = west) from Open-Meteo, converted with the cell temperature (NOCT 45 °C, −0.4 % per °C above 25 °C), minus ${S.lossS} % losses (inverter, cabling, soiling), capped at the capacity. Band: spread of the 31 members of the GFS ensemble (10th to 90th percentile around their median), centred on the forecast.`
       : `Wind at ${S.hub} m interpolated between the 80, 120 and 180 m levels of Open-Meteo, through a generic power curve, ${CLS_T[S.cls]}, cut-out at 25 m/s, minus ${S.lossW} % losses (wake, availability, electrical). Band: spread of the 31 members of the GFS ensemble (100 m wind, 0.14 shear to hub height), centred on the forecast.`;
   }
   // ── Backtest on real data (scripts/fcst_backtest.py) ──
-  const STEP = { v0: 'Tool', v1: 'Grid', v2: '+ bias', v3: '+ shape', v4: '+ MOS', v5: '+ price', v6: '+ models' };
+  const STEP = { v0: 'Tool', v1: 'Grid', v2: '+ bias', v3: '+ shape', v3h: 'Fleet mode', v4: '+ MOS', v5: '+ price', v6: '+ models' };
   async function backtest() {
     const host = $('fc-bt'); if (!host || host.dataset.done) return;
     let j; try { const r = await fetch(DATA_BASE + 'history/fcst_backtest.json'); j = r.ok ? await r.json() : null; } catch (_) { j = null; }
@@ -443,7 +505,7 @@
     host.innerHTML = `<div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">Regional fleet tested</th>${vs.map(v => `<th>${STEP[v]}</th>`).join('')}</tr></thead><tbody>` +
       keys.map(k => { const [t, reg] = k.split('|'), r = j.results[k], best = Math.min(...vs.map(v => r[v] ? r[v].nmae : 9));
         return `<tr><td style="text-align:left">${t === 'solar' ? 'Solar' : 'Wind'} · ${reg}</td>${vs.map(v => r[v] ? `<td${r[v].nmae === best ? ' style="font-weight:700;color:var(--acc)"' : ''}>${(r[v].nmae * 100).toFixed(1)}</td>` : '<td>–</td>').join('')}</tr>`; }).join('') +
-      `</tbody></table></div><div class="fuel-note">Steps, each adding to the previous one: Tool = the first version at one point · Grid = averaged over 9 points of the region · + bias = monthly scale factor · + shape = solar correction by month × hour, wind empirical power curve · + MOS = regression on several forecast variables · + price = curtailment at day-ahead prices ≤ 0 · + models = Météo-France, ICON and GFS next to the best model, recent months weighing more. Hourly error in % of installed capacity (solar: daylight hours), ${j.period[0]} → ${j.period[1]}, each month predicted with the forecast issued the day before and corrections learned only on the months before it. The tool for a single site uses the steps that carry over to one site: several weather models, the monthly French solar correction, curtailment at negative prices, and the calibration on the site’s own output.</div>`;
+      `</tbody></table></div><div class="fuel-note">Steps, each adding to the previous one: Tool = the first version at one point · Grid = averaged over 9 points of the region · + bias = monthly scale factor · + shape = solar correction by month × hour, wind empirical power curve · + MOS = regression on several forecast variables · + price = curtailment at day-ahead prices ≤ 0 · + models = Météo-France, ICON and GFS next to the best model, recent months weighing more. Hourly error in % of installed capacity (solar: daylight hours), ${j.period[0]} → ${j.period[1]}, each month predicted with the forecast issued the day before and corrections learned only on the months before it. The tool for a single site uses the steps that carry over to one site: several weather models, the monthly French solar correction, curtailment at negative prices, and the calibration on the site’s own output.</div>${'<div class="fuel-note">' + TT('Mode parc régional (choix « Prévision » en haut de page) : la grille, puis la forme apprise (solaire mois × heure, courbe de puissance éolienne) réapprise chaque semaine jusqu’à la veille, les mois récents pesant plus (demi-vie 6 mois).', 'Fleet mode (the « Forecast » choice at the top): the grid, then the learnt shape (solar month × hour, wind power curve) relearnt every week up to yesterday, recent months weighing more (half-life 6 months).') + '</div>'}`;
     const draw = (cid, key, col) => { const a = j.samples[key]; if (!a || !a.length) return;
       const L = a.map(r => r[0].slice(11, 13) === '00' ? new Date(r[0].slice(0, 10) + 'T12:00:00Z').toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short', timeZone: 'UTC' }) : r[0].slice(11, 16));
       _fuelChart(cid, { type: 'line', data: { labels: L, datasets: [
