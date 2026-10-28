@@ -25,7 +25,7 @@
   const CAT = new Map();
   const add = (id, label, group, unit, load) => CAT.set(id, { id, label, group, unit, load });
   const G = { expr: ['Vos formules', 'Your formulas'], spot: ['Électricité · spot', 'Power · spot'], fwd: ['Électricité · forwards', 'Power · forwards'], fuel: ['Gaz, carbone, pétrole, change', 'Gas, carbon, oil, FX'],
-    sys: ['Système France', 'France system'], ren: ['Renouvelables et PPA', 'Renewables and PPA'], bal: ['Équilibrage', 'Balancing'] };
+    sys: ['Système France', 'France system'], ren: ['Renouvelables et PPA', 'Renewables and PPA'], stor: ['Batteries', 'Batteries'], bal: ['Équilibrage', 'Balancing'] };
   const ZN = { FR: 'France', DE_LU: 'Germany', BE: 'Belgium', NL: 'Netherlands', ES: 'Spain', PT: 'Portugal', IT_NORD: 'Italy North', CH: 'Switzerland', AT: 'Austria', PL: 'Poland' };
   Object.entries(ZN).forEach(([z, n]) => add('spot:' + z, 'Spot ' + n, 'spot', '€/MWh', async () => {
     const s = window.pkSummary ? await window.pkSummary().catch(() => null) : null;
@@ -83,6 +83,11 @@
     const j = await json('bench', 'history/ppa_benchmark.json');
     return new Map(Object.entries((j && j.days) || {}).filter(([, v]) => v[t]).map(([d, v]) => [d, v[t].ppa]));
   }));
+  // the PowerKlock BESS index (scripts/bess_optim.py): forward, and the value of each delivery day annualised (× 365 ÷ 1000)
+  const bidx = () => json('bidx', 'history/bess_index.json');
+  add('bess:fwd', 'BESS index, forward (1 MW, 2 h)', 'stor', T('k€/MW/an', 'k€/MW/yr'), async () => { const j = await bidx(); return new Map(Object.entries((j && j.forward) || {}).map(([d, v]) => [d, v.v])); });
+  [['co', 'BESS, day-ahead + FCR, perfect schedule'], ['co_rl', 'BESS, day-ahead + FCR, without foresight'], ['da', 'BESS, day-ahead alone, perfect schedule']].forEach(([k, l]) =>
+    add('bess:' + k, l + ' (annualised)', 'stor', T('k€/MW/an', 'k€/MW/yr'), async () => { const j = await bidx(); return new Map(Object.entries((j && j.realised) || {}).filter(([, v]) => v[k] != null).map(([d, v]) => [d, Math.round(v[k] * 0.365 * 10) / 10])); }));
   add('imb:short', 'France imbalance price (deficit), daily mean', 'bal', '€/MWh', async from => {
     const m = new Map(); let ym = from.slice(0, 7) < '2026-08' ? '2026-08' : from.slice(0, 7);   // first month collected
     const months = []; while (ym <= today().slice(0, 7)) { months.push(ym); const [y, mm] = ym.split('-').map(Number); ym = new Date(Date.UTC(y, mm, 1)).toISOString().slice(0, 7); }
@@ -119,7 +124,7 @@
     ['GO renewable, next production year', 'GO renouvelable, année de production suivante'], ['PPA benchmark solar', 'Benchmark PPA solaire'], ['PPA benchmark wind', 'Benchmark PPA éolien'],
     ['France imbalance price (deficit), daily mean', 'Prix des écarts France (déficit), moyenne du jour'], ['France mFRR activation price, up', 'France mFRR, prix d’activation à la hausse'],
     ['France mFRR activation price, down', 'France mFRR, prix d’activation à la baisse'], ['France sunshine (ERA5)', 'Ensoleillement France (ERA5)'], ['France wind speed (ERA5)', 'Vent France (ERA5)']];
-  const label = id => { const c = CAT.get(id); if (!c) return id; let l = c.label; if (T(1, 0)) FR_WORDS.forEach(([e, f]) => { l = l.split(e).join(f); }); return l; };
+  const label = id => { const c = CAT.get(id); if (!c) return id; let l = c.label; if (T(1, 0) && window.PKI18n) { const t = PKI18n.tr(l); if (t !== l) return t; } if (T(1, 0)) FR_WORDS.forEach(([e, f]) => { l = l.split(e).join(f); }); return l; };
   // the market a series belongs to: forwards of one country and the PPA benchmark (built from the French Cal) move by construction together
   const family = id => { const m = /^(?:fwd|cal):([A-Z]+):/.exec(id); return m ? m[1] : id.startsWith('ppa:') ? 'FR' : null; };
 
