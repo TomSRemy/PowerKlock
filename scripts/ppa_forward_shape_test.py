@@ -9,7 +9,7 @@ Two parts.
        flat Cal        Cal × Σ w_m × r_m × c_m ÷ Σ w_m
    w_m = national monthly output share × paid share, c_m = monthly capture rate of a method
    (data/history/ppa_forecast.json), F_m = monthly forward, r_m = historical month ÷ year day-ahead ratio.
-2. Backtest 2023-2025: in the last quarter of Y−1, the four quoted quarters of Y (SEFE closes,
+2. Backtest on the complete years (2023-2025): in the last quarter of Y−1, the four quoted quarters of Y (SEFE closes,
    data/history/fr_market_contracts_FR.json) against the realised seasonal factor of Y,
        Σ_q E_q × baseload_q ÷ (E_year × baseload_year)
    and against the historical quarter ratios known at the time (complete years since 2016, 2022 left out).
@@ -30,6 +30,7 @@ Writes data/history/ppa_forward_shape_test.json
 """
 import calendar
 import json
+from datetime import date
 import os
 import statistics as stt
 
@@ -75,7 +76,8 @@ def backtest(C, cap):
         a = agg.setdefault((y, q), dict(P=0, N=0, sE=0, wE=0))
         a['P'] += r[ix['pSum']]; a['N'] += r[ix['pN']]
         a['sE'] += r[ix['sE']]; a['wE'] += r[ix['wE']]
-    full = lambda y: all((y, q) in agg for q in (1, 2, 3, 4))
+    # a complete year only: every quarter there and the year over (the current year's last quarter is partial)
+    full = lambda y: y < date.today().year and all((y, q) in agg for q in (1, 2, 3, 4))
     base = lambda y, q: agg[(y, q)]['P'] / agg[(y, q)]['N']
     year_base = lambda y: sum(agg[(y, q)]['P'] for q in range(1, 5)) / sum(agg[(y, q)]['N'] for q in range(1, 5))
     rows = []
