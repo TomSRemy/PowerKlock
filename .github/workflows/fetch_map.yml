@@ -35,7 +35,7 @@ jobs:
           if git diff --staged --quiet; then echo "No change"; exit 0; fi
           git commit -q -m "data: power map $(date -u '+%Y-%m-%d %H:%M UTC')"
           for i in 1 2 3 4 5; do
-            git pull -q --rebase -X theirs origin main && git push && exit 0; git rebase --abort 2>/dev/null
+            git pull -q --rebase -X theirs origin main && git push && exit 0; git rebase --abort 2>/dev/null || true
             sleep 8
           done
           exit 1

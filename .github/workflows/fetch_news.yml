@@ -47,7 +47,7 @@ jobs:
           git commit -m "data: update news $(date -u '+%Y-%m-%d %H:%M UTC')"
           for i in 1 2 3 4 5; do
             # -X theirs: on a conflict in news.json, the file just fetched (this run's commit) wins
-            git pull --rebase -X theirs origin main && git push && exit 0; git rebase --abort 2>/dev/null
+            git pull --rebase -X theirs origin main && git push && exit 0; git rebase --abort 2>/dev/null || true
             git rebase --abort 2>/dev/null || true
             echo "Push attempt $i failed, retrying in 5s..."
             sleep 5
