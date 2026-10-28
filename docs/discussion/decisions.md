@@ -10,3 +10,7 @@
 | 2026-10-28 08:35 | **PPA, improved forward shape** (recent hourly skeleton for solar, cannibalisation per season): live now. The 4-method average stays for ~15 Nov. | Tom |
 | 2026-10-28 08:35 | **Forecast tool**: the monthly correction stays off by default (pending Tom's question on how the model learns). | Claude, for Tom |
 | 2026-10-28 08:35 | **BOA, aFRR**: the German figure stays shown as a benchmark only; the French market is less mature and will behave differently. | Tom |
+| 2026-10-28 12:29 | **PPA, published price = average of the 4 methods now** (not 15 Nov.), whole history recomputed (solar 46.58 → 45.04 €/MWh after the bias corrections). | Tom |
+| 2026-10-28 12:29 | **Adoption rule for improvements**: lower mean error over 1, 2 and 3 years ahead in the published convention (output stopped at ≤ 0 €), "même un peu". Applied: bias corrections (bridge-cse, 608b907c). Tested, not adopted: recency / year to date, adaptation floor, neighbours as France's future, monthly penetration model (Stiewe et al. 2024 spec), FPC double-counting fix, FPC variants. Pending Tom: inverse-error weights (solar +0.2 €, wind worse). | Tom / Claude |
+| 2026-10-28 12:29 | **Peak/base forwards: in observation** (pricer card, kept daily in mkt_implied.json), to compare with realised months as they deliver. | Tom |
+| 2026-10-28 12:29 | **Capacity trend keeps the log of GW** (linear tested: better 3 yrs ahead only). **Past discount keeps 2023** in its trend. | Tom |
