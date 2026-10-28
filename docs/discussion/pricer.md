@@ -90,3 +90,40 @@ wind); Compare and Methodology complete in French and English; the price buttons
 model, today trained with 2022 — without it, 2024-2026 error 6.71 → 8.18 €/MWh (stopped at ≤ 0), 2.43 → 2.33
 (all hours); (c) the 2022 slide mockup (`docs/maquettes/diapo_2022.png` on the pricer branch): solar 2022
 capture 104.6 % = season effect 1.080 × hour-of-day effect 0.969 — the year's price peak fell in summer.
+
+### 2026-10-28 08:30 · bridge-cse (Tom: « la vision forward, c'est pas ça ailleurs dans l'outil »)
+
+**The cause.** The common framework of the methods deck (slide « Le cadre commun », presented on 26 Oct.) says
+value of a MWh = **month level** (forward) × month shape × paid share, and the rest of the tool reads the forward
+that way (short-term pricer `js/ppa-st.js`, capture fan `scripts/build_ppa_fan.py`, morning page): each month at
+its quoted forward (`data/history/fr_forward_monthly.json`: the month, else its quarter or season, else the Cal
+shaped by the day-ahead's history). In the long-term pricer only two methods did: forward shape (FPC calibrated
+on months > quarters > seasons > Cal) and weather simulation. The capacity trend (and the P74 reference) took
+the flat Cal; the European model took the Cal × the day-ahead's *historical* month ratios (its doc wrongly said
+"forward of the month ÷ Cal"; text fixed on main). The deck's decomposition slide used the flat Cal too (84.05).
+
+**Size** (profile-weighted forward, 27 Oct. closes, `scripts/ppa_forward_shape_test.py`):
+
+| | Cal | quoted months | Cal × historical shape |
+|---|---|---|---|
+| Solar 2027 | 120.30 | 112.96 | 114.74 |
+| Solar 2028 | 70.72 | 71.22 | 69.97 |
+| Wind 2027 | 120.30 | 134.93 | 128.83 |
+| Wind 2028 | 70.72 | 82.23 | 75.76 |
+| 2029 | 62.51 | Cal only quoted: same | |
+
+**Which is right?** As a *forecast* of the seasonal shape, the quotes do worse than history (Q4 Y−1 quarter
+quotes vs realised, 2023–2026: mean error solar 7.6 vs 4.8 pts, wind 5.3 vs 2.7). As a *price*, the quoted
+months are what a buyer can lock today by hedging month by month: the market value of the profile. For a PPA
+price, I recommend the quoted months everywhere, as the framework says.
+
+**Done, to validate → Tom** (switch branch `claude/ppa-blend4-switch`, not on the site): capacity trend × a
+quoted-month factor k per year (value on the quoted months ÷ value on the Cal with the historical shape that
+its yearly capture carries; 1 when nothing below the Cal is quoted) and the European model on the quoted months.
+k = 0.988 / 1.026 / 1 (solar 2027–29), 1.042 / 1.068 / 1 (wind). Effect on the 4-method average: solar
+47.34 → 47.45, wind 80.36 → 81.64 €/MWh. Applied on the switch day so the published series moves once. The
+frozen pricer test was updated on purpose (capacity trend solar 54.09 → 54.31, wind 74.39 → 77.24); limit: k uses
+the national monthly profile even with an asset curve loaded. Reviewed by powerklock-78 (FR/EN, 390–1280 px).
+
+**Also applied tonight:** European model draws 100 → 300 per weekly run (monthly P10/P90 moved by 1 pt on
+average, up to 5, between 100 and 300 draws; run time 4.5 → 6 min).
