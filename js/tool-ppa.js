@@ -162,7 +162,7 @@
       return { g: wM > 0 && aA > 0 ? (aM / wM) / (aA / wA) : 1, sh };
     });
   }
-  function euYears(o, st) {
+  function euYears(o, st, fld = 'regional') {   // fld: 'regional' (central), 'p10' / 'p90' (the simulated weather's spread)
     const conv = st.conv === 'all' ? 'all' : 'curt';
     const f = D.fcst && D.fcst.forecast && D.fcst.forecast[st.tech] && D.fcst.forecast[st.tech][conv];
     const nat = D.fcst && D.fcst.share && D.fcst.share[st.tech], ratio = D.fwRatio;
@@ -186,9 +186,9 @@
       for (let m = 1; m <= 12; m++) {
         if (Mo && !Mo.includes(m)) continue;   // a year delivered in part: its months only
         const e = f[`${y}-${String(m).padStart(2, '0')}`];
-        if (!e || e.regional == null || ratio[m] == null) return null;
+        if (!e || e[fld] == null || ratio[m] == null) return null;
         const w = sh(m) * (conv === 'curt' ? e.paid : 1);
-        num += w * (q ? q[m - 1] : ratio[m] / rn) * (e.regional + gap); den += w;
+        num += w * (q ? q[m - 1] : ratio[m] / rn) * (e[fld] + gap); den += w;
       }
       if (!(den > 0)) return null;
       out.push({ y, capture: num / den });
@@ -1260,6 +1260,60 @@
   }
 
   // ── Three methods side by side ──
+  // Projection with P10–P90 by delivery year, method by method (or their average), computed live by the pricer:
+  // capture = value of one MWh ÷ the Cal of the year (forward month by month and the months delivered included).
+  //   capacity trend   P50 = its projected capture; P10/P90 = ± 1.2816 × its uncertainty on the shape discount (σ × √years)
+  //   forward shape    P50 = its capture; P10/P90 = ± 1.2816 × the spread of its yearly cannibalisation
+  //   weather          P10 / P50 / P90 of its simulated years
+  //   European model   its capture, P10 / P90 from its simulated weather (monthly, data/history/ppa_forecast.json)
+  //   average of 4     the average of the four P50s and of their P10s and P90s; the range of the four P50s around it
+  let FANM = 'avg';
+  function fanMethods(o) {
+    const Y = o.years, z = 1.2816, out = {};
+    out.build = Y.map(r => { const k = (r.kq || 1) * (r.g || 1), c = (1 - r.fsd) * k, s = r.sig * k; return { y: r.y, p50: c, lo: c - z * s, hi: c + z * s }; });
+    if (o.m3) out.fpc = o.m3.fwd.map((r, i) => { const c = r.capture / Y[i].fwd, s = o.m3.sigC * r.cal / Y[i].fwd; return { y: r.y, p50: c, lo: c - z * s, hi: c + z * s }; });
+    if (o.m4) out.wx = o.m4.years.map((r, i) => { const f = r.cal / Y[i].fwd; return { y: r.y, p50: r.rate * f, lo: r.p10 * f, hi: r.p90 * f }; });
+    if (o.eu) { const lo = euYears(o, o.st, 'p10'), hi = euYears(o, o.st, 'p90');
+      out.eu = o.eu.map((e, i) => ({ y: Y[i].y, p50: e.capture, lo: lo ? lo[i].capture : e.capture, hi: hi ? hi[i].capture : e.capture })); }
+    const ks = ['build', 'fpc', 'wx', 'eu'].filter(k => out[k]);
+    if (ks.length > 1) out.avg = Y.map((r, i) => { const v = f => mean(ks.map(k => out[k][i][f])), p = ks.map(k => out[k][i].p50);
+      return { y: r.y, p50: v('p50'), lo: v('lo'), hi: v('hi'), min: Math.min(...p), max: Math.max(...p) }; });
+    return out;
+  }
+  function renderFanM(o) {
+    const cv = $('pp-fanm'); if (!cv || !o || !o.years) return;
+    const fr = FRDOC(), M = fanMethods(o), keys = ['avg', 'build', 'fpc', 'wx', 'eu'].filter(k => M[k]);
+    if (!M[FANM]) FANM = keys[0];
+    const NAMES = { avg: fr ? 'Moyenne des 4' : 'Average of 4', build: fr ? 'Tendance de capacité' : 'Capacity trend', fpc: fr ? 'Forme forward' : 'Forward shape', wx: fr ? 'Simulation météo' : 'Weather simulation', eu: fr ? 'Modèle européen' : 'European price model' };
+    const COL = { avg: '#E6EDF3', build: '#14D3A9', fpc: '#FBBF24', wx: '#A87DC4', eu: '#5B9BD5' };
+    const bar = $('pp-fanm-pick');
+    if (bar) { bar.innerHTML = keys.map(k => `<button type="button" class="pp-chip${k === FANM ? ' on' : ''}" data-fm="${k}">${NAMES[k]}</button>`).join('');
+      bar.querySelectorAll('[data-fm]').forEach(b => b.addEventListener('click', () => { FANM = b.dataset.fm; renderFanM(S.last); })); }
+    const unit = ($('pp-fanm-unit') || {}).value === 'value' ? 'value' : 'rate';
+    const past = o.hist.filter(x => x.cpPct != null && x.complete), last = past[past.length - 1];
+    const yrs = [...new Set([...past.map(x => x.year), ...o.tenor])].sort((a, b) => a - b), iOf = y => o.tenor.indexOf(y);
+    const sc = (v, y) => v == null ? null : unit === 'value' ? +(v * (iOf(y) >= 0 ? o.years[iOf(y)].fwd : 0)).toFixed(2) : +(v * 100).toFixed(1);
+    const P = M[FANM], c = COL[FANM];
+    const ser = f => yrs.map(y => { const i = iOf(y); if (i >= 0) return sc(P[i][f], y); return null; });
+    const ds = [
+      { label: '_hi', data: ser('hi'), borderWidth: 0, pointRadius: 0, fill: '+1', backgroundColor: c + '30', tension: 0 },
+      { label: 'P10–P90', data: ser('lo'), borderWidth: 0, pointRadius: 0, fill: false, backgroundColor: c + '30', tension: 0 },
+      { label: 'P50', data: ser('p50'), borderColor: c, backgroundColor: c, borderWidth: 2.6, pointRadius: 3, fill: false, tension: 0 },
+    ];
+    if (FANM === 'avg') ds.push({ label: fr ? 'Fourchette des méthodes' : 'Range of the methods', data: yrs.map(y => { const i = iOf(y); return i >= 0 ? sc(P[i].max, y) : null; }), borderColor: c + '99', borderDash: [3, 3], borderWidth: 1.2, pointRadius: 0, fill: false, tension: 0 },
+      { label: '_min', data: yrs.map(y => { const i = iOf(y); return i >= 0 ? sc(P[i].min, y) : null; }), borderColor: c + '99', borderDash: [3, 3], borderWidth: 1.2, pointRadius: 0, fill: false, tension: 0 });
+    if (unit === 'rate') ds.push({ label: fr ? 'Réalisé' : 'Realised', data: yrs.map(y => { const h = past.find(x => x.year === y); return h ? +(h.cpPct * 100).toFixed(1) : null; }), borderColor: C_TX2, backgroundColor: C_TX2, borderWidth: 2, pointRadius: 3, fill: false, tension: 0 });
+    _fuelChart('pp-fanm', { type: 'line', data: { labels: yrs.map(String), datasets: ds }, options: _fuelOpts({
+      plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 8, filter: it => !/^_/.test(it.text) } },
+        tooltip: { callbacks: { label: x => /^_/.test(x.dataset.label) || x.raw == null ? null : ` ${x.dataset.label}: ${unit === 'value' ? f2(x.raw) + ' €/MWh' : (fr ? String(x.raw).replace('.', ',') : x.raw) + ' %'}` } } },
+      scales: { x: Object.assign(_fuelXAxis(), { grid: { display: false } }), y: _fuelAxis(unit === 'value' ? (fr ? '€ par MWh produit' : '€ per MWh produced') : (fr ? 'capture, % du Cal' : 'capture, % of the Cal')) } }) }, 'ppa-fan-by-method');
+    const tb = $('pp-fanm-table');
+    if (tb) tb.innerHTML = `<div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">${fr ? 'Année' : 'Year'}</th><th>P10</th><th>P50</th><th>P90</th>${FANM === 'avg' ? `<th>${fr ? 'Méthodes min – max' : 'Methods min – max'}</th>` : ''}</tr></thead><tbody>` +
+      P.map((r, i) => { const v = x => unit === 'value' ? f2(x * o.years[i].fwd) + ' €' : (fr ? (x * 100).toFixed(1).replace('.', ',') : (x * 100).toFixed(1)) + ' %';
+        return `<tr><td style="text-align:left">${r.y}</td><td>${v(r.lo)}</td><td><b>${v(r.p50)}</b></td><td>${v(r.hi)}</td>${FANM === 'avg' ? `<td>${v(r.min)} – ${v(r.max)}</td>` : ''}</tr>`; }).join('') + '</tbody></table></div>';
+    const sub = $('pp-fanm-sub');
+    if (sub) sub.textContent = (fr ? `${NAMES[FANM]} · ${S.tech === 'wind' ? 'éolien' : 'solaire'} · P10 et P90 : 1 chance sur 10 d’être en dessous / au-dessus` : `${NAMES[FANM]} · ${S.tech === 'wind' ? 'wind' : 'solar'} · P10 and P90: 1 chance in 10 of being below / above`);
+  }
   function renderCompare(o) {
     const host = $('pp-compare'); if (!host) return;
     const m3c = o.m3, mc = o.mc;
@@ -1309,6 +1363,7 @@
           tooltip: { callbacks: { label: c => c.raw == null ? null : ` ${c.dataset.label}: ${FRDOC() ? c.raw.toFixed(1).replace('.', ',') : c.raw.toFixed(1)} %` } } },
         scales: { x: Object.assign(_fuelXAxis(), { grid: { display: false } }), y: _fuelAxis(tr('capture rate, % of the Cal')) } }) }, 'ppa-cannibalisation-by-method');
     })();
+    renderFanM(o);
     const m3 = o.m3, m4 = o.m4, Y = o.years, a = Y[0], z = Y[Y.length - 1];
     const col = (lbl, cur) => `<th${cur ? ' class="pp-cur"' : ''}>${lbl}${cur ? ' ✓' : ''}</th>`;
     const W4 = m4 ? m4.years : null;
@@ -1561,6 +1616,7 @@ ${FRDOC() ? `<p>RTE éCO2mix (production nationale, 15 min) · prix day-ahead EN
     $('pp-pct').addEventListener('change', e => { S.pct = +e.target.value; run(); });
     const pdm = $('pp-pdmode'); if (pdm) pdm.addEventListener('change', e => { S.pdMode = e.target.value; run(); });
     const pdy = $('pp-pdyears'); if (pdy) pdy.addEventListener('change', e => { S.pdYears = +e.target.value; run(); });
+    const fu = $('pp-fanm-unit'); if (fu) fu.addEventListener('change', () => renderFanM(S.last));
     // first and last month delivered (January → December by default: whole calendar years)
     ['pp-m0', 'pp-m1'].forEach(id => { const el = $(id); if (el) el.addEventListener('change', e => { S[id === 'pp-m0' ? 'm0' : 'm1'] = +e.target.value; run(); }); });
     $('pp-pct').addEventListener('input', e => { $('pp-pct-v').textContent = 'P' + e.target.value; });
