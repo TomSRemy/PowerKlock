@@ -591,10 +591,9 @@
 
   // ── Tab 1 · the price band: the methods with a box to tick, their average, and the step from the market price ──
   // default = the site's benchmark (scripts/ppa_daily.py): average of the three model methods, the past discount left out
-  // the past discount is shown as a reference only (review of 27 Oct 2026): it never enters the price. The European model
-  // is shown but not ticked by default, so the average stays the 3-method blend the rest of the site publishes until the
-  // benchmark itself moves to 4 methods (decision 1 of that review, pending)
-  const INC0 = { pct: false, build: true, fpc: true, wx: true, eu: false };
+  // the past discount is shown as a reference only (review of 27 Oct 2026): it never enters the price. The four model
+  // methods are ticked by default: their average is the published PPA benchmark (scripts/ppa_daily.py, blend4)
+  const INC0 = { pct: false, build: true, fpc: true, wx: true, eu: true };
   let INC = Object.assign({}, INC0);
   try { const v = JSON.parse(localStorage.getItem('pk-pp-inc') || 'null'); if (v) INC = Object.assign({}, INC0, v); } catch (_) {}
   INC.pct = false;
@@ -610,6 +609,21 @@
       { k: 'eu', v: o.ppaEu, fair: o.euFair, ref: o.refW },
     ];
   }
+  // measured precision of the 4-method average by horizon (scripts/ppa_horizon_test.py), for the band
+  let HZ = null;
+  const hzLoad = () => HZ || (HZ = fetch(DATA_BASE + 'history/ppa_horizon_test.json').then(r => r.ok ? r.json() : null).catch(() => null));
+  function bandRisk(o, use) {
+    const el = $('pp-band-risk'); if (!el) return;
+    const vs = use.map(m => m.v), lo = Math.min(...vs), hi = Math.max(...vs), fr = FRDOC(), n2 = v => fr ? f2(v).replace('.', ',') : f2(v);
+    const spread = use.length > 1 ? (fr ? `Fourchette des méthodes cochées : <b>${n2(lo)} – ${n2(hi)} €/MWh</b> (écart ${n2(hi - lo)} €) : c’est le risque de modèle, à lire avec le prix.` : `Range of the methods ticked: <b>${n2(lo)} – ${n2(hi)} €/MWh</b> (gap ${n2(hi - lo)} €): this is the model risk, to read with the price.`) : '';
+    el.innerHTML = spread;
+    hzLoad().then(j => {
+      const m = j && j.mae, t = S.tech === 'wind' ? 'wind' : 'solar', c = S.conv === 'all' ? 'all' : 'curt', e = h => m && m[`${t} ${c} h=${h}`] && m[`${t} ${c} h=${h}`].avg4;
+      if (e(1) == null) return;
+      el.innerHTML = spread + ' ' + (fr ? `Précision mesurée de la moyenne des 4 sur 2024–2026 : ${n2(e(1))} € d’erreur moyenne à 1 an, ${n2(e(2))} € à 2 ans, ${n2(e(3))} € à 3 ans ; au-delà du parc déjà observé, l’écart entre méthodes dit mieux l’incertitude.`
+        : `Measured precision of the 4-method average on 2024–2026: ${n2(e(1))} € mean error one year ahead, ${n2(e(2))} € two years, ${n2(e(3))} € three years; beyond the fleet already observed, the gap between methods tells the uncertainty better.`);
+    });
+  }
   function renderBand(o) {
     const host = $('pp-band'); if (!host || !o) return;
     const M = methodVals(o), use = M.filter(m => INC[m.k] && m.v != null), avg = use.length ? mean(use.map(m => m.v)) : null;
@@ -617,9 +631,10 @@
       `<div class="pp-band-s"><span>${use.length}</span> <span>${use.length === 1 ? 'method ticked' : 'methods ticked'}</span> · <span>${S.tech === 'wind' ? 'Wind' : 'Solar'}</span> · <span>Cal ${o.tenor[0]}–${o.tenor[o.tenor.length - 1]}</span> <span>${f2(o.refW)} €/MWh</span></div></div>` +
       `<div class="pp-offer"><label for="pp-offer-in">Offer received</label><span class="cf-in"><input type="number" id="pp-offer-in" step="0.1" placeholder="€/MWh" value="${S.offer != null ? S.offer : ''}"><em>€/MWh</em></span><div class="pp-offer-out" id="pp-offer-out"></div></div>` +
       `<div class="pp-band-m">${M.map(m => `<label class="pp-mcard${INC[m.k] ? ' on' : ''}${m.v == null || m.k === 'pct' ? ' na' : ''}"><input type="checkbox" data-inc="${m.k}"${INC[m.k] ? ' checked' : ''}${m.v == null || m.k === 'pct' ? ' disabled' : ''}>` +
-        `<span class="pp-mcard-n">${MNAME[m.k]}</span><span class="pp-mcard-v">${m.v != null ? f2(m.v) : '…'}</span><span class="pp-mcard-s">${m.k === 'pct' ? 'reference, not for pricing' : m.v != null ? '€/MWh' : m.k === 'eu' ? 'no forecast past 2030' : 'computed on its tab'}</span></label>`).join('')}</div>`;
+        `<span class="pp-mcard-n">${MNAME[m.k]}</span><span class="pp-mcard-v">${m.v != null ? f2(m.v) : '…'}</span><span class="pp-mcard-s">${m.k === 'pct' ? 'reference, not for pricing' : m.v != null ? '€/MWh' : m.k === 'eu' ? 'no forecast past 2030' : 'computed on its tab'}</span></label>`).join('')}</div><div class="pp-band-risk" id="pp-band-risk"></div>`;
     const oi = $('pp-offer-in');
     if (oi) oi.addEventListener('input', () => { S.offer = oi.value === '' ? null : +oi.value; offerOut(S.last, avg); });
+    bandRisk(o, use);
     offerOut(o, avg);
     host.querySelectorAll('[data-inc]').forEach(c => c.addEventListener('change', () => {
       INC[c.dataset.inc] = c.checked; try { localStorage.setItem('pk-pp-inc', JSON.stringify(INC)); } catch (_) {}
