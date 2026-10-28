@@ -628,14 +628,17 @@
   }
   // measured precision of the 4-method average by horizon (scripts/ppa_horizon_test.py), for the band
   let HZ = null;
-  const hzLoad = () => HZ || (HZ = fetch(DATA_BASE + 'history/ppa_horizon_test.json').then(r => r.ok ? r.json() : null).catch(() => null));
+  // the corrected average's errors (scripts/ppa_bias.py, avg4Mae) when present, else the uncorrected replay's
+  const hzLoad = () => HZ || (HZ = Promise.all([fetch(DATA_BASE + 'history/ppa_horizon_test.json').then(r => r.ok ? r.json() : null).catch(() => null),
+    fetch(DATA_BASE + 'history/ppa_bias.json').then(r => r.ok ? r.json() : null).catch(() => null)]).then(([h, b]) => ({ h, b })));
   function bandRisk(o, use) {
     const el = $('pp-band-risk'); if (!el) return;
     const vs = use.map(m => m.v), lo = Math.min(...vs), hi = Math.max(...vs), fr = FRDOC(), n2 = v => fr ? f2(v).replace('.', ',') : f2(v);
     const spread = use.length > 1 ? (fr ? `Fourchette des méthodes cochées : <b>${n2(lo)} – ${n2(hi)} €/MWh</b> (écart ${n2(hi - lo)} €) : c’est le risque de modèle, à lire avec le prix.` : `Range of the methods ticked: <b>${n2(lo)} – ${n2(hi)} €/MWh</b> (gap ${n2(hi - lo)} €): this is the model risk, to read with the price.`) : '';
     el.innerHTML = spread;
     hzLoad().then(j => {
-      const m = j && j.mae, t = S.tech === 'wind' ? 'wind' : 'solar', c = S.conv === 'all' ? 'all' : 'curt', e = h => m && m[`${t} ${c} h=${h}`] && m[`${t} ${c} h=${h}`].avg4;
+      const m = j && j.h && j.h.mae, am = j && j.b && j.b.avg4Mae, t = S.tech === 'wind' ? 'wind' : 'solar', c = S.conv === 'all' ? 'all' : 'curt';
+      const e = h => am && am[t] && am[t][c] && am[t][c][String(h)] != null ? am[t][c][String(h)] : m && m[`${t} ${c} h=${h}`] && m[`${t} ${c} h=${h}`].avg4;
       if (e(1) == null) return;
       el.innerHTML = spread + ' ' + (fr ? `Précision mesurée de la moyenne des 4 sur 2024–2026 : ${n2(e(1))} € d’erreur moyenne à 1 an, ${n2(e(2))} € à 2 ans, ${n2(e(3))} € à 3 ans ; au-delà du parc déjà observé, l’écart entre méthodes dit mieux l’incertitude.`
         : `Measured precision of the 4-method average on 2024–2026: ${n2(e(1))} € mean error one year ahead, ${n2(e(2))} € two years, ${n2(e(3))} € three years; beyond the fleet already observed, the gap between methods tells the uncertainty better.`);
