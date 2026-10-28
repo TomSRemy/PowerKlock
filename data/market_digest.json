@@ -1,5 +1,5 @@
 {
- "updated": "2026-10-28T03:55:10+00:00",
+ "updated": "2026-10-28T13:17:59+00:00",
  "asof": "2026-10-28",
  "notes": 2,
  "engine": "proxy",
@@ -7,45 +7,45 @@
   {
    "topic": "France",
    "topic_en": "France",
-   "text": "La consommation électrique française est impactée par la météo et les capacités nucléaires. Les prix de l'électricité pour 2027 sont en hausse de 10 % depuis lundi dernier et de 30 % depuis le début du mois.",
-   "text_en": "French electricity consumption is affected by weather and nuclear capacity. Electricity prices for 2027 are up 10% since last Monday and 30% since the beginning of the month.",
+   "text": "La disponibilité nucléaire en France est en baisse de 6,4% en une semaine, ce qui pousse les prix à la hausse. La consommation électrique est également en hausse en raison de la météo fraîche.",
+   "text_en": "Nuclear availability in France is down 6.4% in one week, pushing prices up. Electricity consumption is also increasing due to cool weather.",
    "tone": "up"
   },
   {
    "topic": "Golfe",
    "topic_en": "Gulf",
-   "text": "Les attaques répétées contre les transports maritimes et les infrastructures énergétiques dans la région du Golfe maintiennent la pression sur les prix du pétrole.",
-   "text_en": "Repeated attacks on maritime transport and energy infrastructure in the Gulf region keep pressure on oil prices.",
+   "text": "Les attaques répétées contre les infrastructures énergétiques dans le Golfe maintiennent la tension sur le marché du pétrole et du gaz, ce qui pousse les prix à la hausse.",
+   "text_en": "Repeated attacks on energy infrastructure in the Gulf are maintaining tension in the oil and gas market, pushing prices up.",
    "tone": "up"
   },
   {
    "topic": "Norvège",
    "topic_en": "Norway",
-   "text": "Les arrêts imprévus de production en Norvège, notamment à Oseberg et Åsgard, réduisent les flux de gaz et augmentent les prix.",
-   "text_en": "Unplanned outages in Norway, particularly at Oseberg and Åsgard, reduce gas flows and increase prices.",
+   "text": "Les perturbations d'approvisionnement en Norvège, notamment à Oseberg et Åsgard, réduisent les flux de gaz et contribuent à la tension sur le marché européen du gaz.",
+   "text_en": "Supply disruptions in Norway, particularly at Oseberg and Åsgard, are reducing gas flows and contributing to tension in the European gas market.",
    "tone": "up"
   }
  ],
  "outlook": {
   "oil": {
    "tone": "up",
-   "text": "Les prix du pétrole devraient rester élevés en raison des tensions dans la région du Golfe.",
-   "text_en": "Oil prices are expected to remain high due to tensions in the Gulf region."
+   "text": "Les prix du pétrole devraient rester élevés en raison de la tension géopolitique dans le Golfe.",
+   "text_en": "Oil prices are expected to remain high due to geopolitical tension in the Gulf."
   },
   "gas": {
    "tone": "up",
-   "text": "Les prix du gaz devraient rester sous pression en raison des perturbations d'approvisionnement.",
-   "text_en": "Gas prices are expected to remain under pressure due to supply disruptions."
+   "text": "Les prix du gaz devraient rester soutenus en raison des perturbations d'approvisionnement en Norvège et de la concurrence pour les cargaisons de GNL.",
+   "text_en": "Gas prices are expected to remain supported due to supply disruptions in Norway and competition for LNG cargoes."
   },
   "power": {
    "tone": "up",
-   "text": "Les prix de l'électricité devraient rester élevés en raison des tensions sur les marchés du gaz et de la météo.",
-   "text_en": "Electricity prices are expected to remain high due to tensions in gas markets and weather conditions."
+   "text": "Les prix de l'électricité devraient rester élevés en raison de la faible disponibilité nucléaire en France et de la hausse de la consommation électrique.",
+   "text_en": "Power prices are expected to remain high due to low nuclear availability in France and increasing electricity consumption."
   },
   "carbon": {
    "tone": "flat",
-   "text": "Les prix du carbone devraient rester stables.",
-   "text_en": "Carbon prices are expected to remain stable."
+   "text": "Les prix des quotas de carbone devraient rester stables en raison de l'absence de facteurs significatifs influençant le marché.",
+   "text_en": "Carbon prices are expected to remain stable due to the absence of significant factors influencing the market."
   }
  }
 }
