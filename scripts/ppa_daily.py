@@ -10,13 +10,19 @@ the capture rates and the GO.
 Writes data/history/ppa_benchmark.json:
   {"updated", "note", "days": {"2026-10-25": {"tenor": "2027-2028-2029",
      "solar": {"ppa", "build", "pct", "fpc", "wx", "eu", "blend", "blend4", "lo", "hi", "ref", "go", "imb"}, "wind": {…}}, …}}
-  (€/MWh; ppa = the pricer's default method, build = capacity trend, pct = past discount (a reference only),
+  (€/MWh; ppa = the published price = blend4 from the switch day (before it: the capacity trend; days["def"] says
+   which), build = capacity trend, pct = past discount (a reference only),
    fpc = forward shape, wx = weather simulation, eu = European price model (from 2026-10-28),
    blend = mean of build, fpc and wx, blend4 = mean of build, fpc, wx and eu (from 2026-10-28),
-   lo / hi = the default method's price at 10 % and 90 % of its 10,000 simulated futures (P10–P90),
+   lo / hi = the capacity trend's price at 10 % and 90 % of its 10,000 simulated futures (P10–P90), moved by
+   ppa − build so the band sits around the published price,
    ref = forward baseload of the tenor, go = guarantee of origin, imb = imbalance)
 
     python scripts/ppa_daily.py            # today (Paris), overwrites the day if run again
+    python scripts/ppa_daily.py --redefine
+        once, on the switch day: every past day without blend4 is recomputed (that day's Cal settlements, today's
+        model, flagged rebuilt), then every day's ppa = blend4 and its band moved with it, so the history reads one
+        definition and the 7-day alerts see no false jump
     python scripts/ppa_daily.py --rebuild 365
         the past days without a run, rebuilt: same Cal contracts as today, each day's Cal settlements
         (data/history/fr_market_calchain.json), today's capture, imbalance and GO model; flagged "rebuilt"
@@ -111,6 +117,56 @@ def past_days(n, years, have):
     return [[d, {y: by[y][d] for y in by}] for d in days if d not in have]
 
 
+NOTE = ('PowerKlock PPA benchmark: the average of 4 methods of the site\'s pricer (capacity trend, forward shape, weather '
+        'simulation, European price model), default settings (France, baseload pay-as-produced, curtailed at prices <= 0), '
+        'run once a day on that day\'s forwards, capture rates and GO prices. EUR/MWh. Days flagged rebuilt: same Cal '
+        'contracts, that day\'s Cal settlements, the current model.')
+
+
+def headline(x):
+    """the published price = the 4-method average; the capacity trend's P10-P90 band moved around it"""
+    if not x or x.get('blend4') is None or x.get('build') is None:
+        return
+    shift = x['blend4'] - x['build']
+    x['ppa'] = x['blend4']
+    for k in ('lo', 'hi'):
+        if x.get(k) is not None:
+            x[k] = round(x[k] + shift, 2)
+
+
+def redefine():
+    """the switch day: one definition over the whole history (see the module's docstring)"""
+    with open(OUT) as f:
+        j = json.load(f)
+    todo = [d for d, v in j['days'].items() if any((v.get(t) or {}).get('blend4') is None for t in ('solar', 'wind'))]
+    with open(os.path.join(ROOT, 'data', 'history', 'fr_market_calchain.json')) as f:
+        ch = json.load(f)['FR']['years']
+    days = []
+    for d in todo:
+        ys = j['days'][d].get('tenor', '').split('-')
+        by = {y: dict(zip(ch[y]['dates'], ch[y]['values'])) for y in ys if y in ch}
+        if len(by) == len(ys) and all(d in v for v in by.values()):
+            days.append([d, {y: by[y][d] for y in by}])
+    print('recomputing', len(days), 'of', len(todo), 'days without the 4-method average')
+    got, errs = run(days) if days else ({}, [])
+    for d, v in (got.get('rebuilt') or {}).items():
+        j['days'][d].update({'rebuilt': True, 'solar': v['solar'], 'wind': v['wind']})
+    for d, v in j['days'].items():
+        if v.get('def') == 'blend4':
+            continue
+        for t in ('solar', 'wind'):
+            headline(v.get(t))
+        if all((v.get(t) or {}).get('blend4') is not None for t in ('solar', 'wind')):
+            v['def'] = 'blend4'
+    left = [d for d, v in j['days'].items() if v.get('def') != 'blend4']
+    j['note'] = NOTE
+    j['switch'] = datetime.now(ZoneInfo('Europe/Paris')).date().isoformat()
+    with open(OUT, 'w') as f:
+        json.dump(j, f, separators=(',', ':'))
+    print('switched; days still on the old definition (no Cal settlement that day):', left[:10], len(left), '· JS errors:', len(errs))
+    return 0
+
+
 def main():
     rebuild = None
     if '--rebuild' in sys.argv:
@@ -128,7 +184,14 @@ def main():
                 tenor = [int(y) for y in json.load(f)['days'][last]['tenor'].split('-')]
         rebuild = past_days(n, tenor, have)
         print('rebuilding', len(rebuild), 'days')
+    if '--redefine' in sys.argv:
+        return redefine()
     got, errs = run(rebuild)
+    for k in ('solar', 'wind'):
+        headline(got.get(k))
+    for v in (got.get('rebuilt') or {}).values():
+        for k in ('solar', 'wind'):
+            headline(v.get(k))
     if not got.get('solar') or got['solar'].get('ppa') is None or not got.get('wind') or got['wind'].get('ppa') is None:
         print('pricer gave no price', got, errs[:3])
         return 1
@@ -140,15 +203,13 @@ def main():
         j = {'days': {}}
     tenor = got['solar'].pop('tenor', '')
     got['wind'].pop('tenor', None)
-    j['days'][day] = {'tenor': tenor, 'solar': got['solar'], 'wind': got['wind']}
+    j['days'][day] = {'tenor': tenor, 'def': 'blend4', 'solar': got['solar'], 'wind': got['wind']}
     for d, v in (got.get('rebuilt') or {}).items():
         if d != day:
-            j['days'][d] = {'tenor': tenor, 'rebuilt': True, 'solar': v['solar'], 'wind': v['wind']}
+            j['days'][d] = {'tenor': tenor, 'rebuilt': True, 'def': 'blend4', 'solar': v['solar'], 'wind': v['wind']}
     j['days'] = dict(sorted(j['days'].items()))
     j['updated'] = datetime.now(ZoneInfo('UTC')).strftime('%Y-%m-%dT%H:%M:%SZ')
-    j['note'] = ('PowerKlock PPA pricer, default settings (France, baseload pay-as-produced, curtailed at prices <= 0), '
-                 'run once a day on that day\'s forwards, capture rates and GO prices. EUR/MWh. Days flagged rebuilt: '
-                 'same Cal contracts, that day\'s Cal settlements, the capture, imbalance and GO model of the first run.')
+    j['note'] = NOTE
     with open(OUT, 'w') as f:
         json.dump(j, f, separators=(',', ':'))
     print(day, tenor, 'solar', got['solar']['ppa'], 'wind', got['wind']['ppa'], '· JS errors:', len(errs))

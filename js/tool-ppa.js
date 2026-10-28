@@ -521,10 +521,9 @@
 
   // ── Tab 1 · the price band: the methods with a box to tick, their average, and the step from the market price ──
   // default = the site's benchmark (scripts/ppa_daily.py): average of the three model methods, the past discount left out
-  // the past discount is shown as a reference only (review of 27 Oct 2026): it never enters the price. The European model
-  // is shown but not ticked by default, so the average stays the 3-method blend the rest of the site publishes until the
-  // benchmark itself moves to 4 methods (decision 1 of that review, pending)
-  const INC0 = { pct: false, build: true, fpc: true, wx: true, eu: false };
+  // the past discount is shown as a reference only (review of 27 Oct 2026): it never enters the price. The four model
+  // methods are ticked by default: their average is the published PPA benchmark (scripts/ppa_daily.py, blend4)
+  const INC0 = { pct: false, build: true, fpc: true, wx: true, eu: true };
   let INC = Object.assign({}, INC0);
   try { const v = JSON.parse(localStorage.getItem('pk-pp-inc') || 'null'); if (v) INC = Object.assign({}, INC0, v); } catch (_) {}
   INC.pct = false;
