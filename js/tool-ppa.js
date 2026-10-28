@@ -546,8 +546,8 @@
     host.innerHTML = `<div class="pp-band-main"><div class="pp-band-l">PPA price</div><div class="pp-band-v">${avg != null ? f2(avg) : '–'}<small> €/MWh</small></div>` +
       `<div class="pp-band-s"><span>${use.length}</span> <span>${use.length === 1 ? 'method ticked' : 'methods ticked'}</span> · <span>${S.tech === 'wind' ? 'Wind' : 'Solar'}</span> · <span>Cal ${o.tenor[0]}–${o.tenor[o.tenor.length - 1]}</span> <span>${f2(o.refW)} €/MWh</span></div></div>` +
       `<div class="pp-offer"><label for="pp-offer-in">Offer received</label><span class="cf-in"><input type="number" id="pp-offer-in" step="0.1" placeholder="€/MWh" value="${S.offer != null ? S.offer : ''}"><em>€/MWh</em></span><div class="pp-offer-out" id="pp-offer-out"></div></div>` +
-      `<div class="pp-band-m">${M.map(m => `<label class="pp-mcard${INC[m.k] ? ' on' : ''}${m.v == null ? ' na' : ''}"><input type="checkbox" data-inc="${m.k}"${INC[m.k] ? ' checked' : ''}${m.v == null ? ' disabled' : ''}>` +
-        `<span class="pp-mcard-n">${MNAME[m.k]}</span><span class="pp-mcard-v">${m.v != null ? f2(m.v) : '…'}</span><span class="pp-mcard-s">${m.v == null ? 'computed on its tab' : m.k === 'pct' ? 'risks entered by hand' : '€/MWh'}</span></label>`).join('')}</div>`;
+      `<div class="pp-band-m">${M.map(m => `<label class="pp-mcard${INC[m.k] ? ' on' : ''}${m.v == null || m.k === 'pct' ? ' na' : ''}"><input type="checkbox" data-inc="${m.k}"${INC[m.k] ? ' checked' : ''}${m.v == null || m.k === 'pct' ? ' disabled' : ''}>` +
+        `<span class="pp-mcard-n">${MNAME[m.k]}</span><span class="pp-mcard-v">${m.v != null ? f2(m.v) : '…'}</span><span class="pp-mcard-s">${m.k === 'pct' ? 'reference, not for pricing' : m.v != null ? '€/MWh' : m.k === 'eu' ? 'no forecast past 2030' : 'computed on its tab'}</span></label>`).join('')}</div>`;
     const oi = $('pp-offer-in');
     if (oi) oi.addEventListener('input', () => { S.offer = oi.value === '' ? null : +oi.value; offerOut(S.last, avg); });
     offerOut(o, avg);
