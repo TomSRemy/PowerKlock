@@ -7,7 +7,7 @@
 //                       year (national RTE × day-ahead, or the asset curve ×
 //                       France quarter-hour prices), projected over the tenor —
 //                       by default from installed capacity (log fit, PPE3 path)
-//      3 capture value  Σ forward × (1 − projected discount), weighted by the
+//      3 capture value  Σ forward × k × (1 − projected discount), k = quoted-month factor, weighted by the
 //                       expected production and a discount factor
 //      4 risk premium   Monte Carlo (10,000 trajectories: forward path,
 //                       production, cannibalisation drift, correlated): the
@@ -71,7 +71,7 @@
     if (imbc && imbc.months) ['solar', 'wind'].forEach(k => { const ms = Object.keys(imbc.months).filter(m => imbc.months[m][k]).sort().slice(-12); let c = 0, e = 0; ms.forEach(m => { c += imbc.months[m][k].costEur; e += imbc.months[m][k].mwh; }); if (ms.length >= 3 && e > 0) imbCost[k] = { v: c / e, n: ms.length, from: ms[0], to: ms[ms.length - 1] }; });
     const fwdRows = ((mkt && mkt.forwardCurve) || []).filter(r => r.value != null).map(r => ({ contract: r.contract, value: r.value }));
     D = { hc: hcan || null, cc: (ccap && ccap.countries) || null, fwdRows, imbCost, cap: (cap && cap.days) || [], ix, profile: (cap && cap.profile) || {}, capGW, fwd, fwdDate: mkt && mkt.forwardCurve && mkt.forwardCurve[0] && mkt.forwardCurve[0].date, go, fwdVol, fwdVolN,
-      fcst: fcst || null, fwRatio: (fwm && fwm.ratios && fwm.ratios.year) || null };
+      fcst: fcst || null, fwRatio: (fwm && fwm.ratios && fwm.ratios.year) || null, fwM: (fwm && fwm.months) || null };
     // hours with a day-ahead price at or below zero, per year (YTD annualised): the hours the PPA Dashboard convention leaves unpaid
     const negH = {}, ix2 = D.ix;
     D.cap.forEach(r => { const y = +r[0].slice(0, 4), e = negH[y] || (negH[y] = { h: 0, d: 0 }); e.h += (r[ix2.pN] - r[ix2.pNPos]) / 4; e.d++; });
@@ -87,13 +87,13 @@
     return FRDOC() ? `<h4>Modèle européen</h4>
 <ol>
 <li><b>Prix horaires.</b> Le prix de chaque heure ÷ la moyenne du mois, en fonction de la charge résiduelle de la France, de l’Allemagne, de la Belgique et de l’Espagne ensemble (consommation − solaire − éolien − nucléaire, ÷ consommation), par saison × moment de la journée, appris sur les cinq dernières années complètes (banc d’essai, scripts/ppa_lab.py). Le parc de chaque année de livraison est posé sur chaque année météo passée : la cannibalisation sort des prix horaires, pas d’une tendance.</li>
-<li><b>Capture des années du ténor</b>, mois par mois (data/history/ppa_forecast.json, mis à jour chaque dimanche), pondérée par la production de chaque mois (× sa part payée quand la production est arrêtée aux prix ≤ 0) et par le rapport forward du mois ÷ Cal : ${caps || 'pas de prévision pour ce ténor (le banc d’essai s’arrête en 2030)'}.</li>
+<li><b>Capture des années du ténor</b>, mois par mois (data/history/ppa_forecast.json, mis à jour chaque dimanche), pondérée par la production de chaque mois (× sa part payée quand la production est arrêtée aux prix ≤ 0) et par le forward de chaque mois ÷ Cal (mois coté, sinon trimestre, saison, puis Cal découpé par l’historique) : ${caps || 'pas de prévision pour ce ténor (le banc d’essai s’arrête en 2030)'}.</li>
 <li><b>Prix du PPA</b> = Σ poids × forward Cal × capture − la prime de risque de la tendance de capacité (même Monte Carlo, ${f2(o.premium)} €/MWh) − décote additionnelle − écarts + GO − marge${o.eu ? ` = <code>${f2(o.ppaEu)} €/MWh</code>` : ''}, pour comparer les méthodes à l’identique.</li>
 <li><b>Limites.</b> Aucune croissance du stockage ni de la demande flexible n’est modélisée et les voisins progressent à leur rythme récent : à partir de 2028 environ, la région sature à midi dans tous les scénarios et la capacité française ne fait presque plus bouger cette méthode. Pricée 1, 2 et 3 ans à l’avance sur 2024–2026, elle tient mieux que les méthodes de tendance à 3 ans (scripts/ppa_horizon_test.py).</li>
 </ol>` : `<h4>European price model</h4>
 <ol>
 <li><b>Hourly prices.</b> The price of each hour ÷ the month’s average, as a function of the residual load of France, Germany, Belgium and Spain together (consumption − solar − wind − nuclear, ÷ consumption), by season × time of day, learnt on the last five complete years (test bench, scripts/ppa_lab.py). The fleet of each delivery year is put over every past weather year, so cannibalisation comes out of the hourly prices, not out of a trend.</li>
-<li><b>Capture of the tenor years</b>, month by month (data/history/ppa_forecast.json, updated every Sunday), weighted by each month’s output (× its paid share when output stops at prices ≤ 0) and by the month’s forward ÷ Cal ratio: ${caps || 'no forecast for this tenor (the test bench stops in 2030)'}.</li>
+<li><b>Capture of the tenor years</b>, month by month (data/history/ppa_forecast.json, updated every Sunday), weighted by each month’s output (× its paid share when output stops at prices ≤ 0) and by each month’s forward ÷ Cal (the month quoted, else its quarter, season, then the Cal shaped by history): ${caps || 'no forecast for this tenor (the test bench stops in 2030)'}.</li>
 <li><b>PPA price</b> = Σ weight × Cal forward × capture − the capacity trend’s risk premium (same Monte Carlo, ${f2(o.premium)} €/MWh) − additional discount − imbalance + GO − margin${o.eu ? ` = <code>${f2(o.ppaEu)} €/MWh</code>` : ''}, so the methods compare like for like.</li>
 <li><b>Limits.</b> No growth of storage or flexible demand is modelled and the neighbours grow at their recent pace: from about 2028 the region is saturated at midday in every scenario and France’s own capacity barely moves this method. Priced 1, 2 and 3 years ahead on 2024–2026, it holds better than the trend methods at 3 years (scripts/ppa_horizon_test.py).</li>
 </ol>`;
@@ -101,9 +101,40 @@
 
   // European price model, year by year on the tenor: capture of each month (data/history/ppa_forecast.json,
   // 'regional') weighted by its output (× its paid share when curtailed at prices ≤ 0) and by the month's
-  // forward ÷ Cal ratio, so that × the Cal forward it gives the value of one MWh. The asset's own monthly
+  // quoted forward ÷ Cal (quotedShape), so that × the Cal forward it gives the value of one MWh. The asset's own monthly
   // shape and its capture gap to the national profile (last three complete years) when its curve is used.
   // null when a month of the tenor has no forecast (the test bench forecasts up to 2030).
+  // The forward of each month ÷ its Cal, as the rest of the tool reads it (fr_forward_monthly.json: the month
+  // quoted, else its quarter or season, else the Cal, shaped by the day-ahead's history); null without a quote.
+  function quotedShape(y) {
+    const M = D.fwM; if (!M) return null;
+    const v = [], h = [];
+    for (let m = 1; m <= 12; m++) { const e = M[`${y}-${String(m).padStart(2, '0')}`]; if (!e || !(e.value > 0)) return null; v.push(e.value); h.push(new Date(Date.UTC(y, m, 0)).getUTCDate()); }
+    const cal = v.reduce((a, x, i) => a + x * h[i], 0) / h.reduce((a, b) => a + b, 0);
+    return v.map(x => x / cal);
+  }
+  // Quoted-shape factor of a delivery year: the value of the asset's output on the quoted months ÷ its value on
+  // the flat Cal with the day-ahead's historical seasonal shape (the one the capacity trend's yearly capture carries):
+  //   k = Σ w × (F_m ÷ Cal) × c_m ÷ Σ w × (r_m ÷ r̄) × c_m,  w = output share × paid share, c_m = the blend's monthly capture
+  // 1 when no month, quarter or season of the year is quoted (both sides are then the Cal × the same ratios).
+  function shapeFactors(o, st) {
+    const conv = st.conv === 'all' ? 'all' : 'curt';
+    const f = D.fcst && D.fcst.forecast && D.fcst.forecast[st.tech] && D.fcst.forecast[st.tech][conv];
+    const nat = D.fcst && D.fcst.share && D.fcst.share[st.tech], ratio = D.fwRatio;
+    return o.tenor.map(y => {
+      const q = quotedShape(y);
+      if (!q || !f || !nat || !ratio) return 1;
+      const dm = m => new Date(Date.UTC(y, m, 0)).getUTCDate();
+      let rn = 0, hn = 0; for (let m = 1; m <= 12; m++) { rn += ratio[m] * dm(m); hn += dm(m); } rn /= hn;
+      let a = 0, b = 0;
+      for (let m = 1; m <= 12; m++) {
+        const e = f[`${y}-${String(m).padStart(2, '0')}`]; if (!e || e.hybrid == null || ratio[m] == null) return 1;
+        const w = nat[m] * (conv === 'curt' ? e.paid : 1);
+        a += w * q[m - 1] * e.hybrid; b += w * ratio[m] / rn * e.hybrid;
+      }
+      return b > 0 ? a / b : 1;
+    });
+  }
   function euYears(o, st) {
     const conv = st.conv === 'all' ? 'all' : 'curt';
     const f = D.fcst && D.fcst.forecast && D.fcst.forecast[st.tech] && D.fcst.forecast[st.tech][conv];
@@ -122,11 +153,12 @@
     const out = [];
     for (const y of o.tenor) {
       let num = 0, den = 0;
+      const q = quotedShape(y);   // the quoted months ÷ Cal, else the day-ahead's historical month ÷ year ratios
       for (let m = 1; m <= 12; m++) {
         const e = f[`${y}-${String(m).padStart(2, '0')}`];
         if (!e || e.regional == null || ratio[m] == null) return null;
         const w = sh(m) * (conv === 'curt' ? e.paid : 1);
-        num += w * ratio[m] * (e.regional + gap); den += w;
+        num += w * (q ? q[m - 1] : ratio[m]) * (e.regional + gap); den += w;
       }
       if (!(den > 0)) return null;
       out.push({ y, capture: num / den });
@@ -293,8 +325,10 @@
     const rho = clamp(pick('rho', st.tech === 'solar' ? 0.3 : 0.2, 'assumption: a sunnier / windier year cannibalises more'), -0.95, 0.95);
     // Year by year: expected production, discount factor, capture value
     const now = nowFrac();
-    const years = tenor.map((y, i) => { const ns = negShare(y), ev = volume * Math.pow(1 - degr, i) * (st.conv !== 'all' && ns != null ? 1 - ns : 1), df = Math.pow(1 + disc, -Math.max(0, y + 0.5 - now)), fsd = proj(y), cpY = fwds[i] * (1 - fsd);
-      return { y, fwd: fwds[i], ev, df, fsd, cp: cpY, go: goY[i], w: ev * df, sig: sigT(y - lastYr), negH: negHours(y), negShare: ns }; });
+    // the level month by month, as the common framework says: the yearly capture × the quoted-shape factor
+    const kq = shapeFactors({ tenor }, st);
+    const years = tenor.map((y, i) => { const ns = negShare(y), ev = volume * Math.pow(1 - degr, i) * (st.conv !== 'all' && ns != null ? 1 - ns : 1), df = Math.pow(1 + disc, -Math.max(0, y + 0.5 - now)), fsd = proj(y), cpY = fwds[i] * kq[i] * (1 - fsd);
+      return { y, fwd: fwds[i], kq: kq[i], ev, df, fsd, cp: cpY, go: goY[i], w: ev * df, sig: sigT(y - lastYr), negH: negHours(y), negShare: ns }; });
     const W = years.reduce((a, r) => a + r.w, 0) || 1;
     years.forEach(r => { r.wt = r.w / W; });
     const wavg = k => years.reduce((a, r) => a + r.wt * r[k], 0);
@@ -412,7 +446,7 @@
         const zv = gauss(), pr = r.ev * clamp(1 + o.sigV * zv, 0.3, 2);
         const dt = t === 0 ? Math.max(1, r.y - o.lastYr) : 1;
         rw += Math.sqrt(dt) * o.sig0 * (o.rho * zv + rc * gauss());
-        const sd = clamp(r.fsd + rw, 0, 0.95), cap = spot * (1 - sd);
+        const sd = clamp(r.fsd + rw, 0, 0.95), cap = spot * (r.kq || 1) * (1 - sd);
         const v = pr * cap + (hedged ? r.ev * (r.fwd - spot) : 0);
         prod[t][i] = pr; val[t][i] = v; sdM[t][i] = sd; cpM[t][i] = cap; spM[t][i] = spot;
         num += r.df * v; den += r.df * pr;
@@ -708,7 +742,7 @@
     ].join(''); } else
     $('pp-kpis').innerHTML = (build ? [
       _fuelKpi('PPA price', f2(o.ppa), '€/MWh', `${tech} · ${T0}–${T1} · ${(o.ppa / o.refW * 100).toFixed(1)} % of forward`, ''),
-      _fuelKpi('Capture value', f2(o.fair), '€/MWh', 'forward × (1 − projected shape discount), no risk'),
+      _fuelKpi('Capture value', f2(o.fair), '€/MWh', 'forward × quoted-month factor × (1 − projected shape discount), no risk'),
       _fuelKpi('Risk premium', f2(o.premium), '€/MWh', `${o.alpha} % chance of loss accepted · Monte Carlo`),
       _fuelKpi('Chance of loss', mcA ? (mcA.prob * 100).toFixed(1) : '–', '%', 'at the PPA price, margin included', mcA && mcA.prob > 0.5 ? 'down' : 'up'),
       _fuelKpi('Production', f0(o.volume), 'MWh/yr', o.auto.volume && S.volume == null ? o.auto.volume[1] : 'entered'),
@@ -739,7 +773,7 @@
     ].join('') : build ? [
       step('1 · Forward', f2(o.refW) + ' €/MWh', `Cal ${T0}–${T1}, weighted by production${o.disc ? ' and discounted' : ''} · <a href="#pp-fwd" data-go="hs-pp-in">inputs</a>`),
       step('2 · Cannibalisation', pc(first.fsd) + ' → ' + pc(last.fsd), `shape discount ${T0} → ${T1}, ${MODEL_T[o.model]} · <a href="#hs-pp-mkt" data-go="hs-pp-mkt">chart</a>`),
-      step('3 · Capture value', f2(o.fair) + ' €/MWh', 'forward × (1 − shape discount), year by year · <a href="#pp-years" data-go="hs-pp-price">table</a>'),
+      step('3 · Capture value', f2(o.fair) + ' €/MWh', 'forward × k × (1 − shape discount), year by year · <a href="#pp-years" data-go="hs-pp-price">table</a>'),
       step('4 · Risk premium', '−' + f2(o.premium) + ' €/MWh', `price with a ${o.alpha} % chance of loss, ${o.mc && o.mc.hedged ? 'forward hedged' : 'forward open'} · <a href="#hs-pp-mc" data-go="hs-pp-mc">Monte Carlo</a>`),
       step('5 · Costs and GO', (o.goW - o.imb - o.margin - o.refW * o.add / 100 >= 0 ? '+' : '−') + f2(Math.abs(o.goW - o.imb - o.margin - o.refW * o.add / 100)) + ' €/MWh', `imbalance −${f2(o.imb)}, GO +${f2(o.goW)}, margin −${f2(o.margin)}${o.add ? ', add. discount −' + f2(o.refW * o.add / 100) : ''}`),
       step('PPA price', f2(o.ppa) + ' €/MWh', other, 'final'),
@@ -1253,7 +1287,7 @@
 <li><b>Cannibalisation.</b> Shape discount = 1 − capture price ÷ baseload, per calendar year: national (RTE éCO2mix production × ENTSO-E day-ahead) or the asset (its curve × France quarter-hour prices). Convention: ${S.conv === 'pos' ? 'hours with a price ≤ 0 left out of both the capture price and the baseload (Past discount)' : 'all hours (as the CRE M0)'}.
 Projection from the last year used (${o.lastYr}): ${MODEL_T[o.model]}.${o.cfit ? ` Capacity model: capture rate = a + b × ln(installed GW), fitted on ${o.cfit.use.join(', ')} (b = ${(o.cfit.sl * 100).toFixed(1)} pts per ln GW, R² ${o.cfit.r2.toFixed(2)}), installed capacity going in a straight line to the PPE3 targets (${Object.entries(PPE3[S.tech]).map(([y, g]) => y + ': ' + g + ' GW').join(', ')}), anchored on ${o.lastYr}.` : ''}
 Uncertainty: ${(o.sig0 * 100).toFixed(1)} pts × √years after ${o.lastYr} (the bands of the chart).</li>
-<li><b>Capture value</b> = Σ weight × forward × (1 − projected shape discount) = <code>${f2(o.fair)} €/MWh</code>.</li>
+<li><b>Capture value</b> ${FRDOC() ? `= Σ poids × forward Cal × k × (1 − décote de profil projetée) = <code>${f2(o.fair)} €/MWh</code>. <b>k</b>, le facteur des mois cotés, met le niveau au mois comme le reste de l’outil : la valeur de la production sur les forwards des mois (mois coté, sinon trimestre, saison, puis Cal découpé par l’historique, data/history/fr_forward_monthly.json) ÷ sa valeur sur le Cal avec la forme saisonnière historique, que porte la capture annuelle. k = ${o.years.map(r => r.y + ' ' + (r.kq || 1).toFixed(3)).join(', ')} (1 quand rien n’est coté sous le Cal).` : `= Σ weight × Cal forward × k × (1 − projected shape discount) = <code>${f2(o.fair)} €/MWh</code>. <b>k</b>, the quoted-month factor, puts the level month by month as the rest of the tool does: the output's value on the months' forwards (the month quoted, else its quarter, season, then the Cal shaped by history, data/history/fr_forward_monthly.json) ÷ its value on the Cal with the historical seasonal shape that the yearly capture carries. k = ${o.years.map(r => r.y + ' ' + (r.kq || 1).toFixed(3)).join(', ')} (1 when nothing below the Cal is quoted).`}</li>
 <li><b>Risk premium.</b> Monte Carlo (10,000 trajectories, see the Risk section): value earned per MWh, hedge included; the price is the ${o.alpha}th percentile of that value, so the chance of loss before margin is ${o.alpha} %. Premium = capture value − that percentile = <code>${f2(o.premium)} €/MWh</code>.</li>
 <li><b>PPA price</b> = value at risk − additional discount − imbalance + GO − margin = <code>${f2(o.ppaBuild)} €/MWh</code>. The margin is what the buyer keeps, so it is deducted.</li>
 </ol>
