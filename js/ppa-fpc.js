@@ -11,7 +11,7 @@
 //           recalibrated on that year's realised monthly prices
 //   cannib  (1) − (3) per year and per season (summer April–September, winter
 //           October–March), as a share of the season's baseload; projected with
-//           installed capacity (or flat); the year's term = the seasons' terms
+//           installed solar capacity, for wind too (or flat); the year's term = the seasons' terms
 //           weighted by the value of the output in each season; added to (2)
 //   solar   the shaping coefficients lean towards the recent years (weights
 //           halving every year back); wind keeps the plain average
@@ -118,6 +118,10 @@
     const SEASONS = [['summer', m => m >= 4 && m <= 9], ['winter', m => m < 4 || m > 9]];
     const pos = st.conv !== 'all', baseAll = st.conv === 'curt';
     const capOf = D.capGW[st.tech];
+    // the fleet that drives the cannibalisation: solar's own; for wind, the solar fleet too (its summer value is eaten by
+    // solar's midday hours at prices ≤ 0, and the wind fleet grows slowly: scripts/ppa_fpc_driver_test.py, error over
+    // 1–3 years on the complete delivery years, curt, 1.64 → 1.31 €/MWh)
+    const DRV = 'solar', drvCap = D.capGW[DRV] || capOf, drvPath = DRV === st.tech || !o.capPathFor ? o.capPath : o.capPathFor(DRV);
     // production by hour for a historical year: the asset's curve (kWh per quarter-hour → MW) or the national one
     const assetH = st.asset && o.useAsset ? (() => { const out = {}; st.asset.slots.forEach((a, d) => { const h = []; for (let k = 0; k < 24; k++) { let s = 0, n = 0; for (let q = 0; q < 4; q++) { const v = a[k * 4 + q]; if (v != null) { s += v * 4 / 1000; n++; } } h.push(n ? s / n : null); } out[d] = h; }); return out; })() : null;
     const prodOf = (y, d) => assetH ? (assetH[d] || null) : ((H[y].days[d] || {})[tech] || null);
@@ -139,7 +143,7 @@
         const mk = mask ? mask.map((v, i) => v && k[i]) : k;
         const hs = profileCost(pick(V), pick(P), mk, baseAll), ds = profileCost(pick(V), pick(Pt), mk, baseAll);
         bySeason[sn] = hs == null || ds == null ? null : hs - ds; });
-      return h == null || d == null ? null : { y, hist: h, decorr: d, cannib: h - d, season: bySeason, gw: capOf[y] || null };
+      return h == null || d == null ? null : { y, hist: h, decorr: d, cannib: h - d, season: bySeason, gw: drvCap[y] || null };
     }).filter(Boolean);
     if (!hist.length) return null;
     // projection of the cannibalisation: a + b·ln(GW), anchored on the last year used; or flat at the average
@@ -149,7 +153,7 @@
     const meanC = mean(hist.map(x => x.cannib));
     const resid = reg ? fitPts.map(x => x.cannib - (reg.ic + reg.sl * Math.log(x.gw))) : hist.map(x => x.cannib - meanC);
     const sigC = Math.sqrt(mean(resid.map(r => r * r))) || 0.02;
-    const cannibOf = y => flat ? meanC : last.cannib + reg.sl * (Math.log(o.capPath(y)) - Math.log(last.gw));
+    const cannibOf = y => flat ? meanC : last.cannib + reg.sl * (Math.log(drvPath(y)) - Math.log(last.gw));
     // per season: the same projection on each season's term ('flat' model or under 3 years: the season's mean, as the yearly term;
     // the test bench always trains on 3 years or more)
     const seasonFit = Object.fromEntries(SEASONS.map(([sn]) => { const pts = fitPts.filter(x => x.season && x.season[sn] != null);
@@ -157,7 +161,7 @@
       const m = mean(hist.filter(x => x.season && x.season[sn] != null).map(x => x.season[sn]));
       return [sn, { reg: r, mean: m, last: last.season ? last.season[sn] : null }]; }));
     const seasonOf = (y, sn) => { const f = seasonFit[sn]; if (f.mean == null) return null;
-      return flat || !f.reg || f.last == null ? f.mean : f.last + f.reg.sl * (Math.log(o.capPath(y)) - Math.log(last.gw)); };
+      return flat || !f.reg || f.last == null ? f.mean : f.last + f.reg.sl * (Math.log(drvPath(y)) - Math.log(last.gw)); };
     // (2) forward: expected production by month × hour (the asset's average, or the national load factor), on the FPC
     const prof = {}, cnt = {};
     yrs.forEach(y => Object.keys(H[y].days).forEach(d => { const pr = prodOf(y, d); if (!pr) return; const m = +d.slice(5, 7), cap = assetH ? 1 : (capOf[y] || null); if (!cap) return; for (let h = 0; h < 24; h++) if (pr[h] != null) { const k = m + '|' + h; prof[k] = (prof[k] || 0) + pr[h] / cap; cnt[k] = (cnt[k] || 0) + 1; } }));

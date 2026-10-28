@@ -7,20 +7,15 @@ capture points: forecast − realised) over the delivery years already realised,
 with the complete years up to Y − h only (as scripts/ppa_horizon_test.py). The pricer subtracts it from the
 method's capture of each delivery year, at that year's horizon (h > 3 takes h = 3).
 
-Applied only where the test (scripts/ppa_bias_test.py, variant "all", 2024–2026, 1 to 3 years ahead) lowers
-the method's mean error over the three horizons (rule set by Tom on 28 Oct. 2026: take every correction that
+Applied only where the test (scripts/ppa_bias_test.py, variant "all", complete delivery years from 2024, 1 to 3
+years ahead; rerun every week before this script, which reads its choice) lowers the method's mean error over the
+three horizons (rule set by Tom on 28 Oct. 2026: take every correction that
 improves, judged on the published convention, the stopped-at-prices-≤-0 one; the other convention where it
 also improves there). Also writes avg4Mae: the mean absolute error of the 4-method average with these corrections,
-2024–2026, 1 to 3 years ahead (€/MWh), the precision shown next to the published price:
-                     curt (published)                       all hours
-  capacity trend     wind 3.15 → 2.91                       solar 6.62 → 4.62, wind 3.41 → 3.13
-  forward shape      solar 5.01 → 3.81                      solar 9.45 → 8.47
-  weather sim.       wind 2.95 → 2.20                       solar 8.96 → 8.22, wind 3.86 → 3.55
-  European model     wind 5.79 → 4.21                       wind 2.83 → 2.78
-  not applied: capacity trend solar curt (2.69 → 2.79), European solar (2.68 → 2.71; 4.65 → 5.49), forward
-  shape wind curt (2.68 → 2.89), weather solar curt (3.82 → 3.82, no gain)
-4-method average, mean over 1–3 years: solar curt 2.10 → 1.94, wind curt 2.67 → 1.92 €/MWh.
-Limits: three test years; the weather simulation of the pricer (js/ppa-wx.js) is a lighter version of the
+complete delivery years from 2024, 1 to 3 years ahead (€/MWh), the precision shown next to the published price.
+The corrections taken and their gains: data/history/ppa_bias_test.json (rerun weekly; until 30 Oct. 2026 the
+choice was a fixed list learnt with 2026 still running, ADOPT_FIXED).
+Limits: few test years (two while 2026 runs); the weather simulation of the pricer (js/ppa-wx.js) is a lighter version of the
 test bench's, so its correction is the test bench's error.
 
 Writes data/history/ppa_bias.json
@@ -40,8 +35,35 @@ import ppa_lab as L           # noqa: E402
 sys.argv = _argv
 
 OUT = os.path.join(ROOT, 'data', 'history', 'ppa_bias.json')
-ADOPT = {'solar': {'curt': ['fpc'], 'all': ['step', 'fpc', 'weather']},
-         'wind': {'curt': ['step', 'weather', 'regional'], 'all': ['step', 'weather', 'regional']}}
+# the corrections chosen until 30 Oct. 2026 (fixed list); now kept only as the fallback without a test file
+ADOPT_FIXED = {'solar': {'curt': ['fpc'], 'all': ['step', 'fpc', 'weather']},
+               'wind': {'curt': ['step', 'weather', 'regional'], 'all': ['step', 'weather', 'regional']}}
+
+
+def adopt_from_test():
+    """Tom's rule, applied to the latest test (data/history/ppa_bias_test.json, complete delivery years only): a method's
+    correction is taken in a convention where the 'all' variant lowers its mean error over the three horizons"""
+    try:
+        mae = json.load(open(T.OUT))['mae']
+    except (OSError, KeyError, ValueError):
+        return ADOPT_FIXED
+    out = {}
+    for tech in ('solar', 'wind'):
+        for conv in ('curt', 'all'):
+            keep = []
+            for k in T.METHODS:
+                try:
+                    n = np.mean([mae[f'{tech} {conv} h={h}'][k]['none'] for h in T.HORIZONS])
+                    a = np.mean([mae[f'{tech} {conv} h={h}'][k]['all'] for h in T.HORIZONS])
+                except (KeyError, TypeError):
+                    continue
+                if a < n:
+                    keep.append(k)
+            out.setdefault(tech, {})[conv] = keep
+    return out
+
+
+ADOPT = adopt_from_test()
 
 
 def main():
@@ -64,7 +86,7 @@ def main():
                             errs.append(s['pts'] / 100)
                     if errs:
                         out['bias'].setdefault(tech, {}).setdefault(k, {}).setdefault(conv, {})[str(h)] = {'value': round(float(np.mean(errs)), 4), 'n': len(errs)}
-    # the precision of the published price: the 4-method average with the adopted corrections, 2024–2026,
+    # the precision of the published price: the 4-method average with the adopted corrections, complete years from 2024,
     # each correction learnt only on the years realised before the scored year (as in scripts/ppa_bias_test.py)
     act = {(tech, Y): L.actual('s' if tech == 'solar' else 'w', Y) for tech in ('solar', 'wind') for Y in T.RUN_YEARS if Y in L.DATA}
     pred = lambda tech, Y, h, conv, k: {int(m): v for m, v in R[f'{tech}|{Y}|{h}|{conv}'][k].items()} if f'{tech}|{Y}|{h}|{conv}' in R else None
