@@ -22,6 +22,7 @@ Writes data/history/ppa_benchmark.json:
 
     python scripts/ppa_daily.py            # today (Paris), overwrites the day if run again
     python scripts/ppa_daily.py --redefine
+    python scripts/ppa_daily.py --recompute-all   (after a change of method: every day with the current model)
         once, on the switch day: every past day without blend4 is recomputed (that day's Cal settlements, today's
         model, flagged rebuilt), then every day's ppa = blend4 and its band moved with it, so the history reads one
         definition and the 7-day alerts see no false jump
@@ -138,6 +139,36 @@ def headline(x):
             x[k] = round(x[k] + shift, 2)
 
 
+def recompute_all():
+    """after a change of method: every day of the history recomputed with that day's Cal settlements and the current
+    model (flagged rebuilt), so the series reads one definition; days without a settlement of each Cal keep theirs"""
+    with open(OUT) as f:
+        j = json.load(f)
+    with open(os.path.join(ROOT, 'data', 'history', 'fr_market_calchain.json')) as f:
+        ch = json.load(f)['FR']['years']
+    days = []
+    for d, v in sorted(j['days'].items()):
+        ys = v.get('tenor', '').split('-')
+        last = {}
+        for y in ys:
+            if y in ch:
+                ok = [(t, x) for t, x in zip(ch[y]['dates'], ch[y]['values']) if t <= d and x is not None]
+                if ok:
+                    last[y] = ok[-1][1]
+        if ys and len(last) == len(ys):
+            days.append([d, last])
+    print('recomputing', len(days), 'of', len(j['days']), 'days')
+    got, errs = run(days)
+    for d, v in (got.get('rebuilt') or {}).items():
+        for t in ('solar', 'wind'):
+            headline(v.get(t))
+        j['days'][d].update({'rebuilt': True, 'solar': v['solar'], 'wind': v['wind'], 'def': 'blend4'})
+    j['note'] = NOTE
+    with open(OUT, 'w') as f:
+        json.dump(j, f, separators=(',', ':'))
+    print('recomputed', len(got.get('rebuilt') or {}), 'days · JS errors:', len(errs))
+
+
 def redefine():
     """the switch day: one definition over the whole history (see the module's docstring)"""
     with open(OUT) as f:
@@ -196,6 +227,8 @@ def main():
         print('rebuilding', len(rebuild), 'days')
     if '--redefine' in sys.argv:
         return redefine()
+    if '--recompute-all' in sys.argv:
+        return recompute_all()
     got, errs = run(rebuild)
     for k in ('solar', 'wind'):
         headline(got.get(k))
