@@ -1613,6 +1613,6 @@ ${FRDOC() ? `<p>RTE éCO2mix (production nationale, 15 min) · prix day-ahead EN
     reg('cannib-rolling-eur', 'Rolling captured price vs baseload', 'cn-roll-eur', '365-day captured price against the 365-day baseload: the gap is the shape discount in €/MWh.', [TECH, CONV], c => ({ rollEur: c }));
     reg('cannib-profile', 'Daily production profile by month', 'cn-prof', 'Average MW by hour of the day, one line per month, last complete year (RTE).', [TECH], (c, s2) => ({ profNat: c, profNatSub: s2 }), { w: 6, h: 5 });
   }
-  window.PKCannib = { render() { const p = pageP(); [['cannib-projection', 'cn-proj'], ['cannib-capacity', 'cn-capfit'], ['cannib-countries-years', 'cn-xcy'], ['cannib-countries', 'cn-xc'], ['cannib-hourly', 'cn-hc'], ['cannib-neghours', 'cn-negh'], ['cannib-rolling', 'cn-roll'], ['cannib-rolling-eur', 'cn-roll-eur'], ['cannib-profile', 'cn-prof']].forEach(([w, c]) => PKW.draw(w, c, p)); } };
+  window.PKCannib = { render() { const p = pageP(); [['cannib-projection', 'cn-proj'], ['cannib-capacity', 'cn-capfit'], ['cannib-countries-years', 'cn-xcy'], ['cannib-countries', 'cn-xc'], ['cannib-hourly', 'cn-hc'], ['cannib-neghours', 'cn-negh'], ['cannib-rolling', 'cn-roll'], ['cannib-rolling-eur', 'cn-roll-eur'], ['cannib-profile', 'cn-prof'], ['cannib-penetration-years', 'cn-pen']].forEach(([w, c]) => PKW.get(w) && PKW.draw(w, c, p)); } };
   window.PKPpa = { compute: () => compute(), state: S, run };
 })();
