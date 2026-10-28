@@ -1235,6 +1235,30 @@
       ...(o.m4 ? [{ label: 'Weather simulation', data: o.m4.years.map(r => +r.capture.toFixed(2)), backgroundColor: '#A87DC4AA', borderRadius: 3 }] : []),
       ...(o.eu ? [{ label: 'European price model', data: o.years.map((r, i) => +(r.fwd * o.eu[i].capture).toFixed(2)), backgroundColor: '#5B9BD5AA', borderRadius: 3 }] : []),
     ] }, options: _fuelOpts({ plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 8 } } }, scales: { x: Object.assign(_fuelXAxis(), { grid: { display: false } }), y: _fuelAxis('€/MWh', { beginAtZero: true }) } }) }, 'ppa-methods-years');
+    // Cannibalisation by method: the capture rate measured on the past years, then what each method projects for the
+    // delivery years (its value of one MWh ÷ the Cal of that year), all starting from the last complete year
+    (() => {
+      const tr = x => window.PKI18n ? PKI18n.tr(x) : x;
+      const past = o.hist.filter(x => x.cpPct != null), last = past.filter(x => x.complete).pop();
+      if (!last) return;
+      const yrs = [...new Set([...past.map(x => x.year), ...o.tenor])].sort((a, b) => a - b), at = (arr, y) => { const i = o.tenor.indexOf(y); return i < 0 ? null : arr[i]; };
+      const r1 = v => v == null ? null : +(v * 100).toFixed(1);
+      const line = (label, rates, color, extra) => ({ label: tr(label), data: yrs.map(y => y === last.year ? r1(last.cpPct) : r1(at(rates, y))), borderColor: color, backgroundColor: color, borderWidth: 2, pointRadius: 3, fill: false, spanGaps: true, tension: 0, ...extra });
+      const ds = [
+        { label: tr(o.useAsset ? 'Realised (asset)' : 'Realised (national profile)'), data: yrs.map(y => { const h = past.find(x => x.year === y); return h ? r1(h.cpPct) : null; }), borderColor: C_TX2, backgroundColor: C_TX2, borderWidth: 2.4, pointRadius: yrs.map(y => { const h = past.find(x => x.year === y); return h && !h.complete ? 4 : 3; }), pointStyle: yrs.map(y => { const h = past.find(x => x.year === y); return h && !h.complete ? 'rectRot' : 'circle'; }), fill: false, tension: 0 },
+        line('Past discount', o.years.map((r, i) => 1 - (o.sdPctY ? o.sdPctY[i] : o.sdCh)), '#B8C9D9', { borderDash: [5, 4], borderWidth: 1.6 }),
+        line('Capacity trend', o.years.map(r => r.cp / r.fwd), '#14D3A9', { borderWidth: 3 }),
+        ...(m3c ? [line('Forward shape', m3c.fwd.map((r, i) => r.capture / o.years[i].fwd), '#FBBF24')] : []),
+        ...(o.m4 ? [line('Weather simulation', o.m4.years.map((r, i) => r.capture / o.years[i].fwd), '#A87DC4')] : []),
+        ...(o.eu ? [line('European price model', o.eu.map(e => e.capture), '#5B9BD5')] : []),
+      ];
+      const sub = $('pp-cmp-cannib-sub');
+      if (sub) sub.textContent = tr('Capture rate, % of the Cal · realised, then each method’s projection from') + ' ' + last.year + (past.some(x => !x.complete) ? ' · ' + tr('◆ = year to date') : '');
+      _fuelChart('pp-cmp-cannib', { type: 'line', data: { labels: yrs.map(String), datasets: ds }, options: _fuelOpts({
+        plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 8 } },
+          tooltip: { callbacks: { label: c => c.raw == null ? null : ` ${c.dataset.label}: ${FRDOC() ? c.raw.toFixed(1).replace('.', ',') : c.raw.toFixed(1)} %` } } },
+        scales: { x: Object.assign(_fuelXAxis(), { grid: { display: false } }), y: _fuelAxis(tr('capture rate, % of the Cal')) } }) }, 'ppa-cannibalisation-by-method');
+    })();
     const m3 = o.m3, m4 = o.m4, Y = o.years, a = Y[0], z = Y[Y.length - 1];
     const col = (lbl, cur) => `<th${cur ? ' class="pp-cur"' : ''}>${lbl}${cur ? ' ✓' : ''}</th>`;
     const W4 = m4 ? m4.years : null;
