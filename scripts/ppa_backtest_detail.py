@@ -62,9 +62,38 @@ def m_step(t, Y, train, V, conv):
     return r[-1] + b * (math.log(B.cap_guess(t, Y, last)) - math.log(B.CAP[t][last]))
 
 
+FPC_HALF = {'s': 1, 'w': None}      # solar: skeleton weights halve every year back; wind: plain average
+SUMMER = set(range(4, 10))
+
+
+def shape_coef_w(train, weights):
+    """B.shape_coef with year weights"""
+    co, mc = {}, {}
+    rel = P / B.mavg
+    for m in range(1, 13):
+        for d in range(3):
+            for h in range(24):
+                num = den = 0.0
+                for y in train:
+                    i = (yr == y) & (mo == m) & (ty == d) & (hr == h)
+                    if i.any():
+                        num += weights[y] * rel[i].mean(); den += weights[y]
+                co[(m, d, h)] = num / den if den else 1.0
+        num = den = 0.0
+        for y in train:
+            i = (yr == y) & (mo == m)
+            if i.any():
+                num += weights[y] * P[i].mean() / P[yr == y].mean(); den += weights[y]
+        mc[m] = num / den if den else 1.0
+    return co, mc
+
+
 def m_fpc(t, Y, train, V, conv):
-    """yearly and monthly: expected profile on the FPC skeleton + cannibalisation (1) − (3) projected"""
-    co, mc = B.shape_coef(train)
+    """yearly and monthly: expected profile on the FPC skeleton + cannibalisation (1) − (3) projected per season
+    (summer April–September, winter October–March); solar's skeleton leans towards the recent years
+    (walk-forward, scripts/ppa_fpc_variants.py: solar 7.64 → 5.84 €/MWh, wind 6.23 → 4.94 on 2024–2026)"""
+    half = FPC_HALF[t]
+    co, mc = shape_coef_w(train, {y: 0.5 ** ((train[-1] - y) / half) if half else 1.0 for y in train})
     days = [date.fromordinal(o) for o in range(date(Y, 1, 1).toordinal(), date(Y + 1, 1, 1).toordinal())]
     prof = {}
     for m in range(1, 13):
@@ -81,22 +110,31 @@ def m_fpc(t, Y, train, V, conv):
     sk, pv, mm, hh = np.array(sk), np.array(pv), np.array(mm), np.array(hh)
     f = (pv * sk).sum() / pv.sum() / sk.mean() - 1
     fm = {m: (pv[mm == m] * sk[mm == m]).sum() / pv[mm == m].sum() / sk[mm == m].mean() - 1 for m in range(1, 13)}
-    cs = []
+    last = train[-1]
+    fulls = {}
     for y in train:
         i = yr == y
-        pt = B.decorrelated(y, co)
         full = np.zeros_like(P)
-        full[i] = pt
-        cs.append(rate(i, V, P, conv) - rate(i, V, full, conv))
-    last = train[-1]
-    b = B.logfit([B.CAP[t][y] for y in train], cs) if len(train) >= 3 else 0
-    c = cs[-1] + b * (math.log(B.cap_guess(t, Y, last)) - math.log(B.CAP[t][last]))
+        full[i] = B.decorrelated(y, co)
+        fulls[y] = full
+    cterm = {}
+    for months in (SUMMER, set(range(1, 13)) - SUMMER):
+        cs = []
+        for y in train:
+            k = (yr == y) & np.isin(mo, list(months))
+            cs.append(rate(k, V, P, conv) - rate(k, V, fulls[y], conv))
+        b = B.logfit([B.CAP[t][y] for y in train], cs) if len(train) >= 3 else 0
+        for m in months:
+            cterm[m] = cs[-1] + b * (math.log(B.cap_guess(t, Y, last)) - math.log(B.CAP[t][last]))
+    # the year's term: each season's, weighted by the output's value on the skeleton in that season
+    wv = {m: (pv[mm == m] * sk[mm == m]).sum() for m in range(1, 13)}
+    c = sum(wv[m] * cterm[m] for m in wv) / sum(wv.values())
     # expected price shape by season × hour (skeleton, % of the season's average)
     shape = {}
     for sname, ms in (('summer', range(4, 10)), ('winter', [10, 11, 12, 1, 2, 3])):
         k = np.isin(mm, list(ms))
         shape[sname] = [float(sk[k & (hh == h)].mean() / sk[k].mean()) for h in range(24)]
-    return 1 + f + c, {m: 1 + fm[m] + c for m in range(1, 13)}, shape
+    return 1 + f + c, {m: 1 + fm[m] + cterm[m] for m in range(1, 13)}, shape
 
 
 def m_weather(t, Y, train, V, n_sims):

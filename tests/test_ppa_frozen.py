@@ -25,10 +25,10 @@ CASES = {
     'wind · defaults': {'tech': 'wind'},
     'solar · past discount, P80': {'method': 'pct', 'pct': 80},
 }
-EXPECTED = {   # fixtures of 2026-10-25; capacity trend with the quoted-month factor k (switch branch)
-    'solar · defaults': {'ppa': 54.31, 'build': 54.31, 'pct': 46.19, 'fpc': 44.46, 'ref': 84.05, 'go': 1.84, 'tenor': '2027-2028-2029'},
-    'wind · defaults': {'ppa': 77.24, 'build': 77.24, 'pct': 81.12, 'fpc': 73.64, 'ref': 83.24, 'go': 1.84, 'tenor': '2027-2028-2029'},
-    'solar · past discount, P80': {'ppa': 43.18, 'build': 54.31, 'pct': 43.18, 'fpc': 44.46, 'ref': 83.01, 'go': 1.84, 'tenor': '2027-2028-2029'},
+EXPECTED = {   # fixtures of 2026-10-25; switch branch: capacity trend × quoted-month factor k, forward shape with recent skeleton (solar) and c per season
+    'solar · defaults': {'ppa': 54.31, 'build': 54.31, 'pct': 46.19, 'fpc': 39.19, 'ref': 84.05, 'go': 1.84, 'tenor': '2027-2028-2029'},
+    'wind · defaults': {'ppa': 77.24, 'build': 77.24, 'pct': 81.12, 'fpc': 75.15, 'ref': 83.24, 'go': 1.84, 'tenor': '2027-2028-2029'},
+    'solar · past discount, P80': {'ppa': 43.18, 'build': 54.31, 'pct': 43.18, 'fpc': 39.19, 'ref': 83.01, 'go': 1.84, 'tenor': '2027-2028-2029'},
 }
 fails = []
 
