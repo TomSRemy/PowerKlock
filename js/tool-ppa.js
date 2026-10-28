@@ -87,21 +87,22 @@
     return FRDOC() ? `<h4>Modèle européen</h4>
 <ol>
 <li><b>Prix horaires.</b> Le prix de chaque heure ÷ la moyenne du mois, en fonction de la charge résiduelle de la France, de l’Allemagne, de la Belgique et de l’Espagne ensemble (consommation − solaire − éolien − nucléaire, ÷ consommation), par saison × moment de la journée, appris sur les cinq dernières années complètes (banc d’essai, scripts/ppa_lab.py). Le parc de chaque année de livraison est posé sur chaque année météo passée : la cannibalisation sort des prix horaires, pas d’une tendance.</li>
-<li><b>Capture des années du ténor</b>, mois par mois (data/history/ppa_forecast.json, mis à jour chaque dimanche), pondérée par la production de chaque mois (× sa part payée quand la production est arrêtée aux prix ≤ 0) et par le rapport forward du mois ÷ Cal : ${caps || 'pas de prévision pour ce ténor (le banc d’essai s’arrête en 2030)'}.</li>
+<li><b>Capture des années du ténor</b>, mois par mois (data/history/ppa_forecast.json, mis à jour chaque dimanche), pondérée par la production de chaque mois (× sa part payée quand la production est arrêtée aux prix ≤ 0) et par le rapport mois ÷ année du day-ahead (moyenne des années complètes depuis 2016, 2022 exclue), puis multipliée par le forward Cal : la forme saisonnière est celle de l’historique, pas celle des mois cotés (les méthodes Forme forward et Simulation météo lisent, elles, les mois cotés) : ${caps || 'pas de prévision pour ce ténor (le banc d’essai s’arrête en 2030)'}.</li>
 <li><b>Prix du PPA</b> = Σ poids × forward Cal × capture − la prime de risque de la tendance de capacité (même Monte Carlo, ${f2(o.premium)} €/MWh) − décote additionnelle − écarts + GO − marge${o.eu ? ` = <code>${f2(o.ppaEu)} €/MWh</code>` : ''}, pour comparer les méthodes à l’identique.</li>
 <li><b>Limites.</b> Aucune croissance du stockage ni de la demande flexible n’est modélisée et les voisins progressent à leur rythme récent : à partir de 2028 environ, la région sature à midi dans tous les scénarios et la capacité française ne fait presque plus bouger cette méthode. Pricée 1, 2 et 3 ans à l’avance sur 2024–2026, elle tient mieux que les méthodes de tendance à 3 ans (scripts/ppa_horizon_test.py).</li>
 </ol>` : `<h4>European price model</h4>
 <ol>
 <li><b>Hourly prices.</b> The price of each hour ÷ the month’s average, as a function of the residual load of France, Germany, Belgium and Spain together (consumption − solar − wind − nuclear, ÷ consumption), by season × time of day, learnt on the last five complete years (test bench, scripts/ppa_lab.py). The fleet of each delivery year is put over every past weather year, so cannibalisation comes out of the hourly prices, not out of a trend.</li>
-<li><b>Capture of the tenor years</b>, month by month (data/history/ppa_forecast.json, updated every Sunday), weighted by each month’s output (× its paid share when output stops at prices ≤ 0) and by the month’s forward ÷ Cal ratio: ${caps || 'no forecast for this tenor (the test bench stops in 2030)'}.</li>
+<li><b>Capture of the tenor years</b>, month by month (data/history/ppa_forecast.json, updated every Sunday), weighted by each month’s output (× its paid share when output stops at prices ≤ 0) and by the day-ahead’s month ÷ year ratio (average of the complete years since 2016, 2022 left out), then multiplied by the Cal forward: the seasonal shape is history’s, not the quoted months’ (the Forward shape and Weather simulation methods do read the quoted months): ${caps || 'no forecast for this tenor (the test bench stops in 2030)'}.</li>
 <li><b>PPA price</b> = Σ weight × Cal forward × capture − the capacity trend’s risk premium (same Monte Carlo, ${f2(o.premium)} €/MWh) − additional discount − imbalance + GO − margin${o.eu ? ` = <code>${f2(o.ppaEu)} €/MWh</code>` : ''}, so the methods compare like for like.</li>
 <li><b>Limits.</b> No growth of storage or flexible demand is modelled and the neighbours grow at their recent pace: from about 2028 the region is saturated at midday in every scenario and France’s own capacity barely moves this method. Priced 1, 2 and 3 years ahead on 2024–2026, it holds better than the trend methods at 3 years (scripts/ppa_horizon_test.py).</li>
 </ol>`;
   }
 
   // European price model, year by year on the tenor: capture of each month (data/history/ppa_forecast.json,
-  // 'regional') weighted by its output (× its paid share when curtailed at prices ≤ 0) and by the month's
-  // forward ÷ Cal ratio, so that × the Cal forward it gives the value of one MWh. The asset's own monthly
+  // 'regional') weighted by its output (× its paid share when curtailed at prices ≤ 0) and by the day-ahead's
+  // historical month ÷ year ratio (fr_forward_monthly.json ratios.year, not its quoted months), so that × the Cal
+  // forward it gives the value of one MWh. The asset's own monthly
   // shape and its capture gap to the national profile (last three complete years) when its curve is used.
   // null when a month of the tenor has no forecast (the test bench forecasts up to 2030).
   function euYears(o, st) {
