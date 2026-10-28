@@ -150,7 +150,8 @@
     const resid = reg ? fitPts.map(x => x.cannib - (reg.ic + reg.sl * Math.log(x.gw))) : hist.map(x => x.cannib - meanC);
     const sigC = Math.sqrt(mean(resid.map(r => r * r))) || 0.02;
     const cannibOf = y => flat ? meanC : last.cannib + reg.sl * (Math.log(o.capPath(y)) - Math.log(last.gw));
-    // per season: the same projection on each season's term
+    // per season: the same projection on each season's term ('flat' model or under 3 years: the season's mean, as the yearly term;
+    // the test bench always trains on 3 years or more)
     const seasonFit = Object.fromEntries(SEASONS.map(([sn]) => { const pts = fitPts.filter(x => x.season && x.season[sn] != null);
       const r = pts.length >= 3 ? linreg(pts.map(x => Math.log(x.gw)), pts.map(x => x.season[sn])) : null;
       const m = mean(hist.filter(x => x.season && x.season[sn] != null).map(x => x.season[sn]));
@@ -172,9 +173,9 @@
       const cal = mean(P), f = profileCost(V, P, null);
       // the year's cannibalisation: each season's term weighted by the value of the output in that season
       let c = 0, ws = 0;
-      SEASONS.forEach(([sn, inS]) => { const cs = seasonOf(y, sn); let e = 0, pv = 0, n = 0;
-        pts.forEach((p, i) => { if (!inS(+p.d.slice(5, 7))) return; e += V[i]; pv += p.v; n++; });
-        if (cs == null || !n) return; const w = e * pv / n; c += w * cs; ws += w; });
+      SEASONS.forEach(([sn, inS]) => { const cs = seasonOf(y, sn); let w = 0;
+        pts.forEach((p, i) => { if (inS(+p.d.slice(5, 7))) w += V[i] * p.v; });   // the output's value in the season, hour by hour
+        if (cs == null || !(w > 0)) return; c += w * cs; ws += w; });
       c = ws > 0 ? c / ws : cannibOf(y);
       return { y, cal, fwdCost: f, cannib: c, capture: cal * (1 + f + c), rate: 1 + f + c,
         months: Array.from({ length: 12 }, (_, m) => mean(pts.filter(p => +p.d.slice(5, 7) === m + 1).map(p => p.v))) };
