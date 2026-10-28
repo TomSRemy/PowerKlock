@@ -23,7 +23,6 @@ Writes data/history/ppa_recency_test.json
 """
 import inspect
 import json
-import math
 import os
 import sys
 
