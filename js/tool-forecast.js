@@ -187,6 +187,8 @@
       _fuelKpi('Next 7 days', f0(e7), 'MWh', `band ${f0(e7lo)}–${f0(e7hi)} MWh`),
       _fuelKpi('Load factor, 7 days', cf7 == null ? '–' : (cf7 * 100).toFixed(1), '%', `${f1(S.mw)} MW`),
     ].join('');
+    // every hour of the forecast, kept for the CSV download (MW, P10 / forecast / P90)
+    S.csvRows = T.map((t, i) => [t, P[i], band.lo[i], band.hi[i]]).filter(r => r[1] != null);
     // hourly chart: 2 past days + 7 days ahead
     const iEnd = Math.min(n, T.findIndex(t => dayOf(t) === addDay(t0, 7)) > 0 ? T.findIndex(t => dayOf(t) === addDay(t0, 7)) : n);
     const sl = a => a.slice(0, iEnd).map(v => v == null ? null : Math.round(v * 100) / 100);
@@ -263,6 +265,16 @@
       _fuelKpi(T('Coordonnées', 'Coordinates'), n(S.lat, 2) + ', ' + n(S.lon, 2), '', T('zone de prix ', 'price zone ') + S.zone) +
       _fuelKpi(T('Calage', 'Calibration'), c ? T('oui', 'yes') : T('non', 'no'), '', c ? T('sur la production mesurée du site', 'on the site’s metered output') : T('modèle générique', 'generic model'));
   }
+  function downloadCsv() {
+    if (!S.csvRows || !S.csvRows.length) return;
+    const fr = !window.PKI18n || PKI18n.lang !== 'en', sep = fr ? ';' : ',', n = v => v == null ? '' : fr ? (+v).toFixed(3).replace('.', ',') : (+v).toFixed(3);
+    const head = fr ? ['heure (Europe/Paris)', 'prévision MW', 'P10 MW', 'P90 MW'] : ['hour (Europe/Paris)', 'forecast MW', 'P10 MW', 'P90 MW'];
+    const txt = [head.join(sep)].concat(S.csvRows.map(r => [r[0], n(r[1]), n(r[2]), n(r[3])].join(sep))).join('\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob(['\ufeff' + txt], { type: 'text/csv;charset=utf-8' }));
+    a.download = `forecast-${S.tech}-${(+S.lat).toFixed(2)}-${(+S.lon).toFixed(2)}-${S.mw}MW.csv`;
+    document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 0);
+  }
   function wire() {
     const page = $('page-fcst'); if (!page || page.dataset.wired) return; page.dataset.wired = '1';
     const ids = { 'fc-inj': 'inj', 'fc-p50': 'p50', 'fc-tech': 'tech', 'fc-lat': 'lat', 'fc-lon': 'lon', 'fc-mw': 'mw', 'fc-tilt': 'tilt', 'fc-az': 'az', 'fc-loss-s': 'lossS', 'fc-hub': 'hub', 'fc-cls': 'cls', 'fc-loss-w': 'lossW', 'fc-zone': 'zone' };
@@ -277,6 +289,7 @@
     [['fc-calfr', 'calFr'], ['fc-curt', 'curt']].forEach(([id, k]) => { const e = $(id); if (!e) return; e.checked = !!S[k]; e.addEventListener('change', () => { S[k] = e.checked; run(); }); });
     const cf = $('fc-calfile'); if (cf) cf.addEventListener('change', async () => { const f = cf.files[0]; cf.value = ''; if (f) await calibrate(f); });
     const hb = $('fc-hist-btn'); if (hb) hb.addEventListener('click', buildHistory); const up = $('fc-hist-p50'); if (up) { up.checked = S.useP50; up.addEventListener('change', () => { S.useP50 = up.checked; if (ERA_LAST) buildHistory(); }); } const hp = $('fc-hist-pptx'); if (hp) hp.addEventListener('click', parkSheet);
+    const csvb = $('fc-csv'); if (csvb) csvb.addEventListener('click', downloadCsv);
     const sbt = $('fc-hist-send'); if (sbt) sbt.addEventListener('click', sendToPricer);
     const cr = $('fc-calreset'); if (cr) cr.addEventListener('click', () => { delete S.cal[siteKey()]; save(); calInfo(); run(); });
     const pasteBox = $('fc-paste');
