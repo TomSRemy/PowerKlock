@@ -1,5 +1,11 @@
 # Roles and how we work together
 
+### 2026-10-28 13:30 · centralised (Tom: « Harmonise le travail entre instances et centralise tout ici »)
+From now on **one session leads: bridge-cse**. Tom talks to it; it does or dispatches the work, keeps the decisions
+(`decisions.md`), the debrief and the backlog up to date, and pushes to `main` after its full check (backup tag before
+each push). powerklock-78 finishes its in-progress push (weights per method, solar) and starts nothing new; the table
+below is the history of the night of 27–28 Oct.
+
 ### 2026-10-28 00:15 · powerklock-78 (proposed, Tom to confirm)
 
 ## Who does what
