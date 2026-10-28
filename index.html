@@ -2493,7 +2493,7 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
           <div class="cf-form" id="pp-fwd"></div>
           <div class="cf-form">
             <label class="cf-field"><span>Margin <i class="pp-auto" data-for="pp-margin"></i></span><span class="cf-in"><input type="number" id="pp-margin" step="0.1"><em>€/MWh</em></span></label>
-            <label class="cf-field"><span>Negative prices</span><select id="pp-conv"><option value="curt">Curtailed at ≤ 0 € (not paid)</option><option value="all">No curtailment, all hours paid</option><option value="pos">PPA Dashboard convention (legacy)</option></select></label>
+            <label class="cf-field"><span>Negative prices</span><select id="pp-conv"><option value="curt">Curtailed at ≤ 0 € (not paid)</option><option value="all">No curtailment, all hours paid</option><option value="part">Partial stop at ≤ 0 €</option><option value="pos">PPA Dashboard convention (legacy)</option></select></label><label class="cf-field" id="pp-curtpct-field" hidden><span>Output stopped at ≤ 0 €</span><span class="cf-in"><input type="number" id="pp-curtpct" step="5" min="0" max="100" value="50"><em>%</em></span></label>
           </div>
           </div>
           <details class="pp-adv" id="pp-adv"><summary>Advanced settings <span class="pp-adv-n" id="pp-adv-n"></span><span class="pp-hint">history used, projection, risk, costs, uncertainty · every value is set automatically</span></summary>
