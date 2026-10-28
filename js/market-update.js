@@ -83,7 +83,13 @@ _muReg({
     const fut = days.map((d, i) => d > _muToday() ? i : -1).filter(i => i >= 0);
     const fm = _muMean(fut.map(i => sl(s.mean)[i])), nm = _muMean(fut.map(i => sl(s.normal)[i]));
     const dev = fm != null && nm ? (p.series === 'temp' ? (fm - nm).toFixed(1) + ' °C' : ((fm / nm - 1) * 100).toFixed(0) + ' %') : '';
-    return { sub: _muT(`${fut.length} prochains jours : ${fm == null ? '–' : fm.toFixed(1)} ${s.unit.replace('/day', '/jour')} vs normale ${nm == null ? '–' : nm.toFixed(1)} (${dev && (fm >= nm ? '+' : '')}${dev}) · mis à jour le ${j.updated.slice(0, 10)}`, `Next ${fut.length} days: ${fm == null ? '–' : fm.toFixed(1)} ${s.unit} vs normal ${nm == null ? '–' : nm.toFixed(1)} (${dev && (fm >= nm ? '+' : '')}${dev}) · updated ${j.updated.slice(0, 10)}`) };
+    // the finding of the chart in one line: above, below or near normal over the forecast days
+    const pct = fm != null && nm ? (fm / nm - 1) * 100 : null, nd = fut.length;
+    const what = { wind: _muT('Éolien', 'Wind'), solar: _muT('Solaire', 'Solar') }[p.series];
+    const finding = what && pct != null ? (Math.abs(pct) < 5 ? _muT(`${what} proche de la normale sur les ${nd} prochains jours`, `${what} near normal over the next ${nd} days`)
+      : pct > 0 ? _muT(`${what} au-dessus de la normale : +${pct.toFixed(0)} % sur les ${nd} prochains jours`, `${what} above normal: +${pct.toFixed(0)}% over the next ${nd} days`)
+        : _muT(`${what} sous la normale : −${Math.abs(pct).toFixed(0)} % sur les ${nd} prochains jours`, `${what} below normal: −${Math.abs(pct).toFixed(0)}% over the next ${nd} days`)) : null;
+    return { finding, sub: _muT(`${fut.length} prochains jours : ${fm == null ? '–' : fm.toFixed(1)} ${s.unit.replace('/day', '/jour')} vs normale ${nm == null ? '–' : nm.toFixed(1)} (${dev && (fm >= nm ? '+' : '')}${dev}) · mis à jour le ${j.updated.slice(0, 10)}`, `Next ${fut.length} days: ${fm == null ? '–' : fm.toFixed(1)} ${s.unit} vs normal ${nm == null ? '–' : nm.toFixed(1)} (${dev && (fm >= nm ? '+' : '')}${dev}) · updated ${j.updated.slice(0, 10)}`) };
   },
 });
 

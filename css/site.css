@@ -3587,3 +3587,6 @@ html[data-theme="light"] #page-boa .boa-f3 code { color: #1D4E89; } html[data-th
 /* comparator: ready-made comparisons */
 .cmp-presets { flex-basis:100%; flex-wrap:wrap; }
 .cmp-presets-l { font:700 10px 'JetBrains Mono',monospace; letter-spacing:.08em; text-transform:uppercase; color:var(--text3); margin-right:4px; align-self:center; }
+
+/* Analysis: the finding of a chart in one line */
+.ma-finding { font:600 14px/1.35 'Outfit',sans-serif; color:var(--text); margin:4px 0 2px; text-wrap:balance; }
