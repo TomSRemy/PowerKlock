@@ -545,12 +545,32 @@
     const M = methodVals(o), use = M.filter(m => INC[m.k] && m.v != null), avg = use.length ? mean(use.map(m => m.v)) : null;
     host.innerHTML = `<div class="pp-band-main"><div class="pp-band-l">PPA price</div><div class="pp-band-v">${avg != null ? f2(avg) : '–'}<small> €/MWh</small></div>` +
       `<div class="pp-band-s"><span>${use.length}</span> <span>${use.length === 1 ? 'method ticked' : 'methods ticked'}</span> · <span>${S.tech === 'wind' ? 'Wind' : 'Solar'}</span> · <span>Cal ${o.tenor[0]}–${o.tenor[o.tenor.length - 1]}</span> <span>${f2(o.refW)} €/MWh</span></div></div>` +
-      `<div class="pp-band-m">${M.map(m => `<label class="pp-mcard${INC[m.k] ? ' on' : ''}${m.v == null || m.k === 'pct' ? ' na' : ''}"><input type="checkbox" data-inc="${m.k}"${INC[m.k] ? ' checked' : ''}${m.v == null || m.k === 'pct' ? ' disabled' : ''}>` +
-        `<span class="pp-mcard-n">${MNAME[m.k]}</span><span class="pp-mcard-v">${m.v != null ? f2(m.v) : '…'}</span><span class="pp-mcard-s">${m.k === 'pct' ? 'reference, not for pricing' : m.v != null ? '€/MWh' : m.k === 'eu' ? 'no forecast past 2030' : 'computed on its tab'}</span></label>`).join('')}</div>`;
+      `<div class="pp-offer"><label for="pp-offer-in">Offer received</label><span class="cf-in"><input type="number" id="pp-offer-in" step="0.1" placeholder="€/MWh" value="${S.offer != null ? S.offer : ''}"><em>€/MWh</em></span><div class="pp-offer-out" id="pp-offer-out"></div></div>` +
+      `<div class="pp-band-m">${M.map(m => `<label class="pp-mcard${INC[m.k] ? ' on' : ''}${m.v == null ? ' na' : ''}"><input type="checkbox" data-inc="${m.k}"${INC[m.k] ? ' checked' : ''}${m.v == null ? ' disabled' : ''}>` +
+        `<span class="pp-mcard-n">${MNAME[m.k]}</span><span class="pp-mcard-v">${m.v != null ? f2(m.v) : '…'}</span><span class="pp-mcard-s">${m.v == null ? 'computed on its tab' : m.k === 'pct' ? 'risks entered by hand' : '€/MWh'}</span></label>`).join('')}</div>`;
+    const oi = $('pp-offer-in');
+    if (oi) oi.addEventListener('input', () => { S.offer = oi.value === '' ? null : +oi.value; offerOut(S.last, avg); });
+    offerOut(o, avg);
     host.querySelectorAll('[data-inc]').forEach(c => c.addEventListener('change', () => {
       INC[c.dataset.inc] = c.checked; try { localStorage.setItem('pk-pp-inc', JSON.stringify(INC)); } catch (_) {}
       renderBand(S.last); renderSumWf(S.last); renderSens(S.last);
     }));
+  }
+  // an offer received, read against the pricer: gap to the price shown, chance of loss and expected P&L at that price
+  // (the 10,000 futures of the capacity trend's Monte Carlo, forward hedged, as in its Risk section)
+  function offerOut(o, avg) {
+    const el = $('pp-offer-out'); if (!el) return;
+    if (S.offer == null || !o) { el.innerHTML = '<span class="pp-offer-h">Type the price of an offer to see where it stands</span>'; return; }
+    const x = S.offer, mc = o.mc, gap = avg != null ? x - avg : null;
+    let prob = null, pnl = null;
+    if (mc && mc.Us && mc.N) {
+      const base = o.imb - o.goP, c = x + base; let lo = 0, hi = mc.N;
+      while (lo < hi) { const m = (lo + hi) >> 1; if (mc.Us[m] < c) lo = m + 1; else hi = m; }
+      prob = lo / mc.N; pnl = mean(o.years.map(r => r.ev)) * (mc.mean - base - x) / 1000;
+    }
+    const col = v => v > 0 ? 'var(--red, #ED6965)' : '#14D3A9';
+    el.innerHTML = (gap != null ? `<span><b style="color:${col(gap)}">${gap >= 0 ? '+' : '−'}${f2(Math.abs(gap))}</b> <span>€/MWh vs the price shown</span></span>` : '') +
+      (prob != null ? `<span><b>${(prob * 100).toFixed(0)} %</b> <span>chance of loss (capacity trend, 10 000 futures)</span></span><span><b style="color:${pnl >= 0 ? '#14D3A9' : '#ED6965'}">${pnl >= 0 ? '+' : '−'}${f0(Math.abs(pnl))}</b> <span>k€ per year expected</span></span>` : '');
   }
   function renderSumWf(o) {
     if (!$('pp-sum-wf') || !o) return;

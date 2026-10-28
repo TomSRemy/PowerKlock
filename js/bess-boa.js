@@ -96,7 +96,7 @@
       '<div class="boa-card"><div class="boa-sec">' + T('Revenue stack, scenario shown', 'Empilement des revenus, scénario affiché') + '</div><div style="position:relative;height:260px"><canvas id="boa-stack" style="width:100%;height:260px"></canvas></div><div class="boa-legend">' +
       SLABELS.map((l, i) => '<span><i class="sq" style="background:' + SCOLORS[i] + '"></i>' + l + '</span>').join('') + '</div></div>';
     const tabs = '<div class="boa-card"><div class="boa-tabs" id="boa-tabs">' + pill('t', 'pnl', T('P&L table', 'Tableau de P&L'), 1) + pill('t', 'compare', T('Structure comparison', 'Comparaison des structures')) + '</div>' +
-      '<div id="boa-tab-pnl"><p class="boa-note">' + T('Scenario and structure shown. DSCR green ≥ 1.20, amber 1.10 to 1.20, red under 1.10.', 'Scénario et structure affichés. DSCR vert ≥ 1,20, ambre 1,10 à 1,20, rouge sous 1,10.') + '</p><div class="table-wrap" style="overflow-x:auto"><table class="data-table boa-table" id="boa-pnl"></table></div></div>' +
+      '<div id="boa-tab-pnl"><p class="boa-note">' + T('Scenario and structure shown. DSCR green ≥ 1.20, amber 1.10 to 1.20, red under 1.10.', 'Scénario et structure affichés. DSCR vert ≥ 1,20, ambre 1,10 à 1,20, rouge sous 1,10.') + ' <button type="button" class="pk-btn-ghost" id="boa-csv">' + T('Download the P&L (CSV)', 'Télécharger le P&L (CSV)') + '</button></p><div class="table-wrap" style="overflow-x:auto"><table class="data-table boa-table" id="boa-pnl"></table></div></div>' +
       '<div id="boa-tab-compare" hidden><p class="boa-note">' + T('Each structure with its own default terms, mid scenario, current financing. Full tolling is tested on a 7-year debt. Bankable = minimum DSCR ≥ 1.20× every year in the mid scenario.', 'Chaque structure avec ses paramètres par défaut, scénario central, financement actuel. Le tolling complet est testé sur une dette de 7 ans. Finançable = DSCR minimum ≥ 1,20× chaque année dans le scénario central.') + '</p><div class="table-wrap" style="overflow-x:auto"><table class="data-table boa-table" id="boa-cmp"></table></div></div></div>';
     const guide = '<div class="boa-guide"><b>' + T('How to use it', 'Comment s’en servir') + '</b><ol>' +
       '<li>' + T('Floor + upside by default: a flat floor of 70 k, check the DSCR stays ≥ 1.20× in the mid scenario.', 'Floor + upside par défaut : floor plat de 70 k, vérifier que le DSCR reste ≥ 1,20× en scénario central.') + '</li>' +
@@ -240,6 +240,9 @@
       options: _fuelOpts({ plugins: { legend: { display: false } }, scales: { x: Object.assign(_fuelXAxis(), { stacked: true }), y: _fuelAxis(SC(act) + ' · ' + T('k€/MW/yr', 'k€/MW/an'), { stacked: true }) } }) }, 'bess-boa-stack');
 
     const chip = d => '<span class="boa-chip boa-' + band(d) + '">' + f2(d) + '×</span>';
+    S.csv = [[T('Year', 'Année'), T('Market revenue', 'Revenu de marché'), T('Capacity left %', 'Capacité restante %'), T('Floor adjusted', 'Floor ajusté'), T('Developer payment', 'Paiement au développeur'), 'OPEX', 'EBITDA', T('Debt service', 'Service de la dette'), 'DSCR', T('Offtaker margin', 'Marge de l’acheteur')]]
+      .concat(R.map((r, i) => [BOA_START + i, r.mkt, Math.pow(1 - p.deg, i) * 100, r.fl, r.dev, p.opex, r.ebitda, ds, r.dscr, r.stk].map((v, k) => k === 0 ? v : v == null ? '' : (+v).toFixed(k === 8 ? 3 : 2))));
+    S.csvName = `boa-${S.dur}-${S.struct}-${act}.csv`;
     $('boa-pnl').innerHTML = '<thead><tr><th>' + T('Year', 'Année') + '</th><th>' + T('Market revenue', 'Revenu de marché') + '</th><th>' + T('Capacity left', 'Capacité restante') + '</th><th>' + T('Floor adjusted', 'Floor ajusté') + '</th><th>' + T('Developer payment', 'Paiement au développeur') + '</th><th>OPEX</th><th>EBITDA</th><th>' + T('Debt service', 'Service de la dette') + '</th><th>DSCR</th><th>' + T('Offtaker margin', 'Marge de l’acheteur') + '</th></tr></thead><tbody>' +
       R.map((r, i) => '<tr><td>' + (BOA_START + i) + '</td><td class="c-mkt">' + f1(r.mkt) + '</td><td class="c-mut">' + f1(Math.pow(1 - p.deg, i) * 100) + ' %</td><td class="c-fl">' + (r.fl == null ? '–' : f1(r.fl)) + '</td><td><b>' + f1(r.dev) + '</b></td><td class="c-mut">' + p.opex + '</td><td>' + f1(r.ebitda) +
         '</td><td class="c-mut">' + f1(ds) + '</td><td>' + chip(r.dscr) + '</td><td style="font-weight:600;color:' + (r.stk >= 0 ? OK : BAD) + '">' + f1(r.stk) + '</td></tr>').join('') + '</tbody>';
@@ -287,6 +290,12 @@
     root.addEventListener('input', e => { if (e.target.id === 'boa-capex') root.dataset.capexTouched = '1'; }, true);
     root.addEventListener('input', e => { if (/^boa-[lmh]-da-cod$/.test(e.target.id)) root.dataset.daTouched = '1'; }, true);
     live();
+    $('boa-csv').addEventListener('click', () => {
+      if (!S.csv) return;
+      const sep = fr() ? ';' : ',', txt = S.csv.map(r => r.map(v => fr() ? String(v).replace('.', ',') : v).join(sep)).join('\n');
+      const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\ufeff' + txt], { type: 'text/csv;charset=utf-8' })); a.download = S.csvName || 'boa.csv';
+      document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 0);
+    });
     $('boa-tabs').addEventListener('click', e => {
       const b = e.target.closest('button[data-t]'); if (!b) return;
       $('boa-tabs').querySelectorAll('button').forEach(x => x.classList.toggle('active', x === b));
