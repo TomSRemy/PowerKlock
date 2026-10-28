@@ -409,6 +409,13 @@
       tenor, negHours, negShare, nhReg, nhFitYears, shLast, fwds, fwdAuto, ref, refW, goVal, goMkt, goW, fair, sdW, volume, mw, lf, degr, disc, imb, margin, add, volRisk, priceRisk, alpha, volStress, spotStress, sigV, sigF, rho, years, auto };
     // Monte Carlo: the realised value of one MWh of the contract, 10,000 trajectories
     if (!st.noMC) o.mc = simulate(o, st);
+    // the published price's P10–P90 (scripts/ppa_daily.py): the same futures, but the capture drift set to the measured
+    // spread of the published average's errors (scripts/ppa_bias.py bandSigma: σ(h) = a √h, widened by the Student t of
+    // its n errors) instead of the capacity trend's own, about twice as wide; volume and forward risks unchanged
+    if (o.mc && D.bias && D.bias.bandSigma) {
+      const bs = (D.bias.bandSigma[st.tech] || {})[st.conv === 'all' ? 'all' : 'curt'];
+      if (bs && bs.a > 0 && bs.n > 2) { const z = t90(bs.n - 1) * Math.sqrt(1 + 1 / bs.n); o.bandSig0 = bs.a * z / 1.2816; o.mcBand = simulate(Object.assign({}, o, { sig0: o.bandSig0 }), st); }
+    }
     // Prices of both methods
     // Past discount, as the team's PPA Dashboard does it. 'projected' (default): each delivery year takes the
     // linear trend of the shape discount over the last N years used (3 by default, as in the tool), shifted by
@@ -504,6 +511,8 @@
   // + hedge result) ÷ Σ df × production: what one MWh of the contract earned.
   function rng(seed) { let a = seed >>> 0; return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
   const qtl = (sorted, q) => { const r = q * (sorted.length - 1), lo = Math.floor(r); return sorted[lo] + (sorted[Math.min(sorted.length - 1, lo + 1)] - sorted[lo]) * (r - lo); };
+  // 90th percentile of Student's t with df degrees of freedom (Cornish–Fisher; within 1 % for df ≥ 2)
+  const t90 = df => { const z = 1.2816; return z + (z ** 3 + z) / (4 * df) + (5 * z ** 5 + 16 * z ** 3 + 3 * z) / (96 * df * df); };
   function simulate(o, st) {
     const N = 10000, Y = o.years, T = Y.length, R = rng(42);
     let spare = null; const gauss = () => { if (spare != null) { const v = spare; spare = null; return v; } let u = 0, v = 0; while (!u) u = R(); v = R(); const m = Math.sqrt(-2 * Math.log(u)); spare = m * Math.sin(2 * Math.PI * v); return m * Math.cos(2 * Math.PI * v); };

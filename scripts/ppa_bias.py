@@ -86,6 +86,29 @@ def main():
                 if errs:
                     out['avg4Mae'].setdefault(tech, {}).setdefault(conv, {})[str(h)] = round(float(np.mean(errs)), 2)
     print('avg4Mae', out['avg4Mae'])
+    # the spread of the published average's capture errors, for its P10–P90 band: errors (capture points) of the
+    # corrected 4-method average on the realised delivery years (2022 out), σ(h) = a × √h fitted on all horizons,
+    # with n the number of errors (the pricer widens it with the Student t of n − 1 degrees of freedom).
+    # Walk-forward check 2021–2026 (σ learnt only on errors realised at pricing time): the band holds the realised
+    # value 11 times in 13 for solar, 12 in 13 for wind (target 8 in 10), against 12/13 and 13/13 with the capacity
+    # trend's own spread, used until 28 Oct. 2026 (too wide: σ 4.28 and 3.0 pts per √year against 2.43 and 1.70).
+    out['bandSigma'] = {}
+    for tech in ('solar', 'wind'):
+        for conv in ('curt', 'all'):
+            errs = []
+            for Y in T.RUN_YEARS:
+                if Y > last or Y == 2022:
+                    continue
+                for h in T.HORIZONS:
+                    ps = {k: pred(tech, Y, h, conv, k) for k in T.METHODS}
+                    if any(v is None for v in ps.values()):
+                        continue
+                    c = {k: corr(tech, Y, h, conv, k) if k in ADOPT[tech][conv] else 0.0 for k in T.METHODS}
+                    ms = set.intersection(*[set(p) for p in ps.values()])
+                    errs.append((h, L.score({m: float(np.mean([ps[k][m] - c[k] for k in T.METHODS])) for m in ms}, act[(tech, Y)], conv)['pts'] / 100))
+            if len(errs) >= 3:
+                out['bandSigma'].setdefault(tech, {})[conv] = {'a': round(float(np.sqrt(sum(e * e for _, e in errs) / sum(h for h, _ in errs))), 4), 'n': len(errs)}
+    print('bandSigma', out['bandSigma'])
     for tech, v in out['bias'].items():
         for k, c in v.items():
             print(tech, k, {conv: {h: x['value'] for h, x in hh.items()} for conv, hh in c.items()}, 'applied:', [conv for conv in ('curt', 'all') if k in ADOPT[tech][conv]])
