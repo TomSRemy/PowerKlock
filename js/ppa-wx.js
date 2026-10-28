@@ -106,8 +106,11 @@
     let zs = 0, zw = 0;
     const gauss = () => { let u = 0; while (!u) u = R(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * R()); };
     let week = null;
+    // the forward level of a delivery year: its Cal, or the day-weighted mean of its months' levels when only some are delivered
+    const calOf = (Y, Mo) => { if (!Mo || Mo.length === 12) return monthLevel(Y, 0); let a = 0, n = 0; Mo.forEach(m => { const d = new Date(Date.UTC(Y, m, 0)).getUTCDate(); a += monthLevel(Y, m) * d; n += d; }); return n ? a / n : monthLevel(Y, 0); };
     o.tenor.forEach((Y, yi) => {
-      const capS = capPathFor('solar')(Y), capW = capPathFor('wind')(Y), days = daysOf(Y);
+      const Mo = o.monthsOf ? o.monthsOf(Y) : null;   // a year delivered in part: its months only
+      const capS = capPathFor('solar')(Y), capW = capPathFor('wind')(Y), days = daysOf(Y).filter(d => !Mo || Mo.includes(+d.slice(5, 7)));
       const simsY = [];
       for (let n = 0; n < N; n++) {
         const P = new Float64Array(days.length * 24), V = new Float64Array(days.length * 24);
@@ -132,10 +135,10 @@
             V[k] = (tech === 'S' ? cS * aS.shS[h] : cW * aW.shW[h]) * aDay;
           }
         });
-        // the year averages exactly its Cal
-        const cal = monthLevel(Y, 0); let ps = 0; for (let k = 0; k < P.length; k++) ps += P[k]; const f = cal / (ps / P.length); for (let k = 0; k < P.length; k++) P[k] *= f;
+        // the year averages exactly its Cal (a part year: the average level of its months)
+        const cal = calOf(Y, Mo); let ps = 0; for (let k = 0; k < P.length; k++) ps += P[k]; const f = cal / (ps / P.length); for (let k = 0; k < P.length; k++) P[k] *= f;
         simsY.push({ P, V });
-        if (yi === 0 && n === 0) { const a = days.indexOf(Y + '-06-01'); week = Array.from({ length: 7 * 24 }, (_, k) => ({ p: P[a * 24 + k], v: V[a * 24 + k] })); }
+        if (yi === 0 && n === 0) { const a0 = days.indexOf(Y + '-06-01'), a = a0 >= 0 ? a0 : 0; week = Array.from({ length: 7 * 24 }, (_, k) => ({ p: P[a * 24 + k], v: V[a * 24 + k] })); }
       }
       const capRate = (V, P) => { let num = 0, den = 0, ps = 0, pn = 0; for (let k = 0; k < P.length; k++) { const paid = !pos || P[k] > 0; if (paid || baseAll) { ps += P[k]; pn++; } if (!paid) continue; num += V[k] * P[k]; den += V[k]; } return den && pn ? (num / den) / (ps / pn) : null; };
       simsY.forEach((s, n) => { out[yi].rate[n] = capRate(s.V, s.P); out[yi].rateD[n] = capRate(s.V, simsY[(n + 1) % N].P); let v = 0; for (let k = 0; k < s.V.length; k++) v += s.V[k]; out[yi].vol[n] = v; });
@@ -146,7 +149,7 @@
     if (sm > 0) for (let n = 0; n < N; n++) { const z = gauss() * sm; out.forEach(r => { r.rate[n] += z; }); }
     // per delivery year: correlated and decorrelated capture rates, cannibalisation, spread
     const srt = a => Float64Array.from(a).sort();
-    const years = o.tenor.map((y, i) => { const r = srt(out[i].rate), d = srt(out[i].rateD), cal = monthLevel(y, 0);
+    const years = o.tenor.map((y, i) => { const r = srt(out[i].rate), d = srt(out[i].rateD), cal = calOf(y, o.monthsOf ? o.monthsOf(y) : null);
       return { y, cal, rate: mean(Array.from(r)), rateD: mean(Array.from(d)), cannib: mean(Array.from(r)) - mean(Array.from(d)), p10: quant(r, 0.1), p90: quant(r, 0.9), capture: cal * mean(Array.from(r)) }; });
     // value per MWh over the delivery, trajectory by trajectory (weights of the step-by-step method)
     const W = o.years.reduce((a, r) => a + r.w, 0) || 1;
