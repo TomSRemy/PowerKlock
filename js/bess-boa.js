@@ -67,10 +67,10 @@
       '<div class="boa-div"></div><div class="boa-sec">' + T('Contract structure', 'Structure du contrat') + '</div>' +
       '<div class="boa-pills" id="boa-struct">' + pill('s', 'floor', 'Floor + upside ★', 1) + pill('s', 'toll', T('Full tolling', 'Tolling complet')) + pill('s', 'partial', T('Partial tolling', 'Tolling partiel')) + pill('s', 'merchant', 'Merchant') + '</div>' +
       '<div id="boa-sp">' +
-      '<div id="r-floor">' + row('boa-floor', T('Floor at COD (k€/MW/yr)', 'Floor au COD (k€/MW/an)'), 30, 120, 1, 70, 'k') + '</div>' +
+      '<div id="r-floor">' + row('boa-floor', T('Floor at COD (k€/MW/yr)', 'Floor au COD (k€/MW/an)'), 30, 250, 1, 70, 'k') + '</div>' +
       '<div id="r-step">' + row('boa-step', T('Floor step-down (%/yr)', 'Baisse annuelle du floor (%/an)'), 0, 5, 0.5, 0, '%', 1) + '</div>' +
       '<div id="r-share">' + row('boa-share', T('Developer share of the upside (%)', 'Part de l’upside pour le développeur (%)'), 50, 95, 5, 70, '%') + '</div>' +
-      '<div id="r-toll" hidden>' + row('boa-toll', T('Toll price (k€/MW/yr)', 'Prix du toll (k€/MW/an)'), 60, 120, 1, 87, 'k') + '</div>' +
+      '<div id="r-toll" hidden>' + row('boa-toll', T('Toll price (k€/MW/yr)', 'Prix du toll (k€/MW/an)'), 40, 250, 1, 87, 'k') + '</div>' +
       '<div id="r-pfrac" hidden>' + row('boa-pfrac', T('Tolled fraction (%)', 'Part sous toll (%)'), 20, 80, 5, 60, '%') + '</div></div>' +
       '<div class="boa-div"></div><div class="boa-sec">' + T('Financing · optimistic defaults', 'Financement · valeurs par défaut optimistes') + '</div>' +
       row('boa-capex', 'CAPEX (k€/MW)', 400, 1600, 10, 750, 'k') + row('boa-opex', T('OPEX (k€/MW/yr)', 'OPEX (k€/MW/an)'), 8, 25, 1, 12, 'k') + row('boa-ltv', T('Gearing, LTV (%)', 'Gearing, LTV (%)'), 40, 85, 5, 70, '%') +
@@ -219,6 +219,7 @@
     const bisect = f => { let lo = 0, hi = 400; if (f(hi) < 1.2) return null; for (let k = 0; k < 40; k++) { const m = (lo + hi) / 2; if (f(m) >= 1.2) hi = m; else lo = m; } return hi; };
     const fMin = bisect(F => minDscr(Object.assign({}, p, { floor: F }), 'floor')), tMin = bisect(t => minDscr(Object.assign({}, p, { toll: t }), 'toll'));
     const capW = stacks.mid.slice(0, n).map((r, i) => Math.pow(1 - p.deg, i)), tMax = stacks.mid.slice(0, n).reduce((a, r, i) => a + r.total * capW[i], 0) / capW.reduce((a, b) => a + b, 0);
+    S.be = { fMin, tMin, tMax };
     setTile('boa-t-fmin', fMin == null ? '–' : f1(fMin) + ' k', fMin == null ? 'bad' : (s === 'floor' || s === 'partial') && p.floor >= fMin ? 'ok' : 'warn');
     setTile('boa-t-tmin', tMin == null ? '–' : f1(tMin) + ' k', tMin == null ? 'bad' : tMin <= tMax ? 'ok' : 'bad');
     setTile('boa-t-tmax', f1(tMax) + ' k', tMin != null && tMin <= tMax ? 'ok' : 'bad');
@@ -290,6 +291,17 @@
     root.addEventListener('input', e => { if (e.target.id === 'boa-capex') root.dataset.capexTouched = '1'; }, true);
     root.addEventListener('input', e => { if (/^boa-[lmh]-da-cod$/.test(e.target.id)) root.dataset.daTouched = '1'; }, true);
     live();
+    // a break-even tile applies its value: floor + upside with that floor, or full tolling at that toll
+    const apply = (struct, id, v) => {
+      if (v == null) return;
+      const b = $('boa-struct').querySelector('[data-s="' + struct + '"]'); if (b && S.struct !== struct) b.click();
+      const el = $(id); el.value = Math.min(+el.max, Math.max(+el.min, Math.ceil(v))); update();
+    };
+    [['boa-t-fmin', 'floor', 'boa-floor', 'fMin'], ['boa-t-tmin', 'toll', 'boa-toll', 'tMin'], ['boa-t-tmax', 'toll', 'boa-toll', 'tMax']].forEach(([tid, st, inp, k]) => {
+      const t = $(tid); if (!t) return;
+      t.style.cursor = 'pointer'; t.title = T('Click to use this value', 'Cliquer pour utiliser cette valeur');
+      t.addEventListener('click', () => apply(st, inp, S.be && S.be[k]));
+    });
     $('boa-csv').addEventListener('click', () => {
       if (!S.csv) return;
       const sep = fr() ? ';' : ',', txt = S.csv.map(r => r.map(v => fr() ? String(v).replace('.', ',') : v).join(sep)).join('\n');
