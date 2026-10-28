@@ -328,9 +328,16 @@
 
   // ── controls ──
   function pill(group, v, txt, on) { return `<button type="button" class="cmp-pill${on ? ' on' : ''}" data-${group}="${v}">${txt}</button>`; }
+  // ready-made comparisons: one click sets the series (same handler as the correlation watch)
+  const y1 = y0 + 1;
+  const PRESETS = [[T('Spot France / Allemagne', 'Spot France / Germany'), 'spot:FR;spot:DE_LU'], [T('Spot France / Cal ', 'Spot France / Cal ') + String(y1).slice(2), 'spot:FR;cal:FR:' + y1],
+    [T('Électricité / gaz', 'Power / gas'), 'cal:FR:' + y1 + ';c:ttf'], [T('Gaz / carbone', 'Gas / carbon'), 'c:ttf;c:eua'], [T('Nucléaire disponible / spot', 'Nuclear available / spot'), 'c:fr_nuc_avail;spot:FR'],
+    [T('Cal ', 'Cal ') + String(y1).slice(2) + T(' France / Allemagne', ' France / Germany'), 'cal:FR:' + y1 + ';cal:DE:' + y1]];
   function drawBar() {
     const b = document.getElementById('cmp-bar'); if (!b) return;
-    b.innerHTML = '<div class="cmp-grp" role="group" aria-label="Period">' + [['3M', '3M'], ['6M', '6M'], ['1Y', T('1A', '1Y')], ['3Y', T('3A', '3Y')], ['5Y', T('5A', '5Y')], ['All', T('Tout', 'All')]].map(([v, t]) => pill('per', v, t, !S.from && S.per === v)).join('') + '</div>' +
+    b.innerHTML = '<div class="cmp-grp cmp-presets" role="group" aria-label="Ready-made"><span class="cmp-presets-l">' + T('Tout prêt', 'Ready-made') + '</span>' +
+      PRESETS.filter(([, ids]) => ids.split(';').every(id => CAT.has(id))).map(([l, ids]) => `<button type="button" class="cmp-pill${S.sel.join(';') === ids ? ' on' : ''}" data-pair="${ids}">${esc(l)}</button>`).join('') + '</div>' +
+      '<div class="cmp-grp" role="group" aria-label="Period">' + [['3M', '3M'], ['6M', '6M'], ['1Y', T('1A', '1Y')], ['3Y', T('3A', '3Y')], ['5Y', T('5A', '5Y')], ['All', T('Tout', 'All')]].map(([v, t]) => pill('per', v, t, !S.from && S.per === v)).join('') + '</div>' +
       '<div class="cmp-grp" role="group" aria-label="Scale">' + [['auto', T('Auto', 'Auto')], ['raw', T('Valeurs', 'Values')], ['b100', 'Base 100'], ['pct', '%'], ['z', T('Écart à la moyenne', 'Z-score')]].map(([v, t]) => pill('scale', v, t, S.scale === v)).join('') + '</div>' +
       '<div class="cmp-grp" role="group" aria-label="Chart">' + [['auto', T('Auto', 'Auto')], ['line', T('Courbes', 'Lines')], ['bar', T('Barres mensuelles', 'Monthly bars')], ['scatter', T('Nuage X–Y', 'X–Y scatter')]].map(([v, t]) => pill('type', v, t, S.type === v)).join('') + '</div>' +
       '<div class="cmp-grp" style="margin-left:auto">' + `<button type="button" class="cmp-pill" id="cmp-link">${T('Copier le lien', 'Copy link')}</button><button type="button" class="cmp-pill" id="cmp-csv">CSV</button><button type="button" class="cmp-pill" id="cmp-dash">${T('+ Tableau de bord', '+ Dashboard')}</button>` + '</div>';
