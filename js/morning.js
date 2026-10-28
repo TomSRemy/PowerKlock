@@ -717,6 +717,15 @@ function _mrnCreg() {
   if (!per.options.length) {
     per.innerHTML = [[String(y), _mT('Année ', 'Year ') + y], [(y - 2) + '-' + y, (y - 2) + '–' + y + _mT(' (3 ans)', ' (3 years)')], [(y - 4) + '-' + y, (y - 4) + '–' + y + _mT(' (5 ans)', ' (5 years)')]].map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
     per.addEventListener('change', _mrnCreg);
+    // the current year to date, first, once the regional file says which months it covers (RTE's regional data comes later than the national)
+    fetch(DATA_BASE + 'history/fr_regional_capture.json').then(r => r.ok ? r.json() : null).then(j => {
+      const c = String(y + 1), sh = j && Object.values(j.regions || {}).map(r => r.years && r.years[c] && r.years[c].solar && r.years[c].solar.share).find(Boolean);
+      if (!sh || per.querySelector(`option[value="${c}"]`)) return;
+      let m = 0; sh.forEach((v, i) => { if (v > 0) m = i + 1; }); if (!m) return;
+      const mon = new Date(Date.UTC(+c, m - 1, 15)).toLocaleDateString(_mrnFr() ? 'fr-FR' : 'en-GB', { month: 'long', timeZone: 'UTC' });
+      per.insertAdjacentHTML('afterbegin', `<option value="${c}">${_mT('Année ', 'Year ') + c + _mT(' (à fin ' + mon + ')', ' (to end ' + mon + ')')}</option>`);
+      per.value = c; _mrnCreg();
+    }).catch(() => {});
   }
   const lbl = per.options[per.selectedIndex].text;
   PKW.draw('ren-capture-regions', 'mrn-creg', { tech: 'solar', year: per.value }).then(() => { const e = document.getElementById('mrn-creg-sub'); if (e) e.textContent = lbl + _mT(' · production de chaque région au prix spot français, classée, avec la France', ' · each region’s output on the French day-ahead price, ranked, with France'); });

@@ -218,5 +218,9 @@
  "55": {
   "status": "done",
   "reply": "Fait : la carte du lendemain avant publication (prévision PowerKlock) a maintenant le même style que les autres prévisions du site — courbe bleu clair en pointillés, mention « prévision » en bleu, moyenne en gris — et n’est plus grisée ; le gris reste réservé à « pas encore publié »."
+ },
+ "56": {
+  "status": "done",
+  "reply": "Fait : l’année en cours est maintenant proposée et affichée par défaut sur la carte (solaire et éolien) : « Année 2026 (à fin août) ». Le fichier régional de RTE arrive plus tard que le national (aujourd’hui jusqu’à fin août), d’où la mention ; l’année 2025 complète et les moyennes 3 et 5 ans restent dans le menu."
  }
 }
