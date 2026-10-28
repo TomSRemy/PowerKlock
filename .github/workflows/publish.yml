@@ -44,7 +44,7 @@ jobs:
           else
             echo "busy=no" >> "$GITHUB_OUTPUT"
           fi
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         if: steps.busy.outputs.busy == 'no'
         with: { fetch-depth: 1 }
       - name: Code changed since the published version?
@@ -56,7 +56,7 @@ jobs:
           # compare every top-level entry except data/ (trees are compared by hash, no history needed)
           A=$(git ls-tree HEAD | grep -v -P '\tdata$'); B=$(git ls-tree origin/site | grep -v -P '\tdata$')
           if [ "$A" = "$B" ]; then echo "code=no" >> "$GITHUB_OUTPUT"; else echo "code=yes" >> "$GITHUB_OUTPUT"; fi
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         if: steps.diff.outputs.code == 'yes'
         with: { python-version: '3.12' }
       - name: Tests (code changed)
