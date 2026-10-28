@@ -139,6 +139,10 @@ def m_fpc(t, Y, train, V, conv):
 
 WX_NOISE = {'s': True, 'w': False}    # solar: each hour's price scattered by a residual of the recent years
 WX_DEMAND2 = {'s': False, 'w': True}   # wind: consumption and nuclear drawn from the last two complete years
+# the hour's price is floored at zero: since 2025 most plants stop at negative prices, so the price settles at about zero
+# instead of diving (Jan.–Oct. 2026: 74 % of the hours ≤ 0 € between −1 € and 0); scripts/ppa_floor_test.py, error over
+# 1–3 years in the all-hours convention: solar 9.02 → 8.13, wind 3.85 → 3.83 (the curtailed one does not change)
+WX_FLOOR = True
 # (scripts/ppa_wx_align_test.py, mean error over 1–3 years, curt: solar 3.82 → 2.44 with the noise, wind 2.95 → 2.70
 #  with the two-year demand; the other choice made each worse); js/ppa-wx.js applies the same rule
 
@@ -207,6 +211,8 @@ def m_weather(t, Y, train, V, n_sims):
                 pr = look(g, int(round((Ld[h] - s_ - w_ - nav) / 1000)))
                 if res.get(g):
                     pr *= res[g][R.randrange(len(res[g]))]
+                if WX_FLOOR:
+                    pr = max(pr, 0.0)  # negative hours settle at about zero
                 prs.append(pr)
                 v = hs[h] if t == 's' else hw[h]
                 for ix in (0, m):
