@@ -18,6 +18,8 @@
 // WX_DEMAND2, scripts/ppa_wx_align_test.py: mean error over 1–3 years, curt,
 // solar 3.82 → 2.44 with the residual, wind 2.95 → 2.70 with two years of demand),
 // so the method's bias correction (scripts/ppa_bias.py) is measured on this version
+// The hour's price is floored at zero, as the test bench (scripts/ppa_floor_test.py: most plants stop at
+// negative prices since 2025, the price settles at about zero; all-hours error solar 9.02 → 8.13 €/MWh)
 // Correlated: production and prices of the same simulated year. Decorrelated:
 // production of one year, prices of another. The gap is the cannibalisation.
 // ════════════════════════════════════════════════════════════════════
@@ -137,7 +139,7 @@
             const net = (dem.L[h] - s - w - dem.nav) / 1000, g = summer(m) * 3 + block(h);
             const rs = tech === 'S' ? PC.res[g] : null, noise = rs && rs.length ? rs[Math.floor(R() * rs.length)] : 1;   // the residual: solar only
             const k = di * 24 + h;
-            P[k] = lvl * lookup(PC.T, g, Math.round(net)) * noise;
+            P[k] = Math.max(0, lvl * lookup(PC.T, g, Math.round(net)) * noise);   // floored: plants stop at negative prices
             V[k] = (tech === 'S' ? cS * aS.shS[h] : cW * aW.shW[h]) * aDay;
           }
         });
