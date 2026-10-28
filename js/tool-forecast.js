@@ -87,6 +87,7 @@
   }
 
   async function run() {
+    priceSite();
     const st = $('fc-status'); if (st) st.textContent = 'Fetching the weather forecast…';
     save();
     const base = `latitude=${S.lat}&longitude=${S.lon}&timezone=Europe%2FParis&wind_speed_unit=ms&forecast_days=16`;
@@ -251,6 +252,16 @@
       const la = $('fc-lat'), lo = $('fc-lon'); if (la) la.value = S.lat; if (lo) lo.value = S.lon;
       drawMap(); run();
     });
+  }
+  // the park being priced, recalled at the top of the Price this park tab (its settings live in the first tab)
+  function priceSite() {
+    const el = $('fc-price-site'); if (!el || typeof _fuelKpi !== 'function') return;
+    const fr = !window.PKI18n || PKI18n.lang !== 'en', T = (f, e) => fr ? f : e, n = (v, d) => (+v).toFixed(d).replace('.', fr ? ',' : '.');
+    const c = siteCal();
+    el.innerHTML = _fuelKpi(T('Parc', 'Park'), S.tech === 'wind' ? T('Éolien', 'Wind') : T('Solaire', 'Solar'), '', T('choisi dans Site et prévision', 'set in Site & forecast')) +
+      _fuelKpi(T('Puissance', 'Capacity'), n(S.mw, 1), 'MW', S.inj ? T('injection limitée à ', 'injection capped at ') + n(S.inj, 1) + ' MW' : T('sans limite d’injection', 'no injection limit')) +
+      _fuelKpi(T('Coordonnées', 'Coordinates'), n(S.lat, 2) + ', ' + n(S.lon, 2), '', T('zone de prix ', 'price zone ') + S.zone) +
+      _fuelKpi(T('Calage', 'Calibration'), c ? T('oui', 'yes') : T('non', 'no'), '', c ? T('sur la production mesurée du site', 'on the site’s metered output') : T('modèle générique', 'generic model'));
   }
   function wire() {
     const page = $('page-fcst'); if (!page || page.dataset.wired) return; page.dataset.wired = '1';
