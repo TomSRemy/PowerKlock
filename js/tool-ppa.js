@@ -154,11 +154,12 @@
     for (const y of o.tenor) {
       let num = 0, den = 0;
       const q = quotedShape(y);   // the quoted months ÷ Cal, else the day-ahead's historical month ÷ year ratios
+      let rn = 0, hn = 0; for (let m = 1; m <= 12; m++) { const dm = new Date(Date.UTC(y, m, 0)).getUTCDate(); rn += ratio[m] * dm; hn += dm; } rn /= hn;
       for (let m = 1; m <= 12; m++) {
         const e = f[`${y}-${String(m).padStart(2, '0')}`];
         if (!e || e.regional == null || ratio[m] == null) return null;
         const w = sh(m) * (conv === 'curt' ? e.paid : 1);
-        num += w * (q ? q[m - 1] : ratio[m]) * (e.regional + gap); den += w;
+        num += w * (q ? q[m - 1] : ratio[m] / rn) * (e.regional + gap); den += w;
       }
       if (!(den > 0)) return null;
       out.push({ y, capture: num / den });
@@ -803,7 +804,7 @@
     // year table
     $('pp-years').innerHTML = `<div style="overflow-x:auto"><table class="fuel-table pp-ptab"><thead><tr><th style="text-align:left">Year</th><th>Forward</th><th>Shape disc.</th><th>Capture</th><th>Neg. hours</th><th>MWh${S.conv === 'pos' ? ' paid' : ''}</th><th>P&L k€</th></tr></thead><tbody>` +
       o.years.map(r => `<tr><td style="text-align:left">${r.y}</td><td>${f2(r.fwd)}</td><td>${pc(r.fsd)} <span class="pp-hint">± ${(r.sig * 100).toFixed(1)}</span></td><td>${f2(r.cp)}</td><td title="${r.negShare != null ? (r.negShare * 100).toFixed(1) + ' % of the output at prices ≤ 0' : ''}">${f0(r.negH)}</td><td>${f0(r.ev)}</td><td class="${r.pnlK >= 0 ? 'pp-pos' : 'pp-neg'}">${sgn(r.pnlK)}</td></tr>`).join('') +
-      `</tbody></table></div><div class="fuel-note">Shape discount ${MODEL_T[o.model]}, from ${o.lastYr} (${pc(o.proj(o.lastYr))}, ${o.useAsset ? 'asset' : 'national'}); ± = 1 σ of the projection. Negative hours projected with the solar build-out${S.conv === 'pos' ? '; with the PPA Dashboard convention the output at prices ≤ 0 is not paid, so the volume paid shrinks as they grow' : ''}. P&L = production × (capture − imbalance + GO − PPA price), central case.</div>`;
+      `</tbody></table></div><div class="fuel-note">${o.years.some(r => r.kq != null && Math.abs(r.kq - 1) > 0.0005) ? (FRDOC() ? `Facteur des mois cotés k (le niveau lu mois par mois, comme le reste de l’outil) : ${o.years.map(r => r.y + ' ' + (r.kq || 1).toFixed(3)).join(', ')} ; valeur captée = forward × k × capture. ` : `Quoted-month factor k (the level read month by month, as the rest of the tool does): ${o.years.map(r => r.y + ' ' + (r.kq || 1).toFixed(3)).join(', ')}; capture value = forward × k × capture. `) : ''}Shape discount ${MODEL_T[o.model]}, from ${o.lastYr} (${pc(o.proj(o.lastYr))}, ${o.useAsset ? 'asset' : 'national'}); ± = 1 σ of the projection. Negative hours projected with the solar build-out${S.conv === 'pos' ? '; with the PPA Dashboard convention the output at prices ≤ 0 is not paid, so the volume paid shrinks as they grow' : ''}. P&L = production × (capture − imbalance + GO − PPA price), central case.</div>`;
     // P&L vs percentile
     _fuelChart('pp-pnl', { type: 'line', data: { labels: o.pcts.map(p => 'P' + p), datasets: [
       { label: 'Annual P&L (k€)', data: o.pnlCurve.map(v => Math.round(v)), borderColor: '#FFFFFF', borderWidth: 2, pointRadius: 0, fill: { target: { value: 0 }, above: 'rgba(20,211,169,.18)', below: 'rgba(237,105,101,.22)' } },
