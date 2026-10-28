@@ -1381,6 +1381,23 @@
     host.innerHTML = `<div style="overflow-x:auto"><table class="fuel-table"><thead>${head}</thead><tbody>${sep(fr ? 'Par année' : 'By year')}${rows.map(tr).join('')}${prods.length ? sep(fr ? 'Par produit coté' : 'By quoted product') + prods.map(tr).join('') : ''}</tbody></table></div>` +
       (o.m4 ? '' : `<div class="fuel-note">${fr ? 'Simulation météo : ouvrez son onglet ou Comparaison et prix pour la calculer.' : 'Weather simulation: open its tab or Compare & price to compute it.'}</div>`);
   }
+  // What the peak / base forwards imply for the capture rate (scripts/build_mkt_implied.py), in observation: not in the
+  // average of methods, kept daily to be compared with what is realised as months and quarters deliver
+  let MKT = null;
+  const mktLoad = () => MKT || (MKT = fetch(DATA_BASE + 'history/mkt_implied.json').then(r => r.ok ? r.json() : null).catch(() => null));
+  function renderMkt() {
+    const host = $('pp-mkt'); if (!host) return;
+    mktLoad().then(j => {
+      if (!j || !j.latest) { host.innerHTML = ''; return; }
+      const fr = FRDOC(), row = j.days[j.latest], ys = Object.keys(row).sort(), pc = v => v == null ? '–' : (fr ? (v * 100).toFixed(1).replace('.', ',') : (v * 100).toFixed(1)) + ' %';
+      const n3 = v => fr ? v.toFixed(2).replace('.', ',') : v.toFixed(2), R = j.realised || {}, dt = new Date(j.latest + 'T12:00:00Z').toLocaleDateString(fr ? 'fr-FR' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+      host.innerHTML = `<div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">${fr ? 'Année' : 'Year'}</th><th>${fr ? 'Peak ÷ base' : 'Peak ÷ base'}</th><th>${fr ? 'Capture solaire implicite' : 'Implied solar capture'}</th><th>${fr ? 'Capture éolienne implicite' : 'Implied wind capture'}</th><th>${fr ? 'Trimestres peak cotés' : 'Peak quarters quoted'}</th></tr></thead><tbody>` +
+        (R.year ? `<tr><td style="text-align:left">${R.year} ${fr ? '(réalisé)' : '(realised)'}</td><td>–</td><td>${pc(R.solar)}</td><td>${pc(R.wind)}</td><td>–</td></tr>` : '') +
+        ys.map(y => `<tr><td style="text-align:left">${y}</td><td>${n3(row[y].pbRatio)}</td><td><b>${pc(row[y].solar)}</b></td><td><b>${pc(row[y].wind)}</b></td><td>${row[y].quarters} / 4</td></tr>`).join('') + '</tbody></table></div>' +
+        `<div class="fuel-note">${fr ? `Forwards France du ${dt}, séparés en heures pleines (lun–ven 8 h–20 h) et creuses, par trimestre quand ils sont cotés ; production nationale ; × la forme des prix à l’intérieur des blocs mesurée en ${j.ratio.year} (la même formule sur les prix réalisés surestimait la capture solaire, d’un rapport passé de 0,90 en 2016 à ${n3(j.ratio.solar)} en ${j.ratio.year}). Capture sur toutes les heures. Repère seulement, hors de la moyenne ; les années sans trimestres peak cotés ignorent la saison et sont moins fiables. Enregistré chaque jour pour être comparé au réalisé.`
+          : `France forwards of ${dt}, split into peak (Mon–Fri 8:00–20:00) and off-peak hours, by quarter when quoted; national output; × the shape of prices inside the blocks measured in ${j.ratio.year} (the same formula on realised prices overstated solar capture, by a ratio that went from 0.90 in 2016 to ${n3(j.ratio.solar)} in ${j.ratio.year}). Capture over all hours. A reference only, not in the average; years without peak quarters quoted ignore the season and are less reliable. Kept every day to be compared with what is realised.`}</div>`;
+    });
+  }
   function renderCompare(o) {
     const host = $('pp-compare'); if (!host) return;
     const m3c = o.m3, mc = o.mc;
@@ -1432,6 +1449,7 @@
     })();
     renderProducts(o);
     renderFanM(o);
+    renderMkt();
     renderVsActual();
     const m3 = o.m3, m4 = o.m4, Y = o.years, a = Y[0], z = Y[Y.length - 1];
     const col = (lbl, cur) => `<th${cur ? ' class="pp-cur"' : ''}>${lbl}${cur ? ' ✓' : ''}</th>`;
