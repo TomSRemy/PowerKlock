@@ -18,7 +18,7 @@
 (function () {
   'use strict';
   const $ = id => document.getElementById(id);
-  const S = { useP50: false, tech: 'solar', lat: 49.44, lon: 1.10, mw: 10, tilt: 30, az: 0, lossS: 14, hub: 120, cls: 'medium', lossW: 12, zone: 'FR', calFr: true, curt: false, cal: {}, inj: '', p50: '', p50cache: {} };
+  const S = { useP50: false, tech: 'solar', lat: 49.44, lon: 1.10, mw: 10, tilt: 30, az: 0, lossS: 14, hub: 120, cls: 'medium', lossW: 12, zone: 'FR', calFr: false, curt: false, cal: {}, inj: '', p50: '', p50cache: {} };
   try { Object.assign(S, JSON.parse(localStorage.getItem('pk-fcst') || '{}')); } catch (_) {}
   const save = () => { try { localStorage.setItem('pk-fcst', JSON.stringify(S)); } catch (_) {} };
   const f1 = v => v == null || !isFinite(v) ? '–' : v.toLocaleString('en-GB', { minimumFractionDigits: 1, maximumFractionDigits: 1 });

@@ -607,7 +607,8 @@ async function _mrnTiles2(el) {
       if (ex != null) t(_mT('Échanges', 'Exchanges'), _mT('Solde à ', 'Balance at ') + hh, _mN(Math.abs(ex) / 1000, 1), 'GW', ex < 0 ? _mT('la France exporte', 'France exports') : _mT('la France importe', 'France imports'), day('exchanges', v => -v), '#7FC8F8');
     }
   }
-  host.innerHTML = T.join('');
+  // just after midnight RTE has nothing for the new day yet: say so instead of leaving the block empty
+  host.innerHTML = T.length ? T.join('') : '<div class="no-data-msg">' + _mT('Pas encore de données RTE pour aujourd’hui (le premier quart d’heure arrive vers 00:30).', 'No RTE data for today yet (the first quarter-hour comes around 00:30).') + '</div>';
 }
 
 // ── the next 4 weeks: weather against normal week by week, gas storage against its winter mark, month-ahead forward ──
