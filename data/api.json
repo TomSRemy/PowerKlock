@@ -1,6 +1,6 @@
 {
  "name": "PowerKlock data API",
- "updated": "2026-10-28T04:05:30Z",
+ "updated": "2026-10-28T10:51:25Z",
  "usage": "Plain HTTPS GET, JSON, no key. Cite the source of each dataset. Times are Paris delivery days unless stated.",
  "datasets": [
   {
@@ -33,7 +33,7 @@
    "content": "Per zone, every day: average, min, max, negative hours, peak / off-peak, rolling averages.",
    "refresh": "daily",
    "source": "ENTSO-E Transparency Platform",
-   "sizeKB": 18851
+   "sizeKB": 18858
   },
   {
    "url": "https://tomsremy.github.io/PowerKlock/data/history/fr_prices/{YYYY}.json",
@@ -97,7 +97,7 @@
    "content": "Installed capacity by technology and year, per country.",
    "refresh": "monthly",
    "source": "Energy-Charts (Fraunhofer ISE) — CC BY 4.0",
-   "sizeKB": 15
+   "sizeKB": 16
   },
   {
    "url": "https://tomsremy.github.io/PowerKlock/data/map/{YYYY-MM-DD}.json",
