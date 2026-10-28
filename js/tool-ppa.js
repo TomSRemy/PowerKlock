@@ -58,7 +58,7 @@
     // GO: latest Commerg mid per production year (AIB renewable)
     const go = {};
     goCsv.split(/\r?\n/).slice(1).forEach(l => { const c = l.split(','); if (c.length < 8 || !/Renewable/i.test(c[4])) return; const bid = parseFloat(c[6]), ask = parseFloat(c[7]); const mid = isFinite(bid) && isFinite(ask) ? (bid + ask) / 2 : isFinite(bid) ? bid : null; if (mid != null && (!go[c[5]] || c[1] >= go[c[5]].d)) go[c[5]] = { d: c[1], v: mid }; });
-    // installed capacity (GW) by year, Energy-Charts
+    // installed capacity (GW) by year: RTE (ODRÉ) for French solar and wind, Energy-Charts otherwise (data/history/capacity.json)
     const fr = capa && capa.countries && capa.countries.FR, capGW = { solar: {}, wind: {} };
     if (fr) fr.years.forEach((y, i) => { const t = fr.types; const s = t['Solar AC'] && t['Solar AC'][i]; const w = (t['Wind onshore'] && t['Wind onshore'][i] || 0) + (t['Wind offshore'] && t['Wind offshore'][i] || 0); if (s) capGW.solar[y] = s; if (w) capGW.wind[y] = w; });
     // forward volatility: France Cal+1 daily settlements
@@ -1388,7 +1388,7 @@ ${euDoc(o)}
 <h4>P&L</h4>
 <p>Everywhere on the page: production × (capture price − imbalance + GO − PPA price). Earlier versions left the imbalance and GO out of the P&L.</p>
 <h4>Data</h4>
-<p>RTE éCO2mix (national production, 15 min) · ENTSO-E day-ahead prices · Energy-Charts installed capacity · PPE3 targets · France Cal forwards and Cal+1 history (market data) · Commerg GO mid prices (AIB renewable). Nothing you load leaves the browser.</p>
+<p>RTE éCO2mix (national production, 15 min) · ENTSO-E day-ahead prices · installed capacity: RTE (ODRÉ) for France, Energy-Charts for the neighbours · PPE3 targets · France Cal forwards and Cal+1 history (market data) · Commerg GO mid prices (AIB renewable). Nothing you load leaves the browser.</p>
 <h4>Proposed updates</h4>
 <ul>
 <li><b>Hourly price forward curve.</b> Build hourly prices from the Cal forwards and a shape (month × day type × hour, with a solar-hour discount growing with capacity) and price the asset's profile on it, instead of one shape discount per year. Most rigorous; needs the shape calibration.</li>
