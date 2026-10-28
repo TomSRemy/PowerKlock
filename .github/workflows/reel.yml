@@ -24,9 +24,9 @@ jobs:
         run: |
           [ "$(TZ=Europe/Paris date +%z)" = "+0100" ] && WANT="0 7 * * *" || WANT="0 6 * * *"
           if [ "${{ github.event_name }}" = "schedule" ] && [ "${{ github.event.schedule }}" != "$WANT" ]; then echo "run=false" >> "$GITHUB_OUTPUT"; else echo "run=true" >> "$GITHUB_OUTPUT"; fi
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         if: steps.due.outputs.run == 'true'
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         if: steps.due.outputs.run == 'true'
         with:
           python-version: '3.12'
@@ -38,7 +38,7 @@ jobs:
       - name: Record
         if: steps.due.outputs.run == 'true'
         run: python scripts/record_reel.py --lang fr
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         if: steps.due.outputs.run == 'true'
         with:
           name: reel
