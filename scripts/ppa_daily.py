@@ -15,7 +15,8 @@ Writes data/history/ppa_benchmark.json:
    fpc = forward shape, wx = weather simulation, eu = European price model (from 2026-10-28),
    blend = mean of build, fpc and wx, blend4 = average of build, fpc, wx and eu weighted by the inverse of their past error for solar, equal for wind
    (data/history/ppa_weights.json; from 2026-10-28),
-   lo / hi = the capacity trend's price at 10 % and 90 % of its 10,000 simulated futures (P10–P90), moved by
+   lo / hi = the capacity trend's price at 10 % and 90 % of 10,000 simulated futures (P10–P90) whose capture drift is
+             the measured spread of the published average's errors (since 28 Oct. 2026: tool-ppa.js o.mcBand), moved by
    ppa − build so the band sits around the published price,
    ref = forward baseload of the tenor, go = guarantee of origin, imb = imbalance)
 
@@ -67,8 +68,9 @@ def run(rebuild=None):
                 const m = [o.ppaBuild, o.ppaFpc, o.ppaWx].filter(v => v != null && isFinite(v));
                 const m4 = [o.ppaBuild, o.ppaFpc, o.ppaWx, o.ppaEu].filter(v => v != null && isFinite(v));
                 let lo = null, hi = null;
-                if (o.mc && o.mc.Us && o.mc.Us.length) {
-                  const u = Float64Array.from(o.mc.Us).sort(), q = a => u[Math.min(u.length - 1, Math.max(0, Math.round(a * (u.length - 1))))];
+                const mcB = o.mcBand || o.mc;   // the band's futures: capture drift = the published average's measured spread
+                if (mcB && mcB.Us && mcB.Us.length) {
+                  const u = Float64Array.from(mcB.Us).sort(), q = a => u[Math.min(u.length - 1, Math.max(0, Math.round(a * (u.length - 1))))];
                   const adj = - o.refW * (o.add || 0) / 100 - o.imb + o.goW - o.margin;
                   lo = q(0.10) + adj; hi = q(0.90) + adj;
                 }
