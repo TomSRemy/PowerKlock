@@ -2790,8 +2790,9 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
           <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
         <div class="hist-section-body open" id="hs-body-fc-price">
+<div class="kpi-strip fuel-kpis" id="fc-price-site"></div>
 <div class="fc-opts"><button type="button" class="pk-btn-primary" id="fc-hist-btn">Build the park’s history (ERA5, 2005 → last year)</button><button type="button" class="pk-btn-ghost" id="fc-hist-send" hidden>Price it in the PPA pricer →</button><label class="fuel-toolbar-lbl" title="By default the level comes from the model with the single-park factor; the annex P50s of four metered parks were 8–17 % below their real output"><input type="checkbox" id="fc-hist-p50"> level from the P50</label><button type="button" class="pk-btn-ghost" id="fc-hist-pptx" hidden title="The park on a few slides: output P50/P90, capture rate, and the prices from the PPA pricer and the M0 contract when they were run">⤓ Park sheet (PowerPoint)</button></div>
-<div class="cf-status" id="fc-hist-status">Uses the site above: coordinates, capacity, panels or turbine, injection limit, P50 if entered, and the metered output if loaded for calibration.</div>
+<div class="cf-status" id="fc-hist-status">Uses the park set in the Site & forecast tab (above): coordinates, capacity, panels or turbine, injection limit, P50 if entered, and the metered output if loaded for calibration.</div>
 <div id="fc-hist"></div>
         </div>
       </div>
