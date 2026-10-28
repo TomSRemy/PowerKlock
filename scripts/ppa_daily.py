@@ -144,9 +144,15 @@ def redefine():
     days = []
     for d in todo:
         ys = j['days'][d].get('tenor', '').split('-')
-        by = {y: dict(zip(ch[y]['dates'], ch[y]['values'])) for y in ys if y in ch}
-        if len(by) == len(ys) and all(d in v for v in by.values()):
-            days.append([d, {y: by[y][d] for y in by}])
+        # each Cal's last settlement on or before the day (a weekend run has none of its own)
+        last = {}
+        for y in ys:
+            if y in ch:
+                ok = [(t, v) for t, v in zip(ch[y]['dates'], ch[y]['values']) if t <= d and v is not None]
+                if ok:
+                    last[y] = ok[-1][1]
+        if len(last) == len(ys):
+            days.append([d, last])
     print('recomputing', len(days), 'of', len(todo), 'days without the 4-method average')
     got, errs = run(days) if days else ({}, [])
     for d, v in (got.get('rebuilt') or {}).items():
