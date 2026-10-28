@@ -91,7 +91,7 @@ model, today trained with 2022 — without it, 2024-2026 error 6.71 → 8.18 €
 (all hours); (c) the 2022 slide mockup (`docs/maquettes/diapo_2022.png` on the pricer branch): solar 2022
 capture 104.6 % = season effect 1.080 × hour-of-day effect 0.969 — the year's price peak fell in summer.
 
-### 2026-10-28 08:30 · bridge-cse (Tom: « la vision forward, c'est pas ça ailleurs dans l'outil »)
+### 2026-10-28 07:00 · bridge-cse (Tom: « la vision forward, c'est pas ça ailleurs dans l'outil »)
 
 **The cause.** The common framework of the methods deck (slide « Le cadre commun », presented on 26 Oct.) says
 value of a MWh = **month level** (forward) × month shape × paid share, and the rest of the tool reads the forward
@@ -113,7 +113,7 @@ the flat Cal; the European model took the Cal × the day-ahead's *historical* mo
 | 2029 | 62.51 | Cal only quoted: same | |
 
 **Which is right?** As a *forecast* of the seasonal shape, the quotes do worse than history (Q4 Y−1 quarter
-quotes vs realised, 2023–2026: mean error solar 7.6 vs 4.8 pts, wind 5.3 vs 2.7). As a *price*, the quoted
+quotes vs realised, complete years 2023–2025: mean error solar 6.1 vs 4.3 pts, wind 3.5 vs 1.8). As a *price*, the quoted
 months are what a buyer can lock today by hedging month by month: the market value of the profile. For a PPA
 price, I recommend the quoted months everywhere, as the framework says.
 
