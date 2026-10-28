@@ -366,6 +366,47 @@ def calendar(Y):
 _DI = {}
 
 
+# demand (consumption, nuclear) taken from the same kind of day of the demand year: weekday, Saturday, Sunday or French
+# public holiday (counted as a Sunday), the nearest such day within ±3 days of the same date; off = the same date
+DEMAND_CAL = {'on': True}   # scripts/ppa_calendar_test.py: error over 1–3 yrs, curt, solar 2.55 → 2.49, wind equal
+
+
+def _easter(y):
+    a, b, c = y % 19, y // 100, y % 100
+    d, e = b // 4, b % 4
+    g = (8 * b + 13) // 25
+    h = (19 * a + b - d - g + 15) % 30
+    i, k = c // 4, c % 4
+    l_ = (32 + 2 * e + 2 * i - h - k) % 7
+    m = (a + 11 * h + 22 * l_) // 451
+    mo = (h + l_ - 7 * m + 114) // 31
+    return date(y, mo, (h + l_ - 7 * m + 114) % 31 + 1)
+
+
+def day_kind(d):
+    """0 weekday, 1 Saturday, 2 Sunday or French public holiday"""
+    dd = d if isinstance(d, date) else date.fromisoformat(str(d)[:10])
+    e = _easter(dd.year)
+    hol = {(1, 1), (5, 1), (5, 8), (7, 14), (8, 15), (11, 1), (11, 11), (12, 25)}
+    if (dd.month, dd.day) in hol or dd in (e + timedelta(days=1), e + timedelta(days=39), e + timedelta(days=50)):
+        return 2
+    wd = dd.weekday()
+    return 0 if wd < 5 else (1 if wd == 5 else 2)
+
+
+def demand_row(dmd, di, d):
+    """row of the demand year for day d of the delivery year"""
+    k = di.get(doy(d))
+    if not DEMAND_CAL['on'] or k is None:
+        return k
+    want = day_kind(d)
+    for off in (0, -1, 1, -2, 2, -3, 3):
+        j = di.get(doy(d) + off)
+        if j is not None and day_kind(dmd['days'][j]) == want:
+            return j
+    return k
+
+
 def by_doy(a, key=None):
     """{day of year: row} of a past year's array (cached)"""
     k = id(a)
@@ -391,7 +432,7 @@ def assemble(Y, days, weather_src, demand_year, capY):
             cs, cw = cap(c, 's', wy) or 1, cap(c, 'w', wy) or 1
             S[i] = a[pre + 's'][j] / (cs * 1000) * capY[c]['s'] * 1000
             Wd[i] = a[pre + 'w'][j] / (cw * 1000) * capY[c]['w'] * 1000
-            k = di.get(doy(d))
+            k = demand_row(dmd, di, d)
             if k is None:
                 k = min(di.values(), key=lambda q: abs(int(dmd['doy'][q]) - doy(d)))
             L[i] = dmd[pre + 'l'][k]; N[i] = dmd[pre + 'n'][k]
