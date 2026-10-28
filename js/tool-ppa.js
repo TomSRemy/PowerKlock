@@ -26,7 +26,7 @@
   const thisYear = () => +(typeof pkTodayISO === 'function' ? pkTodayISO() : new Date().toISOString()).slice(0, 4);
   const nowFrac = () => { const d = new Date(); const y = d.getUTCFullYear(); return y + (d - Date.UTC(y, 0, 1)) / (365.25 * 864e5); };
   // null = automatic value
-  const S = { tech: 'solar', years: null, pct: 74, pdMode: 'projected', pdYears: 3, tenorStart: null, tenorEnd: null, m0: 1, m1: 12, fwd: {}, method: 'build', model: 'capacity', conv: 'curt', hedge: 'hedged',
+  const S = { curtPct: 50, tech: 'solar', years: null, pct: 74, pdMode: 'projected', pdYears: 3, tenorStart: null, tenorEnd: null, m0: 1, m1: 12, fwd: {}, method: 'build', model: 'capacity', conv: 'curt', hedge: 'hedged',
     mw: null, volume: null, degr: null, alpha: null, imb: null, go: null, margin: null, disc: null, add: null, volRisk: null, priceRisk: null,
     mcVol: null, mcFwd: null, mcSd: null, rho: null, volStress: null, spotStress: null, asset: null, assetName: '', basis: 'asset' };
   let D = null;   // reference data
@@ -282,6 +282,22 @@
 
   async function compute(st = S) {
     await load();
+    // Partial stop at prices ≤ 0 (contract parameter, decided 27 Oct. 2026): a share k of the output at those hours is
+    // stopped and not paid, the rest runs and is paid the negative price. Each method is priced with full stop and with
+    // no stop; its price per paid MWh is the blend of the two revenues over the paid volume:
+    //   p = ((1 − k) × p_all + k × p_stop × (1 − s)) ÷ (1 − k × s),  s = share of the output at prices ≤ 0 (weighted over the tenor)
+    // The charts and tables show the full-stop case.
+    if (st.conv === 'part') {
+      const k = clamp((st.curtPct == null || st.curtPct === '' ? 50 : +st.curtPct) / 100, 0, 1);
+      const oc = await compute(Object.assign({}, st, { conv: 'curt' })), oa = await compute(Object.assign({}, st, { conv: 'all' }));
+      const ns = oc.years.reduce((a, r) => a + r.wt * (r.negShare || 0), 0);
+      const mix = (pc, pa) => pc == null || pa == null || !isFinite(pc) || !isFinite(pa) ? null : ((1 - k) * pa + k * pc * (1 - ns)) / (1 - k * ns);
+      const keys = ['ppaBuild', 'ppaFpc', 'ppaWx', 'ppaEu', 'ppaPct', 'ppa'];
+      oc.partial = { k, ns, stop: Object.fromEntries(keys.map(x => [x, oc[x]])), run: Object.fromEntries(keys.map(x => [x, oa[x]])) };
+      keys.forEach(x => { oc[x] = mix(oc[x], oa[x]); });
+      oc.st = st;
+      return oc;
+    }
     const nat = nationalYears(st);
     const ast = st.asset ? (await assetYears(st)) : null;
     const useAsset = ast && ast.length >= 1 && st.basis === 'asset';
@@ -542,7 +558,7 @@
     'pp-file': 'Hourly or 15-minute production of the asset (CSV or Excel). The price then reflects this asset; without it the national profile is used.',
     'pp-model': 'How the discount is carried into the future: with the installed capacity (PPE3 targets), flat at the last year, or a trend.',
     'pp-pct': 'Past-discount method only: which percentile of the past discounts is used. Projected mode: the trend is shifted by this percentile minus the median. Higher = more cautious.',
-    'pp-conv': 'Curtailed: the asset stops when the price is ≤ 0 €; that output is neither produced nor paid, and the forward (Cal) still settles on every hour. No curtailment: every hour is produced and paid, negative prices included. PPA Dashboard convention: the team’s former rule, kept to compare.',
+    'pp-conv': 'Curtailed: the asset stops when the price is ≤ 0 €; that output is neither produced nor paid, and the forward (Cal) still settles on every hour. No curtailment: every hour is produced and paid, negative prices included. Partial stop: only the share entered stops (for instance the parks under the stop obligation), the rest runs and is paid the negative price. PPA Dashboard convention: the team’s former rule, kept to compare.',
     'pp-alpha': 'The chance of losing money you accept. Lower = a more cautious price and a bigger risk premium.',
     'pp-hedge': 'Whether the expected volume is sold forward at the Cal price. Hedged: only the volume and profile risks remain.',
     'pp-imb': 'Cost of forecast errors per MWh produced. Default: national estimate (forecast error × gap between imbalance and spot prices).',
@@ -568,7 +584,7 @@
   };
 
   // input id → state key; an empty field takes the automatic value
-  const FIELDS = { 'pp-t0': 'tenorStart', 'pp-t1': 'tenorEnd', 'pp-mw': 'mw', 'pp-volume': 'volume', 'pp-degr': 'degr', 'pp-alpha': 'alpha', 'pp-imb': 'imb', 'pp-go': 'go', 'pp-margin': 'margin',
+  const FIELDS = { 'pp-curtpct': 'curtPct', 'pp-t0': 'tenorStart', 'pp-t1': 'tenorEnd', 'pp-mw': 'mw', 'pp-volume': 'volume', 'pp-degr': 'degr', 'pp-alpha': 'alpha', 'pp-imb': 'imb', 'pp-go': 'go', 'pp-margin': 'margin',
     'pp-disc': 'disc', 'pp-add': 'add', 'pp-volrisk': 'volRisk', 'pp-pricerisk': 'priceRisk', 'pp-mcvol': 'mcVol', 'pp-mcfwd': 'mcFwd', 'pp-mcsd': 'mcSd', 'pp-rho': 'rho', 'pp-vs': 'volStress', 'pp-ss': 'spotStress' };
   function renderAuto(o) {
     Object.entries(FIELDS).forEach(([id, k]) => {
@@ -1688,14 +1704,25 @@ ${FRDOC() ? `<p>RTE éCO2mix (production nationale, 15 min) · prix day-ahead EN
   }
 
   let busy = false, again = false;
+  // the partial stop, said under the price: the share stopped, the two cases blended, the charts showing the full stop
+  function partialNote(o) {
+    let el = $('pp-partial-note');
+    if (!o.partial) { if (el) el.remove(); return; }
+    const st = $('pp-status'); if (!el && st) { el = document.createElement('div'); el.id = 'pp-partial-note'; el.className = 'fuel-note'; st.after(el); }
+    if (!el) return;
+    const P = o.partial, fr = FRDOC(), n = (v, d) => v == null || !isFinite(v) ? '–' : (+v).toFixed(d).replace('.', fr ? ',' : '.');
+    el.innerHTML = fr ? `<b>Arrêt partiel aux prix ≤ 0 :</b> ${n(P.k * 100, 0)} % de la production de ces heures s’arrête (non payée), le reste tourne et touche le prix négatif ; ${n(P.ns * 100, 1)} % de la production tombe à ces heures sur le ténor. Chaque méthode mélange ses deux prix : arrêt total ${n(P.stop.ppa, 2)} €/MWh, sans arrêt ${n(P.run.ppa, 2)} €/MWh → <b>${n(o.ppa, 2)} €/MWh</b>, pondéré par les volumes payés. Les graphiques et tableaux montrent le cas d’arrêt total ; la précision mesurée est celle de l’arrêt total.`
+      : `<b>Partial stop at prices ≤ 0:</b> ${n(P.k * 100, 0)} % of the output at those hours stops (not paid), the rest runs and is paid the negative price; ${n(P.ns * 100, 1)} % of the output falls in those hours over the tenor. Each method blends its two prices: full stop ${n(P.stop.ppa, 2)} €/MWh, no stop ${n(P.run.ppa, 2)} €/MWh → <b>${n(o.ppa, 2)} €/MWh</b>, weighted by the paid volumes. Charts and tables show the full-stop case; the measured precision is the full-stop one.`;
+  }
   async function run() {
     if (busy) { again = true; return; }
     busy = true;
+    const cpf = $('pp-curtpct-field'); if (cpf) cpf.hidden = S.conv !== 'part';
     try { await load(); const o = await compute();
       if (o.missing) { S.last = null; renderForwards(o); renderYears(o); renderAuto(o); try { renderMarket(o); } catch (e) { console.warn('[ppa] market', e); }
         $('pp-status').innerHTML = `<b>No market price for Cal ${o.missing.join(', ')}.</b> Enter your forward for ${o.missing.length > 1 ? 'these years' : 'this year'} (step 2), or end the delivery in ${o.missing[0] - 1}. Nothing is priced until then.`;
         $('pp-kpis').innerHTML = ''; $('pp-build').innerHTML = ''; busy = false; if (again) { again = false; run(); } return; }
-      S.last = o; renderForwards(o); render(o); renderScen(); document.dispatchEvent(new CustomEvent('pk-ppa-run')); try { renderMarket(o); } catch (e) { console.warn('[ppa] market', e); } try { renderMC(o); } catch (e) { console.warn('[ppa] mc', e); } $('pp-status').textContent = ''; }
+      S.last = o; renderForwards(o); render(o); partialNote(o); renderScen(); document.dispatchEvent(new CustomEvent('pk-ppa-run')); try { renderMarket(o); } catch (e) { console.warn('[ppa] market', e); } try { renderMC(o); } catch (e) { console.warn('[ppa] mc', e); } $('pp-status').textContent = ''; }
     catch (e) { console.warn('[ppa]', e); $('pp-status').textContent = 'Pricing failed: ' + e.message; }
     busy = false; if (again) { again = false; run(); }
   }
