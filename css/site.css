@@ -3583,3 +3583,7 @@ html[data-theme="light"] #page-boa .boa-f3 code { color: #1D4E89; } html[data-th
 .pp-offer-out { display:flex; flex-wrap:wrap; gap:6px 18px; font-size:13px; color:var(--text3); }
 .pp-offer-out b { font:700 15px 'JetBrains Mono',monospace; color:var(--text); }
 .pp-offer-h { font-size:12px; }
+
+/* comparator: ready-made comparisons */
+.cmp-presets { flex-basis:100%; flex-wrap:wrap; }
+.cmp-presets-l { font:700 10px 'JetBrains Mono',monospace; letter-spacing:.08em; text-transform:uppercase; color:var(--text3); margin-right:4px; align-self:center; }
