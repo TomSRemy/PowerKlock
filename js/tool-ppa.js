@@ -52,6 +52,8 @@
   // ── Reference data ────────────────────────────────────────────────
   async function load() {
     if (D) return D;
+    // the methods' weights in the published average (scripts/ppa_weights.py): inverse of their past error, solar
+    const pwts = get('history/ppa_weights.json').catch(() => null);
     const [cap, mkt, goCsv, capa, chain, imbc, ccap, hcan, fcst, fwm, pbias] = await Promise.all([get('history/fr_capture.json'), get('fr_market.json'), fetch(DATA_BASE + 'go_prices.csv').then(r => r.ok ? r.text() : '').catch(() => ''), get('history/capacity.json'), get('history/fr_market_calchain.json'), get('history/fr_imbalance_cost.json'), get('history/country_capture.json'), get('history/hourly_cannib.json'), get('history/ppa_forecast.json'), get('history/fr_forward_monthly.json'), get('history/ppa_bias.json')]);
     const fwd = {};
     ((mkt && mkt.forwardCurve) || []).forEach(r => { const m = /Cal\s?(\d{4})/.exec(r.contract || ''); if (m && r.value != null) fwd[+m[1]] = r.value; });
@@ -72,6 +74,7 @@
     const fwdRows = ((mkt && mkt.forwardCurve) || []).filter(r => r.value != null).map(r => ({ contract: r.contract, value: r.value }));
     D = { hc: hcan || null, cc: (ccap && ccap.countries) || null, fwdRows, imbCost, cap: (cap && cap.days) || [], ix, profile: (cap && cap.profile) || {}, capGW, fwd, fwdDate: mkt && mkt.forwardCurve && mkt.forwardCurve[0] && mkt.forwardCurve[0].date, go, fwdVol, fwdVolN,
       fcst: fcst || null, fwRatio: (fwm && fwm.ratios && fwm.ratios.year) || null, fwM: (fwm && fwm.months) || null, bias: pbias || null };
+    D.weights = await pwts;
     // hours with a day-ahead price at or below zero, per year (YTD annualised): the hours the PPA Dashboard convention leaves unpaid
     const negH = {}, ix2 = D.ix;
     D.cap.forEach(r => { const y = +r[0].slice(0, 4), e = negH[y] || (negH[y] = { h: 0, d: 0 }); e.h += (r[ix2.pN] - r[ix2.pNPos]) / 4; e.d++; });
@@ -402,7 +405,7 @@
     years.forEach(r => { r.wt = r.w / W; });
     const wavg = k => years.reduce((a, r) => a + r.wt * r[k], 0);
     const refW = wavg('fwd'), fair = wavg('cp'), goW = wavg('go'), sdW = wavg('fsd');
-    const o = { st, biasOf, nat, ast, hist, useAsset, complete, monthsOf, m0, m1, sel: fitRows.map(x => x.year), histSd, reg, lastYr, anchor, proj, fitLine, model, cfit, capOff, capPath: cp, excluded, sig0, sigT,
+    const o = { st, stAt: { tech: st.tech, conv: st.conv }, biasOf, nat, ast, hist, useAsset, complete, monthsOf, m0, m1, sel: fitRows.map(x => x.year), histSd, reg, lastYr, anchor, proj, fitLine, model, cfit, capOff, capPath: cp, excluded, sig0, sigT,
       tenor, negHours, negShare, nhReg, nhFitYears, shLast, fwds, fwdAuto, ref, refW, goVal, goMkt, goW, fair, sdW, volume, mw, lf, degr, disc, imb, margin, add, volRisk, priceRisk, alpha, volStress, spotStress, sigV, sigF, rho, years, auto };
     // Monte Carlo: the realised value of one MWh of the contract, 10,000 trajectories
     if (!st.noMC) o.mc = simulate(o, st);
@@ -631,6 +634,20 @@
   try { const v = JSON.parse(localStorage.getItem('pk-pp-inc') || 'null'); if (v) INC = Object.assign({}, INC0, v); } catch (_) {}
   INC.pct = false;
   const MNAME = { pct: 'Past discount', build: 'Capacity trend', fpc: 'Forward shape', wx: 'Weather simulation', eu: 'European price model' };
+  // weight of a method in the average (published price): the inverse of its past error for solar, equal for wind
+  // (data/history/ppa_weights.json); keys of the pricer → keys of the test bench
+  const WKEY = { build: 'step', fpc: 'fpc', wx: 'weather', eu: 'regional' };
+  function wOf(k, st) {
+    const t = (st || S).tech === 'wind' ? 'wind' : 'solar', c = (st || S).conv === 'all' ? 'all' : 'curt', W = D && D.weights && D.weights.weights;
+    const w = W && W[t] && W[t][c] && W[t][c][WKEY[k]];
+    return w != null && isFinite(w) ? w : 1;
+  }
+  // weighted mean of items {k, [f]} (only those with a value), weights renormalised on the methods ticked
+  function wmean(items, f, st) {
+    const its = items.filter(m => m[f] != null && isFinite(m[f]));
+    const W = its.reduce((a, m) => a + wOf(m.k, st), 0);
+    return W > 0 ? its.reduce((a, m) => a + wOf(m.k, st) * m[f], 0) / W : null;
+  }
   function methodVals(o) {
     if (o.m4) S.wxLast = Object.assign(S.wxLast || {}, { ppa: o.ppaWx, fair: o.m4.fair, ref: o.m4.refW, fp: fp() });
     const wxc = !o.m4 && S.wxLast && S.wxLast.fp === fp() ? S.wxLast : null;
@@ -651,18 +668,22 @@
     const el = $('pp-band-risk'); if (!el) return;
     const vs = use.map(m => m.v), lo = Math.min(...vs), hi = Math.max(...vs), fr = FRDOC(), n2 = v => fr ? f2(v).replace('.', ',') : f2(v);
     const spread = use.length > 1 ? (fr ? `Fourchette des méthodes cochées : <b>${n2(lo)} – ${n2(hi)} €/MWh</b> (écart ${n2(hi - lo)} €) : c’est le risque de modèle, à lire avec le prix.` : `Range of the methods ticked: <b>${n2(lo)} – ${n2(hi)} €/MWh</b> (gap ${n2(hi - lo)} €): this is the model risk, to read with the price.`) : '';
-    el.innerHTML = spread;
+    // the weights, when they are not equal (solar): each method weighs by the inverse of its past error
+    const ws = use.map(m => [m.k, wOf(m.k)]), wt = ws.reduce((a, [, w]) => a + w, 0), NM = { build: fr ? 'tendance' : 'capacity trend', fpc: fr ? 'forme forward' : 'forward shape', wx: fr ? 'météo' : 'weather', eu: fr ? 'européen' : 'European' };
+    const uneven = ws.length > 1 && ws.some(([, w]) => Math.abs(w - ws[0][1]) > 1e-6);
+    const wtxt = uneven ? (fr ? ' Moyenne pondérée par l’inverse de l’erreur passée de chaque méthode : ' : ' Average weighted by the inverse of each method’s past error: ') + ws.map(([k, w]) => NM[k] + ' ' + Math.round(w / wt * 100) + ' %').join(' · ') + '.' : '';
+    el.innerHTML = spread + wtxt;
     hzLoad().then(j => {
       const m = j && j.h && j.h.mae, am = j && j.b && j.b.avg4Mae, t = S.tech === 'wind' ? 'wind' : 'solar', c = S.conv === 'all' ? 'all' : 'curt';
       const e = h => am && am[t] && am[t][c] && am[t][c][String(h)] != null ? am[t][c][String(h)] : m && m[`${t} ${c} h=${h}`] && m[`${t} ${c} h=${h}`].avg4;
       if (e(1) == null) return;
-      el.innerHTML = spread + ' ' + (fr ? `Précision mesurée de la moyenne des 4 sur 2024–2026 : ${n2(e(1))} € d’erreur moyenne à 1 an, ${n2(e(2))} € à 2 ans, ${n2(e(3))} € à 3 ans ; au-delà du parc déjà observé, l’écart entre méthodes dit mieux l’incertitude.`
-        : `Measured precision of the 4-method average on 2024–2026: ${n2(e(1))} € mean error one year ahead, ${n2(e(2))} € two years, ${n2(e(3))} € three years; beyond the fleet already observed, the gap between methods tells the uncertainty better.`);
+      el.innerHTML = spread + wtxt + ' ' + (fr ? `Précision mesurée de la moyenne des 4${uneven ? ' (à poids égaux)' : ''} sur 2024–2026 : ${n2(e(1))} € d’erreur moyenne à 1 an, ${n2(e(2))} € à 2 ans, ${n2(e(3))} € à 3 ans ; au-delà du parc déjà observé, l’écart entre méthodes dit mieux l’incertitude.`
+        : `Measured precision of the 4-method average${uneven ? ' (equal weights)' : ''} on 2024–2026: ${n2(e(1))} € mean error one year ahead, ${n2(e(2))} € two years, ${n2(e(3))} € three years; beyond the fleet already observed, the gap between methods tells the uncertainty better.`);
     });
   }
   function renderBand(o) {
     const host = $('pp-band'); if (!host || !o) return;
-    const M = methodVals(o), use = M.filter(m => INC[m.k] && m.v != null), avg = use.length ? mean(use.map(m => m.v)) : null;
+    const M = methodVals(o), use = M.filter(m => INC[m.k] && m.v != null), avg = use.length ? wmean(use, 'v') : null;
     host.innerHTML = `<div class="pp-band-main"><div class="pp-band-l">PPA price</div><div class="pp-band-v">${avg != null ? f2(avg) : '–'}<small> €/MWh</small></div>` +
       `<div class="pp-band-s"><span>${use.length}</span> <span>${use.length === 1 ? 'method ticked' : 'methods ticked'}</span> · <span>${S.tech === 'wind' ? 'Wind' : 'Solar'}</span> · <span>Cal ${o.tenor[0]}–${o.tenor[o.tenor.length - 1]}</span> <span>${f2(o.refW)} €/MWh</span></div></div>` +
       `<div class="pp-offer"><label for="pp-offer-in">Offer received</label><span class="cf-in"><input type="number" id="pp-offer-in" step="0.1" placeholder="€/MWh" value="${S.offer != null ? S.offer : ''}"><em>€/MWh</em></span><div class="pp-offer-out" id="pp-offer-out"></div></div>` +
@@ -697,7 +718,7 @@
     if (!$('pp-sum-wf') || !o) return;
     const use = methodVals(o).filter(m => INC[m.k] && m.v != null && m.fair != null && m.ref != null);
     if (!use.length) return;
-    const ref = mean(use.map(m => m.ref)), fair = mean(use.map(m => m.fair)), price = mean(use.map(m => m.v));
+    const ref = wmean(use, 'ref'), fair = wmean(use, 'fair'), price = wmean(use, 'v');
     const risk = price - (fair - o.imb + o.goW - o.margin);
     const st = [['Cal forward', ref, 1], [S.tech === 'wind' ? 'Wind profile' : 'Solar profile', fair - ref], ['Risk', risk], ['Imbalance', -o.imb], ['GO', o.goW], ['Margin', -o.margin], ['PPA price', price, 1]];
     let run0 = 0;
@@ -715,7 +736,7 @@
     if (!$('pp-sens') || !o) return;
     const use = methodVals(o).filter(m => INC[m.k] && m.v != null && m.fair != null && m.ref != null);
     if (!use.length) return;
-    const fair = mean(use.map(m => m.fair)), ref = mean(use.map(m => m.ref)), price = mean(use.map(m => m.v));
+    const fair = wmean(use, 'fair'), ref = wmean(use, 'ref'), price = wmean(use, 'v');
     const tr = x => window.PKI18n ? PKI18n.tr(x) : x;
     const L = [['Cal forward ± 10 %', fair * 0.10], ['Capture rate ± 5 points', ref * 0.05], ['Imbalance cost ± 1 €/MWh', 1], ['GO value ± 1 €/MWh', 1], ['Margin ± 0.5 €/MWh', 0.5]];
     _fuelChart('pp-sens', { type: 'bar', data: { labels: L.map(x => tr(x[0])), datasets: [
@@ -1312,7 +1333,7 @@
     if (o.eu) { const lo = euYears(o, o.st, 'p10'), hi = euYears(o, o.st, 'p90');
       out.eu = o.eu.map((e, i) => ({ y: Y[i].y, p50: e.capture, lo: lo ? lo[i].capture : e.capture, hi: hi ? hi[i].capture : e.capture })); }
     const ks = ['build', 'fpc', 'wx', 'eu'].filter(k => out[k]);
-    if (ks.length > 1) out.avg = Y.map((r, i) => { const v = f => mean(ks.map(k => out[k][i][f])), p = ks.map(k => out[k][i].p50);
+    if (ks.length > 1) out.avg = Y.map((r, i) => { const v = f => wmean(ks.map(k => ({ k, x: out[k][i][f] })), 'x'), p = ks.map(k => out[k][i].p50);
       return { y: r.y, p50: v('p50'), lo: v('lo'), hi: v('hi'), min: Math.min(...p), max: Math.max(...p) }; });
     return out;
   }
@@ -1402,7 +1423,7 @@
       const vals = M.map(([k]) => { if (isYear) return price(k, yearVal[k] ? yearVal[k][i] : null, F, go);
         const ms = months.map(([y, m]) => [mw(y, m), monthVal(k, y, m)]); if (ms.some(([, v]) => v == null)) return null;
         return price(k, ms.reduce((a, [w, v]) => a + w * v, 0) / W, F, go); });
-      const ok = vals.filter(v => v != null), avg = ok.length === 4 ? mean(ok) : null;
+      const ok = vals.filter(v => v != null), avg = ok.length === 4 ? wmean(M.map(([k], j) => ({ k, x: vals[j] })), 'x') : null;
       return { label, F, vals, avg };
     };
     const rows = Y.map((r, i) => rowsOf('Cal ' + r.y, Array.from({ length: 12 }, (_, m) => [r.y, m + 1]), r.fwd, true, i));
@@ -1821,5 +1842,7 @@ ${FRDOC() ? `<p>RTE éCO2mix (production nationale, 15 min) · prix day-ahead EN
     reg('cannib-profile', 'Daily production profile by month', 'cn-prof', 'Average MW by hour of the day, one line per month, last complete year (RTE).', [TECH], (c, s2) => ({ profNat: c, profNatSub: s2 }), { w: 6, h: 5 });
   }
   window.PKCannib = { render() { const p = pageP(); [['cannib-projection', 'cn-proj'], ['cannib-capacity', 'cn-capfit'], ['cannib-countries-years', 'cn-xcy'], ['cannib-countries', 'cn-xc'], ['cannib-hourly', 'cn-hc'], ['cannib-neghours', 'cn-negh'], ['cannib-rolling', 'cn-roll'], ['cannib-rolling-eur', 'cn-roll-eur'], ['cannib-profile', 'cn-prof'], ['cannib-penetration-years', 'cn-pen']].forEach(([w, c]) => PKW.get(w) && PKW.draw(w, c, p)); } };
-  window.PKPpa = { compute: () => compute(), state: S, run };
+  // the published average for the benchmark (scripts/ppa_daily.py): the four methods with their weights
+  const avg4Of = o => { const it = [['build', o.ppaBuild], ['fpc', o.ppaFpc], ['wx', o.ppaWx], ['eu', o.ppaEu]].map(([k, x]) => ({ k, x })); return it.every(m => m.x != null && isFinite(m.x)) ? wmean(it, 'x', o.stAt || o.st) : null; };   // stAt: the state may be restored before this is read
+  window.PKPpa = { compute: () => compute(), state: S, run, avg4Of };
 })();
