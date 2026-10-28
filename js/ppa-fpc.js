@@ -9,8 +9,14 @@
 //   (2)     forward pricing: expected (P50) production × FPC, per delivery year
 //   (3)     decorrelated pricing: actual production × the FPC skeleton
 //           recalibrated on that year's realised monthly prices
-//   cannib  (1) − (3) per year, as a share of the baseload; projected with
-//           installed capacity (or flat), added to (2)
+//   cannib  (1) − (3) per year and per season (summer April–September, winter
+//           October–March), as a share of the season's baseload; projected with
+//           installed capacity (or flat); the year's term = the seasons' terms
+//           weighted by the value of the output in each season; added to (2)
+//   solar   the shaping coefficients lean towards the recent years (weights
+//           halving every year back); wind keeps the plain average
+//           (walk-forward, scripts/ppa_fpc_variants.py: solar 7.64 → 5.84 €/MWh,
+//           wind 6.23 → 4.94 on 2024–2026, settings chosen on 2019–2023)
 //   price_y = Cal_y × (1 + forward profile cost_y + cannibalisation_y)
 // Data: data/history/fr_hourly/YYYY.json (scripts/build_fr_hourly.py).
 // ════════════════════════════════════════════════════════════════════
@@ -24,8 +30,8 @@
   const linreg = (xs, ys) => { const n = xs.length; if (n < 2) return null; const mx = mean(xs), my = mean(ys); let sxy = 0, sxx = 0; xs.forEach((x, i) => { sxy += (x - mx) * (ys[i] - my); sxx += (x - mx) ** 2; }); return sxx ? { sl: sxy / sxx, ic: my - (sxy / sxx) * mx } : null; };
 
   // ── shaping coefficients from the years used ──
-  function coefficients(H, years) {
-    const mc = {}, dc = {}, hc = {};
+  function coefficients(H, years, wOf) {
+    const mc = {}, dc = {}, hc = {}, wt = wOf || (() => 1);
     years.forEach(y => {
       const D = H[y]; if (!D) return;
       const all = []; Object.values(D.days).forEach(v => v.p.forEach(p => p != null && all.push(p)));
@@ -34,17 +40,17 @@
         const md = Object.entries(D.days).filter(([d]) => +d.slice(5, 7) === m);
         const mp = []; md.forEach(([, v]) => v.p.forEach(p => p != null && mp.push(p)));
         if (!mp.length) continue;
-        const ma = mean(mp); (mc[m] = mc[m] || []).push(ma / ya);
+        const ma = mean(mp); (mc[m] = mc[m] || []).push([ma / ya, wt(y)]);
         for (let t = 0; t < 3; t++) {
           const tp = md.filter(([d]) => dtype(d) === t).map(([, v]) => v.p);
           const tv = []; tp.forEach(a => a.forEach(p => p != null && tv.push(p)));
           if (!tv.length) continue;
-          const ta = mean(tv); (dc[m + '|' + t] = dc[m + '|' + t] || []).push(ta / ma);
-          for (let h = 0; h < 24; h++) { const hv = tp.map(a => a[h]).filter(p => p != null); if (hv.length) (hc[m + '|' + t + '|' + h] = hc[m + '|' + t + '|' + h] || []).push(mean(hv) / ta); }
+          const ta = mean(tv); (dc[m + '|' + t] = dc[m + '|' + t] || []).push([ta / ma, wt(y)]);
+          for (let h = 0; h < 24; h++) { const hv = tp.map(a => a[h]).filter(p => p != null); if (hv.length) (hc[m + '|' + t + '|' + h] = hc[m + '|' + t + '|' + h] || []).push([mean(hv) / ta, wt(y)]); }
         }
       }
     });
-    const avg = o => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, mean(v)]));
+    const avg = o => Object.fromEntries(Object.entries(o).map(([k, v]) => [k, v.reduce((a, [x, w]) => a + x * w, 0) / v.reduce((a, [, w]) => a + w, 0)]));
     return { mc: avg(mc), dc: avg(dc), hc: avg(hc) };
   }
   const shape = (K, iso, h) => { const m = +iso.slice(5, 7), t = dtype(iso); return (K.mc[m] || 1) * (K.dc[m + '|' + t] || 1) * (K.hc[m + '|' + t + '|' + h] || 1); };
@@ -106,7 +112,10 @@
     const H = {}; (await Promise.all(years.map(getY))).forEach((f, i) => { if (f) H[years[i]] = f; });
     const yrs = years.filter(y => H[y]);
     if (yrs.length < 2) return null;
-    const K = coefficients(H, yrs);
+    // solar: the skeleton leans towards the recent years (weight halves every year back); wind: plain average
+    const lastY = yrs[yrs.length - 1], HALF = tech === 's' ? 1 : null;
+    const K = coefficients(H, yrs, HALF ? y => Math.pow(0.5, (lastY - y) / HALF) : null);
+    const SEASONS = [['summer', m => m >= 4 && m <= 9], ['winter', m => m < 4 || m > 9]];
     const pos = st.conv !== 'all', baseAll = st.conv === 'curt';
     const capOf = D.capGW[st.tech];
     // production by hour for a historical year: the asset's curve (kWh per quarter-hour → MW) or the national one
@@ -124,7 +133,13 @@
       const hasV = V.some(v => v != null && v > 0);
       if (!hasV) return null;
       const h = profileCost(V, P, mask, baseAll), d = profileCost(V, Pt, mask, baseAll);
-      return h == null || d == null ? null : { y, hist: h, decorr: d, cannib: h - d, gw: capOf[y] || null };
+      // the same, season by season (each season against its own baseload)
+      const bySeason = {};
+      SEASONS.forEach(([sn, inS]) => { const k = M.map(inS), pick = a => a.map((v, i) => k[i] ? v : null);
+        const mk = mask ? mask.map((v, i) => v && k[i]) : k;
+        const hs = profileCost(pick(V), pick(P), mk, baseAll), ds = profileCost(pick(V), pick(Pt), mk, baseAll);
+        bySeason[sn] = hs == null || ds == null ? null : hs - ds; });
+      return h == null || d == null ? null : { y, hist: h, decorr: d, cannib: h - d, season: bySeason, gw: capOf[y] || null };
     }).filter(Boolean);
     if (!hist.length) return null;
     // projection of the cannibalisation: a + b·ln(GW), anchored on the last year used; or flat at the average
@@ -135,6 +150,14 @@
     const resid = reg ? fitPts.map(x => x.cannib - (reg.ic + reg.sl * Math.log(x.gw))) : hist.map(x => x.cannib - meanC);
     const sigC = Math.sqrt(mean(resid.map(r => r * r))) || 0.02;
     const cannibOf = y => flat ? meanC : last.cannib + reg.sl * (Math.log(o.capPath(y)) - Math.log(last.gw));
+    // per season: the same projection on each season's term ('flat' model or under 3 years: the season's mean, as the yearly term;
+    // the test bench always trains on 3 years or more)
+    const seasonFit = Object.fromEntries(SEASONS.map(([sn]) => { const pts = fitPts.filter(x => x.season && x.season[sn] != null);
+      const r = pts.length >= 3 ? linreg(pts.map(x => Math.log(x.gw)), pts.map(x => x.season[sn])) : null;
+      const m = mean(hist.filter(x => x.season && x.season[sn] != null).map(x => x.season[sn]));
+      return [sn, { reg: r, mean: m, last: last.season ? last.season[sn] : null }]; }));
+    const seasonOf = (y, sn) => { const f = seasonFit[sn]; if (f.mean == null) return null;
+      return flat || !f.reg || f.last == null ? f.mean : f.last + f.reg.sl * (Math.log(o.capPath(y)) - Math.log(last.gw)); };
     // (2) forward: expected production by month × hour (the asset's average, or the national load factor), on the FPC
     const prof = {}, cnt = {};
     yrs.forEach(y => Object.keys(H[y].days).forEach(d => { const pr = prodOf(y, d); if (!pr) return; const m = +d.slice(5, 7), cap = assetH ? 1 : (capOf[y] || null); if (!cap) return; for (let h = 0; h < 24; h++) if (pr[h] != null) { const k = m + '|' + h; prof[k] = (prof[k] || 0) + pr[h] / cap; cnt[k] = (cnt[k] || 0) + 1; } }));
@@ -147,7 +170,13 @@
     const fwd = o.tenor.map((y, i) => {
       const pts = F.pts.filter(p => +p.d.slice(0, 4) === y);
       const V = pts.map(p => pAt(p.d, p.h)), P = pts.map(p => p.v);
-      const cal = mean(P), f = profileCost(V, P, null), c = cannibOf(y);
+      const cal = mean(P), f = profileCost(V, P, null);
+      // the year's cannibalisation: each season's term weighted by the value of the output in that season
+      let c = 0, ws = 0;
+      SEASONS.forEach(([sn, inS]) => { const cs = seasonOf(y, sn); let w = 0;
+        pts.forEach((p, i) => { if (inS(+p.d.slice(5, 7))) w += V[i] * p.v; });   // the output's value in the season, hour by hour
+        if (cs == null || !(w > 0)) return; c += w * cs; ws += w; });
+      c = ws > 0 ? c / ws : cannibOf(y);
       return { y, cal, fwdCost: f, cannib: c, capture: cal * (1 + f + c), rate: 1 + f + c,
         months: Array.from({ length: 12 }, (_, m) => mean(pts.filter(p => +p.d.slice(5, 7) === m + 1).map(p => p.v))) };
     });
@@ -161,7 +190,7 @@
     const ppa = fair - premium - refW * o.add / 100 - o.imb + o.goW - o.margin;
     // a typical week of the first delivery year, for the chart
     const y0 = o.tenor[0], wk = F.pts.filter(p => p.d >= iso(y0, 6, 1) && p.d < iso(y0, 6, 8));
-    return { K, hist, reg, flat, meanC, sigC, fwd, fair, refW, premium, ppa, used: F.used, calGap: F.calGap, week: wk.map(p => ({ d: p.d, h: p.h, v: p.v, prod: pAt(p.d, p.h) })), years: yrs, asset: !!assetH, cannibOf };
+    return { K, hist, reg, flat, meanC, sigC, seasonFit, half: HALF, fwd, fair, refW, premium, ppa, used: F.used, calGap: F.calGap, week: wk.map(p => ({ d: p.d, h: p.h, v: p.v, prod: pAt(p.d, p.h) })), years: yrs, asset: !!assetH, cannibOf };
   }
 
   window.PKFpc = { compute, coefficients, buildFPC, periodOf, profileCost };
