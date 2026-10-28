@@ -33,7 +33,7 @@ import glob
 import json
 import os
 import sys
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 
 import numpy as np
 from scipy.optimize import linprog
@@ -104,7 +104,7 @@ def optimise_day(p, hours, wear, prm=PARAMS, detail=False):
     return rev, float(np.sum(d) * DT)
 
 
-def cooptimise_day(p, fcr, hours, wear, prm=PARAMS, res_h=0.25, cap=1.0, afrr=None, res_a=1.0):
+def cooptimise_day(p, fcr, hours, wear, prm=PARAMS, res_h=0.25, cap=1.0, afrr=None, res_a=1.0, detail=False):
     """Day-ahead, FCR and (optionally) aFRR capacity in one schedule of 1 MW / `hours` MWh.
     p: 96 quarter-hour prices (EUR/MWh); fcr: the 6 FCR block prices (EUR per MW per 4-hour block), or None;
     afrr: {'up': 6 block prices, 'down': 6 block prices} in EUR per MW per hour (4-hour blocks), or None.
@@ -115,7 +115,7 @@ def cooptimise_day(p, fcr, hours, wear, prm=PARAMS, res_h=0.25, cap=1.0, afrr=No
     energy-neutral; aFRR activation is paid on its own market, not modelled). cap: the most MW FCR may take
     (1 = price taker). Wear is paid per MWh discharged.
     Returns (day-ahead revenue EUR, FCR revenue EUR, MWh discharged, mean MW in FCR, aFRR revenue EUR,
-    mean MW in aFRR up, mean MW in aFRR down) or None."""
+    mean MW in aFRR up, mean MW in aFRR down) or None; with detail=True one more item, the schedule (c, d, f, u, w)."""
     T = len(p)
     B = 6
     per = T // B
@@ -170,7 +170,8 @@ def cooptimise_day(p, fcr, hours, wear, prm=PARAMS, res_h=0.25, cap=1.0, afrr=No
     c, d = r.x[:T], r.x[T:2 * T]
     f, u, w = r.x[F:F + B], r.x[U:U + B], r.x[Wd:Wd + B]
     da = float(np.sum((p - gi) * d * DT) - np.sum((p + gw) * c * DT))
-    return da, float(np.dot(fcr, f)), float(np.sum(d) * DT), float(np.mean(f)), float(np.dot(au, u) + np.dot(ad, w)), float(np.mean(u)), float(np.mean(w))
+    out = (da, float(np.dot(fcr, f)), float(np.sum(d) * DT), float(np.mean(f)), float(np.dot(au, u) + np.dot(ad, w)), float(np.mean(u)), float(np.mean(w)))
+    return out + ((c, d, f, u, w),) if detail else out
 
 def naive_day(p, trailing, hours, prm=PARAMS):
     """Fixed schedule from the average profile of the previous days; paid at the real prices of the day."""
@@ -196,6 +197,54 @@ def naive_day(p, trailing, hours, prm=PARAMS):
             rev += (p[t] - prm['grid_injection']) * d * DT
             disch += d * DT
     return rev, disch
+
+
+# ── without perfect foresight: the schedule is chosen on a forecast of the day, then paid at the real prices ──
+# Forecast = the average of the 7 previous delivery days, quarter-hour by quarter-hour (all known when the bids for the
+# day are placed), for the day-ahead prices and for the reserve block prices alike. Chosen on 2024-2025 among plain
+# forecasts (previous day, same day a week before, both averaged, 7 and 30 days averaged), checked on 2026: the
+# 7-day average keeps 68 % then 78 % of the perfect day-ahead value in France, the previous day 55 % then 71 %. A desk
+# with a real forecast does better: a plain, reproducible estimate between the naive profile (floor) and the perfect
+# schedule (ceiling).
+FC_DAYS = 7
+
+
+def forecast(by_day, d, n=FC_DAYS, need=5):
+    """mean of the values of the n days before d in {day: array or list}, or None with fewer than `need` of them"""
+    D = date.fromisoformat(d)
+    xs = [by_day.get((D - timedelta(days=k)).isoformat()) for k in range(1, n + 1)]
+    xs = [np.asarray(x, dtype=float) for x in xs if x is not None and len(x)]
+    if len(xs) < need or len({len(x) for x in xs}) != 1:
+        return None
+    return np.mean(xs, axis=0)
+def at_prices(p, c, d, prm=PARAMS):
+    """day-ahead revenue (EUR) of a fixed schedule, MW drawn c and sent d per step, at prices p, grid fees included"""
+    return float(np.sum((p - prm['grid_injection']) * d * DT) - np.sum((p + prm['grid_withdrawal']) * c * DT))
+
+
+def realistic_da(p, p_fc, hours, wear, prm=PARAMS):
+    """day-ahead alone: scheduled on p_fc, paid on p, net of wear (EUR), or None"""
+    r = optimise_day(p_fc, hours, wear, prm, detail=True)
+    if r is None:
+        return None
+    c, d = r[2], r[3]
+    return at_prices(p, c, d, prm) - wear * float(np.sum(d) * DT)
+
+
+def realistic_co(p, p_fc, fcr, fcr_fc, hours, wear, prm=PARAMS, afrr=None, afrr_fc=None):
+    """day-ahead + FCR (+ aFRR capacity) scheduled on the forecasts, paid at the real prices: (total net of wear,
+    day-ahead net of wear, FCR, aFRR), EUR, or None. Reserves are pay-as-cleared: the MW held earn the real price."""
+    r = cooptimise_day(p_fc, fcr_fc, hours, wear, prm, afrr=afrr_fc, detail=True)
+    if r is None:
+        return None
+    c, d, f, u, w = r[-1]
+    B = len(f)
+    fr = np.zeros(B) if fcr is None else np.asarray(fcr, dtype=float)
+    au = np.zeros(B) if not afrr else np.asarray(afrr.get('up') or [0] * B, dtype=float) * 24 / B
+    ad = np.zeros(B) if not afrr else np.asarray(afrr.get('down') or [0] * B, dtype=float) * 24 / B
+    da = at_prices(p, c, d, prm) - wear * float(np.sum(d) * DT)
+    fv, av = float(np.dot(fr, f)), float(np.dot(au, u) + np.dot(ad, w))
+    return da + fv + av, da, fv, av
 
 
 def run(days, prices, prm=PARAMS):
@@ -332,6 +381,18 @@ def build_index(rows, prices=None, k='2h'):
             m = max(e, key=e.get)
             e['best'], e['mkt'] = e[m], m
         blocks = (res.get('fcr_blocks') or {}).get(d)
+        pfc = forecast(prices, d) if prices is not None and d in prices else None
+        if pfc is not None:
+            # without perfect foresight (realistic_*): scheduled on the 7-day average, paid at the day's own prices
+            h = int(k[:-1])
+            rd = realistic_da(prices[d], pfc, h, PARAMS['wear'])
+            if rd is not None:
+                e['rl_da'] = round(rd, 1)
+            bp = forecast({x: v for x, v in (res.get('fcr_blocks') or {}).items() if v and len(v) == 6}, d)
+            if blocks and len(blocks) == 6 and bp is not None:
+                rc = realistic_co(prices[d], pfc, blocks, bp, h, PARAMS['wear'])
+                if rc is not None:
+                    e['co_rl'], e['co_rl_da'], e['co_rl_fcr'] = round(rc[0], 1), round(rc[1], 1), round(rc[2], 1)
         if prices is not None and d in prices and blocks and len(blocks) == 6:
             h = int(k[:-1])
             co = cooptimise_day(prices[d], blocks, h, PARAMS['wear'])
@@ -344,7 +405,12 @@ def build_index(rows, prices=None, k='2h'):
         real[d] = e
     months = {}
     for d, e in real.items():
-        mo = months.setdefault(d[:7], {'n': 0, 'nb': 0, 'da': 0, 'fcr': [], 'afrr': [], 'best': 0, 'share': {}, 'co': [], 'co_da': [], 'co_fcr': [], 'co_f': []})
+        mo = months.setdefault(d[:7], {'n': 0, 'nb': 0, 'da': 0, 'fcr': [], 'afrr': [], 'best': 0, 'share': {}, 'co': [], 'co_da': [], 'co_fcr': [], 'co_f': [],
+                                       'rl': [], 'corl': []})
+        if 'rl_da' in e:
+            mo['rl'].append((e['rl_da'], e['da']))
+        if 'co_rl' in e and 'co' in e:
+            mo['corl'].append((e['co_rl'], e['co']))
         if 'co' in e:
             for x in ('co', 'co_da', 'co_fcr', 'co_f'):
                 mo[x].append(e[x])
@@ -370,12 +436,21 @@ def build_index(rows, prices=None, k='2h'):
                       'share': {x: round(c / mo['nb'] * 100) for x, c in mo['share'].items()} if mo['nb'] else {},
                       **({'co': ann(sum(mo['co']) / len(mo['co'])), 'co_da': ann(sum(mo['co_da']) / len(mo['co_da'])),
                           'co_fcr': ann(sum(mo['co_fcr']) / len(mo['co_fcr'])), 'co_f': round(sum(mo['co_f']) / len(mo['co_f']), 2)}
-                         if len(mo['co']) >= 5 else {})})
+                         if len(mo['co']) >= 5 else {}),
+                      # without perfect foresight, and what it keeps of the perfect value (same days)
+                      **({'rl_da': ann(sum(x for x, _ in mo['rl']) / len(mo['rl'])),
+                          'rl_da_ratio': round(sum(x for x, _ in mo['rl']) / sum(y for _, y in mo['rl']), 3) if sum(y for _, y in mo['rl']) > 0 else None}
+                         if len(mo['rl']) >= 5 else {}),
+                      **({'co_rl': ann(sum(x for x, _ in mo['corl']) / len(mo['corl'])),
+                          'co_rl_ratio': round(sum(x for x, _ in mo['corl']) / sum(y for _, y in mo['corl']), 3) if sum(y for _, y in mo['corl']) > 0 else None}
+                         if len(mo['corl']) >= 5 else {})})
     today = datetime.now(timezone.utc).strftime('%Y-%m-%d')
     doc = {'updated': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%MZ'), 'battery': '1 MW, ' + k.replace('h', ' h'),
            'strip': '-'.join(map(str, STRIP)),
            'note': 'kEUR per MW per year. forward: day-ahead value over the Cal strip, rebuilt from each day\'s forwards. '
-                   'realised: per delivery day, EUR per MW per day in each market and the best one (not a stack).',
+                   'realised: per delivery day, EUR per MW per day in each market and the best one (not a stack). '
+                   'rl_da / co_rl: the same without perfect foresight (scheduled on the 7 previous days\' average prices, '
+                   'paid at the day\'s own); *_ratio: what they keep of the perfect value, same days.',
            'forward': fwd, 'computed_on': today,
            'realised': {d: real[d] for d in dlist[-400:]}, 'months': mrows}
     with open(INDEX_OUT, 'w') as f:
@@ -398,6 +473,9 @@ def build_europe(days=370, k=2):
     files = sorted(glob.glob(os.path.join(DAILY, '*.json')))[-days:]
     W = PARAMS['wear']
     acc = {z: {} for z in EU_ZONES}
+    hist = {z: {} for z in EU_ZONES}          # {zone: {day: prices}} for the 7-day forecast
+    fcrh = {z: {} for z in EU_ZONES}
+    afh = {'up': {}, 'down': {}}
     for f in files:
         d = os.path.basename(f)[:-5]
         try:
@@ -420,6 +498,26 @@ def build_europe(days=370, k=2):
                 co = cooptimise_day(p, fb, k, W, afrr=af)
                 if co:
                     e.update(co=co[0] + co[1] + co[4] - W * co[2], co_da=co[0] - W * co[2], co_fcr=co[1], co_afrr=co[4], f=co[3])
+            # without perfect foresight: the 7 previous days' average prices (and reserve prices) as the forecast
+            pp = forecast(hist[z], d)
+            if pp is not None:
+                rd = realistic_da(p, pp, k, W)
+                if rd is not None:
+                    e['rl_da'] = rd
+                if 'co' in e:
+                    fbp = forecast(fcrh[z], d)
+                    afp = None
+                    if z == 'DE_LU':
+                        up, dn = forecast(afh['up'], d), forecast(afh['down'], d)
+                        afp = {'up': list(up), 'down': list(dn)} if up is not None and dn is not None else None
+                    rc = realistic_co(p, pp, fb, None if fbp is None else list(fbp), k, W, afrr=af, afrr_fc=afp)
+                    if rc is not None:
+                        e['co_rl'] = rc[0]
+            hist[z][d] = p
+            if fb and len(fb) == 6:
+                fcrh[z][d] = fb
+            if z == 'DE_LU' and af and af.get('up') and af.get('down'):
+                afh['up'][d], afh['down'][d] = af['up'], af['down']
             acc[z][d] = e
     ann = lambda v: round(v * 365 / 1000, 1)   # noqa: E731
     out = {}
@@ -434,15 +532,30 @@ def build_europe(days=370, k=2):
             for key in ('co', 'co_da', 'co_fcr', 'co_afrr'):
                 e[key + '30'] = ann(np.mean([x[key] for x in co30]))
             e['f30'] = round(float(np.mean([x['f'] for x in co30])), 2)
+        rl30 = [by[d] for d in last30 if 'rl_da' in by[d]]
+        if len(rl30) >= 20:
+            e['rl_da30'] = ann(np.mean([x['rl_da'] for x in rl30]))
+            e['rl_da30_ratio'] = round(float(np.sum([x['rl_da'] for x in rl30]) / np.sum([x['da'] for x in rl30])), 3)
+        rl365 = [by[d] for d in ds[-365:] if 'rl_da' in by[d]]
+        if len(rl365) >= 200:
+            e['rl_da365'] = ann(np.mean([x['rl_da'] for x in rl365]))
+        corl30 = [by[d] for d in last30 if 'co_rl' in by[d]]
+        if len(corl30) >= 20:
+            e['co_rl30'] = ann(np.mean([x['co_rl'] for x in corl30]))
+            e['co_rl30_ratio'] = round(float(np.sum([x['co_rl'] for x in corl30]) / np.sum([x['co'] for x in corl30])), 3)
         months = {}
         for d in ds:
             months.setdefault(d[:7], []).append(by[d])
-        e['months'] = {m: {'da': ann(np.mean([x['da'] for x in v])), **({'co': ann(np.mean([x['co'] for x in v if 'co' in x]))} if sum('co' in x for x in v) >= 10 else {})}
+        e['months'] = {m: {'da': ann(np.mean([x['da'] for x in v])), **({'co': ann(np.mean([x['co'] for x in v if 'co' in x]))} if sum('co' in x for x in v) >= 10 else {}),
+                           **({'rl_da': ann(np.mean([x['rl_da'] for x in v if 'rl_da' in x]))} if sum('rl_da' in x for x in v) >= 10 else {}),
+                           **({'co_rl': ann(np.mean([x['co_rl'] for x in v if 'co_rl' in x]))} if sum('co_rl' in x for x in v) >= 10 else {})}
                        for m, v in sorted(months.items()) if len(v) >= 10}
         out[z] = e
     doc = {'updated': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%MZ'), 'battery': f'1 MW, {k} h',
            'note': 'kEUR per MW per year. da: day-ahead alone, perfect schedule net of wear. co: day-ahead + FCR (+ aFRR capacity '
-                   'for DE_LU) in one schedule a day, price taker. 30 = last 30 delivery days.',
+                   'for DE_LU) in one schedule a day, price taker. rl_da / co_rl: the same without perfect foresight (scheduled on '
+                   'the 7 previous days\' average prices, paid at the day\'s own); *_ratio: what they keep of the perfect value, same days. '
+                   '30 = last 30 delivery days.',
            'zones': out}
     with open(EU_OUT, 'w') as f:
         json.dump(doc, f, separators=(',', ':'))
