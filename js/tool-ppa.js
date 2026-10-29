@@ -203,11 +203,11 @@
         if (Mo && !Mo.includes(m)) continue;   // a year delivered in part: its months only
         const e = f[`${y}-${String(m).padStart(2, '0')}`];
         if (!e || e[fld] == null || ratio[m] == null) return null;
-        const w = sh(m) * (conv === 'curt' ? e.paid : 1);
+        const w = sh(m) * (conv === 'curt' ? (e[fld + 'Paid'] != null ? e[fld + 'Paid'] : e.paid) : 1);
         num += w * (q ? q[m - 1] : ratio[m] / rn) * (e[fld] + gap); den += w;
       }
       if (!(den > 0)) return null;
-      const b = o.biasOf && fld !== 'anchored' ? o.biasOf('regional', y) : 0;
+      const b = o.biasOf && fld !== 'anchored' && fld !== 'generator' ? o.biasOf('regional', y) : 0;
       out.push({ y, capture: num / den - b, bias: b });
     }
     return out;
@@ -459,6 +459,11 @@
     o.anc = euYears(o, st, 'anchored');
     o.ancFair = o.anc ? years.reduce((a, r, i) => a + r.wt * r.fwd * o.anc[i].capture, 0) : null;
     o.ppaAnc = o.anc ? o.ancFair - o.premium - refW * add / 100 - imb + goW - margin : null;
+    // the single scenario generator (scripts/ppa_generator.py, since 30 Oct. 2026 the integrated method shown as a
+    // test): real weeks with every variable of the same day, one price rule in euros, no bias correction
+    o.gen = euYears(o, st, 'generator');
+    o.genFair = o.gen ? years.reduce((a, r, i) => a + r.wt * r.fwd * o.gen[i].capture, 0) : null;
+    o.ppaGen = o.gen ? o.genFair - o.premium - refW * add / 100 - imb + goW - margin : null;
     o.method = st.method;
     // asset-specific FPC method (three pricings): js/ppa-fpc.js
     o.capPathFor = capPath;
@@ -466,7 +471,12 @@
     o.ppaFpc = o.m3 ? o.m3.ppa : null;
     // Monte Carlo on simulated weather (js/ppa-wx.js): heavier, run on its tab and on Compare
     if (!st.noMC && window.PKWx && (st.method === 'wx' || st.view === 'compare')) {
-      const monthLevel = (y, m) => { const r = o.m3 && o.m3.fwd.find(f => f.y === y); const i = o.tenor.indexOf(y); return m === 0 ? (r ? r.cal : fwds[i]) : (r && r.months[m - 1] != null ? r.months[m - 1] : fwds[i]); };
+      // the month levels: the site's monthly forward curve (data/history/fr_forward_monthly.json, as the capacity
+      // trend's k and the European model), scaled to the year's Cal; the forward shape's months only if it is missing
+      const fwMY = y => { const M = D.fwM; if (!M) return null; const v = []; for (let m = 1; m <= 12; m++) { const e = M[`${y}-${String(m).padStart(2, '0')}`]; if (!e || !(e.value > 0)) return null; v.push(e.value); } return v; };
+      const monthLevel = (y, m) => { const i = o.tenor.indexOf(y); if (m === 0) return fwds[i]; const v = fwMY(y);
+        if (v) { let a = 0, n = 0; v.forEach((x, k) => { const dm = new Date(Date.UTC(y, k + 1, 0)).getUTCDate(); a += x * dm; n += dm; }); return v[m - 1] * fwds[i] / (a / n); }
+        const r = o.m3 && o.m3.fwd.find(f => f.y === y); return r && r.months[m - 1] != null ? r.months[m - 1] : fwds[i]; };
       // model risk measured on the historical replay: the weather method's own past errors (2022 left out)
       if (!BT) BT = await get('history/ppa_backtest.json');
       const bt = BT ? BT.rows.filter(r => r.tech === st.tech && r.year !== 2022) : [];
@@ -677,14 +687,10 @@
     const W = its.reduce((a, m) => a + wOf(m.k, st), 0);
     return W > 0 ? its.reduce((a, m) => a + wOf(m.k, st) * m[f], 0) / W : null;
   }
-  // the integrated method: wind = the anchored European model; solar = the mean of the anchored model, the capacity
-  // trend and the weather simulation (scripts/ppa_integrated_test.py); shown as a test, never in the published price
-  function integrated(o, wxc) {
-    const wv = o.m4 ? o.ppaWx : wxc ? wxc.ppa : null, wf = o.m4 ? o.m4.fair : wxc ? wxc.fair : null;
-    if (o.ppaAnc == null) return { k: 'int', v: null };
-    if ((o.st || S).tech === 'wind') return { k: 'int', v: o.ppaAnc, fair: o.ancFair, ref: o.refW };
-    if (wv == null) return { k: 'int', v: null, needWx: true };
-    return { k: 'int', v: (o.ppaAnc + o.ppaBuild + wv) / 3, fair: (o.ancFair + o.fair + wf) / 3, ref: o.refW };
+  // the integrated method (since 30 Oct. 2026): the single scenario generator, the same for both technologies, no
+  // bias correction (scripts/ppa_generator.py); shown as a test, never in the published price until wind is right
+  function integrated(o) {
+    return o.ppaGen == null ? { k: 'int', v: null } : { k: 'int', v: o.ppaGen, fair: o.genFair, ref: o.refW };
   }
   function methodVals(o) {
     if (o.m4) S.wxLast = Object.assign(S.wxLast || {}, { ppa: o.ppaWx, fair: o.m4.fair, ref: o.m4.refW, fp: fp() });
@@ -695,7 +701,7 @@
       { k: 'fpc', v: o.ppaFpc, fair: o.m3 ? o.m3.fair : null, ref: o.m3 ? o.m3.refW : null },
       { k: 'wx', v: o.m4 ? o.ppaWx : wxc ? wxc.ppa : null, fair: o.m4 ? o.m4.fair : wxc ? wxc.fair : null, ref: o.m4 ? o.m4.refW : wxc ? wxc.ref : null },
       { k: 'eu', v: o.ppaEu, fair: o.euFair, ref: o.refW },
-      integrated(o, wxc),
+      integrated(o),
     ];
   }
   // measured precision of the 4-method average by horizon (scripts/ppa_horizon_test.py), for the band
@@ -1608,7 +1614,7 @@ Projection depuis la dernière année utilisée (${o.lastYr}) : ${MODEL_T[o.mode
 Incertitude : ${(o.sig0 * 100).toFixed(1).replace('.', ',')} pts × √années après ${o.lastYr} (les bandes du graphique).</li>` : `<li><b>Cannibalisation.</b> Shape discount = 1 − capture price ÷ baseload, per calendar year: national (RTE éCO2mix production × ENTSO-E day-ahead) or the asset (its curve × France quarter-hour prices). Convention: ${S.conv === 'pos' ? 'hours with a price ≤ 0 left out of both the capture price and the baseload (Past discount)' : 'all hours (as the CRE M0)'}.
 Projection from the last year used (${o.lastYr}): ${MODEL_T[o.model]}.${o.cfit ? ` Capacity model: capture rate = a + b × ln(installed GW), fitted on ${o.cfit.use.join(', ')} (b = ${(o.cfit.sl * 100).toFixed(1)} pts per ln GW, R² ${o.cfit.r2.toFixed(2)}), installed capacity going at the last year's pace, never below the straight line to the PPE3 targets (${Object.entries(PPE3[S.tech]).map(([y, g]) => y + ': ' + g + ' GW').join(', ')}): on 2017–2025 every simple extrapolation stayed below the real fleet, anchored on ${o.lastYr}.` : ''}
 Uncertainty: ${(o.sig0 * 100).toFixed(1)} pts × √years after ${o.lastYr} (the bands of the chart).</li>`}
-<li><b>Capture value</b> ${FRDOC() ? `= Σ poids × forward Cal × k × (1 − décote de profil projetée) = <code>${f2(o.fair)} €/MWh</code>. <b>k</b>, le facteur des mois cotés, met le niveau au mois comme le reste de l’outil : la valeur de la production sur les forwards des mois (mois coté, sinon trimestre, saison, puis Cal découpé par l’historique, data/history/fr_forward_monthly.json) ÷ sa valeur sur le Cal avec la forme saisonnière historique, que porte la capture annuelle. k = ${o.years.map(r => r.y + ' ' + (r.kq || 1).toFixed(3).replace('.', ',')).join(' ; ')} (1 quand rien n’est coté sous le Cal).${o.years.some(r => r.g !== 1) ? ` Livraison sur une partie d’année : la capture annuelle est ramenée aux mois livrés par <b>g</b> = valeur d’un MWh sur ces mois ÷ sur l’année entière (forward des mois × capture mensuelle prévue × production de chaque mois), et le volume à leur part de la production annuelle : ${o.years.filter(r => r.g !== 1).map(r => r.y + ' g ' + r.g.toFixed(3).replace('.', ',') + ', ' + Math.round(r.sh * 100) + ' % du volume').join(' ; ')}.` : ''}` : `= Σ weight × Cal forward × k × (1 − projected shape discount) = <code>${f2(o.fair)} €/MWh</code>. <b>k</b>, the quoted-month factor, puts the level month by month as the rest of the tool does: the output's value on the months' forwards (the month quoted, else its quarter, season, then the Cal shaped by history, data/history/fr_forward_monthly.json) ÷ its value on the Cal with the historical seasonal shape that the yearly capture carries. k = ${o.years.map(r => r.y + ' ' + (r.kq || 1).toFixed(3)).join(', ')} (1 when nothing below the Cal is quoted).${o.years.some(r => r.g !== 1) ? ` A year delivered in part: the yearly capture is brought to the months delivered by <b>g</b> = value of one MWh on those months ÷ on the whole year (months' forwards × forecast monthly capture × each month's output), and the volume to their share of the year's output: ${o.years.filter(r => r.g !== 1).map(r => r.y + ' g ' + r.g.toFixed(3) + ', ' + Math.round(r.sh * 100) + ' % of the volume').join('; ')}.` : ''}`}</li>
+<li><b>Capture value</b> ${FRDOC() ? `= Σ poids × forward Cal × k × (1 − décote de profil projetée) = <code>${f2(o.fair)} €/MWh</code>. <b>k</b>, le facteur des mois cotés, met le niveau au mois comme le reste de l’outil : la valeur de la production sur les forwards des mois (produits liquides seulement : mois M+1 à M+3, trimestres Q+1 à Q+4, puis Cal découpé par la forme de la dernière année couverte par des trimestres liquides, pesée ½ l’année suivante, ¼ celle d’après, et par l’historique pour le reste, data/history/fr_forward_monthly.json ; même courbe pour le modèle européen, la méthode intégrée et la simulation météo) ÷ sa valeur sur le Cal avec la forme saisonnière historique, que porte la capture annuelle. k = ${o.years.map(r => r.y + ' ' + (r.kq || 1).toFixed(3).replace('.', ',')).join(' ; ')} (proche de 1 quand rien n’est coté sous le Cal : la forme ne s’appuie alors qu’à moitié sur la dernière année cotée, puis au quart).${o.years.some(r => r.g !== 1) ? ` Livraison sur une partie d’année : la capture annuelle est ramenée aux mois livrés par <b>g</b> = valeur d’un MWh sur ces mois ÷ sur l’année entière (forward des mois × capture mensuelle prévue × production de chaque mois), et le volume à leur part de la production annuelle : ${o.years.filter(r => r.g !== 1).map(r => r.y + ' g ' + r.g.toFixed(3).replace('.', ',') + ', ' + Math.round(r.sh * 100) + ' % du volume').join(' ; ')}.` : ''}` : `= Σ weight × Cal forward × k × (1 − projected shape discount) = <code>${f2(o.fair)} €/MWh</code>. <b>k</b>, the quoted-month factor, puts the level month by month as the rest of the tool does: the output's value on the months' forwards (liquid products only: months M+1 to M+3, quarters Q+1 to Q+4, then the Cal shaped by the last year covered by liquid quarters, weighted ½ the year after, ¼ the next, and by history for the rest, data/history/fr_forward_monthly.json; the same curve for the European model, the integrated method and the weather simulation) ÷ its value on the Cal with the historical seasonal shape that the yearly capture carries. k = ${o.years.map(r => r.y + ' ' + (r.kq || 1).toFixed(3)).join(', ')} (close to 1 when nothing below the Cal is quoted: the shape then leans on the last quoted year's only half way, then a quarter).${o.years.some(r => r.g !== 1) ? ` A year delivered in part: the yearly capture is brought to the months delivered by <b>g</b> = value of one MWh on those months ÷ on the whole year (months' forwards × forecast monthly capture × each month's output), and the volume to their share of the year's output: ${o.years.filter(r => r.g !== 1).map(r => r.y + ' g ' + r.g.toFixed(3) + ', ' + Math.round(r.sh * 100) + ' % of the volume').join('; ')}.` : ''}`}</li>
 <li><b>${FRDOC() ? 'Correction de biais' : 'Bias correction'}.</b>${biasLine(o, 'step')}</li>
 <li><b>Risk premium.</b> Monte Carlo (10,000 trajectories, see the Risk section): value earned per MWh, hedge included; the price is the ${o.alpha}th percentile of that value, so the chance of loss before margin is ${o.alpha} %. Premium = capture value − that percentile = <code>${f2(o.premium)} €/MWh</code>.</li>
 <li><b>PPA price</b> = value at risk − additional discount − imbalance + GO − margin = <code>${f2(o.ppaBuild)} €/MWh</code>. The margin is what the buyer keeps, so it is deducted.</li>

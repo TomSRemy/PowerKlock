@@ -2,7 +2,8 @@
 """France baseload forward for every month of the quoted horizon, for the PPA pricer's
 monthly periods (a contract that is not a calendar year: April 2027 → November 2028).
 
-For each month, the finest listed contract (last SEFE close):
+For each month, the finest listed liquid contract (last SEFE close; liquid = months M+1 to M+3, quarters Q+1 to Q+4,
+Cals; seasons and further months or quarters are quoted but thinly traded and left out):
   month contract                       → its price
   else quarter                         → quarter × (month ÷ quarter ratio)
   else season (Sum = Apr–Sep, Win = Oct–Mar) → season × (month ÷ season ratio)
@@ -54,6 +55,26 @@ def main():
     ct = json.load(open(os.path.join(H, 'fr_market_contracts.json')))['FR']
     newest = max(max(v['points']) for k, v in ct.items() if v.get('points') and not k.endswith('Peak'))
     live = {k: v['points'][max(v['points'])] for k, v in ct.items() if v.get('points') and max(v['points']) >= newest and not k.endswith('Peak')}
+    # liquid products only for the shape (Tom 29 Oct. 2026): the next three months, the next four quarters; seasons
+    # left out; every Cal kept for the level. A contract outside that window (a month M+9, a quarter of Y+2) is
+    # quoted but thinly traded: it does not shape the months
+    d0 = date.fromisoformat(newest)
+    def liquid(k):
+        if k.startswith('Cal'):
+            return True
+        if k[:3] in MON:
+            y, m = int(k[3:]), MON.index(k[:3]) + 1
+            ahead = (y - d0.year) * 12 + m - d0.month
+            return 1 <= ahead <= 3
+        if k.startswith('Q'):
+            q, y = int(k[1]), int(k[2:])
+            ahead = (y - d0.year) * 4 + q - ((d0.month - 1) // 3 + 1)
+            return 1 <= ahead <= 4
+        return False
+    shaping = {k for k in live if not k.startswith('Cal')}
+    dropped = sorted(k for k in shaping if not liquid(k))
+    live = {k: v for k, v in live.items() if liquid(k)}
+    print('illiquid, not used for the shape:', ', '.join(dropped))
     R = ratios()
     today = date.today()
     first = (today.year, today.month + 1) if today.month < 12 else (today.year + 1, 1)
@@ -78,6 +99,30 @@ def main():
         m += 1
         if m > 12:
             y, m = y + 1, 1
+
+    # a year whose months all come from its Cal: its seasonal shape leans on the last year quoted by liquid quarters or finer
+    # (Tom 29 Oct. 2026: the historical shape should take the forward quotes' shape into account), the weight halving
+    # every year further: shape = w × that year's month ÷ year ratios + (1 − w) × the day-ahead's historical ratios,
+    # w = 0.5 ^ (years after it). Before, such a year took the history alone and its value jumped from the quoted year's
+    # (solar k 1.033 in 2028, 1.000 in 2029)
+    def year_of(k):
+        return int(k[:4])
+    full = {}
+    for yy in sorted({year_of(k) for k in months}):
+        ks = [f'{yy}-{i:02d}' for i in range(1, 13)]
+        if all(k in months and not months[k]['from'].startswith(('Cal', 'Sum', 'Win')) for k in ks):
+            mean = sum(months[k]['value'] for k in ks) / 12
+            full[yy] = {i: months[f'{yy}-{i:02d}']['value'] / mean for i in range(1, 13)}
+    for yy in sorted({year_of(k) for k in months}):
+        ks = [f'{yy}-{i:02d}' for i in range(1, 13)]
+        prev = [q for q in full if q < yy]
+        if not prev or not all(k in months and months[k]['from'] == f'Cal{yy}' for k in ks):
+            continue
+        q = max(prev)
+        w = 0.5 ** (yy - q)
+        for i in range(1, 13):
+            months[f'{yy}-{i:02d}']['value'] = live[f'Cal{yy}'] * (w * full[q][i] + (1 - w) * R['year'][i])
+            months[f'{yy}-{i:02d}']['shape'] = f'{round(w * 100)} % Q{q}, {round((1 - w) * 100)} % history'
 
     # listed contracts matched again, finest first: a quarter rescales its free months, then seasons, then the
     # Cal rescales what is left free, so every listed contract's average is its price (months are taken as they are)
@@ -123,7 +168,8 @@ def main():
                 break
     for v in months.values():
         v['value'] = round(v['value'], 2)
-    out = {'asOf': newest, 'source': 'SEFE Energy Market Insights, last closes; day-ahead ratios (complete years, 2022 left out)',
+    out = {'asOf': newest, 'source': 'SEFE Energy Market Insights, last closes, liquid products only (months M+1 to M+3, quarters Q+1 to Q+4, Cals); day-ahead ratios (complete years, 2022 left out)',
+           'illiquidLeftOut': dropped,
            'ratios': {k: {str(m): round(x, 4) for m, x in v.items()} if isinstance(v, dict) else v for k, v in R.items()}, 'months': months}
     with open(os.path.join(H, 'fr_forward_monthly.json'), 'w') as f:
         json.dump(out, f, separators=(',', ':'))

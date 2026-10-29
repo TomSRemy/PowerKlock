@@ -118,12 +118,16 @@
     const calOf = (Y, Mo) => { if (!Mo || Mo.length === 12) return monthLevel(Y, 0); let a = 0, n = 0; Mo.forEach(m => { const d = new Date(Date.UTC(Y, m, 0)).getUTCDate(); a += monthLevel(Y, m) * d; n += d; }); return n ? a / n : monthLevel(Y, 0); };
     o.tenor.forEach((Y, yi) => {
       const Mo = o.monthsOf ? o.monthsOf(Y) : null;   // a year delivered in part: its months only
-      const capS = capPathFor('solar')(Y), capW = capPathFor('wind')(Y), days = daysOf(Y).filter(d => !Mo || Mo.includes(+d.slice(5, 7)));
+      // the fleet day by day, from the previous year-end to the year-end (before: the year-end on every day, about half a
+      // year's growth too much; solar 2027 42.3 GW against 39.4 on average)
+      const capS1 = capPathFor('solar')(Y), capW1 = capPathFor('wind')(Y), capS0 = capPathFor('solar')(Y - 1), capW0 = capPathFor('wind')(Y - 1);
+      const nDays = daysOf(Y).length, days = daysOf(Y).filter(d => !Mo || Mo.includes(+d.slice(5, 7)));
       const simsY = [];
       for (let n = 0; n < N; n++) {
         const P = new Float64Array(days.length * 24), V = new Float64Array(days.length * 24);
         days.forEach((iso, di) => {
           const m = +iso.slice(5, 7), t = dtype(iso);
+          const fy = ((Date.parse(iso) - Date.UTC(Y, 0, 1)) / 864e5 + 0.5) / nDays, capS = capS0 + (capS1 - capS0) * fy, capW = capW0 + (capW1 - capW0) * fy;
           const e1 = gauss(), e2 = gauss();
           zs = phiS * zs + Math.sqrt(1 - phiS * phiS) * e1;
           zw = phiW * zw + Math.sqrt(1 - phiW * phiW) * (rho * e1 + Math.sqrt(1 - rho * rho) * e2);
