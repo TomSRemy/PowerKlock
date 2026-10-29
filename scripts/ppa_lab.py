@@ -50,6 +50,10 @@ OUT = os.path.join(ROOT, 'data', 'history', 'ppa_lab.json')
 CAL, VERDICT = [2019, 2020, 2021, 2023], [2024, 2025]
 NEIGH = ('DE', 'BE', 'ES')
 PPE3 = {'s': {2030: 48.0, 2035: 67.5}, 'w': {2030: 31.0, 2035: 37.5}}
+# neighbours' official 2030 targets, a ceiling on their extrapolated pace (GW): Spain PNIEC 2023-2030 (MITECO, Sept.
+# 2024: 76 GW solar incl. 19 GW self-consumption, 62 GW wind incl. 3 offshore); Germany EEG 2023 §4 (215 GW solar,
+# 115 GW onshore + 30 GW offshore wind). Without it Spain's last pace (+12 GW a year) passed its 2030 target in 2028.
+TARGETS = {'ES': {'s': (2030, 76.0), 'w': (2030, 62.0)}, 'DE': {'s': (2030, 215.0), 'w': (2030, 145.0)}}
 TECH = {'s': 'solar', 'w': 'wind'}
 BIN = 0.025
 RNG = np.random.default_rng(7)
@@ -131,23 +135,127 @@ def cap_guess(c, t, Y, last):
 
 
 def cap_future(c, t, Y):
-    """forecast capacity: France follows the PPE3 path, neighbours their last yearly pace"""
+    """forecast capacity: France its last yearly pace, never below the PPE3 path; neighbours their last yearly pace"""
     ys = [y for y in range(2010, 2040) if cap(c, t, y) and (c != 'DE' or y <= date.today().year)]
     last = ys[-1]
     if Y <= last:
         return cap(c, t, Y)
     if c == 'FR':
+        # the last year's pace, never below the PPE3 path (as js/tool-ppa.js capPath; the test bench's own pace)
         pts = [(last, cap(c, t, last))] + [(y, g) for y, g in PPE3[t].items() if y > last]
+        ppe = None
         for (y0, g0), (y1, g1) in zip(pts, pts[1:]):
             if Y <= y1:
-                return g0 + (g1 - g0) * (Y - y0) / (y1 - y0)
-        (ya, ga), (yb, gb) = pts[-2], pts[-1]
-        return gb + (gb - ga) / (yb - ya) * (Y - yb)
-    return cap_guess(c, t, Y, last)
+                ppe = g0 + (g1 - g0) * (Y - y0) / (y1 - y0)
+                break
+        if ppe is None:
+            (ya, ga), (yb, gb) = pts[-2], pts[-1]
+            ppe = gb + (gb - ga) / (yb - ya) * (Y - yb)
+        return max(ppe, cap_guess(c, t, Y, last) or 0)
+    g = cap_guess(c, t, Y, last)
+    tg = TARGETS.get(c, {}).get(t)
+    if g is not None and tg and Y > last:
+        # never beyond the straight line from the last known year to the official target (then its slope)
+        ty, tv = tg
+        slope = (tv - cap(c, t, last)) / max(1, ty - last)
+        g = min(g, cap(c, t, last) + slope * (Y - last))
+    return g
 
 
 # ── regional price model ─────────────────────────────────────────────────────
 FLEX = {'on': False}
+SOFT_LEVEL = {'on': False, 'band': 15.0, 'techs': ('w',)}   # price-level classes blended within ±band €/MWh of each
+# threshold; on for the technologies in 'techs' (wind: lower error in scripts/ppa_level_soft_test.py, solar: higher)
+# batteries added beyond the years the table was learnt on (they charge in the region's lowest residual hours and give
+# back 85 % in the highest, each day): France, RTE Bilan prévisionnel 2025 (≈1 GW at end 2024, of which ~0.7 GW serves
+# reserves; "socle" +0.3 GW a year to 2.8 GW in 2030, 2 h; central variant +5 GW more by 2035, 4 h); Germany, its
+# battery fleet (Energy-Charts, data/history/capacity.json: 8.4 GW 2023, 12.7, 16.9, 22.0 GW 2026, then the pace of
+# its last three years, +4.4 GW a year), counted at 50 % (mostly home
+# batteries run for self-consumption, not for the market)
+STORAGE = {'on': False, 'de_eff': 0.5, 'techs': ('w',)}   # on for 'techs' (scripts/ppa_storage_test.py: wind lower error,
+# solar higher: the table already overvalues solar a little in the replay)
+
+
+
+
+def _de_batt():
+    try:
+        c = json.load(open(os.path.join(ROOT, 'data', 'history', 'capacity.json')))['countries']['DE']
+        return {y: v for y, v in zip(c['years'], c['types']['Battery storage (power)']) if v}
+    except (OSError, KeyError):
+        return {}
+
+
+DE_BATT = _de_batt()
+
+
+def fr_batteries(Y):
+    """France's batteries beyond the reserves: [(GW, hours)], RTE socle (2 h) then the central variant (4 h)"""
+    socle = min(2.8, 1.0 + 0.3 * (Y - 2024)) - 0.7
+    extra = 5.0 * min(1.0, (Y - 2026) / (2035 - 2026)) if Y > 2026 else 0.0
+    return [(max(0.0, socle), 2.0), (extra, 4.0)]
+
+
+def de_batteries(Y):
+    """Germany's battery power (GW): Energy-Charts, then its last three years' pace"""
+    if not DE_BATT:
+        return 0.0
+    last = max(DE_BATT)
+    if Y <= last:
+        return DE_BATT.get(Y, DE_BATT[min(DE_BATT)])
+    return DE_BATT[last] + (DE_BATT[last] - DE_BATT[last - 3]) / 3 * (Y - last)
+
+
+def storage_added(Y, base):
+    """the batteries of Y beyond those of the year the table was learnt on: [(MW, hours)]"""
+    fy, fb = fr_batteries(Y), fr_batteries(base)
+    out = [(max(0.0, a[0] - b[0]) * 1000, a[1]) for a, b in zip(fy, fb)]
+    out.append((max(0.0, de_batteries(Y) - de_batteries(base)) * STORAGE['de_eff'] * 1000, 2.0))
+    return [o for o in out if o[0] > 0]
+
+
+def batteries_on(t, Y, demand_year, region, h, x):
+    """the residual share x after the batteries added since demand_year, when STORAGE applies to technology t"""
+    if not (STORAGE['on'] or t in STORAGE['techs']) or not region or Y <= demand_year:
+        return x
+    Lo = sum(h['l'][c] for c in ('FR',) + NEIGH)
+    R2, L2 = with_batteries(x * Lo, Lo, storage_added(Y, demand_year))
+    return R2 / L2
+
+
+def with_batteries(R, Lo, tranches, eff=0.85):
+    """residual load R and load Lo (D × 24, MW, the region summed) after daily cycles: each tranche charges where the
+    residual load is lowest and gives back 85 % where it is highest"""
+    R, Lo = R.copy(), Lo.copy()
+    for p_mw, hours in tranches:
+        e_max = p_mw * hours
+        for d in range(R.shape[0]):
+            order = np.argsort(R[d])
+            stored = 0.0
+            for h in order:
+                if stored >= e_max:
+                    break
+                c = min(p_mw, e_max - stored)
+                R[d, h] += c; Lo[d, h] += c; stored += c
+            out = stored * eff
+            for h in order[::-1]:
+                if out <= 0:
+                    break
+                q = min(p_mw, out)
+                R[d, h] -= q; out -= q
+    return R, Lo
+    order = np.argsort(R)
+    e, stored = p_mw * hours, 0.0
+    for h in order:
+        if stored >= e:
+            break
+        c = min(p_mw, e - stored); R[h] += c; Lo[h] += c; stored += c
+    out = stored * eff
+    for h in order[::-1]:
+        if out <= 0:
+            break
+        q = min(p_mw, out); R[h] -= q; out -= q
+    return R, Lo
 
 
 def residual_share(a, region=True, s=None, w=None, l=None, n=None, pump=None):
@@ -263,6 +371,47 @@ def calendar(Y):
 _DI = {}
 
 
+# demand (consumption, nuclear) taken from the same kind of day of the demand year: weekday, Saturday, Sunday or French
+# public holiday (counted as a Sunday), the nearest such day within ±3 days of the same date; off = the same date
+DEMAND_CAL = {'on': True}   # scripts/ppa_calendar_test.py: error over 1–3 yrs, curt, solar 2.55 → 2.49, wind equal
+
+
+def _easter(y):
+    a, b, c = y % 19, y // 100, y % 100
+    d, e = b // 4, b % 4
+    g = (8 * b + 13) // 25
+    h = (19 * a + b - d - g + 15) % 30
+    i, k = c // 4, c % 4
+    l_ = (32 + 2 * e + 2 * i - h - k) % 7
+    m = (a + 11 * h + 22 * l_) // 451
+    mo = (h + l_ - 7 * m + 114) // 31
+    return date(y, mo, (h + l_ - 7 * m + 114) % 31 + 1)
+
+
+def day_kind(d):
+    """0 weekday, 1 Saturday, 2 Sunday or French public holiday"""
+    dd = d if isinstance(d, date) else date.fromisoformat(str(d)[:10])
+    e = _easter(dd.year)
+    hol = {(1, 1), (5, 1), (5, 8), (7, 14), (8, 15), (11, 1), (11, 11), (12, 25)}
+    if (dd.month, dd.day) in hol or dd in (e + timedelta(days=1), e + timedelta(days=39), e + timedelta(days=50)):
+        return 2
+    wd = dd.weekday()
+    return 0 if wd < 5 else (1 if wd == 5 else 2)
+
+
+def demand_row(dmd, di, d):
+    """row of the demand year for day d of the delivery year"""
+    k = di.get(doy(d))
+    if not DEMAND_CAL['on'] or k is None:
+        return k
+    want = day_kind(d)
+    for off in (0, -1, 1, -2, 2, -3, 3):
+        j = di.get(doy(d) + off)
+        if j is not None and day_kind(dmd['days'][j]) == want:
+            return j
+    return k
+
+
 def by_doy(a, key=None):
     """{day of year: row} of a past year's array (cached)"""
     k = id(a)
@@ -288,7 +437,7 @@ def assemble(Y, days, weather_src, demand_year, capY):
             cs, cw = cap(c, 's', wy) or 1, cap(c, 'w', wy) or 1
             S[i] = a[pre + 's'][j] / (cs * 1000) * capY[c]['s'] * 1000
             Wd[i] = a[pre + 'w'][j] / (cw * 1000) * capY[c]['w'] * 1000
-            k = di.get(doy(d))
+            k = demand_row(dmd, di, d)
             if k is None:
                 k = min(di.values(), key=lambda q: abs(int(dmd['doy'][q]) - doy(d)))
             L[i] = dmd[pre + 'l'][k]; N[i] = dmd[pre + 'n'][k]
@@ -335,8 +484,16 @@ def regional(t, Y, train_w, pm, demand_year, capY, sims=0, levels=None, region=T
     days = calendar(Y)
     month = np.array([int(d[5:7]) for d in days])
     g = grp(month)
+    soft = None
     if pm.level:
         lv = np.array([(levels or {}).get(int(m), 50.0) for m in month])
+        if SOFT_LEVEL['on'] or t in SOFT_LEVEL['techs']:
+            # the class below and above, and the weight of the upper one within ±band of the 60 and 110 thresholds
+            bd = SOFT_LEVEL['band']
+            lo = np.where(lv < 60 + bd, 0, np.where(lv < 110 + bd, 1, 2))
+            w = np.where(lo == 0, np.clip((lv - (60 - bd)) / (2 * bd), 0, 1), np.where(lo == 1, np.clip((lv - (110 - bd)) / (2 * bd), 0, 1), 0.0))
+            hi = np.minimum(lo + 1, 2)
+            soft = (g + 6 * lo[:, None], g + 6 * hi[:, None], w[:, None])
         g = g + 6 * pm.lclass(lv)[:, None]
     wkd = np.array([date.fromisoformat(d).weekday() < 5 for d in days])
     peak = wkd[:, None] & ((np.arange(24) >= 8) & (np.arange(24) < 20))[None, :]
@@ -345,7 +502,12 @@ def regional(t, Y, train_w, pm, demand_year, capY, sims=0, levels=None, region=T
         src = weather_index(Y, wy, days)
         h = assemble(Y, days, src, demand_year, capY)
         x = residual_share(None, region, h['s'], h['w'], h['l'], h['n'], h['pump'])
-        rm, rp, pp = pm.expected(x, g)
+        x = batteries_on(t, Y, demand_year, region, h, x)
+        if soft is not None:
+            a, b = pm.expected(x, soft[0]), pm.expected(x, soft[1])
+            rm, rp, pp = [(1 - soft[2]) * u + soft[2] * v for u, v in zip(a, b)]
+        else:
+            rm, rp, pp = pm.expected(x, g)
         res4.append(month_rates(month, h[t]['FR'], rm, rp, pp, peak))
     m4 = {m: {k: float(np.mean([r[m][k] for r in res4 if m in r and r[m].get(k) is not None])) for k in ('all', 'curt', 'paid', 'negH', 'peak')} for m in range(1, 13)}
     m5, dist = None, None
@@ -360,6 +522,7 @@ def regional(t, Y, train_w, pm, demand_year, capY, sims=0, levels=None, region=T
                 src.append(weather_index(Y, wy, [d])[0])
             h = assemble(Y, days, src, demand_year, capY)
             x = residual_share(None, region, h['s'], h['w'], h['l'], h['n'], h['pump'])
+            x = batteries_on(t, Y, demand_year, region, h, x)
             r = pm.draw(x, g)
             allm.append(month_rates(month, h[t]['FR'], r, r * (r > 0), (r > 0).astype(float)))
         m5 = {m: {k: float(np.mean([a[m][k] for a in allm if m in a and a[m][k] is not None])) for k in ('all', 'curt', 'paid', 'negH')} for m in range(1, 13)}

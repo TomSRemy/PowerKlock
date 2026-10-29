@@ -1,51 +1,51 @@
 {
- "updated": "2026-10-27T20:49:22+00:00",
- "asof": "2026-10-27",
+ "updated": "2026-10-28T21:13:13+00:00",
+ "asof": "2026-10-28",
  "notes": 2,
  "engine": "proxy",
  "context": [
   {
    "topic": "France",
    "topic_en": "France",
-   "text": "La disponibilité nucléaire en France est en baisse de 6,4% sur 7 jours, ce qui pousse les prix à la hausse. La consommation électrique est également impactée par les conditions météorologiques.",
-   "text_en": "Nuclear availability in France is down 6.4% over 7 days, driving prices up. Electricity consumption is also affected by weather conditions.",
+   "text": "La consommation électrique en France est soutenue par la baisse des températures. Les prix de l'électricité en France sont influencés par la disponibilité de la production nucléaire et hydroélectrique. La disponibilité nucléaire en France est en baisse de 6,4% sur 7 jours, à 40 936,77 MW",
+   "text_en": "Electricity consumption in France is supported by the drop in temperatures. French electricity prices are influenced by the availability of nuclear and hydroelectric production. Nuclear availability in France is down 6.4% over 7 days, at 40,936.77 MW",
    "tone": "up"
   },
   {
    "topic": "Golfe",
    "topic_en": "Gulf",
-   "text": "Les tensions dans le Golfe persistent, avec des attaques contre les infrastructures énergétiques, ce qui maintient le risque de perturbations d'approvisionnement élevé.",
-   "text_en": "Tensions in the Gulf persist, with attacks on energy infrastructure, keeping the risk of supply disruptions high.",
+   "text": "Les tensions dans le Golfe ont fait augmenter les prix du gaz et de l'électricité en Europe. Les États-Unis ont appelé plusieurs pays du Golfe à se préparer à une campagne militaire potentielle contre l'Iran",
+   "text_en": "Tensions in the Gulf have increased gas and electricity prices in Europe. The US has urged several Gulf nations to prepare for a potential military campaign against Iran",
    "tone": "up"
   },
   {
    "topic": "Norvège",
    "topic_en": "Norway",
-   "text": "Les perturbations d'approvisionnement en Norvège, avec des arrêts non planifiés à Oseberg et Åsgard, contribuent à la tension sur le marché du gaz.",
-   "text_en": "Supply disruptions in Norway, with unplanned outages at Oseberg and Åsgard, contribute to tightness in the gas market.",
+   "text": "Les exportations de gaz norvégiennes sont en baisse en raison d'arrêts imprévus. Les prix du gaz en Europe sont influencés par la disponibilité des importations de gaz norvégiennes",
+   "text_en": "Norwegian gas exports are down due to unplanned outages. European gas prices are influenced by the availability of Norwegian gas imports",
    "tone": "up"
   }
  ],
  "outlook": {
   "oil": {
    "tone": "up",
-   "text": "Les prix du pétrole devraient rester élevés en raison des tensions géopolitiques.",
-   "text_en": "Oil prices are expected to remain high due to geopolitical tensions."
+   "text": "Les prix du pétrole devraient rester soutenus en raison des tensions géopolitiques",
+   "text_en": "Oil prices are expected to remain supported due to geopolitical tensions"
   },
   "gas": {
    "tone": "up",
-   "text": "Le marché du gaz devrait rester tendu en raison des perturbations d'approvisionnement.",
-   "text_en": "The gas market is expected to remain tight due to supply disruptions."
+   "text": "Les prix du gaz devraient continuer à augmenter en raison de la faible disponibilité des importations",
+   "text_en": "Gas prices are expected to continue to rise due to low availability of imports"
   },
   "power": {
    "tone": "up",
-   "text": "Les prix de l'électricité devraient rester élevés en raison de la baisse de la disponibilité nucléaire et des conditions météorologiques.",
-   "text_en": "Electricity prices are expected to remain high due to decreased nuclear availability and weather conditions."
+   "text": "Les prix de l'électricité devraient rester élevés en raison de la faible disponibilité de la production renouvelable",
+   "text_en": "Electricity prices are expected to remain high due to low availability of renewable production"
   },
   "carbon": {
    "tone": "flat",
-   "text": "Les prix du carbone devraient rester stables.",
-   "text_en": "Carbon prices are expected to remain stable."
+   "text": "Les prix des quotas de carbone devraient rester stables",
+   "text_en": "Carbon prices are expected to remain stable"
   }
  }
 }

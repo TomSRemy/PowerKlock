@@ -3559,7 +3559,9 @@ html[data-theme="light"] #page-boa .boa-f3 code { color: #1D4E89; } html[data-th
 .pp-band-v { font:700 46px/1.05 'JetBrains Mono',monospace; letter-spacing:-.02em; color:var(--text); white-space:nowrap; }
 .pp-band-v small { font-size:15px; color:var(--text3); font-weight:600; }
 .pp-band-s { font-size:12.5px; color:var(--text3); margin-top:4px; }
-.pp-band-m { display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:8px; }
+.pp-band-risk { font-size:12.5px; color:var(--text2); margin-top:10px; line-height:1.5; }
+.pp-band-risk:empty { display:none; }
+.pp-band-m { display:grid; grid-template-columns:repeat(auto-fit, minmax(118px, 1fr)); gap:8px; }
 .pp-mcard { position:relative; display:grid; gap:2px; padding:10px 12px 10px 36px; border-radius:10px; background:var(--bg3); border:1px solid var(--border); cursor:pointer; min-width:0; }
 .pp-mcard.on { border-color:color-mix(in srgb, var(--accent) 60%, var(--border)); }
 .pp-mcard.na { opacity:.6; cursor:default; }
@@ -3575,3 +3577,33 @@ html[data-theme="light"] #page-boa .boa-f3 code { color: #1D4E89; } html[data-th
 
 /* forecast tool: the map of the site */
 .fc-map-card { max-width:560px; margin:12px 0; padding:10px; background:var(--bg2); border:1px solid var(--border); border-radius:10px; }
+#page-boa .boa-tiles3 { grid-template-columns:repeat(3, minmax(0, 1fr)); } @media (max-width:600px) { #page-boa .boa-tiles3 { grid-template-columns:1fr; } }
+
+.pp-offer { grid-column:1 / -1; display:flex; flex-wrap:wrap; align-items:center; gap:8px 14px; padding-top:10px; border-top:1px solid var(--border); }
+.pp-offer label { font:600 11px 'JetBrains Mono',monospace; text-transform:uppercase; letter-spacing:.06em; color:var(--text3); }
+.pp-offer .cf-in { width:150px; }
+.pp-offer-out { display:flex; flex-wrap:wrap; gap:6px 18px; font-size:13px; color:var(--text3); }
+.pp-offer-out b { font:700 15px 'JetBrains Mono',monospace; color:var(--text); }
+.pp-offer-h { font-size:12px; }
+
+/* comparator: ready-made comparisons */
+.cmp-presets { flex-basis:100%; flex-wrap:wrap; }
+.cmp-presets-l { font:700 10px 'JetBrains Mono',monospace; letter-spacing:.08em; text-transform:uppercase; color:var(--text3); margin-right:4px; align-self:center; }
+
+/* Analysis: the finding of a chart in one line */
+.ma-finding { font:600 14px/1.35 'Outfit',sans-serif; color:var(--text); margin:4px 0 2px; text-wrap:balance; }
+
+/* 1024–1180 px fixes, bridge-cse, 28 Oct. */
+/* the section meta line wraps instead of being cut with an ellipsis (titles and units wrap, never cut) */
+@media (min-width: 761px) {
+  .pk-hs-meta { white-space: normal; overflow: visible; text-overflow: clip; }
+}
+/* short labels that were cut with an ellipsis at 1024–1180 px wrap instead (their rules are injected by the page
+   scripts, hence html body): power map legend, forecast tiles, the morning tiles' comparison line */
+html body .pm-o-l, html body .pkf-t-l, html body .mrn2-tc { white-space: normal; overflow: visible; text-overflow: clip; }
+
+#page-boa .boa-chk { display:flex; gap:8px; align-items:flex-start; margin:8px 0 2px; font-size:12.5px; color:var(--text2); cursor:pointer; }
+#page-boa .boa-chk input { accent-color:#7FC8F8; margin-top:2px; }
+
+/* Production forecast: a hidden field stays hidden (.cf-field sets display:flex, which beat the hidden attribute: wind fields showed in solar mode) */
+#page-fcst [hidden] { display: none !important; }

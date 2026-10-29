@@ -96,7 +96,7 @@
     const j = await load();
     const upd = document.getElementById('cap-upd');
     if (!j || !j.countries) { if (upd) upd.textContent = 'capacity.json not available'; return; }
-    if (upd) upd.textContent = 'Energy-Charts · ' + (j.updated || '').slice(0, 10);
+    if (upd) upd.textContent = (window.PKI18n && PKI18n.lang === 'en' ? 'Energy-Charts · RTE (France, solar and wind) · ' : 'Energy-Charts · RTE (France, solaire et éolien) · ') + (j.updated || '').slice(0, 10);
     PKW.draw('cap-history', 'cap-history', { country: cc }).then(() => { addFullscreen('cap-history'); addDownload('cap-history', 'capacity-' + cc); });
     PKW.draw('cap-compare', 'cap-compare').then(() => { addFullscreen('cap-compare'); addDownload('cap-compare', 'capacity-compare'); });
     document.getElementById('cap-history-title').textContent = 'Installed capacity by year · ' + cTitle(cc);

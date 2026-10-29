@@ -21,8 +21,8 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
       - name: Install dependencies
@@ -34,11 +34,19 @@ jobs:
       - name: Regional capture (France, 12 regions)
         run: python scripts/fetch_fr_regions_capture.py --recent || echo "::warning::regional capture not updated"
       - name: Test bench and forecasts
-        run: python scripts/ppa_lab.py --sims 100
+        run: python scripts/ppa_lab.py --sims 300
+      - name: Integrated method (realised last year × the European model's change)
+        run: python scripts/ppa_integrated.py || echo "::warning::integrated method not updated"
       - name: Walk-forward test, year by year
         run: python scripts/ppa_walkforward.py || echo "::warning::walk-forward not updated"
       - name: Capture fan
         run: python scripts/build_ppa_fan.py
+      - name: Test of the bias corrections (complete delivery years; decides which ones are taken)
+        run: python scripts/ppa_bias_test.py || echo "::warning::bias test not updated"
+      - name: Each method's past bias (the pricer takes it off where it helps)
+        run: python scripts/ppa_bias.py --cache || echo "::warning::methods' bias not updated"
+      - name: Weights of the methods in the published price (inverse of their past error; solar)
+        run: python scripts/ppa_weights.py || echo "::warning::method weights not updated"
       - name: Production forecast backtest
         run: python scripts/fcst_backtest.py || echo "::warning::forecast backtest not updated"
       - name: Production forecast vs ENTSO-E, France
@@ -53,10 +61,10 @@ jobs:
         run: |
           git config user.name "PowerDesk Bot"
           git config user.email "bot@powerdesk.local"
-          git add data/history/region_hourly data/history/ppa_backtest_detail.json data/history/ppa_lab.json data/history/ppa_forecast.json data/history/ppa_walkforward.json data/history/fr_regional_capture.json data/history/ppa_fan.json data/history/fcst_backtest.json data/history/fcst_calib.json data/history/fcst_national.json data/history/fr_prod_model.json data/history/ppa_factors.json data/history/fcst_neighbours.json
+          git add data/history/region_hourly data/history/ppa_backtest_detail.json data/history/ppa_lab.json data/history/ppa_forecast.json data/history/ppa_walkforward.json data/history/fr_regional_capture.json data/history/ppa_fan.json data/history/fcst_backtest.json data/history/fcst_calib.json data/history/fcst_national.json data/history/fr_prod_model.json data/history/ppa_factors.json data/history/fcst_neighbours.json data/history/ppa_bias.json data/history/ppa_bias_test.json data/history/ppa_weights.json
           if git diff --staged --quiet; then echo "No change"; exit 0; fi
           git commit -m "data: PPA test bench $(date -u '+%Y-%m-%d')"
-          for i in 1 2 3 4 5; do git pull -q --rebase -X theirs origin main && git push && exit 0; git rebase --abort 2>/dev/null; sleep 5; done
+          for i in 1 2 3 4 5; do git pull -q --rebase -X theirs origin main && git push && exit 0; git rebase --abort 2>/dev/null || true; sleep 5; done
           exit 1
 
       - name: E-mail on failure

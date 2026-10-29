@@ -1,5 +1,5 @@
 {
- "open": 8,
+ "open": 6,
  "notes": [
   {
    "id": 29,
@@ -111,49 +111,6 @@
    },
    "body": "je colorends pas les sous section. En haut ? dans le menu ? pk pas tout ? pk en haut si dans le menus et inversement ? A rationaliser",
    "reply": "Juste. Proposition de règle unique : le menu de gauche donne les pages, les onglets en haut donnent les vues d’une même page, et rien n’apparaît aux deux endroits. Je prépare la liste des pages à réordonner et une maquette.",
-   "done_at": null
-  },
-  {
-   "id": 54,
-   "status": "open",
-   "created_at": "2026-10-27T10:32+00:00",
-   "author": "Tom",
-   "route": "tools/converter",
-   "page": "Outils › Convertisseur",
-   "tab": "MW · Éolien terrestre (25%)",
-   "target_id": null,
-   "target_label": null,
-   "settings": {
-    "_page": "converter",
-    "cap-lf": "25",
-    "cap-mw": "500",
-    "pk-zone": "France",
-    "lf-scope": "Régions françaises",
-    "lf-period": "Dernière année complète",
-    "conv-input": "1000"
-   },
-   "body": "choix auto du facteur de charge pour plus de rapidit via menu défilant et possibilité de le chosir",
-   "reply": null,
-   "done_at": null
-  },
-  {
-   "id": 55,
-   "status": "open",
-   "created_at": "2026-10-27T10:40+00:00",
-   "author": "Tom",
-   "route": "today",
-   "page": "Aujourd'hui",
-   "tab": "Expert · Tout",
-   "target_id": "mu-day-m9gx5v",
-   "target_label": "élément sans titre (graphique)",
-   "settings": {
-    "_page": "morning",
-    "_path": "#mrn2 > div:nth-of-type(2) > section:nth-of-type(3)",
-    "pk-zone": "France",
-    "mrn-creg-per": "Année 2025"
-   },
-   "body": "pas le style forward comme ailleurs",
-   "reply": null,
    "done_at": null
   },
   {
@@ -1169,6 +1126,49 @@
    "body": "le tuiles sont un peu bloqué à droit. Et si on pouvait avoir le graph en grand en appuyant dessus comme dans aujourd'hui ce serait top.",
    "reply": "Fait : panneau de droite élargi pour que les tuiles respirent, et chaque graphique a maintenant son bouton plein écran comme sur Aujourd’hui (le plein écran global reste pour garder le curseur partagé).",
    "done_at": "2026-10-27T00:39+00:00"
+  },
+  {
+   "id": 54,
+   "status": "done",
+   "created_at": "2026-10-27T10:32+00:00",
+   "author": "Tom",
+   "route": "tools/converter",
+   "page": "Outils › Convertisseur",
+   "tab": "MW · Éolien terrestre (25%)",
+   "target_id": null,
+   "target_label": null,
+   "settings": {
+    "_page": "converter",
+    "cap-lf": "25",
+    "cap-mw": "500",
+    "pk-zone": "France",
+    "lf-scope": "Régions françaises",
+    "lf-period": "Dernière année complète",
+    "conv-input": "1000"
+   },
+   "body": "choix auto du facteur de charge pour plus de rapidit via menu défilant et possibilité de le chosir",
+   "reply": "Fait : sous la case « Facteur de charge », une liste des facteurs mesurés (pays par technologie, régions françaises pour l’éolien et le solaire, moyenne 3 ans ou dernière année selon le choix du tableau). À l’ouverture, l’éolien France mesuré est choisi automatiquement (23,3 % sur 2023-2025) ; taper une valeur ou cliquer une règle du pouce repasse en saisie libre. Les boutons « règles du pouce » passent aussi à la ligne sur téléphone (ils étaient coupés).",
+   "done_at": "2026-10-27T23:49+00:00"
+  },
+  {
+   "id": 55,
+   "status": "done",
+   "created_at": "2026-10-27T10:40+00:00",
+   "author": "Tom",
+   "route": "today",
+   "page": "Aujourd'hui",
+   "tab": "Expert · Tout",
+   "target_id": "mu-day-m9gx5v",
+   "target_label": "élément sans titre (graphique)",
+   "settings": {
+    "_page": "morning",
+    "_path": "#mrn2 > div:nth-of-type(2) > section:nth-of-type(3)",
+    "pk-zone": "France",
+    "mrn-creg-per": "Année 2025"
+   },
+   "body": "pas le style forward comme ailleurs",
+   "reply": "Fait : la carte du lendemain avant publication (prévision PowerKlock) a maintenant le même style que les autres prévisions du site — courbe bleu clair en pointillés, mention « prévision » en bleu, moyenne en gris — et n’est plus grisée ; le gris reste réservé à « pas encore publié ».",
+   "done_at": "2026-10-27T23:49+00:00"
   }
  ]
 }

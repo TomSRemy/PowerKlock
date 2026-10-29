@@ -24,16 +24,16 @@ jobs:
       actions: write     # to relaunch a late data job
       contents: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with: { fetch-depth: 1, sparse-checkout: scripts }
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with: { python-version: '3.12' }
       - name: Install
         run: |
           pip install -q playwright==1.48.0 requests==2.33.1
           python -m playwright install --with-deps chromium
       - name: Problems already reported
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: monitor_state.json
           key: monitor-state-${{ github.run_id }}
@@ -47,7 +47,7 @@ jobs:
         run: for w in $HEAL; do gh workflow run "$w" --ref main || echo "::warning::could not relaunch $w"; done
       - name: Remember what was reported
         if: always()
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: monitor_state.json
           key: monitor-state-${{ github.run_id }}

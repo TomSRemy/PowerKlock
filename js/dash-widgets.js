@@ -54,7 +54,7 @@
       const L = j.days[last], wk = all.filter(d => d <= new Date(Date.parse(last) - 7 * 864e5).toISOString().slice(0, 10)).pop();
       const mv = t => wk && j.days[wk][t] && L[t] ? ' (' + _mS(L[t].ppa - j.days[wk][t].ppa, 2) + _mT(' sur 7 j)', ' on 7 d)') : '';
       const reb = days.some(d => j.days[d].rebuilt);
-      return { sub: techs.map(t => (t === 'solar' ? _mT('Solaire ', 'Solar ') : _mT('Éolien ', 'Wind ')) + _mN(L[t] && L[t].ppa, 2) + ' €/MWh' + mv(t)).join(' · ') +
+      return { sub: _mT('Moyenne des 4 méthodes · ', 'Average of the 4 methods · ') + techs.map(t => (t === 'solar' ? _mT('Solaire ', 'Solar ') : _mT('Éolien ', 'Wind ')) + _mN(L[t] && L[t].ppa, 2) + ' €/MWh' + mv(t)).join(' · ') +
         ' · Cal ' + (L.tenor || '').replace(/-/g, '–') + (reb ? _mT(' · pointillés : jours reconstruits (forwards du jour, modèle actuel)', ' · dashed: rebuilt days (that day’s forwards, current model)') : '') };
     } });
   R({ id: 'ppa-today', kind: 'html', title: 'PPA benchmark · today', category: 'kpi', page: 'ppapricer', size: { w: 6, h: 3 },
@@ -64,7 +64,8 @@
       const all = Object.keys(j.days).sort(), L = j.days[all[all.length - 1]], P = j.days[all[all.length - 2]] || {}, W = j.days[all[Math.max(0, all.length - 6)]] || {};
       const cell = t => !L[t] ? '' : `<div class="mrn2-tile"><span class="mrn2-tn">${t === 'solar' ? _mT('PPA solaire', 'Solar PPA') : _mT('PPA éolien', 'Wind PPA')} · Cal ${(L.tenor || '').replace(/-/g, '–')}</span><span class="mrn2-tv">${_mN(L[t].ppa, 2)}<small>€/MWh</small></span>` +
         `<span class="mrn2-tc">${P[t] ? _mS(L[t].ppa - P[t].ppa, 2) + ' ' + _mT('J-1', 'D-1') : ''}${W[t] ? ' · ' + _mS(L[t].ppa - W[t].ppa, 2) + ' ' + _mT('5 j ouvrés', '5 runs') : ''}</span>` +
-        (L[t].blend != null ? `<span class="mrn2-tc">Blend <b>${_mN(L[t].blend, 2)}</b>${L[t].lo != null ? ' · P10–P90 <b>' + _mN(L[t].lo, 1) + '–' + _mN(L[t].hi, 1) + '</b>' : ''}</span>` : '') +
+        `<span class="mrn2-tc">${_mT('moyenne des 4 méthodes', 'average of the 4 methods')}${(() => { const v = ['build', 'fpc', 'wx', 'eu'].map(k => L[t][k]).filter(x => x != null); return v.length > 1 ? ' · ' + _mT('fourchette', 'range') + ' <b>' + _mN(Math.min(...v), 1) + '–' + _mN(Math.max(...v), 1) + '</b>' : ''; })()}</span>` +
+        (L[t].build != null ? `<span class="mrn2-tc">${_mT('dont tendance de capacité', 'of which capacity trend')} <b>${_mN(L[t].build, 2)}</b>${L[t].lo != null ? ' · P10–P90 <b>' + _mN(L[t].lo, 1) + '–' + _mN(L[t].hi, 1) + '</b>' : ''}</span>` : '') +
         `<span class="mrn3-tx"><span>${_mT('forward', 'forward')} <b>${_mN(L[t].ref, 2)}</b> · PPA ÷ forward <b>${_mN(L[t].ppa / L[t].ref * 100, 0)} %</b></span><span>${all[all.length - 1]}</span></span></div>`;
       host.innerHTML = '<div class="mrn2-tiles" style="grid-template-columns:1fr 1fr">' + cell('solar') + cell('wind') + '</div>';
     } });

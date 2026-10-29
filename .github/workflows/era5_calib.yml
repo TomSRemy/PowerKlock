@@ -23,8 +23,8 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
       - run: pip install numpy==2.5.4
@@ -38,7 +38,7 @@ jobs:
           if git diff --staged --quiet; then echo "No change"; exit 0; fi
           git commit -q -m "data: ERA5 correction by region"
           for i in 1 2 3 4 5; do
-            git pull -q --rebase -X theirs origin main && git push && exit 0; git rebase --abort 2>/dev/null
+            git pull -q --rebase -X theirs origin main && git push && exit 0; git rebase --abort 2>/dev/null || true
             sleep 8
           done
           exit 1

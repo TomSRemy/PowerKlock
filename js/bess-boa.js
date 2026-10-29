@@ -13,7 +13,10 @@
   'use strict';
   const $ = id => document.getElementById(id);
   const BOA_START = 2028, BASE = 10;
-  const S = { struct: 'floor', scen: 'mid', tab: 'pnl' };
+  const S = { struct: 'floor', scen: 'mid', tab: 'pnl', dur: '2h' };
+  // indicative CAPEX by duration (k€ per MW of power): the 2 h value is the reference (Capstone DC, Nov. 2025); 1 h and 4 h
+  // follow the usual split between power (~270 k€/MW) and energy (~240 k€/MWh) — replace them with real quotes
+  const CAPEX = { '1h': 510, '2h': 750, '4h': 1230 };
   // scenarios: red (low), blue (mid), amber (high); green only means "bankable"
   const COL = { low: '#ED6965', mid: '#7FC8F8', high: '#FBBF24' };
   const OK = '#4ADE80', WARN = '#FBBF24', BAD = '#ED6965';
@@ -59,16 +62,19 @@
     const scen = ['low', 'mid', 'high'].map(k => '<div class="boa-scen boa-scen-' + k + '"><div class="boa-sec">' + SCEN[k].name() + ' <span class="boa-src">(' + SCEN[k].src() + ')</span></div>' +
       FIELDS.map(([f, l, mn, mx, st], i) => row('boa-' + PFX[k] + '-' + f, l(), mn, mx, st, SCEN[k].v[i], 'k')).join('') + '<p class="boa-note">' + SCEN[k].note() + '</p>' + (k === 'mid' ? '<p class="boa-note boa-live" id="boa-live"></p>' : '') + '</div>').join('');
     const left = '<div class="boa-card">' +
-      '<div class="boa-sec">' + T('Contract structure', 'Structure du contrat') + '</div>' +
+      '<div class="boa-sec">' + T('Battery', 'Batterie') + '</div>' +
+      '<div class="boa-pills" id="boa-dur">' + pill('d', '1h', T('1 h of storage', '1 h de stockage')) + pill('d', '2h', T('2 h of storage', '2 h de stockage'), 1) + pill('d', '4h', T('4 h of storage', '4 h de stockage')) + '</div>' +
+      '<label class="boa-chk"><input type="checkbox" id="boa-real"> <span>' + T('Day-ahead without foresight', 'Day-ahead sans anticipation') + ' <span class="boa-note" id="boa-real-n"></span></span></label>' +
+      '<div class="boa-div"></div><div class="boa-sec">' + T('Contract structure', 'Structure du contrat') + '</div>' +
       '<div class="boa-pills" id="boa-struct">' + pill('s', 'floor', 'Floor + upside ★', 1) + pill('s', 'toll', T('Full tolling', 'Tolling complet')) + pill('s', 'partial', T('Partial tolling', 'Tolling partiel')) + pill('s', 'merchant', 'Merchant') + '</div>' +
       '<div id="boa-sp">' +
-      '<div id="r-floor">' + row('boa-floor', T('Floor at COD (k€/MW/yr)', 'Floor au COD (k€/MW/an)'), 30, 120, 1, 70, 'k') + '</div>' +
+      '<div id="r-floor">' + row('boa-floor', T('Floor at COD (k€/MW/yr)', 'Floor au COD (k€/MW/an)'), 30, 250, 1, 70, 'k') + '</div>' +
       '<div id="r-step">' + row('boa-step', T('Floor step-down (%/yr)', 'Baisse annuelle du floor (%/an)'), 0, 5, 0.5, 0, '%', 1) + '</div>' +
       '<div id="r-share">' + row('boa-share', T('Developer share of the upside (%)', 'Part de l’upside pour le développeur (%)'), 50, 95, 5, 70, '%') + '</div>' +
-      '<div id="r-toll" hidden>' + row('boa-toll', T('Toll price (k€/MW/yr)', 'Prix du toll (k€/MW/an)'), 60, 120, 1, 87, 'k') + '</div>' +
+      '<div id="r-toll" hidden>' + row('boa-toll', T('Toll price (k€/MW/yr)', 'Prix du toll (k€/MW/an)'), 40, 250, 1, 87, 'k') + '</div>' +
       '<div id="r-pfrac" hidden>' + row('boa-pfrac', T('Tolled fraction (%)', 'Part sous toll (%)'), 20, 80, 5, 60, '%') + '</div></div>' +
       '<div class="boa-div"></div><div class="boa-sec">' + T('Financing · optimistic defaults', 'Financement · valeurs par défaut optimistes') + '</div>' +
-      row('boa-capex', 'CAPEX (k€/MW)', 600, 1000, 10, 750, 'k') + row('boa-opex', T('OPEX (k€/MW/yr)', 'OPEX (k€/MW/an)'), 8, 25, 1, 12, 'k') + row('boa-ltv', T('Gearing, LTV (%)', 'Gearing, LTV (%)'), 40, 85, 5, 70, '%') +
+      row('boa-capex', 'CAPEX (k€/MW)', 400, 1600, 10, 750, 'k') + row('boa-opex', T('OPEX (k€/MW/yr)', 'OPEX (k€/MW/an)'), 8, 25, 1, 12, 'k') + row('boa-ltv', T('Gearing, LTV (%)', 'Gearing, LTV (%)'), 40, 85, 5, 70, '%') +
       row('boa-marg', T('Bank margin over the 10-year rate (%)', 'Marge bancaire sur le taux 10 ans (%)'), 0.5, 4, 0.05, 1.75, '%', 2) + '<p class="boa-note" id="boa-rate-note"></p>' + row('boa-tenor', T('Debt tenor (years)', 'Maturité de la dette (années)'), 5, 15, 1, 10, 'yrs') + row('boa-deg', T('Degradation (%/yr)', 'Dégradation (%/an)'), 1, 4, 0.5, 2, '%', 1) +
       '<div class="boa-div"></div><div class="boa-sec">' + T('Reserves', 'Réserves') + '</div>' +
       row('boa-fcrsh', T('Share of the power sold in FCR (%)', 'Part de la puissance vendue en FCR (%)'), 0, 20, 1, 5, '%') + '<p class="boa-note" id="boa-fcr-note"></p>' +
@@ -81,6 +87,9 @@
       '<div style="position:relative;height:220px"><canvas id="boa-dscr" style="width:100%;height:220px"></canvas></div>' +
       '<div class="boa-tiles">' + tile('boa-t-ds', T('Debt service', 'Service de la dette'), T('k€/MW/yr · annuity', 'k€/MW/an · annuité')) + tile('boa-t-min', T('Minimum DSCR', 'DSCR minimum'), T('worst year · binding', 'pire année · contraignante')) +
       tile('boa-t-avg', T('Average DSCR', 'DSCR moyen'), T('for reference', 'pour mémoire')) + tile('boa-t-br', T('First year < 1.20×', 'Première année < 1,20×'), T('low scenario', 'scénario bas')) + tile('boa-t-m', T('Offtaker margin', 'Marge de l’acheteur'), T('average k€/MW/yr', 'moyenne k€/MW/an')) + '</div>' +
+      '<div class="boa-sec" style="margin-top:12px">' + T('What the market allows · mid scenario, this financing', 'Ce que le marché permet · scénario central, ce financement') + '</div>' +
+      '<div class="boa-tiles boa-tiles3">' + tile('boa-t-fmin', T('Lowest bankable floor', 'Floor minimum finançable'), T('k€/MW/yr · DSCR ≥ 1.20× every year', 'k€/MW/an · DSCR ≥ 1,20× chaque année')) +
+      tile('boa-t-tmin', T('Lowest toll for the bank', 'Toll minimum pour la banque'), T('k€/MW/yr · DSCR ≥ 1.20×', 'k€/MW/an · DSCR ≥ 1,20×')) + tile('boa-t-tmax', T('Highest toll for the offtaker', 'Toll maximum pour l’acheteur'), T('k€/MW/yr · margin ≥ 0 on average', 'k€/MW/an · marge ≥ 0 en moyenne')) + '</div>' +
       '<div style="position:relative;height:170px"><canvas id="boa-rev" style="width:100%;height:170px"></canvas></div></div>';
     $('boa-in-root').innerHTML = '<div id="boa-best" class="boa-best"></div><div class="boa-grid2">' + left + right + '</div>' + formulas;
     // the battery and its market: live figures, the three scenarios, the revenue stack
@@ -88,7 +97,7 @@
       '<div class="boa-card"><div class="boa-sec">' + T('Revenue stack, scenario shown', 'Empilement des revenus, scénario affiché') + '</div><div style="position:relative;height:260px"><canvas id="boa-stack" style="width:100%;height:260px"></canvas></div><div class="boa-legend">' +
       SLABELS.map((l, i) => '<span><i class="sq" style="background:' + SCOLORS[i] + '"></i>' + l + '</span>').join('') + '</div></div>';
     const tabs = '<div class="boa-card"><div class="boa-tabs" id="boa-tabs">' + pill('t', 'pnl', T('P&L table', 'Tableau de P&L'), 1) + pill('t', 'compare', T('Structure comparison', 'Comparaison des structures')) + '</div>' +
-      '<div id="boa-tab-pnl"><p class="boa-note">' + T('Scenario and structure shown. DSCR green ≥ 1.20, amber 1.10 to 1.20, red under 1.10.', 'Scénario et structure affichés. DSCR vert ≥ 1,20, ambre 1,10 à 1,20, rouge sous 1,10.') + '</p><div class="table-wrap" style="overflow-x:auto"><table class="data-table boa-table" id="boa-pnl"></table></div></div>' +
+      '<div id="boa-tab-pnl"><p class="boa-note">' + T('Scenario and structure shown. DSCR green ≥ 1.20, amber 1.10 to 1.20, red under 1.10.', 'Scénario et structure affichés. DSCR vert ≥ 1,20, ambre 1,10 à 1,20, rouge sous 1,10.') + ' <button type="button" class="pk-btn-ghost" id="boa-csv">' + T('Download the P&L (CSV)', 'Télécharger le P&L (CSV)') + '</button></p><div class="table-wrap" style="overflow-x:auto"><table class="data-table boa-table" id="boa-pnl"></table></div></div>' +
       '<div id="boa-tab-compare" hidden><p class="boa-note">' + T('Each structure with its own default terms, mid scenario, current financing. Full tolling is tested on a 7-year debt. Bankable = minimum DSCR ≥ 1.20× every year in the mid scenario.', 'Chaque structure avec ses paramètres par défaut, scénario central, financement actuel. Le tolling complet est testé sur une dette de 7 ans. Finançable = DSCR minimum ≥ 1,20× chaque année dans le scénario central.') + '</p><div class="table-wrap" style="overflow-x:auto"><table class="data-table boa-table" id="boa-cmp"></table></div></div></div>';
     const guide = '<div class="boa-guide"><b>' + T('How to use it', 'Comment s’en servir') + '</b><ol>' +
       '<li>' + T('Floor + upside by default: a flat floor of 70 k, check the DSCR stays ≥ 1.20× in the mid scenario.', 'Floor + upside par défaut : floor plat de 70 k, vérifier que le DSCR reste ≥ 1,20× en scénario central.') + '</li>' +
@@ -206,6 +215,15 @@
     setTile('boa-t-br', br >= 0 ? String(BOA_START + br) : T('None', 'Aucune'), br >= 0 ? 'warn' : 'ok');
     setTile('boa-t-m', f1(avgM) + ' k', avgM >= 0 ? 'ok' : 'bad');
     best(s, p, ds, stacks.mid);
+    // break-evens on the mid scenario: the DSCR rises with the floor or the toll, so a bisection finds the threshold
+    const minDscr = (q, st) => Math.min(...rows(stacks.mid, q, ds, st).map(r => r.dscr));
+    const bisect = f => { let lo = 0, hi = 400; if (f(hi) < 1.2) return null; for (let k = 0; k < 40; k++) { const m = (lo + hi) / 2; if (f(m) >= 1.2) hi = m; else lo = m; } return hi; };
+    const fMin = bisect(F => minDscr(Object.assign({}, p, { floor: F }), 'floor')), tMin = bisect(t => minDscr(Object.assign({}, p, { toll: t }), 'toll'));
+    const capW = stacks.mid.slice(0, n).map((r, i) => Math.pow(1 - p.deg, i)), tMax = stacks.mid.slice(0, n).reduce((a, r, i) => a + r.total * capW[i], 0) / capW.reduce((a, b) => a + b, 0);
+    S.be = { fMin, tMin, tMax };
+    setTile('boa-t-fmin', fMin == null ? '–' : f1(fMin) + ' k', fMin == null ? 'bad' : (s === 'floor' || s === 'partial') && p.floor >= fMin ? 'ok' : 'warn');
+    setTile('boa-t-tmin', tMin == null ? '–' : f1(tMin) + ' k', tMin == null ? 'bad' : tMin <= tMax ? 'ok' : 'bad');
+    setTile('boa-t-tmax', f1(tMax) + ' k', tMin != null && tMin <= tMax ? 'ok' : 'bad');
 
     const years = Array.from({ length: n }, (_, i) => String(BOA_START + i)), show = S.scen === 'all' ? ['low', 'mid', 'high'] : [S.scen];
     const dsd = show.map(k => ({ label: 'DSCR (' + SC(k) + ')', data: all[k].map(r => +r.dscr.toFixed(2)), borderColor: COL[k], backgroundColor: 'transparent', borderWidth: 2, pointRadius: 4.5,
@@ -224,6 +242,9 @@
       options: _fuelOpts({ plugins: { legend: { display: false } }, scales: { x: Object.assign(_fuelXAxis(), { stacked: true }), y: _fuelAxis(SC(act) + ' · ' + T('k€/MW/yr', 'k€/MW/an'), { stacked: true }) } }) }, 'bess-boa-stack');
 
     const chip = d => '<span class="boa-chip boa-' + band(d) + '">' + f2(d) + '×</span>';
+    S.csv = [[T('Year', 'Année'), T('Market revenue', 'Revenu de marché'), T('Capacity left %', 'Capacité restante %'), T('Floor adjusted', 'Floor ajusté'), T('Developer payment', 'Paiement au développeur'), 'OPEX', 'EBITDA', T('Debt service', 'Service de la dette'), 'DSCR', T('Offtaker margin', 'Marge de l’acheteur')]]
+      .concat(R.map((r, i) => [BOA_START + i, r.mkt, Math.pow(1 - p.deg, i) * 100, r.fl, r.dev, p.opex, r.ebitda, ds, r.dscr, r.stk].map((v, k) => k === 0 ? v : v == null ? '' : (+v).toFixed(k === 8 ? 3 : 2))));
+    S.csvName = `boa-${S.dur}-${S.struct}-${act}.csv`;
     $('boa-pnl').innerHTML = '<thead><tr><th>' + T('Year', 'Année') + '</th><th>' + T('Market revenue', 'Revenu de marché') + '</th><th>' + T('Capacity left', 'Capacité restante') + '</th><th>' + T('Floor adjusted', 'Floor ajusté') + '</th><th>' + T('Developer payment', 'Paiement au développeur') + '</th><th>OPEX</th><th>EBITDA</th><th>' + T('Debt service', 'Service de la dette') + '</th><th>DSCR</th><th>' + T('Offtaker margin', 'Marge de l’acheteur') + '</th></tr></thead><tbody>' +
       R.map((r, i) => '<tr><td>' + (BOA_START + i) + '</td><td class="c-mkt">' + f1(r.mkt) + '</td><td class="c-mut">' + f1(Math.pow(1 - p.deg, i) * 100) + ' %</td><td class="c-fl">' + (r.fl == null ? '–' : f1(r.fl)) + '</td><td><b>' + f1(r.dev) + '</b></td><td class="c-mut">' + p.opex + '</td><td>' + f1(r.ebitda) +
         '</td><td class="c-mut">' + f1(ds) + '</td><td>' + chip(r.dscr) + '</td><td style="font-weight:600;color:' + (r.stk >= 0 ? OK : BAD) + '">' + f1(r.stk) + '</td></tr>').join('') + '</tbody>';
@@ -242,9 +263,9 @@
   function anchor() {
     PKBess.load().then(doc => {
       const el = $('boa-anchor'); if (!el || !doc) return;
-      const L = doc.summary_ltm['2h'], daMid = g('boa-m-da-cod');
-      el.innerHTML = _fuelKpi(T('Day-ahead alone, last 12 months', 'Day-ahead seul, 12 derniers mois'), f1(L.pw), T('k€/MW/yr', 'k€/MW/an'), T('2 h battery · perfect schedule · net of wear', 'batterie 2 h · programme parfait · net d’usure')) +
-        _fuelKpi(T('Day-ahead alone, no foresight', 'Day-ahead seul, sans anticipation'), f1(L.nv), T('k€/MW/yr', 'k€/MW/an'), T('2 h battery · fixed schedule', 'batterie 2 h · programme fixe')) +
+      const L = doc.summary_ltm[S.dur] || doc.summary_ltm['2h'], daMid = g('boa-m-da-cod'), hh = S.dur.replace('h', ' h');
+      el.innerHTML = _fuelKpi(T('Day-ahead alone, last 12 months', 'Day-ahead seul, 12 derniers mois'), f1(L.pw), T('k€/MW/yr', 'k€/MW/an'), T(hh + ' battery · perfect schedule · net of wear', 'batterie ' + hh + ' · programme parfait · net d’usure')) +
+        _fuelKpi(T('Day-ahead alone, no foresight', 'Day-ahead seul, sans anticipation'), f1(L.nv), T('k€/MW/yr', 'k€/MW/an'), T(hh + ' battery · fixed schedule', 'batterie ' + hh + ' · programme fixe')) +
         _fuelKpi(T('Mid scenario: DA + intraday at COD', 'Scénario central : DA + intraday au COD'), f1(daMid), T('k€/MW/yr', 'k€/MW/an'), LIVE.daSrc || T('from the assumptions above', 'd’après les hypothèses ci-dessus')) +
         _fuelKpi(T('FCR, 1 MW all year', 'FCR, 1 MW toute l’année'), LIVE.fcr == null ? '–' : f1(LIVE.fcr), T('k€/MW/yr', 'k€/MW/an'), T(`France · ${LIVE.fcrN} days`, `France · ${LIVE.fcrN} jours`)) +
         _fuelKpi(T('Debt rate', 'Taux de la dette'), f2(P().rate * 100), '%', T('10-year € + margin', '10 ans € + marge'));
@@ -261,8 +282,34 @@
       S[key] = b.dataset[attr]; if (key === 'struct') defaults(); update();
     });
     bind('boa-struct', 's', 'struct'); bind('boa-scen', 'c', 'scen');
+    $('boa-dur').addEventListener('click', e => {
+      const b = e.target.closest('button[data-d]'); if (!b || b.dataset.d === S.dur) return;
+      $('boa-dur').querySelectorAll('button').forEach(x => x.classList.toggle('active', x === b));
+      S.dur = b.dataset.d; delete root.dataset.daTouched;
+      if (!root.dataset.capexTouched) $('boa-capex').value = CAPEX[S.dur];
+      live();
+    });
+    root.addEventListener('input', e => { if (e.target.id === 'boa-capex') root.dataset.capexTouched = '1'; }, true);
+    $('boa-real').addEventListener('change', e => { S.real = e.target.checked; delete root.dataset.daTouched; live(); });
     root.addEventListener('input', e => { if (/^boa-[lmh]-da-cod$/.test(e.target.id)) root.dataset.daTouched = '1'; }, true);
     live();
+    // a break-even tile applies its value: floor + upside with that floor, or full tolling at that toll
+    const apply = (struct, id, v) => {
+      if (v == null) return;
+      const b = $('boa-struct').querySelector('[data-s="' + struct + '"]'); if (b && S.struct !== struct) b.click();
+      const el = $(id); el.value = Math.min(+el.max, Math.max(+el.min, Math.ceil(v))); update();
+    };
+    [['boa-t-fmin', 'floor', 'boa-floor', 'fMin'], ['boa-t-tmin', 'toll', 'boa-toll', 'tMin'], ['boa-t-tmax', 'toll', 'boa-toll', 'tMax']].forEach(([tid, st, inp, k]) => {
+      const t = $(tid); if (!t) return;
+      t.style.cursor = 'pointer'; t.title = T('Click to use this value', 'Cliquer pour utiliser cette valeur');
+      t.addEventListener('click', () => apply(st, inp, S.be && S.be[k]));
+    });
+    $('boa-csv').addEventListener('click', () => {
+      if (!S.csv) return;
+      const sep = fr() ? ';' : ',', txt = S.csv.map(r => r.map(v => fr() ? String(v).replace('.', ',') : v).join(sep)).join('\n');
+      const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\ufeff' + txt], { type: 'text/csv;charset=utf-8' })); a.download = S.csvName || 'boa.csv';
+      document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 0);
+    });
     $('boa-tabs').addEventListener('click', e => {
       const b = e.target.closest('button[data-t]'); if (!b) return;
       $('boa-tabs').querySelectorAll('button').forEach(x => x.classList.toggle('active', x === b));
@@ -282,25 +329,29 @@
   const END_RATIO = { m: 74 / 66, l: 62 / 56, h: 88 / 74 };
   function live() {
     const fd = d => d ? new Date(d + 'T12:00:00Z').toLocaleDateString(fr() ? 'fr-FR' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }) : '';
-    Promise.all([PKBess.load(), PKBess.loadRes ? PKBess.loadRes() : null]).then(([doc, R]) => {
+    const eu = window.__pkBessEu || (window.__pkBessEu = fetch('data/history/bess_europe.json').then(r => r.ok ? r.json() : null).catch(() => null));
+    Promise.all([PKBess.load(), PKBess.loadRes ? PKBess.loadRes() : null, eu]).then(([doc, R, E]) => {
+      const fz = E && E.zones && E.zones.FR, ratio = fz && fz.rl_da365 && fz.da365 ? fz.rl_da365 / fz.da365 : null;
+      const rn = $('boa-real-n'); if (rn) rn.textContent = ratio ? T(`(${Math.round(ratio * 100)}% of the perfect schedule, France 2 h, 12 months)`, `(${Math.round(ratio * 100)} % du programme parfait, France 2 h, 12 mois)`) : T('(not computed yet)', '(pas encore calculé)');
       const root = $('page-boa'); if (!root) return;
       if (R) {
         const L = PKBess.fcrLtm(R), rt = PKBess.lastRate(R);
         if (L) { LIVE.fcr = PKBess.ann(L.avg); LIVE.fcrN = L.n; LIVE.need = R.fcr_mw && R.fcr_mw[L.to]; }
         if (rt) { LIVE.r10 = rt.v; LIVE.r10d = rt.d; }
       }
-      const L2 = doc && doc.summary_ltm && doc.summary_ltm['2h'], path = doc && doc.da_path && doc.da_path[String(BOA_START)];
+      const L2 = doc && doc.summary_ltm && doc.summary_ltm[S.dur], path = doc && doc.da_path && doc.da_path[String(BOA_START)];
       let mid = null, msg = '';
-      if (path && path['2h'] != null) {
-        mid = Math.round(path['2h']);
+      if (path && path[S.dur] != null) {
+        mid = Math.round(path[S.dur]);
         LIVE.daSrc = T(`12 months × Cal ${BOA_START} ÷ day-ahead average`, `12 mois × Cal ${BOA_START} ÷ moyenne day-ahead`);
-        msg = T(`day-ahead of a 2 h battery over 12 months, ${Math.round(L2.pw)} k€/MW/yr (to ${fd(doc.last)}), × Cal ${BOA_START} ${f1(path.cal)} €/MWh ÷ ${f1(doc.base_ltm)} €/MWh average = <b>${mid} k€/MW/yr at COD</b>`,
-          `day-ahead d’une batterie 2 h sur 12 mois, ${Math.round(L2.pw)} k€/MW/an (au ${fd(doc.last)}), × Cal ${BOA_START} ${f1(path.cal)} €/MWh ÷ ${f1(doc.base_ltm)} €/MWh de moyenne = <b>${mid} k€/MW/an au COD</b>`);
+        msg = T(`day-ahead of a ${S.dur.replace('h', ' h')} battery over 12 months, ${Math.round(L2.pw)} k€/MW/yr (to ${fd(doc.last)}), × Cal ${BOA_START} ${f1(path.cal)} €/MWh ÷ ${f1(doc.base_ltm)} €/MWh average = <b>${mid} k€/MW/yr at COD</b>`,
+          `day-ahead d’une batterie ${S.dur.replace('h', ' h')} sur 12 mois, ${Math.round(L2.pw)} k€/MW/an (au ${fd(doc.last)}), × Cal ${BOA_START} ${f1(path.cal)} €/MWh ÷ ${f1(doc.base_ltm)} €/MWh de moyenne = <b>${mid} k€/MW/an au COD</b>`);
       } else if (L2 && L2.pw != null) {
         mid = Math.round(L2.pw);
         LIVE.daSrc = T('last 12 months, no forward', '12 derniers mois, sans forward');
-        msg = T(`day-ahead of a 2 h battery over 12 months, <b>${mid} k€/MW/yr</b> (to ${fd(doc.last)})`, `day-ahead d’une batterie 2 h sur 12 mois, <b>${mid} k€/MW/an</b> (au ${fd(doc.last)})`);
+        msg = T(`day-ahead of a ${S.dur.replace('h', ' h')} battery over 12 months, <b>${mid} k€/MW/yr</b> (to ${fd(doc.last)})`, `day-ahead d’une batterie ${S.dur.replace('h', ' h')} sur 12 mois, <b>${mid} k€/MW/an</b> (au ${fd(doc.last)})`);
       }
+      if (mid != null && S.real && ratio) mid = Math.round(mid * ratio);
       if (mid != null && !root.dataset.daTouched) {
         [['m', mid], ['l', Math.round(mid * 0.85)], ['h', Math.round(mid * 1.12)]].forEach(([k, v]) => {
           const set = (f, x) => { const el = $('boa-' + k + '-' + f); if (el) el.value = Math.max(+el.min, Math.min(+el.max, x)); };
@@ -308,6 +359,9 @@
         });
       }
       if (msg) $('boa-live').innerHTML = T('<b>From the data:</b> ', '<b>D’après les données :</b> ') + msg + T('; low and high keep their gap. aFRR, mFRR, capacity and the 2037 values remain assumptions.', ' ; bas et haut gardent leur écart. aFRR, mFRR, capacité et valeurs 2037 restent des hypothèses.');
+      const de = E && E.zones && E.zones.DE_LU && E.zones.DE_LU.co_afrr30, lv = $('boa-live');
+      if (de != null && lv) lv.innerHTML += T(` <br><b>aFRR, German benchmark:</b> a 2 h battery in Germany earned <b>${Math.round(de)} k€/MW/yr</b> from aFRR capacity over the last 30 days (regelleistung.net, co-optimised with day-ahead and FCR). A benchmark only: the French market is less mature and will not behave like the German one, so the three scenarios’ COD values stay French assumptions (France publishes no aFRR capacity price for batteries yet).`,
+        ` <br><b>aFRR, repère allemand :</b> une batterie 2 h en Allemagne a gagné <b>${Math.round(de)} k€/MW/an</b> en capacité aFRR sur les 30 derniers jours (regelleistung.net, co-optimisé avec day-ahead et FCR). Un repère seulement : le marché français, moins mature, n’aura pas le même comportement que l’allemand ; les valeurs au COD des trois scénarios restent des hypothèses françaises (la France ne publie pas encore de prix de capacité aFRR pour les batteries).`);
       const fn = $('boa-fcr-note');
       if (fn) fn.innerHTML = LIVE.fcr == null ? T(`No FCR data loaded: ${FCR_FALLBACK} k€/MW/yr assumed for 1 MW all year.`, `Pas de donnée FCR chargée : ${FCR_FALLBACK} k€/MW/an supposés pour 1 MW toute l’année.`)
         : T(`French FCR price, last ${LIVE.fcrN} days: <b>${f1(LIVE.fcr)} k€/MW/yr</b> for 1 MW all year; the French need is ${LIVE.need || '≈ 600'} MW for the whole market, so a battery sells only a share. Falls to 4/9 of it by 2037.`,

@@ -36,7 +36,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       # after another job: run only if the forecast is due (tomorrow missing from 7:00 Paris, or older than 3 h)
       - name: Due?
         id: due
@@ -52,7 +52,7 @@ jobs:
           due = (now.hour >= 7 and tm not in (j.get('days') or {})) or age > 3
           print('run=' + ('yes' if due and 6 <= now.hour <= 22 else 'no'))
           PY
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         if: steps.due.outputs.run == 'yes'
         with:
           python-version: '3.12'
@@ -86,7 +86,7 @@ jobs:
           if git diff --staged --quiet; then echo "No change"; exit 0; fi
           git commit -q -m "data: forecasts $(date -u '+%Y-%m-%d %H:%M')"
           for i in 1 2 3 4 5; do
-            git pull -q --rebase -X theirs origin main && git push && exit 0; git rebase --abort 2>/dev/null
+            git pull -q --rebase -X theirs origin main && git push && exit 0; git rebase --abort 2>/dev/null || true
             sleep 8
           done
           exit 1

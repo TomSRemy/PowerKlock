@@ -10,12 +10,12 @@ jobs:
 
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.11'
 
@@ -37,7 +37,7 @@ jobs:
           else
             git commit -m "recalc: refresh summary.json (incl. intraday profiles by Q)"
             # a data job may have pushed meanwhile: rebase on it, then push (5 tries)
-            for i in 1 2 3 4 5; do git pull -q --rebase -X theirs origin main && git push && exit 0; git rebase --abort 2>/dev/null; sleep 8; done; exit 1
+            for i in 1 2 3 4 5; do git pull -q --rebase -X theirs origin main && git push && exit 0; git rebase --abort 2>/dev/null || true; sleep 8; done; exit 1
           fi
 
       - name: E-mail on failure

@@ -97,8 +97,8 @@
   const NOTE = scope => scope === 'region'
     ? T('Facteur de charge publié par RTE pour chaque région (production ÷ puissance installée), moyenne des quarts d’heure de l’année, données consolidées (ODRÉ).',
         'Load factor published by RTE for each region (output ÷ installed capacity), mean of the year’s quarter-hours, consolidated data (ODRÉ).')
-    : T('Production de l’année ÷ puissance installée (moyenne des fins d’année avant et après), Energy-Charts. Années complètes seulement. Hydraulique : avec le pompage-turbinage, dont la production dépend des pompages ; fossile : gaz, charbon, lignite, fioul.',
-        'The year’s output ÷ installed capacity (mean of the year-ends before and after), Energy-Charts. Full years only. Hydro includes pumped storage, whose output depends on pumping; fossil: gas, hard coal, lignite, oil.');
+    : T('Production de l’année ÷ puissance installée (moyenne des fins d’année avant et après), Energy-Charts (France, solaire et éolien : RTE). Années complètes seulement. Hydraulique : avec le pompage-turbinage, dont la production dépend des pompages ; fossile : gaz, charbon, lignite, fioul.',
+        'The year’s output ÷ installed capacity (mean of the year-ends before and after), Energy-Charts (France, solar and wind: RTE). Full years only. Hydro includes pumped storage, whose output depends on pumping; fossil: gas, hard coal, lignite, oil.');
 
   // ── converter page ──
   function page() {
@@ -109,10 +109,64 @@
       box.value = lf; if (typeof updateCapacity === 'function') updateCapacity();
       document.querySelectorAll('#page-converter .day-tab').forEach(b => b.classList.remove('active'));
       const u = $('lf-used'); if (u) u.textContent = T('Facteur de charge utilisé : ', 'Load factor in use: ') + lbl + ' — ' + num(lf, 1) + ' %';
+      const s = $('cap-lf-auto'); if (s) { const o = [...s.options].find(x => x.dataset.lbl === lbl); s.selectedIndex = o ? o.index : 0; }
       box.scrollIntoView({ behavior: 'smooth', block: 'center' });
     };
-    const draw = () => { table(host, sc.value, pe.value, use); const n = $('lf-note'); if (n) n.textContent = NOTE(sc.value); };
+    const draw = () => { table(host, sc.value, pe.value, use); const n = $('lf-note'); if (n) n.textContent = NOTE(sc.value); fill(); };
     sc.addEventListener('change', draw); pe.addEventListener('change', draw);
+    // the measured factors in a list under the box: France wind picked by default, any typed value or rule of thumb
+    // switches it back to manual entry
+    const sel = $('cap-lf-auto'), box = $('cap-lf');
+    let first = true;
+    async function fill() {
+      if (!sel) return;
+      const C = await countries();
+      render(C, null);
+      const R = await regions();
+      if (R) render(C, R);
+    }
+    function render(C, R) {
+      const per = pe.value, cur = sel.options[sel.selectedIndex], keep = cur && cur.value ? cur.dataset.lbl : null;
+      const opt = (lf, lbl, text) => `<option value="${lf.toFixed(1)}" data-lbl="${lbl.replace(/"/g, '&quot;')}">${text} — ${num(lf, 1)} %</option>`;
+      let html = `<option value="">${T('Saisie libre', 'Manual entry')}</option>`;
+      if (C) {
+        const pt = per === 'last' ? String(C.years[C.years.length - 1]) : C.years[0] + '–' + C.years[C.years.length - 1];
+        ZONES.filter(z => C.v[z[0]]).forEach(z => {
+          const name = fr() ? z[2] : z[3];
+          const o = TECH.map(t => { const v = pick(C.v[z[0]][t[0]], C.years, per); return v == null ? '' : opt(v, name + ' · ' + (fr() ? t[1] : t[2]) + ' · ' + pt, name + ' · ' + (fr() ? t[1] : t[2])); }).join('');
+          if (o) html += `<optgroup label="${name} · ${pt}">${o}</optgroup>`;
+        });
+      }
+      if (R) {
+        const pt = per === 'last' ? String(R.years[R.years.length - 1]) : R.years[0] + '–' + R.years[R.years.length - 1];
+        TECH.filter(t => t[0] === 'wind' || t[0] === 'solar').forEach(t => {
+          const o = Object.keys(R.v).sort((a, b) => a.localeCompare(b, 'fr')).map(r => { const v = pick(R.v[r][t[0]], R.years, per); return v == null ? '' : opt(v, r + ' · ' + (fr() ? t[1] : t[2]) + ' · ' + pt, r); }).join('');
+          if (o) html += `<optgroup label="${T('Régions françaises', 'French regions')} · ${fr() ? t[1] : t[2]} · ${pt}">${o}</optgroup>`;
+        });
+      }
+      sel.innerHTML = html;
+      if (first && C) {
+        first = false;
+        const fw = [...sel.options].find(o => (o.dataset.lbl || '').startsWith((fr() ? 'France · Éolien' : 'France · Wind')));
+        if (fw) { sel.value = fw.value; sel.selectedIndex = fw.index; choose(); return; }
+      }
+      // the same choice kept when the list is redrawn (the period changes the figures, so the label is matched without it)
+      const base = l => (l || '').split(' · ').slice(0, 2).join(' · ');
+      const again = keep ? [...sel.options].find(o => o.value && base(o.dataset.lbl) === base(keep)) : null;
+      sel.selectedIndex = again ? again.index : 0;
+      if (again && again.value !== box.value) choose();
+    }
+    function choose() {
+      const o = sel.options[sel.selectedIndex]; if (!o || !o.value) return;
+      box.value = o.value; if (typeof updateCapacity === 'function') updateCapacity();
+      document.querySelectorAll('#page-converter .day-tab').forEach(b => b.classList.remove('active'));
+      const u = $('lf-used'); if (u) u.textContent = T('Facteur de charge utilisé : ', 'Load factor in use: ') + o.dataset.lbl + ' — ' + num(+o.value, 1) + ' %';
+    }
+    if (sel) {
+      sel.addEventListener('change', choose);
+      box.addEventListener('input', () => { sel.selectedIndex = 0; const u = $('lf-used'); if (u) u.textContent = ''; });
+      document.querySelectorAll('#page-converter .day-tab').forEach(b => b.addEventListener('click', () => { sel.selectedIndex = 0; const u = $('lf-used'); if (u) u.textContent = ''; }));
+    }
     draw();
   }
   document.addEventListener('pk-view', e => { if (e.detail && e.detail.key === 'converter') setTimeout(page, 50); });

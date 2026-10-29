@@ -478,7 +478,7 @@ async function _mrnRenTiles(el) {
   const days = bm && bm.days ? Object.keys(bm.days).sort() : [];
   if (days.length) { const L = bm.days[days[days.length - 1]], W = bm.days[days[Math.max(0, days.length - 6)]] || {}, ser = t => days.slice(-60).map(d => bm.days[d][t] && bm.days[d][t].ppa).filter(v => v != null);
     [['solar', _mT('PPA solaire', 'Solar PPA'), '#FBBF24'], ['wind', _mT('PPA éolien', 'Wind PPA'), '#14D3A9']].forEach(([t, n, tc]) => { const x = L[t]; if (!x) return; const d = W[t] ? x.ppa - W[t].ppa : null;
-      T.push(`<a class="mrn2-tile" data-tile="ppa${t === 'solar' ? 's' : 'w'}" href="#tools/ppa" data-route="tools/ppa" title="${_mT('Prix fixe d’un PPA ' + (t === 'solar' ? 'solaire' : 'éolien') + ' France sur 3 ans calculé chaque jour par le pricer PowerKlock (forwards, taux de capture, GO, écarts)', 'Fixed price of a 3-year French ' + t + ' PPA computed every day by the PowerKlock pricer (forwards, capture, GO, imbalance)')}">` +
+      T.push(`<a class="mrn2-tile" data-tile="ppa${t === 'solar' ? 's' : 'w'}" href="#tools/ppa" data-route="tools/ppa" title="${_mT('Prix fixe d’un PPA ' + (t === 'solar' ? 'solaire' : 'éolien') + ' France sur 3 ans calculé chaque jour par le pricer PowerKlock (forwards, taux de capture, GO, écarts), moyenne des 4 méthodes' + (x.build != null ? ' ; dont tendance de capacité : ' + _mN(x.build, 2) + ' €/MWh' : '') + (() => { const v = ['build', 'fpc', 'wx', 'eu'].map(k => x[k]).filter(z => z != null); return v.length > 1 ? ' ; fourchette des 4 méthodes : ' + _mN(Math.min(...v), 1) + '–' + _mN(Math.max(...v), 1) + ' €/MWh' : ''; })(), 'Fixed price of a 3-year French ' + t + ' PPA computed every day by the PowerKlock pricer (forwards, capture, GO, imbalance), average of the 4 methods' + (x.build != null ? '; of which capacity trend: ' + _mN(x.build, 2) + ' €/MWh' : '') + (() => { const v = ['build', 'fpc', 'wx', 'eu'].map(k => x[k]).filter(z => z != null); return v.length > 1 ? '; range of the 4 methods: ' + _mN(Math.min(...v), 1) + '–' + _mN(Math.max(...v), 1) + ' €/MWh' : ''; })())}">` +
         `<span class="mrn3-cat">${_mT('Benchmark PowerKlock', 'PowerKlock benchmark')}</span><span class="mrn3-th"><span class="mrn2-tn">${n} · ${(L.tenor || '').replace(/-/g, '–')}</span></span>` +
         `<span class="mrn2-tv">${_mN(x.ppa, 2)}<small>€/MWh</small></span><span class="mrn2-tc">${d == null ? '' : `<span class="${d > 0 ? 'mrn-up' : d < 0 ? 'mrn-down' : ''}">${_mS(d, 2)} €</span> <span class="mrn3-dim">${_mT('5 j ouvrés', '5 runs')}</span> · `}${_mT('forward', 'forward')} <b>${_mN(x.ref, 1)}</b></span>` +
         _mrnSpark(ser(t), tc) + foot(x.lo != null ? 'P10–P90 <b>' + _mN(x.lo, 0) + '–' + _mN(x.hi, 0) + '</b>' : '', _mT('60 j', '60 d')) + '</a>'); }); }
@@ -607,7 +607,8 @@ async function _mrnTiles2(el) {
       if (ex != null) t(_mT('Échanges', 'Exchanges'), _mT('Solde à ', 'Balance at ') + hh, _mN(Math.abs(ex) / 1000, 1), 'GW', ex < 0 ? _mT('la France exporte', 'France exports') : _mT('la France importe', 'France imports'), day('exchanges', v => -v), '#7FC8F8');
     }
   }
-  host.innerHTML = T.join('');
+  // just after midnight RTE has nothing for the new day yet: say so instead of leaving the block empty
+  host.innerHTML = T.length ? T.join('') : '<div class="no-data-msg">' + _mT('Pas encore de données RTE pour aujourd’hui (le premier quart d’heure arrive vers 00:30).', 'No RTE data for today yet (the first quarter-hour comes around 00:30).') + '</div>';
 }
 
 // ── the next 4 weeks: weather against normal week by week, gas storage against its winter mark, month-ahead forward ──
@@ -716,6 +717,15 @@ function _mrnCreg() {
   if (!per.options.length) {
     per.innerHTML = [[String(y), _mT('Année ', 'Year ') + y], [(y - 2) + '-' + y, (y - 2) + '–' + y + _mT(' (3 ans)', ' (3 years)')], [(y - 4) + '-' + y, (y - 4) + '–' + y + _mT(' (5 ans)', ' (5 years)')]].map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
     per.addEventListener('change', _mrnCreg);
+    // the current year to date, first, once the regional file says which months it covers (RTE's regional data comes later than the national)
+    fetch(DATA_BASE + 'history/fr_regional_capture.json').then(r => r.ok ? r.json() : null).then(j => {
+      const c = String(y + 1), sh = j && Object.values(j.regions || {}).map(r => r.years && r.years[c] && r.years[c].solar && r.years[c].solar.share).find(Boolean);
+      if (!sh || per.querySelector(`option[value="${c}"]`)) return;
+      let m = 0; sh.forEach((v, i) => { if (v > 0) m = i + 1; }); if (!m) return;
+      const mon = new Date(Date.UTC(+c, m - 1, 15)).toLocaleDateString(_mrnFr() ? 'fr-FR' : 'en-GB', { month: 'long', timeZone: 'UTC' });
+      per.insertAdjacentHTML('afterbegin', `<option value="${c}">${_mT('Année ', 'Year ') + c + _mT(' (à fin ' + mon + ')', ' (to end ' + mon + ')')}</option>`);
+      per.value = c; _mrnCreg();
+    }).catch(() => {});
   }
   const lbl = per.options[per.selectedIndex].text;
   PKW.draw('ren-capture-regions', 'mrn-creg', { tech: 'solar', year: per.value }).then(() => { const e = document.getElementById('mrn-creg-sub'); if (e) e.textContent = lbl + _mT(' · production de chaque région au prix spot français, classée, avec la France', ' · each region’s output on the French day-ahead price, ranked, with France'); });
