@@ -37,6 +37,8 @@ jobs:
         run: python scripts/ppa_lab.py --sims 300
       - name: Integrated method (realised last year × the European model's change)
         run: python scripts/ppa_integrated.py || echo "::warning::integrated method not updated"
+      - name: Single scenario generator (integrated method, test)
+        run: python scripts/ppa_generator.py || echo "::warning::scenario generator not updated"
       - name: Walk-forward test, year by year
         run: python scripts/ppa_walkforward.py || echo "::warning::walk-forward not updated"
       - name: Capture fan
