@@ -677,10 +677,17 @@
   }
   // a method left out of the published price for this technology by the weekly leave-one-out check (scripts/ppa_weights.py
   // 'exclude': the replayed average is closer to the realised without it; on 29 Oct. 2026 the forward shape for solar)
+  // the published price of a technology set by the single scenario generator alone (Tom, 30 Oct. 2026: solar; replay
+  // 2020–2025 1–3 years ahead, no correction: 0.87 €/MWh mean error against 1.84 for the average of the methods). Wind
+  // keeps the average until the generator is right for it (it overvalues wind by about 2.4 €/MWh)
+  const GEN_ONLY = st => (st || S).tech !== 'wind';
   function outOf(k, st) {
+    if (GEN_ONLY(st)) return k !== 'pct' && k !== 'int';
     const X = D && D.weights && D.weights.exclude, t = (st || S).tech === 'wind' ? 'wind' : 'solar';
     return k !== 'pct' && !!X && (X[t] || []).includes(WKEY[k]);
   }
+  // a method in the price shown: the generator for a technology it prices, else the ticked methods not left out
+  const inPrice = m => m.k === 'int' ? GEN_ONLY() && m.v != null : INC[m.k] && !outOf(m.k);
   // weighted mean of items {k, [f]} (only those with a value), weights renormalised on the methods ticked
   function wmean(items, f, st) {
     const its = items.filter(m => m[f] != null && isFinite(m[f]) && !outOf(m.k, st));
@@ -722,18 +729,19 @@
       const m = j && j.h && j.h.mae, am = (D.weights && D.weights.pubMae) || (j && j.b && j.b.avg4Mae), t = S.tech === 'wind' ? 'wind' : 'solar', c = S.conv === 'all' ? 'all' : 'curt';
       const e = h => am && am[t] && am[t][c] && am[t][c][String(h)] != null ? am[t][c][String(h)] : m && m[`${t} ${c} h=${h}`] && m[`${t} ${c} h=${h}`].avg4;
       if (e(1) == null) return;
+      if (GEN_ONLY()) { el.innerHTML = spread + ' ' + (fr ? 'Prix publié = le générateur de scénarios seul (méthode intégrée), sans correction. Précision mesurée sur le rejeu 2020–2025 : 0,64 € d’erreur moyenne à 1 an, 0,97 € à 2 ans, 1,12 € à 3 ans (contre 1,84 € en moyenne pour la moyenne des méthodes).' : 'Published price = the scenario generator alone (integrated method), no correction. Measured precision on the 2020–2025 replay: 0.64 € mean error one year ahead, 0.97 € two years, 1.12 € three years (against 1.84 € on average for the average of the methods).'); return; }
       el.innerHTML = spread + wtxt + ' ' + (fr ? `Précision mesurée de la moyenne publiée${use.length < 4 ? ' (' + use.length + ' méthodes)' : ''} sur les années complètes depuis 2024 : ${n2(e(1))} € d’erreur moyenne à 1 an, ${n2(e(2))} € à 2 ans, ${n2(e(3))} € à 3 ans ; au-delà du parc déjà observé, l’écart entre méthodes dit mieux l’incertitude.`
         : `Measured precision of the published average${use.length < 4 ? ' (' + use.length + ' methods)' : ''} on the complete years since 2024: ${n2(e(1))} € mean error one year ahead, ${n2(e(2))} € two years, ${n2(e(3))} € three years; beyond the fleet already observed, the gap between methods tells the uncertainty better.`);
     });
   }
   function renderBand(o) {
     const host = $('pp-band'); if (!host || !o) return;
-    const M = methodVals(o), use = M.filter(m => INC[m.k] && m.v != null && !outOf(m.k)), avg = use.length ? wmean(use, 'v') : null;
+    const M = methodVals(o), use = M.filter(m => inPrice(m) && m.v != null), avg = use.length ? wmean(use, 'v') : null;
     host.innerHTML = `<div class="pp-band-main"><div class="pp-band-l">PPA price</div><div class="pp-band-v">${avg != null ? f2(avg) : '–'}<small> €/MWh</small></div>` +
       `<div class="pp-band-s"><span>${use.length}</span> <span>${use.length === 1 ? 'method ticked' : 'methods ticked'}</span> · <span>${S.tech === 'wind' ? 'Wind' : 'Solar'}</span> · <span>Cal ${o.tenor[0]}–${o.tenor[o.tenor.length - 1]}</span> <span>${f2(o.refW)} €/MWh</span></div></div>` +
       `<div class="pp-offer"><label for="pp-offer-in">Offer received</label><span class="cf-in"><input type="number" id="pp-offer-in" step="0.1" placeholder="€/MWh" value="${S.offer != null ? S.offer : ''}"><em>€/MWh</em></span><div class="pp-offer-out" id="pp-offer-out"></div></div>` +
-      `<div class="pp-band-m">${M.map(m => `<label class="pp-mcard${INC[m.k] && !outOf(m.k) ? ' on' : ''}${m.v == null || m.k === 'pct' || m.k === 'int' || outOf(m.k) ? ' na' : ''}"><input type="checkbox" data-inc="${m.k}"${INC[m.k] && !outOf(m.k) ? ' checked' : ''}${m.v == null || m.k === 'pct' || m.k === 'int' || outOf(m.k) ? ' disabled' : ''}>` +
-        `<span class="pp-mcard-n">${MNAME[m.k]}</span><span class="pp-mcard-v">${m.v != null ? f2(m.v) : '…'}</span><span class="pp-mcard-s">${m.k === 'pct' ? 'reference, not for pricing' : m.k === 'int' ? (m.needWx ? 'open Compare to compute' : 'test: not in the price yet') : outOf(m.k) ? 'not in the price: the replayed average is closer without it' : m.v != null ? '€/MWh' : m.k === 'eu' ? 'no forecast past 2030' : 'computed on its tab'}</span></label>`).join('')}</div><div class="pp-band-risk" id="pp-band-risk"></div>`;
+      `<div class="pp-band-m">${M.map(m => `<label class="pp-mcard${inPrice(m) ? ' on' : ''}${m.v == null || m.k === 'pct' || (m.k === 'int' && !GEN_ONLY()) || outOf(m.k) ? ' na' : ''}"><input type="checkbox" data-inc="${m.k}"${inPrice(m) ? ' checked' : ''}${m.v == null || m.k === 'pct' || m.k === 'int' || outOf(m.k) ? ' disabled' : ''}>` +
+        `<span class="pp-mcard-n">${MNAME[m.k]}</span><span class="pp-mcard-v">${m.v != null ? f2(m.v) : '…'}</span><span class="pp-mcard-s">${m.k === 'pct' ? 'reference, not for pricing' : m.k === 'int' ? (GEN_ONLY() ? 'sets the published price' : 'test: not in the price yet') : outOf(m.k) ? (GEN_ONLY() ? 'not in the price: the generator sets it' : 'not in the price: the replayed average is closer without it') : m.v != null ? '€/MWh' : m.k === 'eu' ? 'no forecast past 2030' : 'computed on its tab'}</span></label>`).join('')}</div><div class="pp-band-risk" id="pp-band-risk"></div>`;
     const oi = $('pp-offer-in');
     if (oi) oi.addEventListener('input', () => { S.offer = oi.value === '' ? null : +oi.value; offerOut(S.last, avg); });
     bandRisk(o, use);
@@ -761,7 +769,7 @@
   }
   function renderSumWf(o) {
     if (!$('pp-sum-wf') || !o) return;
-    const use = methodVals(o).filter(m => INC[m.k] && m.v != null && m.fair != null && m.ref != null && !outOf(m.k));
+    const use = methodVals(o).filter(m => inPrice(m) && m.v != null && m.fair != null && m.ref != null);
     if (!use.length) return;
     const ref = wmean(use, 'ref'), fair = wmean(use, 'fair'), price = wmean(use, 'v');
     const risk = price - (fair - o.imb + o.goW - o.margin);
@@ -779,7 +787,7 @@
   //    forward; a capture point is 1 % of the forward; costs pass one for one) ──
   function renderSens(o) {
     if (!$('pp-sens') || !o) return;
-    const use = methodVals(o).filter(m => INC[m.k] && m.v != null && m.fair != null && m.ref != null && !outOf(m.k));
+    const use = methodVals(o).filter(m => inPrice(m) && m.v != null && m.fair != null && m.ref != null);
     if (!use.length) return;
     const fair = wmean(use, 'fair'), ref = wmean(use, 'ref'), price = wmean(use, 'v');
     const tr = x => window.PKI18n ? PKI18n.tr(x) : x;
@@ -1888,6 +1896,6 @@ ${FRDOC() ? `<p>RTE éCO2mix (production nationale, 15 min) · prix day-ahead EN
   }
   window.PKCannib = { render() { const p = pageP(); [['cannib-projection', 'cn-proj'], ['cannib-capacity', 'cn-capfit'], ['cannib-countries-years', 'cn-xcy'], ['cannib-countries', 'cn-xc'], ['cannib-hourly', 'cn-hc'], ['cannib-neghours', 'cn-negh'], ['cannib-rolling', 'cn-roll'], ['cannib-rolling-eur', 'cn-roll-eur'], ['cannib-profile', 'cn-prof'], ['cannib-penetration-years', 'cn-pen']].forEach(([w, c]) => PKW.get(w) && PKW.draw(w, c, p)); } };
   // the published average for the benchmark (scripts/ppa_daily.py): the four methods with their weights
-  const avg4Of = o => { const it = [['build', o.ppaBuild], ['fpc', o.ppaFpc], ['wx', o.ppaWx], ['eu', o.ppaEu]].map(([k, x]) => ({ k, x })); return it.every(m => m.x != null && isFinite(m.x)) ? wmean(it, 'x', o.stAt || o.st) : null; };   // stAt: the state may be restored before this is read
+  const avg4Of = o => { if (GEN_ONLY(o.stAt || o.st)) return o.ppaGen != null && isFinite(o.ppaGen) ? o.ppaGen : null; const it = [['build', o.ppaBuild], ['fpc', o.ppaFpc], ['wx', o.ppaWx], ['eu', o.ppaEu]].map(([k, x]) => ({ k, x })); return it.every(m => m.x != null && isFinite(m.x)) ? wmean(it, 'x', o.stAt || o.st) : null; };   // stAt: the state may be restored before this is read
   window.PKPpa = { compute: () => compute(), state: S, run, avg4Of };
 })();

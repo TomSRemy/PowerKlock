@@ -13,7 +13,8 @@ Writes data/history/ppa_benchmark.json:
   (€/MWh; ppa = the published price = blend4 from the switch day (before it: the capacity trend; days["def"] says
    which), build = capacity trend, pct = past discount (a reference only),
    fpc = forward shape, wx = weather simulation, eu = European price model (from 2026-10-28), int = integrated method (test, from 2026-10-29),
-   blend = mean of build, fpc and wx, blend4 = average of build, fpc, wx and eu weighted by the inverse of their past error for solar, equal for wind
+   blend = mean of build, fpc and wx, blend4 = the published price: since 2026-10-30 the scenario generator alone for solar
+   (int), before the average of build, fpc, wx and eu weighted by the inverse of their past error for solar; equal weights for wind
    (data/history/ppa_weights.json; from 2026-10-28),
    lo / hi = the capacity trend's price at 10 % and 90 % of 10,000 simulated futures (P10–P90) whose capture drift is
              the measured spread of the published average's errors (since 28 Oct. 2026: tool-ppa.js o.mcBand), moved by
