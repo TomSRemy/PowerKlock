@@ -653,9 +653,15 @@
     const w = W && W[t] && W[t][c] && W[t][c][WKEY[k]];
     return w != null && isFinite(w) ? w : 1;
   }
+  // a method left out of the published price for this technology by the weekly leave-one-out check (scripts/ppa_weights.py
+  // 'exclude': the replayed average is closer to the realised without it; on 29 Oct. 2026 the forward shape for solar)
+  function outOf(k, st) {
+    const X = D && D.weights && D.weights.exclude, t = (st || S).tech === 'wind' ? 'wind' : 'solar';
+    return k !== 'pct' && !!X && (X[t] || []).includes(WKEY[k]);
+  }
   // weighted mean of items {k, [f]} (only those with a value), weights renormalised on the methods ticked
   function wmean(items, f, st) {
-    const its = items.filter(m => m[f] != null && isFinite(m[f]));
+    const its = items.filter(m => m[f] != null && isFinite(m[f]) && !outOf(m.k, st));
     const W = its.reduce((a, m) => a + wOf(m.k, st), 0);
     return W > 0 ? its.reduce((a, m) => a + wOf(m.k, st) * m[f], 0) / W : null;
   }
@@ -685,21 +691,21 @@
     const wtxt = uneven ? (fr ? ' Moyenne pondérée par l’inverse de l’erreur passée de chaque méthode : ' : ' Average weighted by the inverse of each method’s past error: ') + ws.map(([k, w]) => NM[k] + ' ' + Math.round(w / wt * 100) + ' %').join(' · ') + '.' : '';
     el.innerHTML = spread + wtxt;
     hzLoad().then(j => {
-      const m = j && j.h && j.h.mae, am = j && j.b && j.b.avg4Mae, t = S.tech === 'wind' ? 'wind' : 'solar', c = S.conv === 'all' ? 'all' : 'curt';
+      const m = j && j.h && j.h.mae, am = (D.weights && D.weights.pubMae) || (j && j.b && j.b.avg4Mae), t = S.tech === 'wind' ? 'wind' : 'solar', c = S.conv === 'all' ? 'all' : 'curt';
       const e = h => am && am[t] && am[t][c] && am[t][c][String(h)] != null ? am[t][c][String(h)] : m && m[`${t} ${c} h=${h}`] && m[`${t} ${c} h=${h}`].avg4;
       if (e(1) == null) return;
-      el.innerHTML = spread + wtxt + ' ' + (fr ? `Précision mesurée de la moyenne des 4${uneven ? ' (à poids égaux)' : ''} sur les années complètes depuis 2024 : ${n2(e(1))} € d’erreur moyenne à 1 an, ${n2(e(2))} € à 2 ans, ${n2(e(3))} € à 3 ans ; au-delà du parc déjà observé, l’écart entre méthodes dit mieux l’incertitude.`
-        : `Measured precision of the 4-method average${uneven ? ' (equal weights)' : ''} on the complete years since 2024: ${n2(e(1))} € mean error one year ahead, ${n2(e(2))} € two years, ${n2(e(3))} € three years; beyond the fleet already observed, the gap between methods tells the uncertainty better.`);
+      el.innerHTML = spread + wtxt + ' ' + (fr ? `Précision mesurée de la moyenne publiée${use.length < 4 ? ' (' + use.length + ' méthodes)' : ''} sur les années complètes depuis 2024 : ${n2(e(1))} € d’erreur moyenne à 1 an, ${n2(e(2))} € à 2 ans, ${n2(e(3))} € à 3 ans ; au-delà du parc déjà observé, l’écart entre méthodes dit mieux l’incertitude.`
+        : `Measured precision of the published average${use.length < 4 ? ' (' + use.length + ' methods)' : ''} on the complete years since 2024: ${n2(e(1))} € mean error one year ahead, ${n2(e(2))} € two years, ${n2(e(3))} € three years; beyond the fleet already observed, the gap between methods tells the uncertainty better.`);
     });
   }
   function renderBand(o) {
     const host = $('pp-band'); if (!host || !o) return;
-    const M = methodVals(o), use = M.filter(m => INC[m.k] && m.v != null), avg = use.length ? wmean(use, 'v') : null;
+    const M = methodVals(o), use = M.filter(m => INC[m.k] && m.v != null && !outOf(m.k)), avg = use.length ? wmean(use, 'v') : null;
     host.innerHTML = `<div class="pp-band-main"><div class="pp-band-l">PPA price</div><div class="pp-band-v">${avg != null ? f2(avg) : '–'}<small> €/MWh</small></div>` +
       `<div class="pp-band-s"><span>${use.length}</span> <span>${use.length === 1 ? 'method ticked' : 'methods ticked'}</span> · <span>${S.tech === 'wind' ? 'Wind' : 'Solar'}</span> · <span>Cal ${o.tenor[0]}–${o.tenor[o.tenor.length - 1]}</span> <span>${f2(o.refW)} €/MWh</span></div></div>` +
       `<div class="pp-offer"><label for="pp-offer-in">Offer received</label><span class="cf-in"><input type="number" id="pp-offer-in" step="0.1" placeholder="€/MWh" value="${S.offer != null ? S.offer : ''}"><em>€/MWh</em></span><div class="pp-offer-out" id="pp-offer-out"></div></div>` +
-      `<div class="pp-band-m">${M.map(m => `<label class="pp-mcard${INC[m.k] ? ' on' : ''}${m.v == null || m.k === 'pct' ? ' na' : ''}"><input type="checkbox" data-inc="${m.k}"${INC[m.k] ? ' checked' : ''}${m.v == null || m.k === 'pct' ? ' disabled' : ''}>` +
-        `<span class="pp-mcard-n">${MNAME[m.k]}</span><span class="pp-mcard-v">${m.v != null ? f2(m.v) : '…'}</span><span class="pp-mcard-s">${m.k === 'pct' ? 'reference, not for pricing' : m.v != null ? '€/MWh' : m.k === 'eu' ? 'no forecast past 2030' : 'computed on its tab'}</span></label>`).join('')}</div><div class="pp-band-risk" id="pp-band-risk"></div>`;
+      `<div class="pp-band-m">${M.map(m => `<label class="pp-mcard${INC[m.k] && !outOf(m.k) ? ' on' : ''}${m.v == null || m.k === 'pct' || outOf(m.k) ? ' na' : ''}"><input type="checkbox" data-inc="${m.k}"${INC[m.k] && !outOf(m.k) ? ' checked' : ''}${m.v == null || m.k === 'pct' || outOf(m.k) ? ' disabled' : ''}>` +
+        `<span class="pp-mcard-n">${MNAME[m.k]}</span><span class="pp-mcard-v">${m.v != null ? f2(m.v) : '…'}</span><span class="pp-mcard-s">${m.k === 'pct' ? 'reference, not for pricing' : outOf(m.k) ? 'not in the price: the replayed average is closer without it' : m.v != null ? '€/MWh' : m.k === 'eu' ? 'no forecast past 2030' : 'computed on its tab'}</span></label>`).join('')}</div><div class="pp-band-risk" id="pp-band-risk"></div>`;
     const oi = $('pp-offer-in');
     if (oi) oi.addEventListener('input', () => { S.offer = oi.value === '' ? null : +oi.value; offerOut(S.last, avg); });
     bandRisk(o, use);
@@ -727,7 +733,7 @@
   }
   function renderSumWf(o) {
     if (!$('pp-sum-wf') || !o) return;
-    const use = methodVals(o).filter(m => INC[m.k] && m.v != null && m.fair != null && m.ref != null);
+    const use = methodVals(o).filter(m => INC[m.k] && m.v != null && m.fair != null && m.ref != null && !outOf(m.k));
     if (!use.length) return;
     const ref = wmean(use, 'ref'), fair = wmean(use, 'fair'), price = wmean(use, 'v');
     const risk = price - (fair - o.imb + o.goW - o.margin);
@@ -745,7 +751,7 @@
   //    forward; a capture point is 1 % of the forward; costs pass one for one) ──
   function renderSens(o) {
     if (!$('pp-sens') || !o) return;
-    const use = methodVals(o).filter(m => INC[m.k] && m.v != null && m.fair != null && m.ref != null);
+    const use = methodVals(o).filter(m => INC[m.k] && m.v != null && m.fair != null && m.ref != null && !outOf(m.k));
     if (!use.length) return;
     const fair = wmean(use, 'fair'), ref = wmean(use, 'ref'), price = wmean(use, 'v');
     const tr = x => window.PKI18n ? PKI18n.tr(x) : x;
@@ -1343,7 +1349,7 @@
     if (o.m4) out.wx = o.m4.years.map((r, i) => { const f = r.cal / Y[i].fwd; return { y: r.y, p50: r.rate * f, lo: r.p10 * f, hi: r.p90 * f }; });
     if (o.eu) { const lo = euYears(o, o.st, 'p10'), hi = euYears(o, o.st, 'p90');
       out.eu = o.eu.map((e, i) => ({ y: Y[i].y, p50: e.capture, lo: lo ? lo[i].capture : e.capture, hi: hi ? hi[i].capture : e.capture })); }
-    const ks = ['build', 'fpc', 'wx', 'eu'].filter(k => out[k]);
+    const ks = ['build', 'fpc', 'wx', 'eu'].filter(k => out[k] && !outOf(k));
     if (ks.length > 1) out.avg = Y.map((r, i) => { const v = f => wmean(ks.map(k => ({ k, x: out[k][i][f] })), 'x'), p = ks.map(k => out[k][i].p50);
       return { y: r.y, p50: v('p50'), lo: v('lo'), hi: v('hi'), min: Math.min(...p), max: Math.max(...p) }; });
     return out;
