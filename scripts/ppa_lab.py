@@ -870,8 +870,17 @@ MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'No
 
 
 def forward_levels(Y):
-    """monthly forward level of France for year Y: the month contract when listed, else the quarter
-    shaped by month ÷ quarter ratios, else the Cal shaped by month ÷ year ratios"""
+    """monthly forward level of France for year Y: the site's monthly forward curve (data/history/
+    fr_forward_monthly.json: the month contract when listed, else the quarter shaped by month ÷ quarter ratios,
+    else the Cal shaped by the last quarter-quoted year's shape blended with history), as the pricer reads it;
+    without that file, the contracts directly"""
+    try:
+        fm = json.load(open(os.path.join(ROOT, 'data', 'history', 'fr_forward_monthly.json')))['months']
+        out = {m: fm[f'{Y}-{m:02d}']['value'] for m in range(1, 13) if f'{Y}-{m:02d}' in fm}
+        if len(out) == 12:
+            return out
+    except (OSError, KeyError, ValueError):
+        pass
     try:
         ct = json.load(open(os.path.join(ROOT, 'data', 'history', 'fr_market_contracts.json')))['FR']
     except OSError:
