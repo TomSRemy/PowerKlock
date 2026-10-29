@@ -390,6 +390,78 @@ class TrendRule:
         return m, mp, pp
 
 
+def guard_floor(t, years, q=10, width=0.02):
+    """the observed floor of a day's capture by daily penetration (Tom, 29 Oct. 2026: a simulated day may not capture
+    less than days at the same penetration really did): over the years given, each day's capture of technology t
+    (paid hours, ÷ its month's mean price) by its penetration (its output ÷ France's load); per bin of `width`, the q-th
+    percentile (q = 10: 90 % of the observed days did better). Beyond the highest bin seen, that bin's floor, flat."""
+    pen, cap = [], []
+    for y in years:
+        a = L.DATA[y]
+        P, V, Lo, mo = a['fr_p'], a['fr_' + t], a['fr_l'], a['month']
+        mm = {m: P[mo == m].mean() for m in np.unique(mo)}
+        for i in range(len(P)):
+            pos = P[i] > 0
+            if V[i][pos].sum() <= 0 or mm[mo[i]] <= 1:
+                continue
+            pen.append(V[i].sum() / Lo[i].sum())
+            cap.append((V[i][pos] * P[i][pos]).sum() / V[i][pos].sum() / mm[mo[i]])
+    pen, cap = np.array(pen), np.array(cap)
+    b = (pen / width).astype(int)
+    floor = {int(k): float(np.percentile(cap[b == k], q)) for k in np.unique(b) if (b == k).sum() >= 10}
+    return floor, width
+
+
+def below_floor(v, price, floor, width, load, month):
+    """(days whose capture is under the observed floor of their penetration, days counted)"""
+    if not floor:
+        return 0, 0
+    top, n, k_ = max(floor), 0, 0
+    base = {m: price[month == m].mean() for m in np.unique(month)}
+    for i in range(len(v)):
+        pos = price[i] > 0
+        vp = v[i][pos].sum()
+        if vp <= 0 or base[month[i]] <= 0:
+            continue
+        c = (v[i][pos] * price[i][pos]).sum() / vp / base[month[i]]
+        bi = min(int(v[i].sum() / load[i].sum() / width), top)
+        f = floor.get(bi)
+        if f is None:
+            f = floor[min(floor, key=lambda x: abs(x - bi))]
+        n += 1; k_ += c < f
+    return k_, n
+
+
+def apply_guard(month, v, price, floor, width, load):
+    """monthly capture rates (curt) with each day's capture raised to the observed floor of its penetration"""
+    out = {}
+    top = max(floor) if floor else None
+    for m in range(1, 13):
+        k = np.where(month == m)[0]
+        if not len(k):
+            continue
+        P, V, Lo = price[k], v[k], load[k]
+        base = P.mean()
+        if base <= 0:
+            continue
+        num = den = 0.0
+        for i in range(len(k)):
+            pos = P[i] > 0
+            vp = V[i][pos].sum()
+            if vp <= 0:
+                continue
+            c = (V[i][pos] * P[i][pos]).sum() / vp / base
+            if floor:
+                bi = min(int(V[i].sum() / Lo[i].sum() / width), top)
+                f = floor.get(bi)
+                if f is None:
+                    f = floor[min(floor, key=lambda x: abs(x - bi))]
+                c = max(c, f)
+            num += c * vp; den += vp
+        out[m] = num / den if den else None
+    return out
+
+
 def _residuals(y, pm, region):
     """the historical day's price surprise against this price rule: realised ratio − the rule's ratio (ratio units)"""
     d = _year(y)
@@ -405,7 +477,7 @@ def _residuals(y, pm, region):
 
 
 def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=None, weeks=7, surprise='none', rule='fuel', cost=None, fuel_window=2,
-             batteries='both', pool_from=2019, fuel_dev=True, france=True, window=7, same_month=False, train=None, trend=False):
+             batteries='both', pool_from=2019, fuel_dev=True, france=True, window=7, same_month=False, train=None, trend=False, guard=False):
     """monthly capture rates ('all', 'curt', 'paid') averaged over n chained-week scenarios, and their P10/P90"""
     rng = np.random.default_rng(seed if seed is not None else Y)
     pool = [y for y in known if y != 2022 and L.DATA[y]['complete'] and (pool_from is None or y >= pool_from)
@@ -425,6 +497,8 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
             if france:
                 pmf.add_france(fy)
     SUR = {y: _residuals(y, pm, st['regional']) for y in pool}
+    GF = guard_floor(t, [y for y in known if L.DATA[y]['complete'] and y != 2022][-2:]) if guard else None
+    BELOW = [0, 0]
     HN = {}
     if rule == 'fuel' and PriceModelFuel.HYDRO:
         for c in CS:
@@ -543,7 +617,18 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
             xfr = (fr_gw(S, W, Lo, N, H) if FR_GW['on'] else share(S, W, Lo, N, H, False)) if france else None
             f1, fp, fq = pmf.phi(x, gg, xfr)
             v = S['FR'] if t == 's' else W['FR']
-            res.append(L.month_rates(month, v, f1 * cday, fp * cday, fq))
+            mr = L.month_rates(month, v, f1 * cday, fp * cday, fq)
+            if guard == 'measure':
+                kb, nb = below_floor(v, f1 * cday, GF[0], GF[1], Lo['FR'], month)
+                BELOW[0] += kb; BELOW[1] += nb
+            elif guard:
+                # only the days the floor lifts: the month's capture × (with floors ÷ without), both on the same days
+                gc = apply_guard(month, v, f1 * cday, GF[0], GF[1], Lo['FR'])
+                g0 = apply_guard(month, v, f1 * cday, {}, GF[1], Lo['FR'])
+                for m_, c_ in gc.items():
+                    if m_ in mr and c_ and g0.get(m_) and mr[m_].get('curt') is not None:
+                        mr[m_]['curt'] *= c_ / g0[m_]
+            res.append(mr)
             continue
         if pm2 is not None:
             xf = L.residual_share(None, False, S, W, Lo, N, None)
@@ -556,4 +641,6 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
         res.append(L.month_rates(month, v, ratio, ratio * (ratio > 0), (ratio > 0).astype(float)))
     out = {m: {k: float(np.nanmean([r[m][k] for r in res if m in r and r[m].get(k) is not None])) for k in ('all', 'curt', 'paid')} for m in range(1, 13)}
     dist = {m: {k: [float(np.nanpercentile([r[m][k] for r in res if m in r and r[m].get(k) is not None], q)) for q in (10, 90)] for k in ('all', 'curt')} for m in range(1, 13)}
+    if guard == 'measure':
+        dist['belowFloor'] = BELOW[0] / BELOW[1] if BELOW[1] else None
     return out, dist
