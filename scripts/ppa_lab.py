@@ -420,6 +420,55 @@ def by_doy(a, key=None):
     return _DI[k]
 
 
+# the weather day's own demand deviation (Tom 29 Oct. 2026: windy winter days are mild, so demand is lower when the wind
+# blows; taking demand from another year than the weather broke that link): each country's hourly load of the demand
+# year × the weather day's daily load ÷ the mean of the weather year's days of the same month and day kind
+WEATHER_DEMAND = {'on': False}
+_DEV = {}
+
+
+def demand_dev(wy, pre, j):
+    """daily load of row j of weather year wy ÷ the mean of that year's days of the same month and day kind"""
+    key = (wy, pre)
+    if key not in _DEV:
+        a = DATA[wy]
+        daily = a[pre + 'l'].mean(axis=1)
+        kinds = np.array([day_kind(d) for d in a['days']])
+        ref = np.ones(len(daily))
+        for m in range(1, 13):
+            for kd in range(3):
+                k = (a['month'] == m) & (kinds == kd)
+                if k.any():
+                    ref[k] = daily[k].mean()
+        _DEV[key] = daily / ref
+    return float(_DEV[key][j])
+
+
+# installed capacity through the year (Tom 29 Oct. 2026): the published fleets are year-end values; a whole year at its
+# year-end fleet overstated the delivery year by about half a year's growth (solar 2027: 42.3 GW against 39.4 on
+# average) and understated the load factors of the early months of a past weather year. Day by day, linearly from the
+# previous year-end to the year-end, for the weather years (their own fleets) and the delivery year (its projection)
+FLEET_DAILY = {'on': True}
+
+
+def _frac(d):
+    dd = date.fromisoformat(str(d)[:10])
+    return (dd.timetuple().tm_yday - 0.5) / (366 if dd.year % 4 == 0 else 365)
+
+
+def _start_of(c, t, Y, end):
+    """the fleet at the start of year Y: the observed year-end before it, else one year's growth back from 'end' along
+    the path from the last observed year-end"""
+    v = cap(c, t, Y - 1)
+    if v:
+        return v
+    ys = [y for y in range(2010, Y) if cap(c, t, y)]
+    if not ys or end is None:
+        return end
+    last = ys[-1]
+    return end - (end - cap(c, t, last)) / max(1, Y - last)
+
+
 def assemble(Y, days, weather_src, demand_year, capY):
     """hourly solar, wind, load and nuclear for the days of Y: weather (load factors) from
     weather_src[day index] (a past year), load and nuclear from demand_year (or the weather
@@ -431,16 +480,25 @@ def assemble(Y, days, weather_src, demand_year, capY):
     for c in ('FR',) + NEIGH:
         pre = 'fr_' if c == 'FR' else c + '_'
         S = np.zeros((D, 24)); Wd = np.zeros((D, 24)); L = np.zeros((D, 24)); N = np.zeros((D, 24))
+        if FLEET_DAILY['on']:
+            y0 = {tt: _start_of(c, tt, Y, capY[c][tt]) for tt in 'sw'}
         for i, d in enumerate(days):
             wy, j = weather_src[i]
             a = DATA[wy]
             cs, cw = cap(c, 's', wy) or 1, cap(c, 'w', wy) or 1
-            S[i] = a[pre + 's'][j] / (cs * 1000) * capY[c]['s'] * 1000
-            Wd[i] = a[pre + 'w'][j] / (cw * 1000) * capY[c]['w'] * 1000
+            ys_, yw_ = capY[c]['s'], capY[c]['w']
+            if FLEET_DAILY['on']:
+                f, fw = _frac(d), _frac(a['days'][j])
+                cs = (cap(c, 's', wy - 1) or cs) + (cs - (cap(c, 's', wy - 1) or cs)) * fw
+                cw = (cap(c, 'w', wy - 1) or cw) + (cw - (cap(c, 'w', wy - 1) or cw)) * fw
+                ys_ = y0['s'] + (capY[c]['s'] - y0['s']) * f
+                yw_ = y0['w'] + (capY[c]['w'] - y0['w']) * f
+            S[i] = a[pre + 's'][j] / (cs * 1000) * ys_ * 1000
+            Wd[i] = a[pre + 'w'][j] / (cw * 1000) * yw_ * 1000
             k = demand_row(dmd, di, d)
             if k is None:
                 k = min(di.values(), key=lambda q: abs(int(dmd['doy'][q]) - doy(d)))
-            L[i] = dmd[pre + 'l'][k]; N[i] = dmd[pre + 'n'][k]
+            L[i] = dmd[pre + 'l'][k] * (demand_dev(wy, pre, j) if WEATHER_DEMAND['on'] else 1.0); N[i] = dmd[pre + 'n'][k]
         out['s'][c], out['w'][c], out['l'][c], out['n'][c] = S, Wd, L, N
     out['pump'] = np.array([dmd['fr_pump'][di.get(doy(d), 0)] for d in days])
     return out

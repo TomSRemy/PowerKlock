@@ -145,6 +145,7 @@ WX_DEMAND2 = {'s': False, 'w': True}   # wind: consumption and nuclear drawn fro
 # instead of diving (Jan.–Oct. 2026: 74 % of the hours ≤ 0 € between −1 € and 0); scripts/ppa_floor_test.py, error over
 # 1–3 years in the all-hours convention: solar 9.02 → 8.13, wind 3.85 → 3.83 (the curtailed one does not change)
 WX_FLOOR = True
+WX_FLEET_DAILY = True
 # (scripts/ppa_wx_align_test.py, mean error over 1–3 years, curt: solar 3.82 → 2.44 with the noise, wind 2.95 → 2.70
 #  with the two-year demand; the other choice made each worse); js/ppa-wx.js applies the same rule
 
@@ -181,6 +182,9 @@ def m_weather(t, Y, train, V, n_sims):
     sims = PM.simulate(model, days, n_sims, seed=Y, year=Y)
     last = train[-1]
     cs, cw = B.cap_guess('s', Y, last) * 1000, B.cap_guess('w', Y, last) * 1000
+    # the delivery year's fleet day by day, from the previous year-end to its year-end (WX_FLEET_DAILY; before: its
+    # year-end on every day, about half a year's growth too much)
+    cs0, cw0 = B.cap_guess('s', Y - 1, last) * 1000, B.cap_guess('w', Y - 1, last) * 1000
     i_last = np.isin(yr, train[-2:]) if WX_DEMAND2[t] else yr == last
     dem = {}
     for o_ in np.unique(DAY[i_last]):
@@ -208,7 +212,11 @@ def m_weather(t, Y, train, V, n_sims):
             sname = 'summer' if 4 <= m <= 9 else 'winter'
             prs = []
             for h in range(24):
-                s_, w_ = hs[h] * cs, hw[h] * cw
+                if WX_FLEET_DAILY:
+                    fy = (k + 0.5) / len(sim)
+                    s_, w_ = hs[h] * (cs0 + (cs - cs0) * fy), hw[h] * (cw0 + (cw - cw0) * fy)
+                else:
+                    s_, w_ = hs[h] * cs, hw[h] * cw
                 g = (1 if 4 <= m <= 9 else 0) * 3 + (0 if h < 9 else 1 if h < 17 else 2)
                 pr = look(g, int(round((Ld[h] - s_ - w_ - nav) / 1000)))
                 if res.get(g):
