@@ -75,9 +75,9 @@ def run(rebuild=None):
                   const adj = - o.refW * (o.add || 0) / 100 - o.imb + o.goW - o.margin;
                   lo = q(0.10) + adj; hi = q(0.90) + adj;
                 }
-                // the integrated method (test since 29 Oct. 2026, not in the published price): wind = the anchored European
-                // model, solar = the mean of it, the capacity trend and the weather simulation (scripts/ppa_integrated.py)
-                const it = o.ppaAnc == null ? null : o.st.tech === 'wind' ? o.ppaAnc : (o.ppaWx != null ? (o.ppaAnc + o.ppaBuild + o.ppaWx) / 3 : null);
+                // the integrated method (test, not in the published price): since 30 Oct. 2026 the single scenario
+                // generator (scripts/ppa_generator.py); 29 Oct. the anchored European model mix
+                const it = o.ppaGen;
                 return { wx: r(o.ppaWx), eu: r(o.ppaEu), int: r(it), blend: m.length ? r(m.reduce((a, b) => a + b, 0) / m.length) : null,
                          // the published average: the four methods with their weights (inverse of their past error for solar)
                          blend4: m4.length === 4 ? r(PKPpa.avg4Of ? PKPpa.avg4Of(o) : m4.reduce((a, b) => a + b, 0) / 4) : null, lo: r(lo), hi: r(hi) };

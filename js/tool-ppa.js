@@ -203,11 +203,11 @@
         if (Mo && !Mo.includes(m)) continue;   // a year delivered in part: its months only
         const e = f[`${y}-${String(m).padStart(2, '0')}`];
         if (!e || e[fld] == null || ratio[m] == null) return null;
-        const w = sh(m) * (conv === 'curt' ? e.paid : 1);
+        const w = sh(m) * (conv === 'curt' ? (e[fld + 'Paid'] != null ? e[fld + 'Paid'] : e.paid) : 1);
         num += w * (q ? q[m - 1] : ratio[m] / rn) * (e[fld] + gap); den += w;
       }
       if (!(den > 0)) return null;
-      const b = o.biasOf && fld !== 'anchored' ? o.biasOf('regional', y) : 0;
+      const b = o.biasOf && fld !== 'anchored' && fld !== 'generator' ? o.biasOf('regional', y) : 0;
       out.push({ y, capture: num / den - b, bias: b });
     }
     return out;
@@ -459,6 +459,11 @@
     o.anc = euYears(o, st, 'anchored');
     o.ancFair = o.anc ? years.reduce((a, r, i) => a + r.wt * r.fwd * o.anc[i].capture, 0) : null;
     o.ppaAnc = o.anc ? o.ancFair - o.premium - refW * add / 100 - imb + goW - margin : null;
+    // the single scenario generator (scripts/ppa_generator.py, since 30 Oct. 2026 the integrated method shown as a
+    // test): real weeks with every variable of the same day, one price rule in euros, no bias correction
+    o.gen = euYears(o, st, 'generator');
+    o.genFair = o.gen ? years.reduce((a, r, i) => a + r.wt * r.fwd * o.gen[i].capture, 0) : null;
+    o.ppaGen = o.gen ? o.genFair - o.premium - refW * add / 100 - imb + goW - margin : null;
     o.method = st.method;
     // asset-specific FPC method (three pricings): js/ppa-fpc.js
     o.capPathFor = capPath;
@@ -682,14 +687,10 @@
     const W = its.reduce((a, m) => a + wOf(m.k, st), 0);
     return W > 0 ? its.reduce((a, m) => a + wOf(m.k, st) * m[f], 0) / W : null;
   }
-  // the integrated method: wind = the anchored European model; solar = the mean of the anchored model, the capacity
-  // trend and the weather simulation (scripts/ppa_integrated_test.py); shown as a test, never in the published price
-  function integrated(o, wxc) {
-    const wv = o.m4 ? o.ppaWx : wxc ? wxc.ppa : null, wf = o.m4 ? o.m4.fair : wxc ? wxc.fair : null;
-    if (o.ppaAnc == null) return { k: 'int', v: null };
-    if ((o.st || S).tech === 'wind') return { k: 'int', v: o.ppaAnc, fair: o.ancFair, ref: o.refW };
-    if (wv == null) return { k: 'int', v: null, needWx: true };
-    return { k: 'int', v: (o.ppaAnc + o.ppaBuild + wv) / 3, fair: (o.ancFair + o.fair + wf) / 3, ref: o.refW };
+  // the integrated method (since 30 Oct. 2026): the single scenario generator, the same for both technologies, no
+  // bias correction (scripts/ppa_generator.py); shown as a test, never in the published price until wind is right
+  function integrated(o) {
+    return o.ppaGen == null ? { k: 'int', v: null } : { k: 'int', v: o.ppaGen, fair: o.genFair, ref: o.refW };
   }
   function methodVals(o) {
     if (o.m4) S.wxLast = Object.assign(S.wxLast || {}, { ppa: o.ppaWx, fair: o.m4.fair, ref: o.m4.refW, fp: fp() });
@@ -700,7 +701,7 @@
       { k: 'fpc', v: o.ppaFpc, fair: o.m3 ? o.m3.fair : null, ref: o.m3 ? o.m3.refW : null },
       { k: 'wx', v: o.m4 ? o.ppaWx : wxc ? wxc.ppa : null, fair: o.m4 ? o.m4.fair : wxc ? wxc.fair : null, ref: o.m4 ? o.m4.refW : wxc ? wxc.ref : null },
       { k: 'eu', v: o.ppaEu, fair: o.euFair, ref: o.refW },
-      integrated(o, wxc),
+      integrated(o),
     ];
   }
   // measured precision of the 4-method average by horizon (scripts/ppa_horizon_test.py), for the band
