@@ -111,7 +111,9 @@ def main():
         p.evaluate("document.body.focus()"); p.keyboard.press('n'); p.wait_for_timeout(300)
         check('notes: key N opens the panel', p.locator('#pk-notes').is_visible())
         p.click('#pk-notes [data-a=aim]')
-        # the first chart drawn on the page (one may hide itself while its data is not out yet)
+        # the first chart drawn on the page (one may hide itself while its data is not out yet); wait for it rather than a
+        # fixed delay, the hosted runner draws more slowly
+        p.wait_for_function("[...document.querySelectorAll('.page.active canvas[id]')].some(c => c.getBoundingClientRect().height > 50 && window.Chart && Chart.getChart(c))", timeout=10000)
         cid = p.evaluate("[...document.querySelectorAll('.page.active canvas[id]')].find(c => c.getBoundingClientRect().height > 50 && window.Chart && Chart.getChart(c)).id")
         p.evaluate(f"document.getElementById('{cid}').scrollIntoView({{block: 'center'}})"); p.wait_for_timeout(300)
         bb = p.locator('#' + cid).bounding_box(); p.mouse.click(bb['x'] + 40, bb['y'] + 40); p.wait_for_timeout(300)
