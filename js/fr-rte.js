@@ -23,7 +23,10 @@
   const months = new Map();   // 'YYYY-MM' → Promise<json|null>
   const live = new Map();     // 'YYYY-MM-DD' → Promise<day|null>
   const base = () => (typeof DATA_BASE !== 'undefined' && DATA_BASE ? DATA_BASE : 'data/');
-  const nativeFetch = (u) => window.fetch(u);
+  // every call gives up after 3 s (it answers in well under 1 s when up): when the live RTE source (ODRÉ) hangs, the pages that wait for it (Today) still draw
+  // the rest instead of staying blank (29 Oct. 2026: its requests stayed pending for minutes)
+  const nativeFetch = (u) => { const c = typeof AbortController !== 'undefined' ? new AbortController() : null; const t = c ? setTimeout(() => c.abort(), 3000) : null;
+    return window.fetch(u, c ? { signal: c.signal } : undefined).finally(() => { if (t) clearTimeout(t); }); };
 
   function addDays(iso, n) { const [y, m, d] = iso.split('-').map(Number); return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10); }
   function todayParis() { return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris' }).format(new Date()); }
