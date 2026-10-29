@@ -25,8 +25,8 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with: { python-version: '3.12' }
       - run: pip install -q requests==2.33.1
       - name: Rebuild
@@ -43,7 +43,7 @@ jobs:
           git add data/history/daily data/history/summary.json data/history/summary_fr.json data/history/repair_log.json data/history/price_check.json
           git diff --staged --quiet && exit 0
           git commit -q -m "data: day-ahead history repaired (${{ inputs.zones || 'ALL' }})"
-          for i in 1 2 3 4 5; do git pull -q --rebase -X theirs origin main && git push && exit 0; git rebase --abort 2>/dev/null; sleep 8; done
+          for i in 1 2 3 4 5; do git pull -q --rebase -X theirs origin main && git push && exit 0; git rebase --abort 2>/dev/null || true; sleep 8; done
           exit 1
       - name: E-mail on failure
         if: failure()

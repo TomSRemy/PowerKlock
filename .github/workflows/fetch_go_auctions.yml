@@ -18,10 +18,10 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.11"
 
@@ -38,7 +38,7 @@ jobs:
           git add data/go_auctions.json
           git diff --cached --quiet || git commit -m "auto: update go_auctions.json [$(date +%Y-%m-%d)]"
           # a data job may have pushed meanwhile: rebase on it, then push (5 tries)
-          for i in 1 2 3 4 5; do git pull -q --rebase -X theirs origin main && git push && exit 0; git rebase --abort 2>/dev/null; sleep 8; done; exit 1
+          for i in 1 2 3 4 5; do git pull -q --rebase -X theirs origin main && git push && exit 0; git rebase --abort 2>/dev/null || true; sleep 8; done; exit 1
 
       - name: E-mail on failure
         if: failure()

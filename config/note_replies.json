@@ -210,5 +210,17 @@
  "53": {
   "status": "done",
   "reply": "Fait : panneau de droite élargi pour que les tuiles respirent, et chaque graphique a maintenant son bouton plein écran comme sur Aujourd’hui (le plein écran global reste pour garder le curseur partagé)."
+ },
+ "54": {
+  "status": "done",
+  "reply": "Fait : sous la case « Facteur de charge », une liste des facteurs mesurés (pays par technologie, régions françaises pour l’éolien et le solaire, moyenne 3 ans ou dernière année selon le choix du tableau). À l’ouverture, l’éolien France mesuré est choisi automatiquement (23,3 % sur 2023-2025) ; taper une valeur ou cliquer une règle du pouce repasse en saisie libre. Les boutons « règles du pouce » passent aussi à la ligne sur téléphone (ils étaient coupés)."
+ },
+ "55": {
+  "status": "done",
+  "reply": "Fait : la carte du lendemain avant publication (prévision PowerKlock) a maintenant le même style que les autres prévisions du site — courbe bleu clair en pointillés, mention « prévision » en bleu, moyenne en gris — et n’est plus grisée ; le gris reste réservé à « pas encore publié »."
+ },
+ "56": {
+  "status": "done",
+  "reply": "Fait : l’année en cours est maintenant proposée et affichée par défaut sur la carte (solaire et éolien) : « Année 2026 (à fin août) ». Le fichier régional de RTE arrive plus tard que le national (aujourd’hui jusqu’à fin août), d’où la mention ; l’année 2025 complète et les moyennes 3 et 5 ans restent dans le menu."
  }
 }

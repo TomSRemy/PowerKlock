@@ -1,6 +1,6 @@
 // ════════════════════════════════════════════════════════════════════
 // FRANCE AGAINST THE PPE3 (Installed Capacity page)
-//   installed solar and onshore wind (Energy-Charts, data/history/capacity.json)
+//   installed solar and onshore wind (RTE via ODRÉ for France, data/history/capacity.json)
 //   against the PPE3 targets used by the PPA pricer (same constants), the
 //   yearly pace needed from the last year to each target vs the last 3 years
 // ════════════════════════════════════════════════════════════════════
@@ -33,9 +33,9 @@
       return _fuelKpi(lab + ' · end ' + y0, a[a.length - 1].toFixed(1), 'GW', `PPE3 ${PPE3[t][2030]} GW in 2030, ${t === 'solar' ? '55–80' : '35–40'} in 2035`) +
         _fuelKpi(lab + ' · pace', p.toFixed(2), 'GW/yr', `last 3 years · ${nd.toFixed(2)} GW/yr needed to 2030 · ${ok ? 'on track' : 'behind by ' + (nd - p).toFixed(2) + ' GW/yr'}`, ok ? 'up' : 'down'); };
     if (k) k.innerHTML = tile('Solar', S, 'solar') + tile('Onshore wind', W, 'wind');
-    return { sub: `GW, end of year (Energy-Charts) · PPE3 (decree 2026-76, 13 Feb 2026): solar 48 GW in 2030, 55–80 GW in 2035; onshore wind 31 GW, then 35–40 GW · 2035 drawn at the middle of the range, the value the PPA pricer's capture projections use` };
+    return { sub: `GW, end of year (RTE, ODRÉ) · PPE3 (decree 2026-76, 13 Feb 2026): solar 48 GW in 2030, 55–80 GW in 2035; onshore wind 31 GW, then 35–40 GW · 2035 drawn at the middle of the range, the value the PPA pricer's capture projections use` };
   }
-  if (window.PKW) PKW.register({ id: 'cap-ppe3', title: 'France · installed solar and wind vs the PPE3', category: 'renewables', page: 'capacity', pageCanvas: 'cap-ppe', source: 'Energy-Charts · PPE3', size: { w: 6, h: 5 },
+  if (window.PKW) PKW.register({ id: 'cap-ppe3', title: 'France · installed solar and wind vs the PPE3', category: 'renewables', page: 'capacity', pageCanvas: 'cap-ppe', source: 'RTE (ODRÉ) · PPE3', size: { w: 6, h: 5 },
     desc: 'Installed solar and onshore wind in France against the PPE3 targets for 2030 and 2035, with the straight path to them and the yearly pace needed vs the recent pace.', draw });
   const show = () => { if (document.getElementById('cap-ppe')) PKW.draw('cap-ppe3', 'cap-ppe', {}).then(r => { const e = document.getElementById('cap-ppe-sub'); if (e && r) e.textContent = r.sub; }); };
   PK.onPage('capacity', () => setTimeout(show, 200));

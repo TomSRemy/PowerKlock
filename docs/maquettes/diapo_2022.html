@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><title>Maquette · 2022, rupture de corrélation</title>
+<style>
+.viz-root{color-scheme:dark;--surface-0:#0f1012;--surface-1:#1a1a19;--border:#2c2c2a;--text-primary:#ffffff;--text-secondary:#c3c2b7;--text-muted:#8f8e86;--grid:#2e2e2b;--series-1:#3987e5;--series-2:#d95926;--ren:#199e70;--nuc:#9085e9;--hyd:#3987e5;--coal:#8f8e86;--gas:#d95926;--hl:#c9850022}
+*{box-sizing:border-box}body{margin:0;background:#000;display:flex;justify-content:center}
+.viz-root{width:1600px;height:900px;background:var(--surface-0);color:var(--text-primary);font:15px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif;padding:44px 56px 30px;display:grid;grid-template-rows:auto 1fr auto auto;gap:18px}
+h1{margin:0;font-size:34px;letter-spacing:-.01em}.sub{color:var(--text-secondary);font-size:18px;margin-top:6px}
+.cols{display:grid;grid-template-columns:1.05fr 1fr;gap:22px;min-height:0}
+.panel{background:var(--surface-1);border:1px solid var(--border);border-radius:12px;padding:18px 20px;display:flex;flex-direction:column;min-height:0}
+.ptitle{font-weight:650;font-size:17px}.psub{color:var(--text-secondary);font-size:13px;margin:2px 0 8px}
+.legend{display:flex;gap:18px;font-size:13px;color:var(--text-secondary);margin-bottom:4px}.legend i{display:inline-block;width:18px;height:3px;border-radius:2px;vertical-align:middle;margin-right:6px}
+svg text{fill:var(--text-secondary);font-size:12px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.kpi{background:var(--surface-1);border:1px solid var(--border);border-radius:12px;padding:12px 16px}
+.kpi b{display:block;font-size:28px;font-weight:700;color:var(--text-primary)}.kpi span{color:var(--text-secondary);font-size:13px}
+.foot{display:flex;justify-content:space-between;color:var(--text-muted);font-size:12px}
+.take{font-size:15px;color:var(--text-primary);border-left:3px solid var(--series-2);padding:2px 0 2px 12px}
+.tip{position:absolute;pointer-events:none;background:#0b0b0b;border:1px solid var(--border);border-radius:8px;padding:6px 9px;font-size:12px;color:var(--text-primary);display:none;white-space:nowrap}
+.mo{display:grid;grid-template-columns:1fr 1fr;gap:14px;flex:1;min-height:0}.mo h4{margin:0 0 2px;font-size:14px}.mo p{margin:0;color:var(--text-secondary);font-size:12px}
+.mleg{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--text-secondary);margin-top:6px}.mleg i{display:inline-block;width:11px;height:11px;border-radius:3px;vertical-align:-1px;margin-right:5px}
+</style></head>
+<body><div class="viz-root" id="root">
+<div><h1>2022 : l’année où le solaire a valu plus que la base</h1>
+<div class="sub">Capture solaire 104,6 % — non pas parce que midi valait cher, mais parce que le pic de prix de l’année est tombé en été, quand le solaire produit le plus.</div></div>
+<div class="cols">
+ <div class="panel" style="position:relative">
+  <div class="ptitle">Capture solaire = effet saison × effet heure</div>
+  <div class="psub">Effet saison : le solaire produit-il dans les mois chers ? Effet heure : dans le mois, ses heures valent-elles plus que la moyenne ? (1 = neutre)</div>
+  <div class="legend"><span><i style="background:var(--series-1)"></i>Effet saison</span><span><i style="background:var(--series-2)"></i>Effet heure (dans le mois)</span></div>
+  <svg id="ch" viewBox="0 0 700 330" style="width:100%;flex:1"></svg>
+  <div class="tip" id="tip"></div>
+ </div>
+ <div class="panel">
+  <div class="ptitle">Pourquoi : qui fixe le prix à midi en été (ordre de mérite)</div>
+  <div class="psub">Les moyens de production sont appelés du moins cher au plus cher ; le dernier appelé fixe le prix de tous. Schéma, ordres de grandeur.</div>
+  <div class="mo">
+   <div><h4>Été 2025, midi</h4><p>Beaucoup de solaire, nucléaire disponible : la demande est servie avant le gaz → prix proche de zéro, voire négatif.</p><svg id="m25" viewBox="0 0 330 310" style="width:100%"></svg></div>
+   <div><h4>Été 2022, midi</h4><p>Nucléaire au plus bas (corrosion), sécheresse, gaz très cher : même à midi, il faut du gaz → prix fixé par le gaz.</p><svg id="m22" viewBox="0 0 330 310" style="width:100%"></svg></div>
+  </div>
+  <div class="mleg"><span><i style="background:var(--ren)"></i>Solaire + éolien</span><span><i style="background:var(--nuc)"></i>Nucléaire</span><span><i style="background:var(--hyd)"></i>Hydraulique</span><span><i style="background:var(--coal)"></i>Charbon</span><span><i style="background:var(--gas)"></i>Gaz</span><span>┃ demande</span></div>
+ </div>
+</div>
+<div class="kpis">
+ <div class="kpi"><b>104,6 %</b><span>capture solaire 2022 (56,1 % en 2025)</span></div>
+ <div class="kpi"><b>+0,06</b><span>corrélation production solaire / prix horaire, 2022 (−0,41 en 2025)</span></div>
+ <div class="kpi"><b>492 €/MWh</b><span>base d’août 2022, mois le plus cher de l’année</span></div>
+ <div class="kpi"><b>31,8 GW</b><span>nucléaire moyen disponible 2022 (42,6 GW en 2025)</span></div>
+</div>
+<div><div class="take">Pour le pricing : une crise de ce type est un choc de niveau saisonnier, pas de la cannibalisation — elle reste un scénario de stress, hors des squelettes de base (règle 2022 unique).</div>
+<div class="foot" style="margin-top:10px"><span>Sources : RTE éCO2mix (production horaire), ENTSO-E (prix day-ahead France) · calcul PowerKlock, années complètes 2016-2025</span><span>MAQUETTE — à valider</span></div></div>
+</div>
+<script>
+const Y=[2016,2017,2018,2019,2020,2021,2022,2023,2024,2025];
+const SEA=[0.927,0.892,0.994,0.945,0.932,0.885,1.080,0.969,0.878,0.884];
+const HR=[1.031,1.025,1.022,1.007,1.000,0.984,0.969,0.873,0.739,0.635];
+const CAP=[0.956,0.914,1.016,0.952,0.932,0.871,1.046,0.846,0.648,0.561];
+const NS='http://www.w3.org/2000/svg',el=(t,a,p)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);(p||svg).appendChild(e);return e};
+const svg=document.getElementById('ch'),W=700,H=330,L=52,R=96,T=14,B=34;
+const x=i=>L+i*(W-L-R)/(Y.length-1),lo=0.6,hi=1.12,y=v=>T+(hi-v)/(hi-lo)*(H-T-B);
+// 2022 highlight band
+el('rect',{x:x(6)-22,y:T,width:44,height:H-T-B,fill:'#c9850022',rx:4});
+[0.6,0.7,0.8,0.9,1.0,1.1].forEach(v=>{el('line',{x1:L,x2:W-R,y1:y(v),y2:y(v),stroke:v===1?'#8f8e86':'#2e2e2b','stroke-dasharray':v===1?'5 4':'', 'stroke-width':1});const t=el('text',{x:L-8,y:y(v)+4,'text-anchor':'end'});t.textContent=v.toFixed(1).replace('.',',');});
+Y.forEach((yy,i)=>{const t=el('text',{x:x(i),y:H-12,'text-anchor':'middle'});t.textContent=yy;});
+const line=(d,c)=>{el('polyline',{points:d.map((v,i)=>x(i)+','+y(v)).join(' '),fill:'none',stroke:c,'stroke-width':2,'stroke-linejoin':'round'});d.forEach((v,i)=>el('circle',{cx:x(i),cy:y(v),r:4.5,fill:c,stroke:'#1a1a19','stroke-width':2}));};
+line(SEA,'#3987e5');line(HR,'#d95926');
+const lab=(v,c,txt)=>{const t=el('text',{x:W-R+10,y:y(v)+4});t.textContent=txt;t.style.fill='#c3c2b7';};
+lab(SEA[9],'#3987e5','Saison 0,88');lab(HR[9],'#d95926','Heure 0,64');
+const a=el('text',{x:x(6),y:y(1.08)-12,'text-anchor':'middle'});a.textContent='2022 : saison 1,08';a.style.fill='#ffffff';a.style.fontWeight='600';
+const a2=el('text',{x:x(6),y:y(1.08)-26,'text-anchor':'middle'});a2.textContent='seule année > 1';a2.style.fill='#c3c2b7';
+// hover
+const tip=document.getElementById('tip');
+Y.forEach((yy,i)=>{const r=el('rect',{x:x(i)-26,y:T,width:52,height:H-T-B,fill:'transparent'});r.addEventListener('mousemove',ev=>{tip.style.display='block';const b=svg.getBoundingClientRect();tip.style.left=(ev.clientX-b.left+svg.parentNode.offsetLeft*0+40)+'px';tip.style.top=(ev.clientY-b.top+40)+'px';tip.innerHTML=`<b>${yy}</b> · capture ${(CAP[i]*100).toFixed(1).replace('.',',')} %<br>saison ${SEA[i].toFixed(3).replace('.',',')} × heure ${HR[i].toFixed(3).replace('.',',')}`;});r.addEventListener('mouseleave',()=>tip.style.display='none');});
+// merit order on a common price scale (0-500 €/MWh) so the two summers compare at a glance
+function merit(id,blocks,demand,price){const s=document.getElementById(id),Wm=330,Hm=310,l=40,r=10,t=28,b=40,max=500,cap=110;
+ const X=g=>l+g/cap*(Wm-l-r),Yp=p=>t+(1-p/max)*(Hm-t-b);let g0=0;
+ const E=(tg,a,txt)=>{const e=document.createElementNS(NS,tg);for(const k in a)e.setAttribute(k,a[k]);if(txt!=null)e.textContent=txt;s.appendChild(e);return e};
+ [0,100,200,300,400,500].forEach(v=>{E('line',{x1:l,x2:Wm-r,y1:Yp(v),y2:Yp(v),stroke:v?'#2e2e2b':'#8f8e86'});E('text',{x:l-6,y:Yp(v)+4,'text-anchor':'end'},v);});
+ blocks.forEach(([n,gw,p,c])=>{const h=Math.max(5,Yp(0)-Yp(p));E('rect',{x:X(g0)+1,y:Yp(0)-h,width:X(g0+gw)-X(g0)-2,height:h,fill:c,rx:3});
+   if(gw>=24||n==='gaz')E('text',{x:(X(g0)+X(g0+gw))/2,y:Yp(0)-h-5,'text-anchor':'middle'},n);g0+=gw;});
+ E('line',{x1:X(demand),x2:X(demand),y1:t,y2:Yp(0),stroke:'#ffffff','stroke-width':2});
+ E('text',{x:X(demand),y:Yp(0)+15,'text-anchor':'middle'},'demande');
+ E('line',{x1:l,x2:X(demand),y1:Yp(price),y2:Yp(price),stroke:'#ffffff','stroke-dasharray':'4 3','stroke-width':1.5});
+ const low=price<50, pt=E('text',low?{x:X(demand)+8,y:Yp(0)-60}:{x:l+4,y:Yp(price)-7},'prix ≈ '+price+' €/MWh');pt.style.fill='#ffffff';pt.style.fontWeight='600';
+ E('text',{x:Wm-r,y:Hm-4,'text-anchor':'end'},'puissance appelée (GW) →');E('text',{x:4,y:t-14},'€/MWh');}
+merit('m25',[['solaire + éolien',38,2,'#199e70'],['nucléaire',40,15,'#9085e9'],['hydro',10,30,'#3987e5'],['',2,110,'#8f8e86'],['gaz',14,120,'#d95926']],34,0);
+merit('m22',[['solaire + éolien',22,2,'#199e70'],['nucléaire',28,15,'#9085e9'],['',6,30,'#3987e5'],['',2,300,'#8f8e86'],['gaz',16,450,'#d95926']],66,450);
+</script></body></html>

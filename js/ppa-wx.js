@@ -6,13 +6,20 @@
 //               solar ↔ wind link (scripts/prod_model.py → fr_prod_model.json)
 //   production  × the installed capacity projected for the delivery year
 //               (PPE3 path), hourly shape of a real day with a close output
-//   demand      consumption and nuclear availability of a recent real day of
-//               the same month and day type
+//   demand      consumption and nuclear availability of a real day of the same
+//               month and day type: the last complete year for solar, the last
+//               two for wind
 //   price       month level of the forward curve × the effect of the net
 //               residual load (consumption − solar − wind − nuclear available),
 //               measured on the last two complete years by season and time of
-//               day, × a residual drawn from the same years; then the whole
-//               year is rescaled to its Cal exactly
+//               day, × (solar only) a residual drawn from the same years; then
+//               the whole year is rescaled to its Cal exactly
+// Per technology as the test bench (scripts/ppa_backtest_detail.py WX_NOISE /
+// WX_DEMAND2, scripts/ppa_wx_align_test.py: mean error over 1–3 years, curt,
+// solar 3.82 → 2.44 with the residual, wind 2.95 → 2.70 with two years of demand),
+// so the method's bias correction (scripts/ppa_bias.py) is measured on this version
+// The hour's price is floored at zero, as the test bench (scripts/ppa_floor_test.py: most plants stop at
+// negative prices since 2025, the price settles at about zero; all-hours error solar 9.02 → 8.13 €/MWh)
 // Correlated: production and prices of the same simulated year. Decorrelated:
 // production of one year, prices of another. The gap is the cannibalisation.
 // ════════════════════════════════════════════════════════════════════
@@ -95,8 +102,9 @@
     const complete = B.ys.filter(y => y !== 2022 && B.days.filter(d => d.y === y).length > 330);
     const recent = complete.slice(-2);
     const PC = priceCurve(B, recent);
-    const recentDays = {}; B.days.filter(d => recent.includes(d.y)).forEach(d => { const k = d.m + '|' + d.t; (recentDays[k] = recentDays[k] || []).push(d); });
     const tech = st.tech === 'solar' ? 'S' : 'W', pos = st.conv !== 'all', baseAll = st.conv === 'curt';
+    const demYears = tech === 'S' ? recent.slice(-1) : recent;   // demand days: the last complete year for solar, two for wind
+    const recentDays = {}; B.days.filter(d => demYears.includes(d.y)).forEach(d => { const k = d.m + '|' + d.t; (recentDays[k] = recentDays[k] || []).push(d); });
     const AF = o.useAsset ? fitAsset(st, B, tech) : null;
     const meanCF = {}; for (let m = 1; m <= 12; m++) { const q = B.model.months[String(m)][tech === 'S' ? 's' : 'w']; meanCF[m] = mean(q); }
     let eA = 0;
@@ -106,8 +114,11 @@
     let zs = 0, zw = 0;
     const gauss = () => { let u = 0; while (!u) u = R(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * R()); };
     let week = null;
+    // the forward level of a delivery year: its Cal, or the day-weighted mean of its months' levels when only some are delivered
+    const calOf = (Y, Mo) => { if (!Mo || Mo.length === 12) return monthLevel(Y, 0); let a = 0, n = 0; Mo.forEach(m => { const d = new Date(Date.UTC(Y, m, 0)).getUTCDate(); a += monthLevel(Y, m) * d; n += d; }); return n ? a / n : monthLevel(Y, 0); };
     o.tenor.forEach((Y, yi) => {
-      const capS = capPathFor('solar')(Y), capW = capPathFor('wind')(Y), days = daysOf(Y);
+      const Mo = o.monthsOf ? o.monthsOf(Y) : null;   // a year delivered in part: its months only
+      const capS = capPathFor('solar')(Y), capW = capPathFor('wind')(Y), days = daysOf(Y).filter(d => !Mo || Mo.includes(+d.slice(5, 7)));
       const simsY = [];
       for (let n = 0; n < N; n++) {
         const P = new Float64Array(days.length * 24), V = new Float64Array(days.length * 24);
@@ -126,16 +137,16 @@
           for (let h = 0; h < 24; h++) {
             const s = cS * aS.shS[h] * capS * 1000, w = cW * aW.shW[h] * capW * 1000;
             const net = (dem.L[h] - s - w - dem.nav) / 1000, g = summer(m) * 3 + block(h);
-            const rs = PC.res[g], noise = rs && rs.length ? rs[Math.floor(R() * rs.length)] : 1;
+            const rs = tech === 'S' ? PC.res[g] : null, noise = rs && rs.length ? rs[Math.floor(R() * rs.length)] : 1;   // the residual: solar only
             const k = di * 24 + h;
-            P[k] = lvl * lookup(PC.T, g, Math.round(net)) * noise;
+            P[k] = Math.max(0, lvl * lookup(PC.T, g, Math.round(net)) * noise);   // floored: plants stop at negative prices
             V[k] = (tech === 'S' ? cS * aS.shS[h] : cW * aW.shW[h]) * aDay;
           }
         });
-        // the year averages exactly its Cal
-        const cal = monthLevel(Y, 0); let ps = 0; for (let k = 0; k < P.length; k++) ps += P[k]; const f = cal / (ps / P.length); for (let k = 0; k < P.length; k++) P[k] *= f;
+        // the year averages exactly its Cal (a part year: the average level of its months)
+        const cal = calOf(Y, Mo); let ps = 0; for (let k = 0; k < P.length; k++) ps += P[k]; const f = cal / (ps / P.length); for (let k = 0; k < P.length; k++) P[k] *= f;
         simsY.push({ P, V });
-        if (yi === 0 && n === 0) { const a = days.indexOf(Y + '-06-01'); week = Array.from({ length: 7 * 24 }, (_, k) => ({ p: P[a * 24 + k], v: V[a * 24 + k] })); }
+        if (yi === 0 && n === 0) { const a0 = days.indexOf(Y + '-06-01'), a = a0 >= 0 ? a0 : 0; week = Array.from({ length: 7 * 24 }, (_, k) => ({ p: P[a * 24 + k], v: V[a * 24 + k] })); }
       }
       const capRate = (V, P) => { let num = 0, den = 0, ps = 0, pn = 0; for (let k = 0; k < P.length; k++) { const paid = !pos || P[k] > 0; if (paid || baseAll) { ps += P[k]; pn++; } if (!paid) continue; num += V[k] * P[k]; den += V[k]; } return den && pn ? (num / den) / (ps / pn) : null; };
       simsY.forEach((s, n) => { out[yi].rate[n] = capRate(s.V, s.P); out[yi].rateD[n] = capRate(s.V, simsY[(n + 1) % N].P); let v = 0; for (let k = 0; k < s.V.length; k++) v += s.V[k]; out[yi].vol[n] = v; });
@@ -144,9 +155,12 @@
     // model risk: one persistent deviation per trajectory, the size of the method's past errors (historical replay)
     const sm = sigModel || 0;
     if (sm > 0) for (let n = 0; n < N; n++) { const z = gauss() * sm; out.forEach(r => { r.rate[n] += z; }); }
+    // the method's past bias (scripts/ppa_bias.py), taken off where it helps
+    const bias = o.tenor.map(y => (o.biasOf ? o.biasOf('weather', y) : 0));
+    out.forEach((r, i) => { if (bias[i]) for (let n = 0; n < N; n++) r.rate[n] -= bias[i]; });
     // per delivery year: correlated and decorrelated capture rates, cannibalisation, spread
     const srt = a => Float64Array.from(a).sort();
-    const years = o.tenor.map((y, i) => { const r = srt(out[i].rate), d = srt(out[i].rateD), cal = monthLevel(y, 0);
+    const years = o.tenor.map((y, i) => { const r = srt(out[i].rate), d = srt(out[i].rateD), cal = calOf(y, o.monthsOf ? o.monthsOf(y) : null);
       return { y, cal, rate: mean(Array.from(r)), rateD: mean(Array.from(d)), cannib: mean(Array.from(r)) - mean(Array.from(d)), p10: quant(r, 0.1), p90: quant(r, 0.9), capture: cal * mean(Array.from(r)) }; });
     // value per MWh over the delivery, trajectory by trajectory (weights of the step-by-step method)
     const W = o.years.reduce((a, r) => a + r.w, 0) || 1;
@@ -155,7 +169,7 @@
     const Us = srt(U), fair = mean(Array.from(U)), qU = quant(Us, o.alpha / 100), premium = fair - qU;
     const refW = years.reduce((a, r, i) => a + o.years[i].w / W * r.cal, 0);
     const ppa = qU - refW * o.add / 100 - o.imb + o.goW - o.margin;
-    return { N, recent, asset: AF, sigModel: sm, years, U: Us, fair, qU, premium, refW, ppa, week, capS: o.tenor.map(y => capPathFor('solar')(y)), capW: o.tenor.map(y => capPathFor('wind')(y)) };
+    return { N, recent, asset: AF, sigModel: sm, bias, years, U: Us, fair, qU, premium, refW, ppa, week, capS: o.tenor.map(y => capPathFor('solar')(y)), capW: o.tenor.map(y => capPathFor('wind')(y)) };
   }
   window.PKWx = { compute };
 })();

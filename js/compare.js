@@ -25,7 +25,7 @@
   const CAT = new Map();
   const add = (id, label, group, unit, load) => CAT.set(id, { id, label, group, unit, load });
   const G = { expr: ['Vos formules', 'Your formulas'], spot: ['Électricité · spot', 'Power · spot'], fwd: ['Électricité · forwards', 'Power · forwards'], fuel: ['Gaz, carbone, pétrole, change', 'Gas, carbon, oil, FX'],
-    sys: ['Système France', 'France system'], ren: ['Renouvelables et PPA', 'Renewables and PPA'], bal: ['Équilibrage', 'Balancing'] };
+    sys: ['Système France', 'France system'], ren: ['Renouvelables et PPA', 'Renewables and PPA'], stor: ['Batteries', 'Batteries'], bal: ['Équilibrage', 'Balancing'] };
   const ZN = { FR: 'France', DE_LU: 'Germany', BE: 'Belgium', NL: 'Netherlands', ES: 'Spain', PT: 'Portugal', IT_NORD: 'Italy North', CH: 'Switzerland', AT: 'Austria', PL: 'Poland' };
   Object.entries(ZN).forEach(([z, n]) => add('spot:' + z, 'Spot ' + n, 'spot', '€/MWh', async () => {
     const s = window.pkSummary ? await window.pkSummary().catch(() => null) : null;
@@ -83,6 +83,11 @@
     const j = await json('bench', 'history/ppa_benchmark.json');
     return new Map(Object.entries((j && j.days) || {}).filter(([, v]) => v[t]).map(([d, v]) => [d, v[t].ppa]));
   }));
+  // the PowerKlock BESS index (scripts/bess_optim.py): forward, and the value of each delivery day annualised (× 365 ÷ 1000)
+  const bidx = () => json('bidx', 'history/bess_index.json');
+  add('bess:fwd', 'BESS index, forward (1 MW, 2 h)', 'stor', T('k€/MW/an', 'k€/MW/yr'), async () => { const j = await bidx(); return new Map(Object.entries((j && j.forward) || {}).map(([d, v]) => [d, v.v])); });
+  [['co', 'BESS, day-ahead + FCR, perfect schedule'], ['co_rl', 'BESS, day-ahead + FCR, without foresight'], ['da', 'BESS, day-ahead alone, perfect schedule']].forEach(([k, l]) =>
+    add('bess:' + k, l + ' (annualised)', 'stor', T('k€/MW/an', 'k€/MW/yr'), async () => { const j = await bidx(); return new Map(Object.entries((j && j.realised) || {}).filter(([, v]) => v[k] != null).map(([d, v]) => [d, Math.round(v[k] * 0.365 * 10) / 10])); }));
   add('imb:short', 'France imbalance price (deficit), daily mean', 'bal', '€/MWh', async from => {
     const m = new Map(); let ym = from.slice(0, 7) < '2026-08' ? '2026-08' : from.slice(0, 7);   // first month collected
     const months = []; while (ym <= today().slice(0, 7)) { months.push(ym); const [y, mm] = ym.split('-').map(Number); ym = new Date(Date.UTC(y, mm, 1)).toISOString().slice(0, 7); }
@@ -119,7 +124,7 @@
     ['GO renewable, next production year', 'GO renouvelable, année de production suivante'], ['PPA benchmark solar', 'Benchmark PPA solaire'], ['PPA benchmark wind', 'Benchmark PPA éolien'],
     ['France imbalance price (deficit), daily mean', 'Prix des écarts France (déficit), moyenne du jour'], ['France mFRR activation price, up', 'France mFRR, prix d’activation à la hausse'],
     ['France mFRR activation price, down', 'France mFRR, prix d’activation à la baisse'], ['France sunshine (ERA5)', 'Ensoleillement France (ERA5)'], ['France wind speed (ERA5)', 'Vent France (ERA5)']];
-  const label = id => { const c = CAT.get(id); if (!c) return id; let l = c.label; if (T(1, 0)) FR_WORDS.forEach(([e, f]) => { l = l.split(e).join(f); }); return l; };
+  const label = id => { const c = CAT.get(id); if (!c) return id; let l = c.label; if (T(1, 0) && window.PKI18n) { const t = PKI18n.tr(l); if (t !== l) return t; } if (T(1, 0)) FR_WORDS.forEach(([e, f]) => { l = l.split(e).join(f); }); return l; };
   // the market a series belongs to: forwards of one country and the PPA benchmark (built from the French Cal) move by construction together
   const family = id => { const m = /^(?:fwd|cal):([A-Z]+):/.exec(id); return m ? m[1] : id.startsWith('ppa:') ? 'FR' : null; };
 
@@ -328,9 +333,16 @@
 
   // ── controls ──
   function pill(group, v, txt, on) { return `<button type="button" class="cmp-pill${on ? ' on' : ''}" data-${group}="${v}">${txt}</button>`; }
+  // ready-made comparisons: one click sets the series (same handler as the correlation watch)
+  const y1 = y0 + 1;
+  const PRESETS = [[T('Spot France / Allemagne', 'Spot France / Germany'), 'spot:FR;spot:DE_LU'], [T('Spot France / Cal ', 'Spot France / Cal ') + String(y1).slice(2), 'spot:FR;cal:FR:' + y1],
+    [T('Électricité / gaz', 'Power / gas'), 'cal:FR:' + y1 + ';c:ttf'], [T('Gaz / carbone', 'Gas / carbon'), 'c:ttf;c:eua'], [T('Nucléaire disponible / spot', 'Nuclear available / spot'), 'c:fr_nuc_avail;spot:FR'],
+    [T('Cal ', 'Cal ') + String(y1).slice(2) + T(' France / Allemagne', ' France / Germany'), 'cal:FR:' + y1 + ';cal:DE:' + y1]];
   function drawBar() {
     const b = document.getElementById('cmp-bar'); if (!b) return;
-    b.innerHTML = '<div class="cmp-grp" role="group" aria-label="Period">' + [['3M', '3M'], ['6M', '6M'], ['1Y', T('1A', '1Y')], ['3Y', T('3A', '3Y')], ['5Y', T('5A', '5Y')], ['All', T('Tout', 'All')]].map(([v, t]) => pill('per', v, t, !S.from && S.per === v)).join('') + '</div>' +
+    b.innerHTML = '<div class="cmp-grp cmp-presets" role="group" aria-label="Ready-made"><span class="cmp-presets-l">' + T('Tout prêt', 'Ready-made') + '</span>' +
+      PRESETS.filter(([, ids]) => ids.split(';').every(id => CAT.has(id))).map(([l, ids]) => `<button type="button" class="cmp-pill${S.sel.join(';') === ids ? ' on' : ''}" data-pair="${ids}">${esc(l)}</button>`).join('') + '</div>' +
+      '<div class="cmp-grp" role="group" aria-label="Period">' + [['3M', '3M'], ['6M', '6M'], ['1Y', T('1A', '1Y')], ['3Y', T('3A', '3Y')], ['5Y', T('5A', '5Y')], ['All', T('Tout', 'All')]].map(([v, t]) => pill('per', v, t, !S.from && S.per === v)).join('') + '</div>' +
       '<div class="cmp-grp" role="group" aria-label="Scale">' + [['auto', T('Auto', 'Auto')], ['raw', T('Valeurs', 'Values')], ['b100', 'Base 100'], ['pct', '%'], ['z', T('Écart à la moyenne', 'Z-score')]].map(([v, t]) => pill('scale', v, t, S.scale === v)).join('') + '</div>' +
       '<div class="cmp-grp" role="group" aria-label="Chart">' + [['auto', T('Auto', 'Auto')], ['line', T('Courbes', 'Lines')], ['bar', T('Barres mensuelles', 'Monthly bars')], ['scatter', T('Nuage X–Y', 'X–Y scatter')]].map(([v, t]) => pill('type', v, t, S.type === v)).join('') + '</div>' +
       '<div class="cmp-grp" style="margin-left:auto">' + `<button type="button" class="cmp-pill" id="cmp-link">${T('Copier le lien', 'Copy link')}</button><button type="button" class="cmp-pill" id="cmp-csv">CSV</button><button type="button" class="cmp-pill" id="cmp-dash">${T('+ Tableau de bord', '+ Dashboard')}</button>` + '</div>';

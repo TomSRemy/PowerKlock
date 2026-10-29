@@ -35,14 +35,14 @@ jobs:
           ls -la db.dump
           gpg --batch --yes --pinentry-mode loopback --passphrase "$PASS" --symmetric --cipher-algo AES256 -o db.dump.gpg db.dump
           rm db.dump
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         if: steps.ok.outputs.go == 'true'
         with:
           name: db-backup-${{ github.run_id }}
           path: db.dump.gpg
           retention-days: 90
       # a failed backup must not go unnoticed: only the e-mail script is checked out (the dump never touches the repository)
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         if: failure()
         with: { sparse-checkout: scripts/notify_failure.py, sparse-checkout-cone-mode: false }
       - name: E-mail on failure

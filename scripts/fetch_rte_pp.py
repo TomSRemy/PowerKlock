@@ -29,9 +29,22 @@ TOKEN_URL = 'https://digital.iservices.rte-france.com/token/oauth/'
 SIGNAL_URL = os.environ.get('RTE_PP_URL', 'https://digital.iservices.rte-france.com/open_api/signal/v1/signals')
 
 
+LAST_ERROR = []
+
+
 def note(msg):
-    """Shown in the GitHub run summary (annotations are public, logs are not)."""
+    """Shown in the GitHub run summary (annotations are public, logs are not), and kept for rte_pp.json."""
     print('::warning::' + msg)
+    LAST_ERROR.append(msg[:160])
+
+
+def record_failure():
+    """A failed call keeps the signalled days and says why, so the Data status page shows it (no secret in it)."""
+    old = json.load(open(OUT)) if os.path.exists(OUT) else {}
+    old.update({'checked': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'), 'error': ' · '.join(LAST_ERROR)[:300]})
+    old.setdefault('days', {})
+    with open(OUT, 'w') as f:
+        json.dump(old, f, separators=(',', ':'))
 
 
 def http(req):
@@ -105,6 +118,7 @@ def main():
     tok = token(cid, secret)
     ans = call(tok, start, end) if tok else None
     if ans is None:
+        record_failure()
         return 1
     with open(RAW, 'w') as f:
         json.dump(ans, f, indent=1)
@@ -116,7 +130,7 @@ def main():
     parse(ans, days)
     old.update(days)
     with open(OUT, 'w') as f:
-        json.dump({'updated': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
+        json.dump({'updated': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'), 'checked': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
                    'source': 'RTE Data Portal, Signal API (PP1 / PP2 peak-period days)',
                    'days': dict(sorted(old.items()))}, f, separators=(',', ':'))
     print(f'rte_pp.json: {len(days)} signalled days in the last call, {len(old)} in total')

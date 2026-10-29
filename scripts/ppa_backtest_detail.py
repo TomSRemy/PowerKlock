@@ -62,9 +62,39 @@ def m_step(t, Y, train, V, conv):
     return r[-1] + b * (math.log(B.cap_guess(t, Y, last)) - math.log(B.CAP[t][last]))
 
 
+FPC_DRIVER = 's'                    # the fleet whose growth drives the cannibalisation term
+FPC_HALF = {'s': 1, 'w': None}      # solar: skeleton weights halve every year back; wind: plain average
+SUMMER = set(range(4, 10))
+
+
+def shape_coef_w(train, weights):
+    """B.shape_coef with year weights"""
+    co, mc = {}, {}
+    rel = P / B.mavg
+    for m in range(1, 13):
+        for d in range(3):
+            for h in range(24):
+                num = den = 0.0
+                for y in train:
+                    i = (yr == y) & (mo == m) & (ty == d) & (hr == h)
+                    if i.any():
+                        num += weights[y] * rel[i].mean(); den += weights[y]
+                co[(m, d, h)] = num / den if den else 1.0
+        num = den = 0.0
+        for y in train:
+            i = (yr == y) & (mo == m)
+            if i.any():
+                num += weights[y] * P[i].mean() / P[yr == y].mean(); den += weights[y]
+        mc[m] = num / den if den else 1.0
+    return co, mc
+
+
 def m_fpc(t, Y, train, V, conv):
-    """yearly and monthly: expected profile on the FPC skeleton + cannibalisation (1) − (3) projected"""
-    co, mc = B.shape_coef(train)
+    """yearly and monthly: expected profile on the FPC skeleton + cannibalisation (1) − (3) projected per season
+    (summer April–September, winter October–March); solar's skeleton leans towards the recent years
+    (walk-forward, scripts/ppa_fpc_variants.py: solar 7.64 → 5.84 €/MWh, wind 6.23 → 4.94 on 2024–2026)"""
+    half = FPC_HALF[t]
+    co, mc = shape_coef_w(train, {y: 0.5 ** ((train[-1] - y) / half) if half else 1.0 for y in train})
     days = [date.fromordinal(o) for o in range(date(Y, 1, 1).toordinal(), date(Y + 1, 1, 1).toordinal())]
     prof = {}
     for m in range(1, 13):
@@ -81,22 +111,42 @@ def m_fpc(t, Y, train, V, conv):
     sk, pv, mm, hh = np.array(sk), np.array(pv), np.array(mm), np.array(hh)
     f = (pv * sk).sum() / pv.sum() / sk.mean() - 1
     fm = {m: (pv[mm == m] * sk[mm == m]).sum() / pv[mm == m].sum() / sk[mm == m].mean() - 1 for m in range(1, 13)}
-    cs = []
+    last = train[-1]
+    fulls = {}
     for y in train:
         i = yr == y
-        pt = B.decorrelated(y, co)
         full = np.zeros_like(P)
-        full[i] = pt
-        cs.append(rate(i, V, P, conv) - rate(i, V, full, conv))
-    last = train[-1]
-    b = B.logfit([B.CAP[t][y] for y in train], cs) if len(train) >= 3 else 0
-    c = cs[-1] + b * (math.log(B.cap_guess(t, Y, last)) - math.log(B.CAP[t][last]))
+        full[i] = B.decorrelated(y, co)
+        fulls[y] = full
+    cterm = {}
+    for months in (SUMMER, set(range(1, 13)) - SUMMER):
+        cs = []
+        for y in train:
+            k = (yr == y) & np.isin(mo, list(months))
+            cs.append(rate(k, V, P, conv) - rate(k, V, fulls[y], conv))
+        # driven by the solar fleet, for wind too (scripts/ppa_fpc_driver_test.py: wind curt 1.64 → 1.31 €/MWh, complete years)
+        b = B.logfit([B.CAP[FPC_DRIVER][y] for y in train], cs) if len(train) >= 3 else 0
+        for m in months:
+            cterm[m] = cs[-1] + b * (math.log(B.cap_guess(FPC_DRIVER, Y, last)) - math.log(B.CAP[FPC_DRIVER][last]))
+    # the year's term: each season's, weighted by the output's value on the skeleton in that season
+    wv = {m: (pv[mm == m] * sk[mm == m]).sum() for m in range(1, 13)}
+    c = sum(wv[m] * cterm[m] for m in wv) / sum(wv.values())
     # expected price shape by season × hour (skeleton, % of the season's average)
     shape = {}
     for sname, ms in (('summer', range(4, 10)), ('winter', [10, 11, 12, 1, 2, 3])):
         k = np.isin(mm, list(ms))
         shape[sname] = [float(sk[k & (hh == h)].mean() / sk[k].mean()) for h in range(24)]
-    return 1 + f + c, {m: 1 + fm[m] + c for m in range(1, 13)}, shape
+    return 1 + f + c, {m: 1 + fm[m] + cterm[m] for m in range(1, 13)}, shape
+
+
+WX_NOISE = {'s': True, 'w': False}    # solar: each hour's price scattered by a residual of the recent years
+WX_DEMAND2 = {'s': False, 'w': True}   # wind: consumption and nuclear drawn from the last two complete years
+# the hour's price is floored at zero: since 2025 most plants stop at negative prices, so the price settles at about zero
+# instead of diving (Jan.–Oct. 2026: 74 % of the hours ≤ 0 € between −1 € and 0); scripts/ppa_floor_test.py, error over
+# 1–3 years in the all-hours convention: solar 9.02 → 8.13, wind 3.85 → 3.83 (the curtailed one does not change)
+WX_FLOOR = True
+# (scripts/ppa_wx_align_test.py, mean error over 1–3 years, curt: solar 3.82 → 2.44 with the noise, wind 2.95 → 2.70
+#  with the two-year demand; the other choice made each worse); js/ppa-wx.js applies the same rule
 
 
 def m_weather(t, Y, train, V, n_sims):
@@ -112,6 +162,15 @@ def m_weather(t, Y, train, V, n_sims):
             if i.sum() >= 20:
                 tab[(g, int(b))] = float((P[i] / B.mavg[i]).mean())
 
+    res = {}
+    if WX_NOISE[t]:
+        for g in range(6):
+            i = tr & (grp == g)
+            for v, bb in zip(P[i] / B.mavg[i], net[i]):
+                f = tab.get((g, int(bb)))
+                if f is not None and f > 0.05:
+                    res.setdefault(g, []).append(float(v / f))
+
     def look(g, b):
         k = 0
         while (g, b) not in tab and k < 150:
@@ -122,7 +181,7 @@ def m_weather(t, Y, train, V, n_sims):
     sims = PM.simulate(model, days, n_sims, seed=Y, year=Y)
     last = train[-1]
     cs, cw = B.cap_guess('s', Y, last) * 1000, B.cap_guess('w', Y, last) * 1000
-    i_last = yr == last
+    i_last = np.isin(yr, train[-2:]) if WX_DEMAND2[t] else yr == last
     dem = {}
     for o_ in np.unique(DAY[i_last]):
         j = i_last & (DAY == o_)
@@ -152,6 +211,10 @@ def m_weather(t, Y, train, V, n_sims):
                 s_, w_ = hs[h] * cs, hw[h] * cw
                 g = (1 if 4 <= m <= 9 else 0) * 3 + (0 if h < 9 else 1 if h < 17 else 2)
                 pr = look(g, int(round((Ld[h] - s_ - w_ - nav) / 1000)))
+                if res.get(g):
+                    pr *= res[g][R.randrange(len(res[g]))]
+                if WX_FLOOR:
+                    pr = max(pr, 0.0)  # negative hours settle at about zero
                 prs.append(pr)
                 v = hs[h] if t == 's' else hw[h]
                 for ix in (0, m):

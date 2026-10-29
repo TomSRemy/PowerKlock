@@ -95,7 +95,52 @@ def fetch_capacity():
         out['countries'][code] = {'years': [int(t) for t in j['time']], 'types': types}
         print(f'  capacity {code}: {len(types)} types, {j["time"][0]}–{j["time"][-1]}')
     if out['countries']:
+        rte_france(out)
         write_json(os.path.join(OUT, 'capacity.json'), out)
+
+
+# France, solar and wind: the official fleet of RTE (ODRÉ open data, MW at 31 December, every installation connected
+# to the transmission and distribution grids) instead of Energy-Charts, which reads 7–10 % lower since 2022 (it does not
+# follow the fast connection of small rooftop solar). Wind: RTE gives onshore + offshore together; offshore stays
+# Energy-Charts' (a few large parks), onshore = RTE total − offshore. A year RTE has not published yet keeps
+# Energy-Charts' value scaled by RTE ÷ Energy-Charts of the last year both have. Energy-Charts' own figures are kept
+# under 'ec' for the record; without an answer from ODRÉ, Energy-Charts stays.
+ODRE_PARC = ('https://odre.opendatasoft.com/api/explore/v2.1/catalog/datasets/parc-national-annuel-prod-eolien-solaire/'
+             'records?limit=100&order_by=annee')
+
+
+def rte_france(out):
+    fr = out['countries'].get('FR')
+    if not fr:
+        return
+    try:
+        with urllib.request.urlopen(ODRE_PARC, timeout=60) as r:
+            rows = json.load(r).get('results') or []
+        rte = {int(x['annee']): (x.get('parc_installe_solaire'), x.get('parc_installe_eolien')) for x in rows if x.get('annee')}
+    except Exception as e:   # noqa: BLE001
+        print('  RTE fleet (ODRÉ): no answer, Energy-Charts kept:', type(e).__name__)
+        return
+    t, ys = fr['types'], fr['years']
+    sol, on, off = t.get('Solar AC'), t.get('Wind onshore'), t.get('Wind offshore') or [0] * len(ys)
+    if not sol or not on or not rte:
+        return
+    fr['ec'] = {'Solar AC': list(sol), 'Wind onshore': list(on)}
+    both = [y for y in ys if y in rte and rte[y][0] and rte[y][1]]
+    if not both:
+        return
+    lb, i_lb = both[-1], ys.index(both[-1])
+    ks = rte[lb][0] / 1000 / sol[i_lb] if sol[i_lb] else 1
+    kw = (rte[lb][1] / 1000 - (off[i_lb] or 0)) / on[i_lb] if on[i_lb] else 1
+    for i, y in enumerate(ys):
+        if y in rte and rte[y][0] and rte[y][1]:
+            sol[i] = round(rte[y][0] / 1000, 3)
+            on[i] = round(rte[y][1] / 1000 - (off[i] or 0), 3)
+        elif y > lb:
+            sol[i] = None if sol[i] is None else round(sol[i] * ks, 3)
+            on[i] = None if on[i] is None else round(on[i] * kw, 3)
+    fr['src'] = {'Solar AC': 'RTE (ODRÉ)', 'Wind onshore': 'RTE (ODRÉ) − Energy-Charts offshore', 'rteLast': lb}
+    out['source'] += ' · France solar and wind: RTE, parc national annuel (ODRÉ, Etalab 2.0)'
+    print(f'  France solar and wind: RTE (ODRÉ), {min(both)}–{lb}; {lb}: solar {sol[i_lb]} GW, onshore wind {on[i_lb]} GW')
 
 
 # ── Cross-border physical flows ───────────────────────────────────────
@@ -246,11 +291,22 @@ def main():
     ap.add_argument('--from', dest='d_from')
     ap.add_argument('--to', dest='d_to')
     ap.add_argument('--capacity-only', action='store_true')
+    ap.add_argument('--rte-only', action='store_true', help='apply the RTE French fleet to the capacity.json on disk')
     ap.add_argument('--flows-only', action='store_true')
     ap.add_argument('--map', action='store_true', help='map files (yesterday, today) and today\'s flows only')
     ap.add_argument('--map-days', type=int, default=0, help='with --map: also rebuild the map files of the last N days')
     args = ap.parse_args()
     today = datetime.now(PARIS).date()
+    if args.rte_only:
+        path = os.path.join(OUT, 'capacity.json')
+        out = json.load(open(path))
+        fr = out['countries'].get('FR', {})
+        for k, v in (fr.pop('ec', None) or {}).items():   # back to Energy-Charts' own figures, then RTE on top
+            fr['types'][k] = v
+        out['source'] = out['source'].split(' · France solar and wind')[0]
+        rte_france(out)
+        write_json(path, out)
+        return
     if args.map:
         print('Power map')
         fetch_map([today - timedelta(days=k) for k in range(max(1, args.map_days), -1, -1)])

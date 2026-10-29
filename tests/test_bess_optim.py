@@ -73,5 +73,19 @@ co_1h = b.cooptimise_day(flat, None, 1, b.PARAMS['wear'], afrr={'up': [10.0] * 6
 # a 1 h battery starts half full: it holds at least the 0.5 MW its energy covers, and buys energy to hold more when that pays
 check('a 1 h battery: upward aFRR limited by stored energy, charging to hold more when it pays', co_1h and 0.5 - 1e-6 <= co_1h[5] <= 1 + 1e-9 and co_1h[4] + co_1h[0] >= 120 - 1e-6, co_1h)
 
+# without perfect foresight: a perfect forecast gives back the perfect value; a wrong one never beats it
+day = np.array([40.0] * 28 + [5.0] * 20 + [90.0] * 20 + [60.0] * 28)
+perf = b.optimise_day(day, 2, b.PARAMS['wear'])
+rl_same = b.realistic_da(day, day, 2, b.PARAMS['wear'])
+check('realistic with the real prices as forecast = perfect', rl_same is not None and abs(rl_same - (perf[0] - b.PARAMS['wear'] * perf[1])) < 1e-6, (rl_same, perf))
+rl_bad = b.realistic_da(day, np.roll(day, 16), 2, b.PARAMS['wear'])
+check('realistic with a wrong forecast earns less than perfect', rl_bad is not None and rl_bad < perf[0] - b.PARAMS['wear'] * perf[1] - 1, (rl_bad, perf))
+blocks = [500.0] * 6
+co = b.cooptimise_day(day, blocks, 2, b.PARAMS['wear'])
+rc = b.realistic_co(day, day, blocks, blocks, 2, b.PARAMS['wear'])
+check('co-optimised realistic with exact forecasts = perfect', rc is not None and abs(rc[0] - (co[0] + co[1] + co[4] - b.PARAMS['wear'] * co[2])) < 1e-6, (rc, co))
+rc0 = b.realistic_co(day, day, blocks, None, 2, b.PARAMS['wear'])
+check('no FCR forecast: no FCR held, no FCR earned', rc0 is not None and abs(rc0[2]) < 1e-9, rc0)
+
 print('FAILED' if fails else 'all bess optimiser checks pass')
 sys.exit(1 if fails else 0)

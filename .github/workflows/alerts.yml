@@ -28,11 +28,11 @@ jobs:
           DB: ${{ secrets.SUPABASE_DB_URL }}
         run: |
           if [ -z "$DB" ]; then echo "::notice::SUPABASE_DB_URL is not set — alerts skipped."; echo "ok=false" >> "$GITHUB_OUTPUT"; else echo "ok=true" >> "$GITHUB_OUTPUT"; fi
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         if: steps.secret.outputs.ok == 'true'
         with:
           ref: main
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         if: steps.secret.outputs.ok == 'true'
         with:
           python-version: '3.12'

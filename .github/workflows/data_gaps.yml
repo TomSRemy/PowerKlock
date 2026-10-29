@@ -23,8 +23,8 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
       - name: Second source for the prices (once a day)
@@ -73,7 +73,7 @@ jobs:
           git add data/data_gaps.json data/history/price_check.json data/history/market_check.json 2>/dev/null; git add data/data_gaps.json
           git diff --staged --quiet && exit 0
           git commit -q -m "data: holes check $(date -u '+%Y-%m-%d %H:%M')"
-          for i in 1 2 3; do git pull -q --rebase -X theirs origin main && git push && exit 0; git rebase --abort 2>/dev/null; sleep 5; done
+          for i in 1 2 3; do git pull -q --rebase -X theirs origin main && git push && exit 0; git rebase --abort 2>/dev/null || true; sleep 5; done
       - name: E-mail on failure
         if: failure()
         env:

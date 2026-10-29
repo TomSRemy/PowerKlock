@@ -30,7 +30,7 @@
     "mean_of_points": 101.91
    }
   ],
-  "head": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n  <Publication_MarketDocument xmlns=\"urn:iec62325.351:tc57wg16:451-3:publicationdocument:7:3\">\n    <mRID>d720e9a8a3e64a83a49da8752e1a9353</mRID>\n    <revisionNumber>1</revisionNumber>\n    <type>A44</type>\n    <sender_MarketParticipant.mRID codingScheme=\"A01\">10"
+  "head": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n  <Publication_MarketDocument xmlns=\"urn:iec62325.351:tc57wg16:451-3:publicationdocument:7:3\">\n    <mRID>c45e5a5ac3d047aa90b297101fd4e4b7</mRID>\n    <revisionNumber>1</revisionNumber>\n    <type>A44</type>\n    <sender_MarketParticipant.mRID codingScheme=\"A01\">10"
  },
  {
   "zone": "DE_LU",
@@ -63,7 +63,7 @@
     "mean_of_points": 148.61
    }
   ],
-  "head": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n  <Publication_MarketDocument xmlns=\"urn:iec62325.351:tc57wg16:451-3:publicationdocument:7:3\">\n    <mRID>a196423ea1d941d7992ba5efbbef7da5</mRID>\n    <revisionNumber>1</revisionNumber>\n    <type>A44</type>\n    <sender_MarketParticipant.mRID codingScheme=\"A01\">10"
+  "head": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n  <Publication_MarketDocument xmlns=\"urn:iec62325.351:tc57wg16:451-3:publicationdocument:7:3\">\n    <mRID>f214c72f29204df4824b02feea86b2f8</mRID>\n    <revisionNumber>1</revisionNumber>\n    <type>A44</type>\n    <sender_MarketParticipant.mRID codingScheme=\"A01\">10"
  },
  {
   "zone": "NL",
@@ -84,7 +84,7 @@
     "mean_of_points": 50.69
    }
   ],
-  "head": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n  <Publication_MarketDocument xmlns=\"urn:iec62325.351:tc57wg16:451-3:publicationdocument:7:3\">\n    <mRID>1f7d28ca18504dfd8d0744bc3e3ba6ee</mRID>\n    <revisionNumber>1</revisionNumber>\n    <type>A44</type>\n    <sender_MarketParticipant.mRID codingScheme=\"A01\">10"
+  "head": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n  <Publication_MarketDocument xmlns=\"urn:iec62325.351:tc57wg16:451-3:publicationdocument:7:3\">\n    <mRID>a024d3bacffe45bb8dbb4e1be5aed85a</mRID>\n    <revisionNumber>1</revisionNumber>\n    <type>A44</type>\n    <sender_MarketParticipant.mRID codingScheme=\"A01\">10"
  },
  {
   "zone": "FR",
@@ -105,6 +105,6 @@
     "mean_of_points": 142.3
    }
   ],
-  "head": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n  <Publication_MarketDocument xmlns=\"urn:iec62325.351:tc57wg16:451-3:publicationdocument:7:3\">\n    <mRID>8b897139a23d47baa31ff4b38d3b5791</mRID>\n    <revisionNumber>1</revisionNumber>\n    <type>A44</type>\n    <sender_MarketParticipant.mRID codingScheme=\"A01\">10"
+  "head": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n  <Publication_MarketDocument xmlns=\"urn:iec62325.351:tc57wg16:451-3:publicationdocument:7:3\">\n    <mRID>efe8e28082a24f6083cb36f22182f1cf</mRID>\n    <revisionNumber>1</revisionNumber>\n    <type>A44</type>\n    <sender_MarketParticipant.mRID codingScheme=\"A01\">10"
  }
 ]

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # The same checks as the "Site tests" workflow, which gates "Publish": if one fails here, the site would not be
 # published. Run before every push (the pre-push hook in .githooks does it):  git config core.hooksPath .githooks
-# Data-only pushes (data/ alone) skip the browser tests.
+# Data-only pushes (data/ alone) and the discussion branch (docs/discussion/ alone) skip the browser tests.
 set -eo pipefail   # a failing test fails the script even when its output is piped
 cd "$(git rev-parse --show-toplevel)"
 # the code that passed last time (everything but data/): a push that only adds the bots' data commits on top
@@ -17,7 +17,7 @@ else
   echo "▸ JavaScript syntax (browser)"; python3 tests/js_syntax.py
 fi
 echo "▸ Calculations";       python3 tests/test_calculations.py >/dev/null && python3 tests/test_prices_dst.py >/dev/null && python3 tests/test_bess_optim.py >/dev/null
-if [ -n "$changed" ] && ! echo "$changed" | grep -qvE '^data/'; then echo "data only: browser tests skipped"; exit 0; fi
+if [ -n "$changed" ] && ! echo "$changed" | grep -qvE '^(data/|docs/discussion/)'; then echo "data or discussion only: browser tests skipped"; exit 0; fi
 echo "▸ Site logic";         python3 tests/test_site_logic.py | tail -1 && python3 tests/test_ppa_frozen.py | tail -1
 echo "▸ Same figures everywhere, page weight"; python3 tests/test_consistency.py | tail -1
 echo "▸ Smoke tests (about 10 minutes)"; python3 tests/smoke.py | tail -3
