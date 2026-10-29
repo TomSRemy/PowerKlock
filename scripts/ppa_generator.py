@@ -10,7 +10,8 @@ Replay (scripts/ppa_generator_test.py, deliveries 2020–2025 priced 1–3 years
 solar 0.84 €/MWh mean error (bias −0.20), wind 2.57 (+2.53), against 2.47 / 3.21 for the European model and 2.30 /
 3.16 for the weather simulation, both without their corrections.
 
-Adds 'generator', 'generatorPaid', 'generatorP10', 'generatorP90' to every month of data/history/ppa_forecast.json
+Guardrail alarm: 'belowFloor' = share of simulated days under the capture floor observed at the same penetration
+(about 10 % expected). Adds 'generator', 'generatorPaid', 'generatorP10', 'generatorP90' to every month of data/history/ppa_forecast.json
 (both conventions). Run after scripts/ppa_lab.py.
     python scripts/ppa_generator.py
 """
@@ -41,12 +42,14 @@ def main():
     Fc = G.fuel_cost()
     c0 = float(np.mean([v for k, v in sorted(Fc.items())[-30:]]))
     this = date.today()
+    below = {}
     for t, tech in (('s', 'solar'), ('w', 'wind')):
         st = {k: v for k, v in settings[t].items() if k != 'calError'}
         for Y in range(this.year, 2031):
             capY = {c: {tt: L.cap_future(c, tt, Y) for tt in 'sw'} for c in ('FR',) + L.NEIGH}
             m, dist = G.simulate(t, Y, past, st, A, capY, None, n=60, rule='fuel', cost=lambda d: c0,
-                                 batteries='both', pool_from=2019, fuel_dev=True, france=True)
+                                 batteries='both', pool_from=2019, fuel_dev=True, france=True, guard='measure')
+            below.setdefault(tech, {})[str(Y)] = round(dist['belowFloor'], 3) if dist.get('belowFloor') is not None else None
             for conv in ('curt', 'all'):
                 for mm in range(1, 13):
                     e = fc['forecast'].get(tech, {}).get(conv, {}).get(f'{Y}-{mm:02d}')
@@ -56,7 +59,11 @@ def main():
                     e['generatorPaid'] = round(m[mm]['paid'], 5)
                     e['generatorP10'], e['generatorP90'] = (round(v, 5) for v in dist[mm][conv])
             print('generator', tech, Y, flush=True)
-    fc['generator'] = {'asOf': this.isoformat(), 'lastYear': A, 'fuelCost': round(c0, 2), 'sims': 60}
+    # guardrail alarm (Tom 30 Oct. 2026): share of the simulated days whose capture falls under the floor observed at the
+    # same penetration on the last two complete years (the 10th percentile, so about 10 % is expected); a clear rise
+    # says the model is drifting away from what the market has shown. A measure only: nothing is corrected
+    fc['generator'] = {'asOf': this.isoformat(), 'lastYear': A, 'fuelCost': round(c0, 2), 'sims': 60, 'belowFloor': below,
+                       'belowFloorExpected': 0.10}
     with open(F_PATH, 'w') as f:
         json.dump(fc, f, separators=(',', ':'))
 
