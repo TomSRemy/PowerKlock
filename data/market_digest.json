@@ -1,5 +1,5 @@
 {
- "updated": "2026-10-29T13:26:20+00:00",
+ "updated": "2026-10-29T21:16:18+00:00",
  "asof": "2026-10-29",
  "notes": 2,
  "engine": "proxy",
@@ -7,38 +7,45 @@
   {
    "topic": "France",
    "topic_en": "France",
-   "text": "La disponibilité nucléaire en France est en baisse de 6,4% sur 7 jours, à 40 936,77 MW, ce qui pousse les prix à la hausse. Le gouvernement français a annoncé une baisse du prix du gazole à partir du 1er novembre, mais cela n'affecte pas directement les prix de l'électricité.",
-   "text_en": "Nuclear availability in France is down 6.4% over 7 days, at 40,936.77 MW, which is driving prices up. The French government has announced a decrease in diesel prices starting November 1st, but this does not directly affect electricity prices.",
+   "text": "La disponibilité des centrales nucléaires françaises s'améliore grâce à la montée des niveaux des rivières, mais les précipitations restent insuffisantes dans les régions clés pour la production nucléaire. Les prix de l'électricité en France sont influencés par la situation sur le marché du gaz et l'incertitude au Moyen-Orient.",
+   "text_en": "French nuclear power plant availability is improving due to rising river levels, but rainfall remains insufficient in key regions for nuclear generation. French electricity prices are influenced by the gas market situation and Middle East uncertainty.",
    "tone": "up"
   },
   {
    "topic": "Golfe",
    "topic_en": "Gulf",
-   "text": "Les tensions dans la région du Golfe ont entraîné une augmentation des prix du pétrole, ce qui a un impact sur les prix de l'électricité en Europe. Les exportations de gaz naturel liquéfié (GNL) sont en baisse en raison de la situation géopolitique dans la région.",
-   "text_en": "Tensions in the Gulf region have led to an increase in oil prices, which has an impact on electricity prices in Europe. Liquefied natural gas (LNG) exports are down due to the geopolitical situation in the region.",
+   "text": "Les tensions dans le Golfe et les craintes de perturbations de l'approvisionnement en gaz naturel liquéfié (GNL) poussent les prix du gaz à la hausse. Les exportations de pétrole du Golfe ont plus ou moins retrouvé leurs niveaux d'avant le conflit, mais les risques géopolitiques restent élevés.",
+   "text_en": "Tensions in the Gulf and fears of disruptions to liquefied natural gas (LNG) supplies are driving up gas prices. Gulf oil exports have more or less returned to pre-conflict levels, but geopolitical risks remain high.",
+   "tone": "up"
+  },
+  {
+   "topic": "Norvège",
+   "topic_en": "Norway",
+   "text": "Les exportations de gaz norvégiennes ont temporairement baissé en raison de travaux de maintenance, ce qui contribue à la tension sur le marché du gaz en Europe.",
+   "text_en": "Norwegian gas exports have temporarily fallen due to maintenance work, contributing to tension in the European gas market.",
    "tone": "up"
   }
  ],
  "outlook": {
   "oil": {
    "tone": "up",
-   "text": "Les prix du pétrole devraient continuer à augmenter en raison des tensions géopolitiques dans la région du Golfe.",
-   "text_en": "Oil prices are expected to continue rising due to geopolitical tensions in the Gulf region."
+   "text": "Les prix du pétrole devraient continuer à augmenter en raison des tensions géopolitiques et des craintes de perturbations de l'approvisionnement.",
+   "text_en": "Oil prices are expected to continue rising due to geopolitical tensions and fears of supply disruptions."
   },
   "gas": {
    "tone": "up",
-   "text": "Les prix du gaz devraient rester élevés en raison de la faible disponibilité et de la forte demande pour le chauffage.",
-   "text_en": "Gas prices are expected to remain high due to low availability and strong demand for heating."
+   "text": "Les prix du gaz devraient rester élevés en raison des tensions au Moyen-Orient et de la concurrence avec l'Asie pour attirer les cargaisons de GNL.",
+   "text_en": "Gas prices are expected to remain high due to Middle East tensions and competition with Asia for LNG cargoes."
   },
   "power": {
    "tone": "flat",
-   "text": "Les prix de l'électricité devraient rester stables, influencés par les prix du gaz et les conditions météorologiques.",
-   "text_en": "Electricity prices are expected to remain stable, influenced by gas prices and weather conditions."
+   "text": "Les prix de l'électricité devraient rester stables, influencés par la situation sur le marché du gaz et l'incertitude au Moyen-Orient.",
+   "text_en": "Electricity prices are expected to remain stable, influenced by the gas market situation and Middle East uncertainty."
   },
   "carbon": {
    "tone": "flat",
-   "text": "Les prix du carbone devraient rester stables, sans changement significatif prévu dans les prochains jours.",
-   "text_en": "Carbon prices are expected to remain stable, with no significant change expected in the coming days."
+   "text": "Les prix du carbone devraient rester stables, sans événement notable susceptible de les faire varier.",
+   "text_en": "Carbon prices are expected to remain stable, with no notable events likely to cause them to fluctuate."
   }
  }
 }
