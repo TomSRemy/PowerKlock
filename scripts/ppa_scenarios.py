@@ -3,7 +3,8 @@
 
 A scenario is a delivery year made of real past weeks, chained:
   1. weeks   for each week of the delivery year, a real 7-day block of a past complete year (2022 left out) that starts
-             on the same weekday within ±14 days of the same date; among those, the next block is drawn closer to how
+             on the same weekday within ±7 days of the same date (±14: wind 2.57 → 2.41 €/MWh with ±7, solar 0.84 → 0.86;
+             one-day blocks instead of weeks: wind 3.44, solar 1.09, so weeks); among those, the next block is drawn closer to how
              the previous one ended (French wind load factor and demand deviation of its last day), so a storm does
              not stop at the seam
   2. same day, everything   each day brings, for France, Germany, Belgium and Spain together: solar and wind load
@@ -142,24 +143,29 @@ _HYD = {}
 GM_ZONE = {'FR': 'FR', 'DE': 'DE_LU', 'BE': 'BE', 'ES': 'ES'}
 
 
+_ROR = None
+
+
 def hydro_daily(y):
-    """{country: daily hydro output (MW) aligned on the lab's days of year y} (data/history/genmix_daily, Energy-Charts,
-    2020 on); None before"""
+    """{country: daily run-of-river output (MW) aligned on the lab's days of year y} (data/history/run_of_river_daily.
+    json, Energy-Charts, 2020 on); None when the year is not covered. Run-of-river only: it follows the rain, while the
+    reservoirs produce when power is dear (taking them off the residual load made wind look better than it is: on the
+    true weather of 2023–2025, wind 1.69 → 2.29 €/MWh with all hydro, 1.65 with run-of-river; solar 1.94 → 1.56)"""
+    global _ROR
     if y in _HYD:
         return _HYD[y]
-    import json
-    try:
-        z = json.load(open(os.path.join(ROOT, 'data', 'history', 'genmix_daily', f'{y}.json')))['zones']
-    except OSError:
+    if _ROR is None:
+        import json
+        try:
+            _ROR = json.load(open(os.path.join(ROOT, 'data', 'history', 'run_of_river_daily.json')))['countries']
+        except (OSError, ValueError, KeyError):
+            _ROR = {}
+    days = [str(d)[:10] for d in L.DATA[y]['days']]
+    if not _ROR.get('FR') or sum(1 for d in days if d in _ROR['FR']) < 0.9 * len(days):
         _HYD[y] = None
         return None
-    out = {}
-    for c in CS:
-        zz = z.get(GM_ZONE.get(c, c)) or {}
-        m = dict(zip(zz.get('days', []), zz.get('hydro') or []))
-        out[c] = np.array([float(m.get(str(d)[:10]) or 0.0) for d in L.DATA[y]['days']])
-    _HYD[y] = out
-    return out
+    _HYD[y] = {c: np.array([float(_ROR.get(c, {}).get(d, 0.0)) for d in days]) for c in CS}
+    return _HYD[y]
 
 
 def share(S, W, Lo, N, H=None, region=True):
@@ -170,10 +176,20 @@ def share(S, W, Lo, N, H=None, region=True):
     return res / tot
 
 
+NUC_AVAIL = {'on': False}   # nuclear as the day's maximum output (≈ available) instead of the hour's output: worse on
+# the true weather of 2021–2025 (both technologies 1.47 → 1.69 €/MWh), so off
+
+
+def nuc(arr):
+    """the nuclear the rule sees: the hour's output, or (NUC_AVAIL) the day's maximum, since plants modulate down when
+    prices are low (windy nights) and the output then understates what could run"""
+    return np.repeat(arr.max(axis=1, keepdims=True), arr.shape[1], axis=1) if NUC_AVAIL['on'] else arr
+
+
 def year_share(y, region=True, hydro=False):
     a = L.DATA[y]
     S = {c: a[PRE[c] + 's'] for c in CS}; W = {c: a[PRE[c] + 'w'] for c in CS}
-    Lo = {c: a[PRE[c] + 'l'] for c in CS}; N = {c: a[PRE[c] + 'n'] for c in CS}
+    Lo = {c: a[PRE[c] + 'l'] for c in CS}; N = {c: nuc(a[PRE[c] + 'n']) for c in CS}
     return share(S, W, Lo, N, hydro_daily(y) if hydro else None, region)
 
 
@@ -217,7 +233,9 @@ class PriceModelFuel:
         blk = h // (24 // cls.BLOCKS)
         return summer * cls.BLOCKS + blk
 
-    HYDRO = False   # hydro output (daily, by country) taken off the residual load too
+    HYDRO = False   # run-of-river output (daily, by country) taken off the residual load too: better on the true
+    # weather (2023–2025: solar 1.94 → 1.56, wind 1.69 → 1.65 €/MWh) but worse in the generator (2021–2025: solar
+    # 0.91 → 1.91, wind 2.92 → 3.60), so off; data/history/run_of_river_daily.json not kept
 
     def __init__(self, years, region=True):
         F = fuel_cost()
@@ -297,10 +315,11 @@ def _residuals(y, pm, region):
 
 
 def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=None, weeks=7, surprise='none', rule='fuel', cost=None, fuel_window=2,
-             batteries='both', pool_from=2019, fuel_dev=True, france=True):
+             batteries='both', pool_from=2019, fuel_dev=True, france=True, window=7, same_month=False):
     """monthly capture rates ('all', 'curt', 'paid') averaged over n chained-week scenarios, and their P10/P90"""
     rng = np.random.default_rng(seed if seed is not None else Y)
-    pool = [y for y in known if y != 2022 and L.DATA[y]['complete'] and (pool_from is None or y >= pool_from)]
+    pool = [y for y in known if y != 2022 and L.DATA[y]['complete'] and (pool_from is None or y >= pool_from)
+            and (not PriceModelFuel.HYDRO or rule != 'fuel' or hydro_daily(y) is not None)]
     if not pool:
         pool = [y for y in known if y != 2022 and L.DATA[y]['complete']][-1:]
     tr = [y for y in known if st['with2022'] or y != 2022][-st['window']:]
@@ -350,7 +369,8 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
             for y in pool:
                 Yd = starts[y]
                 dy = np.abs(Yd['doy'] - d0.timetuple().tm_yday)
-                ok = np.where((np.minimum(dy, 365 - dy) <= 14) & (Yd['wd'] == d0.weekday()))[0]
+                ok = np.where((np.minimum(dy, 365 - dy) <= window) & (Yd['wd'] == d0.weekday())
+                              & ((Yd['month'] == d0.month) if same_month else True))[0]
                 ok = ok[ok + weeks <= len(Yd['days'])]
                 cand += [(y, int(r)) for r in ok]
             if prev is not None:
@@ -384,7 +404,10 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
             W[c] = wv * fleet[(c, 'w')]
             Lo[c] = ld * np.array([M.get((c, 'l', int(m), int(k)), 0.0) for m, k in zip(month, kind)])[:, None]
             N[c] = nd * np.array([M.get((c, 'n', int(m), int(k)), 0.0) for m, k in zip(month, kind)])[:, None]
-        x = L.residual_share(None, st['regional'], S, W, Lo, N, None)
+        H = None
+        if rule == 'fuel' and PriceModelFuel.HYDRO:
+            H = {c: np.array([hydro_daily(y)[c][r] for y, r, _ in src]) for c in CS}
+        x = share(S, W, Lo, N, H, st['regional'])
         use_b = batteries == 'both' or (batteries == 'tech' and (L.STORAGE['on'] or t in L.STORAGE['techs']))
         if st['regional'] and use_b and Y > demand_year:
             Ltot = sum(Lo[c] for c in (CS if st['regional'] else ('FR',)))
@@ -405,7 +428,7 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
                     dev.append(Fc.get(dd.isoformat(), np.nan) / np.mean(mk) if mk and Fc.get(dd.isoformat()) else 1.0)
                 mc = np.array([np.nanmean(cday[month == m]) for m in range(1, 13)])
                 cday = (mc[month - 1] * np.array(dev))[:, None]
-            f1, fp, fq = pmf.phi(x, gg, L.residual_share(None, False, S, W, Lo, N, None) if france else None)
+            f1, fp, fq = pmf.phi(x, gg, share(S, W, Lo, N, H, False) if france else None)
             v = S['FR'] if t == 's' else W['FR']
             res.append(L.month_rates(month, v, f1 * cday, fp * cday, fq))
             continue
