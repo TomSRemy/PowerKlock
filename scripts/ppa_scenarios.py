@@ -157,7 +157,7 @@ def hydro_daily(y):
     if _ROR is None:
         import json
         try:
-            _ROR = json.load(open(os.path.join(ROOT, 'data', 'history', 'run_of_river_daily.json')))['countries']
+            _ROR = json.load(open(os.environ.get('PK_ROR', os.path.join(ROOT, 'data', 'history', 'run_of_river_daily.json'))))['countries']
         except (OSError, ValueError, KeyError):
             _ROR = {}
     days = [str(d)[:10] for d in L.DATA[y]['days']]
@@ -233,14 +233,16 @@ class PriceModelFuel:
         blk = h // (24 // cls.BLOCKS)
         return summer * cls.BLOCKS + blk
 
-    HYDRO = False   # run-of-river output (daily, by country) taken off the residual load too: better on the true
-    # weather (2023–2025: solar 1.94 → 1.56, wind 1.69 → 1.65 €/MWh) but worse in the generator (2021–2025: solar
-    # 0.91 → 1.91, wind 2.92 → 3.60), so off; data/history/run_of_river_daily.json not kept
+    AFFINE = False  # price = a + b × fuel cost per cell: worse on the true weather of 2023–2025 (1.60 → 1.73 €/MWh), off
+    HYDRO = True    # run-of-river output (daily, by country) taken off the residual load too. In the scenarios as
+    # the weather day's deviation from its month × the month's normal level; replay 2021–2025 with the same learning
+    # years: solar 2.04 → 1.69 €/MWh, wind 3.41 → 3.30 (first tried with the day's raw level: worse, 30 Oct. 2026)
 
     def __init__(self, years, region=True):
         F = fuel_cost()
         self.region = region
         years = [y for y in years if not self.HYDRO or hydro_daily(y) is not None]
+        self._costs = []
         self.G = 2 * self.BLOCKS
         xs, gs, rs = [], [], []
         for y in years:
@@ -250,25 +252,46 @@ class PriceModelFuel:
             x = year_share(y, region, self.HYDRO)
             g = self.groups(a['month'])
             xs.append(x[ok].ravel()); gs.append(g[ok].ravel()); rs.append((a['fr_p'][ok] / c[ok, None]).ravel())
+            self._costs.append(np.repeat(c[ok], 24))
         x, g, r = (np.concatenate(v) for v in (xs, gs, rs))
         self.lo = int(np.floor(x.min() / L.BIN)) - 1
         self.nb = int(np.ceil(x.max() / L.BIN)) - self.lo + 2
         b = np.clip(np.round(x / L.BIN).astype(int) - self.lo, 0, self.nb - 1)
         mean = np.full((self.G, self.nb), np.nan); mpos = mean.copy(); ppos = mean.copy()
+        # AFFINE: in each cell, price = a + b × fuel cost (a fixed part in €, b the gas-following part), fitted on the
+        # cell's hours; φ = a ÷ cost + b. French hours are often set by nuclear or hydro at a level that does not
+        # follow gas, which a pure ratio to the gas cost mixes up between dear-gas and cheap-gas years
+        A_ = np.full((self.G, self.nb), np.nan); B_ = A_.copy()
+        cc = np.concatenate(self._costs) if self.AFFINE else None
         for gi in range(self.G):
             for bi in range(self.nb):
                 k = (g == gi) & (b == bi)
                 if k.sum() >= 15:
                     v = r[k]
                     mean[gi, bi], mpos[gi, bi], ppos[gi, bi] = v.mean(), (v * (v > 0)).mean(), (v > 0).mean()
+                    if self.AFFINE and k.sum() >= 40 and np.ptp(cc[k]) > 10:
+                        pe = v * cc[k]
+                        B_[gi, bi], A_[gi, bi] = np.polyfit(cc[k], pe, 1)
+            if self.AFFINE:
+                fa = np.where(~np.isnan(A_[gi]))[0]
+                if len(fa):
+                    near_a = np.array([fa[np.abs(fa - bi).argmin()] for bi in range(self.nb)])
+                    A_[gi], B_[gi] = A_[gi, near_a], B_[gi, near_a]
             filled = np.where(~np.isnan(mean[gi]))[0]
             near = np.array([filled[np.abs(filled - bi).argmin()] for bi in range(self.nb)])
             mean[gi], mpos[gi], ppos[gi] = mean[gi, near], mpos[gi, near], ppos[gi, near]
         self.mean, self.mpos, self.ppos = mean, mpos, ppos
+        self.A, self.B = A_, B_
 
-    def phi(self, x, g, xf=None):
+    def phi(self, x, g, xf=None, cost=None):
         b = np.clip(np.round(x / L.BIN).astype(int) - self.lo, 0, self.nb - 1)
         out = [self.mean[g, b].copy(), self.mpos[g, b].copy(), self.ppos[g, b].copy()]
+        if self.AFFINE and cost is not None:
+            a_, b_ = self.A[g, b], self.B[g, b]
+            ok = np.isfinite(a_) & np.isfinite(b_)
+            aff = np.where(ok, a_ / np.maximum(cost, 1.0) + b_, out[0])
+            out[1] = np.where(ok, np.where(aff > 0, out[1] * aff / np.where(out[0] != 0, out[0], 1), 0), out[1])
+            out[0] = aff
         if xf is not None and getattr(self, 'tab2', None):
             k = (g * 1000 + (np.round(x / 0.05).astype(int) + 100)) * 1000 + (np.round(xf / 0.10).astype(int) + 100)
             for kk in np.unique(k):
@@ -332,6 +355,10 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
         if france:
             pmf.add_france(fy)
     SUR = {y: _residuals(y, pm, st['regional']) for y in pool}
+    HN = {}
+    if rule == 'fuel' and PriceModelFuel.HYDRO:
+        for c in CS:
+            HN[c] = {m: float(np.mean([hydro_daily(y)[c][_year(y)['month'] == m].mean() for y in pool])) for m in range(1, 13)}
     if surprise == 'eur':
         SUR = {y: v * _year(y)['mavg'] for y, v in SUR.items()}
     elif surprise == 'recent':
@@ -406,7 +433,16 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
             N[c] = nd * np.array([M.get((c, 'n', int(m), int(k)), 0.0) for m, k in zip(month, kind)])[:, None]
         H = None
         if rule == 'fuel' and PriceModelFuel.HYDRO:
-            H = {c: np.array([hydro_daily(y)[c][r] for y, r, _ in src]) for c in CS}
+            # the weather day's run-of-river as a deviation from its own year's month mean × the month's normal level
+            # (mean of the pool years): a week of the very wet spring 2024 brings its wetness, not 2024's whole level
+            H = {}
+            for c in CS:
+                dev = []
+                for y, r, _ in src:
+                    hd, mo = hydro_daily(y)[c], starts[y]['month']
+                    mm = hd[mo == mo[r]].mean()
+                    dev.append(hd[r] / mm if mm > 1 else 1.0)
+                H[c] = np.array(dev) * np.array([HN[c][int(m)] for m in month])
         x = share(S, W, Lo, N, H, st['regional'])
         use_b = batteries == 'both' or (batteries == 'tech' and (L.STORAGE['on'] or t in L.STORAGE['techs']))
         if st['regional'] and use_b and Y > demand_year:
