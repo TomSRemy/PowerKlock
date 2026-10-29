@@ -186,6 +186,21 @@ def nuc(arr):
     return np.repeat(arr.max(axis=1, keepdims=True), arr.shape[1], axis=1) if NUC_AVAIL['on'] else arr
 
 
+FR_GW = {'on': False}   # the France input in GW of residual load (bins of 2 GW) instead of a share of its load:
+# worse on the true weather of 2023–2025 (both technologies 1.55 → 1.91 €/MWh), off
+
+
+def fr_gw(S, W, Lo, N, H=None):
+    """France's residual load in GW (negative = surplus to export)"""
+    return (Lo['FR'] - S['FR'] - W['FR'] - N['FR'] - (H['FR'][:, None] if H is not None else 0)) / 1000
+
+
+def year_fr_gw(y, hydro=False):
+    a = L.DATA[y]
+    h = hydro_daily(y) if hydro else None
+    return (a['fr_l'] - a['fr_s'] - a['fr_w'] - nuc(a['fr_n']) - (h['FR'][:, None] if h is not None else 0)) / 1000
+
+
 def year_share(y, region=True, hydro=False):
     a = L.DATA[y]
     S = {c: a[PRE[c] + 's'] for c in CS}; W = {c: a[PRE[c] + 'w'] for c in CS}
@@ -224,14 +239,17 @@ class PriceModelFuel:
 
     BLOCKS = 3      # times of day per season: 3 (night 0–9, day 9–17, evening 17–24), 6 (4-hour blocks) or 24
 
+    DAYKIND = True    # a separate cell for weekends and public holidays (generator replay 2021–2025: wind 3.43 → 3.18
+    # €/MWh, solar 1.74 → 1.83, both 2.59 → 2.50)
+
     @classmethod
-    def groups(cls, month):
+    def groups(cls, month, kinds=None):
         summer = ((month[:, None] >= 4) & (month[:, None] <= 9)).astype(int)
         h = np.arange(24)[None, :]
-        if cls.BLOCKS == 3:
-            return L.grp(month)
-        blk = h // (24 // cls.BLOCKS)
-        return summer * cls.BLOCKS + blk
+        g = L.grp(month) if cls.BLOCKS == 3 else summer * cls.BLOCKS + h // (24 // cls.BLOCKS)
+        if cls.DAYKIND and kinds is not None:
+            g = g + 2 * cls.BLOCKS * (np.asarray(kinds)[:, None] > 0)
+        return g
 
     AFFINE = False  # price = a + b × fuel cost per cell: worse on the true weather of 2023–2025 (1.60 → 1.73 €/MWh), off
     HYDRO = True    # run-of-river output (daily, by country) taken off the residual load too. In the scenarios as
@@ -243,14 +261,14 @@ class PriceModelFuel:
         self.region = region
         years = [y for y in years if not self.HYDRO or hydro_daily(y) is not None]
         self._costs = []
-        self.G = 2 * self.BLOCKS
+        self.G = 2 * self.BLOCKS * (2 if self.DAYKIND else 1)
         xs, gs, rs = [], [], []
         for y in years:
             a = L.DATA[y]
             c = np.array([F.get(str(d)[:10], np.nan) for d in a['days']])
             ok = np.isfinite(c) & (c > 5)
             x = year_share(y, region, self.HYDRO)
-            g = self.groups(a['month'])
+            g = self.groups(a['month'], [L.day_kind(d) for d in a['days']])
             xs.append(x[ok].ravel()); gs.append(g[ok].ravel()); rs.append((a['fr_p'][ok] / c[ok, None]).ravel())
             self._costs.append(np.repeat(c[ok], 24))
         x, g, r = (np.concatenate(v) for v in (xs, gs, rs))
@@ -293,7 +311,7 @@ class PriceModelFuel:
             out[1] = np.where(ok, np.where(aff > 0, out[1] * aff / np.where(out[0] != 0, out[0], 1), 0), out[1])
             out[0] = aff
         if xf is not None and getattr(self, 'tab2', None):
-            k = (g * 1000 + (np.round(x / 0.05).astype(int) + 100)) * 1000 + (np.round(xf / 0.10).astype(int) + 100)
+            k = (g * 1000 + (np.round(x / 0.05).astype(int) + 100)) * 1000 + (np.round(xf / self.fbin()).astype(int) + 100)
             for kk in np.unique(k):
                 v = self.tab2.get(int(kk))
                 if v is not None:
@@ -301,6 +319,10 @@ class PriceModelFuel:
                     for i in range(3):
                         out[i][sel] = v[i]
         return tuple(out)
+
+    @staticmethod
+    def fbin():
+        return 2.0 if FR_GW['on'] else 0.10
 
     def add_france(self, years):
         """a second input: France's own residual share, in cells of 0.05 (region) × 0.10 (France), 20 hours or more"""
@@ -310,8 +332,9 @@ class PriceModelFuel:
             a = L.DATA[y]
             c = np.array([F.get(str(d)[:10], np.nan) for d in a['days']])
             ok = np.isfinite(c) & (c > 5)
-            x, xf, g = year_share(y, self.region, self.HYDRO), year_share(y, False, self.HYDRO), self.groups(a['month'])
-            k = (g * 1000 + (np.round(x / 0.05).astype(int) + 100)) * 1000 + (np.round(xf / 0.10).astype(int) + 100)
+            x, g = year_share(y, self.region, self.HYDRO), self.groups(a['month'], [L.day_kind(d) for d in a['days']])
+            xf = year_fr_gw(y, self.HYDRO) if FR_GW['on'] else year_share(y, False, self.HYDRO)
+            k = (g * 1000 + (np.round(x / 0.05).astype(int) + 100)) * 1000 + (np.round(xf / self.fbin()).astype(int) + 100)
             ks.append(k[ok].ravel()); rs.append((a['fr_p'][ok] / c[ok, None]).ravel())
         k, r = np.concatenate(ks), np.concatenate(rs)
         self.tab2 = {}
@@ -450,7 +473,7 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
             R2, L2 = L.with_batteries(x * Ltot, Ltot, L.storage_added(Y, demand_year))
             x = R2 / L2
         if pmf is not None:
-            gg = PriceModelFuel.groups(month)
+            gg = PriceModelFuel.groups(month, kind)
             cday = np.array([cost(d) for d in days])[:, None]
             if fuel_dev:
                 # the weather day's own fuel-cost deviation from its month's mean (cold calm days are dear gas days):
@@ -464,7 +487,8 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
                     dev.append(Fc.get(dd.isoformat(), np.nan) / np.mean(mk) if mk and Fc.get(dd.isoformat()) else 1.0)
                 mc = np.array([np.nanmean(cday[month == m]) for m in range(1, 13)])
                 cday = (mc[month - 1] * np.array(dev))[:, None]
-            f1, fp, fq = pmf.phi(x, gg, share(S, W, Lo, N, H, False) if france else None)
+            xfr = (fr_gw(S, W, Lo, N, H) if FR_GW['on'] else share(S, W, Lo, N, H, False)) if france else None
+            f1, fp, fq = pmf.phi(x, gg, xfr)
             v = S['FR'] if t == 's' else W['FR']
             res.append(L.month_rates(month, v, f1 * cday, fp * cday, fq))
             continue
