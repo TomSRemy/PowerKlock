@@ -12,7 +12,7 @@ Writes data/history/ppa_benchmark.json:
      "solar": {"ppa", "build", "pct", "fpc", "wx", "eu", "blend", "blend4", "lo", "hi", "ref", "go", "imb"}, "wind": {…}}, …}}
   (€/MWh; ppa = the published price = blend4 from the switch day (before it: the capacity trend; days["def"] says
    which), build = capacity trend, pct = past discount (a reference only),
-   fpc = forward shape, wx = weather simulation, eu = European price model (from 2026-10-28),
+   fpc = forward shape, wx = weather simulation, eu = European price model (from 2026-10-28), int = integrated method (test, from 2026-10-29),
    blend = mean of build, fpc and wx, blend4 = average of build, fpc, wx and eu weighted by the inverse of their past error for solar, equal for wind
    (data/history/ppa_weights.json; from 2026-10-28),
    lo / hi = the capacity trend's price at 10 % and 90 % of 10,000 simulated futures (P10–P90) whose capture drift is
@@ -75,7 +75,10 @@ def run(rebuild=None):
                   const adj = - o.refW * (o.add || 0) / 100 - o.imb + o.goW - o.margin;
                   lo = q(0.10) + adj; hi = q(0.90) + adj;
                 }
-                return { wx: r(o.ppaWx), eu: r(o.ppaEu), blend: m.length ? r(m.reduce((a, b) => a + b, 0) / m.length) : null,
+                // the integrated method (test since 29 Oct. 2026, not in the published price): wind = the anchored European
+                // model, solar = the mean of it, the capacity trend and the weather simulation (scripts/ppa_integrated.py)
+                const it = o.ppaAnc == null ? null : o.st.tech === 'wind' ? o.ppaAnc : (o.ppaWx != null ? (o.ppaAnc + o.ppaBuild + o.ppaWx) / 3 : null);
+                return { wx: r(o.ppaWx), eu: r(o.ppaEu), int: r(it), blend: m.length ? r(m.reduce((a, b) => a + b, 0) / m.length) : null,
                          // the published average: the four methods with their weights (inverse of their past error for solar)
                          blend4: m4.length === 4 ? r(PKPpa.avg4Of ? PKPpa.avg4Of(o) : m4.reduce((a, b) => a + b, 0) / 4) : null, lo: r(lo), hi: r(hi) };
               }; }""")

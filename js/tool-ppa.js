@@ -178,7 +178,7 @@
       return { g: wM > 0 && aA > 0 ? (aM / wM) / (aA / wA) : 1, sh };
     });
   }
-  function euYears(o, st, fld = 'regional') {   // fld: 'regional' (central), 'p10' / 'p90' (the simulated weather's spread)
+  function euYears(o, st, fld = 'regional') {   // fld: 'regional' (central), 'p10' / 'p90' (the simulated weather's spread), 'anchored' (the integrated method, no bias correction)
     const conv = st.conv === 'all' ? 'all' : 'curt';
     const f = D.fcst && D.fcst.forecast && D.fcst.forecast[st.tech] && D.fcst.forecast[st.tech][conv];
     const nat = D.fcst && D.fcst.share && D.fcst.share[st.tech], ratio = D.fwRatio;
@@ -207,7 +207,7 @@
         num += w * (q ? q[m - 1] : ratio[m] / rn) * (e[fld] + gap); den += w;
       }
       if (!(den > 0)) return null;
-      const b = o.biasOf ? o.biasOf('regional', y) : 0;
+      const b = o.biasOf && fld !== 'anchored' ? o.biasOf('regional', y) : 0;
       out.push({ y, capture: num / den - b, bias: b });
     }
     return out;
@@ -447,6 +447,11 @@
     o.eu = euYears(o, st);
     o.euFair = o.eu ? years.reduce((a, r, i) => a + r.wt * r.fwd * o.eu[i].capture, 0) : null;
     o.ppaEu = o.eu ? o.euFair - o.premium - refW * add / 100 - imb + goW - margin : null;
+    // integrated method (test, not in the published price; scripts/ppa_integrated.py): the realised capture of the last
+    // complete year × the change the European model gives from that year to each delivery year at the same price level
+    o.anc = euYears(o, st, 'anchored');
+    o.ancFair = o.anc ? years.reduce((a, r, i) => a + r.wt * r.fwd * o.anc[i].capture, 0) : null;
+    o.ppaAnc = o.anc ? o.ancFair - o.premium - refW * add / 100 - imb + goW - margin : null;
     o.method = st.method;
     // asset-specific FPC method (three pricings): js/ppa-fpc.js
     o.capPathFor = capPath;
@@ -643,8 +648,8 @@
   const INC0 = { pct: false, build: true, fpc: true, wx: true, eu: true };
   let INC = Object.assign({}, INC0);
   try { const v = JSON.parse(localStorage.getItem('pk-pp-inc') || 'null'); if (v) INC = Object.assign({}, INC0, v); } catch (_) {}
-  INC.pct = false;
-  const MNAME = { pct: 'Past discount', build: 'Capacity trend', fpc: 'Forward shape', wx: 'Weather simulation', eu: 'European price model' };
+  INC.pct = false; INC.int = false;
+  const MNAME = { pct: 'Past discount', build: 'Capacity trend', fpc: 'Forward shape', wx: 'Weather simulation', eu: 'European price model', int: 'Integrated method' };
   // weight of a method in the average (published price): the inverse of its past error for solar, equal for wind
   // (data/history/ppa_weights.json); keys of the pricer → keys of the test bench
   const WKEY = { build: 'step', fpc: 'fpc', wx: 'weather', eu: 'regional' };
@@ -665,6 +670,15 @@
     const W = its.reduce((a, m) => a + wOf(m.k, st), 0);
     return W > 0 ? its.reduce((a, m) => a + wOf(m.k, st) * m[f], 0) / W : null;
   }
+  // the integrated method: wind = the anchored European model; solar = the mean of the anchored model, the capacity
+  // trend and the weather simulation (scripts/ppa_integrated_test.py); shown as a test, never in the published price
+  function integrated(o, wxc) {
+    const wv = o.m4 ? o.ppaWx : wxc ? wxc.ppa : null, wf = o.m4 ? o.m4.fair : wxc ? wxc.fair : null;
+    if (o.ppaAnc == null) return { k: 'int', v: null };
+    if ((o.st || S).tech === 'wind') return { k: 'int', v: o.ppaAnc, fair: o.ancFair, ref: o.refW };
+    if (wv == null) return { k: 'int', v: null, needWx: true };
+    return { k: 'int', v: (o.ppaAnc + o.ppaBuild + wv) / 3, fair: (o.ancFair + o.fair + wf) / 3, ref: o.refW };
+  }
   function methodVals(o) {
     if (o.m4) S.wxLast = Object.assign(S.wxLast || {}, { ppa: o.ppaWx, fair: o.m4.fair, ref: o.m4.refW, fp: fp() });
     const wxc = !o.m4 && S.wxLast && S.wxLast.fp === fp() ? S.wxLast : null;
@@ -674,6 +688,7 @@
       { k: 'fpc', v: o.ppaFpc, fair: o.m3 ? o.m3.fair : null, ref: o.m3 ? o.m3.refW : null },
       { k: 'wx', v: o.m4 ? o.ppaWx : wxc ? wxc.ppa : null, fair: o.m4 ? o.m4.fair : wxc ? wxc.fair : null, ref: o.m4 ? o.m4.refW : wxc ? wxc.ref : null },
       { k: 'eu', v: o.ppaEu, fair: o.euFair, ref: o.refW },
+      integrated(o, wxc),
     ];
   }
   // measured precision of the 4-method average by horizon (scripts/ppa_horizon_test.py), for the band
@@ -704,8 +719,8 @@
     host.innerHTML = `<div class="pp-band-main"><div class="pp-band-l">PPA price</div><div class="pp-band-v">${avg != null ? f2(avg) : '–'}<small> €/MWh</small></div>` +
       `<div class="pp-band-s"><span>${use.length}</span> <span>${use.length === 1 ? 'method ticked' : 'methods ticked'}</span> · <span>${S.tech === 'wind' ? 'Wind' : 'Solar'}</span> · <span>Cal ${o.tenor[0]}–${o.tenor[o.tenor.length - 1]}</span> <span>${f2(o.refW)} €/MWh</span></div></div>` +
       `<div class="pp-offer"><label for="pp-offer-in">Offer received</label><span class="cf-in"><input type="number" id="pp-offer-in" step="0.1" placeholder="€/MWh" value="${S.offer != null ? S.offer : ''}"><em>€/MWh</em></span><div class="pp-offer-out" id="pp-offer-out"></div></div>` +
-      `<div class="pp-band-m">${M.map(m => `<label class="pp-mcard${INC[m.k] && !outOf(m.k) ? ' on' : ''}${m.v == null || m.k === 'pct' || outOf(m.k) ? ' na' : ''}"><input type="checkbox" data-inc="${m.k}"${INC[m.k] && !outOf(m.k) ? ' checked' : ''}${m.v == null || m.k === 'pct' || outOf(m.k) ? ' disabled' : ''}>` +
-        `<span class="pp-mcard-n">${MNAME[m.k]}</span><span class="pp-mcard-v">${m.v != null ? f2(m.v) : '…'}</span><span class="pp-mcard-s">${m.k === 'pct' ? 'reference, not for pricing' : outOf(m.k) ? 'not in the price: the replayed average is closer without it' : m.v != null ? '€/MWh' : m.k === 'eu' ? 'no forecast past 2030' : 'computed on its tab'}</span></label>`).join('')}</div><div class="pp-band-risk" id="pp-band-risk"></div>`;
+      `<div class="pp-band-m">${M.map(m => `<label class="pp-mcard${INC[m.k] && !outOf(m.k) ? ' on' : ''}${m.v == null || m.k === 'pct' || m.k === 'int' || outOf(m.k) ? ' na' : ''}"><input type="checkbox" data-inc="${m.k}"${INC[m.k] && !outOf(m.k) ? ' checked' : ''}${m.v == null || m.k === 'pct' || m.k === 'int' || outOf(m.k) ? ' disabled' : ''}>` +
+        `<span class="pp-mcard-n">${MNAME[m.k]}</span><span class="pp-mcard-v">${m.v != null ? f2(m.v) : '…'}</span><span class="pp-mcard-s">${m.k === 'pct' ? 'reference, not for pricing' : m.k === 'int' ? (m.needWx ? 'open Compare to compute' : 'test: not in the price yet') : outOf(m.k) ? 'not in the price: the replayed average is closer without it' : m.v != null ? '€/MWh' : m.k === 'eu' ? 'no forecast past 2030' : 'computed on its tab'}</span></label>`).join('')}</div><div class="pp-band-risk" id="pp-band-risk"></div>`;
     const oi = $('pp-offer-in');
     if (oi) oi.addEventListener('input', () => { S.offer = oi.value === '' ? null : +oi.value; offerOut(S.last, avg); });
     bandRisk(o, use);

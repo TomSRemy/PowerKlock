@@ -35,6 +35,8 @@ jobs:
         run: python scripts/fetch_fr_regions_capture.py --recent || echo "::warning::regional capture not updated"
       - name: Test bench and forecasts
         run: python scripts/ppa_lab.py --sims 300
+      - name: Integrated method (realised last year × the European model's change)
+        run: python scripts/ppa_integrated.py || echo "::warning::integrated method not updated"
       - name: Walk-forward test, year by year
         run: python scripts/ppa_walkforward.py || echo "::warning::walk-forward not updated"
       - name: Capture fan
