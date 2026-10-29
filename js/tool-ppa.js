@@ -680,7 +680,8 @@
   // the published price of a technology set by the single scenario generator alone (Tom, 30 Oct. 2026: solar; replay
   // 2020–2025 1–3 years ahead, no correction: 0.87 €/MWh mean error against 1.84 for the average of the methods). Wind
   // keeps the average until the generator is right for it (it overvalues wind by about 2.4 €/MWh)
-  const GEN_ONLY = st => (st || S).tech !== 'wind';
+  // (only when the generator's months are there: without them the average of the methods sets it, as before)
+  const GEN_ONLY = st => (st || S).tech !== 'wind' && !!(D && D.fcst && D.fcst.generator);
   function outOf(k, st) {
     if (GEN_ONLY(st)) return k !== 'pct' && k !== 'int';
     const X = D && D.weights && D.weights.exclude, t = (st || S).tech === 'wind' ? 'wind' : 'solar';
