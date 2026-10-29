@@ -135,18 +135,23 @@ def cap_guess(c, t, Y, last):
 
 
 def cap_future(c, t, Y):
-    """forecast capacity: France follows the PPE3 path, neighbours their last yearly pace"""
+    """forecast capacity: France its last yearly pace, never below the PPE3 path; neighbours their last yearly pace"""
     ys = [y for y in range(2010, 2040) if cap(c, t, y) and (c != 'DE' or y <= date.today().year)]
     last = ys[-1]
     if Y <= last:
         return cap(c, t, Y)
     if c == 'FR':
+        # the last year's pace, never below the PPE3 path (as js/tool-ppa.js capPath; the test bench's own pace)
         pts = [(last, cap(c, t, last))] + [(y, g) for y, g in PPE3[t].items() if y > last]
+        ppe = None
         for (y0, g0), (y1, g1) in zip(pts, pts[1:]):
             if Y <= y1:
-                return g0 + (g1 - g0) * (Y - y0) / (y1 - y0)
-        (ya, ga), (yb, gb) = pts[-2], pts[-1]
-        return gb + (gb - ga) / (yb - ya) * (Y - yb)
+                ppe = g0 + (g1 - g0) * (Y - y0) / (y1 - y0)
+                break
+        if ppe is None:
+            (ya, ga), (yb, gb) = pts[-2], pts[-1]
+            ppe = gb + (gb - ga) / (yb - ya) * (Y - yb)
+        return max(ppe, cap_guess(c, t, Y, last) or 0)
     g = cap_guess(c, t, Y, last)
     tg = TARGETS.get(c, {}).get(t)
     if g is not None and tg and Y > last:
