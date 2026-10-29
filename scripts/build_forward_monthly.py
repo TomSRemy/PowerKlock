@@ -79,6 +79,30 @@ def main():
         if m > 12:
             y, m = y + 1, 1
 
+    # a year whose months all come from its Cal: its seasonal shape leans on the last year quoted by quarter or finer
+    # (Tom 29 Oct. 2026: the historical shape should take the forward quotes' shape into account), the weight halving
+    # every year further: shape = w × that year's month ÷ year ratios + (1 − w) × the day-ahead's historical ratios,
+    # w = 0.5 ^ (years after it). Before, such a year took the history alone and its value jumped from the quoted year's
+    # (solar k 1.033 in 2028, 1.000 in 2029)
+    def year_of(k):
+        return int(k[:4])
+    full = {}
+    for yy in sorted({year_of(k) for k in months}):
+        ks = [f'{yy}-{i:02d}' for i in range(1, 13)]
+        if all(k in months and not months[k]['from'].startswith(('Cal', 'Sum', 'Win')) for k in ks):
+            mean = sum(months[k]['value'] for k in ks) / 12
+            full[yy] = {i: months[f'{yy}-{i:02d}']['value'] / mean for i in range(1, 13)}
+    for yy in sorted({year_of(k) for k in months}):
+        ks = [f'{yy}-{i:02d}' for i in range(1, 13)]
+        prev = [q for q in full if q < yy]
+        if not prev or not all(k in months and months[k]['from'] == f'Cal{yy}' for k in ks):
+            continue
+        q = max(prev)
+        w = 0.5 ** (yy - q)
+        for i in range(1, 13):
+            months[f'{yy}-{i:02d}']['value'] = live[f'Cal{yy}'] * (w * full[q][i] + (1 - w) * R['year'][i])
+            months[f'{yy}-{i:02d}']['shape'] = f'{round(w * 100)} % Q{q}, {round((1 - w) * 100)} % history'
+
     # listed contracts matched again, finest first: a quarter rescales its free months, then seasons, then the
     # Cal rescales what is left free, so every listed contract's average is its price (months are taken as they are)
     def cover(k):
