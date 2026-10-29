@@ -7,6 +7,9 @@ the skeleton weigh on the forward term and nothing offsets them. Variants:
   paid    the forward term on the skeleton's paid hours (> 0), as the decorrelated one
   dall    the decorrelated term with every hour paid, so the cannibalisation term carries the stop at prices <= 0
   floor   the skeleton floored at 0 (plants stop at negative prices, so the price settles at about zero)
+  yearly  one yearly cannibalisation term (realised − decorrelated over the whole year), not per season
+  clean   paid + yearly: Tom's formula as written, capture = CR2 + (CR1 − CR3) projected, each CR stopped at prices
+          <= 0 on its own curve, no season re-weighting (and, in the pricer, no bias correction)
 Protocol as scripts/ppa_horizon_test.py (priced 1, 2 and 3 years ahead), scored on complete delivery years
 (2024, 2025; 2026 shown apart); adoption: lower mean error over h1–h3 in the curtailed convention.
 
@@ -30,7 +33,7 @@ import ppa_backtest_detail as BD     # noqa: E402
 sys.argv = _argv
 
 OUT = os.path.join(ROOT, 'data', 'history', 'ppa_fpc_neg_test.json')
-VARIANTS = ('base', 'paid', 'dall', 'floor')
+VARIANTS = ('base', 'paid', 'dall', 'floor', 'yearly', 'clean')
 _src = inspect.getsource(BD.m_fpc)
 _r = [("""    sk, pv, mm, hh = np.array(sk), np.array(pv), np.array(mm), np.array(hh)
     f = (pv * sk).sum() / pv.sum() / sk.mean() - 1
@@ -38,13 +41,15 @@ _r = [("""    sk, pv, mm, hh = np.array(sk), np.array(pv), np.array(mm), np.arra
        """    sk, pv, mm, hh = np.array(sk), np.array(pv), np.array(mm), np.array(hh)
     if _V == 'floor':
         sk = np.maximum(sk, 0.0)
-    pk = (sk > 0) if (_V == 'paid' and conv != 'all') else np.ones(len(sk), bool)
+    pk = (sk > 0) if (_V in ('paid', 'clean') and conv != 'all') else np.ones(len(sk), bool)
     f = (pv * sk)[pk].sum() / pv[pk].sum() / sk.mean() - 1
     fm = {m: (pv * sk)[pk & (mm == m)].sum() / pv[pk & (mm == m)].sum() / sk[mm == m].mean() - 1 for m in range(1, 13)}"""),
       ("""        full[i] = B.decorrelated(y, co)""",
        """        full[i] = B.decorrelated(y, co)
         if _V == 'floor':
             full[i] = np.maximum(full[i], 0.0)"""),
+      ("""    for months in (SUMMER, set(range(1, 13)) - SUMMER):""",
+       """    for months in ((set(range(1, 13)),) if _V in ('yearly', 'clean') else (SUMMER, set(range(1, 13)) - SUMMER)):"""),
       ("""            cs.append(rate(k, V, P, conv) - rate(k, V, fulls[y], conv))""",
        """            cs.append(rate(k, V, P, conv) - rate(k, V, fulls[y], 'all' if _V == 'dall' else conv))""")]
 for a, _ in _r:
