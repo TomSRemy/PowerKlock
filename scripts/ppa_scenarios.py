@@ -239,8 +239,8 @@ class PriceModelFuel:
 
     BLOCKS = 3      # times of day per season: 3 (night 0–9, day 9–17, evening 17–24), 6 (4-hour blocks) or 24
 
-    DAYKIND = True    # a separate cell for weekends and public holidays (generator replay 2021–2025: wind 3.43 → 3.18
-    # €/MWh, solar 1.74 → 1.83, both 2.59 → 2.50)
+    DAYKIND = False   # a separate cell for weekends and public holidays: on deliveries 2023–2025, worse (solar
+    # 0.92 → 1.13, wind 2.99 → 3.00 €/MWh); kept for a few hours on a test biased by the 2021 deliveries (30 Oct. 2026)
 
     @classmethod
     def groups(cls, month, kinds=None):
@@ -251,10 +251,11 @@ class PriceModelFuel:
             g = g + 2 * cls.BLOCKS * (np.asarray(kinds)[:, None] > 0)
         return g
 
+    EXTRAP = False  # below the deepest surplus seen, keep falling (slope of the lowest cells) down to the observed floor
     AFFINE = False  # price = a + b × fuel cost per cell: worse on the true weather of 2023–2025 (1.60 → 1.73 €/MWh), off
-    HYDRO = True    # run-of-river output (daily, by country) taken off the residual load too. In the scenarios as
-    # the weather day's deviation from its month × the month's normal level; replay 2021–2025 with the same learning
-    # years: solar 2.04 → 1.69 €/MWh, wind 3.41 → 3.30 (first tried with the day's raw level: worse, 30 Oct. 2026)
+    HYDRO = False   # run-of-river off the residual load: on deliveries 2023–2025 with the same learning years for
+    # every version, worse for both (solar 0.92 → 1.76, wind 2.99 → 3.64 €/MWh); an earlier test including 2021
+    # deliveries (one learning year only once run-of-river is required) had wrongly kept it (30 Oct. 2026)
 
     def __init__(self, years, region=True):
         F = fuel_cost()
@@ -280,6 +281,8 @@ class PriceModelFuel:
         # cell's hours; φ = a ÷ cost + b. French hours are often set by nuclear or hydro at a level that does not
         # follow gas, which a pure ratio to the gas cost mixes up between dear-gas and cheap-gas years
         A_ = np.full((self.G, self.nb), np.nan); B_ = A_.copy()
+        self._floor = {}
+        self._lowbin = {gi: int(min([bi for bi in range(self.nb) if ((g == gi) & (b == bi)).sum() >= 15] or [0])) for gi in range(self.G)}
         cc = np.concatenate(self._costs) if self.AFFINE else None
         for gi in range(self.G):
             for bi in range(self.nb):
@@ -287,6 +290,8 @@ class PriceModelFuel:
                 if k.sum() >= 15:
                     v = r[k]
                     mean[gi, bi], mpos[gi, bi], ppos[gi, bi] = v.mean(), (v * (v > 0)).mean(), (v > 0).mean()
+                    if bi <= self._lowbin.get(gi, 10 ** 6) + 2:
+                        self._floor[gi] = min(self._floor.get(gi, 9.9), float(np.percentile(v, 5)))
                     if self.AFFINE and k.sum() >= 40 and np.ptp(cc[k]) > 10:
                         pe = v * cc[k]
                         B_[gi, bi], A_[gi, bi] = np.polyfit(cc[k], pe, 1)
@@ -297,7 +302,22 @@ class PriceModelFuel:
                     A_[gi], B_[gi] = A_[gi, near_a], B_[gi, near_a]
             filled = np.where(~np.isnan(mean[gi]))[0]
             near = np.array([filled[np.abs(filled - bi).argmin()] for bi in range(self.nb)])
+            low = filled.min() if len(filled) else 0
+            m0 = mean[gi].copy()
             mean[gi], mpos[gi], ppos[gi] = mean[gi, near], mpos[gi, near], ppos[gi, near]
+            winter = (gi % (2 * self.BLOCKS)) < self.BLOCKS
+            if self.EXTRAP and len(filled) >= 3 and (self.EXTRAP is True or (self.EXTRAP == 'winter') == winter):  # off: in the
+                # generator replay 2021–2025, winter only: 2.50 → 2.81 €/MWh (both), all year neutral on the true weather
+                # below the deepest surplus seen: keep the slope of the three lowest filled cells, never under the floor
+                # (the 5th percentile of the price ÷ cost in those cells: today's stops, batteries and flexibility)
+                k3 = filled[:3]
+                sl = np.polyfit(k3, m0[k3], 1)[0]
+                floor = self._floor.get(gi, m0[low])
+                for bi in range(low):
+                    v = m0[low] + sl * (bi - low)
+                    mean[gi, bi] = max(min(v, m0[low]), floor)
+                    ppos[gi, bi] = ppos[gi, low] if mean[gi, bi] > 0 else min(ppos[gi, low], 0.5)
+                    mpos[gi, bi] = max(mean[gi, bi], 0) if mean[gi, bi] > 0 else mpos[gi, low] * 0.5
         self.mean, self.mpos, self.ppos = mean, mpos, ppos
         self.A, self.B = A_, B_
 
@@ -346,6 +366,30 @@ class PriceModelFuel:
         return self
 
 
+class TrendRule:
+    """the fuel rule with a trend: the rule learnt on the last year alone, plus (TREND ×) the change of each cell
+    between the year before and the last year, carried one year ahead and no further, never under the floor seen in
+    the last year's cell (stops at negative prices, batteries, flexibility). The market has moved the same way every
+    year since 2023 (France's surplus hours 2,571 → 4,440 → 5,618), so a rule averaged on past years lags it."""
+    TREND = 1.0
+
+    def __init__(self, years, region=True, france=True):
+        last, prev = years[-1], years[-2] if len(years) > 1 else years[-1]
+        self.a = PriceModelFuel([prev], region)
+        self.b = PriceModelFuel([last], region)
+        if france:
+            self.a.add_france([prev]); self.b.add_france([last])
+
+    def phi(self, x, g, xf=None, cost=None):
+        pa, pb = self.a.phi(x, g, xf, cost), self.b.phi(x, g, xf, cost)
+        m = pb[0] + self.TREND * (pb[0] - pa[0])
+        floor = np.minimum(pb[0], self.b.mean[g, 0] if self.b.mean.shape[1] else pb[0])
+        m = np.maximum(m, np.minimum(floor, pb[0]))
+        mp = np.where(m > 0, np.maximum(pb[1] + self.TREND * (pb[1] - pa[1]), 0), 0)
+        pp = np.clip(pb[2] + self.TREND * (pb[2] - pa[2]), 0, 1)
+        return m, mp, pp
+
+
 def _residuals(y, pm, region):
     """the historical day's price surprise against this price rule: realised ratio − the rule's ratio (ratio units)"""
     d = _year(y)
@@ -361,7 +405,7 @@ def _residuals(y, pm, region):
 
 
 def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=None, weeks=7, surprise='none', rule='fuel', cost=None, fuel_window=2,
-             batteries='both', pool_from=2019, fuel_dev=True, france=True, window=7, same_month=False):
+             batteries='both', pool_from=2019, fuel_dev=True, france=True, window=7, same_month=False, train=None, trend=False):
     """monthly capture rates ('all', 'curt', 'paid') averaged over n chained-week scenarios, and their P10/P90"""
     rng = np.random.default_rng(seed if seed is not None else Y)
     pool = [y for y in known if y != 2022 and L.DATA[y]['complete'] and (pool_from is None or y >= pool_from)
@@ -373,10 +417,13 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
     pm2 = PriceModel2(tr, st['level'] != 'none') if rule == '2d' else None
     pmf = None
     if rule == 'fuel':
-        fy = [y for y in known if L.DATA[y]['complete'] and y >= 2019][-fuel_window:]
-        pmf = PriceModelFuel(fy, st['regional'])
-        if france:
-            pmf.add_france(fy)
+        fy = train or [y for y in known if L.DATA[y]['complete'] and y >= 2019][-fuel_window:]
+        if trend:
+            pmf = TrendRule(fy, st['regional'], france)
+        else:
+            pmf = PriceModelFuel(fy, st['regional'])
+            if france:
+                pmf.add_france(fy)
     SUR = {y: _residuals(y, pm, st['regional']) for y in pool}
     HN = {}
     if rule == 'fuel' and PriceModelFuel.HYDRO:
@@ -423,6 +470,12 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
                               & ((Yd['month'] == d0.month) if same_month else True))[0]
                 ok = ok[ok + weeks <= len(Yd['days'])]
                 cand += [(y, int(r)) for r in ok]
+            if not cand:          # the year's edges: widen the window
+                for y in pool:
+                    Yd = starts[y]
+                    dy = np.abs(Yd['doy'] - d0.timetuple().tm_yday)
+                    ok = np.where((np.minimum(dy, 365 - dy) <= 14) & (Yd['wd'] == d0.weekday()))[0]
+                    cand += [(y, int(r)) for r in ok[ok + weeks <= len(Yd['days'])]]
             if prev is not None:
                 pw, pl = prev
                 w = np.array([np.exp(-0.5 * (((starts[y]['FR_w'][r].mean() - pw) / sd[y][0]) ** 2 + ((starts[y]['FR_ldev'][r].mean() - pl) / sd[y][1]) ** 2))
