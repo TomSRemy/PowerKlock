@@ -257,26 +257,32 @@ class PriceModelFuel:
     # every version, worse for both (solar 0.92 → 1.76, wind 2.99 → 3.64 €/MWh); an earlier test including 2021
     # deliveries (one learning year only once run-of-river is required) had wrongly kept it (30 Oct. 2026)
 
+    NEG_EUR = os.environ.get('PK_NEG_EUR', '1') == '1'   # the negative part of the price learnt in € per cell, not as a
+    # multiple of the gas cost: negative prices come from renewables that keep producing and from stops, not from gas
+    # (a dear-gas year made them deeper: −12 to −17 €/MWh simulated vs −2 to −7 realised in 2025). Replay 2020–2025:
+    # wind 2.49 → 2.22, solar 0.85 → 0.90, both 1.67 → 1.56 €/MWh; adopted 30 Oct. 2026
+
     def __init__(self, years, region=True):
         F = fuel_cost()
         self.region = region
         years = [y for y in years if not self.HYDRO or hydro_daily(y) is not None]
         self._costs = []
         self.G = 2 * self.BLOCKS * (2 if self.DAYKIND else 1)
-        xs, gs, rs = [], [], []
+        xs, gs, rs, es = [], [], [], []
         for y in years:
             a = L.DATA[y]
             c = np.array([F.get(str(d)[:10], np.nan) for d in a['days']])
             ok = np.isfinite(c) & (c > 5)
             x = year_share(y, region, self.HYDRO)
             g = self.groups(a['month'], [L.day_kind(d) for d in a['days']])
-            xs.append(x[ok].ravel()); gs.append(g[ok].ravel()); rs.append((a['fr_p'][ok] / c[ok, None]).ravel())
+            xs.append(x[ok].ravel()); gs.append(g[ok].ravel()); rs.append((a['fr_p'][ok] / c[ok, None]).ravel()); es.append(np.minimum(a['fr_p'][ok], 0).ravel())
             self._costs.append(np.repeat(c[ok], 24))
         x, g, r = (np.concatenate(v) for v in (xs, gs, rs))
+        e = np.concatenate(es)
         self.lo = int(np.floor(x.min() / L.BIN)) - 1
         self.nb = int(np.ceil(x.max() / L.BIN)) - self.lo + 2
         b = np.clip(np.round(x / L.BIN).astype(int) - self.lo, 0, self.nb - 1)
-        mean = np.full((self.G, self.nb), np.nan); mpos = mean.copy(); ppos = mean.copy()
+        mean = np.full((self.G, self.nb), np.nan); mpos = mean.copy(); ppos = mean.copy(); neg = mean.copy()
         # AFFINE: in each cell, price = a + b × fuel cost (a fixed part in €, b the gas-following part), fitted on the
         # cell's hours; φ = a ÷ cost + b. French hours are often set by nuclear or hydro at a level that does not
         # follow gas, which a pure ratio to the gas cost mixes up between dear-gas and cheap-gas years
@@ -290,6 +296,7 @@ class PriceModelFuel:
                 if k.sum() >= 15:
                     v = r[k]
                     mean[gi, bi], mpos[gi, bi], ppos[gi, bi] = v.mean(), (v * (v > 0)).mean(), (v > 0).mean()
+                    neg[gi, bi] = e[k].mean()
                     if bi <= self._lowbin.get(gi, 10 ** 6) + 2:
                         self._floor[gi] = min(self._floor.get(gi, 9.9), float(np.percentile(v, 5)))
                     if self.AFFINE and k.sum() >= 40 and np.ptp(cc[k]) > 10:
@@ -304,7 +311,7 @@ class PriceModelFuel:
             near = np.array([filled[np.abs(filled - bi).argmin()] for bi in range(self.nb)])
             low = filled.min() if len(filled) else 0
             m0 = mean[gi].copy()
-            mean[gi], mpos[gi], ppos[gi] = mean[gi, near], mpos[gi, near], ppos[gi, near]
+            mean[gi], mpos[gi], ppos[gi], neg[gi] = mean[gi, near], mpos[gi, near], ppos[gi, near], neg[gi, near]
             winter = (gi % (2 * self.BLOCKS)) < self.BLOCKS
             if self.EXTRAP and len(filled) >= 3 and (self.EXTRAP is True or (self.EXTRAP == 'winter') == winter):  # off: in the
                 # generator replay 2021–2025, winter only: 2.50 → 2.81 €/MWh (both), all year neutral on the true weather
@@ -318,12 +325,13 @@ class PriceModelFuel:
                     mean[gi, bi] = max(min(v, m0[low]), floor)
                     ppos[gi, bi] = ppos[gi, low] if mean[gi, bi] > 0 else min(ppos[gi, low], 0.5)
                     mpos[gi, bi] = max(mean[gi, bi], 0) if mean[gi, bi] > 0 else mpos[gi, low] * 0.5
-        self.mean, self.mpos, self.ppos = mean, mpos, ppos
+        self.mean, self.mpos, self.ppos, self.neg = mean, mpos, ppos, neg
         self.A, self.B = A_, B_
 
     def phi(self, x, g, xf=None, cost=None):
         b = np.clip(np.round(x / L.BIN).astype(int) - self.lo, 0, self.nb - 1)
         out = [self.mean[g, b].copy(), self.mpos[g, b].copy(), self.ppos[g, b].copy()]
+        ng = self.neg[g, b].copy()
         if self.AFFINE and cost is not None:
             a_, b_ = self.A[g, b], self.B[g, b]
             ok = np.isfinite(a_) & np.isfinite(b_)
@@ -338,6 +346,9 @@ class PriceModelFuel:
                     sel = k == kk
                     for i in range(3):
                         out[i][sel] = v[i]
+                    ng[sel] = v[3]
+        if self.NEG_EUR and cost is not None:
+            out[0] = out[1] + ng / np.maximum(cost, 1.0)
         return tuple(out)
 
     @staticmethod
@@ -347,7 +358,7 @@ class PriceModelFuel:
     def add_france(self, years):
         """a second input: France's own residual share, in cells of 0.05 (region) × 0.10 (France), 20 hours or more"""
         F = fuel_cost()
-        ks, rs = [], []
+        ks, rs, es = [], [], []
         for y in years:
             a = L.DATA[y]
             c = np.array([F.get(str(d)[:10], np.nan) for d in a['days']])
@@ -355,14 +366,14 @@ class PriceModelFuel:
             x, g = year_share(y, self.region, self.HYDRO), self.groups(a['month'], [L.day_kind(d) for d in a['days']])
             xf = year_fr_gw(y, self.HYDRO) if FR_GW['on'] else year_share(y, False, self.HYDRO)
             k = (g * 1000 + (np.round(x / 0.05).astype(int) + 100)) * 1000 + (np.round(xf / self.fbin()).astype(int) + 100)
-            ks.append(k[ok].ravel()); rs.append((a['fr_p'][ok] / c[ok, None]).ravel())
-        k, r = np.concatenate(ks), np.concatenate(rs)
+            ks.append(k[ok].ravel()); rs.append((a['fr_p'][ok] / c[ok, None]).ravel()); es.append(np.minimum(a['fr_p'][ok], 0).ravel())
+        k, r, e = np.concatenate(ks), np.concatenate(rs), np.concatenate(es)
         self.tab2 = {}
         for kk in np.unique(k):
             sel = k == kk
             if sel.sum() >= 20:
                 v = r[sel]
-                self.tab2[int(kk)] = (v.mean(), (v * (v > 0)).mean(), (v > 0).mean())
+                self.tab2[int(kk)] = (v.mean(), (v * (v > 0)).mean(), (v > 0).mean(), e[sel].mean())
         return self
 
 
@@ -615,7 +626,7 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
                 mc = np.array([np.nanmean(cday[month == m]) for m in range(1, 13)])
                 cday = (mc[month - 1] * np.array(dev))[:, None]
             xfr = (fr_gw(S, W, Lo, N, H) if FR_GW['on'] else share(S, W, Lo, N, H, False)) if france else None
-            f1, fp, fq = pmf.phi(x, gg, xfr)
+            f1, fp, fq = pmf.phi(x, gg, xfr, cday)
             v = S['FR'] if t == 's' else W['FR']
             mr = L.month_rates(month, v, f1 * cday, fp * cday, fq)
             if guard == 'measure':
