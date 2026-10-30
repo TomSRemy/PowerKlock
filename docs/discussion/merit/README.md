@@ -40,3 +40,22 @@ Tried and left out: the thermal curve as a markup over the cost-based stack (coa
 ## What a usable merit order still needs
 Flow-based coupling (the export room moves with the grid situation, not a constant), the nuclear offer and hydro water
 values that move with the fuel prices, Italy/Spain/Britain modelled rather than taken as given.
+
+## Third pass (31 Oct. 2026, with the new data in the site)
+The model now lives in `scripts/ppa_merit.py` and reads the site's data: neighbours' output by type
+(data/history/region_hourly), France's hourly Core export / import limit (data/history/jao_core, JAO), coal before 2022
+(data/history/coal_monthly.json, World Bank), Britain (data/history/gb_hourly). Central-western zone = Core
+neighbours DE, BE, NL, AT; Switzerland, Britain, Italy, Spain enter as the day's exchanges.
+
+- France's maximum Core export fell: 9.2 GW on average in 2023, 7.6 in 2024, 5.4 in 2025, which is why France is cut off
+  more and more. When it is cut off, its physical export is 70–90 % of JAO's commercial limit; the model uses that ratio
+  (last two years' median) times the hour's limit.
+- True weather, output stopped at ≤ 0, mean error 2023–2025: wind 1.54 €/MWh against 1.68 for the rule, solar 1.13
+  against 1.97.
+- Generator replay (`genmo2.py`), 9 cases 2023–2025 × 1–3 years ahead: solar 3.24 against 0.59 for the current
+  generator, wind 2.66 against 2.49. On the cases learnt after the crisis (known year 2023 or later): wind 1.65 against
+  2.08, solar 1.28 against 0.48. Two and three years ahead from 2020–2021 it fails (curves from before the crisis and the
+  cut-off regime). Learning on 2022 as well: worse.
+- Solar is fragile: on the delivery year's own weather, the replay's assumptions (fleet guessed, demand and nuclear
+  availability as last year's monthly means, flat fuel prices, output per GW levelled) move solar by about 3 €/MWh
+  (`sanity.py`). To understand before going further.
