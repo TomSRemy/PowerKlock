@@ -4,13 +4,28 @@ Code to run outside the site: `fetch_full.py` fetches the neighbours' hourly gen
 /tmp/mo/full; `merit.py` is the model (France + central-western Europe DE/BE/NL/AT/CH, coupled at the French border;
 Italy, Spain and Britain as the day's exchanges); `calib*.py` set the free parameters on 2021 and 2023 only and test 2024–2025.
 
-## Results (true weather, hourly price error €/MWh)
+## Results, second night (true weather, hourly price error €/MWh; parameters set on 2021 + 2023 only)
 | | 2021 | 2023 | 2024 | 2025 |
 |---|---|---|---|---|
 | current rule | 20.6 | 16.9 | 23.9 | 19.4 |
-| merit order, best version | 27.8 | 24.9 | 31.0 | 24.2 |
+| merit order v1 | 27.8 | 24.9 | 31.0 | 24.2 |
+| merit order v2 | **17.0** | **16.0** | **17.6** | **19.3** |
 
-Captures are further off than the rule's (wind, output stopped at ≤ 0: +6 to +35 €/MWh against +1 to +2.5). Not usable yet.
+v2 = observed offer curves (French nuclear: price ÷ CCGT cost by use of the available fleet, learnt on the two last
+years; central-western thermal fleet: Germany's price ÷ CCGT cost by use, winter and summer apart), the nuclear
+minimum as the lowest seen over all previous years, a monthly effective export room (median export when France
+was cut off), negative bids at last year's observed depth, flexible renewables bidding around zero (−3 to +3 €).
+
+Captures on the true weather (output stopped at ≤ 0, €/MWh): wind 0.81 / 4.59 / 3.56 / 0.09 (rule 2023–2025: 1.55 /
+1.06 / 2.44); solar 1.79 / 0.78 / 3.43 / −1.64 (rule 2.51 / 0.92 / 2.49).
+
+Generator replay (`genmo.py`: drawn real weeks on the delivery year's fleets, nothing of the delivery year known), same
+9 cases 2023–2025 × 1–3 years ahead: solar 2.63 €/MWh against 0.59 for the current generator, wind 2.91 against 2.49.
+One year ahead it is better for wind (1.91 against 2.28) but not for solar (0.60 against 0.46); two and three years
+ahead it breaks down (curves learnt on 2020–2021, before the crisis and the French cut-off regime, do not carry over).
+
+Tried and left out: the thermal curve as a markup over the cost-based stack (coal–gas switching), worse on calibration
+(no coal price before 2022).
 
 ## What it taught
 - France is more and more cut off from Germany: its price 5 € or more below Germany's in 629 h in 2021, 1,496 in 2023,

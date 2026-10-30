@@ -227,7 +227,7 @@ def prev_params(Yp):
     ratio = fr['nuclear'] / np.maximum(fr['avail'], 1)
     link = fr['link']
     return dict(fr_gas=mp(fr['gas'], 5), fr_coal=mp(fr['coal'], 5), r_gas=mp(rs['gas'], 5), r_coal=mp(rs['coal'], 5), r_lig=mp(rs['lignite'], 5),
-                kmin=mp(ratio, 2), xmax=float(np.percentile(-link, 99)), imax=float(np.percentile(link, 99)), **eff_room(Yp), **nuc_curve(Yp))
+                neg5=float(np.percentile(Yp['price'][Yp['price'] <= 0], 5)) if (Yp['price'] <= 0).sum() > 20 else -10.0, kmin=mp(ratio, 2), xmax=float(np.percentile(-link, 99)), imax=float(np.percentile(link, 99)), **eff_room(Yp), **nuc_curve(Yp), **th_curve(Yp), **th_curves_season(Yp))
 
 def nuc_curve(Yp):
     """France's nuclear offer, from last year: in the hours France's price was its own (cheaper than Germany's), the price
@@ -245,12 +245,98 @@ def nuc_curve(Yp):
     r = np.interp(mid, mid[f], r[f]) if f.any() else np.full(len(mid), 0.3)
     return dict(nc_u=mid, nc_r=np.maximum.accumulate(r))
 
+def th_curve(Yp, sel=None):
+    """the central-western thermal offer, from last year: Germany's price ÷ CCGT cost at each use of the thermal fleet
+    (lignite + coal + gas + oil output ÷ capacity, bins of 0.02), non-decreasing"""
+    y = Yp['y']; rs = Yp['rest']
+    cap = sum(M_cap(c, t, y) for c in REST for t in ('Fossil gas', 'Fossil hard coal', 'Fossil brown coal / lignite', 'Fossil oil')) * 1000
+    cst = costs(Yp['days']); cc = np.repeat(((cst['ttf'] + 0.202 * cst['eua']) / 0.54 + 3)[:, None], 24, 1)
+    u = (rs['gas'] + rs['coal'] + rs['lignite'] + rs['oil']) / cap; DE = Yp['de']; ok = np.isfinite(DE)
+    if sel is not None:
+        ok = ok & sel
+    edges = np.arange(0.0, 1.02, 0.02); mid = (edges[:-1] + edges[1:]) / 2; r = []
+    for lo, hi in zip(edges[:-1], edges[1:]):
+        k = ok & (u >= lo) & (u < hi)
+        r.append(np.median(DE[k] / cc[k]) if k.sum() >= 20 else np.nan)
+    r = np.array(r); f = np.isfinite(r)
+    r = np.interp(mid, mid[f], r[f])
+    # above the highest use seen: the last ratio rises to 2 × at full use (scarcity), straight line
+    top = mid[f].max()
+    r = np.where(mid > top, r[f][-1] + (2.0 - r[f][-1]) * (mid - top) / max(1 - top, 1e-6), r)
+    return dict(tc_u=mid, tc_r=np.maximum.accumulate(r), tc_cap=cap)
+
+def stack_cost(cst, y, mids):
+    """the cost-based marginal cost of the central-western thermal fleet at each use (days × bins): lignite, coal, gas
+    tiers, oil sorted by each day's cost"""
+    caps = {k: sum(capacity(c, t, y) for c in REST) for k, t in (('gas', 'Fossil gas'), ('coal', 'Fossil hard coal'), ('lignite', 'Fossil brown coal / lignite'), ('oil', 'Fossil oil'))}
+    tiers = thermal_blocks(cst, caps, avail=1.0)          # [(GW, € per day)]
+    tot = sum(c for c, _ in tiers)
+    caps_ = np.array([c / tot for c, _ in tiers]); costs_ = np.array([b for _, b in tiers])   # tiers × days
+    out = np.zeros((costs_.shape[1], len(mids)))
+    for d in range(costs_.shape[1]):
+        o = np.argsort(costs_[:, d]); cum = np.cumsum(caps_[o])
+        idx = np.searchsorted(cum, np.clip(mids, 0, 0.999))
+        out[d] = costs_[o, d][np.minimum(idx, len(o) - 1)]
+    return out
+
+def th_markup(Yp, sel):
+    """Germany's price ÷ the cost-based marginal cost at the observed use (bins of 0.02), non-decreasing"""
+    y = Yp['y']; rs = Yp['rest']
+    cap = sum(capacity(c, t, y) for c in REST for t in ('Fossil gas', 'Fossil hard coal', 'Fossil brown coal / lignite', 'Fossil oil')) * 1000
+    u = (rs['gas'] + rs['coal'] + rs['lignite'] + rs['oil']) / cap; DE = Yp['de']
+    edges = np.arange(0.0, 1.02, 0.02); mid = (edges[:-1] + edges[1:]) / 2
+    sc = stack_cost(costs(Yp['days']), y, mid)                     # days × bins
+    b = np.clip((u / 0.02).astype(int), 0, len(mid) - 1)
+    mc = np.take_along_axis(np.repeat(sc[:, None, :], 24, 1), b[..., None], 2)[..., 0]
+    ok = np.isfinite(DE) & sel; r = []
+    for i in range(len(mid)):
+        k = ok & (b == i)
+        r.append(np.median(DE[k] / mc[k]) if k.sum() >= 20 else np.nan)
+    r = np.array(r); f = np.isfinite(r)
+    r = np.interp(mid, mid[f], r[f]) if f.any() else np.ones(len(mid))
+    top = mid[f].max() if f.any() else 1.0
+    r = np.where(mid > top, r[f][-1] + (1.5 - r[f][-1]) * (mid - top) / max(1 - top, 1e-6), r) if f.any() else r
+    return np.maximum.accumulate(r)
+
+def th_curves_season(Yp):
+    w = np.isin(Yp['month'], (1, 2, 3, 10, 11, 12))[:, None] * np.ones((1, 24), bool)
+    return dict(tc_w=th_curve(Yp, w)['tc_r'], tc_s=th_curve(Yp, ~w)['tc_r'], mk_w=th_markup(Yp, w), mk_s=th_markup(Yp, ~w))
+
+def M_cap(c, t, y):
+    return capacity(c, t, y)
+
 def eff_room(Yp):
     """the export (import) level at which France's price leaves Germany's, median over the hours it did (last year)"""
     P, DE, link = Yp['price'], Yp['de'], Yp['fr']['link']; ok = np.isfinite(DE)
     lo, hi = ok & (P < DE - 5), ok & (P > DE + 5)
-    return dict(xeff=float(np.median(-link[lo])) if lo.sum() > 50 else float(np.percentile(-link, 90)),
+    m = Yp['month'][:, None] * np.ones((1, 24), int); ex = -link
+    allm = float(np.median(ex[lo])) if lo.sum() > 50 else float(np.percentile(ex, 90))
+    xm = np.array([float(np.median(ex[lo & (m == k)])) if (lo & (m == k)).sum() > 30 else allm for k in range(1, 13)])
+    # the CWE solar effect on the room at cut-off (flow-based: German midday solar takes room on the lines)
+    if lo.sum() > 200:
+        sol = Yp['rest']['solar'][lo] / 1e3; X = np.column_stack([np.ones(lo.sum()), sol, (m[lo] >= 4) & (m[lo] <= 9)])
+        bs = float(np.linalg.lstsq(X, ex[lo] / 1e3, rcond=None)[0][1]); sm = float(sol.mean())
+    else:
+        bs, sm = 0.0, 0.0
+    return dict(xm=xm, xsol=bs, xsolm=sm, xeff=allm if lo.sum() > 50 else float(np.percentile(-link, 90)),
                 ieff=float(np.median(link[hi])) if hi.sum() > 50 else float(np.percentile(link, 90)))
+
+def merge(Ya, Yb):
+    """two years as one (for curves learnt on both)"""
+    out = dict(y=Yb['y'], days=Ya['days'] + Yb['days'], month=np.concatenate([Ya['month'], Yb['month']]),
+               price=np.concatenate([Ya['price'], Yb['price']]), de=np.concatenate([Ya['de'], Yb['de']]))
+    for z in ('fr', 'rest'):
+        out[z] = {k: np.concatenate([Ya[z][k], Yb[z][k]]) for k in Ya[z] if k in Yb[z]}
+    return out
+
+def kmin_all(Ys, y):
+    """the nuclear minimum (output ÷ available, monthly 2nd percentile) over every complete year before y"""
+    ks = []
+    for yy in Ys:
+        if yy < y and yy != 2022:
+            Yp = Ys[yy]; m = Yp['month']; ratio = Yp['fr']['nuclear'] / np.maximum(Yp['fr']['avail'], 1)
+            ks.append([np.percentile(ratio[m == k], 2) if (m == k).any() else np.percentile(ratio, 2) for k in range(1, 13)])
+    return np.min(np.array(ks), axis=0) if ks else None
 
 def run(Yd, pp, prm):
     y = Yd['y']; days = Yd['days']; m = Yd['month']; mi = m - 1
@@ -264,9 +350,9 @@ def run(Yd, pp, prm):
     nd_f = fr['load'] - fr['gb'] - fr['hydroRoR'] - fr['bio'] - vre_f
     wk_e = {w: fr['hydroLake'][week == w].sum() for w in np.unique(week)}
     Hf = hydro_shave(nd_f, wk_e, capacity('FR', 'Hydro water reservoir', y) * 1000, week)
-    Sf = storage(nd_f - Hf, capacity('FR', 'Hydro pumped storage', y) * 1000 * prm['ps_use'], 6)
+    Sf = storage(nd_f - Hf, capacity('FR', 'Hydro pumped storage', y) * 1000 * prm.get('ps_fr', prm['ps_use']), 6)
     gmr_f, cmr_f = pp['fr_gas'][mi][:, None] * np.ones((1, 24)), pp['fr_coal'][mi][:, None] * np.ones((1, 24))
-    infl_f = fr['hydroRoR'] + fr['bio'] + (1 - rF) * vre_f + nmin + gmr_f + cmr_f
+    infl_f = fr['hydroRoR'] + fr['bio'] + nmin + gmr_f + cmr_f + (0 if prm.get('neg_obs') else (1 - rF) * vre_f)
     capf = {'gas': capacity('FR', 'Fossil gas', y) * 1000, 'coal': capacity('FR', 'Fossil hard coal', y) * 1000, 'lignite': 0.0, 'oil': capacity('FR', 'Fossil oil', y) * 1000}
     blocks_f = []
     for cap, bid in thermal_blocks(cst, capf):
@@ -279,7 +365,12 @@ def run(Yd, pp, prm):
         for u0, rr in zip(pp['nc_u'], pp['nc_r']):
             cap = np.clip(np.minimum(A * (u0 + du / 2), A) - np.maximum(A * (u0 - du / 2), nmin), 0, None)
             blocks_f.append((cap.ravel(), (rr * ccgt).ravel()))
-    spreads_f = [((rF * vre_f).ravel(), np.full(nD * 24, -10.0), np.zeros(nD * 24)),
+    if prm.get('neg_obs'):
+        spreads_f_extra = [(((1 - rF) * vre_f).ravel(), np.full(nD * 24, pp['neg5']), np.full(nD * 24, -0.5))]
+    else:
+        spreads_f_extra = []
+    rb = prm.get('resp_bid', (-10.0, 0.0))
+    spreads_f = spreads_f_extra + [((rF * vre_f).ravel(), np.full(nD * 24, rb[0]), np.full(nD * 24, rb[1])),
                  ] + ([] if prm.get('nuc_curve') else [((fr['avail'] - nmin).clip(0).ravel(), *((np.full(nD * 24, prm['b_lo']), np.full(nD * 24, prm['b_hi'])) if prm.get('nuc_eur') else ((prm['b_lo'] * ccgt).ravel(), (prm['b_hi'] * ccgt).ravel())))])
     Df = (fr['load'] - fr['gb'] - Hf - Sf).ravel()
     Nf = supply(infl_f.ravel(), blocks_f, spreads_f, None, Df)
@@ -291,7 +382,7 @@ def run(Yd, pp, prm):
     ps_r = sum(capacity(c, 'Hydro pumped storage', y) for c in REST) * 1000 * prm['ps_use']
     Sr = storage(nd_r - Hr, ps_r, 6) + storage(nd_r - Hr, capacity('DE', 'Battery storage (power)', y) * 1000 * prm['ps_use'], 2)
     gmr_r, cmr_r, lmr_r = (pp[k][mi][:, None] * np.ones((1, 24)) for k in ('r_gas', 'r_coal', 'r_lig'))
-    infl_r = rs['mr'] + rs['nuclear'] + (1 - rR) * vre_r + gmr_r + cmr_r + lmr_r
+    infl_r = rs['mr'] + rs['nuclear'] + gmr_r + cmr_r + lmr_r + (0 if prm.get('neg_obs') else (1 - rR) * vre_r)
     capr = {k: sum(capacity(c, t, y) for c in REST) * 1000 for k, t in (('gas', 'Fossil gas'), ('coal', 'Fossil hard coal'), ('lignite', 'Fossil brown coal / lignite'), ('oil', 'Fossil oil'))}
     blocks_r = []
     for cap, bid in thermal_blocks(cst, capr):
@@ -299,10 +390,31 @@ def run(Yd, pp, prm):
     blocks_r[0] = (np.maximum(blocks_r[0][0] - gmr_r.ravel(), 0), blocks_r[0][1])
     blocks_r[4] = (np.maximum(blocks_r[4][0] - cmr_r.ravel(), 0), blocks_r[4][1])
     blocks_r[6] = (np.maximum(blocks_r[6][0] - lmr_r.ravel(), 0), blocks_r[6][1])
-    spreads_r = [((rR * vre_r).ravel(), np.full(nD * 24, -10.0), np.zeros(nD * 24))]
+    if prm.get('th_curve'):
+        # the thermal fleet as last year's offer curve (from zero use: its must-run part is in the curve's low end)
+        infl_r = rs['mr'] + rs['nuclear'] + (0 if prm.get('neg_obs') else (1 - rR) * vre_r)
+        capT = sum(capacity(c, t, y) for c in REST for t in ('Fossil gas', 'Fossil hard coal', 'Fossil brown coal / lignite', 'Fossil oil')) * 1000
+        if prm.get('th_markup'):
+            win = np.isin(m, (1, 2, 3, 10, 11, 12))[:, None] * np.ones((1, 24), bool)
+            mids = pp['tc_u']; sc = stack_cost(cst, y, mids)          # days × bins
+            blocks_r = [(np.full(nD * 24, capT * 0.02), (np.where(win, pp['mk_w'][i], pp['mk_s'][i]) * sc[:, i][:, None]).ravel()) for i in range(len(mids))]
+        elif prm.get('th_season'):
+            win = np.isin(m, (1, 2, 3, 10, 11, 12))[:, None] * np.ones((1, 24), bool)
+            blocks_r = [(np.full(nD * 24, capT * 0.02), (np.where(win, rw, rsu) * ccgt).ravel()) for rw, rsu in zip(pp['tc_w'], pp['tc_s'])]
+        else:
+            blocks_r = [(np.full(nD * 24, capT * 0.02), (rr * ccgt).ravel()) for rr in pp['tc_r']]
+    rb = prm.get('resp_bid', (-10.0, 0.0))
+    spreads_r = [((rR * vre_r).ravel(), np.full(nD * 24, rb[0]), np.full(nD * 24, rb[1]))]
+    if prm.get('neg_obs'):
+        spreads_r.append((((1 - rR) * vre_r).ravel(), np.full(nD * 24, pp['neg5']), np.full(nD * 24, -0.5)))
     Dr = (rs['load'] - rs['ext'] - Hr - Sr).ravel()
     Nr = supply(infl_r.ravel(), blocks_r, spreads_r, None, Dr)
     xmax = np.full(nD * 24, pp['xeff'] if prm.get('eff') else pp['xmax']); imax = np.full(nD * 24, pp['ieff'] if prm.get('eff') else pp['imax'])
+    if prm.get('eff') in ('month', 'msol'):
+        xm = pp['xm'][mi][:, None] * np.ones((1, 24))
+        if prm['eff'] == 'msol':
+            xm = xm + pp['xsol'] * 1000 * (rs['solar'] / 1e3 - pp['xsolm'])
+        xmax = np.maximum(xm, 1000).ravel(); imax = np.full(nD * 24, pp['imax'])
     pf, pc = clear(Nf, Nr, xmax, imax)
     return pf.reshape(nD, 24), pc.reshape(nD, 24)
 
@@ -323,4 +435,9 @@ def score(Yd, ph):
             e_all += (cp - ca) * base * w; w_all += w; e_curt += (cuh - cua) * base * wp; w_curt += wp
         out[t] = (e_all / w_all, e_curt / w_curt)
     out['mae'] = float(np.abs(ph - P).mean()); out['bias'] = float((ph - P).mean())
+    # revenue per produced MWh with output stopped at ≤ 0 (no ratio, so no blow-up when a month's mean is near 0),
+    # as an error relative to the year's baseload: (model − actual) ÷ actual baseload × 100 (% points of capture)
+    for t in ('solar', 'wind'):
+        v = Yd['fr'][t]
+        out[t + '_rev'] = float(((v * np.maximum(ph, 0)).sum() - (v * np.maximum(P, 0)).sum()) / v.sum())
     return out
