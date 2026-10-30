@@ -659,6 +659,15 @@ def export_need(S, W, Lo, A):
     return (A + S + W - Lo) / 1000
 
 
+REGIME_EXTRAP = os.environ.get('PK_REGIME_EXTRAP') == '1'   # test: in the cut-off regime, beyond the deepest surplus
+# seen, the price keeps falling (slope of the lowest cells) down to the observed floor, so more solar keeps lowering the
+# capture instead of stalling at the last cell (solar 2027 → 2029 capture 0.677 → 0.663 without it)
+
+
+class _PMExtrap(PriceModelFuel):
+    EXTRAP = True
+
+
 class RegimeRule:
     """France's price as the mix of two rules weighted by the chance France is cut off from Germany (its price 5 € or
     more below): cut off, a France-only rule learnt on those hours; coupled, the regional rule learnt on the others"""
@@ -672,7 +681,7 @@ class RegimeRule:
             need[y] = export_need(a['fr_s'], a['fr_w'], a['fr_l'], fr_avail(y)) - (fr_jmax(y) / 1000 if REGIME_JAO else 0)
         nd_ = sum(int(dec[y].sum()) for y in years)
         # too few hours cut off (the years before 2023): that regime keeps the whole-year rule
-        self.dec = PriceModelFuel(years, False, mask=dec if nd_ >= 500 else None)
+        self.dec = (_PMExtrap if REGIME_EXTRAP else PriceModelFuel)(years, False, mask=dec if nd_ >= 500 else None)
         self.cpl = PriceModelFuel(years, region, mask={y: ~dec[y] for y in years})
         if france:
             self.cpl.add_france(years)
@@ -702,6 +711,29 @@ class RegimeRule:
         b = self.cpl.phi(x, g, xf, cost)
         w = self.pdec(g, need)
         return tuple(w * u + (1 - w) * v for u, v in zip(a, b))
+
+
+ANCHOR = os.environ.get('PK_ANCHOR', '1') == '1'   # the capture anchored on the last complete year (Tom, 31 Oct. 2026):
+# generator(delivery year) × realised(last year) ÷ generator(last year), one factor per technology and convention, so
+# the model's level error cancels and it only gives the change (fleet, batteries, regimes). Deliveries 2023–2026, 1–3
+# years ahead (9 cases each): wind 2.14 → 0.99 €/MWh (bias +2.14 → −0.13), solar 1.18 → 1.33 (its level was already
+# right; its error is the slope), both 1.66 → 1.16. Adopted 31 Oct. 2026
+
+
+def anchor_factor(t, A, known, st, cost, n=30, seed=7):
+    """{'curt': k, 'all': k}: the realised capture of year A ÷ the generator's capture of year A (its fleet, its data,
+    the same rule and draws), production-weighted (× the paid share for 'curt')"""
+    capA = {c: {tt: (L.cap(c, tt, A) or L.cap_guess(c, tt, A, A)) for tt in 'sw'} for c in CS}
+    gA, _ = simulate(t, A, known, st, A, capA, None, n=n, rule='fuel', cost=cost, batteries='both', pool_from=2019,
+                     fuel_dev=True, france=True, seed=seed)
+    aA = L.actual(t, A)
+    out = {}
+    for conv in ('curt', 'all'):
+        w = {m: aA[m]['mwh'] * (aA[m]['paid'] if conv == 'curt' else 1) for m in aA
+             if m in gA and gA[m][conv] == gA[m][conv] and aA[m][conv] is not None}
+        den = sum(w[m] * gA[m][conv] for m in w)
+        out[conv] = float(sum(w[m] * aA[m][conv] for m in w) / den) if den > 0 else 1.0
+    return out
 
 
 class TrendRule:
