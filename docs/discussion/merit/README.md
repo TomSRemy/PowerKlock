@@ -59,3 +59,24 @@ neighbours DE, BE, NL, AT; Switzerland, Britain, Italy, Spain enter as the day's
 - Solar is fragile: on the delivery year's own weather, the replay's assumptions (fleet guessed, demand and nuclear
   availability as last year's monthly means, flat fuel prices, output per GW levelled) move solar by about 3 €/MWh
   (`sanity.py`). To understand before going further.
+
+## Fourth pass (31 Oct. 2026): judged by quarter
+Yearly figures hid seasonal errors that cancel. By quarter (2023 Q1 – 2026 Q3, output stopped at ≤ 0, €/MWh):
+
+| | current rule / generator | merit order |
+|---|---|---|
+| true weather, solar (15 quarters) | **3.01** | 4.83 |
+| true weather, wind | 3.72 | 3.69 |
+| replay 1 year ahead, solar | **2.51** | 4.30 |
+| replay 1 year ahead, wind | 5.01 | **3.87** (closer in 12 of 15) |
+| replay 2 years ahead, solar (11) | **3.08** | 6.79 |
+| replay 2 years ahead, wind | **5.35** | 5.90 |
+
+The merit order's gap is midday in spring and summer: on the true weather its midday price is far too high (May 2024:
+30 € against 7 €; Germany 40 € against 22 €). That midday, 12.6 GW of German thermal ran at a negative price (started for
+the evening, heat, reserves): the offer curves learnt on 2021 and 2023 do not show that much thermal staying on. Unit
+commitment (± W hours, or 40 % of the day's peak), offer curves by time of day, always-running thermal by month and
+time of day: none better (`midday.py`, `qtrue.py`).
+
+The current rule with France's hourly JAO export limit as its France input (`rule_jao.py`): solar 3.01 → 2.22, wind
+3.72 → 4.72 on the true weather by quarter: not better for both.

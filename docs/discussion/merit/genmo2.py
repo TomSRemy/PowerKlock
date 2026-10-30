@@ -9,8 +9,24 @@ sys.path.insert(0, M.ROOT + '/scripts'); _a, sys.argv = sys.argv, ['x']
 import ppa_lab as L
 sys.argv = _a
 
-YS = {y: M.year(y) for y in range(2020, 2026)}
-COMPLETE = [y for y in YS if len(YS[y]['days']) >= 340]
+YS = {y: M.year(y) for y in range(2020, 2027)}
+COMPLETE = [y for y in YS if len(YS[y]['days']) >= 340 and y < 2026]
+
+def jao_feats(D):
+    fr, rs = D['fr'], D['rest']; m = D['month'][:, None] * np.ones((1, 24)); h = np.ones((len(D['days']), 1)) * np.arange(24)[None, :]
+    X = [np.ones_like(m), rs['wind'] / 1e4, rs['solar'] / 1e4, rs['load'] / 1e4, fr['wind'] / 1e4, fr['solar'] / 1e4, fr['load'] / 1e4, fr['avail'] / 1e4,
+         rs['nuclear'] / 1e4, (rs['lignite'] + rs['coal'] + rs['gas']) / 1e4] + [(m == k).astype(float) for k in range(2, 13)] + [((h >= a) & (h < a + 6)).astype(float) for a in (6, 12, 18)]
+    return np.stack([x.ravel() for x in X], 1)
+
+def jao_fit(years, key):
+    Xs, ys = [], []
+    for y in years:
+        X = jao_feats(YS[y]); j = YS[y]['fr'][key].ravel(); ok = np.isfinite(j) & np.isfinite(X).all(1)
+        if ok.sum() > 2000:
+            Xs.append(X[ok]); ys.append(j[ok])
+    if not Xs:
+        return None
+    return np.linalg.lstsq(np.concatenate(Xs), np.concatenate(ys), rcond=None)[0]
 
 def cap_vre(c, t, y):
     """installed GW (solar 's' / wind 'w') of country c at the end of year y, from capacity.json"""
@@ -38,7 +54,7 @@ def assemble(Y, A, src, Yrows, h_known):
     days = [date(Y, 1, 1) + timedelta(i) for i in range(len(src))]
     month = np.array([d.month for d in days])
     D = {'y': A, 'days': [d.isoformat() for d in days], 'month': month, 'fr': {}, 'rest': {}}
-    dem = YS[Y] if os.environ.get('DEM_TRUE') == '1' else YS[A]
+    dem = YS[Y] if os.environ.get('DEM_TRUE') == '1' else YS[int(os.environ.get('DEM_FROM', A))]
     for z, cl in (('fr', ('FR',)), ('rest', M.REST)):
         cfs, cfw, lv = {}, {}, {}
         for y in set(s[0] for s in src):
@@ -54,7 +70,21 @@ def assemble(Y, A, src, Yrows, h_known):
             ls = {y: a_s / cfs[y].mean() for y in cfs}; lw = {y: a_w / cfw[y].mean() for y in cfw}
         else:
             lw = {y: cfw[A].mean() / cfw[y].mean() for y in cfw}
-        fs = sum(cap_guess(c, 's', Y, A) for c in cl) * 1000; fw = sum(cap_guess(c, 'w', Y, A) for c in cl) * 1000
+        if os.environ.get('LEVEL', 'trend') == 'trend':
+            # as the published generator: a straight line through the pool years' mean output per GW (keeps a dull
+            # or sunny year as it was), the ratio of its value at the last known year to its value at the weather year
+            def _cfm(y, tt):
+                Yd_ = YS[y]; caps_ = sum(cap_vre(c, tt, y) for c in cl) * 1000
+                return float((Yd_[z]['solar' if tt == 's' else 'wind'] / caps_).mean())
+            ys_ = sorted(set([y for y in COMPLETE if y <= A and y != 2022]))
+            for tt, lev in (('s', ls), ('w', lw)):
+                xs_ = np.array(ys_); vs_ = np.array([_cfm(y, tt) for y in ys_])
+                if len(xs_) >= 3:
+                    a_, b_ = np.polyfit(xs_, vs_, 1)
+                    for y in list(lev):
+                        lev[y] = (a_ * A + b_) / (a_ * y + b_)
+        Af = int(os.environ.get('FLEET_FROM', A))
+        fs = sum(cap_guess(c, 's', Y, Af) for c in cl) * 1000; fw = sum(cap_guess(c, 'w', Y, Af) for c in cl) * 1000
         if os.environ.get('FLEET_TRUE') == '1':
             fs = sum(cap_vre(c, 's', Y) for c in cl) * 1000; fw = sum(cap_vre(c, 'w', Y) for c in cl) * 1000
         dm = mm(dem[z]['load'], dem['month'])
@@ -63,15 +93,32 @@ def assemble(Y, A, src, Yrows, h_known):
             for (y, r), d in zip(src, days):
                 Yd = YS[y]
                 if k == 'solar':
-                    rows.append(cfs[y][r] * ls[y] * fs)
+                    rows.append(cfs[y][r] * (1.0 if os.environ.get('LEVEL_OFF') == '1' else ls[y]) * fs)
                 elif k == 'wind':
-                    rows.append(cfw[y][r] * lw[y] * fw)
+                    rows.append(cfw[y][r] * (1.0 if os.environ.get('LEVEL_OFF') == '1' else lw[y]) * fw)
                 elif k == 'load':
                     rows.append(Yd[z]['load'][r] / lv[y][Yd['month'][r] - 1] * dm[d.month - 1])
+                elif k in ('avail',) and os.environ.get('AVAIL_TRUE') == '1':
+                    rows.append(Yd[z][k][r])
+                elif k == 'nuclear' and z == 'rest' and os.environ.get('AVAIL_TRUE') == '1':
+                    rows.append(Yd[z][k][r])
                 elif k in ('avail',):
                     rows.append(np.full(24, mm(dem['fr']['avail'][:, 0], dem['month'])[d.month - 1]))
                 elif k == 'nuclear' and z == 'rest':
                     rows.append(np.full(24, mm(dem['rest']['nuclear'].mean(1), dem['month'])[d.month - 1]))
+                elif k in ('gb', 'ext') and os.environ.get('EXO_LEVEL') == '1':
+                    # exchanges outside the model: the drawn day's shape, the last known year's level (as output per GW)
+                    v = Yd[z][k][r]
+                    rows.append(v - np.mean(Yd[z][k]) + np.mean(YS[A][z][k]))
+                elif k in ('jmax', 'jmin') and os.environ.get('JAO_LEVEL', '1') == '1':
+                    # the drawn day's limit (its grid and weather situation) at the last known year's level
+                    v = Yd[z][k][r]
+                    jy = [y_ for y_ in COMPLETE if y_ <= A and np.isfinite(np.nanmean(YS[y_][z][k]))][-int(os.environ.get('JAO_N', 1)):]
+                    ref = float(np.mean([np.nanmean(YS[y_][z][k]) for y_ in jy])) if jy else np.nan
+                    if os.environ.get('JAO_FROM'):
+                        ref = np.nanmean(YS[int(os.environ['JAO_FROM'])][z][k])
+                    own = np.nanmean(Yd[z][k])
+                    rows.append(v * (ref / own) if np.isfinite(ref) and np.isfinite(own) and own != 0 else (np.full(24, ref) if np.isfinite(ref) else v))
                 else:
                     rows.append(Yd[z][k][r])
             D[z][k] = np.array(rows)
@@ -122,12 +169,17 @@ def known_costs(A):
 
 def replay(Y, h, prm, n=10, seed=7):
     A = max(y for y in COMPLETE if y <= Y - h)
-    prev = [y for y in COMPLETE if y <= A and (y != 2022 or os.environ.get('WITH2022') == '1')][-2:]
-    pp = M.prev_params(M.merge(YS[prev[0]], YS[prev[1]]) if len(prev) == 2 else YS[prev[-1]])
+    Ap = int(os.environ.get('PP_FROM', A))
+    NP = int(os.environ.get('NPREV', 2))
+    prev = [y for y in COMPLETE if y <= Ap and (y != 2022 or os.environ.get('WITH2022') == '1')][-NP:]
+    Yp = YS[prev[0]]
+    for yy in prev[1:]:
+        Yp = M.merge(Yp, YS[yy])
+    pp = M.prev_params(Yp)
     pp['kmin'] = M.kmin_all(YS, A + 1)
     pool = [y for y in COMPLETE if y <= A and y != 2022]
     rng = np.random.default_rng(seed + Y * 10 + h)
-    kc = known_costs(A)
+    kc = known_costs(int(os.environ.get('FUEL_FROM', A)))
     M_series = M.series()
     res = []
     for _ in range(n):
@@ -140,7 +192,14 @@ def replay(Y, h, prm, n=10, seed=7):
                 for d in D['days']:
                     M_series[k][d] = v
         p = dict(prm); p['rF'] = 0.2 if A >= 2024 else 0.0
-        D['y'] = A   # capacities of the last known year
+        D['y'] = Y if os.environ.get('CAP_Y') == '1' else A   # capacities of the last known year
+        if os.environ.get('JAO') == 'model':
+            # France's export / import limit explained by the hour's situation (fit on the known years with JAO data)
+            for key in ('jmax', 'jmin'):
+                b = jao_fit([y for y in COMPLETE if y <= A], key)
+                if b is not None:
+                    X = jao_feats(D)
+                    D['fr'][key] = (X @ b).reshape(D['fr'][key].shape)
         try:
             pf, _ = M.run(D, pp, p)
         finally:
