@@ -469,7 +469,7 @@
     // 3 cases out of 4. Taken off only when the model has erred on the high side
     const MR = D.fcst && D.fcst.generator && D.fcst.generator.modelRisk, mrT = MR && MR[st.tech];
     o.modelRisk = mrT && mrT.qPts > 0 ? refW * mrT.qPts / 100 : 0;
-    o.modelRiskInfo = mrT ? { level: MR.level, n: mrT.n, qPts: mrT.qPts, meanEur: mrT.meanEur, maeEur: mrT.maeEur, byH: mrT.byH } : null;
+    o.modelRiskInfo = mrT ? { level: MR.level, n: mrT.n, qPts: mrT.qPts, meanEur: mrT.meanEur, maeEur: mrT.maeEur, byH: mrT.byH, anchorMae: mrT.anchorMae } : null;
     o.ppaGen = o.gen ? o.genFair - o.premium - o.modelRisk - refW * add / 100 - imb + goW - margin : null;
     o.method = st.method;
     // asset-specific FPC method (three pricings): js/ppa-fpc.js
@@ -748,7 +748,14 @@
         const mrTxt = !I ? '' : fr
           ? ` Risque de modèle retiré du prix : <b>${n2(o.modelRisk)} €/MWh</b> (${I.level}e centile des erreurs passées du générateur sur la capture, ${I.n} cas : livraisons depuis 2023, pricées 1 à 3 ans avant ; il se trompe en moyenne de ${I.meanEur >= 0 ? '+' : ''}${n2(I.meanEur)} €, écart moyen ${bh} € à 1 / 2 / 3 ans). Ainsi le prix n’aurait pas dépassé la valeur réalisée dans 3 cas sur 4.`
           : ` Model risk taken off the price: <b>${f2(o.modelRisk)} €/MWh</b> (${I.level}th percentile of the generator's past errors on the capture, ${I.n} cases: deliveries since 2023, priced 1 to 3 years ahead; on average it errs by ${I.meanEur >= 0 ? '+' : ''}${f2(I.meanEur)} €, mean gap ${bh} € one / two / three years ahead). So the price would not have exceeded the realised value in 3 cases out of 4.`;
-        el.innerHTML = spread + bfTxt + ' ' + (fr ? 'Prix publié = le générateur de scénarios (deux régimes : la France couplée à ses voisins ou coupée par sa limite d’export du couplage Core, JAO), pour le solaire et l’éolien, ancré sur la capture réalisée de la dernière année complète (il ne donne que l’évolution jusqu’aux années livrées), sans correction de biais.' : 'Published price = the scenario generator (two regimes: France coupled to its neighbours or cut off by its Core export limit, JAO), for solar and wind, anchored on the realised capture of the last complete year (it only gives the change to the delivery years), no bias correction.') + mrTxt;
+        // the anchoring this technology uses, chosen on the weekly replay (scripts/ppa_model_risk.py anchorMode)
+        const AN = D.fcst.generator.anchor && D.fcst.generator.anchor[S.tech === 'wind' ? 'wind' : 'solar'], am2 = I && I.anchorMae;
+        const anMode = AN && AN.mode ? AN.mode : 'year', anY = AN && AN.year;
+        const anErr = am2 ? ['none', 'year', 'season'].filter(k => am2[k] != null).map(k => (fr ? { none: 'sans', year: 'année', season: 'hiver/été' } : { none: 'none', year: 'year', season: 'winter/summer' })[k] + ' ' + (fr ? n2 : f2)(am2[k])).join(', ') : '';
+        const anTxt = fr
+          ? (anMode === 'none' ? 'sans ancrage' : `ancré sur la capture réalisée de ${anY || 'la dernière année complète'}${anMode === 'season' ? ', un facteur pour l’hiver (octobre–mars) et un pour l’été (avril–septembre)' : ' (un facteur sur l’année)'}`) + (anErr ? ` : le choix qui se trompait le moins en rejeu, écart moyen ${anErr} €/MWh` : '')
+          : (anMode === 'none' ? 'not anchored' : `anchored on the realised capture of ${anY || 'the last complete year'}${anMode === 'season' ? ', one factor for winter (October–March) and one for summer (April–September)' : ' (one factor on the year)'}`) + (anErr ? `: the choice that erred least in the replay, mean gap ${anErr} €/MWh` : '');
+        el.innerHTML = spread + bfTxt + ' ' + (fr ? `Prix publié = le générateur de scénarios (deux régimes : la France couplée à ses voisins ou coupée par sa limite d’export du couplage Core, JAO), ${anTxt}, sans correction de biais.` : `Published price = the scenario generator (two regimes: France coupled to its neighbours or cut off by its Core export limit, JAO), ${anTxt}, no bias correction.`) + mrTxt;
         return;
       }
       el.innerHTML = spread + wtxt + ' ' + (fr ? `Précision mesurée de la moyenne publiée${use.length < 4 ? ' (' + use.length + ' méthodes)' : ''} sur les années complètes depuis 2024 : ${n2(e(1))} € d’erreur moyenne à 1 an, ${n2(e(2))} € à 2 ans, ${n2(e(3))} € à 3 ans ; au-delà du parc déjà observé, l’écart entre méthodes dit mieux l’incertitude.`

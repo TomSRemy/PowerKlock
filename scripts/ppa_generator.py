@@ -43,11 +43,18 @@ def main():
     c0 = float(np.mean([v for k, v in sorted(Fc.items())[-30:]]))
     this = date.today()
     below, anchors = {}, {}
+    # the anchoring of each technology, chosen on the weekly replay (scripts/ppa_model_risk.py, run just before)
+    try:
+        modes = json.load(open(os.path.join(ROOT, 'data', 'history', 'ppa_model_risk.json'))).get('anchorMode') or {}
+    except (OSError, ValueError):
+        modes = {}
     for t, tech in (('s', 'solar'), ('w', 'wind')):
         st = {k: v for k, v in settings[t].items() if k != 'calError'}
-        # anchored on the last complete year: the realised ÷ the generator's own view of that year (ppa_scenarios ANCHOR)
-        k = G.anchor_factor(t, A, past, st, lambda d: c0) if G.ANCHOR else {'curt': 1.0, 'all': 1.0}
-        anchors[tech] = {'year': A, **{c: round(v, 4) for c, v in k.items()}}
+        # anchored on the last complete year: the realised ÷ the generator's own view of that year (ppa_scenarios ANCHOR),
+        # over the year, by half-year or not at all, whichever the replay found best for this technology
+        mode = modes.get(tech, 'year') if G.ANCHOR else 'none'
+        k = G.anchor_factors(t, A, past, st, lambda d: c0)[mode]
+        anchors[tech] = {'year': A, 'mode': mode, **{c: {'winter': round(k[c][1], 4), 'summer': round(k[c][7], 4)} for c in k}}
         print('anchor', tech, anchors[tech], flush=True)
         for Y in range(this.year, 2031):
             capY = {c: {tt: L.cap_future(c, tt, Y) for tt in 'sw'} for c in ('FR',) + L.NEIGH}
@@ -59,9 +66,9 @@ def main():
                     e = fc['forecast'].get(tech, {}).get(conv, {}).get(f'{Y}-{mm:02d}')
                     if e is None or m[mm][conv] != m[mm][conv]:
                         continue
-                    e['generator'] = round(m[mm][conv] * k[conv], 5)
+                    e['generator'] = round(m[mm][conv] * k[conv][mm], 5)
                     e['generatorPaid'] = round(m[mm]['paid'], 5)
-                    e['generatorP10'], e['generatorP90'] = (round(v * k[conv], 5) for v in dist[mm][conv])
+                    e['generatorP10'], e['generatorP90'] = (round(v * k[conv][mm], 5) for v in dist[mm][conv])
             print('generator', tech, Y, flush=True)
     # guardrail alarm (Tom 30 Oct. 2026): share of the simulated days whose capture falls under the floor observed at the
     # same penetration on the last two complete years (the 10th percentile, so about 10 % is expected); a clear rise
@@ -75,7 +82,10 @@ def main():
         fc['generator']['modelRisk'] = {k: mr[k] for k in ('asOf', 'level') if k in mr}
         for tech in ('solar', 'wind'):
             if tech in mr:
-                fc['generator']['modelRisk'][tech] = {k: mr[tech][k] for k in ('n', 'meanPts', 'qPts', 'meanEur', 'maeEur', 'byH')}
+                fc['generator']['modelRisk'][tech] = {k: mr[tech][k] for k in ('n', 'meanPts', 'qPts', 'meanEur', 'maeEur', 'byH', 'anchor')
+                                                      if k in mr[tech]}
+                if tech in (mr.get('anchorMae') or {}):
+                    fc['generator']['modelRisk'][tech]['anchorMae'] = mr['anchorMae'][tech]
     except (OSError, ValueError, KeyError):
         pass
     with open(F_PATH, 'w') as f:
