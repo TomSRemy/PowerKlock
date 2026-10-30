@@ -1,0 +1,48 @@
+name: Fetch ENTSO-E adequacy projections (ERAA)
+
+# ENTSO-E's yearly European Resource Adequacy Assessment: installed capacity by zone and target year, demand, Core
+# flow-based reach, fuel and CO2 assumptions, for the PPA generator's merit order (one edition a year, no key).
+# Writes data/history/eraa.json (scripts/fetch_eraa.py).
+
+on:
+  schedule:
+    - cron: "17 5 3 * *"       # the 3rd of each month (a new edition comes once a year)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fetch-eraa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+
+      - name: Install
+        run: pip install requests openpyxl
+
+      - name: Fetch
+        run: |
+          python scripts/fetch_eraa.py
+
+      - name: Commit and push if new data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/history/eraa.json
+          git diff --cached --quiet || git commit -m "data: ENTSO-E adequacy projections (ERAA) $(date +%Y-%m-%d)"
+          for i in 1 2 3 4 5; do git pull -q --rebase -X theirs origin main && git push && exit 0; git rebase --abort 2>/dev/null || true; sleep 8; done; exit 1
+
+      - name: E-mail on failure
+        if: failure()
+        env:
+          GO_GMAIL_USER: ${{ secrets.GO_GMAIL_USER }}
+          GO_GMAIL_APP_PASSWORD: ${{ secrets.GO_GMAIL_APP_PASSWORD }}
+          WORKFLOW: ${{ github.workflow }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: python3 scripts/notify_failure.py || true
