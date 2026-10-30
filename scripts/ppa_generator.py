@@ -42,9 +42,13 @@ def main():
     Fc = G.fuel_cost()
     c0 = float(np.mean([v for k, v in sorted(Fc.items())[-30:]]))
     this = date.today()
-    below = {}
+    below, anchors = {}, {}
     for t, tech in (('s', 'solar'), ('w', 'wind')):
         st = {k: v for k, v in settings[t].items() if k != 'calError'}
+        # anchored on the last complete year: the realised ÷ the generator's own view of that year (ppa_scenarios ANCHOR)
+        k = G.anchor_factor(t, A, past, st, lambda d: c0) if G.ANCHOR else {'curt': 1.0, 'all': 1.0}
+        anchors[tech] = {'year': A, **{c: round(v, 4) for c, v in k.items()}}
+        print('anchor', tech, anchors[tech], flush=True)
         for Y in range(this.year, 2031):
             capY = {c: {tt: L.cap_future(c, tt, Y) for tt in 'sw'} for c in ('FR',) + L.NEIGH}
             m, dist = G.simulate(t, Y, past, st, A, capY, None, n=60, rule='fuel', cost=lambda d: c0,
@@ -55,15 +59,15 @@ def main():
                     e = fc['forecast'].get(tech, {}).get(conv, {}).get(f'{Y}-{mm:02d}')
                     if e is None or m[mm][conv] != m[mm][conv]:
                         continue
-                    e['generator'] = round(m[mm][conv], 5)
+                    e['generator'] = round(m[mm][conv] * k[conv], 5)
                     e['generatorPaid'] = round(m[mm]['paid'], 5)
-                    e['generatorP10'], e['generatorP90'] = (round(v, 5) for v in dist[mm][conv])
+                    e['generatorP10'], e['generatorP90'] = (round(v * k[conv], 5) for v in dist[mm][conv])
             print('generator', tech, Y, flush=True)
     # guardrail alarm (Tom 30 Oct. 2026): share of the simulated days whose capture falls under the floor observed at the
     # same penetration on the last two complete years (the 10th percentile, so about 10 % is expected); a clear rise
     # says the model is drifting away from what the market has shown. A measure only: nothing is corrected
     fc['generator'] = {'asOf': this.isoformat(), 'lastYear': A, 'fuelCost': round(c0, 2), 'sims': 60, 'belowFloor': below,
-                       'belowFloorExpected': 0.10}
+                       'belowFloorExpected': 0.10, 'anchor': anchors}
     # model risk (Tom 31 Oct. 2026): the generator's past errors against the realised (scripts/ppa_model_risk.py), so
     # the pricer takes off the forwards × their chosen percentile and the price does not lose money again and again
     try:

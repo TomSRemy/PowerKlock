@@ -4,7 +4,7 @@ does not lose money again and again when the model is wrong in the same directio
 
 Replay: each delivery year from 2023 (the years with France's Core export limits, JAO) to the running year (its
 complete months only), priced 1, 2 and 3 years ahead with only the complete years known then, exactly as the generator
-prices today (scripts/ppa_scenarios.py simulate, current settings); error = the generator's capture − the realised
+prices today (scripts/ppa_scenarios.py simulate, current settings, anchored on the last known year); error = the generator's capture − the realised
 capture, output stopped at prices ≤ 0, production-weighted, in capture points (so the pricer applies it to the
 forwards of the tenor) and in € on the realised baseload. Deliveries whose last known year is before 2022 are left out
 (other regime, no JAO).
@@ -62,7 +62,9 @@ def main():
                 c0 = float(np.mean([v for k, v in F.items() if f'{A}-12-01' <= k <= f'{A}-12-31']))
                 gm, _ = G.simulate(t, Y, known, st, A, capY, lv, n=30, rule='fuel', cost=lambda d: c0, batteries='both',
                                    pool_from=2019, fuel_dev=True, france=True, seed=7)
-                sc = L.score({m: v['curt'] for m, v in gm.items()}, act, 'curt')
+                # anchored on the last known year, as the published generator (ppa_scenarios ANCHOR)
+                kA = G.anchor_factor(t, A, known, st, lambda d: c0)['curt'] if G.ANCHOR else 1.0
+                sc = L.score({m: v['curt'] * kA for m, v in gm.items()}, act, 'curt')
                 if not sc:
                     continue
                 rows.append({'tech': tech, 'year': Y, 'h': h, 'known': A, 'months': len(act),
