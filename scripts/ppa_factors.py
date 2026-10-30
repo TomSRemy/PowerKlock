@@ -58,8 +58,8 @@ def region_midday_solar(y, m):
         if int(d[5:7]) != m or not v.get('s'):
             continue
         s = sum(v['s'][11:15]) / 4
-        for c in rg:
-            row = rg[c]['s'].get(d)
+        for c in ('DE', 'BE', 'ES'):   # the regional model's neighbours (the file also holds NL, AT, CH for the merit order)
+            row = rg.get(c, {}).get('s', {}).get(d)
             if row:
                 s += sum(x or 0 for x in row[11:15]) / 4
         tot += s; n += 1

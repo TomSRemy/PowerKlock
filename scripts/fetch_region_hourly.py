@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
 """Hourly solar, wind, load and nuclear of France's coupled neighbours (Germany,
 Belgium, Spain), on the same clock as data/history/fr_hourly (Paris day, 24 hours),
-for the regional price model of the PPA pricer (scripts/ppa_lab.py).
+for the regional price model of the PPA pricer (scripts/ppa_lab.py); and, for the
+merit order of the scenario generator (docs/discussion/merit-order-plan.md), the
+output by type of the central-western neighbours (Germany, Belgium, the Netherlands,
+Austria, Switzerland) and Spain: lignite, hard coal, gas, oil, run-of-river,
+reservoir hydro, pumped storage (output and pumping), biomass, other.
 
-The Netherlands are left out: most of their solar is behind the meter and missing
-from the public power series.
+The Netherlands stay out of the regional price model (most of their solar is behind
+the meter and missing from the public power series); they are kept for the merit
+order, where their thermal fleet counts.
 
 Writes data/history/region_hourly/YYYY.json
     {"year", "unit": "MW", "countries": {"DE": {"s": {day: [24]}, "w": …, "l": …, "n": …}}}
@@ -22,7 +27,11 @@ import requests
 
 API = 'https://api.energy-charts.info/public_power'
 OUT = Path('data/history/region_hourly')
-COUNTRIES = {'DE': 'de', 'BE': 'be', 'ES': 'es'}
+COUNTRIES = {'DE': 'de', 'BE': 'be', 'ES': 'es', 'NL': 'nl', 'AT': 'at', 'CH': 'ch'}
+# output by type (Energy-Charts names) for the merit order
+TYPES = {'lig': ('Fossil brown coal / lignite',), 'coal': ('Fossil hard coal', 'Fossil coal-derived gas'), 'gas': ('Fossil gas',),
+         'oil': ('Fossil oil',), 'ror': ('Hydro Run-of-River',), 'lake': ('Hydro water reservoir',), 'ps': ('Hydro pumped storage',),
+         'psc': ('Hydro pumped storage consumption',), 'bio': ('Biomass',), 'oth': ('Waste', 'Geothermal', 'Others', 'Other renewables', 'Other, non-renewable')}
 PARIS = ZoneInfo('Europe/Paris')
 UA = {'User-Agent': 'PowerKlock (github.com/TomSRemy/PowerKlock)'}
 
@@ -72,7 +81,7 @@ def by_paris_day(series, y):
 
 def main():
     this = date.today().year
-    years = range(this - 1, this + 1) if '--recent' in sys.argv else range(2016, this + 1)
+    years = range(this - 1, this + 1) if '--recent' in sys.argv else range(int(sys.argv[sys.argv.index('--since') + 1]) if '--since' in sys.argv else 2016, this + 1)
     OUT.mkdir(parents=True, exist_ok=True)
     for y in years:
         f = OUT / f'{y}.json'
@@ -88,6 +97,11 @@ def main():
             wind = {h: won.get(h, 0) + woff.get(h, 0) for h in set(won) | set(woff)}
             doc['countries'][c] = {'s': by_paris_day(hourly(ts, t.get('Solar')), y), 'w': by_paris_day(wind, y),
                                    'l': by_paris_day(hourly(ts, t.get('Load')), y), 'n': by_paris_day(hourly(ts, t.get('Nuclear')), y)}
+            for k, names in TYPES.items():
+                parts = [hourly(ts, t[nm]) for nm in names if t.get(nm)]
+                if parts:
+                    tot = {h: sum(p.get(h, 0) for p in parts) for h in set().union(*parts)}
+                    doc['countries'][c][k] = by_paris_day({h: abs(v) for h, v in tot.items()}, y)
             print(y, c, len(doc['countries'][c]['l']), 'days', flush=True)
             time.sleep(2)
         f.write_text(json.dumps(doc, separators=(',', ':')))
