@@ -1,0 +1,1361 @@
+{
+ "2020": {
+  "label": "2020",
+  "hours": 8783,
+  "shares": {
+   "core": 0.4471,
+   "partial": 0.3248,
+   "cut_exp": 0.0511,
+   "cut_imp": 0.0014,
+   "cut_mid": 0.1756
+  },
+  "shares_1eur": {
+   "core": 0.5539,
+   "partial": 0.3201,
+   "cut_exp": 0.041,
+   "cut_imp": 0.001,
+   "cut_mid": 0.084
+  },
+  "state_prices": {
+   "core": {
+    "FR": 33.9,
+    "DE_LU": 33.9,
+    "BE": 33.9,
+    "ES": 34.0,
+    "IT_NORD": 37.4,
+    "CH": 34.4,
+    "GB": 40.3
+   },
+   "partial": {
+    "FR": 34.2,
+    "DE_LU": 31.0,
+    "BE": 32.9,
+    "ES": 34.6,
+    "IT_NORD": 38.8,
+    "CH": 35.5,
+    "GB": 40.9
+   },
+   "cut_exp": {
+    "FR": 18.4,
+    "DE_LU": 27.4,
+    "BE": 22.3,
+    "ES": 27.1,
+    "IT_NORD": 29.7,
+    "CH": 25.3,
+    "GB": 33.6
+   },
+   "cut_imp": {
+    "FR": 62.1,
+    "DE_LU": 41.8,
+    "BE": 46.7,
+    "ES": 48.6,
+    "IT_NORD": 55.8,
+    "CH": 50.3,
+    "GB": 53.9
+   },
+   "cut_mid": {
+    "FR": 28.1,
+    "DE_LU": 21.6,
+    "BE": 27.6,
+    "ES": 34.7,
+    "IT_NORD": 39.2,
+    "CH": 32.8,
+    "GB": 37.2
+   }
+  },
+  "state_nx": {
+   "core": 5.0,
+   "partial": 3.7,
+   "cut_exp": 11.6,
+   "cut_imp": -5.9,
+   "cut_mid": 5.6
+  },
+  "borders": {
+   "BE": {
+    "coupled": 0.4842,
+    "fr_cheaper": 0.2777,
+    "fr_dearer": 0.2434,
+    "fr": 32.2,
+    "nb": 31.9
+   },
+   "DE": {
+    "coupled": 0.4593,
+    "fr_cheaper": 0.1785,
+    "fr_dearer": 0.3643,
+    "fr": 32.2,
+    "nb": 30.5
+   },
+   "ES": {
+    "coupled": 0.3935,
+    "fr_cheaper": 0.4073,
+    "fr_dearer": 0.1996,
+    "fr": 32.2,
+    "nb": 34.0
+   },
+   "IT": {
+    "coupled": 0.3686,
+    "fr_cheaper": 0.599,
+    "fr_dearer": 0.0332,
+    "fr": 32.2,
+    "nb": 37.8
+   },
+   "CH": {
+    "coupled": 0.0033,
+    "fr_cheaper": 0.6217,
+    "fr_dearer": 0.3768,
+    "fr": 32.2,
+    "nb": 34.0
+   },
+   "GB": {
+    "coupled": 0.0017,
+    "fr_cheaper": 0.7355,
+    "fr_dearer": 0.2628,
+    "fr": 32.2,
+    "nb": 39.6
+   }
+  },
+  "partial_with": {
+   "ES": 1201,
+   "IT": 648,
+   "ES+IT": 568,
+   "BE": 178,
+   "BE+ES": 95,
+   "DE": 44,
+   "DE+ES": 36,
+   "BE+IT": 31,
+   "BE+ES+IT": 22,
+   "DE+IT": 20,
+   "DE+ES+IT": 7,
+   "GB": 3
+  },
+  "real": 32.1,
+  "iso": 18.6,
+  "real_all": 32.2,
+  "iso_all": 22.3,
+  "iso_deep": 16.7,
+  "iso_delta": 18.0,
+  "iso_cut_variant": 18.8,
+  "gap": 13.6,
+  "consumers": 5.94,
+  "producers": 6.44,
+  "consumers_cut_variant": 5.69,
+  "consumers_deep": 6.6,
+  "consumers_delta": 6.18,
+  "rent": 0.5,
+  "rent_by_border": {
+   "BE": 0.014,
+   "DE": 0.076,
+   "ES": 0.123,
+   "IT": 0.114,
+   "CH": 0.061,
+   "GB": 0.116
+  },
+  "exports_by_border": {
+   "BE": 2.2,
+   "DE": -1.6,
+   "ES": 5.4,
+   "IT": 15.4,
+   "CH": 14.1,
+   "GB": 8.6
+  },
+  "export_value_fr": 1.21,
+  "export_value_nb": 1.65,
+  "nx_twh": 45.8,
+  "load_twh": 446.5,
+  "france_net": 0.75,
+  "shortage_hours": 11,
+  "shortage_gwh": 10,
+  "shortage_max_gw": 2.5,
+  "curtail_twh": 1.9,
+  "out_of_support": 0.056,
+  "validation": {
+   "all": {
+    "n": 8783,
+    "mae": 8.6,
+    "bias": 1.0,
+    "real": 32.2
+   },
+   "cut": {
+    "n": 2003,
+    "mae": 9.6,
+    "bias": 2.5,
+    "real": 26.1
+   },
+   "cut_exp": {
+    "n": 449,
+    "mae": 8.1,
+    "bias": 4.7,
+    "real": 18.4
+   },
+   "coupled": {
+    "n": 6780,
+    "mae": 8.3,
+    "bias": 0.5,
+    "real": 34.0
+   }
+  }
+ },
+ "2021": {
+  "label": "2021",
+  "hours": 8759,
+  "shares": {
+   "core": 0.4853,
+   "partial": 0.3095,
+   "cut_exp": 0.0366,
+   "cut_imp": 0.0059,
+   "cut_mid": 0.1626
+  },
+  "shares_1eur": {
+   "core": 0.53,
+   "partial": 0.318,
+   "cut_exp": 0.0301,
+   "cut_imp": 0.0059,
+   "cut_mid": 0.116
+  },
+  "state_prices": {
+   "core": {
+    "FR": 98.3,
+    "DE_LU": 98.3,
+    "BE": 98.3,
+    "ES": 100.8,
+    "IT_NORD": 112.1,
+    "CH": 101.1,
+    "GB": 124.9
+   },
+   "partial": {
+    "FR": 134.5,
+    "DE_LU": 104.0,
+    "BE": 122.7,
+    "ES": 129.4,
+    "IT_NORD": 145.4,
+    "CH": 140.5,
+    "GB": 149.9
+   },
+   "cut_exp": {
+    "FR": 59.6,
+    "DE_LU": 79.8,
+    "BE": 68.7,
+    "ES": 98.1,
+    "IT_NORD": 100.2,
+    "CH": 79.0,
+    "GB": 106.0
+   },
+   "cut_imp": {
+    "FR": 304.0,
+    "DE_LU": 213.0,
+    "BE": 247.4,
+    "ES": 231.4,
+    "IT_NORD": 277.6,
+    "CH": 278.8,
+    "GB": 278.7
+   },
+   "cut_mid": {
+    "FR": 97.5,
+    "DE_LU": 78.4,
+    "BE": 88.8,
+    "ES": 110.6,
+    "IT_NORD": 126.1,
+    "CH": 109.5,
+    "GB": 125.5
+   }
+  },
+  "state_nx": {
+   "core": 6.5,
+   "partial": 2.0,
+   "cut_exp": 12.8,
+   "cut_imp": -7.9,
+   "cut_mid": 5.2
+  },
+  "borders": {
+   "BE": {
+    "coupled": 0.5126,
+    "fr_cheaper": 0.1951,
+    "fr_dearer": 0.2926,
+    "fr": 109.2,
+    "nb": 104.1
+   },
+   "DE": {
+    "coupled": 0.4926,
+    "fr_cheaper": 0.1256,
+    "fr_dearer": 0.3823,
+    "fr": 109.2,
+    "nb": 96.9
+   },
+   "ES": {
+    "coupled": 0.348,
+    "fr_cheaper": 0.4227,
+    "fr_dearer": 0.2294,
+    "fr": 109.2,
+    "nb": 111.9
+   },
+   "IT": {
+    "coupled": 0.3103,
+    "fr_cheaper": 0.658,
+    "fr_dearer": 0.0321,
+    "fr": 109.2,
+    "nb": 125.2
+   },
+   "CH": {
+    "coupled": 0.0009,
+    "fr_cheaper": 0.603,
+    "fr_dearer": 0.3963,
+    "fr": 109.2,
+    "nb": 114.9
+   },
+   "GB": {
+    "coupled": 0.0004,
+    "fr_cheaper": 0.7441,
+    "fr_dearer": 0.2557,
+    "fr": 110.4,
+    "nb": 133.0
+   }
+  },
+  "partial_with": {
+   "ES": 1085,
+   "IT": 849,
+   "ES+IT": 474,
+   "BE": 134,
+   "BE+ES": 74,
+   "DE": 37,
+   "DE+ES": 23,
+   "BE+IT": 18,
+   "BE+ES+IT": 13,
+   "DE+IT": 4
+  },
+  "real": 107.1,
+  "iso": 78.5,
+  "real_all": 109.2,
+  "iso_all": 100.2,
+  "iso_deep": 70.7,
+  "iso_delta": 78.6,
+  "iso_cut_variant": 76.0,
+  "gap": 28.6,
+  "consumers": 10.61,
+  "producers": 12.02,
+  "consumers_cut_variant": 11.78,
+  "consumers_deep": 13.42,
+  "consumers_delta": 10.51,
+  "rent": 1.94,
+  "rent_by_border": {
+   "BE": 0.09,
+   "DE": 0.327,
+   "ES": 0.435,
+   "IT": 0.369,
+   "CH": 0.171,
+   "GB": 0.544
+  },
+  "exports_by_border": {
+   "BE": -3.6,
+   "DE": -6.5,
+   "ES": 6.3,
+   "IT": 17.8,
+   "CH": 16.3,
+   "GB": 13.5
+  },
+  "export_value_fr": 2.8,
+  "export_value_nb": 4.5,
+  "nx_twh": 45.1,
+  "load_twh": 468.5,
+  "france_net": 2.38,
+  "shortage_hours": 65,
+  "shortage_gwh": 130,
+  "shortage_max_gw": 6.3,
+  "curtail_twh": 9.7,
+  "out_of_support": 0.13,
+  "validation": {
+   "all": {
+    "n": 8759,
+    "mae": 17.1,
+    "bias": -0.8,
+    "real": 109.2
+   },
+   "cut": {
+    "n": 1797,
+    "mae": 19.5,
+    "bias": 2.6,
+    "real": 96.7
+   },
+   "cut_exp": {
+    "n": 321,
+    "mae": 15.2,
+    "bias": 2.0,
+    "real": 59.6
+   },
+   "coupled": {
+    "n": 6962,
+    "mae": 16.5,
+    "bias": -1.6,
+    "real": 112.4
+   }
+  }
+ },
+ "2022": {
+  "label": "2022",
+  "hours": 8759,
+  "shares": {
+   "core": 0.3347,
+   "partial": 0.3883,
+   "cut_exp": 0.0,
+   "cut_imp": 0.0152,
+   "cut_mid": 0.2618
+  },
+  "shares_1eur": {
+   "core": 0.3725,
+   "partial": 0.3882,
+   "cut_exp": 0.0,
+   "cut_imp": 0.0144,
+   "cut_mid": 0.2249
+  },
+  "state_prices": {
+   "core": {
+    "FR": 280.8,
+    "DE_LU": 280.8,
+    "BE": 280.8,
+    "ES": 177.6,
+    "IT_NORD": 311.5,
+    "CH": 286.6,
+    "GB": 245.2
+   },
+   "partial": {
+    "FR": 274.4,
+    "DE_LU": 205.7,
+    "BE": 222.1,
+    "ES": 175.7,
+    "IT_NORD": 291.9,
+    "CH": 274.4,
+    "GB": 227.9
+   },
+   "cut_exp": {
+    "FR": null,
+    "DE_LU": null,
+    "BE": null,
+    "ES": null,
+    "IT_NORD": null,
+    "CH": null,
+    "GB": null
+   },
+   "cut_imp": {
+    "FR": 470.7,
+    "DE_LU": 320.6,
+    "BE": 350.8,
+    "ES": 163.6,
+    "IT_NORD": 401.6,
+    "CH": 404.5,
+    "GB": 348.5
+   },
+   "cut_mid": {
+    "FR": 260.5,
+    "DE_LU": 216.7,
+    "BE": 225.4,
+    "ES": 142.8,
+    "IT_NORD": 321.2,
+    "CH": 279.0,
+    "GB": 217.1
+   }
+  },
+  "state_nx": {
+   "core": -0.9,
+   "partial": -2.8,
+   "cut_exp": null,
+   "cut_imp": -9.5,
+   "cut_mid": -1.4
+  },
+  "borders": {
+   "BE": {
+    "coupled": 0.3464,
+    "fr_cheaper": 0.0804,
+    "fr_dearer": 0.574,
+    "fr": 275.9,
+    "nb": 244.5
+   },
+   "DE": {
+    "coupled": 0.343,
+    "fr_cheaper": 0.0651,
+    "fr_dearer": 0.5925,
+    "fr": 275.9,
+    "nb": 235.5
+   },
+   "ES": {
+    "coupled": 0.267,
+    "fr_cheaper": 0.0993,
+    "fr_dearer": 0.6336,
+    "fr": 275.9,
+    "nb": 167.5
+   },
+   "IT": {
+    "coupled": 0.3781,
+    "fr_cheaper": 0.5884,
+    "fr_dearer": 0.0336,
+    "fr": 275.9,
+    "nb": 307.8
+   },
+   "CH": {
+    "coupled": 0.001,
+    "fr_cheaper": 0.5888,
+    "fr_dearer": 0.4104,
+    "fr": 275.9,
+    "nb": 281.7
+   },
+   "GB": {
+    "coupled": 0.0001,
+    "fr_cheaper": 0.2846,
+    "fr_dearer": 0.7154,
+    "fr": 275.9,
+    "nb": 232.7
+   }
+  },
+  "partial_with": {
+   "IT": 1655,
+   "ES": 1066,
+   "ES+IT": 506,
+   "BE": 58,
+   "DE": 48,
+   "BE+ES": 31,
+   "DE+IT": 19,
+   "BE+IT": 12,
+   "DE+ES": 5,
+   "BE+ES+IT": 1
+  },
+  "real": 273.2,
+  "iso": 295.0,
+  "real_all": 275.9,
+  "iso_all": 330.7,
+  "iso_deep": 295.0,
+  "iso_delta": 294.0,
+  "iso_cut_variant": 291.9,
+  "gap": -21.8,
+  "consumers": -10.22,
+  "producers": -9.14,
+  "consumers_cut_variant": -8.9,
+  "consumers_deep": -10.22,
+  "consumers_delta": -9.75,
+  "rent": 5.56,
+  "rent_by_border": {
+   "BE": 0.442,
+   "DE": 0.975,
+   "ES": 1.976,
+   "IT": 0.776,
+   "CH": 0.335,
+   "GB": 1.055
+  },
+  "exports_by_border": {
+   "BE": -12.1,
+   "DE": -15.3,
+   "ES": -9.3,
+   "IT": 18.0,
+   "CH": 12.2,
+   "GB": -9.9
+  },
+  "export_value_fr": -7.26,
+  "export_value_nb": -2.29,
+  "nx_twh": -14.8,
+  "load_twh": 450.1,
+  "france_net": 3.86,
+  "shortage_hours": 89,
+  "shortage_gwh": 190,
+  "shortage_max_gw": 7.5,
+  "curtail_twh": 1.4,
+  "out_of_support": 0.017,
+  "validation": {
+   "all": {
+    "n": 8759,
+    "mae": 43.0,
+    "bias": -1.8,
+    "real": 275.9
+   },
+   "cut": {
+    "n": 2426,
+    "mae": 50.2,
+    "bias": 5.3,
+    "real": 272.0
+   },
+   "cut_exp": {
+    "n": 0,
+    "mae": null,
+    "bias": null,
+    "real": null
+   },
+   "coupled": {
+    "n": 6333,
+    "mae": 40.3,
+    "bias": -4.5,
+    "real": 277.4
+   }
+  }
+ },
+ "2023": {
+  "label": "2023",
+  "hours": 8759,
+  "shares": {
+   "core": 0.2834,
+   "partial": 0.3256,
+   "cut_exp": 0.0543,
+   "cut_imp": 0.0001,
+   "cut_mid": 0.3366
+  },
+  "shares_1eur": {
+   "core": 0.4527,
+   "partial": 0.3065,
+   "cut_exp": 0.0419,
+   "cut_imp": 0.0,
+   "cut_mid": 0.1989
+  },
+  "state_prices": {
+   "core": {
+    "FR": 99.4,
+    "DE_LU": 99.4,
+    "BE": 99.4,
+    "ES": 88.5,
+    "IT_NORD": 122.0,
+    "CH": 103.4,
+    "GB": 107.7
+   },
+   "partial": {
+    "FR": 107.4,
+    "DE_LU": 102.6,
+    "BE": 107.2,
+    "ES": 97.1,
+    "IT_NORD": 132.2,
+    "CH": 116.2,
+    "GB": 116.2
+   },
+   "cut_exp": {
+    "FR": 73.5,
+    "DE_LU": 94.1,
+    "BE": 80.9,
+    "ES": 100.4,
+    "IT_NORD": 108.0,
+    "CH": 90.6,
+    "GB": 79.2
+   },
+   "cut_imp": {
+    "FR": 197.4,
+    "DE_LU": 194.5,
+    "BE": 196.9,
+    "ES": 145.0,
+    "IT_NORD": 190.4,
+    "CH": 215.0,
+    "GB": 164.3
+   },
+   "cut_mid": {
+    "FR": 88.3,
+    "DE_LU": 84.7,
+    "BE": 88.6,
+    "ES": 74.1,
+    "IT_NORD": 131.5,
+    "CH": 105.1,
+    "GB": 103.0
+   }
+  },
+  "state_nx": {
+   "core": 6.3,
+   "partial": 4.6,
+   "cut_exp": 10.1,
+   "cut_imp": -0.4,
+   "cut_mid": 5.7
+  },
+  "borders": {
+   "BE": {
+    "coupled": 0.3079,
+    "fr_cheaper": 0.3594,
+    "fr_dearer": 0.3343,
+    "fr": 96.9,
+    "nb": 97.3
+   },
+   "DE": {
+    "coupled": 0.2907,
+    "fr_cheaper": 0.281,
+    "fr_dearer": 0.4298,
+    "fr": 96.9,
+    "nb": 95.2
+   },
+   "ES": {
+    "coupled": 0.3277,
+    "fr_cheaper": 0.2855,
+    "fr_dearer": 0.3868,
+    "fr": 96.9,
+    "nb": 87.1
+   },
+   "IT": {
+    "coupled": 0.1612,
+    "fr_cheaper": 0.8318,
+    "fr_dearer": 0.007,
+    "fr": 96.9,
+    "nb": 127.8
+   },
+   "CH": {
+    "coupled": 0.0013,
+    "fr_cheaper": 0.6722,
+    "fr_dearer": 0.3269,
+    "fr": 96.9,
+    "nb": 107.5
+   },
+   "GB": {
+    "coupled": 0.0003,
+    "fr_cheaper": 0.6096,
+    "fr_dearer": 0.39,
+    "fr": 96.9,
+    "nb": 107.3
+   }
+  },
+  "partial_with": {
+   "ES": 1750,
+   "IT": 540,
+   "ES+IT": 283,
+   "BE": 110,
+   "BE+ES": 75,
+   "DE": 48,
+   "BE+IT": 22,
+   "DE+ES": 11,
+   "BE+ES+IT": 8,
+   "DE+IT": 4,
+   "DE+ES+IT": 1
+  },
+  "real": 96.4,
+  "iso": 65.0,
+  "real_all": 96.9,
+  "iso_all": 82.1,
+  "iso_deep": 60.2,
+  "iso_delta": 65.5,
+  "iso_cut_variant": 62.7,
+  "gap": 31.4,
+  "consumers": 12.23,
+  "producers": 13.57,
+  "consumers_cut_variant": 13.29,
+  "consumers_deep": 13.98,
+  "consumers_delta": 12.03,
+  "rent": 2.06,
+  "rent_by_border": {
+   "BE": 0.051,
+   "DE": 0.248,
+   "ES": 0.469,
+   "IT": 0.676,
+   "CH": 0.268,
+   "GB": 0.347
+  },
+  "exports_by_border": {
+   "BE": 2.1,
+   "DE": 0.4,
+   "ES": -1.9,
+   "IT": 20.0,
+   "CH": 16.4,
+   "GB": 13.2
+  },
+  "export_value_fr": 4.01,
+  "export_value_nb": 5.98,
+  "nx_twh": 50.7,
+  "load_twh": 435.5,
+  "france_net": 2.37,
+  "shortage_hours": 38,
+  "shortage_gwh": 70,
+  "shortage_max_gw": 6.1,
+  "curtail_twh": 6.4,
+  "out_of_support": 0.072,
+  "validation": {
+   "all": {
+    "n": 8759,
+    "mae": 15.3,
+    "bias": -0.5,
+    "real": 96.9
+   },
+   "cut": {
+    "n": 3425,
+    "mae": 17.1,
+    "bias": 2.6,
+    "real": 86.3
+   },
+   "cut_exp": {
+    "n": 476,
+    "mae": 13.3,
+    "bias": 2.5,
+    "real": 73.5
+   },
+   "coupled": {
+    "n": 5334,
+    "mae": 14.2,
+    "bias": -2.6,
+    "real": 103.7
+   }
+  }
+ },
+ "2024": {
+  "label": "2024",
+  "hours": 8783,
+  "shares": {
+   "core": 0.1332,
+   "partial": 0.3088,
+   "cut_exp": 0.1896,
+   "cut_imp": 0.0,
+   "cut_mid": 0.3684
+  },
+  "shares_1eur": {
+   "core": 0.236,
+   "partial": 0.3318,
+   "cut_exp": 0.1781,
+   "cut_imp": 0.0,
+   "cut_mid": 0.2541
+  },
+  "state_prices": {
+   "core": {
+    "FR": 67.5,
+    "DE_LU": 67.5,
+    "BE": 67.5,
+    "ES": 58.6,
+    "IT_NORD": 97.4,
+    "CH": 70.2,
+    "GB": 86.8
+   },
+   "partial": {
+    "FR": 61.8,
+    "DE_LU": 88.3,
+    "BE": 78.1,
+    "ES": 61.4,
+    "IT_NORD": 111.2,
+    "CH": 82.9,
+    "GB": 91.1
+   },
+   "cut_exp": {
+    "FR": 51.6,
+    "DE_LU": 92.7,
+    "BE": 74.1,
+    "ES": 90.5,
+    "IT_NORD": 113.0,
+    "CH": 71.8,
+    "GB": 81.9
+   },
+   "cut_imp": {
+    "FR": null,
+    "DE_LU": null,
+    "BE": null,
+    "ES": null,
+    "IT_NORD": null,
+    "CH": null,
+    "GB": null
+   },
+   "cut_mid": {
+    "FR": 54.7,
+    "DE_LU": 67.0,
+    "BE": 62.9,
+    "ES": 51.9,
+    "IT_NORD": 105.0,
+    "CH": 74.4,
+    "GB": 79.3
+   }
+  },
+  "state_nx": {
+   "core": 8.7,
+   "partial": 10.3,
+   "cut_exp": 13.3,
+   "cut_imp": null,
+   "cut_mid": 8.8
+  },
+  "borders": {
+   "BE": {
+    "coupled": 0.1456,
+    "fr_cheaper": 0.6327,
+    "fr_dearer": 0.2233,
+    "fr": 58.0,
+    "nb": 70.3
+   },
+   "DE": {
+    "coupled": 0.1388,
+    "fr_cheaper": 0.5763,
+    "fr_dearer": 0.2863,
+    "fr": 58.0,
+    "nb": 78.5
+   },
+   "ES": {
+    "coupled": 0.3252,
+    "fr_cheaper": 0.3959,
+    "fr_dearer": 0.2789,
+    "fr": 58.0,
+    "nb": 63.0
+   },
+   "IT": {
+    "coupled": 0.0359,
+    "fr_cheaper": 0.964,
+    "fr_dearer": 0.0001,
+    "fr": 58.0,
+    "nb": 107.4
+   },
+   "CH": {
+    "coupled": 0.0013,
+    "fr_cheaper": 0.7668,
+    "fr_dearer": 0.232,
+    "fr": 58.0,
+    "nb": 76.0
+   },
+   "GB": {
+    "coupled": 0.0,
+    "fr_cheaper": 0.7785,
+    "fr_dearer": 0.2215,
+    "fr": 58.0,
+    "nb": 84.5
+   }
+  },
+  "partial_with": {
+   "ES": 2418,
+   "IT": 90,
+   "BE": 69,
+   "ES+IT": 46,
+   "BE+ES": 38,
+   "DE": 38,
+   "DE+ES": 11,
+   "BE+ES+IT": 1,
+   "BE+IT": 1
+  },
+  "real": 58.0,
+  "iso": 19.4,
+  "real_all": 58.0,
+  "iso_all": 19.4,
+  "iso_deep": 13.7,
+  "iso_delta": 19.2,
+  "iso_cut_variant": 20.0,
+  "gap": 38.7,
+  "consumers": 16.81,
+  "producers": 18.97,
+  "consumers_cut_variant": 16.54,
+  "consumers_deep": 18.87,
+  "consumers_delta": 16.85,
+  "rent": 3.33,
+  "rent_by_border": {
+   "BE": 0.297,
+   "DE": 0.469,
+   "ES": 0.41,
+   "IT": 1.036,
+   "CH": 0.434,
+   "GB": 0.688
+  },
+  "exports_by_border": {
+   "BE": 14.4,
+   "DE": 12.9,
+   "ES": 2.8,
+   "IT": 22.3,
+   "CH": 16.6,
+   "GB": 20.0
+  },
+  "export_value_fr": 5.19,
+  "export_value_nb": 8.45,
+  "nx_twh": 89.6,
+  "load_twh": 440.0,
+  "france_net": 3.83,
+  "shortage_hours": 0,
+  "shortage_gwh": 0,
+  "shortage_max_gw": 0.0,
+  "curtail_twh": 5.2,
+  "out_of_support": 0.121,
+  "validation": {
+   "all": {
+    "n": 8783,
+    "mae": 15.2,
+    "bias": 0.2,
+    "real": 58.0
+   },
+   "cut": {
+    "n": 4901,
+    "mae": 14.9,
+    "bias": 0.9,
+    "real": 53.7
+   },
+   "cut_exp": {
+    "n": 1665,
+    "mae": 17.4,
+    "bias": 3.0,
+    "real": 51.6
+   },
+   "coupled": {
+    "n": 3882,
+    "mae": 15.6,
+    "bias": -0.8,
+    "real": 63.5
+   }
+  }
+ },
+ "2025": {
+  "label": "2025",
+  "hours": 8759,
+  "shares": {
+   "core": 0.0986,
+   "partial": 0.3719,
+   "cut_exp": 0.2073,
+   "cut_imp": 0.0,
+   "cut_mid": 0.3222
+  },
+  "shares_1eur": {
+   "core": 0.1681,
+   "partial": 0.3845,
+   "cut_exp": 0.1981,
+   "cut_imp": 0.0,
+   "cut_mid": 0.2493
+  },
+  "state_prices": {
+   "core": {
+    "FR": 74.8,
+    "DE_LU": 74.8,
+    "BE": 74.8,
+    "ES": 69.7,
+    "IT_NORD": 106.3,
+    "CH": 84.6,
+    "GB": 95.1
+   },
+   "partial": {
+    "FR": 64.6,
+    "DE_LU": 96.8,
+    "BE": 88.9,
+    "ES": 63.7,
+    "IT_NORD": 118.1,
+    "CH": 107.3,
+    "GB": 97.9
+   },
+   "cut_exp": {
+    "FR": 51.0,
+    "DE_LU": 93.6,
+    "BE": 82.0,
+    "ES": 91.1,
+    "IT_NORD": 114.0,
+    "CH": 99.3,
+    "GB": 83.4
+   },
+   "cut_imp": {
+    "FR": null,
+    "DE_LU": null,
+    "BE": null,
+    "ES": null,
+    "IT_NORD": null,
+    "CH": null,
+    "GB": null
+   },
+   "cut_mid": {
+    "FR": 59.3,
+    "DE_LU": 82.4,
+    "BE": 78.0,
+    "ES": 49.1,
+    "IT_NORD": 117.3,
+    "CH": 102.0,
+    "GB": 94.5
+   }
+  },
+  "state_nx": {
+   "core": 7.6,
+   "partial": 10.8,
+   "cut_exp": 14.1,
+   "cut_imp": null,
+   "cut_mid": 8.9
+  },
+  "borders": {
+   "BE": {
+    "coupled": 0.1116,
+    "fr_cheaper": 0.7226,
+    "fr_dearer": 0.1672,
+    "fr": 61.1,
+    "nb": 82.6
+   },
+   "DE": {
+    "coupled": 0.1056,
+    "fr_cheaper": 0.6806,
+    "fr_dearer": 0.2146,
+    "fr": 61.1,
+    "nb": 89.3
+   },
+   "ES": {
+    "coupled": 0.3826,
+    "fr_cheaper": 0.3416,
+    "fr_dearer": 0.2759,
+    "fr": 61.1,
+    "nb": 65.3
+   },
+   "IT": {
+    "coupled": 0.0382,
+    "fr_cheaper": 0.9615,
+    "fr_dearer": 0.0002,
+    "fr": 61.1,
+    "nb": 115.9
+   },
+   "CH": {
+    "coupled": 0.0005,
+    "fr_cheaper": 0.9084,
+    "fr_dearer": 0.0911,
+    "fr": 61.1,
+    "nb": 101.7
+   },
+   "GB": {
+    "coupled": 0.0001,
+    "fr_cheaper": 0.7991,
+    "fr_dearer": 0.2009,
+    "fr": 61.2,
+    "nb": 93.5
+   }
+  },
+  "partial_with": {
+   "ES": 2909,
+   "IT": 110,
+   "BE": 70,
+   "ES+IT": 64,
+   "DE": 43,
+   "BE+ES": 40,
+   "DE+ES": 18,
+   "BE+ES+IT": 3,
+   "BE+IT": 1
+  },
+  "real": 61.1,
+  "iso": 22.7,
+  "real_all": 61.1,
+  "iso_all": 22.7,
+  "iso_deep": 17.5,
+  "iso_delta": 22.8,
+  "iso_cut_variant": 24.7,
+  "gap": 38.4,
+  "consumers": 17.08,
+  "producers": 19.34,
+  "consumers_cut_variant": 16.07,
+  "consumers_deep": 19.01,
+  "consumers_delta": 17.03,
+  "rent": 4.52,
+  "rent_by_border": {
+   "BE": 0.406,
+   "DE": 0.511,
+   "ES": 0.367,
+   "IT": 1.436,
+   "CH": 0.875,
+   "GB": 0.923
+  },
+  "exports_by_border": {
+   "BE": 12.1,
+   "DE": 11.2,
+   "ES": 0.2,
+   "IT": 26.2,
+   "CH": 20.2,
+   "GB": 22.6
+  },
+  "export_value_fr": 5.51,
+  "export_value_nb": 9.96,
+  "nx_twh": 93.1,
+  "load_twh": 443.8,
+  "france_net": 4.52,
+  "shortage_hours": 0,
+  "shortage_gwh": 0,
+  "shortage_max_gw": 0.0,
+  "curtail_twh": 8.9,
+  "out_of_support": 0.129,
+  "validation": {
+   "all": {
+    "n": 8759,
+    "mae": 17.1,
+    "bias": -0.4,
+    "real": 61.1
+   },
+   "cut": {
+    "n": 4603,
+    "mae": 17.2,
+    "bias": 0.6,
+    "real": 56.1
+   },
+   "cut_exp": {
+    "n": 1782,
+    "mae": 17.5,
+    "bias": -0.8,
+    "real": 51.4
+   },
+   "coupled": {
+    "n": 4156,
+    "mae": 17.0,
+    "bias": -1.5,
+    "real": 66.6
+   }
+  }
+ },
+ "2026": {
+  "label": "2026 (janv.\u2013oct.)",
+  "hours": 7246,
+  "shares": {
+   "core": 0.1225,
+   "partial": 0.3634,
+   "cut_exp": 0.1256,
+   "cut_imp": 0.0001,
+   "cut_mid": 0.3884
+  },
+  "shares_1eur": {
+   "core": 0.2104,
+   "partial": 0.3907,
+   "cut_exp": 0.1139,
+   "cut_imp": 0.0,
+   "cut_mid": 0.2849
+  },
+  "state_prices": {
+   "core": {
+    "FR": 123.3,
+    "DE_LU": 123.3,
+    "BE": 123.3,
+    "ES": 110.9,
+    "IT_NORD": 152.8,
+    "CH": 128.5,
+    "GB": 138.3
+   },
+   "partial": {
+    "FR": 87.8,
+    "DE_LU": 116.6,
+    "BE": 117.1,
+    "ES": 82.3,
+    "IT_NORD": 154.0,
+    "CH": 130.9,
+    "GB": 125.1
+   },
+   "cut_exp": {
+    "FR": 55.4,
+    "DE_LU": 110.6,
+    "BE": 105.8,
+    "ES": 97.5,
+    "IT_NORD": 145.8,
+    "CH": 121.8,
+    "GB": 114.5
+   },
+   "cut_imp": {
+    "FR": 145.4,
+    "DE_LU": 145.3,
+    "BE": 145.4,
+    "ES": 12.2,
+    "IT_NORD": 129.2,
+    "CH": 132.1,
+    "GB": 143.8
+   },
+   "cut_mid": {
+    "FR": 90.4,
+    "DE_LU": 107.3,
+    "BE": 108.7,
+    "ES": 69.2,
+    "IT_NORD": 157.6,
+    "CH": 134.4,
+    "GB": 122.3
+   }
+  },
+  "state_nx": {
+   "core": 8.1,
+   "partial": 11.0,
+   "cut_exp": 15.7,
+   "cut_imp": -0.6,
+   "cut_mid": 9.4
+  },
+  "borders": {
+   "BE": {
+    "coupled": 0.1404,
+    "fr_cheaper": 0.6723,
+    "fr_dearer": 0.1891,
+    "fr": 89.1,
+    "nb": 113.2
+   },
+   "DE": {
+    "coupled": 0.1424,
+    "fr_cheaper": 0.5507,
+    "fr_dearer": 0.3081,
+    "fr": 89.1,
+    "nb": 113.1
+   },
+   "ES": {
+    "coupled": 0.3568,
+    "fr_cheaper": 0.3012,
+    "fr_dearer": 0.342,
+    "fr": 89.1,
+    "nb": 82.6
+   },
+   "IT": {
+    "coupled": 0.056,
+    "fr_cheaper": 0.94,
+    "fr_dearer": 0.004,
+    "fr": 89.1,
+    "nb": 154.2
+   },
+   "CH": {
+    "coupled": 0.0012,
+    "fr_cheaper": 0.8317,
+    "fr_dearer": 0.1677,
+    "fr": 89.1,
+    "nb": 130.8
+   },
+   "GB": {
+    "coupled": 0.0002,
+    "fr_cheaper": 0.7529,
+    "fr_dearer": 0.247,
+    "fr": 89.1,
+    "nb": 124.3
+   }
+  },
+  "partial_with": {
+   "ES": 2173,
+   "IT": 138,
+   "DE": 107,
+   "BE": 85,
+   "ES+IT": 48,
+   "BE+ES": 40,
+   "DE+ES": 36,
+   "BE+ES+IT": 2,
+   "DE+IT": 2,
+   "BE+IT": 2
+  },
+  "real": 89.0,
+  "iso": 37.9,
+  "real_all": 89.1,
+  "iso_all": 46.1,
+  "iso_deep": 26.3,
+  "iso_delta": 38.6,
+  "iso_cut_variant": 36.5,
+  "gap": 51.1,
+  "consumers": 17.7,
+  "producers": 20.05,
+  "consumers_cut_variant": 18.06,
+  "consumers_deep": 21.51,
+  "consumers_delta": 17.4,
+  "rent": 4.46,
+  "rent_by_border": {
+   "BE": 0.532,
+   "DE": 0.301,
+   "ES": 0.466,
+   "IT": 1.48,
+   "CH": 0.801,
+   "GB": 0.878
+  },
+  "exports_by_border": {
+   "BE": 14.9,
+   "DE": 5.4,
+   "ES": 0.6,
+   "IT": 22.3,
+   "CH": 16.2,
+   "GB": 17.6
+  },
+  "export_value_fr": 6.24,
+  "export_value_nb": 10.53,
+  "nx_twh": 77.9,
+  "load_twh": 357.5,
+  "france_net": 4.58,
+  "shortage_hours": 15,
+  "shortage_gwh": 50,
+  "shortage_max_gw": 6.7,
+  "curtail_twh": 15.8,
+  "out_of_support": 0.262,
+  "validation": {
+   "all": {
+    "n": 7246,
+    "mae": 24.7,
+    "bias": 3.1,
+    "real": 89.1
+   },
+   "cut": {
+    "n": 3665,
+    "mae": 25.5,
+    "bias": 8.1,
+    "real": 81.5
+   },
+   "cut_exp": {
+    "n": 836,
+    "mae": 25.7,
+    "bias": 15.6,
+    "real": 54.0
+   },
+   "coupled": {
+    "n": 3581,
+    "mae": 24.0,
+    "bias": -2.1,
+    "real": 96.8
+   }
+  }
+ }
+}
