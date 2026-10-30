@@ -1,0 +1,1660 @@
+{
+ "bounds": {
+  "2020": {
+   "kmin": 0.7041588110899286,
+   "gas_mr": 494.5,
+   "floor": -5.85,
+   "floor_deep": -26.008,
+   "flex": 21948.0
+  },
+  "2021": {
+   "kmin": 0.7901170656145471,
+   "gas_mr": 516.5,
+   "floor": -6.325,
+   "floor_deep": -35.964,
+   "flex": 23773.5
+  },
+  "2022": {
+   "kmin": 0.807599361561607,
+   "gas_mr": 1565.4,
+   "floor": 0.0,
+   "floor_deep": 0.0,
+   "flex": 24841.0
+  },
+  "2023": {
+   "kmin": 0.7196868199883727,
+   "gas_mr": 458.5,
+   "floor": -0.1,
+   "floor_deep": -22.086,
+   "flex": 23720.0
+  },
+  "2024": {
+   "kmin": 0.6272632409379608,
+   "gas_mr": 376.5,
+   "floor": -1.505,
+   "floor_deep": -29.658,
+   "flex": 22033.5
+  },
+  "2025": {
+   "kmin": 0.6298335275983599,
+   "gas_mr": 292.0,
+   "floor": -0.05,
+   "floor_deep": -18.2,
+   "flex": 20745.0
+  },
+  "2026": {
+   "kmin": 0.7072945530010297,
+   "gas_mr": 268.5,
+   "floor": -0.04375,
+   "floor_deep": -25.928250000000002,
+   "flex": 20770.5
+  }
+ },
+ "validation": {
+  "2020": {
+   "all": {
+    "n": 8783,
+    "mae": 8.6,
+    "bias": 1.0,
+    "real": 32.2
+   },
+   "cut": {
+    "n": 2003,
+    "mae": 9.6,
+    "bias": 2.5,
+    "real": 26.1
+   },
+   "cut_exp": {
+    "n": 449,
+    "mae": 8.1,
+    "bias": 4.7,
+    "real": 18.4
+   },
+   "coupled": {
+    "n": 6780,
+    "mae": 8.3,
+    "bias": 0.5,
+    "real": 34.0
+   }
+  },
+  "2021": {
+   "all": {
+    "n": 8759,
+    "mae": 17.1,
+    "bias": -0.8,
+    "real": 109.2
+   },
+   "cut": {
+    "n": 1797,
+    "mae": 19.5,
+    "bias": 2.6,
+    "real": 96.7
+   },
+   "cut_exp": {
+    "n": 321,
+    "mae": 15.2,
+    "bias": 2.0,
+    "real": 59.6
+   },
+   "coupled": {
+    "n": 6962,
+    "mae": 16.5,
+    "bias": -1.6,
+    "real": 112.4
+   }
+  },
+  "2022": {
+   "all": {
+    "n": 8759,
+    "mae": 43.0,
+    "bias": -1.8,
+    "real": 275.9
+   },
+   "cut": {
+    "n": 2426,
+    "mae": 50.2,
+    "bias": 5.3,
+    "real": 272.0
+   },
+   "cut_exp": {
+    "n": 0,
+    "mae": null,
+    "bias": null,
+    "real": null
+   },
+   "coupled": {
+    "n": 6333,
+    "mae": 40.3,
+    "bias": -4.5,
+    "real": 277.4
+   }
+  },
+  "2023": {
+   "all": {
+    "n": 8759,
+    "mae": 15.3,
+    "bias": -0.5,
+    "real": 96.9
+   },
+   "cut": {
+    "n": 3425,
+    "mae": 17.1,
+    "bias": 2.6,
+    "real": 86.3
+   },
+   "cut_exp": {
+    "n": 476,
+    "mae": 13.3,
+    "bias": 2.5,
+    "real": 73.5
+   },
+   "coupled": {
+    "n": 5334,
+    "mae": 14.2,
+    "bias": -2.6,
+    "real": 103.7
+   }
+  },
+  "2024": {
+   "all": {
+    "n": 8783,
+    "mae": 15.2,
+    "bias": 0.2,
+    "real": 58.0
+   },
+   "cut": {
+    "n": 4901,
+    "mae": 14.9,
+    "bias": 0.9,
+    "real": 53.7
+   },
+   "cut_exp": {
+    "n": 1665,
+    "mae": 17.4,
+    "bias": 3.0,
+    "real": 51.6
+   },
+   "coupled": {
+    "n": 3882,
+    "mae": 15.6,
+    "bias": -0.8,
+    "real": 63.5
+   }
+  },
+  "2025": {
+   "all": {
+    "n": 8759,
+    "mae": 17.1,
+    "bias": -0.4,
+    "real": 61.1
+   },
+   "cut": {
+    "n": 4603,
+    "mae": 17.2,
+    "bias": 0.6,
+    "real": 56.1
+   },
+   "cut_exp": {
+    "n": 1782,
+    "mae": 17.5,
+    "bias": -0.8,
+    "real": 51.4
+   },
+   "coupled": {
+    "n": 4156,
+    "mae": 17.0,
+    "bias": -1.5,
+    "real": 66.6
+   }
+  },
+  "2026": {
+   "all": {
+    "n": 7246,
+    "mae": 24.7,
+    "bias": 3.1,
+    "real": 89.1
+   },
+   "cut": {
+    "n": 3665,
+    "mae": 25.5,
+    "bias": 8.1,
+    "real": 81.5
+   },
+   "cut_exp": {
+    "n": 836,
+    "mae": 25.7,
+    "bias": 15.6,
+    "real": 54.0
+   },
+   "coupled": {
+    "n": 3581,
+    "mae": 24.0,
+    "bias": -2.1,
+    "real": 96.8
+   }
+  }
+ },
+ "years": {
+  "2020": {
+   "hours": 8783,
+   "price_real": 32.2,
+   "price_iso": 22.3,
+   "price_iso_deep": 20.4,
+   "price_iso_delta": 21.8,
+   "price_real_loadw": 33.9,
+   "price_iso_loadw": 26.2,
+   "price_iso_no_ens": 18.6,
+   "consumers_bn_no_ens": 5.94,
+   "producers_bn_no_ens": 6.44,
+   "ens_value_bn": 2.55,
+   "cut_exp_nx_over_lim": null,
+   "out_of_support": 0.056,
+   "gap_exporting": 16.4,
+   "gap_importing": -29.3,
+   "share_iso_below": 0.848,
+   "nx_twh": 45.8,
+   "load_twh": 446.5,
+   "export_hours": 7526,
+   "curtail_twh": 1.9,
+   "curtail_hours": 820,
+   "ens_twh": 0.01,
+   "ens_hours": 11,
+   "consumers_bn": 3.46,
+   "consumers_bn_deepfloor": 4.12,
+   "consumers_bn_delta": 3.7,
+   "producers_bn": 3.99,
+   "export_revenue_bn": 1.21,
+   "rent": {
+    "BE": {
+     "total": 0.014,
+     "export_twh": 2.2,
+     "value_at_nb": 0.07,
+     "coverage": 1.0
+    },
+    "DE": {
+     "total": 0.076,
+     "export_twh": -1.6,
+     "value_at_nb": -0.04,
+     "coverage": 1.0
+    },
+    "ES": {
+     "total": 0.123,
+     "export_twh": 5.4,
+     "value_at_nb": 0.15,
+     "coverage": 1.0
+    },
+    "IT": {
+     "total": 0.114,
+     "export_twh": 15.4,
+     "value_at_nb": 0.62,
+     "coverage": 1.0
+    },
+    "CH": {
+     "total": 0.061,
+     "export_twh": 14.1,
+     "value_at_nb": 0.46,
+     "coverage": 1.0
+    },
+    "GB": {
+     "total": 0.116,
+     "export_twh": 8.6,
+     "value_at_nb": 0.39,
+     "coverage": 1.0
+    }
+   },
+   "rent_total_bn": 0.5,
+   "france_net_bn": 0.78,
+   "by_state": {
+    "core": {
+     "hours": 3927,
+     "real": 33.9,
+     "iso": 20.1,
+     "nx_gw": 5.2,
+     "cons_bn": 2.65
+    },
+    "partial": {
+     "hours": 2853,
+     "real": 34.2,
+     "iso": 23.6,
+     "nx_gw": 3.9,
+     "cons_bn": 1.5
+    },
+    "cut_exp": {
+     "hours": 449,
+     "real": 18.4,
+     "iso": -6.1,
+     "nx_gw": 11.7,
+     "cons_bn": 0.5
+    },
+    "cut_mid": {
+     "hours": 1542,
+     "real": 28.1,
+     "iso": 31.7,
+     "nx_gw": 5.7,
+     "cons_bn": -0.95
+    },
+    "cut_imp": {
+     "hours": 12,
+     "real": 62.1,
+     "iso": 313.5,
+     "nx_gw": -5.2,
+     "cons_bn": -0.24
+    }
+   }
+  },
+  "2021": {
+   "hours": 8759,
+   "price_real": 109.2,
+   "price_iso": 100.2,
+   "price_iso_deep": 92.5,
+   "price_iso_delta": 100.3,
+   "price_real_loadw": 115.8,
+   "price_iso_loadw": 122.3,
+   "price_iso_no_ens": 78.5,
+   "consumers_bn_no_ens": 10.61,
+   "producers_bn_no_ens": 12.02,
+   "ens_value_bn": 15.63,
+   "cut_exp_nx_over_lim": null,
+   "out_of_support": 0.13,
+   "gap_exporting": 40.4,
+   "gap_importing": -116.5,
+   "share_iso_below": 0.787,
+   "nx_twh": 45.1,
+   "load_twh": 468.5,
+   "export_hours": 7006,
+   "curtail_twh": 9.7,
+   "curtail_hours": 2284,
+   "ens_twh": 0.13,
+   "ens_hours": 65,
+   "consumers_bn": -3.04,
+   "consumers_bn_deepfloor": -0.23,
+   "consumers_bn_delta": -3.14,
+   "producers_bn": -1.29,
+   "export_revenue_bn": 2.8,
+   "rent": {
+    "BE": {
+     "total": 0.09,
+     "export_twh": -3.6,
+     "value_at_nb": -0.5,
+     "coverage": 1.0
+    },
+    "DE": {
+     "total": 0.327,
+     "export_twh": -6.5,
+     "value_at_nb": -0.95,
+     "coverage": 1.0
+    },
+    "ES": {
+     "total": 0.435,
+     "export_twh": 6.3,
+     "value_at_nb": 0.58,
+     "coverage": 1.0
+    },
+    "IT": {
+     "total": 0.369,
+     "export_twh": 17.8,
+     "value_at_nb": 2.14,
+     "coverage": 1.0
+    },
+    "CH": {
+     "total": 0.171,
+     "export_twh": 16.3,
+     "value_at_nb": 1.77,
+     "coverage": 1.0
+    },
+    "GB": {
+     "total": 0.544,
+     "export_twh": 13.5,
+     "value_at_nb": 1.46,
+     "coverage": 0.978
+    }
+   },
+   "rent_total_bn": 1.94,
+   "france_net_bn": 2.72,
+   "by_state": {
+    "core": {
+     "hours": 4251,
+     "real": 98.3,
+     "iso": 72.0,
+     "nx_gw": 6.7,
+     "cons_bn": 3.09
+    },
+    "partial": {
+     "hours": 2711,
+     "real": 134.5,
+     "iso": 153.6,
+     "nx_gw": 2.1,
+     "cons_bn": -5.6
+    },
+    "cut_exp": {
+     "hours": 321,
+     "real": 59.6,
+     "iso": -3.0,
+     "nx_gw": 12.6,
+     "cons_bn": 0.79
+    },
+    "cut_mid": {
+     "hours": 1424,
+     "real": 97.5,
+     "iso": 74.3,
+     "nx_gw": 5.1,
+     "cons_bn": 1.39
+    },
+    "cut_imp": {
+     "hours": 52,
+     "real": 304.0,
+     "iso": 969.1,
+     "nx_gw": -7.2,
+     "cons_bn": -2.71
+    }
+   }
+  },
+  "2022": {
+   "hours": 8759,
+   "price_real": 275.9,
+   "price_iso": 330.7,
+   "price_iso_deep": 330.7,
+   "price_iso_delta": 329.7,
+   "price_real_loadw": 277.4,
+   "price_iso_loadw": 349.8,
+   "price_iso_no_ens": 295.0,
+   "consumers_bn_no_ens": -10.22,
+   "producers_bn_no_ens": -9.14,
+   "ens_value_bn": 26.06,
+   "cut_exp_nx_over_lim": null,
+   "out_of_support": 0.017,
+   "gap_exporting": 28.5,
+   "gap_importing": -98.2,
+   "share_iso_below": 0.396,
+   "nx_twh": -14.8,
+   "load_twh": 450.1,
+   "export_hours": 3001,
+   "curtail_twh": 1.4,
+   "curtail_hours": 515,
+   "ens_twh": 0.19,
+   "ens_hours": 89,
+   "consumers_bn": -32.62,
+   "consumers_bn_deepfloor": -32.62,
+   "consumers_bn_delta": -32.16,
+   "producers_bn": -30.9,
+   "export_revenue_bn": -7.26,
+   "rent": {
+    "BE": {
+     "total": 0.442,
+     "export_twh": -12.1,
+     "value_at_nb": -3.06,
+     "coverage": 1.0
+    },
+    "DE": {
+     "total": 0.975,
+     "export_twh": -15.3,
+     "value_at_nb": -3.45,
+     "coverage": 1.0
+    },
+    "ES": {
+     "total": 1.976,
+     "export_twh": -9.3,
+     "value_at_nb": -1.27,
+     "coverage": 1.0
+    },
+    "IT": {
+     "total": 0.776,
+     "export_twh": 18.0,
+     "value_at_nb": 5.14,
+     "coverage": 1.0
+    },
+    "CH": {
+     "total": 0.335,
+     "export_twh": 12.2,
+     "value_at_nb": 2.53,
+     "coverage": 1.0
+    },
+    "GB": {
+     "total": 1.055,
+     "export_twh": -9.9,
+     "value_at_nb": -2.18,
+     "coverage": 0.999
+    }
+   },
+   "rent_total_bn": 5.56,
+   "france_net_bn": 4.51,
+   "by_state": {
+    "core": {
+     "hours": 2932,
+     "real": 280.8,
+     "iso": 310.6,
+     "nx_gw": -0.7,
+     "cons_bn": -6.11
+    },
+    "partial": {
+     "hours": 3401,
+     "real": 274.4,
+     "iso": 325.9,
+     "nx_gw": -2.5,
+     "cons_bn": -11.87
+    },
+    "cut_exp": {
+     "hours": 0,
+     "real": null,
+     "iso": null,
+     "nx_gw": null,
+     "cons_bn": 0.0
+    },
+    "cut_mid": {
+     "hours": 2293,
+     "real": 260.5,
+     "iso": 319.7,
+     "nx_gw": -1.3,
+     "cons_bn": -8.75
+    },
+    "cut_imp": {
+     "hours": 133,
+     "real": 470.7,
+     "iso": 1086.8,
+     "nx_gw": -9.1,
+     "cons_bn": -5.89
+    }
+   }
+  },
+  "2023": {
+   "hours": 8759,
+   "price_real": 96.9,
+   "price_iso": 82.1,
+   "price_iso_deep": 77.2,
+   "price_iso_delta": 82.5,
+   "price_real_loadw": 102.1,
+   "price_iso_loadw": 99.9,
+   "price_iso_no_ens": 65.0,
+   "consumers_bn_no_ens": 12.23,
+   "producers_bn_no_ens": 13.57,
+   "ens_value_bn": 11.92,
+   "cut_exp_nx_over_lim": 0.75,
+   "out_of_support": 0.072,
+   "gap_exporting": 37.6,
+   "gap_importing": -153.0,
+   "share_iso_below": 0.854,
+   "nx_twh": 50.7,
+   "load_twh": 435.5,
+   "export_hours": 7710,
+   "curtail_twh": 6.4,
+   "curtail_hours": 1913,
+   "ens_twh": 0.07,
+   "ens_hours": 38,
+   "consumers_bn": 0.95,
+   "consumers_bn_deepfloor": 2.69,
+   "consumers_bn_delta": 0.74,
+   "producers_bn": 2.56,
+   "export_revenue_bn": 4.01,
+   "rent": {
+    "BE": {
+     "total": 0.051,
+     "export_twh": 2.1,
+     "value_at_nb": 0.21,
+     "coverage": 1.0
+    },
+    "DE": {
+     "total": 0.248,
+     "export_twh": 0.4,
+     "value_at_nb": 0.02,
+     "coverage": 1.0
+    },
+    "ES": {
+     "total": 0.469,
+     "export_twh": -1.9,
+     "value_at_nb": -0.04,
+     "coverage": 1.0
+    },
+    "IT": {
+     "total": 0.676,
+     "export_twh": 20.0,
+     "value_at_nb": 2.6,
+     "coverage": 1.0
+    },
+    "CH": {
+     "total": 0.268,
+     "export_twh": 16.4,
+     "value_at_nb": 1.69,
+     "coverage": 1.0
+    },
+    "GB": {
+     "total": 0.347,
+     "export_twh": 13.2,
+     "value_at_nb": 1.5,
+     "coverage": 1.0
+    }
+   },
+   "rent_total_bn": 2.06,
+   "france_net_bn": 2.64,
+   "by_state": {
+    "core": {
+     "hours": 2482,
+     "real": 99.4,
+     "iso": 86.7,
+     "nx_gw": 6.3,
+     "cons_bn": -0.66
+    },
+    "partial": {
+     "hours": 2852,
+     "real": 107.4,
+     "iso": 106.8,
+     "nx_gw": 4.7,
+     "cons_bn": -2.46
+    },
+    "cut_exp": {
+     "hours": 476,
+     "real": 73.5,
+     "iso": 21.6,
+     "nx_gw": 10.0,
+     "cons_bn": 0.92
+    },
+    "cut_mid": {
+     "hours": 2948,
+     "real": 88.3,
+     "iso": 63.9,
+     "nx_gw": 5.7,
+     "cons_bn": 3.14
+    },
+    "cut_imp": {
+     "hours": 1,
+     "real": 197.4,
+     "iso": 194.0,
+     "nx_gw": -0.9,
+     "cons_bn": 0.0
+    }
+   }
+  },
+  "2024": {
+   "hours": 8783,
+   "price_real": 58.0,
+   "price_iso": 19.4,
+   "price_iso_deep": 13.7,
+   "price_iso_delta": 19.2,
+   "price_real_loadw": 62.0,
+   "price_iso_loadw": 23.8,
+   "price_iso_no_ens": 19.4,
+   "consumers_bn_no_ens": 16.81,
+   "producers_bn_no_ens": 18.97,
+   "ens_value_bn": 0.0,
+   "cut_exp_nx_over_lim": 0.85,
+   "out_of_support": 0.121,
+   "gap_exporting": 39.7,
+   "gap_importing": -8.9,
+   "share_iso_below": 0.959,
+   "nx_twh": 89.6,
+   "load_twh": 440.0,
+   "export_hours": 8593,
+   "curtail_twh": 5.2,
+   "curtail_hours": 1777,
+   "ens_twh": 0.0,
+   "ens_hours": 0,
+   "consumers_bn": 16.81,
+   "consumers_bn_deepfloor": 18.87,
+   "consumers_bn_delta": 16.85,
+   "producers_bn": 18.97,
+   "export_revenue_bn": 5.19,
+   "rent": {
+    "BE": {
+     "total": 0.297,
+     "export_twh": 14.4,
+     "value_at_nb": 1.17,
+     "coverage": 1.0
+    },
+    "DE": {
+     "total": 0.469,
+     "export_twh": 12.9,
+     "value_at_nb": 1.14,
+     "coverage": 1.0
+    },
+    "ES": {
+     "total": 0.41,
+     "export_twh": 2.8,
+     "value_at_nb": 0.58,
+     "coverage": 1.0
+    },
+    "IT": {
+     "total": 1.036,
+     "export_twh": 22.3,
+     "value_at_nb": 2.42,
+     "coverage": 1.0
+    },
+    "CH": {
+     "total": 0.434,
+     "export_twh": 16.6,
+     "value_at_nb": 1.4,
+     "coverage": 1.0
+    },
+    "GB": {
+     "total": 0.688,
+     "export_twh": 20.0,
+     "value_at_nb": 1.74,
+     "coverage": 1.0
+    }
+   },
+   "rent_total_bn": 3.33,
+   "france_net_bn": 3.83,
+   "by_state": {
+    "core": {
+     "hours": 1170,
+     "real": 67.5,
+     "iso": 29.9,
+     "nx_gw": 8.9,
+     "cons_bn": 2.34
+    },
+    "partial": {
+     "hours": 2712,
+     "real": 61.8,
+     "iso": 21.6,
+     "nx_gw": 10.4,
+     "cons_bn": 5.43
+    },
+    "cut_exp": {
+     "hours": 1665,
+     "real": 51.6,
+     "iso": 4.6,
+     "nx_gw": 13.3,
+     "cons_bn": 3.35
+    },
+    "cut_mid": {
+     "hours": 3236,
+     "real": 54.7,
+     "iso": 21.3,
+     "nx_gw": 8.9,
+     "cons_bn": 5.7
+    },
+    "cut_imp": {
+     "hours": 0,
+     "real": null,
+     "iso": null,
+     "nx_gw": null,
+     "cons_bn": 0.0
+    }
+   }
+  },
+  "2025": {
+   "hours": 8759,
+   "price_real": 61.1,
+   "price_iso": 22.7,
+   "price_iso_deep": 17.5,
+   "price_iso_delta": 22.8,
+   "price_real_loadw": 66.7,
+   "price_iso_loadw": 28.2,
+   "price_iso_no_ens": 22.7,
+   "consumers_bn_no_ens": 17.08,
+   "producers_bn_no_ens": 19.34,
+   "ens_value_bn": 0.0,
+   "cut_exp_nx_over_lim": 0.92,
+   "out_of_support": 0.129,
+   "gap_exporting": 38.9,
+   "gap_importing": -6.9,
+   "share_iso_below": 0.961,
+   "nx_twh": 93.1,
+   "load_twh": 443.8,
+   "export_hours": 8674,
+   "curtail_twh": 8.9,
+   "curtail_hours": 2482,
+   "ens_twh": 0.0,
+   "ens_hours": 0,
+   "consumers_bn": 17.08,
+   "consumers_bn_deepfloor": 19.01,
+   "consumers_bn_delta": 17.03,
+   "producers_bn": 19.34,
+   "export_revenue_bn": 5.51,
+   "rent": {
+    "BE": {
+     "total": 0.406,
+     "export_twh": 12.1,
+     "value_at_nb": 1.12,
+     "coverage": 1.0
+    },
+    "DE": {
+     "total": 0.511,
+     "export_twh": 11.2,
+     "value_at_nb": 1.17,
+     "coverage": 1.0
+    },
+    "ES": {
+     "total": 0.367,
+     "export_twh": 0.2,
+     "value_at_nb": 0.27,
+     "coverage": 1.0
+    },
+    "IT": {
+     "total": 1.436,
+     "export_twh": 26.2,
+     "value_at_nb": 3.1,
+     "coverage": 1.0
+    },
+    "CH": {
+     "total": 0.875,
+     "export_twh": 20.2,
+     "value_at_nb": 2.12,
+     "coverage": 1.0
+    },
+    "GB": {
+     "total": 0.923,
+     "export_twh": 22.6,
+     "value_at_nb": 2.18,
+     "coverage": 0.997
+    }
+   },
+   "rent_total_bn": 4.52,
+   "france_net_bn": 4.52,
+   "by_state": {
+    "core": {
+     "hours": 864,
+     "real": 74.1,
+     "iso": 43.1,
+     "nx_gw": 7.8,
+     "cons_bn": 1.44
+    },
+    "partial": {
+     "hours": 3292,
+     "real": 64.7,
+     "iso": 24.4,
+     "nx_gw": 10.9,
+     "cons_bn": 6.84
+    },
+    "cut_exp": {
+     "hours": 1782,
+     "real": 51.4,
+     "iso": 3.6,
+     "nx_gw": 14.0,
+     "cons_bn": 3.83
+    },
+    "cut_mid": {
+     "hours": 2821,
+     "real": 59.0,
+     "iso": 26.4,
+     "nx_gw": 9.1,
+     "cons_bn": 4.97
+    },
+    "cut_imp": {
+     "hours": 0,
+     "real": null,
+     "iso": null,
+     "nx_gw": null,
+     "cons_bn": 0.0
+    }
+   }
+  },
+  "2026": {
+   "hours": 7246,
+   "price_real": 89.1,
+   "price_iso": 46.1,
+   "price_iso_deep": 34.5,
+   "price_iso_delta": 46.8,
+   "price_real_loadw": 88.4,
+   "price_iso_loadw": 53.0,
+   "price_iso_no_ens": 37.9,
+   "consumers_bn_no_ens": 17.7,
+   "producers_bn_no_ens": 20.05,
+   "ens_value_bn": 5.25,
+   "cut_exp_nx_over_lim": 0.95,
+   "out_of_support": 0.262,
+   "gap_exporting": 51.8,
+   "gap_importing": -557.2,
+   "share_iso_below": 0.94,
+   "nx_twh": 77.9,
+   "load_twh": 357.5,
+   "export_hours": 7141,
+   "curtail_twh": 15.8,
+   "curtail_hours": 3230,
+   "ens_twh": 0.05,
+   "ens_hours": 15,
+   "consumers_bn": 12.65,
+   "consumers_bn_deepfloor": 16.46,
+   "consumers_bn_delta": 12.35,
+   "producers_bn": 15.19,
+   "export_revenue_bn": 6.24,
+   "rent": {
+    "BE": {
+     "total": 0.532,
+     "export_twh": 14.9,
+     "value_at_nb": 1.7,
+     "coverage": 1.0
+    },
+    "DE": {
+     "total": 0.301,
+     "export_twh": 5.4,
+     "value_at_nb": 0.83,
+     "coverage": 1.0
+    },
+    "ES": {
+     "total": 0.466,
+     "export_twh": 0.6,
+     "value_at_nb": 0.44,
+     "coverage": 1.0
+    },
+    "IT": {
+     "total": 1.48,
+     "export_twh": 22.3,
+     "value_at_nb": 3.4,
+     "coverage": 1.0
+    },
+    "CH": {
+     "total": 0.801,
+     "export_twh": 16.2,
+     "value_at_nb": 2.1,
+     "coverage": 1.0
+    },
+    "GB": {
+     "total": 0.878,
+     "export_twh": 17.6,
+     "value_at_nb": 2.06,
+     "coverage": 1.0
+    }
+   },
+   "rent_total_bn": 4.46,
+   "france_net_bn": 4.77,
+   "by_state": {
+    "core": {
+     "hours": 927,
+     "real": 121.7,
+     "iso": 131.8,
+     "nx_gw": 8.3,
+     "cons_bn": -2.86
+    },
+    "partial": {
+     "hours": 2654,
+     "real": 88.2,
+     "iso": 36.2,
+     "nx_gw": 11.3,
+     "cons_bn": 6.67
+    },
+    "cut_exp": {
+     "hours": 836,
+     "real": 54.0,
+     "iso": 6.2,
+     "nx_gw": 15.5,
+     "cons_bn": 1.61
+    },
+    "cut_mid": {
+     "hours": 2829,
+     "real": 89.7,
+     "iso": 39.0,
+     "nx_gw": 9.7,
+     "cons_bn": 7.22
+    },
+    "cut_imp": {
+     "hours": 0,
+     "real": null,
+     "iso": null,
+     "nx_gw": null,
+     "cons_bn": 0.0
+    }
+   }
+  }
+ },
+ "validation_by_depth": {
+  "0-0.6": {
+   "n": 82,
+   "mae": 24.7,
+   "bias": -1.7,
+   "real": -24.1
+  },
+  "0.6-0.7": {
+   "n": 390,
+   "mae": 27.6,
+   "bias": 4.6,
+   "real": -18.1
+  },
+  "0.7-0.8": {
+   "n": 966,
+   "mae": 17.9,
+   "bias": 0.7,
+   "real": 4.9
+  },
+  "0.8-0.9": {
+   "n": 2491,
+   "mae": 20.9,
+   "bias": 6.6,
+   "real": 24.6
+  },
+  "0.9-1.0": {
+   "n": 4543,
+   "mae": 19.2,
+   "bias": 2.3,
+   "real": 59.3
+  },
+  "1.0-9": {
+   "n": 8122,
+   "mae": 16.6,
+   "bias": 2.1,
+   "real": 97.1
+  }
+ },
+ "iso_depth": {
+  "2020": {
+   "-9-0.6": 0.01,
+   "0.6-0.7": 0.066,
+   "0.7-0.8": 0.132,
+   "0.8-0.9": 0.186,
+   "0.9-1.0": 0.208,
+   "1.0-9": 0.399
+  },
+  "2021": {
+   "-9-0.6": 0.027,
+   "0.6-0.7": 0.09,
+   "0.7-0.8": 0.14,
+   "0.8-0.9": 0.191,
+   "0.9-1.0": 0.156,
+   "1.0-9": 0.395
+  },
+  "2022": {
+   "-9-0.6": 0.001,
+   "0.6-0.7": 0.008,
+   "0.7-0.8": 0.025,
+   "0.8-0.9": 0.054,
+   "0.9-1.0": 0.098,
+   "1.0-9": 0.814
+  },
+  "2023": {
+   "-9-0.6": 0.048,
+   "0.6-0.7": 0.116,
+   "0.7-0.8": 0.191,
+   "0.8-0.9": 0.202,
+   "0.9-1.0": 0.17,
+   "1.0-9": 0.273
+  },
+  "2024": {
+   "-9-0.6": 0.139,
+   "0.6-0.7": 0.208,
+   "0.7-0.8": 0.239,
+   "0.8-0.9": 0.192,
+   "0.9-1.0": 0.117,
+   "1.0-9": 0.106
+  },
+  "2025": {
+   "-9-0.6": 0.2,
+   "0.6-0.7": 0.233,
+   "0.7-0.8": 0.212,
+   "0.8-0.9": 0.152,
+   "0.9-1.0": 0.103,
+   "1.0-9": 0.1
+  },
+  "2026": {
+   "-9-0.6": 0.2,
+   "0.6-0.7": 0.216,
+   "0.7-0.8": 0.22,
+   "0.8-0.9": 0.187,
+   "0.9-1.0": 0.114,
+   "1.0-9": 0.064
+  }
+ },
+ "monthly": [
+  {
+   "m": "2020-01",
+   "real": 38.0,
+   "iso": 22.6,
+   "de": 35.0,
+   "nx": 6.14
+  },
+  {
+   "m": "2020-02",
+   "real": 26.2,
+   "iso": 7.2,
+   "de": 21.9,
+   "nx": 9.77
+  },
+  {
+   "m": "2020-03",
+   "real": 23.8,
+   "iso": 6.6,
+   "de": 22.5,
+   "nx": 8.15
+  },
+  {
+   "m": "2020-04",
+   "real": 13.5,
+   "iso": -7.8,
+   "de": 17.1,
+   "nx": 7.93
+  },
+  {
+   "m": "2020-05",
+   "real": 14.9,
+   "iso": -5.5,
+   "de": 17.6,
+   "nx": 8.68
+  },
+  {
+   "m": "2020-06",
+   "real": 25.8,
+   "iso": 13.5,
+   "de": 26.2,
+   "nx": 4.69
+  },
+  {
+   "m": "2020-07",
+   "real": 33.4,
+   "iso": 28.3,
+   "de": 30.1,
+   "nx": 1.79
+  },
+  {
+   "m": "2020-08",
+   "real": 36.8,
+   "iso": 29.1,
+   "de": 34.9,
+   "nx": 2.39
+  },
+  {
+   "m": "2020-09",
+   "real": 47.2,
+   "iso": 47.4,
+   "de": 43.7,
+   "nx": -0.72
+  },
+  {
+   "m": "2020-10",
+   "real": 37.9,
+   "iso": 25.4,
+   "de": 34.0,
+   "nx": 3.88
+  },
+  {
+   "m": "2020-11",
+   "real": 40.1,
+   "iso": 24.9,
+   "de": 38.8,
+   "nx": 6.71
+  },
+  {
+   "m": "2020-12",
+   "real": 48.4,
+   "iso": 74.8,
+   "de": 43.5,
+   "nx": 3.34
+  },
+  {
+   "m": "2021-01",
+   "real": 59.5,
+   "iso": 84.2,
+   "de": 52.8,
+   "nx": 2.64
+  },
+  {
+   "m": "2021-02",
+   "real": 49.0,
+   "iso": 33.9,
+   "de": 48.7,
+   "nx": 5.07
+  },
+  {
+   "m": "2021-03",
+   "real": 50.2,
+   "iso": 37.7,
+   "de": 47.2,
+   "nx": 4.32
+  },
+  {
+   "m": "2021-04",
+   "real": 63.1,
+   "iso": 64.6,
+   "de": 53.6,
+   "nx": 1.95
+  },
+  {
+   "m": "2021-05",
+   "real": 55.3,
+   "iso": 19.3,
+   "de": 53.3,
+   "nx": 8.0
+  },
+  {
+   "m": "2021-06",
+   "real": 73.5,
+   "iso": 24.6,
+   "de": 74.1,
+   "nx": 9.52
+  },
+  {
+   "m": "2021-07",
+   "real": 78.4,
+   "iso": 19.1,
+   "de": 81.4,
+   "nx": 9.79
+  },
+  {
+   "m": "2021-08",
+   "real": 77.3,
+   "iso": 11.2,
+   "de": 82.7,
+   "nx": 10.25
+  },
+  {
+   "m": "2021-09",
+   "real": 135.3,
+   "iso": 76.3,
+   "de": 128.4,
+   "nx": 8.04
+  },
+  {
+   "m": "2021-10",
+   "real": 172.6,
+   "iso": 121.2,
+   "de": 139.6,
+   "nx": 5.8
+  },
+  {
+   "m": "2021-11",
+   "real": 217.1,
+   "iso": 286.9,
+   "de": 176.2,
+   "nx": -1.1
+  },
+  {
+   "m": "2021-12",
+   "real": 274.7,
+   "iso": 418.4,
+   "de": 221.1,
+   "nx": -2.62
+  },
+  {
+   "m": "2022-01",
+   "real": 211.4,
+   "iso": 261.5,
+   "de": 167.7,
+   "nx": -1.33
+  },
+  {
+   "m": "2022-02",
+   "real": 185.5,
+   "iso": 161.5,
+   "de": 128.8,
+   "nx": 2.74
+  },
+  {
+   "m": "2022-03",
+   "real": 295.2,
+   "iso": 320.5,
+   "de": 252.0,
+   "nx": -1.34
+  },
+  {
+   "m": "2022-04",
+   "real": 233.1,
+   "iso": 291.0,
+   "de": 165.7,
+   "nx": -1.55
+  },
+  {
+   "m": "2022-05",
+   "real": 197.4,
+   "iso": 182.9,
+   "de": 177.5,
+   "nx": 0.79
+  },
+  {
+   "m": "2022-06",
+   "real": 248.4,
+   "iso": 255.2,
+   "de": 218.0,
+   "nx": -1.48
+  },
+  {
+   "m": "2022-07",
+   "real": 400.9,
+   "iso": 457.1,
+   "de": 315.0,
+   "nx": -4.37
+  },
+  {
+   "m": "2022-08",
+   "real": 492.5,
+   "iso": 555.1,
+   "de": 465.2,
+   "nx": -4.34
+  },
+  {
+   "m": "2022-09",
+   "real": 394.7,
+   "iso": 452.6,
+   "de": 346.1,
+   "nx": -4.63
+  },
+  {
+   "m": "2022-10",
+   "real": 179.0,
+   "iso": 177.9,
+   "de": 152.7,
+   "nx": -0.39
+  },
+  {
+   "m": "2022-11",
+   "real": 191.9,
+   "iso": 212.4,
+   "de": 173.6,
+   "nx": -1.5
+  },
+  {
+   "m": "2022-12",
+   "real": 270.9,
+   "iso": 620.8,
+   "de": 251.6,
+   "nx": -2.57
+  },
+  {
+   "m": "2023-01",
+   "real": 132.1,
+   "iso": 242.6,
+   "de": 117.8,
+   "nx": 1.75
+  },
+  {
+   "m": "2023-02",
+   "real": 148.8,
+   "iso": 173.4,
+   "de": 128.3,
+   "nx": 1.24
+  },
+  {
+   "m": "2023-03",
+   "real": 112.0,
+   "iso": 145.5,
+   "de": 102.5,
+   "nx": 1.93
+  },
+  {
+   "m": "2023-04",
+   "real": 106.4,
+   "iso": 80.7,
+   "de": 100.7,
+   "nx": 4.06
+  },
+  {
+   "m": "2023-05",
+   "real": 77.5,
+   "iso": 24.6,
+   "de": 81.7,
+   "nx": 9.53
+  },
+  {
+   "m": "2023-06",
+   "real": 91.3,
+   "iso": 51.5,
+   "de": 94.8,
+   "nx": 6.92
+  },
+  {
+   "m": "2023-07",
+   "real": 77.6,
+   "iso": 46.2,
+   "de": 77.6,
+   "nx": 5.92
+  },
+  {
+   "m": "2023-08",
+   "real": 90.9,
+   "iso": 53.1,
+   "de": 94.3,
+   "nx": 5.98
+  },
+  {
+   "m": "2023-09",
+   "real": 88.7,
+   "iso": 45.1,
+   "de": 100.7,
+   "nx": 7.92
+  },
+  {
+   "m": "2023-10",
+   "real": 84.4,
+   "iso": 39.2,
+   "de": 87.5,
+   "nx": 8.91
+  },
+  {
+   "m": "2023-11",
+   "real": 89.0,
+   "iso": 51.7,
+   "de": 91.1,
+   "nx": 7.4
+  },
+  {
+   "m": "2023-12",
+   "real": 68.5,
+   "iso": 36.7,
+   "de": 68.5,
+   "nx": 7.53
+  },
+  {
+   "m": "2024-01",
+   "real": 76.6,
+   "iso": 41.2,
+   "de": 76.6,
+   "nx": 7.82
+  },
+  {
+   "m": "2024-02",
+   "real": 58.4,
+   "iso": 20.7,
+   "de": 61.3,
+   "nx": 9.96
+  },
+  {
+   "m": "2024-03",
+   "real": 53.6,
+   "iso": 21.2,
+   "de": 64.7,
+   "nx": 9.4
+  },
+  {
+   "m": "2024-04",
+   "real": 28.2,
+   "iso": 4.5,
+   "de": 62.4,
+   "nx": 7.56
+  },
+  {
+   "m": "2024-05",
+   "real": 27.2,
+   "iso": -4.8,
+   "de": 67.2,
+   "nx": 12.53
+  },
+  {
+   "m": "2024-06",
+   "real": 37.6,
+   "iso": -0.7,
+   "de": 72.9,
+   "nx": 11.65
+  },
+  {
+   "m": "2024-07",
+   "real": 47.0,
+   "iso": 2.8,
+   "de": 67.7,
+   "nx": 11.49
+  },
+  {
+   "m": "2024-08",
+   "real": 54.6,
+   "iso": 11.9,
+   "de": 82.0,
+   "nx": 10.88
+  },
+  {
+   "m": "2024-09",
+   "real": 51.9,
+   "iso": 5.7,
+   "de": 78.3,
+   "nx": 10.8
+  },
+  {
+   "m": "2024-10",
+   "real": 62.0,
+   "iso": 18.5,
+   "de": 86.1,
+   "nx": 10.92
+  },
+  {
+   "m": "2024-11",
+   "real": 100.5,
+   "iso": 53.3,
+   "de": 113.9,
+   "nx": 10.36
+  },
+  {
+   "m": "2024-12",
+   "real": 98.2,
+   "iso": 57.5,
+   "de": 108.3,
+   "nx": 8.95
+  },
+  {
+   "m": "2025-01",
+   "real": 102.3,
+   "iso": 65.2,
+   "de": 114.1,
+   "nx": 9.04
+  },
+  {
+   "m": "2025-02",
+   "real": 122.7,
+   "iso": 92.6,
+   "de": 128.5,
+   "nx": 7.3
+  },
+  {
+   "m": "2025-03",
+   "real": 76.9,
+   "iso": 39.7,
+   "de": 94.7,
+   "nx": 8.18
+  },
+  {
+   "m": "2025-04",
+   "real": 42.2,
+   "iso": 7.1,
+   "de": 77.9,
+   "nx": 8.73
+  },
+  {
+   "m": "2025-05",
+   "real": 19.4,
+   "iso": -1.4,
+   "de": 67.3,
+   "nx": 10.03
+  },
+  {
+   "m": "2025-06",
+   "real": 40.7,
+   "iso": 5.4,
+   "de": 64.0,
+   "nx": 9.79
+  },
+  {
+   "m": "2025-07",
+   "real": 58.0,
+   "iso": 11.4,
+   "de": 87.8,
+   "nx": 11.98
+  },
+  {
+   "m": "2025-08",
+   "real": 54.4,
+   "iso": 9.9,
+   "de": 77.0,
+   "nx": 11.73
+  },
+  {
+   "m": "2025-09",
+   "real": 34.8,
+   "iso": 3.9,
+   "de": 83.5,
+   "nx": 12.01
+  },
+  {
+   "m": "2025-10",
+   "real": 57.5,
+   "iso": 12.0,
+   "de": 84.5,
+   "nx": 11.68
+  },
+  {
+   "m": "2025-11",
+   "real": 59.1,
+   "iso": 16.7,
+   "de": 101.9,
+   "nx": 12.58
+  },
+  {
+   "m": "2025-12",
+   "real": 68.7,
+   "iso": 14.5,
+   "de": 93.5,
+   "nx": 14.25
+  },
+  {
+   "m": "2026-01",
+   "real": 100.7,
+   "iso": 135.7,
+   "de": 110.2,
+   "nx": 8.57
+  },
+  {
+   "m": "2026-02",
+   "real": 46.0,
+   "iso": 6.2,
+   "de": 96.6,
+   "nx": 12.67
+  },
+  {
+   "m": "2026-03",
+   "real": 63.9,
+   "iso": 14.8,
+   "de": 99.3,
+   "nx": 12.65
+  },
+  {
+   "m": "2026-04",
+   "real": 39.8,
+   "iso": 7.9,
+   "de": 78.5,
+   "nx": 12.66
+  },
+  {
+   "m": "2026-05",
+   "real": 52.2,
+   "iso": 8.0,
+   "de": 97.5,
+   "nx": 13.09
+  },
+  {
+   "m": "2026-06",
+   "real": 66.1,
+   "iso": 19.3,
+   "de": 109.5,
+   "nx": 11.39
+  },
+  {
+   "m": "2026-07",
+   "real": 95.2,
+   "iso": 31.6,
+   "de": 105.4,
+   "nx": 11.72
+  },
+  {
+   "m": "2026-08",
+   "real": 122.8,
+   "iso": 63.3,
+   "de": 126.9,
+   "nx": 9.16
+  },
+  {
+   "m": "2026-09",
+   "real": 143.3,
+   "iso": 80.7,
+   "de": 144.8,
+   "nx": 7.81
+  },
+  {
+   "m": "2026-10",
+   "real": 160.8,
+   "iso": 91.6,
+   "de": 163.3,
+   "nx": 7.73
+  }
+ ]
+}

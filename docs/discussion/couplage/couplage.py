@@ -70,5 +70,5 @@ fig.text(.5, -.06,
  'Chiffres des trois cas : illustratifs (parc et prix simplifiés). Heures coupées et limites : données PowerKlock (ENTSO-E, JAO).',
  ha='center', va='top', fontsize=9.5, color=INK)
 plt.tight_layout(rect=(0, 0, 1, .9))
-plt.savefig('/tmp/schema/couplage_france_allemagne.png', dpi=150, bbox_inches='tight', facecolor='white')
+plt.savefig('couplage_france_allemagne.png', dpi=150, bbox_inches='tight', facecolor='white')
 print(p1, p2, p3)
