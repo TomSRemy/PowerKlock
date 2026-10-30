@@ -1,5 +1,5 @@
 {
- "lastUpdate": "2026-10-30T18:17:32.530989+00:00",
+ "lastUpdate": "2026-10-30T20:05:48.307522+00:00",
  "spot": {
   "value": 238,
   "unit": "EUR/MWh",
@@ -132,7 +132,7 @@
   "other": 2.27
  },
  "generationMixDate": "2026-10-29",
- "marketInsightsHtml": "<p>La charge de base allemande du 26 novembre a chuté de 3,55 € pour s'établir à 225,80 €/MWh, tandis que la France de novembre a perdu 4,70 € à 214,30 €/MWh et la Grande-Bretagne de novembre a chuté de 3,75 £ à 194,25 £/MWh. La livraison rapide Day-Ahead a également corrigé à la baisse par rapport aux sommets de mercredi, le Day-Ahead allemand en baisse de 41,50 € pour s'établir à 273,50 €/MWh, la France chutant de 27,05 € à 242,95 €/MWh, et le Day-Ahead britannique chutant de 12,20 £ à 201,40 £/MWh.</p><p>L’indisponibilité du nucléaire français en novembre a été révisée à la hausse de 1,4 GW au cours de la semaine dernière, pour atteindre une moyenne de 15,1 GW (bien au-dessus des 13,7 GW de l’année dernière), tandis que l’interconnexion IFA de 2 GW vers la Grande-Bretagne reste plafonnée à 500 MW dans chaque direction jusqu’au 13 novembre.</p>",
+ "marketInsightsHtml": "<p>German November 26 baseload dropped €3.55 to settle at €225.80/MWh, while French November shed €4.70 to €214.30/MWh and UK November fell £3.75 to £194.25/MWh. Prompt Day-Ahead delivery also corrected downwards from Wednesday’s peaks, with German Day-Ahead declining €41.50 to clear at €273.50/MWh, France falling €27.05 to €242.95/MWh, and UK Day-Ahead dropping £12.20 to £201.40/MWh.</p><p>French November nuclear unavailability was revised up by 1.4 GW over the past week to an average of 15.1 GW (well above last year’s 13.7 GW), while the 2 GW IFA interconnector to Great Britain remains capped at 500 MW in each direction until 13 November.</p>",
  "marketInsights": {
   "gas": "<p>European natural gas eased on Thursday, following Wednesday&rsquo;s test of &euro;100/MWh, though persistent Middle East risks and emerging winter cold forecasts kept contracts near multi-year highs. Dutch TTF November 26 settled down &euro;2.03 at &euro;98.28/MWh, while Day-Ahead fell &euro;2.40 to close at &euro;99.95/MWh. This Morning, TTF December 26 opened up at &euro;98.75/MWh. &nbsp;In the UK, NBP Day-Ahead shed 8.89p to settle at 241.10p/th, while November 26 retreated 6.10p to 241.44p/th, and December 26 opened at 246.31p/th.</p>\n<p>The modest pullback was triggered by reports of renewed US-Iran diplomatic outreach, including a letter from US Vice President JD Vance to Iranian security officials, which provided temporary relief against fears of post-midterm escalation. However, physical risk remains critical after Iran reported three commercial tankers struck sea mines in the Strait of Hormuz, while the UKMTO confirmed a separate vessel fire. Brent crude pushed back above $115/bbl this morning following reports that senior military commanders briefed Donald Trump on potential strike options against Tehran should diplomacy stall.</p>\n<p>Weather forecasters raised the probability of a Sudden Stratospheric Warming (SSW) event in mid to late Week 45 to 70%, which would represent the earliest recorded SSW on record, greatly increasing the likelihood of an early winter cold snap across Northern and Central Europe in late November and early December.</p>\n<p>Total EU storage fell back into net withdrawal mode at 74.89% capacity (848.4 TWh, down 0.06% day-on-day), with Germany at 61.61%, the Netherlands at 65.63%, and the UK dropping to 40.57%. Upstream pipeline supply remains tight as unplanned Norwegian outages at Karst&oslash;, Oseberg, Kollsnes, and &Aring;sgard continue.</p>",
   "power": "<p>European power curves retreated on Thursday, tracking wholesale gas lower and unwinding part of Wednesday&rsquo;s surge.</p>\n<p>German November 26 baseload dropped &euro;3.55 to settle at &euro;225.80/MWh, while French November shed &euro;4.70 to &euro;214.30/MWh and UK November fell &pound;3.75 to &pound;194.25/MWh. Prompt Day-Ahead delivery also corrected downwards from Wednesday&rsquo;s peaks, with German Day-Ahead declining &euro;41.50 to clear at &euro;273.50/MWh, France falling &euro;27.05 to &euro;242.95/MWh, and UK Day-Ahead dropping &pound;12.20 to &pound;201.40/MWh.</p>\n<p>Renewables remain in a severe lull as an expansive, blocked high-pressure ridge dominates Northwest Europe. German wind generation is forecast to bottom out at 2.1&ndash;3.2 GW through Sunday (load factors of just 3&ndash;5%) before edging up towards 5.5&ndash;9.7 GW early next week. UK wind output is forecast to average just 2.5&ndash;5.6 GW over the weekend and remain below seasonal averages through Week 45. The combination of weak winds, low solar irradiance, and dense fog continues to create localized Dunkelflaute grid-balancing pressures.</p>\n<p>Supply margins remain constrained by nuclear and hydro deficits. French November nuclear unavailability was revised up by 1.4 GW over the past week to an average of 15.1 GW (well above last year&rsquo;s 13.7 GW), while the 2 GW IFA interconnector to Great Britain remains capped at 500 MW in each direction until 13 November.</p>\n<p>Thermal generation margins saw German November clean spark spreads (55% CCGT) rise to &euro;12.09/MWh as gas fell faster than power; however, clean dark spreads (40% coal) held firm at &euro;102.76/MWh, maintaining a massive &euro;90+/MWh advantage that keeps coal running baseload ahead of CCGTs.</p>"
@@ -319,10 +319,10 @@
      "contract": "UK Q1 27 base",
      "marketId": 189670,
      "unit": "GBP/MWh",
-     "value": 191.9,
+     "value": 191.91,
      "date": "2026-10-29",
      "varD1Pct": -2.07,
-     "varW1Pct": 7.85
+     "varW1Pct": 7.86
     },
     {
      "tenor": "Q+2",
@@ -341,7 +341,7 @@
      "unit": "GBP/MWh",
      "value": 128.78,
      "date": "2026-10-29",
-     "varD1Pct": -0.45,
+     "varD1Pct": -0.46,
      "varW1Pct": 2.46
     },
     {
@@ -352,14 +352,14 @@
      "value": 133.49,
      "date": "2026-10-29",
      "varD1Pct": -1.04,
-     "varW1Pct": 2.75
+     "varW1Pct": 2.76
     },
     {
      "tenor": "S+2",
      "contract": "UK Win27 base",
      "marketId": 85259,
      "unit": "GBP/MWh",
-     "value": 133.94,
+     "value": 133.93,
      "date": "2026-10-29",
      "varD1Pct": -0.39,
      "varW1Pct": 3.28
@@ -369,7 +369,7 @@
      "contract": "UK Cal 2027 base",
      "marketId": 189470,
      "unit": "GBP/MWh",
-     "value": 147.19,
+     "value": 147.18,
      "date": "2026-10-29",
      "varD1Pct": -1.21,
      "varW1Pct": 4.12
@@ -389,10 +389,10 @@
      "contract": "UK Cal 2029 base",
      "marketId": 189487,
      "unit": "GBP/MWh",
-     "value": 81.05,
+     "value": 81.04,
      "date": "2026-10-29",
-     "varD1Pct": -0.37,
-     "varW1Pct": 2.93
+     "varD1Pct": -0.38,
+     "varW1Pct": 2.92
     }
    ],
    "forwardCurveDate": "2026-10-29",
