@@ -9,7 +9,8 @@ capture, output stopped at prices ≤ 0, production-weighted, in capture points 
 forwards of the tenor) and in € on the realised baseload. Deliveries whose last known year is before 2022 are left out
 (other regime, no JAO).
 
-The pricer takes off the forwards × the LEVEL-th percentile of the errors (pooled over horizons): with LEVEL = 75, the
+The pricer takes off the forwards × the LEVEL-th percentile of the errors (pooled over horizons, recent deliveries
+weighing more: a case's weight halves for each year its delivery is older): with LEVEL = 75, the
 published price would not have been above the realised value in 3 cases out of 4. Measured again every week (the
 PPA lab workflow) as months complete.
 
@@ -37,6 +38,14 @@ warnings.simplefilter('ignore')
 OUT = os.path.join(ROOT, 'data', 'history', 'ppa_model_risk.json')
 LEVEL = 75
 FIRST = 2023
+HALF = 1.0   # recent cases weigh more (Tom, 31 Oct. 2026): a case's weight halves for each year its delivery is older
+
+
+def wquantile(x, w, q):
+    """weighted percentile q (0–100), linear between the cumulative weights' mid-points"""
+    o = np.argsort(x); x, w = np.asarray(x, float)[o], np.asarray(w, float)[o]
+    c = (np.cumsum(w) - 0.5 * w) / w.sum()
+    return float(np.interp(q / 100, c, x))
 
 
 def main():
@@ -76,8 +85,11 @@ def main():
         if not rs:
             continue
         p = np.array([r['pts'] for r in rs]); e = np.array([r['eur'] for r in rs])
-        out[tech] = {'n': len(rs), 'meanPts': round(float(p.mean()), 3), 'maePts': round(float(np.abs(p).mean()), 3),
-                     'qPts': round(float(np.percentile(p, LEVEL)), 3), 'meanEur': round(float(e.mean()), 3),
+        last = max(r['year'] for r in rs)
+        w = np.array([0.5 ** ((last - r['year']) / HALF) for r in rs])
+        out[tech] = {'n': len(rs), 'meanPts': round(float((w * p).sum() / w.sum()), 3), 'maePts': round(float(np.abs(p).mean()), 3),
+                     'qPts': round(wquantile(p, w, LEVEL), 3), 'qPtsEqual': round(float(np.percentile(p, LEVEL)), 3),
+                     'meanEur': round(float((w * e).sum() / w.sum()), 3), 'meanEurEqual': round(float(e.mean()), 3),
                      'maeEur': round(float(np.abs(e).mean()), 3),
                      'byH': {str(h): {'n': len(x), 'maeEur': round(float(np.mean(np.abs(x))), 3), 'meanEur': round(float(np.mean(x)), 3)}
                              for h in (1, 2, 3) for x in [[r['eur'] for r in rs if r['h'] == h]] if x}}
