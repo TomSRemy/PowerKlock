@@ -4,6 +4,14 @@
 export / import limit of the hour (JAO); Britain, Switzerland, Italy and Spain enter as the day's exchanges.
 See docs/discussion/merit-order-plan.md and docs/discussion/merit/README.md (results).
 
+Status (31 Oct. 2026): not in the published price. Tested by quarter on 2023–2026 (true weather, output stopped at ≤ 0):
+solar 4.83 €/MWh against 3.01 for the current rule, wind 3.69 against 3.72; in the generator replay by quarter, one
+year ahead, solar 4.30 against 2.51, wind 3.87 against 5.01 (better in 12 quarters of 15), two years ahead worse for
+both. Its gap: midday in spring and summer, where far more thermal output stays on at negative prices (started for the
+evening, heat, reserves) than the years before show; options tried and left off: 'commit' (± W hours or 40 % of the
+day's peak), 'th_tod' (offer curves by time of day), 'mr_tod' (always-running thermal by month and time of day),
+'th_markup' (markup over the cost-based stack): none better on the quarterly test.
+
 Offers: run-of-river, biomass, nuclear minimum and must-run thermal always; solar and wind (a share stops around 0 €,
 the rest at last year's observed negative depth); French nuclear above its minimum at last year's observed offer
 curve (price ÷ CCGT cost by use of the available fleet); the neighbours' thermal fleet at last year's observed offer
@@ -259,7 +267,7 @@ def prev_params(Yp):
     ratio = fr['nuclear'] / np.maximum(fr['avail'], 1)
     link = fr['link']
     return dict(fr_gas=mp(fr['gas'], 5), fr_coal=mp(fr['coal'], 5), r_gas=mp(rs['gas'], 5), r_coal=mp(rs['coal'], 5), r_lig=mp(rs['lignite'], 5),
-                neg5=float(np.percentile(Yp['price'][Yp['price'] <= 0], 5)) if (Yp['price'] <= 0).sum() > 20 else -10.0, kmin=mp(ratio, 2), xmax=float(np.percentile(-link, 99)), imax=float(np.percentile(link, 99)), **eff_room(Yp), **nuc_curve(Yp), **th_curve(Yp), **th_curves_season(Yp))
+                neg5=float(np.percentile(Yp['price'][Yp['price'] <= 0], 5)) if (Yp['price'] <= 0).sum() > 20 else -10.0, kmin=mp(ratio, 2), xmax=float(np.percentile(-link, 99)), imax=float(np.percentile(link, 99)), **eff_room(Yp), **nuc_curve(Yp), **th_curve(Yp), **th_curves_season(Yp), mrtod=mr_tod(Yp))
 
 def nuc_curve(Yp):
     """France's nuclear offer, from last year: in the hours France's price was its own (cheaper than Germany's), the price
@@ -330,12 +338,32 @@ def th_markup(Yp, sel):
     r = np.where(mid > top, r[f][-1] + (1.5 - r[f][-1]) * (mid - top) / max(1 - top, 1e-6), r) if f.any() else r
     return np.maximum.accumulate(r)
 
+TOD = ((0, 9), (9, 17), (17, 24))   # night, day, evening
+
+
 def th_curves_season(Yp):
     w = np.isin(Yp['month'], (1, 2, 3, 10, 11, 12))[:, None] * np.ones((1, 24), bool)
-    return dict(tc_w=th_curve(Yp, w)['tc_r'], tc_s=th_curve(Yp, ~w)['tc_r'], mk_w=th_markup(Yp, w), mk_s=th_markup(Yp, ~w))
+    hh = np.ones((len(Yp['days']), 1)) * np.arange(24)[None, :]
+    tod = {}
+    for si, se in ((0, w), (1, ~w)):
+        for ti, (a, b) in enumerate(TOD):
+            sel = se & (hh >= a) & (hh < b)
+            tod[(si, ti)] = th_curve(Yp, sel)['tc_r'] if sel.sum() > 500 else th_curve(Yp, se)['tc_r']
+    return dict(tc_w=th_curve(Yp, w)['tc_r'], tc_s=th_curve(Yp, ~w)['tc_r'], mk_w=th_markup(Yp, w), mk_s=th_markup(Yp, ~w), tc_tod=tod)
 
 def M_cap(c, t, y):
     return capacity(c, t, y)
+
+def mr_tod(Yp, q=10):
+    """the neighbours' thermal output that always ran: by month and time of day, its q-th percentile (MW)"""
+    rs = Yp['rest']; T = rs['gas'] + rs['coal'] + rs['lignite'] + rs['oil']; m = Yp['month']
+    out = np.zeros((12, 3))
+    for k in range(1, 13):
+        for ti, (a, b) in enumerate(TOD):
+            x = T[m == k][:, a:b]
+            out[k - 1, ti] = np.percentile(x, q) if x.size else np.percentile(T, q)
+    return out
+
 
 def eff_room(Yp):
     """the export (import) level at which France's price leaves Germany's, median over the hours it did (last year)"""
@@ -428,13 +456,45 @@ def run(Yd, pp, prm):
         # the thermal fleet as last year's offer curve (from zero use: its must-run part is in the curve's low end)
         infl_r = rs['mr'] + rs['nuclear'] + (0 if prm.get('neg_obs') else (1 - rR) * vre_r)
         capT = sum(capacity(c, t, y) for c in REST for t in ('Fossil gas', 'Fossil hard coal', 'Fossil brown coal / lignite', 'Fossil oil')) * 1000
-        if prm.get('th_markup'):
+        if prm.get('th_tod'):
+            # the offer curve by season and time of day: units started for the evening run through midday and offer
+            # low then (commitment), which one yearly curve mixed up with the nights
+            win = np.isin(m, (1, 2, 3, 10, 11, 12))[:, None] * np.ones((1, 24), bool)
+            hh = np.ones((nD, 1)) * np.arange(24)[None, :]
+            blocks_r = []
+            u_mr = np.zeros(nD * 24)
+            if prm.get('mr_tod'):
+                mrh = np.zeros((nD, 24))
+                for ti, (a_, b_) in enumerate(TOD):
+                    mrh[:, a_:b_] = pp['mrtod'][mi, ti][:, None]
+                infl_r = infl_r + mrh; u_mr = (mrh / capT).ravel()
+            for i in range(len(pp['tc_u'])):
+                bid = np.zeros((nD, 24))
+                for (si, ti), rr in pp['tc_tod'].items():
+                    a_, b_ = TOD[ti]
+                    sel = (win if si == 0 else ~win) & (hh >= a_) & (hh < b_)
+                    bid[sel] = rr[i]
+                lo_, hi_ = i * 0.02, (i + 1) * 0.02
+                blocks_r.append((capT * np.clip(hi_ - np.maximum(lo_, u_mr), 0, 0.02), (bid * ccgt).ravel()))
+        elif prm.get('th_markup'):
             win = np.isin(m, (1, 2, 3, 10, 11, 12))[:, None] * np.ones((1, 24), bool)
             mids = pp['tc_u']; sc = stack_cost(cst, y, mids)          # days × bins
             blocks_r = [(np.full(nD * 24, capT * 0.02), (np.where(win, pp['mk_w'][i], pp['mk_s'][i]) * sc[:, i][:, None]).ravel()) for i in range(len(mids))]
         elif prm.get('th_season'):
             win = np.isin(m, (1, 2, 3, 10, 11, 12))[:, None] * np.ones((1, 24), bool)
-            blocks_r = [(np.full(nD * 24, capT * 0.02), (np.where(win, rw, rsu) * ccgt).ravel()) for rw, rsu in zip(pp['tc_w'], pp['tc_s'])]
+            if prm.get('th_mr'):
+                # the thermal output that always runs (last year's monthly 5th percentile: CHP, minimum loads) is
+                # inflexible; the observed offer curve applies above it, from that use on
+                mr_ = (pp['r_gas'] + pp['r_coal'] + pp['r_lig'])[mi][:, None] * np.ones((1, 24))
+                infl_r = infl_r + mr_
+                u_mr = (mr_ / capT).ravel()
+                blocks_r = []
+                for i, (rw, rsu) in enumerate(zip(pp['tc_w'], pp['tc_s'])):
+                    lo, hi = i * 0.02, (i + 1) * 0.02
+                    cap_i = capT * np.clip(hi - np.maximum(lo, u_mr), 0, 0.02)
+                    blocks_r.append((cap_i, (np.where(win, rw, rsu) * ccgt).ravel()))
+            else:
+                blocks_r = [(np.full(nD * 24, capT * 0.02), (np.where(win, rw, rsu) * ccgt).ravel()) for rw, rsu in zip(pp['tc_w'], pp['tc_s'])]
         else:
             blocks_r = [(np.full(nD * 24, capT * 0.02), (rr * ccgt).ravel()) for rr in pp['tc_r']]
     rb = prm.get('resp_bid', (-10.0, 0.0))
@@ -461,6 +521,28 @@ def run(Yd, pp, prm):
             xm = xm + pp['xsol'] * 1000 * (rs['solar'] / 1e3 - pp['xsolm'])
         xmax = np.maximum(xm, 1000).ravel(); imax = np.full(nD * 24, pp['imax'])
     pf, pc = clear(Nf, Nr, xmax, imax)
+    if prm.get('commit') and prm.get('th_curve'):
+        # unit commitment, simply: the neighbours' thermal output that the hours around still need (its minimum over
+        # ± W hours of the first clearing) stays on and offers low (it would not stop for a few hours and restart);
+        # the observed offer curve applies above it. Cleared again.
+        W = int(prm['commit'])
+        T = sum(cap.reshape(nD, 24) * (bid.reshape(nD, 24) <= pc.reshape(nD, 24)) for cap, bid in blocks_r)
+        if prm.get('commit_mode') == 'peak':
+            # the plants started for the day's peak run at least at their minimum stable load (≈ 40 % for gas and
+            # coal units) through the day: that share of the day's highest thermal output is committed
+            C = (prm.get('min_load', 0.4) * T.max(axis=1, keepdims=True) * np.ones((1, 24))).ravel()
+        else:
+            Tf = T.ravel(); C = np.empty_like(Tf)
+            for i in range(len(Tf)):
+                C[i] = Tf[max(0, i - W):i + W + 1].min()
+        low = prm.get('commit_bid', 0.1) * ccgt.ravel()
+        new_blocks, left = [], C.copy()
+        for cap, bid in blocks_r:   # the committed MW come off the cheapest blocks first
+            take = np.minimum(cap, left); left = left - take
+            new_blocks.append((cap - take, bid))
+        new_blocks.append((C, low))
+        Nr = supply(infl_r.ravel(), new_blocks, spreads_r, None, Dr)
+        pf, pc = clear(Nf, Nr, xmax, imax)
     return pf.reshape(nD, 24), pc.reshape(nD, 24)
 
 def score(Yd, ph):
