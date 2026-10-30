@@ -608,11 +608,12 @@ class PriceModelFuel:
         return self
 
 
-REGIME = os.environ.get('PK_REGIME') == '1'   # two regimes, France coupled to its neighbours or cut off by its export
+REGIME = os.environ.get('PK_REGIME', '1') == '1'   # two regimes, France coupled to its neighbours or cut off by its export
 # limits (its price 5 € or more under Germany's: 629 h in 2021, 1,496 in 2023, 4,374 in 2024, 5,460 in 2025, with 67 % of
 # French wind MWh in 2025; the current rule is +6.9 € too high in those hours and −6.4 € too low in coupled ones); the
 # chance of each read from what France must export (available nuclear + wind + solar − load). True weather 2023–2025 and
-# generator replay (solar 0.59 → 0.98, wind 2.07 → 2.34 €/MWh) worse; off (31 Oct. 2026)
+# generator replay (solar 0.59 → 0.98, wind 2.07 → 2.34 €/MWh) worse with that chance alone. With the chance read on
+# France's Core export limit of the hour (REGIME_JAO, JAO): adopted 31 Oct. 2026, see REGIME_JAO
 _DE = {}
 
 
@@ -631,6 +632,28 @@ def de_prices(y):
     return _DE[y]
 
 
+REGIME_JAO = os.environ.get('PK_REGIME_JAO', '1') == '1'   # the cut-off chance read on what France must export beyond
+# its Core export limit of the hour (JAO, data/history/jao_core; drawn days at the last known year's level), not on what
+# it must export alone. Deliveries 2023–2026 (2026: complete months), 1–3 years ahead, error on the value of one MWh:
+# solar 1.19 → 1.07, wind 3.08 → 2.42 €/MWh (2026 one year ahead: solar −7.62 → +1.65, wind +7.17 → +2.19); still too high
+# on average (wind +2.4, solar +0.9): the model risk the pricer takes off (scripts/ppa_model_risk.py). Adopted 31 Oct. 2026
+_JM = {}
+
+
+def fr_jmax(y):
+    """France's Core export limit (JAO), MW, days × 24 of L.DATA[y]; hours without it: the year's mean, else 8 GW"""
+    if y not in _JM:
+        import json
+        try:
+            d = json.load(open(os.path.join(ROOT, 'data', 'history', 'jao_core', f'{y}.json')))['days']
+        except (OSError, ValueError):
+            d = {}
+        a = np.array([d.get(str(x)[:10], {}).get('maxFR') or [np.nan] * 24 for x in L.DATA[y]['days']], float)
+        fill = np.nanmean(a) if np.isfinite(a).any() else 8000.0
+        _JM[y] = np.where(np.isfinite(a), a, fill)
+    return _JM[y]
+
+
 def export_need(S, W, Lo, A):
     """what France must export at full nuclear, GW: available nuclear + solar + wind − load"""
     return (A + S + W - Lo) / 1000
@@ -646,7 +669,7 @@ class RegimeRule:
         for y in years:
             a = L.DATA[y]; de = de_prices(y)
             dec[y] = np.isfinite(de) & (a['fr_p'] < de - 5)
-            need[y] = export_need(a['fr_s'], a['fr_w'], a['fr_l'], fr_avail(y))
+            need[y] = export_need(a['fr_s'], a['fr_w'], a['fr_l'], fr_avail(y)) - (fr_jmax(y) / 1000 if REGIME_JAO else 0)
         nd_ = sum(int(dec[y].sum()) for y in years)
         # too few hours cut off (the years before 2023): that regime keeps the whole-year rule
         self.dec = PriceModelFuel(years, False, mask=dec if nd_ >= 500 else None)
@@ -953,7 +976,12 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
             if EXPCAP['on'] and france:
                 xfr = beyond_room(fr_gw(S, W, Lo, N, H) * 1000, EXPCAP['Y'] or max(known))
             if REGIME:
-                f1, fp, fq = pmf.phi(x, gg, xfr, cday, None, export_need(S['FR'], W['FR'], Lo['FR'], AVR[month - 1][:, None] * np.ones((1, 24))), share(S, W, Lo, N, H, False))
+                need = export_need(S['FR'], W['FR'], Lo['FR'], AVR[month - 1][:, None] * np.ones((1, 24)))
+                if REGIME_JAO:
+                    # the drawn day's Core export limit (its grid situation) at the last known year's level
+                    ref = float(np.mean(fr_jmax(demand_year)))
+                    need = need - np.stack([fr_jmax(y)[r] * ref / float(np.mean(fr_jmax(y))) for y, r, _ in src]) / 1000
+                f1, fp, fq = pmf.phi(x, gg, xfr, cday, None, need, share(S, W, Lo, N, H, False))
             else:
                 f1, fp, fq = pmf.phi(x, gg, xfr, cday, fr_gw(S, W, Lo, N, H) if PriceModelFuel.FR_LIN else None)
             if FLEET_STOP and (RS['s'] > 0 or RS['w'] > 0):
