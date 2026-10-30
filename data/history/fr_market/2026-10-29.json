@@ -6,16 +6,102 @@
    "nuclearCapacity": {
     "actualMW": 45059.37,
     "forecastMW": 48230
+   },
+   "forwardCurve": {
+    "M+1": 214.47,
+    "M+2": 199.01,
+    "M+3": 215,
+    "Q+1": 194.38,
+    "Q+2": 80.61,
+    "Q+3": 96.09,
+    "S+1": 88.35,
+    "S+2": 116.92,
+    "Y+1": 122.61,
+    "Y+2": 69.89,
+    "Y+3": 62.48
+   },
+   "generationMix": {
+    "gas": 4.28,
+    "wind": 4.19,
+    "solar": 3.38,
+    "nuclear": 42.5,
+    "hydro": 2.26,
+    "other": 2.27
    }
   },
   "UK": {
-   "spot": 202.2
+   "spot": 202.2,
+   "forwardCurve": {
+    "M+1": 194.66,
+    "M+2": 187.17,
+    "M+3": 202.1,
+    "Q+1": 191.9,
+    "Q+2": 138.25,
+    "Q+3": 128.78,
+    "S+1": 133.49,
+    "S+2": 133.94,
+    "Y+1": 147.19,
+    "Y+2": 100.79,
+    "Y+3": 81.05
+   },
+   "generationMix": {
+    "gas": 17.79,
+    "wind": 3.61,
+    "solar": 2.42,
+    "nuclear": 5.11,
+    "hydro": 0.83,
+    "biomass": 3.29,
+    "other": 1.38
+   }
   },
   "DE": {
-   "spot": 268.62
+   "spot": 268.62,
+   "forwardCurve": {
+    "M+1": 226.18,
+    "M+2": 209.37,
+    "M+3": 226.18,
+    "Q+1": 209.26,
+    "Q+2": 130.31,
+    "Q+3": 139.37,
+    "S+1": 134.84,
+    "S+2": 154.03,
+    "Y+1": 158.5,
+    "Y+2": 115.88,
+    "Y+3": 99.57
+   },
+   "generationMix": {
+    "gas": 9.42,
+    "wind": 4.54,
+    "solar": 6.04,
+    "nuclear": 0,
+    "coal": 17.09,
+    "hydro": 0.17,
+    "other": 0.46
+   }
   },
   "NL": {
-   "spot": 265.72
+   "spot": 265.72,
+   "forwardCurve": {
+    "M+1": 223.63,
+    "M+2": 210.97,
+    "M+3": 229.1,
+    "Q+1": 210.22,
+    "Q+2": 131.08,
+    "Q+3": 137.5,
+    "S+1": 134.31,
+    "S+2": 157.61,
+    "Y+1": 158.98,
+    "Y+2": 114.82,
+    "Y+3": 98.82
+   },
+   "generationMix": {
+    "gas": 5.85,
+    "wind": 0.11,
+    "solar": 0.76,
+    "nuclear": 0.48,
+    "coal": 3.2,
+    "other": 0.3
+   }
   }
  },
  "marketInsightsHtml": "<p>La charge de base Day-Ahead allemande et néerlandaise a augmenté de 66,00 € pour s'établir à 315,00 €/MWh, la charge de base Day-Ahead française a bondi de 31,00 € à 270,00 €/MWh, et la charge de base Day-Ahead britannique a augmenté de 34,60 £ à 213,60 £/MWh. Sur l'ensemble des courbes, le 26 novembre allemand a grimpé de 7,65 € à 229,35 €/MWh, le novembre français a gagné 8,25 € à 219,00 €/MWh et le novembre britannique a augmenté de 7,00 £ à 198,00 £/MWh.</p><p>L'indisponibilité du nucléaire français en novembre est prévue à 14,1 GW, les faibles débits du Rhône incitant EDF à alerter à partir de dimanche sur d'éventuelles limites de production à Saint-Alban.</p>",
