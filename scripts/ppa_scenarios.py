@@ -348,6 +348,29 @@ def fuel_cost():
     return _FUEL
 
 
+WTECH = {'t': None}   # test (Qorbanian, Löhndorf & Wozabal 2024, arXiv 2403.08846: the model fitted with each hour weighed by
+# the output of the technology priced): the rule's cells learnt as output-weighted means of the technology simulated
+# (PK_WTECH=1), so a cell's price is the price when that technology produces; a floor weight keeps hours without output.
+# The month's base price comes from the unweighted rule (WTECH_BASE), else the ratio cancels. Replay 2023–2026, 9 cases:
+# wind 2.20 not anchored (bias +2.62 → +1.37), anchored season 0.71 (seed 7), 0.70 (60 draws), 0.48 (seed 11) against
+# 0.84 / 0.83 for the current rule; solar 1.41 not anchored against 0.76. The last known year's wind value is found
+# again (factor 0.99–1.00 learnt on 2023 or 2024). Candidate for wind, decision pending (31 Oct. 2026)
+
+
+WTECH_BASE = os.environ.get('PK_WTECH_BASE', '1') == '1'
+
+
+def _wt(a):
+    t = WTECH['t']
+    if not t:
+        return np.ones_like(a['fr_p'])
+    v = np.nan_to_num(a['fr_' + t]); return v + 0.05 * max(float(v.mean()), 1e-9)
+
+
+def _wm(v, w):
+    v = np.asarray(v, float); return float((v * w).sum() / w.sum())
+
+
 class PriceModelFuel:
     """price of the hour in €/MWh = the day's gas-plant cost × φ(residual share of the region), by season × time of
     day; φ is learnt as price ÷ that day's cost on the years given. When much is left to produce, the gas plant sets
@@ -370,7 +393,8 @@ class PriceModelFuel:
         return g
 
     EXTRAP = False  # below the deepest surplus seen, keep falling (slope of the lowest cells) down to the observed floor
-    AFFINE = False  # price = a + b × fuel cost per cell: worse on the true weather of 2023–2025 (1.60 → 1.73 €/MWh), off
+    AFFINE = os.environ.get('PK_AFFINE') == 'all'  # (31 Oct. 2026, true data learnt 2025 → 2026, the gas-crisis year: hourly
+    # error 33.1 → 48.0 'all', 45.8 cut-off rule only; worse again) price = a + b × fuel cost per cell: worse on the true weather of 2023–2025 (1.60 → 1.73 €/MWh), off
     HYDRO = False   # run-of-river off the residual load: on deliveries 2023–2025 with the same learning years for
     # every version, worse for both (solar 0.92 → 1.76, wind 2.99 → 3.64 €/MWh); an earlier test including 2021
     # deliveries (one learning year only once run-of-river is required) had wrongly kept it (30 Oct. 2026)
@@ -413,11 +437,12 @@ class PriceModelFuel:
         years = [y for y in years if not self.HYDRO or hydro_daily(y) is not None]
         self._costs = []
         self.G = 2 * self.BLOCKS * (2 if self.DAYKIND else 1)
-        xs, gs, rs, es, ps, cs, yrs, ms = [], [], [], [], [], [], [], []
+        xs, gs, rs, es, ps, cs, yrs, ms, wws = [], [], [], [], [], [], [], [], []
         for y in years:
             a = L.DATA[y]
             c = np.array([F.get(str(d)[:10], np.nan) for d in a['days']])
             ok = np.isfinite(c) & (c > 5)
+            wws.append(_wt(a)[ok].ravel())
             x = year_share(y, region, self.HYDRO)
             g = self.groups(a['month'], [L.day_kind(d) for d in a['days']])
             xs.append(x[ok].ravel()); gs.append(g[ok].ravel()); rs.append((a['fr_p'][ok] / c[ok, None]).ravel()); es.append(np.minimum(a['fr_p'][ok], 0).ravel())
@@ -426,8 +451,8 @@ class PriceModelFuel:
             ms.append(mask[y][ok].ravel() if mask is not None else np.ones(ok.sum() * 24, bool))
         x, g, r = (np.concatenate(v) for v in (xs, gs, rs))
         e = np.concatenate(es); pe_, ce_, ye_ = np.concatenate(ps), np.concatenate(cs), np.concatenate(yrs)
-        mk = np.concatenate(ms)
-        x, g, r, e, pe_, ce_, ye_ = (v[mk] for v in (x, g, r, e, pe_, ce_, ye_))
+        mk = np.concatenate(ms); wv = np.concatenate(wws)
+        x, g, r, e, pe_, ce_, ye_, wv = (v[mk] for v in (x, g, r, e, pe_, ce_, ye_, wv))
         self._costs = [np.concatenate(self._costs)[mk]]
         self.lo = int(np.floor(x.min() / L.BIN)) - 1
         self.nb = int(np.ceil(x.max() / L.BIN)) - self.lo + 2
@@ -445,9 +470,9 @@ class PriceModelFuel:
             for bi in range(self.nb):
                 k = (g == gi) & (b == bi)
                 if k.sum() >= 15:
-                    v = r[k]
-                    mean[gi, bi], mpos[gi, bi], ppos[gi, bi] = v.mean(), (v * (v > 0)).mean(), (v > 0).mean()
-                    neg[gi, bi] = e[k].mean()
+                    v = r[k]; ww = wv[k]
+                    mean[gi, bi], mpos[gi, bi], ppos[gi, bi] = _wm(v, ww), _wm(v * (v > 0), ww), _wm(v > 0, ww)
+                    neg[gi, bi] = _wm(e[k], ww)
                     if self.MO_EUR:
                         eur[gi, bi], me[gi, bi], mpe[gi, bi] = self._pick(pe_[k], ce_[k], ye_[k])
                     if bi <= self._lowbin.get(gi, 10 ** 6) + 2:
@@ -560,15 +585,18 @@ class PriceModelFuel:
         mask = mask if mask is not None else getattr(self, 'mask', None)
         """a second input: France's own residual share, in cells of 0.05 (region) × 0.10 (France), 20 hours or more"""
         F = fuel_cost()
-        ks, rs, es, ps, cs, yrs, zs, gg, mm = [], [], [], [], [], [], [], [], []
+        ks, rs, es, ps, cs, yrs, zs, gg, mm, wws = [], [], [], [], [], [], [], [], [], []
         for y in years:
             a = L.DATA[y]
             c = np.array([F.get(str(d)[:10], np.nan) for d in a['days']])
             ok = np.isfinite(c) & (c > 5)
+            wws.append(_wt(a)[ok].ravel())
             x, g = year_share(y, self.region, self.HYDRO), self.groups(a['month'], [L.day_kind(d) for d in a['days']])
             xf = year_fr_gw(y, self.HYDRO) if FR_GW['on'] else year_share(y, False, self.HYDRO)
             if DAYX:
                 xf = day_mean(year_share(y, DAYX == 'reg', self.HYDRO))
+            if getattr(self, 'DAY2', False):
+                xf = day_mean(year_share(y, False, self.HYDRO)) if DEC2 == '1' else a['fr_w'] / a['fr_l']
             if EXPCAP['on']:
                 xf = beyond_room(year_fr_gw(y, self.HYDRO) * 1000, y)
             k = (g * 1000 + (np.round(x / 0.05).astype(int) + 100)) * 1000 + (np.round(xf / self.fbin()).astype(int) + 100)
@@ -579,14 +607,14 @@ class PriceModelFuel:
         k, r, e = np.concatenate(ks), np.concatenate(rs), np.concatenate(es)
         z_, g_ = np.concatenate(zs), np.concatenate(gg)
         pe_, ce_, ye_ = np.concatenate(ps), np.concatenate(cs), np.concatenate(yrs)
-        mk = np.concatenate(mm)
-        k, r, e, z_, g_, pe_, ce_, ye_ = (v[mk] for v in (k, r, e, z_, g_, pe_, ce_, ye_))
+        mk = np.concatenate(mm); wv = np.concatenate(wws)
+        k, r, e, z_, g_, pe_, ce_, ye_, wv = (v[mk] for v in (k, r, e, z_, g_, pe_, ce_, ye_, wv))
         self.tab2 = {}
         for kk in np.unique(k):
             sel = k == kk
             if sel.sum() >= 20:
-                v = r[sel]
-                self.tab2[int(kk)] = (v.mean(), (v * (v > 0)).mean(), (v > 0).mean(), e[sel].mean()) + \
+                v = r[sel]; ww = wv[sel]
+                self.tab2[int(kk)] = (_wm(v, ww), _wm(v * (v > 0), ww), _wm(v > 0, ww), _wm(e[sel], ww)) + \
                     (self._pick(pe_[sel], ce_[sel], ye_[sel]) if self.MO_EUR else (False, 0.0, 0.0))
         if self.FR_LIN:
             # the slope of price ÷ cost per GW of French residual load, by season × time of day (one line per group, so
@@ -654,6 +682,24 @@ def fr_jmax(y):
     return _JM[y]
 
 
+JAO_Y = os.environ.get('PK_JAO_Y') or None   # test: France's Core export limit for the delivery year: None = the last
+# known year's level; 'oracle' = the delivery year's real level (not knowable, to measure what it explains); 'trend' =
+# the last two known years' change carried on (never below 2 GW). Replay not anchored: oracle wind 2.59, solar 0.93;
+# trend wind 2.70, solar 0.92 (current 2.62 / 0.76): the export limit's level does not explain the wind error (31 Oct.
+# 2026)
+
+
+def jao_level(Y, A, known):
+    m = lambda y: float(np.mean(fr_jmax(y)))
+    if JAO_Y == 'oracle' and Y in L.DATA:
+        return m(Y)
+    if JAO_Y == 'trend':
+        ys = [y for y in known if y >= 2022 and L.DATA[y]['complete']][-2:]
+        if len(ys) == 2:
+            return max(m(ys[1]) + (m(ys[1]) - m(ys[0])) * (Y - ys[1]), 2000.0)
+    return m(A)
+
+
 def export_need(S, W, Lo, A):
     """what France must export at full nuclear, GW: available nuclear + solar + wind − load"""
     return (A + S + W - Lo) / 1000
@@ -669,6 +715,18 @@ REGIME_EXTRAP = os.environ.get('PK_REGIME_EXTRAP', '1') == '1'   # in the cut-of
 
 class _PMExtrap(PriceModelFuel):
     EXTRAP = True
+    AFFINE = os.environ.get('PK_AFFINE') in ('all', 'dec')
+
+
+DEC_REG = os.environ.get('PK_DEC_REG') == '1'   # test: the cut-off rule also reads the region's share (see RegimeRule).
+# Cut off, France's price still follows Germany's (2025, cut-off hours: 67.5 € vs 123 € when German wind is low, 42.4
+# vs 82 when high, France exporting the same 4.5 GW to Core). True data, learnt 2024 → 2025, hourly error 20.3 → 18.5
+# €/MWh, wind-weighted overvaluation +4.4 → +3.2 €, solar +6.5 → +1.7. But the generator replay does not follow: solar
+# 2.46, wind 2.56 not anchored (with WTECH 2.32 / 2.36); anchored season wind 0.97: not taken (31 Oct. 2026)
+DEC2 = os.environ.get('PK_DEC2') or None   # test: France cut off, its price read on the hour's French surplus × the day's
+# mean surplus (a windy day's surplus lasts the whole day, storage and exports cannot absorb it as at midday);
+# 'wind': × the hour's French wind share. True weather 2024–2025: no change ('1'); replay 'wind' solar 0.93, wind 2.31
+# (bias +1.89) not anchored: not taken (31 Oct. 2026)
 
 
 class RegimeRule:
@@ -684,7 +742,16 @@ class RegimeRule:
             need[y] = export_need(a['fr_s'], a['fr_w'], a['fr_l'], fr_avail(y)) - (fr_jmax(y) / 1000 if REGIME_JAO else 0)
         nd_ = sum(int(dec[y].sum()) for y in years)
         # too few hours cut off (the years before 2023): that regime keeps the whole-year rule
-        self.dec = (_PMExtrap if REGIME_EXTRAP else PriceModelFuel)(years, False, mask=dec if nd_ >= 500 else None)
+        if DEC_REG:
+            # cut off, France's price still moves with its neighbours' (through its other borders): the cut-off rule on
+            # the region's share × France's own, as the coupled one
+            self.dec = (_PMExtrap if REGIME_EXTRAP else PriceModelFuel)(years, region, mask=dec if nd_ >= 500 else None)
+            self.dec.add_france(years, mask=dec if nd_ >= 500 else None)
+        else:
+            self.dec = (_PMExtrap if REGIME_EXTRAP else PriceModelFuel)(years, False, mask=dec if nd_ >= 500 else None)
+        if DEC2:
+            self.dec.DAY2 = True
+            self.dec.add_france(years, mask=dec if nd_ >= 500 else None)
         self.cpl = PriceModelFuel(years, region, mask={y: ~dec[y] for y in years})
         if france:
             self.cpl.add_france(years)
@@ -710,7 +777,10 @@ class RegimeRule:
         return out
 
     def phi(self, x, g, xf=None, cost=None, z=None, need=None, xfr=None):
-        a = self.dec.phi(xfr, g, None, cost)
+        if DEC_REG:
+            a = self.dec.phi(x, g, xf, cost)
+        else:
+            a = self.dec.phi(xfr, g, (day_mean(xfr) if DEC2 == '1' else getattr(self, '_wsh', None)) if DEC2 else None, cost)
         b = self.cpl.phi(x, g, xf, cost)
         w = self.pdec(g, need)
         return tuple(w * u + (1 - w) * v for u, v in zip(a, b))
@@ -790,6 +860,36 @@ def wind_slopes(pmf, years):
     return out
 
 
+WIND_DEC = os.environ.get('PK_WIND_DEC') == '1'   # test: when France is cut off, within a cell of its own rule the
+# price still falls with French wind (wind-weighted the rule is +4.5 to +7 € too high on those hours of 2024–2025 while
+# right on their mean): a slope of price ÷ cost on the French wind share, per season × time of day, learnt on the cut-off
+# hours of the learning years around each cell's mean, applied × the hour's chance of being cut off. Replay: solar 1.66,
+# wind 2.38 (bias +1.11, 2026 −3.7 €) not anchored; anchored season wind 0.89: not taken (31 Oct. 2026)
+
+
+def wind_slopes_dec(pmf, years):
+    """{group: (slope, {cell: mean wind share})} of the France-only rule's residual on the real cut-off hours"""
+    F_ = fuel_cost(); R, Wv, K, Gv = [], [], [], []
+    for y in years:
+        a = L.DATA[y]; de = de_prices(y)
+        c = np.array([F_.get(str(d)[:10], np.nan) for d in a['days']])[:, None]
+        g = PriceModelFuel.groups(a['month'], [L.day_kind(d) for d in a['days']]); xf = year_share(y, False)
+        d1, _, _ = pmf.dec.phi(xf, g, None, c)
+        ok = (np.isfinite(c) & (c > 5)) & np.isfinite(de) & (a['fr_p'] < de - 5)
+        R.append((a['fr_p'] / c - d1)[ok]); Wv.append((a['fr_w'] / a['fr_l'])[ok])
+        K.append((g * 1000 + np.round(xf / L.BIN).astype(int) + 500)[ok]); Gv.append(g[ok])
+    r, w, k, gg = (np.concatenate(v) for v in (R, Wv, K, Gv))
+    out = {}
+    for gi in np.unique(gg):
+        sel = gg == gi; kk, rr, ww = k[sel], r[sel], w[sel]
+        wc, rc, means = ww.copy(), rr.copy(), {}
+        for cell in np.unique(kk):
+            m_ = kk == cell; means[int(cell)] = float(ww[m_].mean())
+            wc[m_] -= ww[m_].mean(); rc[m_] -= rr[m_].mean()
+        out[int(gi)] = (float(np.dot(wc, rc) / np.dot(wc, wc)) if np.dot(wc, wc) > 0 else 0.0, means)
+    return out
+
+
 PEN_CURVE = os.environ.get('PK_PEN_CURVE') == '1'   # test (Tom, 31 Oct. 2026): the price within the month as a function
 # of the hour's renewable penetration ((solar + wind) ÷ load, France): realised curve − the rule's curve on the last
 # complete year, by bins of 5 % and season, added to each simulated hour then centred month by month (the month's mean
@@ -837,6 +937,47 @@ ANCHOR = os.environ.get('PK_ANCHOR', '1') == '1'   # the capture anchored on the
 # the model's level error cancels and it only gives the change (fleet, batteries, regimes). Deliveries 2023–2026, 1–3
 # years ahead (9 cases each): wind 2.14 → 0.99 €/MWh (bias +2.14 → −0.13), solar 1.18 → 1.33 (its level was already
 # right; its error is the slope), both 1.66 → 1.16. Adopted 31 Oct. 2026
+
+
+RESID = os.environ.get('PK_RESID') or None   # test (Tom, 31 Oct. 2026: a method without anchoring): each simulated hour
+# gets the drawn day's own surprise against the rule (its realised price − the rule's price on that day's real data),
+# so the link between the wind of that day and its price, which a cell's mean loses, comes back with the weather.
+# 'ratio': the surprise ÷ that day's fuel cost × the delivery year's; 'eur': in €; 'centre': ratio, centred on zero
+# in each (year, month) so the month's level stays the rule's and only the shape inside the month comes back
+RESID_K = float(os.environ.get('PK_RESID_K', 1.0))
+RESID_RECENT = os.environ.get('PK_RESID_RECENT') == '1'   # only the learning years' days carry their surprise
+# Replay 2023–2026, 9 cases, €/MWh, not anchored (current 0.76 solar / 2.62 wind): ratio 2.99 / 3.38, eur 1.88 / 2.28,
+# centred 3.13 / 4.35, half 2.30 / 2.09; learning years only 3.72 / 2.14 (eur 3.98 / 2.12); with draws from 2023 only
+# 2.58 / 4.26. The last known year is then priced right (wind factor 1.00 instead of 0.97) but the delivery years are
+# not: not taken (31 Oct. 2026)
+_RS = {}
+
+
+def rule_resid(pmf, y, mode):
+    """days × 24 of year y: (realised price − the rule's price on y's own data), ÷ the day's fuel cost unless 'eur'"""
+    key = (id(pmf), y, mode)
+    if key not in _RS:
+        a = L.DATA[y]; F_ = fuel_cost(); mo = a['month']
+        c = np.array([F_.get(str(d)[:10], np.nan) for d in a['days']])[:, None]
+        c = np.where(np.isfinite(c), c, np.nanmean(c))
+        g = PriceModelFuel.groups(mo, [L.day_kind(d) for d in a['days']])
+        x, xf = year_share(y, True), year_share(y, False)
+        if isinstance(pmf, RegimeRule):
+            need = export_need(a['fr_s'], a['fr_w'], a['fr_l'], fr_avail(y)) - (fr_jmax(y) / 1000 if REGIME_JAO else 0)
+            f1, _, _ = pmf.phi(x, g, xf, c, None, need, xf)
+        else:
+            f1, _, _ = pmf.phi(x, g, xf, c)
+        r = a['fr_p'] - f1 * c
+        r = np.where(np.isfinite(r), r, 0.0)
+        if mode != 'eur':
+            r = r / c
+        if mode == 'centre':
+            for m in range(1, 13):
+                k = mo == m
+                if k.any():
+                    r[k] = r[k] - r[k].mean()
+        _RS[key] = r
+    return _RS[key]
 
 
 # Which anchoring, per technology (Tom, 31 Oct. 2026): the same rule for both, an anchoring is kept only where it lowers
@@ -992,7 +1133,8 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
     tr = [y for y in known if st['with2022'] or y != 2022][-st['window']:]
     pm = L.PriceModel(tr, st['regional'], 'mean', st['level'] != 'none')
     pm2 = PriceModel2(tr, st['level'] != 'none') if rule == '2d' else None
-    pmf = None
+    pmf = pmf_b = None
+    WTECH['t'] = t if os.environ.get('PK_WTECH') == '1' else None
     if rule == 'fuel':
         fy = train or [y for y in known if L.DATA[y]['complete'] and y >= 2019][-fuel_window:]
         if trend:
@@ -1002,6 +1144,12 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
                 fy = fy + fy[-1:]   # the last learning year counted twice (weighs 2 against 1)
             if REGIME:
                 pmf = RegimeRule(fy, st['regional'], france)
+                if WTECH['t'] and WTECH_BASE:
+                    # the month's base price from the rule learnt on every hour alike, the technology's value from the
+                    # output-weighted one (a capture rate is a ratio: weighting both would cancel)
+                    _t = WTECH['t']; WTECH['t'] = None
+                    pmf_b = RegimeRule(fy, st['regional'], france)
+                    WTECH['t'] = _t
             else:
                 pmf = PriceModelFuel(fy, st['regional'])
                 if france:
@@ -1023,6 +1171,7 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
     RS = {tt: stop_share(tt, Y) for tt in 'sw'}
     ST_TAB = None
     WL_TAB = None
+    WD_TAB = None
     PC_TAB = None
     if REGIME:
         _av, _dm = fr_avail(demand_year), L.DATA[demand_year]['month']
@@ -1151,8 +1300,9 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
                 need = export_need(S['FR'], W['FR'], Lo['FR'], AVR[month - 1][:, None] * np.ones((1, 24)))
                 if REGIME_JAO:
                     # the drawn day's Core export limit (its grid situation) at the last known year's level
-                    ref = float(np.mean(fr_jmax(demand_year)))
+                    ref = jao_level(Y, demand_year, known)
                     need = need - np.stack([fr_jmax(y)[r] * ref / float(np.mean(fr_jmax(y))) for y, r, _ in src]) / 1000
+                pmf._wsh = W['FR'] / Lo['FR']   # DEC2 = 'wind': the cut-off rule's second input
                 f1, fp, fq = pmf.phi(x, gg, xfr, cday, None, need, share(S, W, Lo, N, H, False))
             else:
                 f1, fp, fq = pmf.phi(x, gg, xfr, cday, fr_gw(S, W, Lo, N, H) if PriceModelFuel.FR_LIN else None)
@@ -1176,6 +1326,19 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
                         continue
                     mw = np.vectorize(lambda z: means.get(int(z), np.nan))(cellk[sel])
                     adj[sel] = np.where(np.isfinite(mw), b * (wsh[sel] - mw), 0.0)
+                f1 = f1 + adj; fp = np.maximum(fp + adj * fq, 0)
+            if WIND_DEC and REGIME:
+                if WD_TAB is None:
+                    WD_TAB = wind_slopes_dec(pmf, sorted(set(fy)))
+                xfr_ = share(S, W, Lo, N, H, False)
+                cellk = gg * 1000 + np.round(xfr_ / L.BIN).astype(int) + 500
+                wsh = W['FR'] / Lo['FR']; pi_ = pmf.pdec(gg, need)
+                adj = np.zeros(x.shape)
+                for gi, (b, means) in WD_TAB.items():
+                    sel = gg == gi
+                    if sel.any():
+                        mw = np.vectorize(lambda z: means.get(int(z), np.nan))(cellk[sel])
+                        adj[sel] = np.where(np.isfinite(mw), b * (wsh[sel] - mw), 0.0) * pi_[sel]
                 f1 = f1 + adj; fp = np.maximum(fp + adj * fq, 0)
             if PEN_CURVE:
                 if PC_TAB is None:
@@ -1204,8 +1367,22 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
                 kk_ = state_key(gg, W['FR'] / Lo['FR'], pi_)
                 dlt = np.vectorize(lambda z: ST_TAB.get(int(z), 0.0))(kk_)
                 f1 = f1 + dlt / cday; fp = np.maximum(fp + dlt * fq / cday, 0)
+            if RESID:
+                ry = set(fy) if RESID_RECENT else None
+                rr = np.stack([rule_resid(pmf, y, RESID)[r] if ry is None or y in ry else np.zeros(24) for y, r, _ in src]) * RESID_K
+                P = f1 * cday + (rr if RESID == 'eur' else rr * cday)
+                f1, fp, fq = P / cday, np.maximum(P, 0) / cday, (P > 0).astype(float)
             v = S['FR'] if t == 's' else W['FR']
             mr = L.month_rates(month, v, f1 * cday, fp * cday, fq)
+            if pmf_b is not None:
+                fb, _, _ = pmf_b.phi(x, gg, xfr, cday, None, need, share(S, W, Lo, N, H, False))
+                for m_, e_ in mr.items():
+                    k_ = month == m_
+                    bw, bb = float((f1 * cday)[k_].mean()), float((fb * cday)[k_].mean())
+                    if bb > 0:
+                        for cv in ('all', 'curt'):
+                            if e_.get(cv) is not None:
+                                e_[cv] *= bw / bb
             if guard == 'measure':
                 kb, nb = below_floor(v, f1 * cday, GF[0], GF[1], Lo['FR'], month)
                 BELOW[0] += kb; BELOW[1] += nb
