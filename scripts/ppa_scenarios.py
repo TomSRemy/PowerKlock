@@ -716,6 +716,118 @@ class RegimeRule:
         return tuple(w * u + (1 - w) * v for u, v in zip(a, b))
 
 
+STATE_CORR = os.environ.get('PK_STATE_CORR') == '1'   # test: the price rule's error by situation, measured on the last
+# complete year (season × time of day × French wind share × cut-off chance), added to each simulated hour in that
+# situation (windy days, cut-off hours: where the rule misses). Replay 2023–2026, 9 cases, €/MWh (none / year / season
+# anchor): one year solar 2.81 / 2.11 / –, wind 2.02 / 0.90 / –; two years solar 2.57 / 2.16 / 2.07, wind 1.73 / 0.79 /
+# 0.72, but unanchored 2026 errs by −4 to −8 €: unstable, the anchor only hides it. Not taken (31 Oct. 2026)
+WBIN, PBIN = 0.05, 0.34
+
+
+def state_key(g, wsh, pi):
+    return (g * 100 + np.clip(np.round(wsh / WBIN).astype(int), 0, 20)) * 10 + np.clip((pi / PBIN).astype(int), 0, 2)
+
+
+def state_table(pmf, A):
+    """{state: mean of (realised price − the rule's expected price) in €} over year A (STATE_YEARS = 2: also the
+    complete year before, 2022 left out, A weighing double), each on its own weather and data"""
+    ys = [A] + ([y for y in sorted(L.DATA, reverse=True) if y < A and y != 2022 and L.DATA[y]['complete']][:1] if STATE_YEARS == 2 else [])
+    acc = {}
+    for y, wy in zip(ys, (2.0, 1.0)):
+        for kk, (sm, n) in _state_sums(pmf, y).items():
+            a_ = acc.setdefault(kk, [0.0, 0.0]); a_[0] += wy * sm; a_[1] += wy * n
+    return {kk: v[0] / v[1] for kk, v in acc.items() if v[1] >= 30}
+
+
+STATE_YEARS = int(os.environ.get('PK_STATE_YEARS', 1))
+
+
+def _state_sums(pmf, A):
+    a = L.DATA[A]; F_ = fuel_cost(); mo = a['month']
+    c = np.array([F_.get(str(d)[:10], np.nan) for d in a['days']])[:, None]
+    g = PriceModelFuel.groups(mo)
+    x, xf = year_share(A, True), year_share(A, False)
+    if isinstance(pmf, RegimeRule):
+        need = export_need(a['fr_s'], a['fr_w'], a['fr_l'], fr_avail(A)) - (fr_jmax(A) / 1000 if REGIME_JAO else 0)
+        f1, _, _ = pmf.phi(x, g, xf, c, None, need, xf); pi = pmf.pdec(g, need)
+    else:
+        f1, _, _ = pmf.phi(x, g, xf, c); pi = np.zeros_like(x)
+    r = a['fr_p'] - f1 * c
+    k = state_key(g, a['fr_w'] / a['fr_l'], pi)
+    ok = np.isfinite(r)
+    return {int(kk): (float(r[ok & (k == kk)].sum()), int((ok & (k == kk)).sum())) for kk in np.unique(k[ok])}
+
+
+WIND_LIN = os.environ.get('PK_WIND_LIN') == '1'   # test: within each cell of the rule, the price still falls with French
+# wind (≈ 1.5 € per GW in 2025): a slope of price ÷ cost on the French wind share, per season × time of day, learnt on
+# the learning years around each cell's mean (the rule's own residuals), added to the simulated hours. Replay 2023–2026,
+# 9 cases: solar 1.48 / 1.15 (none / year anchor), wind 1.96 / 0.96; with PEN_CURVE wind: solar 2.54 / 1.14 / 1.23
+# (season), wind 2.59 / 1.05 / 0.84, 2026 unanchored −7 to −8 €. Not taken (31 Oct. 2026)
+
+
+def wind_slopes(pmf, years):
+    """{group: (slope of the rule's residual (price ÷ cost) per unit of French wind share, {cell: mean wind share})}"""
+    F_ = fuel_cost(); R, Wv, K, Gv = [], [], [], []
+    for y in years:
+        a = L.DATA[y]; mo = a['month']
+        c = np.array([F_.get(str(d)[:10], np.nan) for d in a['days']])[:, None]
+        g = PriceModelFuel.groups(mo); x, xf = year_share(y, True), year_share(y, False)
+        need = export_need(a['fr_s'], a['fr_w'], a['fr_l'], fr_avail(y)) - (fr_jmax(y) / 1000 if REGIME_JAO else 0)
+        f1, _, _ = pmf.phi(x, g, xf, c, None, need, xf) if isinstance(pmf, RegimeRule) else pmf.phi(x, g, xf, c)
+        ok = np.isfinite(c[:, 0]) & (c[:, 0] > 5)
+        R.append((a['fr_p'] / c - f1)[ok].ravel()); Wv.append((a['fr_w'] / a['fr_l'])[ok].ravel())
+        K.append(((g * 1000 + np.round(x / 0.05).astype(int)) * 1000 + np.round(xf / 0.1).astype(int))[ok].ravel()); Gv.append(g[ok].ravel())
+    r, w, k, gg = (np.concatenate(v) for v in (R, Wv, K, Gv))
+    out = {}
+    for gi in np.unique(gg):
+        sel = gg == gi; kk, rr, ww = k[sel], r[sel], w[sel]
+        wc, rc, means = ww.copy(), rr.copy(), {}
+        for cell in np.unique(kk):
+            m_ = kk == cell; means[int(cell)] = float(ww[m_].mean())
+            wc[m_] -= ww[m_].mean(); rc[m_] -= rr[m_].mean()
+        b = float(np.dot(wc, rc) / np.dot(wc, wc)) if np.dot(wc, wc) > 0 else 0.0
+        out[int(gi)] = (b, means)
+    return out
+
+
+PEN_CURVE = os.environ.get('PK_PEN_CURVE') == '1'   # test (Tom, 31 Oct. 2026): the price within the month as a function
+# of the hour's renewable penetration ((solar + wind) ÷ load, France): realised curve − the rule's curve on the last
+# complete year, by bins of 5 % and season, added to each simulated hour then centred month by month (the month's mean
+# price unchanged); the curve measured again every year
+PBIN_W = 0.05
+PEN_WIND = os.environ.get('PK_PEN_WIND') == '1'   # the curve on wind penetration alone (wind ÷ load)
+# Replay 2023–2026, 9 cases (none / year / season anchor): total penetration solar 6.31 / – / –, wind 1.77; wind
+# penetration solar 1.63 / 1.01 / 1.14, wind 2.39 (bias +0.05) / 1.03 / 0.83. Other tests of the same night: Great
+# Britain as a fourth neighbour, its fleet frozen (no GB capacity by year yet), wind 2.49 / 0.92 / 0.65, solar 2.27 /
+# 1.81 / 1.95; the Netherlands and Austria added: worse (solar 2.20+, wind 1.29+); all combined wind 0.61 at best but
+# −11 € on 2026 unanchored; 60 draws instead of 30 moves the replay by ≤ 0.03 €; 3-day blocks wind 0.76 (season),
+# solar 0.86; draw window ±14 days: no gain. Not taken (31 Oct. 2026)
+
+
+def pen_curve(pmf, A):
+    """{(season, bin): realised − rule price ÷ month mean} on year A (its own weather and data)"""
+    a = L.DATA[A]; F_ = fuel_cost(); mo = a['month']
+    c = np.array([F_.get(str(d)[:10], np.nan) for d in a['days']])[:, None]
+    g = PriceModelFuel.groups(mo); x, xf = year_share(A, True), year_share(A, False)
+    if isinstance(pmf, RegimeRule):
+        need = export_need(a['fr_s'], a['fr_w'], a['fr_l'], fr_avail(A)) - (fr_jmax(A) / 1000 if REGIME_JAO else 0)
+        f1, _, _ = pmf.phi(x, g, xf, c, None, need, xf)
+    else:
+        f1, _, _ = pmf.phi(x, g, xf, c)
+    ph, pa = f1 * c, a['fr_p'].astype(float)
+    rel = lambda p: p / np.array([np.nanmean(p[mo == m]) for m in mo])[:, None]
+    d = rel(pa) - rel(ph)
+    pen = (a['fr_w'] if PEN_WIND else a['fr_s'] + a['fr_w']) / a['fr_l']; sea = ((mo >= 4) & (mo <= 9)).astype(int)[:, None] * np.ones((1, 24), int)
+    b = np.clip(np.round(pen / PBIN_W).astype(int), 0, 30)
+    out = {}
+    for se in (0, 1):
+        for bi in np.unique(b[sea == se]):
+            k = (sea == se) & (b == bi) & np.isfinite(d)
+            if k.sum() >= 30:
+                out[(se, int(bi))] = float(d[k].mean())
+    return out
+
+
 RECENT_W = os.environ.get('PK_RECENT_W', '1') == '1'   # the price rule's last learning year weighs twice the one before
 # (Tom, 31 Oct. 2026: recent data weigh more). Replay 2023–2026 anchored, 9 cases: solar 1.32 → 1.18, wind 1.13 → 0.96
 # €/MWh; priced at the end of October (6 cases): solar 1.63 → 1.10, wind 1.83 → 1.47. Adopted 31 Oct. 2026. Anchoring on
@@ -727,19 +839,35 @@ ANCHOR = os.environ.get('PK_ANCHOR', '1') == '1'   # the capture anchored on the
 # right; its error is the slope), both 1.66 → 1.16. Adopted 31 Oct. 2026
 
 
-def anchor_factor(t, A, known, st, cost, n=30, seed=7):
-    """{'curt': k, 'all': k}: the realised capture of year A ÷ the generator's capture of year A (its fleet, its data,
-    the same rule and draws), production-weighted (× the paid share for 'curt')"""
+# Which anchoring, per technology (Tom, 31 Oct. 2026): the same rule for both, an anchoring is kept only where it lowers
+# that technology's replay error (scripts/ppa_model_risk.py, measured again every week, writes 'anchorMode'). Modes:
+# 'none', 'year' (one factor on the 12 months), 'season' (one factor for October–March, one for April–September).
+# Replay 2023–2026, 9 cases, €/MWh: solar none 0.76, year 1.18, season 1.22; wind none 2.62, year 0.96, season 0.84.
+# Tested and left out: anchors by month or quarter (solar 2.14 / 2.09, wind 1.69 / 1.52), on the last year's own weather
+# rather than drawn weeks (solar 1.95, wind 1.42), half the yearly factor (solar 0.96, wind 1.51)
+ANCHOR_MODES = ('none', 'year', 'season')
+WINTER = (1, 2, 3, 10, 11, 12)
+
+
+def anchor_factors(t, A, known, st, cost, n=30, seed=7):
+    """{mode: {'curt': {month: k}, 'all': {month: k}}}: the realised capture of year A ÷ the generator's capture of
+    year A (its fleet, its data, the same rule and draws), production-weighted (× the paid share for 'curt'), over the
+    12 months ('year') or within each half-year ('season'); 'none' = 1"""
     capA = {c: {tt: (L.cap(c, tt, A) or L.cap_guess(c, tt, A, A)) for tt in 'sw'} for c in CS}
     gA, _ = simulate(t, A, known, st, A, capA, None, n=n, rule='fuel', cost=cost, batteries='both', pool_from=2019,
                      fuel_dev=True, france=True, seed=seed)
     aA = L.actual(t, A)
-    out = {}
+    out = {'none': {c: {m: 1.0 for m in range(1, 13)} for c in ('curt', 'all')}, 'year': {}, 'season': {}}
     for conv in ('curt', 'all'):
         w = {m: aA[m]['mwh'] * (aA[m]['paid'] if conv == 'curt' else 1) for m in aA
              if m in gA and gA[m][conv] == gA[m][conv] and aA[m][conv] is not None}
-        den = sum(w[m] * gA[m][conv] for m in w)
-        out[conv] = float(sum(w[m] * aA[m][conv] for m in w) / den) if den > 0 else 1.0
+
+        def k(ms):
+            den = sum(w[m] * gA[m][conv] for m in w if m in ms)
+            return float(sum(w[m] * aA[m][conv] for m in w if m in ms) / den) if den > 0 else 1.0
+        ky, kw, ks = k(range(1, 13)), k(WINTER), k([m for m in range(1, 13) if m not in WINTER])
+        out['year'][conv] = {m: ky for m in range(1, 13)}
+        out['season'][conv] = {m: kw if m in WINTER else ks for m in range(1, 13)}
     return out
 
 
@@ -893,6 +1021,9 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
         SUR = {y: np.zeros_like(v) for y, v in SUR.items()}
     M = _means(demand_year)
     RS = {tt: stop_share(tt, Y) for tt in 'sw'}
+    ST_TAB = None
+    WL_TAB = None
+    PC_TAB = None
     if REGIME:
         _av, _dm = fr_avail(demand_year), L.DATA[demand_year]['month']
         AVR = np.array([_av[_dm == m].mean() for m in range(1, 13)])
@@ -1033,6 +1164,46 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
                 x2 = x + dR / Ltot
                 xfr2 = None if xfr is None else (xfr + dR / 1000 if FR_GW['on'] else xfr + dR / Lo['FR'])
                 f1, fp, fq = pmf.phi(x2, gg, xfr2, cday, None)
+            if WIND_LIN:
+                if WL_TAB is None:
+                    WL_TAB = wind_slopes(pmf, fy)
+                cellk = (gg * 1000 + np.round(x / 0.05).astype(int)) * 1000 + np.round(xfr / 0.1).astype(int)
+                wsh = W['FR'] / Lo['FR']
+                adj = np.zeros(x.shape)
+                for gi, (b, means) in WL_TAB.items():
+                    sel = gg == gi
+                    if not sel.any():
+                        continue
+                    mw = np.vectorize(lambda z: means.get(int(z), np.nan))(cellk[sel])
+                    adj[sel] = np.where(np.isfinite(mw), b * (wsh[sel] - mw), 0.0)
+                f1 = f1 + adj; fp = np.maximum(fp + adj * fq, 0)
+            if PEN_CURVE:
+                if PC_TAB is None:
+                    PC_TAB = pen_curve(pmf, demand_year)
+                pen = (W['FR'] if PEN_WIND else S['FR'] + W['FR']) / Lo['FR']; sea = ((month >= 4) & (month <= 9)).astype(int)[:, None] * np.ones((1, 24), int)
+                b = np.clip(np.round(pen / PBIN_W).astype(int), 0, 30)
+                dr = np.zeros(pen.shape)
+                for (se, bi), v in PC_TAB.items():
+                    dr[(sea == se) & (b == bi)] = v
+                # beyond the bins seen: the nearest bin of the season
+                for se in (0, 1):
+                    ks = sorted(bi for (s_, bi) in PC_TAB if s_ == se)
+                    if ks:
+                        hi_, lo_ = (sea == se) & (b > ks[-1]), (sea == se) & (b < ks[0])
+                        dr[hi_] = PC_TAB[(se, ks[-1])]; dr[lo_] = PC_TAB[(se, ks[0])]
+                pm_ = np.array([np.mean((f1 * cday)[month == m]) for m in range(1, 13)])[month - 1][:, None]
+                adj = dr * pm_
+                adj = adj - np.array([adj[month == m].mean() for m in range(1, 13)])[month - 1][:, None]   # month mean unchanged
+                f1 = f1 + adj / cday; fp = np.maximum(fp + adj * fq / cday, 0)
+            if STATE_CORR and REGIME:
+                # the rule's error in this situation on the last complete year, in € (the positive part moves with the
+                # chance the hour is paid)
+                if ST_TAB is None:
+                    ST_TAB = state_table(pmf, demand_year)
+                pi_ = pmf.pdec(gg, need)
+                kk_ = state_key(gg, W['FR'] / Lo['FR'], pi_)
+                dlt = np.vectorize(lambda z: ST_TAB.get(int(z), 0.0))(kk_)
+                f1 = f1 + dlt / cday; fp = np.maximum(fp + dlt * fq / cday, 0)
             v = S['FR'] if t == 's' else W['FR']
             mr = L.month_rates(month, v, f1 * cday, fp * cday, fq)
             if guard == 'measure':

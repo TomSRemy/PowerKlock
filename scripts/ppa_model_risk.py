@@ -4,10 +4,14 @@ does not lose money again and again when the model is wrong in the same directio
 
 Replay: each delivery year from 2023 (the years with France's Core export limits, JAO) to the running year (its
 complete months only), priced 1, 2 and 3 years ahead with only the complete years known then, exactly as the generator
-prices today (scripts/ppa_scenarios.py simulate, current settings, anchored on the last known year); error = the generator's capture − the realised
+prices today (scripts/ppa_scenarios.py simulate, current settings, with each anchoring on the last known year:
+none, year, season); error = the generator's capture − the realised
 capture, output stopped at prices ≤ 0, production-weighted, in capture points (so the pricer applies it to the
 forwards of the tenor) and in € on the realised baseload. Deliveries whose last known year is before 2022 are left out
 (other regime, no JAO).
+
+Anchoring chosen per technology by one rule (Tom, 31 Oct. 2026): the mode with the lowest mean € error on these cases
+('anchorMode', read by scripts/ppa_generator.py); the model risk is measured on that mode.
 
 The pricer takes off the forwards × the LEVEL-th percentile of the errors (pooled over horizons, recent deliveries
 weighing more: a case's weight halves for each year its delivery is older): with LEVEL = 75, the
@@ -15,8 +19,9 @@ published price would not have been above the realised value in 3 cases out of 4
 PPA lab workflow) as months complete.
 
 Writes data/history/ppa_model_risk.json
-    {"asOf", "level", "protocol", "rows": [{"tech", "year", "h", "known", "months", "pts", "eur"}],
-     "solar" | "wind": {"n", "meanPts", "maePts", "qPts", "meanEur", "maeEur", "byH": {"1": {...}}}}
+    {"asOf", "level", "protocol", "anchorMode": {"solar", "wind"}, "anchorMae": {tech: {mode: €}},
+     "rows": [{"tech", "year", "h", "known", "months", "pts", "eur", "byMode": {mode: {"pts", "eur"}}}],
+     "solar" | "wind": {"n", "anchor", "meanPts", "maePts", "qPts", "meanEur", "maeEur", "byH": {"1": {...}}}}
     python scripts/ppa_model_risk.py
 """
 import json
@@ -71,23 +76,33 @@ def main():
                 c0 = float(np.mean([v for k, v in F.items() if f'{A}-12-01' <= k <= f'{A}-12-31']))
                 gm, _ = G.simulate(t, Y, known, st, A, capY, lv, n=30, rule='fuel', cost=lambda d: c0, batteries='both',
                                    pool_from=2019, fuel_dev=True, france=True, seed=7)
-                # anchored on the last known year, as the published generator (ppa_scenarios ANCHOR)
-                kA = G.anchor_factor(t, A, known, st, lambda d: c0)['curt'] if G.ANCHOR else 1.0
-                sc = L.score({m: v['curt'] * kA for m, v in gm.items()}, act, 'curt')
-                if not sc:
+                # each anchoring on the last known year (ppa_scenarios anchor_factors); none only if ANCHOR is off
+                K = G.anchor_factors(t, A, known, st, lambda d: c0)
+                by = {}
+                for mode in (G.ANCHOR_MODES if G.ANCHOR else ('none',)):
+                    sc = L.score({m: v['curt'] * K[mode]['curt'][m] for m, v in gm.items()}, act, 'curt')
+                    if sc:
+                        by[mode] = {'pts': round(sc['pts'], 3), 'eur': round(sc['eur'], 3)}
+                if not by:
                     continue
-                rows.append({'tech': tech, 'year': Y, 'h': h, 'known': A, 'months': len(act),
-                             'pts': round(sc['pts'], 3), 'eur': round(sc['eur'], 3)})
-                print(tech, Y, f'h={h}', f"{sc['pts']:+.2f} pts  {sc['eur']:+.2f} €/MWh", flush=True)
-    out = {'asOf': date.today().isoformat(), 'level': LEVEL, 'protocol': __doc__.split('Writes')[0].strip(), 'rows': rows}
+                rows.append({'tech': tech, 'year': Y, 'h': h, 'known': A, 'months': len(act), 'byMode': by})
+                print(tech, Y, f'h={h}', '  '.join(f"{k} {v['eur']:+.2f}" for k, v in by.items()), flush=True)
+    out = {'asOf': date.today().isoformat(), 'level': LEVEL, 'protocol': __doc__.split('Writes')[0].strip(),
+           'anchorMode': {}, 'anchorMae': {}, 'rows': rows}
     for tech in ('solar', 'wind'):
         rs = [r for r in rows if r['tech'] == tech]
         if not rs:
             continue
+        modes = [md for md in G.ANCHOR_MODES if all(md in r['byMode'] for r in rs)] or ['none']
+        mae = {md: round(float(np.mean([abs(r['byMode'][md]['eur']) for r in rs])), 3) for md in modes}
+        best = min(modes, key=lambda md: mae[md])
+        out['anchorMode'][tech], out['anchorMae'][tech] = best, mae
+        for r in rs:
+            r['pts'], r['eur'] = r['byMode'][best]['pts'], r['byMode'][best]['eur']
         p = np.array([r['pts'] for r in rs]); e = np.array([r['eur'] for r in rs])
         last = max(r['year'] for r in rs)
         w = np.array([0.5 ** ((last - r['year']) / HALF) for r in rs])
-        out[tech] = {'n': len(rs), 'meanPts': round(float((w * p).sum() / w.sum()), 3), 'maePts': round(float(np.abs(p).mean()), 3),
+        out[tech] = {'n': len(rs), 'anchor': best, 'meanPts': round(float((w * p).sum() / w.sum()), 3), 'maePts': round(float(np.abs(p).mean()), 3),
                      'qPts': round(wquantile(p, w, LEVEL), 3), 'qPtsEqual': round(float(np.percentile(p, LEVEL)), 3),
                      'meanEur': round(float((w * e).sum() / w.sum()), 3), 'meanEurEqual': round(float(e.mean()), 3),
                      'maeEur': round(float(np.abs(e).mean()), 3),
