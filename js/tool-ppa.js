@@ -459,11 +459,18 @@
     o.anc = euYears(o, st, 'anchored');
     o.ancFair = o.anc ? years.reduce((a, r, i) => a + r.wt * r.fwd * o.anc[i].capture, 0) : null;
     o.ppaAnc = o.anc ? o.ancFair - o.premium - refW * add / 100 - imb + goW - margin : null;
-    // the single scenario generator (scripts/ppa_generator.py, since 30 Oct. 2026 the integrated method shown as a
-    // test): real weeks with every variable of the same day, one price rule in euros, no bias correction
+    // the single scenario generator (scripts/ppa_generator.py): real weeks with every variable of the same day, one
+    // price rule in euros with two regimes (France coupled to its neighbours or cut off by its Core export limit, JAO),
+    // no bias correction; since 31 Oct. 2026 it sets the published price for solar and wind
     o.gen = euYears(o, st, 'generator');
     o.genFair = o.gen ? years.reduce((a, r, i) => a + r.wt * r.fwd * o.gen[i].capture, 0) : null;
-    o.ppaGen = o.gen ? o.genFair - o.premium - refW * add / 100 - imb + goW - margin : null;
+    // model risk (scripts/ppa_model_risk.py): the generator's past errors on the capture, replayed 1–3 years ahead from
+    // 2023; the forwards × their 75th percentile come off, so the price would not have been above the realised value in
+    // 3 cases out of 4. Taken off only when the model has erred on the high side
+    const MR = D.fcst && D.fcst.generator && D.fcst.generator.modelRisk, mrT = MR && MR[st.tech];
+    o.modelRisk = mrT && mrT.qPts > 0 ? refW * mrT.qPts / 100 : 0;
+    o.modelRiskInfo = mrT ? { level: MR.level, n: mrT.n, qPts: mrT.qPts, meanEur: mrT.meanEur, maeEur: mrT.maeEur, byH: mrT.byH } : null;
+    o.ppaGen = o.gen ? o.genFair - o.premium - o.modelRisk - refW * add / 100 - imb + goW - margin : null;
     o.method = st.method;
     // asset-specific FPC method (three pricings): js/ppa-fpc.js
     o.capPathFor = capPath;
@@ -681,7 +688,7 @@
   // 2020–2025 1–3 years ahead, no correction: 0.87 €/MWh mean error against 1.84 for the average of the methods). Wind
   // keeps the average until the generator is right for it (it overvalues wind by about 2.4 €/MWh)
   // (only when the generator's months are there: without them the average of the methods sets it, as before)
-  const GEN_ONLY = st => (st || S).tech !== 'wind' && !!(D && D.fcst && D.fcst.generator);
+  const GEN_ONLY = () => !!(D && D.fcst && D.fcst.generator);   // since 31 Oct. 2026 for wind too (solar since 30 Oct.)
   function outOf(k, st) {
     if (GEN_ONLY(st)) return k !== 'pct' && k !== 'int';
     const X = D && D.weights && D.weights.exclude, t = (st || S).tech === 'wind' ? 'wind' : 'solar';
@@ -735,7 +742,15 @@
       const BF = D.fcst && D.fcst.generator && D.fcst.generator.belowFloor && D.fcst.generator.belowFloor[S.tech === 'wind' ? 'wind' : 'solar'];
       const bfv = BF ? (o.tenor || []).map(y => BF[String(y)]).filter(v => v != null) : [], bf = bfv.length ? bfv.reduce((a, b) => a + b, 0) / bfv.length : null;
       const bfTxt = bf == null ? '' : ' ' + (bf > 0.2 ? '<b class="mrn-up">' : '') + (fr ? `Garde-fou : ${(bf * 100).toFixed(0)} % des jours simulés sous la capture plancher observée à la même pénétration (≈ 10 % attendu${bf > 0.2 ? ' : le modèle s’écarte de ce que le marché a montré, à vérifier' : ''}).` : `Guardrail: ${(bf * 100).toFixed(0)} % of the simulated days under the capture floor observed at the same penetration (≈ 10 % expected${bf > 0.2 ? ': the model drifts from what the market showed, to check' : ''}).`) + (bf > 0.2 ? '</b>' : '');
-      if (GEN_ONLY()) { el.innerHTML = spread + bfTxt + ' ' + (fr ? 'Prix publié = le générateur de scénarios seul (méthode intégrée), sans correction. Précision mesurée sur le rejeu 2020–2025 : 0,57 € d’erreur moyenne à 1 an, 0,76 € à 2 ans, 0,61 € à 3 ans (contre 1,84 € en moyenne pour la moyenne des méthodes).' : 'Published price = the scenario generator alone (integrated method), no correction. Measured precision on the 2020–2025 replay: 0.57 € mean error one year ahead, 0.76 € two years, 0.61 € three years (against 1.84 € on average for the average of the methods).'); return; }
+      if (GEN_ONLY()) {
+        // the model risk taken off the price (scripts/ppa_model_risk.py, in o.modelRisk) and the replay behind it
+        const I = o.modelRiskInfo, bh = I && I.byH ? [1, 2, 3].map(h => I.byH[String(h)] ? n2(I.byH[String(h)].maeEur) : '–').join(' / ') : null;
+        const mrTxt = !I ? '' : fr
+          ? ` Risque de modèle retiré du prix : <b>${n2(o.modelRisk)} €/MWh</b> (${I.level}e centile des erreurs passées du générateur sur la capture, ${I.n} cas : livraisons depuis 2023, pricées 1 à 3 ans avant ; il se trompe en moyenne de ${I.meanEur >= 0 ? '+' : ''}${n2(I.meanEur)} €, écart moyen ${bh} € à 1 / 2 / 3 ans). Ainsi le prix n’aurait pas dépassé la valeur réalisée dans 3 cas sur 4.`
+          : ` Model risk taken off the price: <b>${f2(o.modelRisk)} €/MWh</b> (${I.level}th percentile of the generator's past errors on the capture, ${I.n} cases: deliveries since 2023, priced 1 to 3 years ahead; on average it errs by ${I.meanEur >= 0 ? '+' : ''}${f2(I.meanEur)} €, mean gap ${bh} € one / two / three years ahead). So the price would not have exceeded the realised value in 3 cases out of 4.`;
+        el.innerHTML = spread + bfTxt + ' ' + (fr ? 'Prix publié = le générateur de scénarios (deux régimes : la France couplée à ses voisins ou coupée par sa limite d’export du couplage Core, JAO), pour le solaire et l’éolien, sans correction de biais.' : 'Published price = the scenario generator (two regimes: France coupled to its neighbours or cut off by its Core export limit, JAO), for solar and wind, no bias correction.') + mrTxt;
+        return;
+      }
       el.innerHTML = spread + wtxt + ' ' + (fr ? `Précision mesurée de la moyenne publiée${use.length < 4 ? ' (' + use.length + ' méthodes)' : ''} sur les années complètes depuis 2024 : ${n2(e(1))} € d’erreur moyenne à 1 an, ${n2(e(2))} € à 2 ans, ${n2(e(3))} € à 3 ans ; au-delà du parc déjà observé, l’écart entre méthodes dit mieux l’incertitude.`
         : `Measured precision of the published average${use.length < 4 ? ' (' + use.length + ' methods)' : ''} on the complete years since 2024: ${n2(e(1))} € mean error one year ahead, ${n2(e(2))} € two years, ${n2(e(3))} € three years; beyond the fleet already observed, the gap between methods tells the uncertainty better.`);
     });
