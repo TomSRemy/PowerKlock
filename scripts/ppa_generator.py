@@ -64,6 +64,16 @@ def main():
     # says the model is drifting away from what the market has shown. A measure only: nothing is corrected
     fc['generator'] = {'asOf': this.isoformat(), 'lastYear': A, 'fuelCost': round(c0, 2), 'sims': 60, 'belowFloor': below,
                        'belowFloorExpected': 0.10}
+    # model risk (Tom 31 Oct. 2026): the generator's past errors against the realised (scripts/ppa_model_risk.py), so
+    # the pricer takes off the forwards × their chosen percentile and the price does not lose money again and again
+    try:
+        mr = json.load(open(os.path.join(ROOT, 'data', 'history', 'ppa_model_risk.json')))
+        fc['generator']['modelRisk'] = {k: mr[k] for k in ('asOf', 'level') if k in mr}
+        for tech in ('solar', 'wind'):
+            if tech in mr:
+                fc['generator']['modelRisk'][tech] = {k: mr[tech][k] for k in ('n', 'meanPts', 'qPts', 'meanEur', 'maeEur', 'byH')}
+    except (OSError, ValueError, KeyError):
+        pass
     with open(F_PATH, 'w') as f:
         json.dump(fc, f, separators=(',', ':'))
 
