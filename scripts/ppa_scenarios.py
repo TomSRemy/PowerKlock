@@ -406,13 +406,14 @@ class PriceModelFuel:
             use = ee < er
         return use, float(p.mean()), float(np.maximum(p, 0).mean())
 
-    def __init__(self, years, region=True):
+    def __init__(self, years, region=True, mask=None):
         F = fuel_cost()
         self.region = region
+        self.mask = mask
         years = [y for y in years if not self.HYDRO or hydro_daily(y) is not None]
         self._costs = []
         self.G = 2 * self.BLOCKS * (2 if self.DAYKIND else 1)
-        xs, gs, rs, es, ps, cs, yrs = [], [], [], [], [], [], []
+        xs, gs, rs, es, ps, cs, yrs, ms = [], [], [], [], [], [], [], []
         for y in years:
             a = L.DATA[y]
             c = np.array([F.get(str(d)[:10], np.nan) for d in a['days']])
@@ -422,8 +423,12 @@ class PriceModelFuel:
             xs.append(x[ok].ravel()); gs.append(g[ok].ravel()); rs.append((a['fr_p'][ok] / c[ok, None]).ravel()); es.append(np.minimum(a['fr_p'][ok], 0).ravel())
             self._costs.append(np.repeat(c[ok], 24))
             ps.append(a['fr_p'][ok].ravel()); cs.append(np.repeat(c[ok], 24)); yrs.append(np.full(ok.sum() * 24, y))
+            ms.append(mask[y][ok].ravel() if mask is not None else np.ones(ok.sum() * 24, bool))
         x, g, r = (np.concatenate(v) for v in (xs, gs, rs))
         e = np.concatenate(es); pe_, ce_, ye_ = np.concatenate(ps), np.concatenate(cs), np.concatenate(yrs)
+        mk = np.concatenate(ms)
+        x, g, r, e, pe_, ce_, ye_ = (v[mk] for v in (x, g, r, e, pe_, ce_, ye_))
+        self._costs = [np.concatenate(self._costs)[mk]]
         self.lo = int(np.floor(x.min() / L.BIN)) - 1
         self.nb = int(np.ceil(x.max() / L.BIN)) - self.lo + 2
         b = np.clip(np.round(x / L.BIN).astype(int) - self.lo, 0, self.nb - 1)
@@ -456,6 +461,8 @@ class PriceModelFuel:
                     near_a = np.array([fa[np.abs(fa - bi).argmin()] for bi in range(self.nb)])
                     A_[gi], B_[gi] = A_[gi, near_a], B_[gi, near_a]
             filled = np.where(~np.isnan(mean[gi]))[0]
+            if not len(filled):
+                continue   # a group without hours (a regime seldom seen): filled from the others below
             near = np.array([filled[np.abs(filled - bi).argmin()] for bi in range(self.nb)])
             low = filled.min() if len(filled) else 0
             m0 = mean[gi].copy()
@@ -474,6 +481,12 @@ class PriceModelFuel:
                     mean[gi, bi] = max(min(v, m0[low]), floor)
                     ppos[gi, bi] = ppos[gi, low] if mean[gi, bi] > 0 else min(ppos[gi, low], 0.5)
                     mpos[gi, bi] = max(mean[gi, bi], 0) if mean[gi, bi] > 0 else mpos[gi, low] * 0.5
+        empty = [gi for gi in range(self.G) if np.isnan(mean[gi]).all()]
+        full_ = [gi for gi in range(self.G) if gi not in empty]
+        for gi in empty:
+            for arr in (mean, mpos, ppos, neg, me, mpe):
+                arr[gi] = np.nanmean(arr[full_], axis=0)
+            eur[gi] = False
         self.mean, self.mpos, self.ppos, self.neg = mean, mpos, ppos, neg
         self.eur, self.me, self.mpe = eur, me, mpe
         self.A, self.B = A_, B_
@@ -543,10 +556,11 @@ class PriceModelFuel:
     def fbin():
         return 2.0 if FR_GW['on'] or EXPCAP['on'] else 0.10
 
-    def add_france(self, years):
+    def add_france(self, years, mask=None):
+        mask = mask if mask is not None else getattr(self, 'mask', None)
         """a second input: France's own residual share, in cells of 0.05 (region) × 0.10 (France), 20 hours or more"""
         F = fuel_cost()
-        ks, rs, es, ps, cs, yrs, zs, gg = [], [], [], [], [], [], [], []
+        ks, rs, es, ps, cs, yrs, zs, gg, mm = [], [], [], [], [], [], [], [], []
         for y in years:
             a = L.DATA[y]
             c = np.array([F.get(str(d)[:10], np.nan) for d in a['days']])
@@ -561,9 +575,12 @@ class PriceModelFuel:
             ks.append(k[ok].ravel()); rs.append((a['fr_p'][ok] / c[ok, None]).ravel()); es.append(np.minimum(a['fr_p'][ok], 0).ravel())
             ps.append(a['fr_p'][ok].ravel()); cs.append(np.repeat(c[ok], 24)); yrs.append(np.full(ok.sum() * 24, y))
             zs.append(year_fr_gw(y, self.HYDRO)[ok].ravel()); gg.append(g[ok].ravel())
+            mm.append(mask[y][ok].ravel() if mask is not None else np.ones(ok.sum() * 24, bool))
         k, r, e = np.concatenate(ks), np.concatenate(rs), np.concatenate(es)
         z_, g_ = np.concatenate(zs), np.concatenate(gg)
         pe_, ce_, ye_ = np.concatenate(ps), np.concatenate(cs), np.concatenate(yrs)
+        mk = np.concatenate(mm)
+        k, r, e, z_, g_, pe_, ce_, ye_ = (v[mk] for v in (k, r, e, z_, g_, pe_, ce_, ye_))
         self.tab2 = {}
         for kk in np.unique(k):
             sel = k == kk
@@ -589,6 +606,79 @@ class PriceModelFuel:
                 if sel.sum() >= 20:
                     self.lin[int(kk)] = (gs_[int(kk // 1000000)], float(z_[sel].mean()))
         return self
+
+
+REGIME = os.environ.get('PK_REGIME') == '1'   # two regimes, France coupled to its neighbours or cut off by its export
+# limits (its price 5 € or more under Germany's: 629 h in 2021, 1,496 in 2023, 4,374 in 2024, 5,460 in 2025, with 67 % of
+# French wind MWh in 2025; the current rule is +6.9 € too high in those hours and −6.4 € too low in coupled ones); the
+# chance of each read from what France must export (available nuclear + wind + solar − load). True weather 2023–2025 and
+# generator replay (solar 0.59 → 0.98, wind 2.07 → 2.34 €/MWh) worse; off (31 Oct. 2026)
+_DE = {}
+
+
+def de_prices(y):
+    """Germany's day-ahead, hourly, on the days of L.DATA[y] (data/history/daily, zones DE_LU); NaN where missing"""
+    if y not in _DE:
+        import json
+        out = []
+        for d in L.DATA[y]['days']:
+            try:
+                z = json.load(open(os.path.join(ROOT, 'data', 'history', 'daily', f'{str(d)[:10]}.json')))['zones'].get('DE_LU', {}).get('hourly')
+            except (OSError, ValueError):
+                z = None
+            out.append(np.array(z, float).reshape(24, -1).mean(1) if z and None not in z and len(z) % 24 == 0 else np.full(24, np.nan))
+        _DE[y] = np.array(out)
+    return _DE[y]
+
+
+def export_need(S, W, Lo, A):
+    """what France must export at full nuclear, GW: available nuclear + solar + wind − load"""
+    return (A + S + W - Lo) / 1000
+
+
+class RegimeRule:
+    """France's price as the mix of two rules weighted by the chance France is cut off from Germany (its price 5 € or
+    more below): cut off, a France-only rule learnt on those hours; coupled, the regional rule learnt on the others"""
+    NB = 1.0   # GW bins of export need
+
+    def __init__(self, years, region=True, france=True):
+        dec, need = {}, {}
+        for y in years:
+            a = L.DATA[y]; de = de_prices(y)
+            dec[y] = np.isfinite(de) & (a['fr_p'] < de - 5)
+            need[y] = export_need(a['fr_s'], a['fr_w'], a['fr_l'], fr_avail(y))
+        nd_ = sum(int(dec[y].sum()) for y in years)
+        # too few hours cut off (the years before 2023): that regime keeps the whole-year rule
+        self.dec = PriceModelFuel(years, False, mask=dec if nd_ >= 500 else None)
+        self.cpl = PriceModelFuel(years, region, mask={y: ~dec[y] for y in years})
+        if france:
+            self.cpl.add_france(years)
+        g = np.concatenate([PriceModelFuel.groups(L.DATA[y]['month'], [L.day_kind(d) for d in L.DATA[y]['days']]).ravel() for y in years])
+        nb = np.concatenate([np.round(need[y] / self.NB).astype(int).ravel() for y in years])
+        dd = np.concatenate([dec[y].ravel() for y in years]).astype(float)
+        self.pd = {}
+        for gi in np.unique(g):
+            for b in np.unique(nb[g == gi]):
+                k = (g == gi) & (nb == b)
+                if k.sum() >= 30:
+                    self.pd[(int(gi), int(b))] = float(dd[k].mean())
+
+    def pdec(self, g, need):
+        nb = np.round(need / self.NB).astype(int); out = np.zeros(g.shape)
+        for gi in np.unique(g):
+            ks = sorted(b for (gg, b) in self.pd if gg == gi)
+            if not ks:
+                continue
+            sel = g == gi
+            bb = np.clip(nb[sel], ks[0], ks[-1])
+            out[sel] = [self.pd.get((int(gi), int(b)), self.pd[(int(gi), min(ks, key=lambda k: abs(k - b)))]) for b in bb]
+        return out
+
+    def phi(self, x, g, xf=None, cost=None, z=None, need=None, xfr=None):
+        a = self.dec.phi(xfr, g, None, cost)
+        b = self.cpl.phi(x, g, xf, cost)
+        w = self.pdec(g, need)
+        return tuple(w * u + (1 - w) * v for u, v in zip(a, b))
 
 
 class TrendRule:
@@ -718,9 +808,12 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
         if trend:
             pmf = TrendRule(fy, st['regional'], france)
         else:
-            pmf = PriceModelFuel(fy, st['regional'])
-            if france:
-                pmf.add_france(fy)
+            if REGIME:
+                pmf = RegimeRule(fy, st['regional'], france)
+            else:
+                pmf = PriceModelFuel(fy, st['regional'])
+                if france:
+                    pmf.add_france(fy)
     SUR = {y: _residuals(y, pm, st['regional']) for y in pool}
     GF = guard_floor(t, [y for y in known if L.DATA[y]['complete'] and y != 2022][-2:]) if guard else None
     BELOW = [0, 0]
@@ -736,6 +829,9 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
         SUR = {y: np.zeros_like(v) for y, v in SUR.items()}
     M = _means(demand_year)
     RS = {tt: stop_share(tt, Y) for tt in 'sw'}
+    if REGIME:
+        _av, _dm = fr_avail(demand_year), L.DATA[demand_year]['month']
+        AVR = np.array([_av[_dm == m].mean() for m in range(1, 13)])
     CFS = {(c, tt, y): cf_scale(c, tt, y, demand_year, pool) for c in CS for tt in 'sw' for y in pool} if CF_LEVEL else {}
     if NUC_AV:
         # France's available nuclear: the last complete year's monthly means (planned outages and their season), the
@@ -856,7 +952,10 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
                 xfr = day_mean(x if DAYX == 'reg' else share(S, W, Lo, N, H, False))
             if EXPCAP['on'] and france:
                 xfr = beyond_room(fr_gw(S, W, Lo, N, H) * 1000, EXPCAP['Y'] or max(known))
-            f1, fp, fq = pmf.phi(x, gg, xfr, cday, fr_gw(S, W, Lo, N, H) if PriceModelFuel.FR_LIN else None)
+            if REGIME:
+                f1, fp, fq = pmf.phi(x, gg, xfr, cday, None, export_need(S['FR'], W['FR'], Lo['FR'], AVR[month - 1][:, None] * np.ones((1, 24))), share(S, W, Lo, N, H, False))
+            else:
+                f1, fp, fq = pmf.phi(x, gg, xfr, cday, fr_gw(S, W, Lo, N, H) if PriceModelFuel.FR_LIN else None)
             if FLEET_STOP and (RS['s'] > 0 or RS['w'] > 0):
                 # the French parks that stop at prices ≤ 0 (the measured share, × the chance the hour is ≤ 0): their
                 # output leaves the surplus the price is read on, as it left the realised output the rule learnt on
