@@ -61,6 +61,27 @@ def _addback(y, t):
     return v
 
 
+CF_LEVEL = os.environ.get('PK_CF_LEVEL', 'trend') or None   # each drawn week's output per installed GW brought to the
+# level of the last complete year (its weather variation kept): output per GW fell in 2019–2025 (stops at negative
+# prices, self-consumption, Spanish curtailment: Spain solar 21.8 % → 17.1 %, Germany solar 10.7 % → 8.0 %, Germany wind
+# 23.5 % → 19.7 %), so old weather on today's fleet made far more surplus than the market sees. 'trend': ratio of a
+# straight line through the years (keeps a windy year windy); 'year': ratio of yearly means. Generator replay 2020–2025:
+# solar 0.90 → 0.59, wind 2.22 → 2.07, both 1.56 → 1.33 €/MWh ('year' 0.58 / 2.11); with NUC_AV, FR_LIN or both on top,
+# worse; adopted 31 Oct. 2026
+
+
+def cf_scale(c, t, y, ref, pool):
+    """multiplier for country c, technology t, weather year y, so its output per GW matches year ref's level"""
+    lv = {yy: float(_year(yy)[f'{c}_{t}'].mean()) for yy in sorted(set(pool) | {ref}) if yy in L.DATA and L.DATA[yy]['complete'] and yy != 2022}
+    if y not in lv or ref not in lv or lv[y] <= 0:
+        return 1.0
+    if CF_LEVEL == 'trend' and len(lv) >= 3:
+        ys = np.array(sorted(lv)); a, b = np.polyfit(ys, [lv[k] for k in ys], 1)
+        fy, fr = a * y + b, a * ref + b
+        return float(fr / fy) if fy > 0 else 1.0
+    return lv[ref] / lv[y]
+
+
 def stop_share(t, Y):
     """the share of France's technology t that stops at prices ≤ 0, from the last year RTE measured before Y (stopped
     ÷ stopped + produced during those hours); none before 2024"""
@@ -715,6 +736,7 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
         SUR = {y: np.zeros_like(v) for y, v in SUR.items()}
     M = _means(demand_year)
     RS = {tt: stop_share(tt, Y) for tt in 'sw'}
+    CFS = {(c, tt, y): cf_scale(c, tt, y, demand_year, pool) for c in CS for tt in 'sw' for y in pool} if CF_LEVEL else {}
     if NUC_AV:
         # France's available nuclear: the last complete year's monthly means (planned outages and their season), the
         # availability of the delivery year being unknown when pricing
@@ -787,6 +809,9 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
                     clim = mm[month - 1]
                     arr[:] = np.clip(clim + af * (arr - clim), 0, 1.2)
                 ld = 1 + af * (ld - 1)
+            if CF_LEVEL:
+                sv = sv * np.array([CFS[(c, 's', y)] for y, _, _ in src])[:, None]
+                wv = wv * np.array([CFS[(c, 'w', y)] for y, _, _ in src])[:, None]
             S[c] = sv * fleet[(c, 's')]
             W[c] = wv * fleet[(c, 'w')]
             Lo[c] = ld * np.array([M.get((c, 'l', int(m), int(k)), 0.0) for m, k in zip(month, kind)])[:, None]
