@@ -659,9 +659,12 @@ def export_need(S, W, Lo, A):
     return (A + S + W - Lo) / 1000
 
 
-REGIME_EXTRAP = os.environ.get('PK_REGIME_EXTRAP') == '1'   # test: in the cut-off regime, beyond the deepest surplus
-# seen, the price keeps falling (slope of the lowest cells) down to the observed floor, so more solar keeps lowering the
-# capture instead of stalling at the last cell (solar 2027 → 2029 capture 0.677 → 0.663 without it)
+REGIME_EXTRAP = os.environ.get('PK_REGIME_EXTRAP', '1') == '1'   # in the cut-off regime, beyond the deepest surplus seen,
+# the price keeps falling (slope of the lowest cells) down to the observed floor, so more solar keeps lowering the capture
+# instead of stalling at the last cell. Anchored solar hourly capture 2027 / 2028 / 2029: 0.713 / 0.700 / 0.692 without,
+# 0.695 / 0.668 / 0.648 with. Replay 2023–2026 (anchored): solar 1.33 → 1.32 €/MWh (bias +0.96 → +0.08), wind 0.99 → 1.13:
+# the replay never left the surplus range already seen, 2028–2029 will; taken for the principle that the method must
+# be able to show cannibalisation rising (Tom, 31 Oct. 2026)
 
 
 class _PMExtrap(PriceModelFuel):
@@ -713,6 +716,10 @@ class RegimeRule:
         return tuple(w * u + (1 - w) * v for u, v in zip(a, b))
 
 
+RECENT_W = os.environ.get('PK_RECENT_W', '1') == '1'   # the price rule's last learning year weighs twice the one before
+# (Tom, 31 Oct. 2026: recent data weigh more). Replay 2023–2026 anchored, 9 cases: solar 1.32 → 1.18, wind 1.13 → 0.96
+# €/MWh; priced at the end of October (6 cases): solar 1.63 → 1.10, wind 1.83 → 1.47. Adopted 31 Oct. 2026. Anchoring on
+# the last 12 complete months instead of the last calendar year, with it: solar 1.10 → 1.08, wind 1.47 → 1.67: not taken
 ANCHOR = os.environ.get('PK_ANCHOR', '1') == '1'   # the capture anchored on the last complete year (Tom, 31 Oct. 2026):
 # generator(delivery year) × realised(last year) ÷ generator(last year), one factor per technology and convention, so
 # the model's level error cancels and it only gives the change (fleet, batteries, regimes). Deliveries 2023–2026, 1–3
@@ -863,6 +870,8 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
         if trend:
             pmf = TrendRule(fy, st['regional'], france)
         else:
+            if RECENT_W:
+                fy = fy + fy[-1:]   # the last learning year counted twice (weighs 2 against 1)
             if REGIME:
                 pmf = RegimeRule(fy, st['regional'], france)
             else:
