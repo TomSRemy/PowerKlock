@@ -3182,6 +3182,10 @@
     font: 600 10px 'Outfit', sans-serif !important; letter-spacing: .1em !important; text-transform: uppercase;
     color: var(--text3) !important; margin-bottom: 6px;
   }
+  /* the tile's name takes the same colour as its evolution: red up, green down, grey flat */
+  .kpi-card.kpi-up .kpi-label { color: var(--up) !important; }
+  .kpi-card.kpi-down .kpi-label { color: var(--down) !important; }
+  .kpi-card.kpi-flat .kpi-label { color: var(--kpi-flat) !important; }
   .kpi-card .kpi-value, .pr-home-kpi-value, .ma-kpi-val {
     font: 600 22px 'JetBrains Mono', monospace !important; letter-spacing: -0.02em; line-height: 1.1;
     color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums;
