@@ -33,7 +33,7 @@ jobs:
       - name: Install Chromium
         if: steps.due.outputs.run == 'true'
         run: |
-          pip install playwright==1.48.0
+          pip install playwright==1.48.0 imageio-ffmpeg
           python -m playwright install --with-deps chromium
       - name: Record
         if: steps.due.outputs.run == 'true'
