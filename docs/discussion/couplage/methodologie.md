@@ -199,3 +199,14 @@ Production d'une France isolée par filière :
 7. Aucune étude publiée trouvée qui chiffre l'effet du couplage sur le prix français ou son partage : les montants
    de ce dossier ne peuvent pas être recoupés. Le sens de l'effet, lui, est appuyé par la théorie du commerce et par la
    CRE (rapport sur les interconnexions 2024, p. 41).
+
+## 6. Du spot au forward (`forwards.json`)
+
+Les clients ne paient pas le spot. Le tarif réglementé achète depuis 2026 des produits annuels lissés sur deux ans (CRE,
+délibération 2026-06), et les offres de marché suivent les mêmes prix à terme. On compare donc le Cal base coté
+l'année avant la livraison (moyenne des clôtures de l'année, source SEFE, base PowerKlock `analytics.forward_curve`,
+tenor Y+1) au spot réalisé, en France et en Allemagne. L'écart Cal France − Allemagne passe de +3 €/MWh (livraison
+2024) à −10 (2025), −22 (2026) et −37 (2027) : le forward intègre le découplage. Il se trompe dans les deux sens
+(2024 : 99,8 coté, 58,0 réalisé ; 2026 : 59,5 coté, 90,1 réalisé sur janvier–octobre). Le forward d'une France
+isolée n'a jamais existé : **l'effet du couplage sur la facture n'est pas chiffré**, seul le canal est montré. Le
+montant « +17 Md€ » est une valeur au prix spot de la consommation, pas une facture.

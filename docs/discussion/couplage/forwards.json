@@ -1,0 +1,7 @@
+{"source": "SEFE Energy Market Insights via the PowerKlock warehouse (analytics.forward_curve, tenors Y+1 / Y+2, mean of daily closes over the trading year); spot: ENTSO-E day-ahead (analytics.da_price_daily, base); TRVE 2026 Cal average: CRE deliberation 2026-06",
+ "query": "select market, tenor, extract(year from trade_date) ty, avg(value_eur) from analytics.forward_curve where market in ('FR','DE') and tenor in ('Y+1','Y+2') group by 1,2,3",
+ "cal_y1": {"FR": {"2024": 99.8, "2025": 63.8, "2026": 59.5, "2027": 64.8}, "DE": {"2024": 96.8, "2025": 73.4, "2026": 81.0, "2027": 102.1}},
+ "cal_y2": {"FR": {"2024": 139.4, "2025": 88.1, "2026": 63.0, "2027": 62.3}, "DE": {"2024": 121.0, "2025": 91.0, "2026": 69.2, "2027": 74.3}},
+ "spot": {"FR": {"2024": 58.0, "2025": 61.1, "2026": 90.1}, "DE": {"2024": 78.5, "2025": 89.3, "2026": 114.0}},
+ "trading_days_y1": {"2024": 255, "2025": 256, "2026": 254, "2027": 212},
+ "note": "Cal for delivery Y traded during Y-1 (Y+1) and Y-2 (Y+2); 2027 traded 2 Jan - 29 Oct 2026; 2026 spot = Jan-Oct; Y+2 for 2024 traded Sept-Dec 2022 only"}
