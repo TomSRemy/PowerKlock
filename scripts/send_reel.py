@@ -35,9 +35,11 @@ def main():
     for path in paths:
         kind = os.path.basename(path)[16:].rsplit('-', 1)[0]
         lines.append(f'· {os.path.basename(path)} — légende proposée : {CAP.get(kind, "")} #électricité #énergie')
+    # the text first: once a file is attached the message is multipart and set_content refuses it
+    m.set_content('\n'.join(lines + ['', '— PowerKlock']))
+    for path in paths:
         with open(path, 'rb') as f:
             m.add_attachment(f.read(), maintype='video', subtype='mp4', filename=os.path.basename(path))
-    m.set_content('\n'.join(lines + ['', '— PowerKlock']))
     with smtplib.SMTP_SSL('smtp.gmail.com', 465, timeout=60) as s:
         s.login(user, pwd)
         s.send_message(m)
