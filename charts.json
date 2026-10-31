@@ -1,0 +1,3856 @@
+{
+ "updated": "2026-10-31T18:51:52Z",
+ "charts": [
+  {
+   "id": "wx-forecast",
+   "title": "Weather forecast",
+   "desc": "Hourly forecast, 7 days back and ahead: population-weighted country line and its main cities.",
+   "kind": "chart",
+   "source": "Open-Meteo",
+   "category": "weather",
+   "params": [
+    {
+     "key": "cc",
+     "label": "Country",
+     "options": [
+      "FR",
+      "DE",
+      "ES",
+      "BE",
+      "NL",
+      "IT",
+      "GB"
+     ]
+    },
+    {
+     "key": "v",
+     "label": "Variable",
+     "options": [
+      "temp",
+      "wind",
+      "radiation",
+      "precip"
+     ]
+    }
+   ],
+   "defaults": {
+    "cc": "FR",
+    "v": "temp"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/wx-forecast.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=wx-forecast"
+  },
+  {
+   "id": "hdd",
+   "title": "Heating degree days",
+   "desc": "Daily HDD of the past days and the 14-day forecast, against the 2016–2025 normal.",
+   "kind": "chart",
+   "source": "Open-Meteo",
+   "category": "weather",
+   "params": [
+    {
+     "key": "cc",
+     "label": "Country",
+     "options": [
+      "FR",
+      "DE",
+      "ES",
+      "BE",
+      "NL",
+      "IT",
+      "GB"
+     ]
+    },
+    {
+     "key": "back",
+     "label": "History",
+     "options": [
+      "30",
+      "60",
+      "90",
+      "180",
+      "365"
+     ]
+    }
+   ],
+   "defaults": {
+    "cc": "FR",
+    "back": "60"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/hdd.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=hdd"
+  },
+  {
+   "id": "hdd-cum",
+   "title": "Heating season, cumulative HDD",
+   "desc": "HDD accumulated since 1 September against the normal and the previous season.",
+   "kind": "chart",
+   "source": "Open-Meteo",
+   "category": "weather",
+   "params": [
+    {
+     "key": "cc",
+     "label": "Country",
+     "options": [
+      "FR",
+      "DE",
+      "ES",
+      "BE",
+      "NL",
+      "IT",
+      "GB"
+     ]
+    }
+   ],
+   "defaults": {
+    "cc": "FR"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/hdd-cum.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=hdd-cum"
+  },
+  {
+   "id": "da-intraday",
+   "title": "Day-ahead intraday profile",
+   "desc": "15-minute day-ahead prices of a group of zones for the current delivery day.",
+   "kind": "chart",
+   "source": "ENTSO-E",
+   "category": "prices",
+   "params": [
+    {
+     "key": "group",
+     "label": "Zones",
+     "options": [
+      "core",
+      "FR",
+      "FR-DE",
+      "CWE",
+      "iberia",
+      "south",
+      "nordic",
+      "cee"
+     ]
+    }
+   ],
+   "defaults": {
+    "group": "core"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/da-intraday.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=da-intraday"
+  },
+  {
+   "id": "gm-mix",
+   "title": "Generation mix of the day",
+   "desc": "Average generation mix of the latest stored day by technology (donut, bars or treemap) with the breakdown table.",
+   "kind": "html",
+   "source": "ENTSO-E A75 · RTE",
+   "category": "system",
+   "params": [
+    {
+     "key": "zone",
+     "label": "Zone",
+     "options": [
+      "FR",
+      "DE_LU",
+      "ES",
+      "BE",
+      "NL"
+     ]
+    },
+    {
+     "key": "mode",
+     "label": "View",
+     "options": [
+      "donut",
+      "bar",
+      "treemap"
+     ]
+    }
+   ],
+   "defaults": {
+    "zone": "FR",
+    "mode": "donut"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/gm-mix.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=gm-mix"
+  },
+  {
+   "id": "gm-carbon",
+   "title": "24 h carbon intensity of generation",
+   "desc": "Carbon intensity of the generation mix (g CO₂/kWh, 15-min) of the latest stored day against the day before, with min, max and clean hours.",
+   "kind": "html",
+   "source": "ENTSO-E A75 · RTE · ADEME/IPCC factors",
+   "category": "system",
+   "params": [
+    {
+     "key": "zone",
+     "label": "Zone",
+     "options": [
+      "FR",
+      "DE_LU",
+      "ES",
+      "BE",
+      "NL"
+     ]
+    }
+   ],
+   "defaults": {
+    "zone": "FR"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/gm-carbon.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=gm-carbon"
+  },
+  {
+   "id": "gm-stack",
+   "title": "24 h production stack by technology",
+   "desc": "Production of the latest stored day stacked by technology (15-min, GW), with the mix at the time pointed and the day’s breakdown by fuel.",
+   "kind": "html",
+   "source": "ENTSO-E A75 · RTE",
+   "category": "system",
+   "params": [
+    {
+     "key": "zone",
+     "label": "Zone",
+     "options": [
+      "FR",
+      "DE_LU",
+      "ES",
+      "BE",
+      "NL"
+     ]
+    }
+   ],
+   "defaults": {
+    "zone": "FR"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/gm-stack.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=gm-stack"
+  },
+  {
+   "id": "gm-profile",
+   "title": "24 h generation profile vs 30-day range",
+   "desc": "Total generation of the latest stored day (15-min, GW) against the P5–P95 and P0–P100 envelope and the median of the last 30 days, with the previous day.",
+   "kind": "chart",
+   "source": "ENTSO-E A75",
+   "category": "system",
+   "params": [
+    {
+     "key": "zone",
+     "label": "Zone",
+     "options": [
+      "FR",
+      "DE_LU",
+      "ES",
+      "BE",
+      "NL"
+     ]
+    }
+   ],
+   "defaults": {
+    "zone": "FR"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/gm-profile.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=gm-profile"
+  },
+  {
+   "id": "gm-crosszone",
+   "title": "Cross-zone generation mix · today",
+   "desc": "Today’s generation across zones: ranking, zones × fuels heatmap, 24 h profiles or spread against a reference zone, on renewable share, low-carbon share, CO₂ intensity or total output.",
+   "kind": "html",
+   "source": "ENTSO-E A75 · RTE",
+   "category": "system",
+   "params": [
+    {
+     "key": "view",
+     "label": "View",
+     "options": [
+      "ranking",
+      "heatmap",
+      "profiles",
+      "spread"
+     ]
+    },
+    {
+     "key": "metric",
+     "label": "Metric",
+     "options": [
+      "ren",
+      "lowc",
+      "co2",
+      "total"
+     ]
+    },
+    {
+     "key": "ref",
+     "label": "Reference (spread)",
+     "options": [
+      "FR",
+      "DE_LU",
+      "ES",
+      "BE",
+      "NL"
+     ]
+    }
+   ],
+   "defaults": {
+    "view": "ranking",
+    "metric": "ren",
+    "ref": "FR"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/gm-crosszone.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=gm-crosszone"
+  },
+  {
+   "id": "cb-intraday",
+   "title": "Exchanges by border",
+   "desc": "Exchanges per border and net position through the day (+ import / − export): France 15-min commercial (RTE), other countries hourly physical flows (Energy-Charts).",
+   "kind": "chart",
+   "source": "RTE éCO2mix · Energy-Charts",
+   "category": "flows",
+   "params": [
+    {
+     "key": "country",
+     "label": "Country",
+     "options": [
+      "FR",
+      "DE",
+      "BE",
+      "NL",
+      "ES",
+      "IT",
+      "CH",
+      "AT",
+      "PL",
+      "CZ",
+      "DK",
+      "PT"
+     ]
+    }
+   ],
+   "defaults": {
+    "country": "FR"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/cb-intraday.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=cb-intraday"
+  },
+  {
+   "id": "cb-days",
+   "title": "Daily exchanges by border",
+   "desc": "Daily average exchange per border over the last days (+ import / − export).",
+   "kind": "chart",
+   "source": "RTE éCO2mix · Energy-Charts",
+   "category": "flows",
+   "params": [
+    {
+     "key": "country",
+     "label": "Country",
+     "options": [
+      "FR",
+      "DE",
+      "BE",
+      "NL",
+      "ES",
+      "IT",
+      "CH",
+      "AT",
+      "PL",
+      "CZ",
+      "DK",
+      "PT"
+     ]
+    },
+    {
+     "key": "n",
+     "label": "Window",
+     "options": [
+      "7",
+      "14",
+      "30",
+      "45"
+     ]
+    }
+   ],
+   "defaults": {
+    "country": "FR",
+    "n": "14"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/cb-days.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=cb-days"
+  },
+  {
+   "id": "cb-fr-avg",
+   "title": "France · average exchange by border",
+   "desc": "Day-average commercial exchange per border, latest day (+ import / − export).",
+   "kind": "chart",
+   "source": "RTE éCO2mix",
+   "category": "flows",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/cb-fr-avg.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=cb-fr-avg"
+  },
+  {
+   "id": "load-day",
+   "title": "Load · actual vs forecast",
+   "desc": "Actual load against the day-ahead forecast and the same weekday last year.",
+   "kind": "chart",
+   "source": "RTE éCO2mix · ENTSO-E",
+   "category": "system",
+   "params": [
+    {
+     "key": "zone",
+     "label": "Zone",
+     "options": [
+      "FR",
+      "DE_LU",
+      "BE",
+      "NL",
+      "ES",
+      "GB",
+      "IT_NORD"
+     ]
+    }
+   ],
+   "defaults": {
+    "zone": "FR"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/load-day.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=load-day"
+  },
+  {
+   "id": "ren-intraday",
+   "title": "Wind & solar output vs price",
+   "desc": "Stacked wind and solar output of the latest day with the day-ahead price.",
+   "kind": "chart",
+   "source": "ENTSO-E",
+   "category": "renewables",
+   "params": [
+    {
+     "key": "zone",
+     "label": "Zone",
+     "options": [
+      "FR",
+      "DE_LU",
+      "ES",
+      "BE",
+      "NL"
+     ]
+    }
+   ],
+   "defaults": {
+    "zone": "FR"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/ren-intraday.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=ren-intraday"
+  },
+  {
+   "id": "ren-fc",
+   "title": "Wind & solar · forecast vs actual",
+   "desc": "Day-ahead forecast against actual output, latest fetched day.",
+   "kind": "chart",
+   "source": "ENTSO-E",
+   "category": "renewables",
+   "params": [
+    {
+     "key": "zone",
+     "label": "Zone",
+     "options": [
+      "FR",
+      "DE_LU",
+      "ES",
+      "BE",
+      "NL"
+     ]
+    }
+   ],
+   "defaults": {
+    "zone": "FR"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/ren-fc.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=ren-fc"
+  },
+  {
+   "id": "ren-cr",
+   "title": "Wind & solar capture rates",
+   "desc": "Daily capture price as a share of baseload, wind and solar.",
+   "kind": "chart",
+   "source": "ENTSO-E",
+   "category": "renewables",
+   "params": [
+    {
+     "key": "zone",
+     "label": "Zone",
+     "options": [
+      "FR",
+      "DE_LU",
+      "ES",
+      "BE",
+      "NL"
+     ]
+    },
+    {
+     "key": "window",
+     "label": "Window",
+     "options": [
+      "30D",
+      "90D",
+      "YTD",
+      "1Y",
+      "All"
+     ]
+    }
+   ],
+   "defaults": {
+    "zone": "FR",
+    "window": "All"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/ren-cr.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=ren-cr"
+  },
+  {
+   "id": "ren-daily",
+   "title": "Daily wind & solar output",
+   "desc": "Daily average wind and solar output with 7-day averages.",
+   "kind": "chart",
+   "source": "ENTSO-E",
+   "category": "renewables",
+   "params": [
+    {
+     "key": "zone",
+     "label": "Zone",
+     "options": [
+      "FR",
+      "DE_LU",
+      "ES",
+      "BE",
+      "NL"
+     ]
+    },
+    {
+     "key": "window",
+     "label": "Window",
+     "options": [
+      "30D",
+      "90D",
+      "YTD",
+      "1Y",
+      "All"
+     ]
+    }
+   ],
+   "defaults": {
+    "zone": "FR",
+    "window": "All"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/ren-daily.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=ren-daily"
+  },
+  {
+   "id": "fc-48h",
+   "title": "Forecast · solar, wind and load, today and tomorrow",
+   "desc": "Day-ahead forecasts of solar, wind and load published by the grid operators, quarter-hourly, for today and tomorrow, with what has happened so far today. The forecast part is hatched and labelled; the note gives the usual error over the last 30 days.",
+   "kind": "chart",
+   "source": "TSO day-ahead forecasts (ENTSO-E, via Energy-Charts)",
+   "category": "renewables",
+   "params": [
+    {
+     "key": "zone",
+     "label": "Zone",
+     "options": [
+      "FR",
+      "DE_LU",
+      "BE",
+      "NL",
+      "ES"
+     ]
+    }
+   ],
+   "defaults": {
+    "zone": "FR"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/fc-48h.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=fc-48h"
+  },
+  {
+   "id": "fc-neg",
+   "title": "France · day-ahead price and chance of a negative price, today and tomorrow",
+   "desc": "For each hour of today and tomorrow, the chance that the French day-ahead price is below zero: residual demand once solar, wind and the nuclear available are served, the same for Germany, the solar share, the calendar; a logistic model on the last three years. Its record since January 2025 is given under the chart. Where the price is already known, the real price is drawn.",
+   "kind": "chart",
+   "source": "PowerKlock model on RTE éCO2mix history and TSO day-ahead forecasts",
+   "category": "prices",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/fc-neg.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=fc-neg"
+  },
+  {
+   "id": "fc-combined",
+   "title": "France · PowerKlock combined forecast, solar and wind",
+   "desc": "Solar and wind output of France for today and tomorrow: PowerKlock’s forecast (the forecast tool’s physics at 15 points weighted by the fleet, with the TSO forecast as an input), its P10–P90 band, the TSO forecast and the actual output so far. Walk-forward since 2024 it beats the TSO forecast alone.",
+   "kind": "chart",
+   "source": "PowerKlock model on Open-Meteo and the TSO day-ahead forecast",
+   "category": "renewables",
+   "params": [
+    {
+     "key": "tech",
+     "label": "Technology",
+     "options": [
+      "wind",
+      "solar"
+     ]
+    }
+   ],
+   "defaults": {
+    "tech": "wind"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/fc-combined.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=fc-combined"
+  },
+  {
+   "id": "fc-tomorrow",
+   "title": "Tomorrow · forecast output and load",
+   "desc": "Tomorrow’s forecast wind and solar output (GWh), load and residual load (average GW), against today; flagged as a forecast with its usual error.",
+   "kind": "html",
+   "source": "TSO day-ahead forecasts (ENTSO-E, via Energy-Charts)",
+   "category": "kpi",
+   "params": [
+    {
+     "key": "zone",
+     "label": "Zone",
+     "options": [
+      "FR",
+      "DE_LU",
+      "BE",
+      "NL",
+      "ES"
+     ]
+    }
+   ],
+   "defaults": {
+    "zone": "FR"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/fc-tomorrow.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=fc-tomorrow"
+  },
+  {
+   "id": "nuc-hist",
+   "title": "France · nuclear availability",
+   "desc": "Available nuclear capacity, operator forecast and installed capacity (GW).",
+   "kind": "chart",
+   "source": "Market data",
+   "category": "france",
+   "params": [
+    {
+     "key": "period",
+     "label": "Period",
+     "options": [
+      "1M",
+      "3M",
+      "6M",
+      "YTD",
+      "1Y",
+      "2Y",
+      "5Y",
+      "All"
+     ]
+    }
+   ],
+   "defaults": {
+    "period": "1Y"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/nuc-hist.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=nuc-hist"
+  },
+  {
+   "id": "nuc-season",
+   "title": "France · nuclear availability, seasonal",
+   "desc": "Current year against the range and average of the previous five years.",
+   "kind": "chart",
+   "source": "Market data",
+   "category": "france",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/nuc-season.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=nuc-season"
+  },
+  {
+   "id": "nuc-mod",
+   "title": "France · nuclear output vs availability",
+   "desc": "Daily nuclear output against available capacity: the gap is modulation.",
+   "kind": "chart",
+   "source": "Market data · ENTSO-E",
+   "category": "france",
+   "params": [
+    {
+     "key": "period",
+     "label": "Period",
+     "options": [
+      "1M",
+      "3M",
+      "6M",
+      "YTD",
+      "1Y",
+      "2Y",
+      "5Y",
+      "All"
+     ]
+    }
+   ],
+   "defaults": {
+    "period": "1Y"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/nuc-mod.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=nuc-mod"
+  },
+  {
+   "id": "remit-unavail",
+   "title": "France · nuclear unavailability",
+   "desc": "Unavailable French nuclear capacity, actual and operator forecast (GW).",
+   "kind": "chart",
+   "source": "Market data",
+   "category": "balancing",
+   "params": [
+    {
+     "key": "period",
+     "label": "Period",
+     "options": [
+      "1M",
+      "3M",
+      "6M",
+      "YTD",
+      "1Y",
+      "2Y",
+      "5Y",
+      "All"
+     ]
+    }
+   ],
+   "defaults": {
+    "period": "6M"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/remit-unavail.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=remit-unavail"
+  },
+  {
+   "id": "imb-intraday",
+   "title": "Belgium · imbalance price vs day-ahead",
+   "desc": "Quarter-hour imbalance price, day-ahead price and system imbalance (MW, negative = short).",
+   "kind": "chart",
+   "source": "Elia · ENTSO-E",
+   "category": "balancing",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/imb-intraday.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=imb-intraday"
+  },
+  {
+   "id": "imb-days",
+   "title": "Belgium · imbalance, daily",
+   "desc": "Daily average imbalance price, day-ahead average and imbalance volatility.",
+   "kind": "chart",
+   "source": "Elia · ENTSO-E",
+   "category": "balancing",
+   "params": [
+    {
+     "key": "n",
+     "label": "Window",
+     "options": [
+      "30",
+      "90",
+      "180",
+      "365"
+     ]
+    }
+   ],
+   "defaults": {
+    "n": "30"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/imb-days.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=imb-days"
+  },
+  {
+   "id": "imb-dist",
+   "title": "Belgium · imbalance − DA distribution",
+   "desc": "Distribution of quarter-hour imbalance minus day-ahead spreads over the window.",
+   "kind": "chart",
+   "source": "Elia · ENTSO-E",
+   "category": "balancing",
+   "params": [
+    {
+     "key": "n",
+     "label": "Window",
+     "options": [
+      "30",
+      "90",
+      "180",
+      "365"
+     ]
+    }
+   ],
+   "defaults": {
+    "n": "30"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/imb-dist.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=imb-dist"
+  },
+  {
+   "id": "fr-activation",
+   "title": "France · mFRR activation prices vs day-ahead",
+   "desc": "Daily average price of the balancing energy RTE activated (mFRR): upward (RTE pays) and downward (RTE is paid), with the most extreme quarter-hour of each side, against the day-ahead baseload. aFRR is not published for France on ENTSO-E.",
+   "kind": "chart",
+   "source": "ENTSO-E",
+   "category": "balancing",
+   "params": [
+    {
+     "key": "win",
+     "label": "Window",
+     "options": [
+      "30",
+      "90",
+      "365"
+     ]
+    }
+   ],
+   "defaults": {
+    "win": "90"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/fr-activation.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=fr-activation"
+  },
+  {
+   "id": "fuel-eua-ttf",
+   "title": "EUA & TTF",
+   "desc": "EUA front-December (€/t) and TTF day-ahead (€/MWh), daily closes.",
+   "kind": "chart",
+   "source": "Market data",
+   "category": "fuels",
+   "params": [
+    {
+     "key": "period",
+     "label": "Period",
+     "options": [
+      "1M",
+      "3M",
+      "6M",
+      "YTD",
+      "1Y",
+      "2Y",
+      "5Y",
+      "All"
+     ]
+    }
+   ],
+   "defaults": {
+    "period": "1Y"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/fuel-eua-ttf.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=fuel-eua-ttf"
+  },
+  {
+   "id": "fuel-switch",
+   "title": "Coal-to-gas switch price",
+   "desc": "EUA price at which a CCGT matches a coal unit, against the EUA.",
+   "kind": "chart",
+   "source": "Market data",
+   "category": "fuels",
+   "params": [
+    {
+     "key": "period",
+     "label": "Period",
+     "options": [
+      "1M",
+      "3M",
+      "6M",
+      "YTD",
+      "1Y",
+      "2Y",
+      "5Y",
+      "All"
+     ]
+    }
+   ],
+   "defaults": {
+    "period": "1Y"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/fuel-switch.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=fuel-switch"
+  },
+  {
+   "id": "fuel-hubs",
+   "title": "European gas hubs",
+   "desc": "TTF, PEG, THE and NBP day-ahead in €/MWh.",
+   "kind": "chart",
+   "source": "Market data",
+   "category": "fuels",
+   "params": [
+    {
+     "key": "period",
+     "label": "Period",
+     "options": [
+      "1M",
+      "3M",
+      "6M",
+      "YTD",
+      "1Y",
+      "2Y",
+      "5Y",
+      "All"
+     ]
+    }
+   ],
+   "defaults": {
+    "period": "1Y"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/fuel-hubs.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=fuel-hubs"
+  },
+  {
+   "id": "fuel-storage",
+   "title": "EU gas storage",
+   "desc": "Current year fill level against the 5-year range and average.",
+   "kind": "chart",
+   "source": "GIE AGSI+",
+   "category": "fuels",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/fuel-storage.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=fuel-storage"
+  },
+  {
+   "id": "fuel-coal-oil",
+   "title": "Coal & oil",
+   "desc": "API2 coal ($/t) and Brent M+1 ($/bbl).",
+   "kind": "chart",
+   "source": "Market data",
+   "category": "fuels",
+   "params": [
+    {
+     "key": "period",
+     "label": "Period",
+     "options": [
+      "1M",
+      "3M",
+      "6M",
+      "YTD",
+      "1Y",
+      "2Y",
+      "5Y",
+      "All"
+     ]
+    }
+   ],
+   "defaults": {
+    "period": "1Y"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/fuel-coal-oil.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=fuel-coal-oil"
+  },
+  {
+   "id": "fuel-lng",
+   "title": "LNG arbitrage · JKM vs TTF",
+   "desc": "JKM M+1 against TTF in $/MMBtu, and the spread that steers LNG cargoes.",
+   "kind": "chart",
+   "source": "Market data",
+   "category": "fuels",
+   "params": [
+    {
+     "key": "period",
+     "label": "Period",
+     "options": [
+      "1M",
+      "3M",
+      "6M",
+      "YTD",
+      "1Y",
+      "2Y",
+      "5Y",
+      "All"
+     ]
+    }
+   ],
+   "defaults": {
+    "period": "1Y"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/fuel-lng.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=fuel-lng"
+  },
+  {
+   "id": "fwdc-ttf",
+   "title": "TTF forward curve",
+   "desc": "TTF day-ahead and the quoted strip (months, quarters, seasons, years).",
+   "kind": "chart",
+   "source": "Market data",
+   "category": "forwards",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/fwdc-ttf.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=fwdc-ttf"
+  },
+  {
+   "id": "fwdc-eua",
+   "title": "EUA December strip",
+   "desc": "EUA December contracts quoted in the feed (€/t).",
+   "kind": "chart",
+   "source": "Market data",
+   "category": "forwards",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/fwdc-eua.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=fwdc-eua"
+  },
+  {
+   "id": "spark-daily",
+   "title": "Clean spark & dark spreads",
+   "desc": "Daily baseload CSS and CDS of one zone, from day-ahead prices and fuel closes.",
+   "kind": "chart",
+   "source": "Market data · ENTSO-E",
+   "category": "spreads",
+   "params": [
+    {
+     "key": "zone",
+     "label": "Zone",
+     "options": [
+      "FR",
+      "DE_LU",
+      "NL",
+      "BE",
+      "ES",
+      "IT_NORD",
+      "AT",
+      "PL",
+      "CZ"
+     ]
+    },
+    {
+     "key": "period",
+     "label": "Period",
+     "options": [
+      "1M",
+      "3M",
+      "6M",
+      "YTD",
+      "1Y",
+      "2Y",
+      "5Y",
+      "All"
+     ]
+    }
+   ],
+   "defaults": {
+    "zone": "FR",
+    "period": "1Y"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/spark-daily.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=spark-daily"
+  },
+  {
+   "id": "spark-monthly",
+   "title": "Spreads · monthly averages",
+   "desc": "Monthly average CSS base, CSS peak and CDS base of one zone.",
+   "kind": "chart",
+   "source": "Market data · ENTSO-E",
+   "category": "spreads",
+   "params": [
+    {
+     "key": "zone",
+     "label": "Zone",
+     "options": [
+      "FR",
+      "DE_LU",
+      "NL",
+      "BE",
+      "ES",
+      "IT_NORD",
+      "AT",
+      "PL",
+      "CZ"
+     ]
+    },
+    {
+     "key": "period",
+     "label": "Period",
+     "options": [
+      "1M",
+      "3M",
+      "6M",
+      "YTD",
+      "1Y",
+      "2Y",
+      "5Y",
+      "All"
+     ]
+    }
+   ],
+   "defaults": {
+    "zone": "FR",
+    "period": "1Y"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/spark-monthly.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=spark-monthly"
+  },
+  {
+   "id": "fwd-power",
+   "title": "Power forward curves",
+   "desc": "Baseload forward settlements FR, DE, NL and GB (converted to €), months to calendar years.",
+   "kind": "chart",
+   "source": "Market data",
+   "category": "forwards",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/fwd-power.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=fwd-power"
+  },
+  {
+   "id": "da-heatmap",
+   "title": "Hourly price heatmap, 14 days",
+   "desc": "Hourly day-ahead prices of the last 14 delivery days, colour-scaled on the window.",
+   "kind": "html",
+   "source": "ENTSO-E",
+   "category": "prices",
+   "params": [
+    {
+     "key": "zone",
+     "label": "Zone",
+     "options": [
+      "FR",
+      "DE_LU",
+      "BE",
+      "NL",
+      "ES",
+      "IT_NORD",
+      "AT",
+      "CH",
+      "PL"
+     ]
+    }
+   ],
+   "defaults": {
+    "zone": "FR"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/da-heatmap.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=da-heatmap"
+  },
+  {
+   "id": "bess-spreads",
+   "title": "Battery spreads TB1 / TB2 / TB4",
+   "desc": "Daily top-n minus bottom-n hourly day-ahead prices: the DA arbitrage of 1, 2 and 4-hour batteries.",
+   "kind": "chart",
+   "source": "ENTSO-E",
+   "category": "spreads",
+   "params": [
+    {
+     "key": "zone",
+     "label": "Zone",
+     "options": [
+      "FR",
+      "DE_LU",
+      "BE",
+      "NL",
+      "ES",
+      "IT_NORD",
+      "AT",
+      "PL"
+     ]
+    },
+    {
+     "key": "n",
+     "label": "Window",
+     "options": [
+      "7",
+      "30",
+      "90"
+     ]
+    }
+   ],
+   "defaults": {
+    "zone": "FR",
+    "n": "30"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/bess-spreads.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=bess-spreads"
+  },
+  {
+   "id": "go-indic",
+   "title": "GO price indications by vintage",
+   "desc": "Weekly broker indications per production year (€/MWh), selected product.",
+   "kind": "chart",
+   "source": "Commerg",
+   "category": "go",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/go-indic.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=go-indic"
+  },
+  {
+   "id": "go-cal1",
+   "title": "GO Cal+1 price",
+   "desc": "Rolling front-year GO price indication (€/MWh).",
+   "kind": "chart",
+   "source": "Commerg",
+   "category": "go",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/go-cal1.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=go-cal1"
+  },
+  {
+   "id": "go-cal",
+   "title": "GO forward curve by calendar year",
+   "desc": "Bid / ask by production year (€/MWh).",
+   "kind": "chart",
+   "source": "Commerg",
+   "category": "go",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/go-cal.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=go-cal"
+  },
+  {
+   "id": "go-spread",
+   "title": "GO bid/ask spread",
+   "desc": "Bid/ask spread over time (€/MWh).",
+   "kind": "chart",
+   "source": "Commerg",
+   "category": "go",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/go-spread.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=go-spread"
+  },
+  {
+   "id": "go-hist",
+   "title": "GO weekly mid prices, all products",
+   "desc": "Weekly mid price per GO product (€/MWh).",
+   "kind": "chart",
+   "source": "Commerg",
+   "category": "go",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/go-hist.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=go-hist"
+  },
+  {
+   "id": "go-wow",
+   "title": "GO week-on-week change",
+   "desc": "Weekly change of the mid price (€/MWh).",
+   "kind": "chart",
+   "source": "Commerg",
+   "category": "go",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/go-wow.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=go-wow"
+  },
+  {
+   "id": "go-box",
+   "title": "GO price distribution by half-year",
+   "desc": "Interquartile range and median of the weekly mid price.",
+   "kind": "chart",
+   "source": "Commerg",
+   "category": "go",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/go-box.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=go-box"
+  },
+  {
+   "id": "go-auct-tech",
+   "title": "French GO auctions · wind vs solar",
+   "desc": "Volume sold and weighted average price per technology, French state auctions.",
+   "kind": "chart",
+   "source": "EEX",
+   "category": "go",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/go-auct-tech.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=go-auct-tech"
+  },
+  {
+   "id": "go-auct-vol",
+   "title": "French GO auctions · volumes",
+   "desc": "Volume offered vs allocated per auction (MWh).",
+   "kind": "chart",
+   "source": "EEX",
+   "category": "go",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/go-auct-vol.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=go-auct-vol"
+  },
+  {
+   "id": "hist-spread",
+   "title": "Daily intraday spread (max − min)",
+   "desc": "Daily max − min day-ahead price per zone over the selected window (Prices → Spread).",
+   "kind": "chart",
+   "source": "ENTSO-E",
+   "category": "spreads",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/hist-spread.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=hist-spread"
+  },
+  {
+   "id": "hist-neg",
+   "title": "Negative-price hours per day",
+   "desc": "Hours with a negative day-ahead price per day over the selected window.",
+   "kind": "chart",
+   "source": "ENTSO-E",
+   "category": "prices",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/hist-neg.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=hist-neg"
+  },
+  {
+   "id": "neg-crosszone",
+   "title": "Negative prices · cross-zone",
+   "desc": "Negative-price hours across European zones: by zone and year, ranking, seasonality, hour of day, pace this year.",
+   "kind": "chart",
+   "source": "ENTSO-E",
+   "category": "prices",
+   "params": [
+    {
+     "key": "view",
+     "label": "View",
+     "options": [
+      "year",
+      "rank",
+      "season",
+      "hour",
+      "cumul"
+     ]
+    },
+    {
+     "key": "win",
+     "label": "Window",
+     "options": [
+      "1M",
+      "3M",
+      "1Y",
+      "2Y",
+      "5Y",
+      "all"
+     ]
+    }
+   ],
+   "defaults": {
+    "view": "year",
+    "win": "1Y"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/neg-crosszone.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=neg-crosszone"
+  },
+  {
+   "id": "neg-zone",
+   "title": "Negative prices · one zone",
+   "desc": "Negative-price hours of one zone: by month, per year, pace, daily with the lowest price, hour of day.",
+   "kind": "chart",
+   "source": "ENTSO-E",
+   "category": "prices",
+   "params": [
+    {
+     "key": "zone",
+     "label": "Zone",
+     "options": [
+      "FR",
+      "DE_LU",
+      "BE",
+      "NL",
+      "ES",
+      "PT",
+      "IT_NORD",
+      "AT",
+      "CH",
+      "PL",
+      "CZ",
+      "HU",
+      "SE",
+      "FI",
+      "DK_W",
+      "DK_E",
+      "EE",
+      "LT",
+      "LV",
+      "GR",
+      "RO",
+      "BG",
+      "HR",
+      "SI",
+      "SK",
+      "RS",
+      "NO_1",
+      "ME",
+      "MK",
+      "IT_SICI"
+     ]
+    },
+    {
+     "key": "view",
+     "label": "View",
+     "options": [
+      "month",
+      "year",
+      "cumul",
+      "daily",
+      "hour"
+     ]
+    },
+    {
+     "key": "win",
+     "label": "Window",
+     "options": [
+      "1M",
+      "3M",
+      "1Y",
+      "2Y",
+      "5Y",
+      "all"
+     ]
+    }
+   ],
+   "defaults": {
+    "zone": "FR",
+    "view": "month",
+    "win": "1Y"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/neg-zone.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=neg-zone"
+  },
+  {
+   "id": "neg-zone-heatmap",
+   "title": "Negative prices · month × hour",
+   "desc": "How often each hour of each month has a negative price in a zone (last three years).",
+   "kind": "html",
+   "source": "ENTSO-E",
+   "category": "prices",
+   "params": [
+    {
+     "key": "zone",
+     "label": "Zone",
+     "options": [
+      "FR",
+      "DE_LU",
+      "BE",
+      "NL",
+      "ES",
+      "PT",
+      "AT",
+      "CH",
+      "PL",
+      "SE",
+      "FI",
+      "DK_W"
+     ]
+    }
+   ],
+   "defaults": {
+    "zone": "FR"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/neg-zone-heatmap.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=neg-zone-heatmap"
+  },
+  {
+   "id": "pf-curve",
+   "title": "Power forward curve vs 1W / 1M ago",
+   "desc": "Baseload forward curve of one market at the latest settlement, a week and a month earlier, tenor by tenor.",
+   "kind": "chart",
+   "source": "Market data",
+   "category": "forwards",
+   "params": [
+    {
+     "key": "country",
+     "label": "Market",
+     "options": [
+      "FR",
+      "UK",
+      "DE",
+      "NL"
+     ]
+    }
+   ],
+   "defaults": {
+    "country": "FR",
+    "vs": ""
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/pf-curve.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=pf-curve"
+  },
+  {
+   "id": "pf-history",
+   "title": "Power forward history",
+   "desc": "Daily settlement of one forward product (M+1 … Y+3) of one market; Y+1 is the rolling Cal+1.",
+   "kind": "chart",
+   "source": "Market data",
+   "category": "forwards",
+   "params": [
+    {
+     "key": "country",
+     "label": "Market",
+     "options": [
+      "FR",
+      "UK",
+      "DE",
+      "NL"
+     ]
+    },
+    {
+     "key": "tenor",
+     "label": "Product",
+     "options": [
+      "M+1",
+      "M+2",
+      "M+3",
+      "Q+1",
+      "Q+2",
+      "Q+3",
+      "S+1",
+      "S+2",
+      "Y+1",
+      "Y+2",
+      "Y+3"
+     ]
+    },
+    {
+     "key": "win",
+     "label": "Period",
+     "options": [
+      "3M",
+      "6M",
+      "1Y",
+      "3Y",
+      "5Y",
+      "all"
+     ]
+    }
+   ],
+   "defaults": {
+    "country": "FR",
+    "tenor": "Y+1",
+    "win": "1Y"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/pf-history.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=pf-history"
+  },
+  {
+   "id": "pf-cals",
+   "title": "Power forward · calendar contracts",
+   "desc": "Price history of each calendar-year baseload contract of one market, one line per contract.",
+   "kind": "chart",
+   "source": "Market data",
+   "category": "forwards",
+   "params": [
+    {
+     "key": "country",
+     "label": "Market",
+     "options": [
+      "FR",
+      "UK",
+      "DE",
+      "NL"
+     ]
+    },
+    {
+     "key": "win",
+     "label": "Period",
+     "options": [
+      "3M",
+      "6M",
+      "1Y",
+      "3Y",
+      "5Y",
+      "all"
+     ]
+    }
+   ],
+   "defaults": {
+    "country": "FR",
+    "win": "1Y"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/pf-cals.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=pf-cals"
+  },
+  {
+   "id": "pf-contracts",
+   "title": "Power forward · dated contracts",
+   "desc": "Price history of the next quarters, months or seasons of one market (baseload), one line per contract.",
+   "kind": "chart",
+   "source": "Market data",
+   "category": "forwards",
+   "params": [
+    {
+     "key": "country",
+     "label": "Market",
+     "options": [
+      "FR",
+      "UK",
+      "DE",
+      "NL"
+     ]
+    },
+    {
+     "key": "kind",
+     "label": "Contracts",
+     "options": [
+      "quarter",
+      "month",
+      "season"
+     ]
+    },
+    {
+     "key": "win",
+     "label": "Period",
+     "options": [
+      "3M",
+      "6M",
+      "1Y",
+      "3Y",
+      "5Y",
+      "all"
+     ]
+    }
+   ],
+   "defaults": {
+    "country": "FR",
+    "kind": "quarter",
+    "win": "1Y"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/pf-contracts.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=pf-contracts"
+  },
+  {
+   "id": "pf-compare",
+   "title": "Power forwards · market comparison",
+   "desc": "One forward product across FR, DE, NL and GB (converted to € at each day’s close).",
+   "kind": "chart",
+   "source": "Market data",
+   "category": "forwards",
+   "params": [
+    {
+     "key": "tenor",
+     "label": "Product",
+     "options": [
+      "M+1",
+      "M+2",
+      "M+3",
+      "Q+1",
+      "Q+2",
+      "Q+3",
+      "S+1",
+      "S+2",
+      "Y+1",
+      "Y+2",
+      "Y+3"
+     ]
+    },
+    {
+     "key": "win",
+     "label": "Period",
+     "options": [
+      "3M",
+      "6M",
+      "1Y",
+      "3Y",
+      "5Y",
+      "all"
+     ]
+    }
+   ],
+   "defaults": {
+    "tenor": "Y+1",
+    "win": "1Y"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/pf-compare.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=pf-compare"
+  },
+  {
+   "id": "fr-fwd-read",
+   "title": "Cal+1 France · analyst read",
+   "desc": "Why the French Cal+1 moved: part explained by gas and carbon, France-specific part, nuclear, spot, weather, gas storage, level vs the gas plant cost, policy news.",
+   "kind": "html",
+   "source": "Market data · News",
+   "category": "forwards",
+   "params": [
+    {
+     "key": "win",
+     "label": "Period",
+     "options": [
+      "1D",
+      "1W",
+      "1M"
+     ]
+    }
+   ],
+   "defaults": {
+    "win": "1W"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/fr-fwd-read.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=fr-fwd-read"
+  },
+  {
+   "id": "kpi-da",
+   "title": "Day-ahead base",
+   "desc": "Baseload day-ahead price of a zone for the current delivery day, change vs the day before.",
+   "kind": "html",
+   "source": "ENTSO-E",
+   "category": "kpi",
+   "params": [
+    {
+     "key": "zone",
+     "label": "Zone",
+     "options": [
+      "AT",
+      "BE",
+      "BG",
+      "HR",
+      "CZ",
+      "DK_E",
+      "DK_W",
+      "EE",
+      "FI",
+      "FR",
+      "DE_LU",
+      "GB",
+      "GR",
+      "HU",
+      "IT_NORD",
+      "IT_SOUTH",
+      "LV",
+      "LT",
+      "ME",
+      "MK",
+      "NL",
+      "NO_2",
+      "NO_3",
+      "NO_1",
+      "PT",
+      "RO",
+      "RS",
+      "SK",
+      "SI",
+      "ES",
+      "SE_3",
+      "CH"
+     ]
+    }
+   ],
+   "defaults": {
+    "zone": "FR"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/kpi-da.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=kpi-da"
+  },
+  {
+   "id": "kpi-fuel",
+   "title": "Fuel & carbon close",
+   "desc": "Last close of a fuel or carbon benchmark and its daily change.",
+   "kind": "html",
+   "source": "Market data",
+   "category": "kpi",
+   "params": [
+    {
+     "key": "c",
+     "label": "Product",
+     "options": [
+      "eua",
+      "ttf",
+      "coal",
+      "brent",
+      "the",
+      "peg",
+      "jkm",
+      "agsi"
+     ]
+    }
+   ],
+   "defaults": {
+    "c": "eua"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/kpi-fuel.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=kpi-fuel"
+  },
+  {
+   "id": "kpi-fr-nuclear",
+   "title": "FR nuclear available",
+   "desc": "Available French nuclear capacity, share of the 63 GW installed fleet.",
+   "kind": "html",
+   "source": "Market data",
+   "category": "kpi",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/kpi-fr-nuclear.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=kpi-fr-nuclear"
+  },
+  {
+   "id": "kpi-fr-load",
+   "title": "FR consumption",
+   "desc": "Latest French consumption, against RTE’s day-before forecast.",
+   "kind": "html",
+   "source": "RTE éCO2mix",
+   "category": "kpi",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/kpi-fr-load.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=kpi-fr-load"
+  },
+  {
+   "id": "kpi-fr-net",
+   "title": "FR net exports",
+   "desc": "Net commercial exchanges of France, latest quarter-hour (positive = net exporter).",
+   "kind": "html",
+   "source": "RTE éCO2mix",
+   "category": "kpi",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/kpi-fr-net.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=kpi-fr-net"
+  },
+  {
+   "id": "kpi-hdd",
+   "title": "FR heating degree days",
+   "desc": "Today’s population-weighted mean temperature in France and heating degree days (base 18 °C).",
+   "kind": "html",
+   "source": "Open-Meteo",
+   "category": "kpi",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/kpi-hdd.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=kpi-hdd"
+  },
+  {
+   "id": "kpi-go",
+   "title": "GO renewables · mid",
+   "desc": "Guarantees of origin, renewable, latest weekly mid price.",
+   "kind": "html",
+   "source": "Commerg",
+   "category": "kpi",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/kpi-go.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=kpi-go"
+  },
+  {
+   "id": "cap-history",
+   "title": "Installed capacity by year",
+   "desc": "Installed net capacity by technology and year (GW), one country.",
+   "kind": "chart",
+   "source": "Energy-Charts",
+   "category": "system",
+   "params": [
+    {
+     "key": "country",
+     "label": "Country",
+     "options": [
+      "FR",
+      "DE",
+      "BE",
+      "NL",
+      "ES",
+      "IT",
+      "CH",
+      "AT",
+      "PL",
+      "CZ",
+      "DK",
+      "PT"
+     ]
+    }
+   ],
+   "defaults": {
+    "country": "FR"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/cap-history.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=cap-history"
+  },
+  {
+   "id": "cap-compare",
+   "title": "Installed capacity · country comparison",
+   "desc": "Latest installed capacity by technology for the 12 covered countries (GW).",
+   "kind": "chart",
+   "source": "Energy-Charts",
+   "category": "system",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/cap-compare.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=cap-compare"
+  },
+  {
+   "id": "fr-reg-lf",
+   "title": "France regions · wind & solar load factors",
+   "desc": "Average load factor (output ÷ installed capacity) of wind and solar per region, latest complete day.",
+   "kind": "chart",
+   "source": "RTE · ODRÉ",
+   "category": "france",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/fr-reg-lf.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=fr-reg-lf"
+  },
+  {
+   "id": "fr-reg-cap",
+   "title": "France regions · installed capacity",
+   "desc": "Installed capacity per region and technology from the national registry of installations (GW).",
+   "kind": "chart",
+   "source": "RTE · ODRÉ",
+   "category": "france",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/fr-reg-cap.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=fr-reg-cap"
+  },
+  {
+   "id": "fr-reg-lf-history",
+   "title": "Regional load factors, monthly",
+   "desc": "Monthly average wind and solar load factor of one French region since RTE publishes them: a yield reference for regional PPAs.",
+   "kind": "chart",
+   "source": "RTE · ODRÉ",
+   "category": "france",
+   "params": [
+    {
+     "key": "region",
+     "label": "Region",
+     "options": [
+      "Auvergne-Rhône-Alpes",
+      "Bourgogne-Franche-Comté",
+      "Bretagne",
+      "Centre-Val de Loire",
+      "Grand Est",
+      "Hauts-de-France",
+      "Île-de-France",
+      "Normandie",
+      "Nouvelle-Aquitaine",
+      "Occitanie",
+      "Pays de la Loire",
+      "Provence-Alpes-Côte d'Azur"
+     ]
+    }
+   ],
+   "defaults": {
+    "region": "Occitanie"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/fr-reg-lf-history.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=fr-reg-lf-history"
+  },
+  {
+   "id": "fr-gas-elec",
+   "title": "France · daily gas and electricity consumption",
+   "desc": "Daily average consumption in GW: gas (NaTran + Teréga, PCS) and electricity (RTE), consolidated data.",
+   "kind": "chart",
+   "source": "RTE · ODRÉ",
+   "category": "france",
+   "params": [
+    {
+     "key": "years",
+     "label": "History",
+     "options": [
+      "1",
+      "3",
+      "5",
+      "14"
+     ]
+    }
+   ],
+   "defaults": {
+    "years": "3"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/fr-gas-elec.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=fr-gas-elec"
+  },
+  {
+   "id": "load-factors",
+   "title": "Measured load factors",
+   "desc": "Load factor (output ÷ installed capacity) by country and technology, or of each French region for wind and solar: last full year or 3-year average.",
+   "kind": "html",
+   "source": "Energy-Charts · RTE (ODRÉ)",
+   "category": "renewables",
+   "params": [
+    {
+     "key": "scope",
+     "label": "Scope",
+     "options": [
+      "country",
+      "region"
+     ]
+    },
+    {
+     "key": "per",
+     "label": "Period",
+     "options": [
+      "avg3",
+      "last"
+     ]
+    }
+   ],
+   "defaults": {
+    "scope": "country",
+    "per": "avg3"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/load-factors.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=load-factors"
+  },
+  {
+   "id": "fr-m0",
+   "title": "France M0",
+   "desc": "Monthly M0 of the complément de rémunération: CRE official values, PowerKlock estimate for months not yet published, forecast from the forwards with its range, and the capture price with negative prices included.",
+   "kind": "chart",
+   "source": "CRE · PowerKlock",
+   "category": "renewables",
+   "params": [
+    {
+     "key": "tech",
+     "label": "Technology",
+     "options": [
+      "solar",
+      "wind",
+      "base"
+     ]
+    },
+    {
+     "key": "view",
+     "label": "View",
+     "options": [
+      "price",
+      "ratio"
+     ]
+    },
+    {
+     "key": "win",
+     "label": "History",
+     "options": [
+      "2Y",
+      "4Y",
+      "All"
+     ]
+    }
+   ],
+   "defaults": {
+    "tech": "solar",
+    "view": "price",
+    "win": "2Y"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/fr-m0.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=fr-m0"
+  },
+  {
+   "id": "fr-m0-forecast",
+   "title": "France M0 forecast",
+   "desc": "Coming months: forward baseload and the base, wind and solar M0 it implies with the ratios of the last three years (range low–high).",
+   "kind": "html",
+   "source": "PowerKlock",
+   "category": "renewables",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/fr-m0-forecast.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=fr-m0-forecast"
+  },
+  {
+   "id": "fr-m0-official",
+   "title": "France M0 · CRE and PowerKlock estimate",
+   "desc": "Last 12 months: official CRE M0 (base, wind, solar), the PowerKlock estimate with the same method and the hours with a negative price.",
+   "kind": "html",
+   "source": "CRE · PowerKlock",
+   "category": "renewables",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/fr-m0-official.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=fr-m0-official"
+  },
+  {
+   "id": "cre-tenders",
+   "title": "CRE tenders · price kept vs M0",
+   "desc": "Average price kept at each period of the CRE renewable tenders (ground and rooftop solar, onshore wind, technology-neutral), against the M0 the market paid the same technology over the 12 months before the result.",
+   "kind": "chart",
+   "source": "CRE open data",
+   "category": "renewables",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/cre-tenders.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=cre-tenders"
+  },
+  {
+   "id": "cre-tenders-table",
+   "title": "CRE tenders · latest results",
+   "desc": "Latest period of each CRE renewable tender: date, volume offered and kept, average price kept, and its gap to the M0 of the 12 months before (negative: the market paid more than the tender price, the contract pays back).",
+   "kind": "html",
+   "source": "CRE open data",
+   "category": "renewables",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/cre-tenders-table.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=cre-tenders-table"
+  },
+  {
+   "id": "cspe-enr",
+   "title": "Public cost of renewable support",
+   "desc": "Charges of public service paid to support renewable power in mainland France, by technology (M€): observed for past years, CRE forecast for the coming ones. Negative: the market paid more than the support contracts.",
+   "kind": "chart",
+   "source": "CRE deliberation",
+   "category": "renewables",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/cspe-enr.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=cspe-enr"
+  },
+  {
+   "id": "fr-capacity-gc",
+   "title": "France capacity guarantees · OTC prices",
+   "desc": "Volume-weighted monthly price (log scale) of bilateral capacity guarantee trades per delivery year (€/MW/year), with traded volume.",
+   "kind": "chart",
+   "source": "RTE registry (ODRÉ)",
+   "category": "prices",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/fr-capacity-gc.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=fr-capacity-gc"
+  },
+  {
+   "id": "fr-sys-prod",
+   "title": "France production by source",
+   "desc": "Quarter-hour production by source with consumption and the D-1 forecast (RTE éCO2mix); pumping and battery charging below zero.",
+   "kind": "chart",
+   "source": "RTE éCO2mix",
+   "category": "france",
+   "params": [
+    {
+     "key": "day",
+     "label": "Day",
+     "options": [
+      "latest",
+      "yesterday"
+     ]
+    }
+   ],
+   "defaults": {
+    "day": "latest"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/fr-sys-prod.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=fr-sys-prod"
+  },
+  {
+   "id": "fr-sys-co2",
+   "title": "France CO₂ intensity",
+   "desc": "Quarter-hour carbon intensity of French generation published by RTE (g CO₂/kWh, direct emissions).",
+   "kind": "chart",
+   "source": "RTE éCO2mix",
+   "category": "france",
+   "params": [
+    {
+     "key": "day",
+     "label": "Day",
+     "options": [
+      "latest",
+      "yesterday"
+     ]
+    }
+   ],
+   "defaults": {
+    "day": "latest"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/fr-sys-co2.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=fr-sys-co2"
+  },
+  {
+   "id": "fr-sys-exch",
+   "title": "France commercial exchanges by border",
+   "desc": "Commercial exchanges per border, quarter-hour (GW, + import, − export), with physical net exchange (RTE éCO2mix).",
+   "kind": "chart",
+   "source": "RTE éCO2mix",
+   "category": "france",
+   "params": [
+    {
+     "key": "day",
+     "label": "Day",
+     "options": [
+      "latest",
+      "yesterday"
+     ]
+    }
+   ],
+   "defaults": {
+    "day": "latest"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/fr-sys-exch.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=fr-sys-exch"
+  },
+  {
+   "id": "fr-sys-flex",
+   "title": "France pumped storage and batteries",
+   "desc": "Pumped-storage turbining and pumping, battery discharge and charge (GW), with the day-ahead price.",
+   "kind": "chart",
+   "source": "RTE éCO2mix",
+   "category": "france",
+   "params": [
+    {
+     "key": "day",
+     "label": "Day",
+     "options": [
+      "latest",
+      "yesterday"
+     ]
+    }
+   ],
+   "defaults": {
+    "day": "latest"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/fr-sys-flex.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=fr-sys-flex"
+  },
+  {
+   "id": "fr-sys-monthly",
+   "title": "France monthly production by source",
+   "desc": "Monthly French electricity production by source since 2015 (TWh or share), with consumption (RTE éCO2mix).",
+   "kind": "chart",
+   "source": "RTE éCO2mix",
+   "category": "france",
+   "params": [
+    {
+     "key": "view",
+     "label": "View",
+     "options": [
+      "twh",
+      "share"
+     ]
+    },
+    {
+     "key": "win",
+     "label": "Window",
+     "options": [
+      "3Y",
+      "5Y",
+      "All"
+     ]
+    }
+   ],
+   "defaults": {
+    "view": "twh",
+    "win": "All"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/fr-sys-monthly.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=fr-sys-monthly"
+  },
+  {
+   "id": "fr-sys-envelope",
+   "title": "France: this year vs previous years",
+   "desc": "Weekly average of a French series this year and last year against the min–max range and mean of earlier years since 2015 (RTE éCO2mix).",
+   "kind": "chart",
+   "source": "RTE éCO2mix",
+   "category": "france",
+   "params": [
+    {
+     "key": "series",
+     "label": "Series",
+     "options": [
+      "nuclear",
+      "load",
+      "wind",
+      "solar",
+      "hydro",
+      "exch",
+      "co2"
+     ]
+    }
+   ],
+   "defaults": {
+    "series": "nuclear"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/fr-sys-envelope.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=fr-sys-envelope"
+  },
+  {
+   "id": "fr-spot-next",
+   "title": "France day-ahead · next delivery day vs previous",
+   "desc": "Quarter-hour French day-ahead prices of the latest delivery day against the day before and a week before.",
+   "kind": "chart",
+   "source": "ENTSO-E",
+   "category": "prices",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/fr-spot-next.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=fr-spot-next"
+  },
+  {
+   "id": "fr-de-spread",
+   "title": "France vs Germany · daily baseload",
+   "desc": "Daily day-ahead baseload in France and Germany and the FR − DE spread.",
+   "kind": "chart",
+   "source": "ENTSO-E",
+   "category": "prices",
+   "params": [
+    {
+     "key": "win",
+     "label": "Window",
+     "options": [
+      "30",
+      "90",
+      "365"
+     ]
+    }
+   ],
+   "defaults": {
+    "win": "30"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/fr-de-spread.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=fr-de-spread"
+  },
+  {
+   "id": "go-vintages",
+   "title": "GO renewable · production-year contracts",
+   "desc": "Weekly mid price of AIB renewable guarantees of origin for the current and next production years (€/MWh).",
+   "kind": "chart",
+   "source": "Commerg",
+   "category": "go",
+   "params": [
+    {
+     "key": "product",
+     "label": "Product",
+     "options": [
+      "GO AIB Renewable",
+      "GO AIB Hydro",
+      "GO AIB Wind",
+      "GO AIB Solar"
+     ]
+    }
+   ],
+   "defaults": {
+    "product": "GO AIB Renewable"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/go-vintages.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=go-vintages"
+  },
+  {
+   "id": "fr-fwd-table",
+   "title": "Power forwards · prices and changes",
+   "desc": "Baseload forward settlements by product with the change on the previous day and on the week.",
+   "kind": "html",
+   "source": "Market data",
+   "category": "forwards",
+   "params": [
+    {
+     "key": "country",
+     "label": "Market",
+     "options": [
+      "FR",
+      "DE",
+      "NL"
+     ]
+    }
+   ],
+   "defaults": {
+    "country": "FR"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/fr-fwd-table.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=fr-fwd-table"
+  },
+  {
+   "id": "fr-fwd-products",
+   "title": "Power forwards · price history by product",
+   "desc": "Daily settlements of the calendar contracts (fixed delivery years) and of the front month and front quarter.",
+   "kind": "chart",
+   "source": "Market data",
+   "category": "forwards",
+   "params": [
+    {
+     "key": "country",
+     "label": "Market",
+     "options": [
+      "FR",
+      "DE",
+      "NL"
+     ]
+    },
+    {
+     "key": "win",
+     "label": "Window",
+     "options": [
+      "1M",
+      "3M",
+      "1Y"
+     ]
+    }
+   ],
+   "defaults": {
+    "country": "FR",
+    "win": "3M"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/fr-fwd-products.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=fr-fwd-products"
+  },
+  {
+   "id": "fr-fwd-strip",
+   "title": "Power forwards · prices over the delivery calendar",
+   "desc": "Each forward product drawn over its own delivery period (months, quarters, seasons, years), today and a week ago.",
+   "kind": "chart",
+   "source": "Market data",
+   "category": "forwards",
+   "params": [
+    {
+     "key": "country",
+     "label": "Market",
+     "options": [
+      "FR",
+      "DE",
+      "NL"
+     ]
+    }
+   ],
+   "defaults": {
+    "country": "FR"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/fr-fwd-strip.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=fr-fwd-strip"
+  },
+  {
+   "id": "wx-outlook",
+   "title": "5-week outlook vs normal",
+   "desc": "Next 5 weeks against the 2016–2025 normal: temperature, wind and solar production (GWh/day, calibrated on RTE or ENTSO-E output) or hydro-basin precipitation; France, Germany, Spain, Belgium, Netherlands, Italy, Switzerland, Austria. Band = 10th–90th percentile of the 31 ensemble members.",
+   "kind": "chart",
+   "source": "Open-Meteo GFS ensemble · RTE",
+   "category": "weather",
+   "params": [
+    {
+     "key": "country",
+     "label": "Country",
+     "options": [
+      "FR",
+      "DE",
+      "ES",
+      "BE",
+      "NL",
+      "IT",
+      "CH",
+      "AT"
+     ]
+    },
+    {
+     "key": "series",
+     "label": "Series",
+     "options": [
+      "temp",
+      "wind",
+      "solar",
+      "precip"
+     ]
+    },
+    {
+     "key": "past",
+     "label": "Past days shown",
+     "options": [
+      "7",
+      "14"
+     ]
+    }
+   ],
+   "defaults": {
+    "country": "FR",
+    "series": "wind",
+    "past": "7"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/wx-outlook.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=wx-outlook"
+  },
+  {
+   "id": "nuc-monthly-years",
+   "title": "France nuclear output by month",
+   "desc": "Monthly French nuclear generation (TWh), current year against the two previous years; the current month is provisional.",
+   "kind": "chart",
+   "source": "RTE éCO2mix",
+   "category": "france",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/nuc-monthly-years.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=nuc-monthly-years"
+  },
+  {
+   "id": "gas-storage-years",
+   "title": "EU gas storage by year",
+   "desc": "Aggregate EU gas storage filling level (%): this year and last year against the range and mean of the earlier years since 2019.",
+   "kind": "chart",
+   "source": "GIE AGSI",
+   "category": "fuels",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/gas-storage-years.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=gas-storage-years"
+  },
+  {
+   "id": "fr-load-normal",
+   "title": "France consumption vs normal",
+   "desc": "French consumption over the last 60 days (daily and 7-day average) against the 2016–2025 average of the same calendar days (GWh/day).",
+   "kind": "chart",
+   "source": "RTE éCO2mix",
+   "category": "france",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/fr-load-normal.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=fr-load-normal"
+  },
+  {
+   "id": "fr-cal-history",
+   "title": "Forward contracts",
+   "desc": "Daily settlements of every liquid forward contract of a market (quoted in the last 7 days, still to deliver): months, quarters, seasons and calendar years, each type shown or hidden. UK in GBP.",
+   "kind": "chart",
+   "source": "Market data",
+   "category": "forwards",
+   "params": [
+    {
+     "key": "country",
+     "label": "Market",
+     "options": [
+      "FR",
+      "DE",
+      "NL",
+      "UK"
+     ]
+    },
+    {
+     "key": "win",
+     "label": "Window",
+     "options": [
+      "3M",
+      "6M",
+      "1Y",
+      "3Y",
+      "all"
+     ]
+    },
+    {
+     "key": "set",
+     "label": "Products",
+     "options": [
+      "liquid",
+      "all"
+     ]
+    },
+    {
+     "key": "load",
+     "label": "Load",
+     "options": [
+      "base",
+      "peak"
+     ]
+    },
+    {
+     "key": "kinds",
+     "label": "Products",
+     "options": [
+      "year",
+      "year,season",
+      "year,season,quarter",
+      "year,season,quarter,month"
+     ]
+    }
+   ],
+   "defaults": {
+    "win": "3M",
+    "country": "FR",
+    "kinds": "year,season,quarter,month",
+    "load": "base",
+    "set": "liquid"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/fr-cal-history.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=fr-cal-history"
+  },
+  {
+   "id": "fr-cal-drivers",
+   "title": "Cal+1 and its drivers",
+   "desc": "A market’s Cal+1 baseload against its drivers: TTF gas of the same calendar year, EUA carbon, API2 coal Cal+1 and Brent oil, indexed to 100 at the start of the window.",
+   "kind": "chart",
+   "source": "Market data",
+   "category": "forwards",
+   "params": [
+    {
+     "key": "country",
+     "label": "Market",
+     "options": [
+      "FR",
+      "DE",
+      "NL",
+      "UK"
+     ]
+    },
+    {
+     "key": "win",
+     "label": "Window",
+     "options": [
+      "3M",
+      "6M",
+      "1Y",
+      "3Y"
+     ]
+    }
+   ],
+   "defaults": {
+    "win": "6M",
+    "country": "FR"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/fr-cal-drivers.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=fr-cal-drivers"
+  },
+  {
+   "id": "ttf-fwd-table",
+   "title": "TTF forwards · table",
+   "desc": "Every liquid TTF gas forward product (months, quarters, seasons, calendar years quoted in the last 7 days): settlement, change vs the previous day and vs a week before.",
+   "kind": "html",
+   "source": "Market data",
+   "category": "forwards",
+   "params": [
+    {
+     "key": "set",
+     "label": "Products",
+     "options": [
+      "liquid",
+      "all"
+     ]
+    }
+   ],
+   "defaults": {
+    "set": "liquid"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/ttf-fwd-table.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=ttf-fwd-table"
+  },
+  {
+   "id": "power-fwd-table",
+   "title": "Power forwards · table",
+   "desc": "Every liquid power forward product of a market (baseload months, quarters, seasons, calendar years quoted in the last 7 days): settlement, change vs the previous day and vs a week before.",
+   "kind": "html",
+   "source": "Market data",
+   "category": "forwards",
+   "params": [
+    {
+     "key": "country",
+     "label": "Market",
+     "options": [
+      "FR",
+      "DE",
+      "NL",
+      "UK"
+     ]
+    },
+    {
+     "key": "set",
+     "label": "Products",
+     "options": [
+      "liquid",
+      "all"
+     ]
+    }
+   ],
+   "defaults": {
+    "country": "FR",
+    "set": "liquid"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/power-fwd-table.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=power-fwd-table"
+  },
+  {
+   "id": "ttf-cal-history",
+   "title": "TTF forward contracts",
+   "desc": "Daily settlements of every liquid TTF gas forward contract (quoted in the last 7 days, still to deliver): months, quarters, seasons and calendar years, each type shown or hidden.",
+   "kind": "chart",
+   "source": "Market data",
+   "category": "forwards",
+   "params": [
+    {
+     "key": "win",
+     "label": "Window",
+     "options": [
+      "3M",
+      "6M",
+      "1Y",
+      "3Y"
+     ]
+    },
+    {
+     "key": "set",
+     "label": "Products",
+     "options": [
+      "liquid",
+      "all"
+     ]
+    },
+    {
+     "key": "kinds",
+     "label": "Products",
+     "options": [
+      "year",
+      "year,season",
+      "year,season,quarter",
+      "year,season,quarter,month"
+     ]
+    }
+   ],
+   "defaults": {
+    "win": "6M",
+    "kinds": "year,season,quarter,month",
+    "set": "liquid"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/ttf-cal-history.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=ttf-cal-history"
+  },
+  {
+   "id": "fr-spot-monthly",
+   "title": "Spot by month · 12 months",
+   "desc": "Monthly average day-ahead baseload of a zone over the last 12 months against their 12-month mean; bars above the mean in orange.",
+   "kind": "chart",
+   "source": "ENTSO-E",
+   "category": "prices",
+   "params": [
+    {
+     "key": "zone",
+     "label": "Zone",
+     "options": [
+      "AT",
+      "BE",
+      "BG",
+      "HR",
+      "CZ",
+      "DK_E",
+      "DK_W",
+      "EE",
+      "FI",
+      "FR",
+      "DE_LU",
+      "GB",
+      "GR",
+      "HU",
+      "IT_NORD",
+      "IT_SOUTH",
+      "LV",
+      "LT",
+      "ME",
+      "MK",
+      "NL",
+      "NO_2",
+      "NO_3",
+      "NO_1",
+      "PT",
+      "RO",
+      "RS",
+      "SK",
+      "SI",
+      "ES",
+      "SE_3",
+      "CH"
+     ]
+    }
+   ],
+   "defaults": {
+    "zone": "FR"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/fr-spot-monthly.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=fr-spot-monthly"
+  },
+  {
+   "id": "fr-spot-30d",
+   "title": "Spot · last 30 days",
+   "desc": "Daily day-ahead baseload of a zone over the last 30 delivery days with the 30-day mean.",
+   "kind": "chart",
+   "source": "ENTSO-E",
+   "category": "prices",
+   "params": [
+    {
+     "key": "zone",
+     "label": "Zone",
+     "options": [
+      "AT",
+      "BE",
+      "BG",
+      "HR",
+      "CZ",
+      "DK_E",
+      "DK_W",
+      "EE",
+      "FI",
+      "FR",
+      "DE_LU",
+      "GB",
+      "GR",
+      "HU",
+      "IT_NORD",
+      "IT_SOUTH",
+      "LV",
+      "LT",
+      "ME",
+      "MK",
+      "NL",
+      "NO_2",
+      "NO_3",
+      "NO_1",
+      "PT",
+      "RO",
+      "RS",
+      "SK",
+      "SI",
+      "ES",
+      "SE_3",
+      "CH"
+     ]
+    }
+   ],
+   "defaults": {
+    "zone": "FR"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/fr-spot-30d.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=fr-spot-30d"
+  },
+  {
+   "id": "fr-spot-day",
+   "title": "Spot · day profile",
+   "desc": "One delivery day of day-ahead prices of a zone: average and change, cheapest and most expensive hour, cheapest and dearest 3-hour windows.",
+   "kind": "html",
+   "source": "ENTSO-E",
+   "category": "prices",
+   "params": [
+    {
+     "key": "zone",
+     "label": "Zone",
+     "options": [
+      "AT",
+      "BE",
+      "BG",
+      "HR",
+      "CZ",
+      "DK_E",
+      "DK_W",
+      "EE",
+      "FI",
+      "FR",
+      "DE_LU",
+      "GB",
+      "GR",
+      "HU",
+      "IT_NORD",
+      "IT_SOUTH",
+      "LV",
+      "LT",
+      "ME",
+      "MK",
+      "NL",
+      "NO_2",
+      "NO_3",
+      "NO_1",
+      "PT",
+      "RO",
+      "RS",
+      "SK",
+      "SI",
+      "ES",
+      "SE_3",
+      "CH"
+     ]
+    },
+    {
+     "key": "day",
+     "label": "Day",
+     "options": [
+      "latest",
+      "previous",
+      "yesterday",
+      "today",
+      "tomorrow"
+     ]
+    }
+   ],
+   "defaults": {
+    "zone": "FR",
+    "day": "latest"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/fr-spot-day.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=fr-spot-day"
+  },
+  {
+   "id": "news-latest",
+   "title": "Energy news · latest",
+   "desc": "Every energy-market headline of the last 7 days, newest first, filtered as you choose in the settings (⚙): what (market movers, geopolitics, regulation, deals, new capacity…), where (country) and from which source.",
+   "kind": "html",
+   "source": "News feeds",
+   "category": "intel",
+   "params": [
+    {
+     "key": "what",
+     "label": "Articles",
+     "options": [
+      "movers",
+      "all",
+      "geopolitics",
+      "regulation",
+      "deal",
+      "build",
+      "gas",
+      "carbon",
+      "markets"
+     ]
+    },
+    {
+     "key": "country",
+     "label": "Country",
+     "options": [
+      "",
+      "FR",
+      "EU",
+      "DE",
+      "BE",
+      "ES",
+      "IT",
+      "NL",
+      "UK"
+     ]
+    },
+    {
+     "key": "source",
+     "label": "Source",
+     "options": [
+      "",
+      "GreenUnivers",
+      "CRE",
+      "Pexapark",
+      "AleaSoft",
+      "Connaissance des Énergies",
+      "Révolution Énergétique",
+      "Le Monde · Énergies",
+      "UFE",
+      "PV Tech",
+      "pv magazine",
+      "Energy-Storage.news",
+      "Windpower Monthly",
+      "WindEurope",
+      "World Nuclear News",
+      "Carbon Pulse",
+      "Carbon Brief",
+      "Energy Monitor",
+      "GIE",
+      "Clean Energy Wire",
+      "Enerdata",
+      "E-CUBE"
+     ]
+    }
+   ],
+   "defaults": {
+    "what": "movers",
+    "country": "",
+    "source": ""
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/news-latest.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=news-latest"
+  },
+  {
+   "id": "hydro-reservoirs",
+   "title": "Hydro reservoir filling",
+   "desc": "Energy stored in hydro reservoirs (weekly): this year and last year against the range and mean of the earlier years since 2015.",
+   "kind": "chart",
+   "source": "ENTSO-E",
+   "category": "weather",
+   "params": [
+    {
+     "key": "country",
+     "label": "Country",
+     "options": [
+      "FR",
+      "CH",
+      "ES",
+      "PT",
+      "AT",
+      "IT",
+      "NO",
+      "SE",
+      "FI"
+     ]
+    }
+   ],
+   "defaults": {
+    "country": "FR"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/hydro-reservoirs.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=hydro-reservoirs"
+  },
+  {
+   "id": "fr-capture-forward",
+   "title": "France forward capture prices (solar, wind)",
+   "desc": "Forward baseload of each French product with the solar and wind capture prices it implies at the capture rates of the last three years.",
+   "kind": "chart",
+   "source": "Market data · RTE",
+   "category": "renewables",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/fr-capture-forward.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=fr-capture-forward"
+  },
+  {
+   "id": "fr-capture-forward-table",
+   "title": "France forward capture prices · table",
+   "desc": "Per forward product: baseload, solar and wind capture rate (three-year average and range) and the implied capture prices.",
+   "kind": "html",
+   "source": "Market data · RTE",
+   "category": "renewables",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/fr-capture-forward-table.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=fr-capture-forward-table"
+  },
+  {
+   "id": "ren-capture-regions",
+   "title": "France · capture rate by region",
+   "desc": "Solar or wind capture rate of each French region over a year or several (its output on the French day-ahead price ÷ baseload), ranked, with France.",
+   "kind": "chart",
+   "source": "RTE éCO2mix · ENTSO-E",
+   "category": "renewables",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/ren-capture-regions.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=ren-capture-regions"
+  },
+  {
+   "id": "cannib-penetration-years",
+   "title": "Price vs the region’s coverage by solar, wind and nuclear",
+   "desc": "Every hour since 2016: the French price of the hour (÷ its month’s average) against the share of the coupled region’s consumption (France, Germany, Belgium, Spain) covered by solar, wind and nuclear; a point per hour for the last four years and one mean line per year.",
+   "kind": "chart",
+   "source": "RTE · ENTSO-E",
+   "category": "renewables",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/cannib-penetration-years.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=cannib-penetration-years"
+  },
+  {
+   "id": "cap-ppe3",
+   "title": "France · installed solar and wind vs the PPE3",
+   "desc": "Installed solar and onshore wind in France against the PPE3 targets for 2030 and 2035, with the straight path to them and the yearly pace needed vs the recent pace.",
+   "kind": "chart",
+   "source": "RTE (ODRÉ) · PPE3",
+   "category": "renewables",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/cap-ppe3.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=cap-ppe3"
+  },
+  {
+   "id": "market-brief",
+   "title": "Energy markets · what moved and why",
+   "desc": "Power, gas, oil, carbon, coal and guarantees of origin: what moved this week and why, the trend for the week ahead (market notes, or prices without a note), and whether the notes’ calls came true.",
+   "kind": "html",
+   "source": "PowerKlock",
+   "category": "intel",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/market-brief.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=market-brief"
+  },
+  {
+   "id": "next-30-days",
+   "title": "France power · the next 30 days",
+   "desc": "What the coming month looks like for French power: month-ahead forward, weather week by week against normal (temperature, wind, sun), nuclear availability and gas storage, with what each means for prices.",
+   "kind": "html",
+   "source": "PowerKlock",
+   "category": "forwards",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/next-30-days.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=next-30-days"
+  },
+  {
+   "id": "today-spot",
+   "title": "France spot · today and tomorrow",
+   "desc": "Day-ahead price hour by hour over 48 hours; tomorrow hatched with the PowerKlock forecast until its price is published (around 13:00).",
+   "kind": "chart",
+   "source": "ENTSO-E · SEFE · RTE · PowerKlock",
+   "category": "today",
+   "params": [
+    {
+     "key": "detail",
+     "label": "Negative-price chance",
+     "options": [
+      "no",
+      "yes"
+     ]
+    }
+   ],
+   "defaults": {
+    "detail": "no"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/today-spot.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=today-spot"
+  },
+  {
+   "id": "today-days",
+   "title": "France spot · the day in figures",
+   "desc": "Today and tomorrow: base, peak, lowest and highest hour, hours at 0 € or below, against the day before.",
+   "kind": "html",
+   "source": "ENTSO-E · SEFE · RTE · PowerKlock",
+   "category": "today",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/today-days.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=today-days"
+  },
+  {
+   "id": "today-moved",
+   "title": "What moved",
+   "desc": "One line per market: spot, forwards against gas, gas storage, oil, nuclear against the operator forecast.",
+   "kind": "html",
+   "source": "ENTSO-E · SEFE · RTE · PowerKlock",
+   "category": "today",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/today-moved.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=today-moved"
+  },
+  {
+   "id": "today-tiles",
+   "title": "Today · key prices",
+   "desc": "Cal+1 France, TTF, EUA, Brent, renewable GO and nuclear available: the move on the day and on 7 days, 60-day curve; a click opens it full size.",
+   "kind": "html",
+   "source": "ENTSO-E · SEFE · RTE · PowerKlock",
+   "category": "today",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/today-tiles.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=today-tiles"
+  },
+  {
+   "id": "today-reel",
+   "title": "The morning reel",
+   "desc": "The day’s figures in a vertical video (9:16), as posted on Instagram every morning: the day, a battery, Europe, the mix.",
+   "kind": "html",
+   "source": "ENTSO-E · SEFE · RTE · PowerKlock",
+   "category": "today",
+   "params": [
+    {
+     "key": "reel",
+     "label": "Reel",
+     "options": [
+      "jour",
+      "batterie",
+      "europe",
+      "mix"
+     ]
+    }
+   ],
+   "defaults": {
+    "reel": "jour"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/today-reel.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=today-reel"
+  },
+  {
+   "id": "today-sentence",
+   "title": "The day in one sentence",
+   "desc": "Whether power is cheap or expensive today, and why next year’s price moves.",
+   "kind": "html",
+   "source": "ENTSO-E · SEFE · RTE · PowerKlock",
+   "category": "today",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/today-sentence.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=today-sentence"
+  },
+  {
+   "id": "today-tiles-explained",
+   "title": "Three prices, explained",
+   "desc": "Cal+1, gas and nuclear available, each with one line on what it is and why it matters.",
+   "kind": "html",
+   "source": "ENTSO-E · SEFE · RTE · PowerKlock",
+   "category": "today",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/today-tiles-explained.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=today-tiles-explained"
+  },
+  {
+   "id": "today-hours",
+   "title": "Today’s price hour by hour",
+   "desc": "France day-ahead today, hours at 0 € or below in green, expensive hours in red, with a line on why.",
+   "kind": "html",
+   "source": "ENTSO-E · SEFE · RTE · PowerKlock",
+   "category": "today",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/today-hours.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=today-hours"
+  },
+  {
+   "id": "today-means",
+   "title": "What it means",
+   "desc": "For a solar park, a wind park, a power purchase and the nuclear fleet.",
+   "kind": "html",
+   "source": "ENTSO-E · SEFE · RTE · PowerKlock",
+   "category": "today",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/today-means.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=today-means"
+  },
+  {
+   "id": "today-glossary",
+   "title": "Glossary",
+   "desc": "Spot, Cal, TTF, EUA, guarantee of origin, capture rate in one line each.",
+   "kind": "html",
+   "source": "ENTSO-E · SEFE · RTE · PowerKlock",
+   "category": "today",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/today-glossary.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=today-glossary"
+  },
+  {
+   "id": "today-weeks",
+   "title": "The next 4 weeks · France",
+   "desc": "Weather against normal week by week, EU gas storage against its winter mark, next-month forward against the spot so far.",
+   "kind": "html",
+   "source": "Open-Meteo · AGSI · RTE",
+   "category": "today",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/today-weeks.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=today-weeks"
+  },
+  {
+   "id": "today-brief",
+   "title": "What moved and why",
+   "desc": "The reasons behind the prices, market by market, with the trend for the week ahead.",
+   "kind": "html",
+   "source": "PowerKlock",
+   "category": "today",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/today-brief.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=today-brief"
+  },
+  {
+   "id": "today-news",
+   "title": "In the news · market movers",
+   "desc": "Last 48 hours, highest market impact first (geopolitics, regulation, deals, new capacity, gas); your ★ keywords first.",
+   "kind": "html",
+   "source": "News feeds · PowerKlock",
+   "category": "today",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/today-news.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=today-news"
+  },
+  {
+   "id": "today-fund",
+   "title": "Fundamentals · the PowerKlock index",
+   "desc": "The index as a calculation (expected demand against low-carbon supply, coverage, gas plant cost, expected spot against the last 7 days and the forward), then week by week the low-carbon supply stacked against demand.",
+   "kind": "html",
+   "source": "PowerKlock · RTE · Open-Meteo",
+   "category": "today",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/today-fund.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=today-fund"
+  },
+  {
+   "id": "today-rtiles",
+   "title": "Renewables · PPA benchmark, M0, tenders",
+   "desc": "PowerKlock PPA benchmark solar and wind over 3 years, the latest M0 solar and wind, the latest CRE tender prices; a click opens each one full size.",
+   "kind": "html",
+   "source": "PowerKlock · RTE · CRE",
+   "category": "today",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/today-rtiles.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=today-rtiles"
+  },
+  {
+   "id": "today-gotable",
+   "title": "Guarantees of origin · prices",
+   "desc": "Renewable AIB broker mid by production year with the change on the week and 4 weeks, and the latest French auction against the previous one.",
+   "kind": "html",
+   "source": "Commerg · EEX",
+   "category": "today",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/today-gotable.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=today-gotable"
+  },
+  {
+   "id": "today-system",
+   "title": "Power system now · France",
+   "desc": "Latest quarter-hour: CO₂, consumption, nuclear, wind + solar, exchanges, against yesterday.",
+   "kind": "html",
+   "source": "RTE éCO2mix",
+   "category": "today",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/today-system.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=today-system"
+  },
+  {
+   "id": "ppa-benchmark",
+   "title": "PPA benchmark · France",
+   "desc": "The PPA price of the PowerKlock pricer (default settings, Cal+1 to Cal+3, pay-as-produced, curtailed at 0 € or below), recalculated every day: how the price moves with the forwards, the capture rates and the GO.",
+   "kind": "chart",
+   "source": "PowerKlock",
+   "category": "renewables",
+   "params": [
+    {
+     "key": "tech",
+     "label": "Technology",
+     "options": [
+      "both",
+      "solar",
+      "wind"
+     ]
+    },
+    {
+     "key": "win",
+     "label": "Period",
+     "options": [
+      "3M",
+      "6M",
+      "1Y",
+      "all"
+     ]
+    }
+   ],
+   "defaults": {
+    "tech": "both",
+    "win": "6M"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/ppa-benchmark.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=ppa-benchmark"
+  },
+  {
+   "id": "ppa-today",
+   "title": "PPA benchmark · today",
+   "desc": "Today’s PPA price of the PowerKlock pricer for French solar and wind, with the move on the day and on 7 days.",
+   "kind": "html",
+   "source": "PowerKlock",
+   "category": "kpi",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/ppa-today.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=ppa-today"
+  },
+  {
+   "id": "bess-index",
+   "title": "BESS index · France",
+   "desc": "The PowerKlock BESS index of a 1 MW, 2 h battery, recalculated every day: the forward index (day-ahead value over the Cal strip of the PPA benchmark) and the realised value co-optimised between day-ahead and FCR, in k€ per MW per year.",
+   "kind": "chart",
+   "source": "PowerKlock",
+   "category": "prices",
+   "params": [
+    {
+     "key": "win",
+     "label": "Period",
+     "options": [
+      "6M",
+      "1Y",
+      "2Y",
+      "all"
+     ]
+    }
+   ],
+   "defaults": {
+    "win": "1Y"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/bess-index.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=bess-index"
+  },
+  {
+   "id": "ppa-bridge",
+   "title": "PPA benchmark · what moved it",
+   "desc": "The change of the PPA benchmark over a week, a month or a year, split into the part due to the forwards, to the capture (production profile and cannibalisation), to the GO and to the imbalance cost.",
+   "kind": "chart",
+   "source": "PowerKlock",
+   "category": "renewables",
+   "params": [
+    {
+     "key": "tech",
+     "label": "Technology",
+     "options": [
+      "solar",
+      "wind"
+     ]
+    },
+    {
+     "key": "win",
+     "label": "Over",
+     "options": [
+      "7",
+      "30",
+      "365"
+     ]
+    }
+   ],
+   "defaults": {
+    "tech": "solar",
+    "win": "30"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/ppa-bridge.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=ppa-bridge"
+  },
+  {
+   "id": "fr-imb-price",
+   "title": "France · imbalance price vs day-ahead",
+   "desc": "Latest full day: the price paid for an excess and for a deficit, quarter-hour by quarter-hour, against the day-ahead price; or 30 days of daily averages.",
+   "kind": "chart",
+   "source": "ENTSO-E (A85) · ENTSO-E day-ahead",
+   "category": "balancing",
+   "params": [
+    {
+     "key": "view",
+     "label": "View",
+     "options": [
+      "day",
+      "30d"
+     ]
+    }
+   ],
+   "defaults": {
+    "view": "day"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/fr-imb-price.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=fr-imb-price"
+  },
+  {
+   "id": "neg-cost",
+   "title": "Hours at 0 € or below · what they cost",
+   "desc": "This month, last month and the same month a year ago: hours at 0 € or below in France, the output of 1 MW of solar or wind in those hours, and its value at today’s PPA benchmark (not paid when the park is curtailed).",
+   "kind": "html",
+   "source": "ENTSO-E · RTE éCO2mix · Energy-Charts · PowerKlock",
+   "category": "renewables",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/neg-cost.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=neg-cost"
+  },
+  {
+   "id": "month-review",
+   "title": "The month in review · France",
+   "desc": "The last full month written out: spot and hours at 0 €, solar and wind capture, output, nuclear, forwards, gas, carbon and the PPA benchmark, each against the month before and a year before.",
+   "kind": "html",
+   "source": "PowerKlock",
+   "category": "intel",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/month-review.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=month-review"
+  },
+  {
+   "id": "imb-park",
+   "title": "Imbalance cost · 10 MW park",
+   "desc": "What forecast errors cost a 10 MW solar or wind park each month: the national error settled at the imbalance price, per MWh and in euros for the park’s output.",
+   "kind": "html",
+   "source": "ENTSO-E (A69, A85) · RTE éCO2mix · PowerKlock",
+   "category": "balancing",
+   "params": [],
+   "defaults": {},
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/imb-park.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=imb-park"
+  },
+  {
+   "id": "compare-chart",
+   "title": "Comparator",
+   "desc": "A chart of the Comparator, saved with its series, period, scale and chart type.",
+   "kind": "chart",
+   "source": "PowerKlock",
+   "category": "intel",
+   "params": [
+    {
+     "key": "per",
+     "label": "Period",
+     "options": [
+      "3M",
+      "6M",
+      "1Y",
+      "3Y",
+      "5Y",
+      "All"
+     ]
+    }
+   ],
+   "defaults": {
+    "s": "c:ttf;c:eua",
+    "per": "1Y",
+    "scale": "auto",
+    "type": "auto"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/compare-chart.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=compare-chart"
+  },
+  {
+   "id": "cannib-projection",
+   "title": "Capture rate · history and projection",
+   "desc": "National capture rate per year, projected with installed capacity to the PPE3 targets (complete years except 2022), P50 with P10–P90 and P25–P75 bands to 2035.",
+   "kind": "chart",
+   "source": "RTE · ENTSO-E",
+   "category": "renewables",
+   "params": [
+    {
+     "key": "tech",
+     "label": "Technology",
+     "options": [
+      "solar",
+      "wind"
+     ]
+    },
+    {
+     "key": "conv",
+     "label": "Capture convention",
+     "options": [
+      "pos",
+      "all"
+     ]
+    },
+    {
+     "key": "model",
+     "label": "Projection",
+     "options": [
+      "capacity",
+      "flat",
+      "damped",
+      "linear"
+     ]
+    }
+   ],
+   "defaults": {
+    "tech": "solar",
+    "conv": "pos",
+    "model": "capacity"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/cannib-projection.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=cannib-projection"
+  },
+  {
+   "id": "cannib-capacity",
+   "title": "Capture rate vs installed capacity",
+   "desc": "One point per year: national capture rate against installed capacity, log fit and the PPE3 2030 / 2035 targets.",
+   "kind": "chart",
+   "source": "RTE · ENTSO-E",
+   "category": "renewables",
+   "params": [
+    {
+     "key": "tech",
+     "label": "Technology",
+     "options": [
+      "solar",
+      "wind"
+     ]
+    },
+    {
+     "key": "conv",
+     "label": "Capture convention",
+     "options": [
+      "pos",
+      "all"
+     ]
+    }
+   ],
+   "defaults": {
+    "tech": "solar",
+    "conv": "pos",
+    "model": "capacity"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/cannib-capacity.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=cannib-capacity"
+  },
+  {
+   "id": "cannib-countries",
+   "title": "Capture rate vs installed capacity · France and its neighbours",
+   "desc": "One colour per country (France, Germany, Belgium, Netherlands, Spain) with its trend: capture rate against installed capacity (GW, % of average load or % of the installed fleet), with the French PPE3 targets.",
+   "kind": "chart",
+   "source": "RTE · ENTSO-E",
+   "category": "renewables",
+   "params": [
+    {
+     "key": "tech",
+     "label": "Technology",
+     "options": [
+      "solar",
+      "wind"
+     ]
+    },
+    {
+     "key": "conv",
+     "label": "Capture convention",
+     "options": [
+      "pos",
+      "all"
+     ]
+    }
+   ],
+   "defaults": {
+    "tech": "solar",
+    "conv": "pos",
+    "model": "capacity"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/cannib-countries.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=cannib-countries"
+  },
+  {
+   "id": "cannib-hourly",
+   "title": "Price vs solar or wind share, hour by hour",
+   "desc": "Every hour of the last three years: the price of the hour against the solar or wind share of the load, the country alone or the coupled region (France, Germany, Belgium, Spain).",
+   "kind": "chart",
+   "source": "RTE · ENTSO-E",
+   "category": "renewables",
+   "params": [
+    {
+     "key": "tech",
+     "label": "Technology",
+     "options": [
+      "solar",
+      "wind"
+     ]
+    }
+   ],
+   "defaults": {
+    "tech": "solar",
+    "conv": "pos",
+    "model": "capacity"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/cannib-hourly.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=cannib-hourly"
+  },
+  {
+   "id": "cannib-countries-years",
+   "title": "Capture rate per year · France and its neighbours",
+   "desc": "Solar or wind capture rate per year in France, Germany, Belgium, the Netherlands and Spain: the coupled markets move together.",
+   "kind": "chart",
+   "source": "RTE · ENTSO-E",
+   "category": "renewables",
+   "params": [
+    {
+     "key": "tech",
+     "label": "Technology",
+     "options": [
+      "solar",
+      "wind"
+     ]
+    },
+    {
+     "key": "conv",
+     "label": "Capture convention",
+     "options": [
+      "pos",
+      "all"
+     ]
+    }
+   ],
+   "defaults": {
+    "tech": "solar",
+    "conv": "pos",
+    "model": "capacity"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/cannib-countries-years.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=cannib-countries-years"
+  },
+  {
+   "id": "cannib-neghours",
+   "title": "Hours at zero or negative prices · history and projection",
+   "desc": "Hours with a day-ahead price at or below zero in France per year, projected with the solar build-out to the PPE3 targets, and the share of solar or wind output in those hours.",
+   "kind": "chart",
+   "source": "RTE · ENTSO-E",
+   "category": "renewables",
+   "params": [
+    {
+     "key": "tech",
+     "label": "Technology",
+     "options": [
+      "solar",
+      "wind"
+     ]
+    },
+    {
+     "key": "conv",
+     "label": "Capture convention",
+     "options": [
+      "pos",
+      "all"
+     ]
+    }
+   ],
+   "defaults": {
+    "tech": "solar",
+    "conv": "pos",
+    "model": "capacity"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/cannib-neghours.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=cannib-neghours"
+  },
+  {
+   "id": "cannib-rolling",
+   "title": "Rolling capture rate",
+   "desc": "National capture rate over the last 30, 90 and 365 days, with the calendar-year values.",
+   "kind": "chart",
+   "source": "RTE · ENTSO-E",
+   "category": "renewables",
+   "params": [
+    {
+     "key": "tech",
+     "label": "Technology",
+     "options": [
+      "solar",
+      "wind"
+     ]
+    },
+    {
+     "key": "conv",
+     "label": "Capture convention",
+     "options": [
+      "pos",
+      "all"
+     ]
+    }
+   ],
+   "defaults": {
+    "tech": "solar",
+    "conv": "pos",
+    "model": "capacity"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/cannib-rolling.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=cannib-rolling"
+  },
+  {
+   "id": "cannib-rolling-eur",
+   "title": "Rolling captured price vs baseload",
+   "desc": "365-day captured price against the 365-day baseload: the gap is the shape discount in €/MWh.",
+   "kind": "chart",
+   "source": "RTE · ENTSO-E",
+   "category": "renewables",
+   "params": [
+    {
+     "key": "tech",
+     "label": "Technology",
+     "options": [
+      "solar",
+      "wind"
+     ]
+    },
+    {
+     "key": "conv",
+     "label": "Capture convention",
+     "options": [
+      "pos",
+      "all"
+     ]
+    }
+   ],
+   "defaults": {
+    "tech": "solar",
+    "conv": "pos",
+    "model": "capacity"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/cannib-rolling-eur.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=cannib-rolling-eur"
+  },
+  {
+   "id": "cannib-profile",
+   "title": "Daily production profile by month",
+   "desc": "Average MW by hour of the day, one line per month, last complete year (RTE).",
+   "kind": "chart",
+   "source": "RTE · ENTSO-E",
+   "category": "renewables",
+   "params": [
+    {
+     "key": "tech",
+     "label": "Technology",
+     "options": [
+      "solar",
+      "wind"
+     ]
+    }
+   ],
+   "defaults": {
+    "tech": "solar",
+    "conv": "pos",
+    "model": "capacity"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/cannib-profile.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=cannib-profile"
+  },
+  {
+   "id": "genmix-hist-daily",
+   "title": "Generation by fuel, day by day",
+   "desc": "Daily average generation by fuel for one zone over the period, with last year's total.",
+   "kind": "chart",
+   "source": "Energy-Charts",
+   "category": "system",
+   "params": [
+    {
+     "key": "zone",
+     "label": "Zone",
+     "options": [
+      "FR",
+      "DE_LU",
+      "BE",
+      "NL",
+      "ES",
+      "PT",
+      "AT",
+      "CH",
+      "PL",
+      "CZ"
+     ]
+    }
+   ],
+   "defaults": {
+    "zone": "FR"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/genmix-hist-daily.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=genmix-hist-daily"
+  },
+  {
+   "id": "genmix-hist-avgday",
+   "title": "Average day by fuel",
+   "desc": "Average generation by hour and fuel over the period, one zone.",
+   "kind": "chart",
+   "source": "Energy-Charts",
+   "category": "system",
+   "params": [
+    {
+     "key": "zone",
+     "label": "Zone",
+     "options": [
+      "FR",
+      "DE_LU",
+      "BE",
+      "NL",
+      "ES",
+      "PT",
+      "AT",
+      "CH",
+      "PL",
+      "CZ"
+     ]
+    }
+   ],
+   "defaults": {
+    "zone": "FR"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/genmix-hist-avgday.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=genmix-hist-avgday"
+  },
+  {
+   "id": "genmix-hist-shares",
+   "title": "Fuel shares by month",
+   "desc": "Share of each fuel in each month's generation, one zone.",
+   "kind": "chart",
+   "source": "Energy-Charts",
+   "category": "system",
+   "params": [
+    {
+     "key": "zone",
+     "label": "Zone",
+     "options": [
+      "FR",
+      "DE_LU",
+      "BE",
+      "NL",
+      "ES",
+      "PT",
+      "AT",
+      "CH",
+      "PL",
+      "CZ"
+     ]
+    }
+   ],
+   "defaults": {
+    "zone": "FR"
+   },
+   "png": "https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/genmix-hist-shares.png",
+   "embed": "https://tomsremy.github.io/PowerKlock/index.html?embed=genmix-hist-shares"
+  }
+ ]
+}
