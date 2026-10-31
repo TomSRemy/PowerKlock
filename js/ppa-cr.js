@@ -43,7 +43,7 @@
   function imbNational(tech) {
     if (!IMB || !IMB.months) return tech === 'solar' ? 3.5 : 2.3;
     // with our own forecast when 3 months or more have it (as the PPA pricer), else the TSO's
-    const all = Object.keys(IMB.months).sort().slice(-12), withO = all.filter(k => (IMB.months[k][tech] || {}).ours), own = withO.length >= 3;
+    const all = Object.keys(IMB.months).sort().slice(-12), withO = all.filter(k => (IMB.months[k][tech] || {}).ours), own = withO.length >= 3 && (!IMB.use || IMB.use[tech] === 'ours');
     let c = 0, e = 0;
     (own ? withO : all).forEach(k => { const x0 = IMB.months[k][tech], x = x0 && (own ? x0.ours : x0); if (x) { c += x.costEur; e += x.mwh; } });
     return e > 0 ? c / e : (tech === 'solar' ? 3.5 : 2.3);
