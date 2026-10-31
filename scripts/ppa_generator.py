@@ -85,7 +85,7 @@ def main():
     Fc = G.fuel_cost()
     c0 = float(np.mean([v for k, v in sorted(Fc.items())[-30:]]))
     this = date.today()
-    below, anchors, band = {}, {}, {}
+    below, anchors, band, vols = {}, {}, {}, {}
     # the anchoring of each technology, chosen on the weekly replay (scripts/ppa_model_risk.py, run just before)
     try:
         modes = json.load(open(os.path.join(ROOT, 'data', 'history', 'ppa_model_risk.json'))).get('anchorMode') or {}
@@ -114,10 +114,14 @@ def main():
                 # the year's capture in each scenario, weighted by the last complete year's monthly output
                 wm = {mm: float(L.DATA[A]['fr_' + t][L.DATA[A]['month'] == mm].sum()) for mm in range(1, 13)}
                 ann = lambda r_: sum(wm[x] * r_[x]['curt'] for x in range(1, 13)) / sum(wm.values())
-                sc = [ann(r_) for r_ in db['scenarios'] if all(r_.get(x, {}).get('curt') is not None for x in range(1, 13))]
+                ok_ = [r_ for r_ in db['scenarios'] if all(r_.get(x, {}).get('curt') is not None for x in range(1, 13))]
+                sc = [ann(r_) for r_ in ok_]
                 if sc:
                     q = {f'p{p_}': round(float(np.percentile(sc, p_)), 5) for p_ in (10, 25, 50, 75, 90)}
                     band.setdefault(tech, {})[str(Y)] = q
+                    if Y > this.year and all('_cf' in r_ for r_ in ok_):
+                        vols.setdefault(tech, []).append((np.array([r_['_cf'] for r_ in ok_]), np.array(sc),
+                                                          np.array([r_['_base'] for r_ in ok_])))
                 bandm = {mm: db[mm]['curt'] for mm in range(1, 13) if mm in db}
             below.setdefault(tech, {})[str(Y)] = round(dist['belowFloor'], 3) if dist.get('belowFloor') is not None else None
             for conv in ('curt', 'all'):
@@ -147,6 +151,22 @@ def main():
         # yearly capture quantiles of the full Monte Carlo: the pricer sets its capture drift on P50 − P25
         fc['generator']['band'] = band
         fc['generator']['v2'] = True
+    if V2 and vols:
+        # volume risk (Tom 1 Nov. 2026): in the same weather scenarios, the year's output per GW of a fixed park against
+        # its capture and its mean price, each delivery year standardised then pooled. The pricer takes the volume–capture
+        # link from here instead of an assumption; the spread itself stays measured on real years (national or the park's
+        # own): chained weeks average out part of a year's weather (solar 2.2 % a year against about 5 % detrended on
+        # 2019–2025, wind 6.0 % against 7 %)
+        z = lambda a: (a - a.mean()) / a.std() if a.std() > 0 else a * 0
+        fc['generator']['volume'] = {}
+        for tech, rows in vols.items():
+            zv = np.concatenate([z(c) for c, _, _ in rows])
+            fc['generator']['volume'][tech] = {
+                'sigV': round(float(np.mean([c.std() / c.mean() for c, _, _ in rows])), 4),
+                'corrCapture': round(float(np.mean(zv * np.concatenate([z(k) for _, k, _ in rows]))), 3),
+                'corrPrice': round(float(np.mean(zv * np.concatenate([z(b_) for _, _, b_ in rows]))), 3),
+                'n': int(zv.size), 'years': [int(Y_) for Y_ in range(this.year + 1, this.year + 1 + len(rows))]}
+            print('volume', tech, fc['generator']['volume'][tech], flush=True)
     # model risk (Tom 31 Oct. 2026): the generator's past errors against the realised (scripts/ppa_model_risk.py), so
     # the pricer takes off the forwards × their chosen percentile and the price does not lose money again and again
     try:
