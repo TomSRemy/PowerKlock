@@ -73,5 +73,40 @@ for y in range(2020, 2027):
              'share_fr_cheaper_5': round(float(np.mean(de - fr >= 5)), 3)}
 out['fr_de'] = fd
 
+# 5. Prix nuls ou négatifs comptés au quart d'heure (depuis le 1er oct. 2025, un prix par quart d'heure)
+qh = {}
+for y in (2024, 2025, 2026):
+    q = 0.0; hm = 0
+    for f in sorted(glob.glob(f'{R}/daily/{y}-*.json')):
+        a = (json.load(open(f)).get('zones', {}).get('FR') or {}).get('hourly')
+        if not a:
+            continue
+        a = np.array([np.nan if v is None else v for v in a], float)
+        if len(a) % 4 == 0 and len(a) >= 92:
+            m = a.reshape(-1, 4); q += np.sum(m <= 0) / 4; hm += int(np.sum(m.mean(1) <= 0))
+        else:
+            q += np.sum(a <= 0); hm += int(np.sum(a <= 0))
+    qh[y] = {'hours_equiv_qh_le0': round(float(q), 1), 'hours_mean_le0': hm}
+out['le0_quarter_hours'] = qh
+
+# 6. Arrêts nucléaires programmés déclarés pour 2027 (dernière révision de chaque arrêt, à midi chaque jour)
+from datetime import datetime, timedelta
+ev = {}
+for e in json.load(open(f'{R}/fr_outages.json'))['events']:
+    if e['fuel'] == 'nuclear' and e['type'] == 'planned' and (e['id'] not in ev or e['rev'] > ev[e['id']]['rev']):
+        ev[e['id']] = e
+pt = lambda s: datetime.strptime(s[:16], '%Y-%m-%dT%H:%M')
+tot = []
+for i in range(365):
+    t = datetime(2027, 1, 1, 12) + timedelta(days=i); u = {}
+    for e in ev.values():
+        if pt(e['start']) <= t < pt(e['end']):
+            u[e['unit']] = max(u.get(e['unit'], 0), e['unavail'])
+    tot.append(sum(u.values()) / 1000)
+tot = np.array(tot)
+out['nuclear_planned_2027_gw'] = {'max': round(float(tot.max()), 1), 'max_day': str((datetime(2027, 1, 1) + timedelta(days=int(tot.argmax()))).date()),
+                                  'mean': round(float(tot.mean()), 1),
+                                  'max_by_month': [round(float(tot[[(datetime(2027, 1, 1) + timedelta(days=i)).month == m for i in range(365)]].max()), 1) for m in range(1, 13)]}
+
 json.dump(out, open('docs/discussion/cours/calc.json', 'w'), indent=1)
 print(json.dumps(out, indent=1))

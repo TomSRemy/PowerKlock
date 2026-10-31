@@ -18,11 +18,13 @@ th, td { border: 1px solid #d5dbe3; padding: 1.5mm 2mm; vertical-align: top; }
 th { background: #e8f0fa; }
 code { font-size: 9pt; background: #f1f3f6; padding: 0 1mm; }
 hr { border: none; border-top: 1px solid #d5dbe3; }
-h3:has(+ p > em) { }
+li, p, td { overflow-wrap: anywhere; }
 """
 
 def build(name):
     md = open(os.path.join(D, name + '.md'), encoding='utf-8').read()
+    import re
+    md = re.sub(r'(?<![(<])(https?://[^\s)]+[^\s).,;])', r'<\1>', md)   # liens cliquables dans le PDF
     body = markdown.markdown(md, extensions=['tables', 'sane_lists'])
     html = f'<!doctype html><html lang="fr"><head><meta charset="utf-8"><style>{CSS}</style></head><body>{body}</body></html>'
     hp = os.path.join(D, name + '.html')

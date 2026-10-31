@@ -200,5 +200,38 @@
    "share_gap_lt1": 0.186,
    "share_fr_cheaper_5": 0.521
   }
+ },
+ "le0_quarter_hours": {
+  "2024": {
+   "hours_equiv_qh_le0": 549.0,
+   "hours_mean_le0": 549
+  },
+  "2025": {
+   "hours_equiv_qh_le0": 742.2,
+   "hours_mean_le0": 732
+  },
+  "2026": {
+   "hours_equiv_qh_le0": 805.0,
+   "hours_mean_le0": 670
+  }
+ },
+ "nuclear_planned_2027_gw": {
+  "max": 20.7,
+  "max_day": "2027-05-22",
+  "mean": 11.3,
+  "max_by_month": [
+   7.0,
+   11.0,
+   15.8,
+   18.0,
+   20.7,
+   19.8,
+   17.2,
+   17.4,
+   14.7,
+   10.0,
+   4.2,
+   2.7
+  ]
  }
 }
