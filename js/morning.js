@@ -538,12 +538,13 @@ function _mrnTileList(k) {
   const foot = (l, r) => `<span class="mrn3-tx"><span>${l}</span><span>${r}</span></span>`;
   const kv = (label, v) => `${label} <b>${v}</b>`;
   const rng60 = pts => { const v = since(pts, 60).map(p => p[1]).filter(x => x != null); return v.length ? kv('min–max', _mN(Math.min(...v), 1) + '–' + _mN(Math.max(...v), 1)) : ''; };
-  // the week ahead, as in « What moved and why »: the market notes' call, else the direction prices took over 7 days
-  const pill = (key, c) => { const o = key && k.look[key], t = o && o.tone ? o.tone : c == null || Math.abs(c) < 1 ? 'flat' : c > 0 ? 'up' : 'down';
-    return `<span class="wk-chip ${t === 'up' ? 'wk-up' : t === 'down' ? 'wk-dn' : 'wk-fl'}" title="${_mT('Semaine à venir · ', 'Week ahead · ') + (o && o.tone ? _mT('notes de marché', 'market notes') : _mT('tendance des prix', 'price trend'))}">${t === 'up' ? '↑ ' + _mT('haussier', 'bullish') : t === 'down' ? '↓ ' + _mT('baissier', 'bearish') : '→ ' + _mT('neutre', 'neutral')}</span>`; };
+  // the chip reads the same move as the name's colour and the figures (Tom 1 Nov. 2026: a red name beside a « neutral »
+  // chip read as a contradiction); the market notes' call for the week ahead stays in « What moved and why »
+  const pill = (key, c, tip) => { const t = tone(c) || 'flat';
+    return `<span class="wk-chip ${t === 'up' ? 'wk-up' : t === 'down' ? 'wk-dn' : 'wk-fl'}" title="${tip || _mT('Évolution sur 7 jours', 'Move over 7 days')}">${t === 'up' ? '↑ ' + _mT('haussier', 'bullish') : t === 'down' ? '↓ ' + _mT('baissier', 'bearish') : '→ ' + _mT('neutre', 'neutral')}</span>`; };
   // the market above the name, so a tile reads at a glance (power, gas, CO₂…)
   const cat = t => `<span class="mrn3-cat">${t}</span>`;
-  const head = (name, key, c, m) => (m ? cat(m) : '') + `<span class="mrn3-th"><span class="mrn2-tn${tone(c) ? ' mrn-' + tone(c) : ''}">${name}</span>${pill(key, c)}</span>`;
+  const head = (name, key, c, m, tip) => (m ? cat(m) : '') + `<span class="mrn3-th"><span class="mrn2-tn${tone(c) ? ' mrn-' + tone(c) : ''}">${name}</span>${pill(key, c, tip)}</span>`;
   const ago = _mT('il y a 60 j', '60 d ago'), now = _mT('auj.', 'today');
   const T = [];
   if (k.cals.length) {   // the next calendar year; the two after it in the footer
@@ -559,19 +560,21 @@ function _mrnTileList(k) {
   if (k.gos) {
     const y = +_mrnToday().slice(0, 4), g1 = _mrnGoSeries(k.gos, 'GO AIB Renewable', y + 1), g0 = _mrnGoSeries(k.gos, 'GO AIB Renewable', y);
     if (g1.length > 1) {
-      const l = g1[g1.length - 1].mid, d = l - g1[g1.length - 2].mid, tn = Math.abs(d) < 1e-6 ? '' : d > 0 ? 'up' : 'down';
-      T.push(`<a class="mrn2-tile" data-tile="go" href="#markets/go" data-route="markets/go" title="${_mT('AIB renouvelable, prix moyen courtier, chaque semaine', 'AIB renewable, broker mid, weekly')}">${head('GO ' + (y + 1), null, g1.length > 4 ? (l / g1[g1.length - 5].mid - 1) * 100 : null, _mT('Garanties d’origine', 'Guarantees of origin'))}<span class="mrn2-tv">${_mN(l, 3)}<small>€/MWh</small></span><span class="mrn2-tc ${tn ? 'mrn-' + tn : ''}">${_mS(d, 3)} <span class="mrn3-dim">${_mT('sur la sem.', 'on the week')}</span></span>${_mrnSpark(g1.slice(-26).map(p => p.mid), tn)}${foot(g0.length ? kv('Cal ' + String(y).slice(2), _mN(g0[g0.length - 1].mid, 3)) : '', _mT('6 mois', '6 months'))}</a>`);
+      const l = g1[g1.length - 1].mid, d = l - g1[g1.length - 2].mid, tn = tone((l / g1[g1.length - 2].mid - 1) * 100);
+      T.push(`<a class="mrn2-tile" data-tile="go" href="#markets/go" data-route="markets/go" title="${_mT('AIB renouvelable, prix moyen courtier, chaque semaine', 'AIB renewable, broker mid, weekly')}">${head('GO ' + (y + 1), null, (l / g1[g1.length - 2].mid - 1) * 100, _mT('Garanties d’origine', 'Guarantees of origin'), _mT('Évolution sur la semaine', 'Move over the week'))}<span class="mrn2-tv">${_mN(l, 3)}<small>€/MWh</small></span><span class="mrn2-tc ${tn ? 'mrn-' + tn : ''}">${_mS(d, 3)} <span class="mrn3-dim">${_mT('sur la sem.', 'on the week')}</span></span>${_mrnSpark(g1.slice(-26).map(p => p.mid), tn)}${foot(g0.length ? kv('Cal ' + String(y).slice(2), _mN(g0[g0.length - 1].mid, 3)) : '', _mT('6 mois', '6 months'))}</a>`);
     }
   }
   // the PowerKlock index: low-carbon coverage of French demand and the price it implies (see _mrnIndex)
   if (k.idx) { const I = k.idx, L = I.lastP, A = I.ahead, pts = I.rows.map(x => [x.d, x.cov]), c = ch7(pts);
     // the chip reads against the spot of the last 7 days (where prices are going), the line below against the forward
-    const sp7 = _mrnMean(k.spotDays.slice(-7).map(r => r.avg));
+    const sp7 = _mrnMean(k.spotDays.slice(-7).map(r => r.avg)), ci = A && sp7 ? (A.fair4 / sp7 - 1) * 100 : null;
     const M = A && A.month, mon = M ? new Date(M.m + '-15T12:00:00Z').toLocaleDateString(_mrnFr() ? 'fr-FR' : 'en-GB', { month: 'short', timeZone: 'UTC' }) : '';
     const main = A ? `<span class="mrn2-tv">${_mN(A.fair4, 0)}<small>€/MWh</small></span><span class="mrn2-tc">${M ? `${mon} : ${_mT('indice', 'index')} <b>${_mN(M.fair, 0)}</b> vs fwd <b>${_mN(M.fwd, 0)}</b> <b class="${M.fair > M.fwd ? 'mrn-up' : 'mrn-down'}">${_mS(M.fair - M.fwd, 0)}</b>` : _mT('spot attendu sur 4 semaines', 'expected spot over 4 weeks')}</span>`
       : `<span class="mrn2-tv">${_mN(L.cov, 0)}<small>%</small></span><span class="mrn2-tc">${_mT('prix implicite', 'implied price')} <b>${_mN(L.fair, 1)} €</b></span>`;
     T.push(`<a class="mrn2-tile" data-tile="idx" href="#tools/compare" data-route="tools/compare" title="${_mT('Spot attendu sur 4 semaines d’après les fondamentaux : couverture de la consommation par le nucléaire, l’hydraulique, les renouvelables et les bioénergies (prévisions météo, nucléaire disponible), au coût du gaz du jour, avec une courbe ajustée sur 3 ans', 'Expected spot over 4 weeks from the fundamentals: demand covered by nuclear, hydro, renewables and bioenergy (weather outlook, nuclear available), at today’s gas cost, through a curve fitted on 3 years')}">` +
-      cat(_mT('Indice PowerKlock', 'PowerKlock index')) + `<span class="mrn3-th"><span class="mrn2-tn${tone(c) ? ' mrn-' + tone(c) : ''}">${A ? _mT('Spot à 4 sem. vs 7 derniers jours', 'Spot in 4 wks vs last 7 days') : _mT('Couv. bas carbone', 'Low-carbon cover')}</span>${A && sp7 ? pill(null, (A.fair4 / sp7 - 1) * 100) : pill(null, c == null ? null : -c)}</span>` + main +
+      cat(_mT('Indice PowerKlock', 'PowerKlock index')) + (A && sp7
+        ? `<span class="mrn3-th"><span class="mrn2-tn${tone(ci) ? ' mrn-' + tone(ci) : ''}">${_mT('Spot à 4 sem. vs 7 derniers jours', 'Spot in 4 wks vs last 7 days')}</span>${pill(null, ci, _mT('Spot attendu sur 4 semaines vs spot des 7 derniers jours', 'Expected spot over 4 weeks vs the last 7 days’ spot'))}</span>`
+        : `<span class="mrn3-th"><span class="mrn2-tn${tone(-c) ? ' mrn-' + tone(-c) : ''}">${_mT('Couv. bas carbone', 'Low-carbon cover')}</span>${pill(null, c == null ? null : -c, _mT('Plus de couverture bas carbone : prix plus bas', 'More low-carbon cover: lower prices'))}</span>`) + main +
       `${_mrnSpark(A ? A.days.slice(0, 28).map(x => x.fair) : since(pts, 60).map(p => p[1]), '')}${foot(kv(_mT('couverture auj.', 'coverage today'), _mN(L.cov, 0) + ' %'), A ? _mT('4 sem.', '4 wks') : _mT('60 j', '60 d'))}</a>`); }
   // Explain: one line under each tile (shown when the switch is on)
   return T.map(h => { const id = (h.match(/data-tile="(\w+)"/) || [])[1], x = id && MRN_EX[id]; return x ? h.replace(/<\/a>$/, `<span class="mrn-x">${_mT(x[0], x[1])}</span></a>`) : h; });
