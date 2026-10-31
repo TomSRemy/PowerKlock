@@ -753,6 +753,12 @@ DEC2 = os.environ.get('PK_DEC2') or None   # test: France cut off, its price rea
 # (bias +1.89) not anchored: not taken (31 Oct. 2026)
 
 
+MC_FULL = os.environ.get('PK_MC_FULL') == '1'   # test: each scenario draws its fleet growth, nuclear and export limit
+MC_FLEET = float(os.environ.get('PK_MC_FLEET', '0.4'))   # growth beyond the last known year × U(1 − x, 1 + x)
+MC_NUC = float(os.environ.get('PK_MC_NUC', '0.04'))      # nuclear × lognormal(0, x) (EDF's yearly range 350–370 TWh ≈ ±3 %)
+MC_JAO = float(os.environ.get('PK_MC_JAO', '0.2'))
+MC_CRISIS = float(os.environ.get('PK_MC_CRISIS', '0.05'))   # chance of a 2022-like nuclear year
+MC_LOAD = float(os.environ.get('PK_MC_LOAD', '0.02'))       # load level × lognormal(0, x) (electrification pace)       # Core export limit × lognormal(0, x √years) (5.4–9.2 GW 2023–2026)
 POOL_HALF = float(os.environ.get('PK_POOL_HALF', '0'))   # test: weather weeks drawn with weight halving every N years back
 KNN = int(os.environ.get('PK_KNN', '0'))   # test (31 Oct. 2026): the price of a simulated hour = the mean of the K most
 # similar learnt hours (analogues) on: the region's and France's shares, what France must export beyond its Core limit,
@@ -1473,6 +1479,17 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
     sd = {y: (np.std(starts[y]['FR_w'].mean(1)) or 1, np.std(starts[y]['FR_ldev'].mean(1)) or 1) for y in pool}
     res = []
     for _ in range(n):
+        if MC_FULL:
+            # this scenario's own world (Tom, 31 Oct. 2026: a Monte Carlo that takes more into account): the fleets grow
+            # faster or slower than the trend, France's nuclear and Core export limit move around their last known level
+            g_fleet = float(rng.uniform(1 - MC_FLEET, 1 + MC_FLEET))
+            g_nuc = float(np.exp(rng.normal(0, MC_NUC)))
+            if rng.random() < MC_CRISIS:
+                g_nuc *= 0.8   # a 2022-like year (corrosion, strikes): France's nuclear 20 % lower
+            g_load = float(np.exp(rng.normal(0, MC_LOAD)))
+            g_jao = float(np.exp(rng.normal(0, MC_JAO * np.sqrt(max(1, Y - demand_year)))))
+        else:
+            g_fleet = g_nuc = g_jao = g_load = 1.0
         src = []                     # (year, row) per delivery day
         prev = None
         i = 0
@@ -1528,14 +1545,34 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
             if CF_LEVEL:
                 sv = sv * np.array([CFS[(c, 's', y)] for y, _, _ in src])[:, None]
                 wv = wv * np.array([CFS[(c, 'w', y)] for y, _, _ in src])[:, None]
-            S[c] = sv * fleet[(c, 's')]
-            W[c] = wv * fleet[(c, 'w')]
+            if MC_FULL and g_fleet != 1.0:
+                # growth beyond the last known year scaled by g_fleet
+                capA_ = {tt: (L.cap(c, tt, demand_year) or capY[c][tt]) * 1000 for tt in 'sw'}
+                S[c] = sv * (capA_['s'] + g_fleet * (fleet[(c, 's')] - capA_['s']))
+                W[c] = wv * (capA_['w'] + g_fleet * (fleet[(c, 'w')] - capA_['w']))
+            else:
+                S[c] = sv * fleet[(c, 's')]
+                W[c] = wv * fleet[(c, 'w')]
             Lo[c] = ld * np.array([M.get((c, 'l', int(m), int(k)), 0.0) for m, k in zip(month, kind)])[:, None]
             N[c] = nd * np.array([M.get((c, 'n', int(m), int(k)), 0.0) for m, k in zip(month, kind)])[:, None]
         if NUC_AV:
             N['FR'] = AVM[month - 1][:, None] * np.ones((1, 24))
         if REGIME and NUC_Y:
             N['FR'] = N['FR'] * NUCF[month - 1][:, None]
+        if MC_FULL:
+            # the drawn days' own nuclear availability against their month's (heat waves, droughts, strikes come with
+            # the weather of the same week), × this scenario's level
+            dv = []
+            for y_, r_, _ in src:
+                av_ = fr_avail(y_); mo_ = starts[y_]['month']
+                mm_ = av_[mo_ == mo_[r_]].mean()
+                dv.append(av_[r_].mean() / mm_ if mm_ > 0 else 1.0)
+            NDEV = np.array(dv)[:, None] * g_nuc
+            N['FR'] = N['FR'] * g_nuc   # the drawn day's output deviation is already in N (FR_ndev)
+            for c in CS:
+                Lo[c] = Lo[c] * g_load
+        else:
+            NDEV = 1.0
         H = None
         if rule == 'fuel' and PriceModelFuel.HYDRO:
             # the weather day's run-of-river as a deviation from its own year's month mean × the month's normal level
@@ -1575,10 +1612,10 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
             if EXPCAP['on'] and france:
                 xfr = beyond_room(fr_gw(S, W, Lo, N, H) * 1000, EXPCAP['Y'] or max(known))
             if REGIME:
-                need = export_need(S['FR'], W['FR'], Lo['FR'], AVR[month - 1][:, None] * np.ones((1, 24)))
+                need = export_need(S['FR'], W['FR'], Lo['FR'], NDEV * AVR[month - 1][:, None] * np.ones((1, 24)))
                 if REGIME_JAO:
                     # the drawn day's Core export limit (its grid situation) at the last known year's level
-                    ref = jao_level(Y, demand_year, known)
+                    ref = jao_level(Y, demand_year, known) * g_jao
                     need = need - np.stack([fr_jmax(y)[r] * ref / float(np.mean(fr_jmax(y))) for y, r, _ in src]) / 1000
                 pmf._wsh = W['FR'] / Lo['FR']   # DEC2 = 'wind': the cut-off rule's second input
                 pmf._ssh, pmf._month = S['FR'] / Lo['FR'], month
