@@ -1869,17 +1869,20 @@
     max-height: 420px;
   }
 
-  /* Vertical grey line : stops at the middle of the LAST sub-item (--line-end set by JS) */
-  .sidebar-subitems-wrap::before {
+  /* Vertical grey line: drawn by each sub-item (below), so it reaches the middle of the last one exactly whatever
+     its height; a fixed offset from the bottom (14 px) left a 2 px gap before the last entry of every group */
+  .sidebar-subitems-wrap::before { content: none; }
+  .sidebar-subitem::after {
     content: '';
     position: absolute;
     left: 22px;
     top: 0;
-    bottom: 14px;   /* the line stops at the middle of the last entry */
+    bottom: 0;
     width: 1px;
     background: var(--border);
     z-index: 1;
   }
+  .sidebar-subitem:last-child::after { bottom: calc(50% - 1px); }   /* meets the last connector */
 
   /* Vertical green path : stops at the middle of the ACTIVE sub-item (--path-height set by JS) */
   .sidebar-subitems-wrap::after {
