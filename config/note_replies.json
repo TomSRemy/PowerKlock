@@ -454,5 +454,49 @@
  "172": {
   "status": "wontfix",
   "reply": "Doublon de la note 114 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 114."
+ },
+ "57": {
+  "status": "done",
+  "reply": "Fait : le filtre de zones en haut de la page pilote maintenant aussi les graphiques multi-zones (par zone et par année, classement, saisonnalité, heure, rythme de l’année), plus seulement le tableau."
+ },
+ "86": {
+  "status": "done",
+  "reply": "Fait : le tableau des 30 zones reste affiché même un jour sans prix négatif ; ouvrir une zone donne tous ses graphiques (par mois, par an, cumul, calendrier, barres quotidiennes, mois × heure). Le message du jour le dit."
+ },
+ "58": {
+  "status": "done",
+  "reply": "Vérifié le 31 octobre : les graphiques sont revenus (ouvrir une zone du tableau affiche son profil quart d’heure par quart d’heure ; courbes multi-zones et tendance spot en dessous). Corrigé entre-temps par une autre mise à jour."
+ },
+ "63": {
+  "status": "done",
+  "reply": "Vérifié le 31 octobre : l’onglet Comparaison affiche bien les 4 zones (France, UK, Allemagne, Pays-Bas) sur le produit choisi. Il était vide le 28, corrigé depuis."
+ },
+ "70": {
+  "status": "done",
+  "reply": "Vérifié le 31 octobre : le planning des arrêts est rempli (46 réacteurs, planifiés et fortuits, d’il y a 14 jours à 4 mois)."
+ },
+ "73": {
+  "status": "done",
+  "reply": "Fait : l’axe du graphique horaire suit la plage du jour (et la ligne N-1) au lieu de partir de 0 ; la France, entre 40 et 60 g, n’est plus une ligne plate. Légendes et libellés du panneau en français. La refonte de la page (note 44) reste à faire."
+ },
+ "74": {
+  "status": "done",
+  "reply": "Fait : un clic sur le logo PowerKlock ramène à Aujourd’hui."
+ },
+ "75": {
+  "status": "done",
+  "reply": "Fait : au lancement, toutes les sections du menu sont repliées dès le départ et seule celle de la page s’ouvre (elles s’affichaient toutes dépliées pendant la première seconde)."
+ },
+ "76": {
+  "status": "done",
+  "reply": "Fait : légendes en français (« Consommation journalière », « Consommation, moyenne 7 jours », « Observé »). L’alerte « données incomplètes » venait d’une fausse alerte du contrôle du solaire, corrigée le 31 octobre."
+ },
+ "79": {
+  "status": "done",
+  "reply": "Fait : sur Aujourd’hui, les deux graphiques de capture glissante s’ouvrent sur 2 ans (les autres périodes restent dans les boutons, « Tout » compris) ; la ligne « Année civile » n’est plus violette (gris clair)."
+ },
+ "80": {
+  "status": "done",
+  "reply": "Fait : les en-têtes du tableau tiennent sur une ligne (« vs enchère préc. (2026-06) » raccourci en « vs préc. », la date au survol) ; sur téléphone ils reviennent à la ligne pour rester lisibles."
  }
 }

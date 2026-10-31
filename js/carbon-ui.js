@@ -156,7 +156,7 @@
 
     inner.innerHTML = `
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-        <div style="font-size:12px;font-weight:700;color:var(--tx2)">${flag} ${r.name} · hourly intensity</div>
+        <div style="font-size:12px;font-weight:700;color:var(--tx2)">${flag} ${r.name} · ${(!window.PKI18n || PKI18n.lang !== 'en') ? 'intensité heure par heure' : 'hourly intensity'}</div>
         <button class="pk-btn-ghost" onclick="event.stopPropagation();(function(){var c=window.__carbCharts&&__carbCharts[${idx}];if(c&&c.resetZoom)c.resetZoom();})()" title="Reset zoom">↺ Reset</button>
       </div>
       <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:12px">
@@ -190,11 +190,16 @@
       const nl = nowLineAnnotation({ slots:N, labels, label:'NOW', mode:'single' });
       if (nl) annotations.now = nl;
     }
+    // the axis frames the day's own range (with the N-1 line), not 0: France sits between 40 and 60 g and read flat
+    // from 0 (note 73)
+    const _cv = ciArr.concat(piArr, [n1]).filter(v => v != null && isFinite(v));
+    const _lo = _cv.length ? Math.min.apply(null, _cv) : 0, _hi = _cv.length ? Math.max.apply(null, _cv) : 100;
+    const _pad = Math.max((_hi - _lo) * 0.25, 5);
     _carbCharts[idx] = new Chart(ctx, {
       type:'line',
       data:{ labels, datasets:[
-        { label:'Cons. intensity', data:ciArr, borderColor:'#A87DC4', backgroundColor:'rgba(168,125,196,.08)', borderWidth:2, pointRadius:0, fill:true, tension: 0 },
-        { label:'Prod. intensity', data:piArr, borderColor:'#7A93AB', borderWidth:1.3, borderDash:[4,3], pointRadius:0, tension: 0 },
+        { label:((!window.PKI18n || PKI18n.lang !== 'en') ? 'Intensité de la consommation' : 'Consumption intensity'), data:ciArr, borderColor:'#A87DC4', backgroundColor:'rgba(168,125,196,.08)', borderWidth:2, pointRadius:0, fill:true, tension: 0 },
+        { label:((!window.PKI18n || PKI18n.lang !== 'en') ? 'Intensité de la production' : 'Production intensity'), data:piArr, borderColor:'#7A93AB', borderWidth:1.3, borderDash:[4,3], pointRadius:0, tension: 0 },
       ]},
       options:{
         responsive:true, maintainAspectRatio:false, animation:{duration:100},
@@ -209,7 +214,7 @@
         scales:{
           x:{ grid:{color:'rgba(255,255,255,.04)'}, ticks:{color:'#4A6280',font:{size:9},maxTicksLimit:12} },
           y:{ grid:{color:'rgba(255,255,255,.04)'}, ticks:{color:'#4A6280',font:{size:10}},
-              title:{display:true,text:'gCO2eq/kWh',color:'#4A6280',font:{size:10}}, grace:'12%', beginAtZero:true },
+              title:{display:true,text:'gCO2eq/kWh',color:'#4A6280',font:{size:10}}, min: Math.max(0, Math.floor((_lo - _pad) / 5) * 5), max: Math.ceil((_hi + _pad) / 5) * 5 },
         },
       },
     });
