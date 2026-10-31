@@ -70,7 +70,8 @@
     const F = cap ? cap.fields : [], ix = Object.fromEntries(F.map((f, i) => [f, i + 1]));
     // national imbalance cost per technology, last 12 months with data (scripts/fetch_fr_imbalance_cost.py)
     const imbCost = {};
-    if (imbc && imbc.months) ['solar', 'wind'].forEach(k => { const ms = Object.keys(imbc.months).filter(m => imbc.months[m][k]).sort().slice(-12); let c = 0, e = 0; ms.forEach(m => { c += imbc.months[m][k].costEur; e += imbc.months[m][k].mwh; }); if (ms.length >= 3 && e > 0) imbCost[k] = { v: c / e, n: ms.length, from: ms[0], to: ms[ms.length - 1] }; });
+    // with our own forecast (the site's combined forecast, closer to an aggregator's) when 3 months or more have it, else the TSO's
+    if (imbc && imbc.months) ['solar', 'wind'].forEach(k => { const all = Object.keys(imbc.months).filter(m => imbc.months[m][k]).sort().slice(-12), withO = all.filter(m => imbc.months[m][k].ours), own = withO.length >= 3, ms = own ? withO : all; let c = 0, e = 0; ms.forEach(m => { const x = own ? imbc.months[m][k].ours : imbc.months[m][k]; c += x.costEur; e += x.mwh; }); if (ms.length >= 3 && e > 0) imbCost[k] = { v: c / e, n: ms.length, from: ms[0], to: ms[ms.length - 1], own }; });
     const fwdRows = ((mkt && mkt.forwardCurve) || []).filter(r => r.value != null).map(r => ({ contract: r.contract, value: r.value }));
     D = { hc: hcan || null, cc: (ccap && ccap.countries) || null, fwdRows, imbCost, cap: (cap && cap.days) || [], ix, profile: (cap && cap.profile) || {}, capGW, fwd, fwdDate: mkt && mkt.forwardCurve && mkt.forwardCurve[0] && mkt.forwardCurve[0].date, go, fwdVol, fwdVolN,
       fcst: fcst || null, fwRatio: (fwm && fwm.ratios && fwm.ratios.year) || null, fwM: (fwm && fwm.months) || null, bias: pbias || null };
@@ -386,7 +387,7 @@
     const degr = pick('degr', st.tech === 'solar' ? 0.4 : 0, st.tech === 'solar' ? 'typical PV panel ageing' : 'none for wind') / 100;
     const disc = pick('disc', 0, 'none: values in today’s money') / 100;
     const ic = D.imbCost[st.tech];
-    const imb = pick('imb', ic ? +ic.v.toFixed(2) : 1.9, ic ? `national forecast error × (imbalance − spot), ${ic.n} months` : 'past-discount default (national estimate not computed yet)'), margin = pick('margin', 1.0, 'past-discount default'), add = pick('add', 0, 'none');
+    const imb = pick('imb', ic ? +ic.v.toFixed(2) : 1.9, ic ? `national forecast error (${ic.own ? 'our combined forecast' : 'the TSO day-ahead forecast'}) × (imbalance − spot), ${ic.n} months` : 'past-discount default (national estimate not computed yet)'), margin = pick('margin', 1.0, 'past-discount default'), add = pick('add', 0, 'none');
     const volRisk = pick('volRisk', 0, 'none'), priceRisk = pick('priceRisk', 0, 'none');
     const alpha = pick('alpha', 25, 'one chance in four');
     const volStress = pick('volStress', 20, 'Past discount'), spotStress = pick('spotStress', 20, 'Past discount');
@@ -604,7 +605,7 @@
     'pp-conv': 'Curtailed: the asset stops when the price is ≤ 0 €; that output is neither produced nor paid, and the forward (Cal) still settles on every hour. No curtailment: every hour is produced and paid, negative prices included. Partial stop: only the share entered stops (for instance the parks under the stop obligation), the rest runs and is paid the negative price. PPA Dashboard convention: the team’s former rule, kept to compare.',
     'pp-alpha': 'The chance of losing money you accept. Lower = a more cautious price and a bigger risk premium.',
     'pp-hedge': 'Whether the expected volume is sold forward at the Cal price. Hedged: only the volume and profile risks remain.',
-    'pp-imb': 'Cost of forecast errors per MWh produced. Default: national estimate (forecast error × gap between imbalance and spot prices).',
+    'pp-imb': 'Cost of forecast errors per MWh produced. Default: national estimate (error of the site\u2019s combined forecast, closer to an aggregator\u2019s than the TSO\u2019s, × gap between imbalance and spot prices).',
     'pp-go': 'Value of the guarantees of origin per MWh, from market prices.',
     'pp-margin': 'What the buyer keeps per MWh. Deducted from the price paid to the producer, in every method.',
     'pp-disc': 'Discount rate applied to later years (0 = none).', 'pp-add': 'An extra discount in % of the forward, if you want one.',

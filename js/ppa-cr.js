@@ -42,8 +42,10 @@
   // national imbalance cost of the technology over the last 12 months (€/MWh produced)
   function imbNational(tech) {
     if (!IMB || !IMB.months) return tech === 'solar' ? 3.5 : 2.3;
-    const ks = Object.keys(IMB.months).sort().slice(-12); let c = 0, e = 0;
-    ks.forEach(k => { const x = IMB.months[k][tech]; if (x) { c += x.costEur; e += x.mwh; } });
+    // with our own forecast when 3 months or more have it (as the PPA pricer), else the TSO's
+    const all = Object.keys(IMB.months).sort().slice(-12), withO = all.filter(k => (IMB.months[k][tech] || {}).ours), own = withO.length >= 3;
+    let c = 0, e = 0;
+    (own ? withO : all).forEach(k => { const x0 = IMB.months[k][tech], x = x0 && (own ? x0.ours : x0); if (x) { c += x.costEur; e += x.mwh; } });
     return e > 0 ? c / e : (tech === 'solar' ? 3.5 : 2.3);
   }
   // hourly output of the park: its own curve when the pricer has one, else the national profile of the technology

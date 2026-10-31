@@ -19,6 +19,9 @@ Score    walk-forward by month (corrections learned on the months before, at lea
          % of the installed capacity (Energy-Charts yearly, interpolated), solar on daylight hours
 
 Writes data/history/fcst_national.json    python scripts/fcst_national.py
+   and data/history/fcst_national_hourly.json: the combined forecast (STACK, walk-forward: each month forecast with
+   corrections learnt on the months before only), national MW by Paris day and hour, {"solar"|"wind": {day: [24]}},
+   read by scripts/fetch_fr_imbalance_cost.py to cost the imbalance of a good forecaster rather than of the TSO's
 """
 import json
 import os
@@ -32,6 +35,7 @@ import fcst_backtest as FB
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, 'data', 'history', 'fcst_national.json')
+OUT_H = os.path.join(ROOT, 'data', 'history', 'fcst_national_hourly.json')
 START, END = FB.START, FB.END
 PARIS = ZoneInfo('Europe/Paris')
 # (lat, lon, solar GW, onshore wind GW, offshore wind GW) — national registry of installations (ODRÉ), 2026
@@ -237,9 +241,16 @@ def score(rows, key, tech):
 
 def main():
     out = {'protocol': __doc__.split('Writes')[0].strip(), 'period': [START, END], 'results': {}, 'monthly': {}, 'sample': {}, 'live': {}}
+    hourly = {'source': 'scripts/fcst_national.py, combined forecast (STACK), walk-forward, national MW, Paris time', 'unit': 'MW'}
     for tech in ('solar', 'wind'):
         rows, wts = frame(tech)
         rows = walk(rows, tech, wts)
+        hd = hourly.setdefault(tech, {})
+        for r in rows:
+            if r.get('stack') is None:
+                continue
+            day = hd.setdefault(r['t'][:10], [None] * 24)
+            day[int(r['t'][11:13])] = round(r['stack'] * r['C'])
         res = {k: score(rows, k, tech) for k in ('ent', 'n0', 'n1', 'n2', 'n3', 'mix', 'stack')}
         out['results'][tech] = res
         print(tech, {k: (round(v['nmae'] * 100, 2), round(v['bias'] * 100, 2), round(v['nmae_day'] * 100, 2)) for k, v in res.items()})
@@ -268,6 +279,10 @@ def main():
         print(tech, 'band', q, 'coverage', cov)
     with open(OUT, 'w') as f:
         json.dump(out, f, separators=(',', ':'))
+    for tech in ('solar', 'wind'):
+        hourly[tech] = dict(sorted(hourly.get(tech, {}).items()))
+    with open(OUT_H, 'w') as f:
+        json.dump(hourly, f, separators=(',', ':'))
 
 
 if __name__ == '__main__':

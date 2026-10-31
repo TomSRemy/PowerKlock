@@ -14,6 +14,13 @@ A surplus (error > 0) is sold at the imbalance price instead of the spot, a
 shortfall bought back at it; when the imbalance price differs by direction,
 the price of the side the error falls on is used.
 
+Two forecasts are costed on the same quarter-hours:
+  "tso"   the TSO's day-ahead forecast (ENTSO-E A69), the one kept until now
+  "ours"  the site's combined forecast (data/history/fcst_national_hourly.json, scripts/fcst_national.py:
+          walk-forward, each month forecast with what was learnt before it), hourly MW spread on its quarters;
+          a balancing party with a good forecast of its own, no intraday re-trading. The pricer takes it when
+          at least 3 months have it (an aggregator's forecast beats the TSO's: Tom, 31 Oct. 2026)
+
 Data
   actual production  RTE éCO2mix, data/history/rte/YYYY-MM.json (15 min)
   day-ahead spot     data/history/daily/YYYY-MM-DD.json (zones.FR.hourly)
@@ -22,7 +29,8 @@ Data
 
 Writes data/history/fr_imbalance_cost.json:
   {"updated", "source", "method", "months": {"2026-09": {"solar": {"eurMWh", "costEur",
-   "mwh", "errPct", "slots"}, "wind": {…}}, …}}
+   "mwh", "errPct", "slots", "ours": {same keys, our forecast}, "tsoSame": {same keys, the TSO's on those
+   quarter-hours}}, "wind": {…}}, …}}
 
     ENTSOE_TOKEN=… python scripts/fetch_fr_imbalance_cost.py              # last 2 months (24 if no file yet)
     ENTSOE_TOKEN=… python scripts/fetch_fr_imbalance_cost.py --months 24
@@ -47,6 +55,7 @@ import requests
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, 'data', 'history', 'fr_imbalance_cost.json')
+OURS = os.path.join(ROOT, 'data', 'history', 'fcst_national_hourly.json')
 BASE = 'https://web-api.tp.entsoe.eu/api'
 FR = '10YFR-RTE------C'
 PARIS = ZoneInfo('Europe/Paris')
@@ -267,7 +276,10 @@ def month_cost(m):
     lg, sh = imbalance(p0, p1)
     save_prices(lg, sh)
     rte = load(os.path.join(ROOT, 'data', 'history', 'rte', m.strftime('%Y-%m') + '.json')) or {}
+    ours = load(OURS) or {}
     acc = {k: {'cost': 0.0, 'mwh': 0.0, 'err': 0.0, 'n': 0} for k in ('solar', 'wind')}
+    acc_o = {k: {'cost': 0.0, 'mwh': 0.0, 'err': 0.0, 'n': 0} for k in ('solar', 'wind')}
+    acc_t = {k: {'cost': 0.0, 'mwh': 0.0, 'err': 0.0, 'n': 0} for k in ('solar', 'wind')}
     d = m
     while d < nxt:
         day = (rte.get('days') or {}).get(d.isoformat())
@@ -294,12 +306,26 @@ def month_cost(m):
                     a_['mwh'] += arr[i] * 0.25
                     a_['err'] += abs(err) * 0.25
                     a_['n'] += 1
+                    # our forecast for the same quarter-hour (its Paris hour)
+                    loc = t.astimezone(PARIS)
+                    oh = ((ours.get(k) or {}).get(loc.date().isoformat()) or [None] * 24)[loc.hour]
+                    if oh is not None:
+                        e2 = arr[i] - oh
+                        p2 = (lg if e2 > 0 else sh).get(t)
+                        if p2 is not None:
+                            for acc_, ee, pp_ in ((acc_o, e2, p2), (acc_t, err, p)):
+                                b_ = acc_[k]
+                                b_['cost'] += -ee * (pp_ - s) * 0.25; b_['mwh'] += arr[i] * 0.25
+                                b_['err'] += abs(ee) * 0.25; b_['n'] += 1
         d += timedelta(days=1)
     out = {}
+    blk = lambda a_: {'eurMWh': round(a_['cost'] / a_['mwh'], 3), 'costEur': round(a_['cost']), 'mwh': round(a_['mwh']),
+                      'errPct': round(a_['err'] / a_['mwh'] * 100, 1), 'slots': a_['n']}
     for k, a_ in acc.items():
         if a_['n'] >= 96 * 5 and a_['mwh'] > 0:
-            out[k] = {'eurMWh': round(a_['cost'] / a_['mwh'], 3), 'costEur': round(a_['cost']), 'mwh': round(a_['mwh']),
-                      'errPct': round(a_['err'] / a_['mwh'] * 100, 1), 'slots': a_['n']}
+            out[k] = blk(a_)
+            if acc_o[k]['n'] >= 96 * 5 and acc_o[k]['mwh'] > 0:
+                out[k]['ours'] = blk(acc_o[k]); out[k]['tsoSame'] = blk(acc_t[k])
     rte_days = len((rte.get('days') or {}))
     return out, {'forecastSlots': len(fc_s) + len(fc_w), 'priceSlots': len(lg) + len(sh), 'rteDays': rte_days, 'matched': {k: a_['n'] for k, a_ in acc.items()},
                  'fcFirst': str(min(fc_s)) if fc_s else None, 'priceFirst': str(min(lg)) if lg else None}
@@ -312,7 +338,9 @@ def main():
         recent_prices(int(sys.argv[sys.argv.index('--prices') + 1]))
         return
     prev = load(OUT) or {'months': {}}
-    n = int(sys.argv[sys.argv.index('--months') + 1]) if '--months' in sys.argv else (2 if prev['months'] else 24)
+    # 24 months the first time, and again once our forecast is there and the months lack its cost
+    redo = os.path.exists(OURS) and not any('ours' in (v.get('wind') or {}) for v in prev['months'].values())
+    n = int(sys.argv[sys.argv.index('--months') + 1]) if '--months' in sys.argv else (2 if prev['months'] and not redo else 24)
     prev['diag'] = {}
     for m in months_back(n):
         try:
@@ -327,7 +355,7 @@ def main():
             prev['months'][m.strftime('%Y-%m')] = res
     prev.update({'updated': datetime.now(timezone.utc).isoformat(timespec='seconds'),
                  'source': 'ENTSO-E (day-ahead wind and solar forecast A69, imbalance prices A85) · RTE éCO2mix (actual) · ENTSO-E day-ahead (spot)',
-                 'method': 'cost = −Σ (actual − forecast) × (imbalance price − spot) × 0.25 h, per MWh produced; national, basic'})
+                 'method': 'cost = −Σ (actual − forecast) × (imbalance price − spot) × 0.25 h, per MWh produced; national; forecast = the TSO day-ahead (main figures) and ours (ours)'})
     prev['months'] = dict(sorted(prev['months'].items()))
     prev['answers'] = DIAG[-40:]
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
