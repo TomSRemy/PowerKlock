@@ -30,7 +30,8 @@ Data
 Writes data/history/fr_imbalance_cost.json:
   {"updated", "source", "method", "months": {"2026-09": {"solar": {"eurMWh", "costEur",
    "mwh", "errPct", "slots", "ours": {same keys, our forecast}, "tsoSame": {same keys, the TSO's on those
-   quarter-hours}}, "wind": {…}}, …}}
+   quarter-hours}}, "wind": {…}}, …}, "use": {"solar": "ours"|"tso", "wind": …}}  (use: the forecast with the smaller
+   error over the last 12 months, the one the site's tools take)
 
     ENTSOE_TOKEN=… python scripts/fetch_fr_imbalance_cost.py              # last 2 months (24 if no file yet)
     ENTSOE_TOKEN=… python scripts/fetch_fr_imbalance_cost.py --months 24
@@ -49,6 +50,7 @@ import sys
 import time
 import xml.etree.ElementTree as ET
 from datetime import date, datetime, timedelta, timezone
+import math
 from zoneinfo import ZoneInfo
 
 import requests
@@ -267,6 +269,24 @@ def load(path):
         return None
 
 
+def ours_q(hd, t):
+    """our hourly forecast (MW, Paris hours) at quarter-hour t, interpolated between the hours' middles"""
+    loc = t.astimezone(PARIS) + Q / 2                       # middle of the quarter-hour
+    x = loc.hour + loc.minute / 60 - 0.5                    # in hours from the middle of hour 0
+    h0 = math.floor(x)
+    f = x - h0
+    def at(h):
+        d = loc.date() + timedelta(days=h // 24)
+        v = (hd.get(d.isoformat()) or [None] * 24)[h % 24]
+        return v
+    a, b = at(h0), at(h0 + 1)
+    if a is None and b is None:
+        return None
+    if a is None or b is None:
+        return a if b is None else b
+    return a + (b - a) * f
+
+
 def month_cost(m):
     nxt = (m.replace(day=28) + timedelta(days=4)).replace(day=1)
     a = datetime(m.year, m.month, 1, tzinfo=PARIS).astimezone(timezone.utc)
@@ -306,9 +326,9 @@ def month_cost(m):
                     a_['mwh'] += arr[i] * 0.25
                     a_['err'] += abs(err) * 0.25
                     a_['n'] += 1
-                    # our forecast for the same quarter-hour (its Paris hour)
-                    loc = t.astimezone(PARIS)
-                    oh = ((ours.get(k) or {}).get(loc.date().isoformat()) or [None] * 24)[loc.hour]
+                    # our forecast for the same quarter-hour: the hourly values read at the hours' middles and joined
+                    # by straight lines (a flat hour misses the solar ramps of the morning and evening)
+                    oh = ours_q(ours.get(k) or {}, t)
                     if oh is not None:
                         e2 = arr[i] - oh
                         p2 = (lg if e2 > 0 else sh).get(t)
@@ -325,7 +345,7 @@ def month_cost(m):
         if a_['n'] >= 96 * 5 and a_['mwh'] > 0:
             out[k] = blk(a_)
             if acc_o[k]['n'] >= 96 * 5 and acc_o[k]['mwh'] > 0:
-                out[k]['ours'] = blk(acc_o[k]); out[k]['tsoSame'] = blk(acc_t[k])
+                out[k]['ours'] = {**blk(acc_o[k]), 'q': 1}; out[k]['tsoSame'] = blk(acc_t[k])
     rte_days = len((rte.get('days') or {}))
     return out, {'forecastSlots': len(fc_s) + len(fc_w), 'priceSlots': len(lg) + len(sh), 'rteDays': rte_days, 'matched': {k: a_['n'] for k, a_ in acc.items()},
                  'fcFirst': str(min(fc_s)) if fc_s else None, 'priceFirst': str(min(lg)) if lg else None}
@@ -339,7 +359,7 @@ def main():
         return
     prev = load(OUT) or {'months': {}}
     # 24 months the first time, and again once our forecast is there and the months lack its cost
-    redo = os.path.exists(OURS) and not any('ours' in (v.get('wind') or {}) for v in prev['months'].values())
+    redo = os.path.exists(OURS) and not any(((v.get('solar') or {}).get('ours') or {}).get('q') for v in prev['months'].values())
     n = int(sys.argv[sys.argv.index('--months') + 1]) if '--months' in sys.argv else (2 if prev['months'] and not redo else 24)
     prev['diag'] = {}
     for m in months_back(n):
@@ -357,6 +377,15 @@ def main():
                  'source': 'ENTSO-E (day-ahead wind and solar forecast A69, imbalance prices A85) · RTE éCO2mix (actual) · ENTSO-E day-ahead (spot)',
                  'method': 'cost = −Σ (actual − forecast) × (imbalance price − spot) × 0.25 h, per MWh produced; national; forecast = the TSO day-ahead (main figures) and ours (ours)'})
     prev['months'] = dict(sorted(prev['months'].items()))
+    # which forecast the site uses for each technology: the one with the smaller error over the last 12 months
+    use = {}
+    for k in ('solar', 'wind'):
+        ms = [m for m, v in prev['months'].items() if (v.get(k) or {}).get('ours')][-12:]
+        if len(ms) >= 3:
+            eo = sum(prev['months'][m][k]['ours']['errPct'] * prev['months'][m][k]['ours']['mwh'] for m in ms)
+            et = sum(prev['months'][m][k]['tsoSame']['errPct'] * prev['months'][m][k]['tsoSame']['mwh'] for m in ms)
+            use[k] = 'ours' if eo < et else 'tso'
+    prev['use'] = use
     prev['answers'] = DIAG[-40:]
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     with open(OUT, 'w') as f:
