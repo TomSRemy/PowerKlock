@@ -3512,19 +3512,6 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
           </div>
 </div>
       </div>
-      <div class="hist-section hist-section-strong" id="hs-nuclear-u">
-        <div class="hist-section-header open" onclick="toggleStrongSection('hs-nuclear-u')">
-          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Nuclear unavailability<span class="pk-hs-meta">French nuclear unavailability · official urgent-market-message platforms</span></div>
-          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-        </div>
-        <div class="hist-section-body open" id="hs-body-nuclear-u">
-<div class="kpi-strip fuel-kpis" id="remit-kpis"></div>
-<div class="chart-container fuel-card" style="margin-bottom:14px">
-        <div class="fuel-card-head"><div><div class="table-title">French nuclear unavailability</div><div class="fuel-card-sub">Installed capacity − available capacity (GW) · operator forecast dashed</div></div><span class="source-badge">Market data</span></div>
-        <div style="position:relative;height:320px"><canvas id="remit-unavail" style="width:100%;height:320px"></canvas></div>
-      </div>
-        </div>
-      </div>
       <div class="hist-section hist-section-strong" id="hs-nuclear-1">
         <div class="hist-section-header open" onclick="toggleStrongSection('hs-nuclear-1')">
           <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="9" y1="4" x2="9" y2="20"/></svg>Unit-level outages<span class="pk-hs-meta">official platforms</span></div>
@@ -3533,8 +3520,8 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
         <div class="hist-section-body open" id="hs-body-nuclear-1">
 <div class="table-wrap" style="padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
         <div>
-          <div class="table-title" style="margin-bottom:4px">Unit-level outages</div>
-          <div style="font-size:11px;color:var(--tx3)">Reactor-by-reactor unavailability (REMIT) is published on the operators' and exchanges' transparency platforms — see the REMIT page.</div>
+          <div class="table-title" style="margin-bottom:4px">Outages and unavailability</div>
+          <div style="font-size:11px;color:var(--tx3)">Total unavailable capacity, the operator's forecast and every reactor outage are on one page: Outages &amp; REMIT.</div>
         </div>
         <div class="sidebar-item" style="display:inline-flex;width:auto;padding:6px 14px;border-radius:6px;background:var(--bg3);border:1px solid var(--bd)" onclick="showPage('remit')">Open REMIT →</div>
       </div>
@@ -4195,6 +4182,19 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
           <div class="pr-tabs-bar-filters"><span class="updated-badge" id="remit-upd">Operator data</span></div>
         </div>
       </div>
+      <div class="hist-section hist-section-strong" id="hs-nuclear-u">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-nuclear-u')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Nuclear unavailability<span class="pk-hs-meta">French nuclear unavailability · official urgent-market-message platforms</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-nuclear-u">
+<div class="kpi-strip fuel-kpis" id="remit-kpis"></div>
+<div class="chart-container fuel-card" style="margin-bottom:14px">
+        <div class="fuel-card-head"><div><div class="table-title">French nuclear unavailability</div><div class="fuel-card-sub">Installed capacity − available capacity (GW) · operator forecast dashed</div></div><span class="source-badge">Market data</span></div>
+        <div style="position:relative;height:320px"><canvas id="remit-unavail" style="width:100%;height:320px"></canvas></div>
+      </div>
+        </div>
+      </div>
       <div class="hist-section hist-section-strong" id="hs-remit-u">
         <div class="hist-section-header open" onclick="toggleStrongSection('hs-remit-u')">
           <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9h6M7 13h10M7 17h4"/></svg>Nuclear outages, unit by unit<span class="pk-hs-meta" id="ro-upd"></span></div>
@@ -4203,6 +4203,10 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
         <div class="hist-section-body open" id="hs-body-remit-u">
 <div class="fuel-note" id="ro-empty" style="display:none"></div>
 <div class="kpi-strip fuel-kpis" id="ro-kpis"></div>
+<div class="chart-container fuel-card" id="ro-proj-card" style="margin-bottom:14px">
+        <div class="fuel-card-head"><div><div class="table-title">Announced nuclear availability · next 4 months</div><div class="fuel-card-sub" id="ro-proj-sub"></div></div><span class="source-badge">ENTSO-E · REMIT</span></div>
+        <div style="position:relative;height:280px"><canvas id="ro-proj" style="width:100%;height:280px"></canvas></div>
+      </div>
 <div class="chart-container fuel-card" id="ro-tl-card" style="margin-bottom:14px">
         <div class="fuel-card-head"><div><div class="table-title">Outage timeline · nuclear reactors</div><div class="fuel-card-sub" id="ro-tl-sub"></div></div><span class="source-badge">ENTSO-E · REMIT</span></div>
         <div id="ro-tl-wrap" style="position:relative;height:300px"><canvas id="ro-tl" style="width:100%;height:300px"></canvas></div>

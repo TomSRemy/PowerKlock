@@ -526,5 +526,29 @@
  "64": {
   "status": "done",
   "reply": "Fait : le tableau des cotations J-1 TTF et EUA est maintenant dans le même onglet que le graphique des contrats forward TTF (la différence : le tableau donne la dernière clôture et ses variations, le graphique l’historique de chaque contrat)."
+ },
+ "71": {
+  "status": "done",
+  "reply": "Fait : la liste réacteur par réacteur n’est plus sur la page Nucléaire ; tout est sur Indisponibilités & REMIT (la page Nucléaire garde la disponibilité et la production, avec un lien)."
+ },
+ "98": {
+  "status": "done",
+  "reply": "Fait : le graphique « Indisponibilités nucléaires françaises » et ses chiffres clés sont passés en tête de la page Indisponibilités & REMIT."
+ },
+ "99": {
+  "status": "done",
+  "reply": "Fait : une seule page pour les indisponibilités (Indisponibilités & REMIT) : total indisponible avec la prévision de l’exploitant, nouvelle projection des 4 prochains mois, planning et liste réacteur par réacteur. Aujourd’hui garde son graphique (note 83)."
+ },
+ "83": {
+  "status": "done",
+  "reply": "D’accord : le graphique reste sur Aujourd’hui ; ailleurs il n’est plus que sur la page Indisponibilités & REMIT (retiré de la page Nucléaire)."
+ },
+ "77": {
+  "status": "done",
+  "reply": "Fait : nouvelle projection « Disponibilité nucléaire annoncée · 4 prochains mois » sur la page Indisponibilités & REMIT : capacité installée moins les arrêts déjà annoncés par EDF (REMIT), jour par jour, avec le réalisé du même jour l’an dernier ; les arrêts fortuits s’y ajouteront."
+ },
+ "97": {
+  "status": "done",
+  "reply": "Fait : la prévision est sur la page Indisponibilités & REMIT (voir note 77), à un clic de la page Nucléaire ; la page Nucléaire garde aussi la prévision de l’exploitant (pointillés) sur la capacité disponible."
  }
 }
