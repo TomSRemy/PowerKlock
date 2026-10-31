@@ -20,7 +20,7 @@ def block(rows):
 def case(fn, rows):
     return f'<div><img src="{img(fn)}">{block(rows)}</div>'
 bn = lambda m: n(m / 1000, 1) + ' Md€' if m >= 950 else n(m) + ' M€'
-NOTE = 'Merit order simplifié : parc et prix illustratifs, pas des données. Point rouge : prix de la France, lu sur la production française ; point blanc : prix qu’elle aurait sans aucun échange. Ligne saturée = prix France différent de celui de la Belgique et de l’Allemagne (au centime) ; exportatrice / importatrice = signe des échanges commerciaux. Chiffres : moyennes des quarts d’heure de chaque cas (ENTSO-E, Energy-Charts ; calcul PowerKlock).'
+NOTE = 'Merit order simplifié : parc et prix illustratifs. Point rouge : prix de la France, lu sur la production française ; point blanc : prix sans aucun échange. Pas saturée = prix France égal à ceux de la Belgique et de l’Allemagne (au centime) ; saturée = France moins chère (exportatrice) ou plus chère (importatrice) que les deux. Autres heures : page 3. Chiffres : moyennes des quarts d’heure de chaque cas (ENTSO-E, Energy-Charts ; calcul PowerKlock).'
 sl('France exportatrice : ligne pas saturée, ligne saturée', '<div class="pair">' +
    case('c5_1.png', [('Prix', f"<b>monte jusqu’au prix des voisins</b> : France = Allemagne = {n(c['exp_free']['fr'])} €/MWh"),
                      ('Fréquence', f"{pc(c['exp_free']['share'])} du temps en 2025 ({pc(C5['2020']['exp_free']['share'])} en 2020)"),
@@ -41,17 +41,17 @@ sl('France importatrice : ligne pas saturée, ligne saturée', '<div class="pair
                      ('Sécurité', f"<b>tension</b> : imports au maximum ({n(-c22['imp_sat']['nx_gw'], 1)} GW en moyenne en 2022) ; seule, la France aurait manqué d’énergie {U['2022']['shortage_hours']} heures en 2022 (jusqu’à {n(U['2022']['shortage_max_gw'], 1)} GW, modèle)"),
                      ('Réseau', f"forte rente : <b>{bn(c22['imp_sat']['rent_m'])}</b> en 2022 ; la CRE a fait reverser 1,94 Md€ aux utilisateurs du réseau au titre de 2022")]) +
    f'</div><p class="note">{NOTE}</p>', '1 · Les cas')
-yy = ('2020', '2022', '2023', '2024', '2025', '2026')
-tr = ''.join(f"<tr><td>{U[y]['label']}</td><td>{pc(C5[y]['exp_free']['share'])}</td><td>{pc(C5[y]['exp_sat']['share'])}</td><td>{pc(C5[y]['imp_free']['share'])}</td><td>{pc(C5[y]['imp_sat']['share'])}</td><td>0 %</td></tr>" for y in yy)
-sl('France coupée, et la part de chaque cas', f'''<div class="two"><div><img src="{img('c5_5.png')}">
+H = json.load(open('cases_hist.json'))
+sl('France coupée, et l’évolution des cas depuis 2015', f'''<div class="two"><div><img src="{img('c5_5.png')}">
 {block([('Prix', f"se lit à la consommation ; <b>jamais observé</b>, estimé par un modèle à environ {n(u['iso'])} €/MWh en 2025 (± 15–20 € sur une heure)"),
         ('Fréquence', 'jamais'),
         ('Sécurité', f"personne pour aider : {U['2023']['shortage_hours']} à {U['2022']['shortage_hours']} heures de pénurie par an en 2021–2023 (modèle) ; en été, {n(u['curtail_twh'], 1)} TWh de surplus à écrêter en 2025"),
         ('Réseau', 'aucune rente, aucun échange')])}</div><div>
-<table class="num sm"><tr><th>Part du temps</th><th>Exportatrice,<br>pas saturée</th><th>Exportatrice,<br>saturée</th><th>Importatrice,<br>pas saturée</th><th>Importatrice,<br>saturée</th><th>Coupée</th></tr>{tr}</table>
-<ul class="sm" style="margin-top:12px"><li>Depuis 2024, la France est <b>exportatrice avec une ligne saturée près de 9 heures sur 10</b>.</li>
-<li>2022 est l’exception : nucléaire à l’arrêt, la France importe deux tiers du temps.</li></ul>
-<p class="note">Comptage au quart d’heure (un prix par quart d’heure depuis le 1er octobre 2025). 2026 : janvier–octobre. Sources : ENTSO-E, Energy-Charts ; calcul PowerKlock (cases5.py).</p></div></div>''', '1 · Les cas')
+<img style="max-height:345px;object-fit:contain;background:#fff" src="{img('cases_hist.png')}">
+<ul class="sm" style="margin-top:8px"><li><b>Le cas 2 était rare</b> : 1 à 16 % du temps de 2015 à 2022. Il domine depuis 2024 : <b>{pc(H['2025']['exp_sat']['share'])} du temps en 2025</b>.</li>
+<li>Avant 2020, la France avait souvent un prix <b>entre</b> ceux de la Belgique et de l’Allemagne, ou plus cher que les deux en exportant vers le sud (gris et sable).</li>
+<li>2022 : la France importe avec une ligne saturée {pc(H['2022']['imp_sat']['share'])} du temps.</li></ul>
+<p class="note">2015–2019 : prix horaires Energy-Charts ; 2020–2026 : quarts d’heure ENTSO-E. Échanges commerciaux : ENTSO-E via Energy-Charts. Calcul PowerKlock (cases5.py, cases_hist.py).</p></div></div>''', '1 · Les cas')
 
 fwr = ''.join(f"<tr><td>{y}</td><td>{n(FW['cal_y1']['FR'][y], 1)}</td><td>{n(FW['spot']['FR'][y], 1) if y in FW['spot']['FR'] else '–'}</td><td>{n(FW['cal_y1']['DE'][y], 1)}</td></tr>" for y in ('2024', '2025', '2026', '2027'))
 sl('Le consommateur paie-t-il plus cher ? Oui et non', f'''<div class="two"><div>

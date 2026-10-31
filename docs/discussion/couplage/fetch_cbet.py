@@ -4,7 +4,7 @@ data, CC BY 4.0; public API, no key). Writes /tmp/coupl/cbet_<month>.json; the A
 import json, urllib.request, time, os
 from datetime import date
 out = {}
-for y in range(2020, 2027):
+for y in range(2015, 2027):
     for m in range(1, 13):
         if (y, m) > (2026, 10): break
         s = date(y, m, 1); e = date(y + (m == 12), m % 12 + 1, 1)

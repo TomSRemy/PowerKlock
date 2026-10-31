@@ -162,3 +162,23 @@ for i, (k, _) in enumerate(cases):
 ax.set_xticks(x); ax.set_xticklabels([l for _, l in cases], fontsize=8.5); ax.set_ylabel('prix spot moyen 2025, €/MWh')
 ax.set_ylim(-20, 115); ax.axhline(0, color='#b9bcc2', lw=.8); clean(ax); ax.legend(frameon=False, loc='upper right', fontsize=8.5)
 save('state_prices.png')
+
+# ── history of the cases, 2015 – Oct. 2026 (short deck) ────────────────────
+H = json.load(open('cases_hist.json'))
+yh = sorted(H)
+lab_h = [y if y != '2026' else '2026\n(janv.–oct.)' for y in yh]
+CS = [('exp_free', '1. Exportatrice, ligne pas saturée', BLUE), ('exp_sat', '2. Exportatrice, ligne saturée (France moins chère)', VIOLET),
+      ('imp_free', '3. Importatrice, ligne pas saturée', AMBER), ('imp_sat', '4. Importatrice, ligne saturée (France plus chère)', RED),
+      ('mix_dearer', 'Autre : la France exporte (vers l’Italie, la Suisse, la GB) mais est plus chère que la Belgique et l’Allemagne', SAND),
+      ('mixed', 'Autre : prix français entre ceux de la Belgique et de l’Allemagne', '#c9ccd2')]
+fig, ax = plt.subplots(figsize=(8.0, 5.0)); x = np.arange(len(yh)); bot = np.zeros(len(yh))
+for k, lab, c in CS:
+    v = np.array([H[y][k]['share'] * 100 for y in yh])
+    ax.bar(x, v, .66, bottom=bot, color=c, label=lab, edgecolor='white', lw=1.0)
+    for i in range(len(yh)):
+        if v[i] >= 7:
+            ax.text(x[i], bot[i] + v[i] / 2, f'{v[i]:.0f}', ha='center', va='center', fontsize=7.8, color='white' if c in (BLUE, VIOLET, RED) else INK)
+    bot += v
+ax.set_xticks(x); ax.set_xticklabels(lab_h, fontsize=8); ax.set_ylabel('part du temps, %'); ax.set_ylim(0, 100)
+clean(ax, False); ax.legend(frameon=False, fontsize=7.8, loc='upper center', bbox_to_anchor=(.5, -.1), ncol=1)
+save('cases_hist.png')
