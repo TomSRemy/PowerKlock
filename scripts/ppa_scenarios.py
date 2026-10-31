@@ -753,6 +753,33 @@ DEC2 = os.environ.get('PK_DEC2') or None   # test: France cut off, its price rea
 # (bias +1.89) not anchored: not taken (31 Oct. 2026)
 
 
+MC_DRY = float(os.environ.get('PK_MC_DRY', '0'))   # test: each scenario keeps a dry or wet year (bandwidth of the
+# reservoir-filling anomaly, e.g. 0.1): the weeks drawn come preferably from years that were as dry at that date
+_RA = {}
+
+
+def res_anom(y):
+    """France's reservoir filling on each day of year y ÷ its mean for that week of the year − 1 (ENTSO-E A72)"""
+    if y not in _RA:
+        import json
+        wk = json.load(open(os.path.join(ROOT, 'data', 'history', 'hydro_reservoirs.json')))['countries']['FR']['weeks']
+        pts = [(date.fromisoformat(d), v) for d, v in wk if v]
+        woy = {}
+        for d, v in pts:
+            woy.setdefault(d.isocalendar()[1], []).append(v)
+        mean = {k: float(np.mean(v)) for k, v in woy.items()}
+        an = {d: v / mean[d.isocalendar()[1]] - 1 for d, v in pts}
+        ds = sorted(an)
+        out = []
+        for d in L.DATA[y]['days']:
+            d = d if isinstance(d, date) else date.fromisoformat(str(d)[:10])
+            i = min(range(len(ds)), key=lambda j: abs((ds[j] - d).days)) if ds else None
+            out.append(an[ds[i]] if i is not None and abs((ds[i] - d).days) <= 10 else 0.0)
+        _RA[y] = np.array(out)
+    return _RA[y]
+
+
+MC_DRY_FREE = float(os.environ.get('PK_MC_DRY_FREE', '0.5'))   # share of the weeks drawn without the dryness preference
 MC_FULL = os.environ.get('PK_MC_FULL') == '1'   # test: each scenario draws its fleet growth, nuclear and export limit
 MC_FLEET = float(os.environ.get('PK_MC_FLEET', '0.4'))   # growth beyond the last known year × U(1 − x, 1 + x)
 MC_NUC = float(os.environ.get('PK_MC_NUC', '0.04'))      # nuclear × lognormal(0, x) (EDF's yearly range 350–370 TWh ≈ ±3 %)
@@ -1490,6 +1517,10 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
             g_jao = float(np.exp(rng.normal(0, MC_JAO * np.sqrt(max(1, Y - demand_year)))))
         else:
             g_fleet = g_nuc = g_jao = g_load = 1.0
+        if MC_DRY > 0:
+            # this scenario's dryness: a year's mean reservoir anomaly drawn among the years seen (2015 on)
+            yrs_ = [yy for yy in L.DATA if L.DATA[yy]['complete'] and yy <= demand_year]
+            dry_t = float(rng.choice([res_anom(yy).mean() for yy in yrs_])) + float(rng.normal(0, MC_DRY / 2))
         src = []                     # (year, row) per delivery day
         prev = None
         i = 0
@@ -1513,6 +1544,10 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
                 ag = np.array([0.5 ** ((max(pool) - y_) / POOL_HALF) for y_, _ in cand])
             else:
                 ag = None
+            if MC_DRY > 0 and rng.random() >= MC_DRY_FREE:
+                # a soft preference only: MC_DRY_FREE of the weeks are drawn without it, so the scenarios keep mixing years
+                dw = np.array([np.exp(-0.5 * ((res_anom(y_)[r_] - dry_t) / MC_DRY) ** 2) for y_, r_ in cand]) + 0.05
+                ag = dw if ag is None else ag * dw
             if prev is not None:
                 pw, pl = prev
                 w = np.array([np.exp(-0.5 * (((starts[y]['FR_w'][r].mean() - pw) / sd[y][0]) ** 2 + ((starts[y]['FR_ldev'][r].mean() - pl) / sd[y][1]) ** 2))
