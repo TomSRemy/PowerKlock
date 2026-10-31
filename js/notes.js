@@ -15,7 +15,7 @@
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const off = () => /^#(solo|board)=/.test(location.hash) || /[?&]embed/.test(location.search);
 
-  let notes = [], team = false, client = null, open = false, view = 'page', target = null, aiming = false, busy = false;
+  let notes = [], team = false, client = null, open = false, view = 'page', target = null, aiming = false, busy = false, uploading = false;
 
   // ── storage ─────────────────────────────────────────────────────────
   const localGet = () => { try { return JSON.parse(localStorage.getItem(LKEY) || '[]') || []; } catch (_) { return []; } };
@@ -40,10 +40,15 @@
   async function reload() {
     if (team) {
       const loc = localGet();
-      if (loc.length) {   // notes written before signing in go up once
-        const rows = loc.map(n => { const r = Object.assign({}, n); delete r.id; delete r.local; delete r.author_email; return r; });
-        const { error } = await client.from('site_note').insert(rows);
-        if (!error) localSet([]);
+      // notes written before signing in go up once: signing in runs connect() twice (page load and sign-in event),
+      // and both used to send them (31 Oct. 2026: 58 notes stored twice); the flag is set before the first await
+      if (loc.length && !uploading) {
+        uploading = true;
+        try {
+          const rows = loc.map(n => { const r = Object.assign({}, n); delete r.id; delete r.local; delete r.author_email; return r; });
+          const { error } = await client.from('site_note').insert(rows);
+          if (!error) localSet([]);
+        } finally { uploading = false; }
       }
       const { data, error } = await client.from('site_note').select('*').order('created_at', { ascending: true }).limit(1000);
       notes = error ? [] : data;
