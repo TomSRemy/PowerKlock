@@ -1,0 +1,204 @@
+{
+ "capture_jan_oct": {
+  "2020": {
+   "base": 29.9,
+   "w": {
+    "value": 27.99,
+    "capture_paid": 0.937,
+    "capture_all": 0.931,
+    "share_jan_mar": 0.456
+   },
+   "s": {
+    "value": 28.93,
+    "capture_paid": 0.969,
+    "capture_all": 0.958
+   },
+   "h_le0": 105,
+   "h_lt0": 102,
+   "n_hours": 8760
+  },
+  "2021": {
+   "base": 81.6,
+   "w": {
+    "value": 70.91,
+    "capture_paid": 0.869,
+    "capture_all": 0.867,
+    "share_jan_mar": 0.4
+   },
+   "s": {
+    "value": 80.47,
+    "capture_paid": 0.986,
+    "capture_all": 0.982
+   },
+   "h_le0": 66,
+   "h_lt0": 64,
+   "n_hours": 8760
+  },
+  "2022": {
+   "base": 284.7,
+   "w": {
+    "value": 247.84,
+    "capture_paid": 0.871,
+    "capture_all": 0.871,
+    "share_jan_mar": 0.408
+   },
+   "s": {
+    "value": 293.21,
+    "capture_paid": 1.03,
+    "capture_all": 1.03
+   },
+   "h_le0": 8,
+   "h_lt0": 4,
+   "n_hours": 8760
+  },
+  "2023": {
+   "base": 100.5,
+   "w": {
+    "value": 93.64,
+    "capture_paid": 0.931,
+    "capture_all": 0.93,
+    "share_jan_mar": 0.4
+   },
+   "s": {
+    "value": 82.41,
+    "capture_paid": 0.82,
+    "capture_all": 0.816
+   },
+   "h_le0": 184,
+   "h_lt0": 147,
+   "n_hours": 8760
+  },
+  "2024": {
+   "base": 49.7,
+   "w": {
+    "value": 44.95,
+    "capture_paid": 0.904,
+    "capture_all": 0.897,
+    "share_jan_mar": 0.426
+   },
+   "s": {
+    "value": 33.25,
+    "capture_paid": 0.668,
+    "capture_all": 0.642
+   },
+   "h_le0": 549,
+   "h_lt0": 352,
+   "n_hours": 8784
+  },
+  "2025": {
+   "base": 60.5,
+   "w": {
+    "value": 53.88,
+    "capture_paid": 0.891,
+    "capture_all": 0.887,
+    "share_jan_mar": 0.355
+   },
+   "s": {
+    "value": 33.89,
+    "capture_paid": 0.56,
+    "capture_all": 0.538
+   },
+   "h_le0": 735,
+   "h_lt0": 509,
+   "n_hours": 8759
+  },
+  "2026": {
+   "base": 89.6,
+   "w": {
+    "value": NaN,
+    "capture_paid": NaN,
+    "capture_all": NaN,
+    "share_jan_mar": NaN
+   },
+   "s": {
+    "value": NaN,
+    "capture_paid": NaN,
+    "capture_all": NaN
+   },
+   "h_le0": 685,
+   "h_lt0": 516,
+   "n_hours": 7271
+  }
+ },
+ "gas_plant_cost_jan_oct": {
+  "2020": 24.9,
+  "2021": 86.3,
+  "2022": 265.8,
+  "2023": 110.9,
+  "2024": 85.2,
+  "2025": 96.1,
+  "2026": 127.0
+ },
+ "res_mean_mwh": {
+  "2014": 2737368,
+  "2015": 2140343,
+  "2016": 2022822,
+  "2017": 1706178,
+  "2018": 1955176,
+  "2019": 2097651,
+  "2020": 2548540,
+  "2021": 1930353,
+  "2022": 2053065,
+  "2023": 2390011,
+  "2024": 2437444,
+  "2025": 2026553,
+  "2026": 1711599
+ },
+ "wind_mean_mw": {
+  "2016": 2381,
+  "2017": 2751,
+  "2018": 3211,
+  "2019": 3860,
+  "2020": 4512,
+  "2021": 4209,
+  "2022": 4410,
+  "2023": 5807,
+  "2024": 5330,
+  "2025": 5665,
+  "2026": 5436
+ },
+ "fr_de": {
+  "2020": {
+   "fr": 32.2,
+   "de": 30.5,
+   "share_gap_lt1": 0.567,
+   "share_fr_cheaper_5": 0.083
+  },
+  "2021": {
+   "fr": 109.2,
+   "de": 96.9,
+   "share_gap_lt1": 0.543,
+   "share_fr_cheaper_5": 0.072
+  },
+  "2022": {
+   "fr": 275.9,
+   "de": 235.5,
+   "share_gap_lt1": 0.387,
+   "share_fr_cheaper_5": 0.032
+  },
+  "2023": {
+   "fr": 96.9,
+   "de": 95.2,
+   "share_gap_lt1": 0.464,
+   "share_fr_cheaper_5": 0.171
+  },
+  "2024": {
+   "fr": 58.0,
+   "de": 78.5,
+   "share_gap_lt1": 0.25,
+   "share_fr_cheaper_5": 0.501
+  },
+  "2025": {
+   "fr": 61.1,
+   "de": 89.3,
+   "share_gap_lt1": 0.173,
+   "share_fr_cheaper_5": 0.626
+  },
+  "2026": {
+   "fr": 90.1,
+   "de": 114.0,
+   "share_gap_lt1": 0.186,
+   "share_fr_cheaper_5": 0.521
+  }
+ }
+}
