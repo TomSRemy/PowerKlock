@@ -3,7 +3,7 @@
 Période : 1er janvier 2020 – 29 octobre 2026 (2026 = janvier–octobre). Jours de livraison en heure de Paris.
 Tous les chiffres viennent des scripts de ce dossier, qui se lancent dans cet ordre :
 `fetch_cbet.py` → `build_data.py` → `states.py` (puis `states.py 1.0` pour la variante à 1 €) → `model.py` (puis
-`PK_TRAIN=cut model.py` pour la variante) → `drivers.py` → `summary.py` → `charts.py` → `deck.py`.
+`PK_TRAIN=cut model.py` pour la variante) → `drivers.py` → `summary.py` → `flows.py` → `charts.py` → `deck.py`.
 Il faut scikit-learn (`pip install scikit-learn`) et Playwright (Chromium) pour le PDF.
 Résultats : `states.json`, `model_results.json`, `drivers.json`, `summary.json`. Sources : `sources.md`.
 
@@ -130,6 +130,38 @@ consommateurs). Sommes horaires :
 Le gain des voisins n'est **pas calculé** : il faudrait leurs propres courbes d'offre. On sait seulement qu'ils
 achètent moins cher que chez eux, et que la rente côté voisin leur revient pour moitié.
 
+## 3 bis. Les heures, et où va l'argent (`flows.py`, `flows.json`)
+
+**Cas, heure par heure**, avec Δ = prix réel − prix isolé (modèle) :
+- *le prix monte, France couplée* : Δ ≥ +5 €/MWh, la France a le prix d'au moins un voisin ;
+- *le prix monte, France coupée* : Δ ≥ +5 €/MWh, prix différent de tous les voisins ;
+- *pas d'effet sur le prix* : |Δ| < 5 €/MWh (une rente peut quand même être gagnée aux frontières) ;
+- *le prix baisse* : Δ ≤ −5 €/MWh ;
+- *pénurie évitée* : la France seule n'aurait pas couvert sa consommation.
+
+Le seuil de 5 €/MWh sert à la lecture, ce n'est pas une précision : une heure du modèle peut être fausse de 15 à
+20 €/MWh. La rente de chaque heure est la somme de ses quarts d'heure.
+
+**Où va l'argent** (réel comparé à isolé, même consommation, hors heures de pénurie) :
+- facture spot des consommateurs : Σ consommation × (P_réel − P_isolé) ;
+- chiffre d'affaires de marché des producteurs, par filière : Σ P_réel × production_réelle − P_isolé × production_isolée.
+  C'est égal (aux arrondis de bilan près) à la facture spot en plus + les exports valorisés au prix français ;
+- acheteurs étrangers : exports valorisés au prix de chaque voisin = exports au prix français + rente de congestion.
+
+Production d'une France isolée par filière :
+- éolien, solaire, fil de l'eau et bioénergies comme observés, moins l'écrêtement nécessaire, pris sur l'éolien et
+  le solaire ;
+- la baisse due aux exports est répartie entre les centrales pilotables au prorata de leur production de l'heure ;
+- aux heures d'import, le surcroît vient du nucléaire jusqu'à sa disponibilité, puis des lacs, STEP, gaz, charbon et
+  fioul au prorata de leur marge.
+
+À qui ça revient ensuite (non chiffré, décrit avec ses sources dans le jeu de diapos) :
+- EDF, détenue à 100 % par l'État depuis juin 2023 ;
+- l'ARENH jusqu'en 2025, puis le VNU ;
+- le soutien public aux renouvelables sous contrat, qui baisse quand le prix de marché monte (CRE, charges de
+  service public) ;
+- la part de rente de RTE, dont l'excédent est déduit du TURPE.
+
 ## 4. Contrôles
 
 - **Exports nets** 2025 : 93,1 TWh (éCO2mix, physique) ; 92,5 TWh (échanges commerciaux, somme des frontières) ;
@@ -152,13 +184,18 @@ achètent moins cher que chez eux, et que la rente côté voisin leur revient po
 
 1. Le prix isolé est une **estimation**. Une heure seule peut être fausse de 15–20 €/MWh. La moyenne annuelle est
    fiable à quelques €/MWh en 2024–2025, beaucoup moins en 2022 (erreur de 50 €/MWh par heure).
-2. **Court terme** : parc, disponibilité nucléaire et stocks d'eau restent ceux observés. Une France isolée durable
-   aurait planifié autrement (arrêts de tranches en été, investissements). Les offres apprises contiennent aussi des
-   coûts d'opportunité européens (valeur de l'eau, du combustible nucléaire) : isolés, ils seraient plus bas. Ces
-   deux effets tirent le prix isolé vers le bas.
+2. **Court terme** : parc, disponibilité nucléaire et stocks d'eau restent ceux observés. À long terme, deux effets
+   jouent en sens contraire. Une France isolée et en surplus aurait arrêté plus de tranches, ce qui monte le prix
+   isolé. Ses offres ne contiendraient plus les coûts d'opportunité européens (valeur de l'eau, du combustible),
+   ce qui le baisse. **Le sens net est inconnu.** (Une version précédente de cette note disait à tort que les deux
+   effets baissaient le prix isolé.)
 3. Demande fixe (aucune réaction au prix). Les heures de pénurie sont comptées à part.
 4. Surplus « au prix des offres » : des offres négatives d'éolien et de solaire sous contrat de soutien comptent
    comme des coûts.
 5. Rente : day-ahead seulement, partage 50/50 par défaut. Avec la Grande-Bretagne et la Suisse, la capacité est
    vendue aux enchères explicites, et la rente va en partie à des tiers (ElecLink, détenteurs de capacité).
-6. Gain des voisins non chiffré.
+6. Gain des voisins non chiffré. Part des recettes des producteurs qui revient à l'État (dividendes, impôts,
+   soutien public évité) non chiffrée.
+7. Aucune étude publiée trouvée qui chiffre l'effet du couplage sur le prix français ou son partage : les montants
+   de ce dossier ne peuvent pas être recoupés. Le sens de l'effet, lui, est appuyé par la théorie du commerce et par la
+   CRE (rapport sur les interconnexions 2024, p. 41).
