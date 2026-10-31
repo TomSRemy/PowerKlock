@@ -348,6 +348,8 @@ def fuel_cost():
     return _FUEL
 
 
+CELL_W = float(os.environ.get('PK_CELL_W', '0'))   # test: French wind share as a third input of the coupled cells
+CELL_MIN = int(os.environ.get('PK_CELL_MIN', '30'))
 WTECH = {'t': None}   # test (Qorbanian, Löhndorf & Wozabal 2024, arXiv 2403.08846: the model fitted with each hour weighed by
 # the output of the technology priced): the rule's cells learnt as output-weighted means of the technology simulated
 # (PK_WTECH=1), so a cell's price is the price when that technology produces; a floor weight keeps hours without output.
@@ -562,6 +564,16 @@ class PriceModelFuel:
                     ng[sel] = v[3]
                     if self.MO_EUR and cost is not None and v[4]:
                         out[0][sel] = v[5] / cb[sel]; out[1][sel] = v[6] / cb[sel]
+        if CELL_W and xf is not None and getattr(self, 'tab3', None) and getattr(self, '_wsh', None) is not None:
+            k3 = ((g * 1000 + (np.round(x / 0.05).astype(int) + 100)) * 1000 + (np.round(xf / self.fbin()).astype(int) + 100)) * 100 \
+                + np.clip(np.round(self._wsh / CELL_W).astype(int), 0, 99)
+            for kk in np.unique(k3):
+                v = self.tab3.get(int(kk))
+                if v is not None:
+                    sel = k3 == kk
+                    for i in range(3):
+                        out[i][sel] = v[i]
+                    ng[sel] = v[3]
         if self.FR_LIN and z is not None and getattr(self, 'lin', None) is not None and xf is not None:
             kc = (g * 1000 + (np.round(x / 0.05).astype(int) + 100)) * 1000 + (np.round(xf / self.fbin()).astype(int) + 100)
             beta, zbar = np.zeros(x.shape), np.zeros(x.shape)
@@ -616,6 +628,17 @@ class PriceModelFuel:
                 v = r[sel]; ww = wv[sel]
                 self.tab2[int(kk)] = (_wm(v, ww), _wm(v * (v > 0), ww), _wm(v > 0, ww), _wm(e[sel], ww)) + \
                     (self._pick(pe_[sel], ce_[sel], ye_[sel]) if self.MO_EUR else (False, 0.0, 0.0))
+        if CELL_W and not getattr(self, 'DAY2', False):
+            # test: the French wind share as a third input of the cells (bins of CELL_W), where a cell has CELL_MIN hours
+            wsh_ = np.concatenate([(L.DATA[y]['fr_w'] / L.DATA[y]['fr_l'])[np.isfinite(np.array([F.get(str(d)[:10], np.nan) for d in L.DATA[y]['days']])) & (np.array([F.get(str(d)[:10], np.nan) for d in L.DATA[y]['days']]) > 5)].ravel() for y in years])
+            wsh_ = wsh_[mk]
+            k3 = k * 100 + np.clip(np.round(wsh_ / CELL_W).astype(int), 0, 99)
+            self.tab3 = {}
+            for kk in np.unique(k3):
+                sel = k3 == kk
+                if sel.sum() >= CELL_MIN:
+                    v = r[sel]
+                    self.tab3[int(kk)] = (v.mean(), (v * (v > 0)).mean(), (v > 0).mean(), e[sel].mean())
         if self.FR_LIN:
             # the slope of price ÷ cost per GW of French residual load, by season × time of day (one line per group, so
             # each slope rests on thousands of hours), applied around each cell's own mean residual load
@@ -636,6 +659,7 @@ class PriceModelFuel:
         return self
 
 
+NUC_Y = os.environ.get('PK_NUC_Y') or None   # test: France's nuclear for the delivery year ('oracle' = its real availability)
 REGIME = os.environ.get('PK_REGIME', '1') == '1'   # two regimes, France coupled to its neighbours or cut off by its export
 # limits (its price 5 € or more under Germany's: 629 h in 2021, 1,496 in 2023, 4,374 in 2024, 5,460 in 2025, with 67 % of
 # French wind MWh in 2025; the current rule is +6.9 € too high in those hours and −6.4 € too low in coupled ones); the
@@ -729,6 +753,240 @@ DEC2 = os.environ.get('PK_DEC2') or None   # test: France cut off, its price rea
 # (bias +1.89) not anchored: not taken (31 Oct. 2026)
 
 
+POOL_HALF = float(os.environ.get('PK_POOL_HALF', '0'))   # test: weather weeks drawn with weight halving every N years back
+KNN = int(os.environ.get('PK_KNN', '0'))   # test (31 Oct. 2026): the price of a simulated hour = the mean of the K most
+# similar learnt hours (analogues) on: the region's and France's shares, what France must export beyond its Core limit,
+# France's wind and solar shares, the hour and the season, instead of the rule's cells; one rule for both technologies
+
+
+KNN_SPR = float(os.environ.get('PK_KNN_SPR', '0'))   # weight of the DE ÷ FR price ratio as an analogue feature
+KNN_SCF = os.environ.get('PK_KNN_SCF') == '1'   # France's solar and wind as load factors (weather), not shares of load
+_FWR = {}
+
+
+def fwd_ratio(A, Y):
+    """Germany's ÷ France's calendar forward for year Y, as quoted in December of year A (data/history/fr_market)"""
+    if (A, Y) not in _FWR:
+        import glob, json
+        k = f'Y+{Y - A}'; r = []
+        for f in sorted(glob.glob(os.path.join(ROOT, 'data', 'history', 'fr_market', f'{A}-12-*.json'))):
+            c = json.load(open(f)).get('countries', {})
+            a, b = c.get('FR', {}).get('forwardCurve', {}).get(k), c.get('DE', {}).get('forwardCurve', {}).get(k)
+            if a and b:
+                r.append(b / a)
+        _FWR[(A, Y)] = float(np.mean(r)) if r else None
+    return _FWR[(A, Y)]
+
+
+def month_ratio(y):
+    """days × 24: Germany's ÷ France's mean day-ahead price of each month of year y"""
+    a = L.DATA[y]; de = de_prices(y); out = np.ones(a['fr_p'].shape)
+    for m in range(1, 13):
+        k = a['month'] == m
+        if k.any():
+            fm, dm = np.nanmean(a['fr_p'][k]), np.nanmean(de[k])
+            out[k] = dm / fm if fm > 5 and np.isfinite(dm) else 1.0
+    return out
+
+
+KNN_DRAW = os.environ.get('PK_KNN_DRAW') or None
+KNN_HYB = float(os.environ.get('PK_KNN_HYB', '0'))
+KNN_AUTO = os.environ.get('PK_KNN_AUTO') == '1'   # the hybrid's correction only outside the known (analogues far away)
+KNN_LL = float(os.environ.get('PK_KNN_LL', '0'))
+KNN_F2 = os.environ.get('PK_KNN_F2') == '1'   # local-linear analogues (ridge on the slopes)   # hybrid: × the rule's difference (simulated hour − analogue hours)   # 'week' / 'day': draw one analogue per hour, rank shared by the block
+
+
+class KNNRule:
+    W_ = np.array([float(v) for v in os.environ.get('PK_KNN_W', '1,1,1,1,1,0.7,0.7').split(',')]
+                  + ([0.7, 0.7] if os.environ.get('PK_KNN_F2') == '1' and len(os.environ.get('PK_KNN_W', '1,1,1,1,1,0.7,0.7').split(',')) == 7 else [])
+                  + ([float(os.environ.get('PK_KNN_SPR', '0'))] if float(os.environ.get('PK_KNN_SPR', '0')) > 0 else []))
+
+    def __init__(self, years):
+        from scipy.spatial import cKDTree
+        if os.environ.get('PK_KNN_LAST') == '1':
+            years = [max(years)]
+        if os.environ.get('PK_KNN_EX22') == '1' and any(y != 2022 for y in years):
+            # the 2022 crisis left out of the analogues (as of the weather pool): the year before takes its place
+            ys = [y for y in years if y != 2022]
+            years = ys if len(set(ys)) > 1 or 2021 not in L.DATA else sorted(set([2021] + ys)) + ys[-1:]
+        F = fuel_cost(); X, R, RP, PP, NG, RH = [], [], [], [], [], []
+        self.rule = RegimeRule(years, True, True) if KNN_HYB else None
+        for y in years:
+            a = L.DATA[y]
+            c = np.array([F.get(str(d)[:10], np.nan) for d in a['days']])[:, None] * np.ones((1, 24))
+            need = export_need(a['fr_s'], a['fr_w'], a['fr_l'], fr_avail(y)) - fr_jmax(y) / 1000
+            x_, xf_ = year_share(y, True), year_share(y, False)
+            wsh_, ssh_ = (a['fr_w'] / 1000 / L.cap('FR', 'w', y), a['fr_s'] / 1000 / L.cap('FR', 's', y)) if KNN_SCF else (a['fr_w'] / a['fr_l'], a['fr_s'] / a['fr_l'])
+            f = self.feats(x_, xf_, need, wsh_, ssh_, a['month'], month_ratio(y) if KNN_SPR else None)
+            ok = np.isfinite(c) & (c > 5) & np.isfinite(a['fr_p']) & np.isfinite(f).all(-1)
+            r = a['fr_p'] / c
+            X.append(f[ok]); R.append(r[ok]); RP.append(np.maximum(r, 0)[ok]); PP.append((r > 0)[ok].astype(float)); NG.append(np.minimum(a['fr_p'], 0)[ok])
+            if self.rule is not None:
+                g_ = PriceModelFuel.groups(a['month'], [L.day_kind(d) for d in a['days']])
+                cc_ = np.where(np.isfinite(c), c, np.nanmean(c))
+                RH.append(self.rule.phi(x_, g_, xf_, cc_, None, need, xf_)[0][ok])
+        X = np.concatenate(X); self.mu, self.sd = X.mean(0), X.std(0) + 1e-9
+        Z = (X - self.mu) / self.sd * self.W_
+        self.tree = cKDTree(Z)
+        self.Z = Z
+        if KNN_AUTO:
+            # the typical distance to the K analogues for a learnt hour (a sample), the yardstick of "outside the known"
+            smp = Z[np.random.default_rng(1).choice(len(Z), min(3000, len(Z)), replace=False)]
+            self.dref = float(np.median(self.tree.query(smp, k=KNN, workers=-1)[0].mean(1)))
+        self.R, self.RP, self.PP, self.NG = (np.concatenate(v) for v in (R, RP, PP, NG))
+        self.RH = np.concatenate(RH) if RH else None
+
+    @staticmethod
+    def feats(x, xf, need, wsh, ssh, month, spr=None):
+        h = np.arange(24)[None, :] * np.ones_like(x)
+        m = (np.asarray(month)[:, None] * np.ones((1, 24)))
+        f = [x, xf, need / 10.0, wsh, ssh, np.sin(2 * np.pi * h / 24) + 0 * x, np.cos(2 * np.pi * (m - 1) / 12)]
+        if KNN_F2:
+            # the hour and the month as full circles (sine alone confuses 03:00 with 09:00, April with October)
+            f += [np.cos(2 * np.pi * h / 24) + 0 * x, np.sin(2 * np.pi * (m - 1) / 12) + 0 * x]
+        if spr is not None:
+            f += [spr + 0 * x]
+        return np.stack(f, -1)
+
+    def phi(self, x, g, xf=None, cost=None, z=None, need=None, xfr=None):
+        spr = None
+        if KNN_SPR:
+            v_ = self._spr if getattr(self, '_spr', None) else 1.0
+            spr = np.full(x.shape, v_)
+        f = self.feats(x, xfr, need, self._wsh, self._ssh, self._month, spr)
+        q = (f.reshape(-1, f.shape[-1]) - self.mu) / self.sd * self.W_
+        dd, ii = self.tree.query(q, k=KNN, workers=-1)
+        sh = x.shape
+        if KNN_DRAW and KNN_LL:
+            if not hasattr(self, '_rng'):
+                self._rng = np.random.default_rng(int(os.environ.get('PK_KNN_SEED', 5)))
+            D = sh[0]; blk = 7 if KNN_DRAW == 'week' else 1
+            u = np.repeat(self._rng.random((D + blk - 1) // blk), blk)[:D]
+            u = np.repeat(u[:, None], sh[1], 1).ravel()
+            order = np.argsort(self.R[ii], axis=1)
+            pick = ii[np.arange(len(ii)), order[np.arange(len(ii)), np.minimum((u * KNN).astype(int), KNN - 1)]]
+            Zn = self.Z[ii]; zq = q[:, None, :]
+            Xd = np.concatenate([np.ones(Zn.shape[:2] + (1,)), Zn - zq], -1)
+            A_ = np.einsum('nki,nkj->nij', Xd, Xd) + KNN_LL * np.diag([0] + [1] * Zn.shape[2])[None]
+            outs = []
+            for v in (self.R, self.RP, self.PP, self.NG):
+                b_ = np.linalg.solve(A_, np.einsum('nki,nk->ni', Xd, v[ii])[..., None])[:, 0, 0]
+                lo, hi = v[ii].min(1), v[ii].max(1); span = hi - lo
+                b_ = np.clip(b_, lo - span, hi + span)
+                outs.append((b_ + v[pick] - v[ii].mean(1)).reshape(sh))
+            r, rp, pp, ng = outs
+            rp = np.maximum(rp, 0); pp = np.clip(pp, 0, 1); ng = np.minimum(ng, 0)
+            rh = None
+        elif KNN_DRAW:
+            # one analogue per hour instead of their mean: each week (or day) of the scenario draws a rank in the
+            # analogues' price distribution, shared by its hours (a dear or cheap week: outages, fuel, behaviour last),
+            # so the scenarios spread like real months while their mean stays the analogues' mean
+            if not hasattr(self, '_rng'):
+                self._rng = np.random.default_rng(int(os.environ.get('PK_KNN_SEED', 5)))
+            D = sh[0]; blk = 7 if KNN_DRAW == 'week' else 1
+            u = np.repeat(self._rng.random((D + blk - 1) // blk), blk)[:D]
+            u = np.repeat(u[:, None], sh[1], 1).ravel()
+            order = np.argsort(self.R[ii], axis=1)
+            pick = ii[np.arange(len(ii)), order[np.arange(len(ii)), np.minimum((u * KNN).astype(int), KNN - 1)]]
+            r, rp, pp, ng = (v[pick].reshape(sh) for v in (self.R, self.RP, self.PP, self.NG))
+            rh = self.RH[pick].reshape(sh) if self.RH is not None else None
+        elif KNN_LL:
+            # local linear: in each hour's analogues, a straight line of the price on the features, read at the hour
+            Zn = self.Z[ii]; zq = q[:, None, :]
+            Xd = np.concatenate([np.ones(Zn.shape[:2] + (1,)), Zn - zq], -1)
+            A_ = np.einsum('nki,nkj->nij', Xd, Xd) + KNN_LL * np.diag([0] + [1] * Zn.shape[2])[None]
+            outs = []
+            for v in (self.R, self.RP, self.PP, self.NG):
+                b_ = np.linalg.solve(A_, np.einsum('nki,nk->ni', Xd, v[ii])[..., None])[:, 0, 0]
+                lo, hi = v[ii].min(1), v[ii].max(1)
+                span = hi - lo
+                outs.append(np.clip(b_, lo - span, hi + span).reshape(sh))
+            r, rp, pp, ng = outs
+            rp = np.maximum(rp, 0); pp = np.clip(pp, 0, 1); ng = np.minimum(ng, 0)
+            rh = None
+        else:
+            r, rp, pp, ng = (v[ii].mean(1).reshape(sh) for v in (self.R, self.RP, self.PP, self.NG))
+            rh = self.RH[ii].mean(1).reshape(sh) if self.RH is not None else None
+        if rh is not None:
+            # hybrid: the analogues moved by the rule's difference between the simulated hour and the analogues' own hours
+            # (none where the future looks like the past; the rule extrapolates where it does not, e.g. more solar)
+            rs = self.rule.phi(x, g, xfr, cost, None, need, xfr)[0]
+            dlt = KNN_HYB * (rs - rh)
+            if KNN_AUTO:
+                # only as far as the hour lies outside the known: 0 at the typical distance, full at twice it
+                wgt = np.clip(dd.mean(1).reshape(sh) / self.dref - 1.0, 0, 1)
+                dlt = dlt * wgt
+            rp = np.maximum(rp + dlt * pp, 0)
+        cb = np.maximum(cost, 1.0) * np.ones(sh)
+        return rp + ng / cb, rp, pp
+
+    def pdec(self, g, need):
+        return np.zeros(g.shape)
+
+
+KNN_MC = os.environ.get('PK_KNN_MC') or None   # test (Tom, 31 Oct. 2026: learn from markets ahead of France): analogue hours
+# from France and the zones listed (e.g. 'FR,DE,ES'), described in shares of each zone's own load (solar, wind, solar + wind
+# + nuclear) and the clock; the target is the hour's price ÷ its month's mean (the shape, comparable across zones)
+
+
+class MCKNNRule:
+    ZONE = {'FR': 'FR', 'DE': 'DE_LU', 'ES': 'ES', 'NL': 'NL', 'BE': 'BE', 'AT': 'AT'}
+    W_ = np.array([float(v) for v in os.environ.get('PK_MC_W', '2,2,1.5,0.7,0.7,0.5,0.5').split(',')])
+
+    @staticmethod
+    def feats(s, w, n, l, month):
+        h = np.arange(24)[None, :] * np.ones_like(l); m = np.asarray(month)[:, None] * np.ones((1, 24))
+        return np.stack([s / l, w / l, (s + w + n) / l, np.sin(2 * np.pi * h / 24), np.cos(2 * np.pi * h / 24),
+                         np.cos(2 * np.pi * (m - 1) / 12), np.sin(2 * np.pi * (m - 1) / 12)], -1)
+
+    def zone(self, c, y):
+        import glob, json
+        P = {}
+        for f in sorted(glob.glob(os.path.join(ROOT, 'data', 'history', 'daily', f'{y}-*.json'))):
+            hh = (json.load(open(f)).get('zones', {}).get(self.ZONE[c]) or {}).get('hourly')
+            if hh and len(hh) in (24, 96):
+                a = np.array([np.nan if v is None else v for v in hh], float); P[f[-15:-5]] = a if len(a) == 24 else a.reshape(24, 4).mean(1)
+        if c == 'FR':
+            a = L.DATA[y]; G = {str(d)[:10]: (a['fr_s'][i], a['fr_w'][i], a['fr_n'][i], a['fr_l'][i]) for i, d in enumerate(a['days'])}
+        else:
+            r = json.load(open(os.path.join(ROOT, 'data', 'history', 'region_hourly', f'{y}.json')))['countries'][c]
+            G = {d: tuple(np.array([np.nan if v is None else v for v in (r[k].get(d) or [np.nan] * 24)], float) for k in ('s', 'w', 'n', 'l')) for d in r['l']}
+        days = sorted(set(P) & set(G)); mo = {}
+        for d in days:
+            mo.setdefault(d[:7], []).append(P[d])
+        mm = {k: np.nanmean(np.concatenate(v)) for k, v in mo.items()}
+        X, R = [], []
+        for d in days:
+            s_, w_, n_, l_ = (np.nan_to_num(np.asarray(x, float)) for x in G[d]); p = P[d]
+            if mm[d[:7]] <= 5 or (l_ <= 0).any():
+                continue
+            f = self.feats(s_[None], w_[None], n_[None], l_[None], [int(d[5:7])])[0]
+            ok = np.isfinite(p) & np.isfinite(f).all(-1)
+            X.append(f[ok]); R.append((p / mm[d[:7]])[ok])
+        return (np.concatenate(X), np.concatenate(R)) if X else (np.zeros((0, 7)), np.zeros(0))
+
+    def __init__(self, years):
+        from scipy.spatial import cKDTree
+        ys = [y for y in years if y != 2022] or list(years)
+        X, R = [], []
+        for c in KNN_MC.split(','):
+            for y in ys:
+                x_, r_ = self.zone(c, y); X.append(x_); R.append(r_)
+        X = np.concatenate(X); self.R = np.concatenate(R)
+        self.mu, self.sd = X.mean(0), X.std(0) + 1e-9
+        self.tree = cKDTree((X - self.mu) / self.sd * self.W_)
+
+    def phi(self, x, g, xf=None, cost=None, z=None, need=None, xfr=None):
+        f = self.feats(self._S, self._W, self._N, self._L, self._month)
+        _, ii = self.tree.query(((f.reshape(-1, f.shape[-1]) - self.mu) / self.sd * self.W_), k=KNN, workers=-1)
+        R = self.R[ii]; sh = x.shape
+        rp, pp, rm = np.maximum(R, 0).mean(1).reshape(sh), (R > 0).mean(1).reshape(sh), R.mean(1).reshape(sh)
+        return rm, rp, pp   # shapes (÷ the month's mean): the capture is a ratio, the level cancels
+
+    def pdec(self, g, need):
+        return np.zeros(g.shape)
+
+
 class RegimeRule:
     """France's price as the mix of two rules weighted by the chance France is cut off from Germany (its price 5 € or
     more below): cut off, a France-only rule learnt on those hours; coupled, the regional rule learnt on the others"""
@@ -777,6 +1035,7 @@ class RegimeRule:
         return out
 
     def phi(self, x, g, xf=None, cost=None, z=None, need=None, xfr=None):
+        self.cpl._wsh = getattr(self, '_wsh', None)
         if DEC_REG:
             a = self.dec.phi(x, g, xf, cost)
         else:
@@ -1142,7 +1401,11 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
         else:
             if RECENT_W:
                 fy = fy + fy[-1:]   # the last learning year counted twice (weighs 2 against 1)
-            if REGIME:
+            if KNN and KNN_MC:
+                pmf = MCKNNRule(fy)
+            elif KNN:
+                pmf = KNNRule(fy)
+            elif REGIME:
                 pmf = RegimeRule(fy, st['regional'], france)
                 if WTECH['t'] and WTECH_BASE:
                     # the month's base price from the rule learnt on every hour alike, the technology's value from the
@@ -1176,6 +1439,13 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
     if REGIME:
         _av, _dm = fr_avail(demand_year), L.DATA[demand_year]['month']
         AVR = np.array([_av[_dm == m].mean() for m in range(1, 13)])
+        NUCF = np.ones(12)
+        if NUC_Y == 'oracle' and Y in L.DATA:
+            # test: the delivery year's real available nuclear (not knowable when pricing) for its months seen
+            _ay, _my = fr_avail(Y), L.DATA[Y]['month']
+            for m_ in range(1, 13):
+                if (_my == m_).sum() >= 20:
+                    v_ = float(_ay[_my == m_].mean()); NUCF[m_ - 1] = v_ / AVR[m_ - 1]; AVR[m_ - 1] = v_
     CFS = {(c, tt, y): cf_scale(c, tt, y, demand_year, pool) for c in CS for tt in 'sw' for y in pool} if CF_LEVEL else {}
     if NUC_AV:
         # France's available nuclear: the last complete year's monthly means (planned outages and their season), the
@@ -1222,6 +1492,10 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
                     dy = np.abs(Yd['doy'] - d0.timetuple().tm_yday)
                     ok = np.where((np.minimum(dy, 365 - dy) <= 14) & (Yd['wd'] == d0.weekday()))[0]
                     cand += [(y, int(r)) for r in ok[ok + weeks <= len(Yd['days'])]]
+            if POOL_HALF > 0:
+                ag = np.array([0.5 ** ((max(pool) - y_) / POOL_HALF) for y_, _ in cand])
+            else:
+                ag = None
             if prev is not None:
                 pw, pl = prev
                 w = np.array([np.exp(-0.5 * (((starts[y]['FR_w'][r].mean() - pw) / sd[y][0]) ** 2 + ((starts[y]['FR_ldev'][r].mean() - pl) / sd[y][1]) ** 2))
@@ -1229,6 +1503,8 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
                 w = w / w.sum() if w.sum() > 0 else None
             else:
                 w = None
+            if ag is not None:
+                w = ag / ag.sum() if w is None else (w * ag) / (w * ag).sum()
             y, r = cand[rng.choice(len(cand), p=w)]
             a_f = float(np.exp(rng.normal(-0.5 * amp ** 2, amp))) if amp > 0 else 1.0
             for k in range(min(weeks, D - i)):
@@ -1258,6 +1534,8 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
             N[c] = nd * np.array([M.get((c, 'n', int(m), int(k)), 0.0) for m, k in zip(month, kind)])[:, None]
         if NUC_AV:
             N['FR'] = AVM[month - 1][:, None] * np.ones((1, 24))
+        if REGIME and NUC_Y:
+            N['FR'] = N['FR'] * NUCF[month - 1][:, None]
         H = None
         if rule == 'fuel' and PriceModelFuel.HYDRO:
             # the weather day's run-of-river as a deviation from its own year's month mean × the month's normal level
@@ -1303,6 +1581,12 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
                     ref = jao_level(Y, demand_year, known)
                     need = need - np.stack([fr_jmax(y)[r] * ref / float(np.mean(fr_jmax(y))) for y, r, _ in src]) / 1000
                 pmf._wsh = W['FR'] / Lo['FR']   # DEC2 = 'wind': the cut-off rule's second input
+                pmf._ssh, pmf._month = S['FR'] / Lo['FR'], month
+                pmf._S, pmf._W, pmf._N, pmf._L = S['FR'], W['FR'], N['FR'], Lo['FR']
+                if KNN_SCF:
+                    pmf._wsh, pmf._ssh = W['FR'] / fleet[('FR', 'w')], S['FR'] / fleet[('FR', 's')]
+                if KNN_SPR:
+                    pmf._spr = fwd_ratio(demand_year, Y)
                 f1, fp, fq = pmf.phi(x, gg, xfr, cday, None, need, share(S, W, Lo, N, H, False))
             else:
                 f1, fp, fq = pmf.phi(x, gg, xfr, cday, fr_gw(S, W, Lo, N, H) if PriceModelFuel.FR_LIN else None)
@@ -1408,4 +1692,5 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
     dist = {m: {k: [float(np.nanpercentile([r[m][k] for r in res if m in r and r[m].get(k) is not None], q)) for q in (10, 90)] for k in ('all', 'curt')} for m in range(1, 13)}
     if guard == 'measure':
         dist['belowFloor'] = BELOW[0] / BELOW[1] if BELOW[1] else None
+    dist['scenarios'] = res   # each scenario's monthly rates (for annual percentiles)
     return out, dist
