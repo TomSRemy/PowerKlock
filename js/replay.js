@@ -225,7 +225,9 @@
     else {
       const dpr = Math.min(2, window.devicePixelRatio || 1), r = RATIO[S.fmt], fs = document.fullscreenElement === st;
       const maxW = st.clientWidth || 1280, maxH = Math.max(300, window.innerHeight - (fs ? 0 : 270));
-      const w = Math.floor(Math.min(maxW, maxH * r));
+      // 16:9 on the page takes the whole width (bounded by the screen's height it left empty sides on a wide
+      // screen: note 112); full screen, square and vertical still fit the height
+      const w = Math.floor(fs || S.fmt !== '16:9' ? Math.min(maxW, maxH * r) : maxW);
       W = Math.round(w * dpr); H = Math.round(w / r * dpr);
       cv.style.width = w + 'px'; cv.style.height = Math.round(w / r) + 'px';   // shown at its CSS size, drawn at the screen's pixels
     }

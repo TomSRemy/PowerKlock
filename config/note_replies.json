@@ -498,5 +498,17 @@
  "80": {
   "status": "done",
   "reply": "Fait : les en-têtes du tableau tiennent sur une ligne (« vs enchère préc. (2026-06) » raccourci en « vs préc. », la date au survol) ; sur téléphone ils reviennent à la ligne pour rester lisibles."
+ },
+ "69": {
+  "status": "done",
+  "reply": "Fait : les vues changeaient bien, mais en « Total GW » le classement affichait les MW comme des GW (France « 59 106 GW » au lieu de 59,1) ; corrigé. Titres et onglets de l’analyse multi-zones en français (Classement, Carte thermique, Profils, % EnR, % bas carbone)."
+ },
+ "101": {
+  "status": "open",
+  "reply": "Je ne reproduis pas : le plein écran de « Consommation France vs normale » s’ouvre bien sur Chromium, le moteur d’Opera (graphique à gauche, tableau des valeurs à droite). Au passage, les dates de l’axe étaient en anglais (« 2 Sep ») : corrigé. Si ça bloque encore chez toi : quel bouton (⛶ en haut à droite de la carte ?) et que se passe-t-il (rien, page noire, erreur) ?"
+ },
+ "112": {
+  "status": "done",
+  "reply": "Fait : en 16:9, le schéma prend toute la largeur de la page (il était limité par la hauteur de l’écran et laissait du vide sur les côtés d’un grand écran) ; le plein écran et les formats carré et vertical restent calés sur la hauteur."
  }
 }

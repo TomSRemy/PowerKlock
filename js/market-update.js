@@ -18,7 +18,10 @@ function _muGet(key, path) { if (!MU.cache[key]) MU.cache[key] = fetch(DATA_BASE
 const _muT = (fr, en) => (!window.PKI18n || PKI18n.lang !== 'en') ? fr : en;
 function _muToday() { return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris' }).format(new Date()); }
 function _muAdd(iso, n) { const [y, m, d] = iso.split('-').map(Number); return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10); }
-const _muDay = iso => +iso.slice(8) + ' ' + MU_MON[+iso.slice(5, 7) - 1];
+// month and day labels in the reader's language (they were English in French too: "2 Sep", "Jan Mar May")
+const MU_MON_FR = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+const _muMon = () => (!window.PKI18n || PKI18n.lang !== 'en') ? MU_MON_FR : MU_MON;
+const _muDay = iso => +iso.slice(8) + ' ' + _muMon()[+iso.slice(5, 7) - 1];
 const _muLegend = () => ({ display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 8, filter: it => !/^_/.test(it.text) } });
 const _muMean = a => { const v = a.filter(x => x != null); return v.length ? v.reduce((s, x) => s + x, 0) / v.length : null; };
 // vertical "today" line on a category axis
@@ -104,10 +107,10 @@ _muReg({
     const by = {}; j.rows.forEach(r => { if (r.nuclearAvg == null) return; const k = r.d.slice(0, 7); (by[k] = by[k] || []).push(r.nuclearAvg); });
     const twh = (yy, m) => { const a = by[yy + '-' + String(m).padStart(2, '0')]; return a ? Math.round(a.reduce((s, v) => s + v, 0) * 24 / 1e6 * 10) / 10 : null; };
     const cols = ['#4A6280', '#7A93AB', '#A87DC4'];   // older years muted, current year in the nuclear colour
-    _fuelChart(cid, { type: 'bar', data: { labels: MU_MON, datasets: years.map((yy, i) => ({ label: String(yy), data: MU_MON.map((_, m) => twh(yy, m + 1)), backgroundColor: cols[i], borderRadius: 3, borderWidth: 0 })) },
+    _fuelChart(cid, { type: 'bar', data: { labels: _muMon(), datasets: years.map((yy, i) => ({ label: String(yy), data: _muMon().map((_, m) => twh(yy, m + 1)), backgroundColor: cols[i], borderRadius: 3, borderWidth: 0 })) },
       options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('TWh', { beginAtZero: true }) }, plugins: { legend: _muLegend() } }) }, 'nuclear-monthly');
     const cur = j.rows[j.rows.length - 1].d;
-    return { sub: `${years.join(' · ')} · ${MU_MON[+cur.slice(5, 7) - 1]} ${y} provisional (to ${cur})` };
+    return { sub: `${years.join(' · ')} · ${MU_MON[+cur.slice(5, 7) - 1]} ${y} provisional (to ${cur})` };   // English month: js/i18n.js translates the sentence
   },
 });
 
@@ -121,7 +124,7 @@ _muReg({
     if (!pts) { noDataMsg(cid, 'Gas storage history not available', ''); return null; }
     const y = +_muToday().slice(0, 4);
     const doy = d => Math.floor((Date.parse(d) - Date.UTC(+d.slice(0, 4), 0, 1)) / 864e5);
-    const lbl = Array.from({ length: 366 }, (_, i) => { const t = new Date(Date.UTC(2001, 0, 1 + i)); return t.getUTCDate() === 1 ? MU_MON[t.getUTCMonth()] : ''; });
+    const lbl = Array.from({ length: 366 }, (_, i) => { const t = new Date(Date.UTC(2001, 0, 1 + i)); return t.getUTCDate() === 1 ? _muMon()[t.getUTCMonth()] : ''; });
     const byYear = {};
     pts.forEach(([d, v]) => { const yy = +d.slice(0, 4); (byYear[yy] = byYear[yy] || new Array(366).fill(null))[Math.min(365, doy(d))] = v; });
     const histYears = Object.keys(byYear).map(Number).filter(yy => yy < y - 1).sort();
@@ -372,7 +375,7 @@ _muReg({
     const months = [...by.keys()].sort().slice(-13);
     const avg = months.map(k => Math.round(_muMean(by.get(k)) * 10) / 10);
     const mean = _muMean(avg.slice(0, -1).slice(-12));
-    _fuelChart(cid, { type: 'bar', data: { labels: months.map(k => MU_MON[+k.slice(5) - 1] + ' ' + k.slice(2, 4)), datasets: [
+    _fuelChart(cid, { type: 'bar', data: { labels: months.map(k => _muMon()[+k.slice(5) - 1] + ' ' + k.slice(2, 4)), datasets: [
       { type: 'bar', label: 'Monthly average', data: avg, backgroundColor: avg.map(v => v > mean ? 'rgba(237,105,101,.75)' : 'rgba(20,211,169,.75)'), borderRadius: 3, borderWidth: 0, order: 2 },
       { type: 'line', label: '12-month mean ' + mean.toFixed(1), data: avg.map(() => Math.round(mean * 10) / 10), borderColor: '#B8C9D9', borderDash: [4, 3], borderWidth: 1.4, pointRadius: 0, order: 1 },
     ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('€/MWh', { beginAtZero: true }) }, plugins: { legend: _muLegend() } }) }, 'spot-monthly-' + (p.zone || 'FR'));
