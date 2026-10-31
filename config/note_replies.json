@@ -184,12 +184,12 @@
   "reply": "Le premier compare cette année à la fourchette des 5 années précédentes ; le second montre cette année et la précédente face à toutes les années depuis 2019. Ils se recoupent : titres clarifiés, et je propose de n’en garder qu’un (à valider)."
  },
  "47": {
-  "status": "open",
-  "reply": "Oui, cotations et forwards TTF se recoupent. Proposition : une seule page « Forwards gaz » avec la courbe, l’historique par échéance et le tableau des cotations. Je la montre en maquette avant de toucher au menu."
+  "status": "done",
+  "reply": "Fait : contrats forward TTF et cotations J-1 réunis dans un même onglet « TTF : contrats et cotations » de la page Courbes forward."
  },
  "48": {
-  "status": "open",
-  "reply": "Même réponse que la note précédente : une seule page TTF suffit. Fusion proposée en maquette, avec la note 47."
+  "status": "done",
+  "reply": "Fait : une seule page pour le TTF (voir note 47)."
  },
  "49": {
   "status": "open",
@@ -510,5 +510,21 @@
  "112": {
   "status": "done",
   "reply": "Fait : en 16:9, le schéma prend toute la largeur de la page (il était limité par la hauteur de l’écran et laissait du vide sur les côtés d’un grand écran) ; le plein écran et les formats carré et vertical restent calés sur la hauteur."
+ },
+ "87": {
+  "status": "done",
+  "reply": "Fait : l’indice BESS est dans Outils › Indice BESS (il reste le dernier onglet de la page Batteries, qui s’ouvre maintenant sur Europe)."
+ },
+ "110": {
+  "status": "done",
+  "reply": "Fait : « Rejouer une journée » est dans Outils ; son adresse reste la même."
+ },
+ "93": {
+  "status": "done",
+  "reply": "Fait : une seule entrée « Courbes forward » dans le menu (l’entrée « Forwards TTF » menait à la même page) ; les anciens liens marchent toujours."
+ },
+ "64": {
+  "status": "done",
+  "reply": "Fait : le tableau des cotations J-1 TTF et EUA est maintenant dans le même onglet que le graphique des contrats forward TTF (la différence : le tableau donne la dernière clôture et ses variations, le graphique l’historique de chaque contrat)."
  }
 }

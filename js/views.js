@@ -20,7 +20,7 @@
     crossborder: [['Daily', ['hs-crossborder-0']], ['Borders', ['hs-crossborder-1']]],
     imbalance: [['Daily', ['hs-imbalance-0']], ['Deviations', ['hs-imbalance-1']]],
     eua: [['Overview', ['hs-eua-0']], ['Gas', ['hs-eua-1']], ['Coal & oil', ['hs-eua-2']]],
-    euafwd: [['Curves', ['hs-euafwd-0']], ['TTF forwards', ['hs-euafwd-ttf']], ['Settlements', ['hs-euafwd-1']]],
+    euafwd: [['Curves', ['hs-euafwd-0']], ['TTF contracts & settlements', ['hs-euafwd-ttf', 'hs-euafwd-1']]],   // TTF forwards and settlements together (notes 47, 64)
     spark: [['Daily', ['hs-spark-0']], ['Historical', ['hs-spark-1']]],
     wxcities: [['Daily', ['hs-wxcities-0', 'hs-wxcities-1']], ['5-week outlook', ['hs-wxcities-outlook']], ['Hydro reservoirs', ['hs-wxcities-hydro']]],
     wxhdd: [['Daily', ['hs-wxhdd-0']], ['Weekly', ['hs-wxhdd-1']]],
@@ -32,7 +32,8 @@
       ['Forward shape', ['hs-pp-price', 'hs-pp-fpc'], 'Methods'], ['Weather simulation', ['hs-pp-price', 'hs-pp-wx'], 'Methods'],
       ['Short-term (monthly)', ['hs-pp-st'], 'Methods'], ['M0-indexed (complément)', ['hs-pp-cr'], 'Methods'], ['Methodology', ['hs-pp-doc'], 'Methods'],
       ['Compare & price', ['hs-pp-cmp', 'hs-pp-roll']]],
-    bess: [['Index', ['hs-bess-idx']], ['Europe', ['hs-bess-eu']], ['Day-ahead value', ['hs-bess-da', 'hs-bess-years']], ['Reserves', ['hs-bess-res']], ['Revenue streams', ['hs-bess-streams']], ['Capacity mechanism', ['hs-bess-cm']], ['Method', ['hs-bess-method']]],
+    // the index is a tool (Tools › BESS index opens it, note 87): last here, Batteries opens on Europe
+    bess: [['Europe', ['hs-bess-eu']], ['Day-ahead value', ['hs-bess-da', 'hs-bess-years']], ['Reserves', ['hs-bess-res']], ['Revenue streams', ['hs-bess-streams']], ['Capacity mechanism', ['hs-bess-cm']], ['Method', ['hs-bess-method']], ['Index', ['hs-bess-idx']]],
     boa: [['Inputs & result', ['hs-bess-boa-in']], ['The battery', ['hs-bess-boa-batt']], ['Contract structures', ['hs-bess-boa-out']]],
     fcst: [['Site & forecast', ['hs-fc-in', 'hs-fc-out']], ['Price this park', ['hs-fc-price']], ['How good is it', ['hs-fc-bt']]],
     carbonfoot: [['Your data', ['hs-cf-input']], ['Overview', ['hs-cf-ov']], ['Consumption', ['hs-cf-cons']], ['Carbon', ['hs-cf-carbon']], ['Cost & flexibility', ['hs-cf-cost']], ['Solar & coverage', ['hs-cf-solar']], ['Reporting', ['hs-cf-report']]],
