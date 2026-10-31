@@ -35,9 +35,10 @@
   const W = (wid, w, h, p) => ({ t: 'w', wid, w, h, p });
   const TEMPLATES = [
     // The three Today views (js/today-widgets.js), same blocks and order as the Today page
-    { id: 'today-quick', name: 'Today · Quick look', desc: 'One screen: France spot today and tomorrow, what moved, the six key prices.', items: [
+    { id: 'today-quick', name: 'Today · Quick look', desc: 'One screen: France spot today and tomorrow, what moved, the six key prices, the morning reel.', items: [
       W('today-spot', 7, 5), W('today-moved', 5, 5),
       W('today-tiles', 12, 3),
+      W('today-reel', 4, 8),
     ] },
     { id: 'today-learn', name: 'Today · Discovery', desc: 'Few figures, each explained: the day in one sentence, three prices and what they are, today hour by hour, what it means, a glossary.', items: [
       W('today-sentence', 12, 2),

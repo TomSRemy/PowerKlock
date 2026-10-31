@@ -3611,3 +3611,12 @@ html body .pm-o-l, html body .pkf-t-l, html body .mrn2-tc { white-space: normal;
 
 /* Production forecast: a hidden field stays hidden (.cf-field sets display:flex, which beat the hidden attribute: wind fields showed in solar mode) */
 #page-fcst [hidden] { display: none !important; }
+
+/* Today › Quick look: What moved beside the morning reel (9:16) */
+.mrn3-qrow-reel{grid-template-columns:minmax(0,1fr) minmax(240px,300px)}
+@media (max-width:900px){.mrn3-qrow-reel{grid-template-columns:minmax(0,1fr)}}
+.mrn-reel-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 8px}
+.mrn-reel-tab{font:600 12px inherit;padding:4px 10px;border-radius:14px;border:1px solid var(--border2,#2a3442);background:transparent;color:var(--text2,#aab);cursor:pointer}
+.mrn-reel-tab.on{background:var(--bg3,#1b2430);color:var(--text,#e6edf3);border-color:var(--accent)}
+.mrn-reel-frame{position:relative;width:100%;max-width:300px;margin:0 auto;aspect-ratio:9/16;border-radius:10px;overflow:hidden;background:#000}
+.mrn-reel-frame iframe{position:absolute;inset:0;width:100%;height:100%;border:0}

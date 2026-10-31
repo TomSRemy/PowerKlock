@@ -34,6 +34,11 @@
     desc: 'Cal+1 France, TTF, EUA, Brent, renewable GO and nuclear available: the move on the day and on 7 days, 60-day curve; a click opens it full size.',
     html: withK((host, k) => { host.innerHTML = '<div class="mrn2-tiles mrn3-tiles">' + _mrnTileList(k).join('') + '</div>'; }) });
 
+  R({ id: 'today-reel', kind: 'html', title: 'The morning reel', size: { w: 4, h: 8 },
+    desc: 'The day’s figures in a vertical video (9:16), as posted on Instagram every morning: the day, a battery, Europe, the mix.',
+    params: [{ key: 'reel', label: 'Reel', options: [['jour', 'Day'], ['batterie', 'Battery'], ['europe', 'Europe'], ['mix', 'Mix']] }], defaults: { reel: 'jour' },
+    html: (host, p) => { host.innerHTML = '<div></div>'; _mrnReel(host.firstChild, p && p.reel); } });
+
   // ── Discovery ──
   R({ id: 'today-sentence', kind: 'html', title: 'The day in one sentence', size: { w: 12, h: 2 },
     desc: 'Whether power is cheap or expensive today, and why next year’s price moves.',

@@ -757,6 +757,22 @@ async function _mrnGoTable(host) {
   host.innerHTML = h + `<div class="mrn-fwd-note">${_mT('Moyenne courtier (offre + demande) du ', 'Broker mid (bid + ask) of ')}${last} · ${_mT('hausse en rouge', 'rise in red')}</div>`;
 }
 
+// the morning reel (reel.html, recorded every morning for Instagram) in a 9:16 frame, with its four reels as tabs; it
+// loops on its own. Used by Today › Quick look and the 'today-reel' widget (js/today-widgets.js)
+const _MRN_REELS = [['jour', 'Jour', 'Day'], ['batterie', 'Batterie', 'Battery'], ['europe', 'Europe', 'Europe'], ['mix', 'Mix', 'Mix']];
+function _mrnReel(el, kind) {
+  if (!el) return;
+  const k0 = _MRN_REELS.some(r => r[0] === kind) ? kind : 'jour';
+  const src = k => 'reel.html?r=' + k + (_mrnFr() ? '' : '#en');
+  el.innerHTML = '<div class="mrn-reel-tabs" role="tablist">' + _MRN_REELS.map(([k, fr, en]) =>
+      `<button type="button" role="tab" class="mrn-reel-tab${k === k0 ? ' on' : ''}" data-k="${k}" aria-selected="${k === k0}">${_mT(fr, en)}</button>`).join('') +
+    '</div><div class="mrn-reel-frame"><iframe loading="lazy" title="' + _mT('Réel du matin', 'Morning reel') + '" src="' + src(k0) + '"></iframe></div>';
+  const fr = el.querySelector('iframe');
+  el.querySelectorAll('.mrn-reel-tab').forEach(b => b.addEventListener('click', () => {
+    el.querySelectorAll('.mrn-reel-tab').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-selected', x === b); });
+    fr.src = src(b.dataset.k);
+  }));
+}
 function _mrnQuick(k, el) {
   const host = el || document.getElementById('mrn-q-moved'); if (!host) return;
   const L = [], B = t => '<b>' + t + '</b>';
@@ -925,7 +941,7 @@ async function renderMorning() {
   _mrnFacts().then(k => {
     MRN.k = k;
     _mrnSpot(k); _mrnTiles(k); _mrnWeeks(k); _mrnNegAlert(k); _mrnCfCard(); _mrnFund(k); _mrn3Days();
-    _mrnSpotChart(k, 'mrn-q-spot', false); _mrnQuick(k); _mrnLearn(k); _mrnStory(k); _mrnQuiz(k); _mrnExplain();
+    _mrnSpotChart(k, 'mrn-q-spot', false); _mrnQuick(k); _mrnReel(document.getElementById('mrn-q-reel')); _mrnLearn(k); _mrnStory(k); _mrnQuiz(k); _mrnExplain();
     const u = document.getElementById('mrn-upd'); if (u) u.textContent = _mT('mis à jour à ', 'updated ') + new Date().toLocaleTimeString(_mrnFr() ? 'fr-FR' : 'en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' });
   }).catch(e => console.warn('[morning]', e));
   if (window.PKBrief) { const b = document.getElementById('mrn-brief'); if (b) PKBrief.brief(b); }
