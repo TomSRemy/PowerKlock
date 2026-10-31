@@ -70,31 +70,31 @@ def save(fig, fn):
 LIM = 10
 # 1 ── exporter, line not saturated
 st = stack(5)
-fig, ax = plt.subplots(figsize=(7.2, 4.9))
+fig, ax = plt.subplots(figsize=(7.2, 4.0))
 draw(ax, st, '1. Exportatrice, ligne pas saturée', 58, 75, [(75, 'Prix des voisins 75 €', GREY)], (55, 58), f'export 3 GW\n(ligne : {LIM} GW)',
      'La ligne a de la place : la France exporte\njusqu’à ce que son prix égale celui des voisins.\nPrix France = prix voisins.', p_iso=price(st, LOAD))
 save(fig, 'c5_1.png')
 # 2 ── exporter, line saturated
 st = stack(25); q = LOAD + LIM
-fig, ax = plt.subplots(figsize=(7.2, 4.9))
+fig, ax = plt.subplots(figsize=(7.2, 4.0))
 draw(ax, st, '2. Exportatrice, ligne saturée', q, price(st, q), [(94, 'Prix des voisins 94 €', GREY)], (55, q), f'export {LIM} GW :\nligne pleine',
      'La France voudrait exporter plus que la ligne.\nSon prix se lit sur son merit order à\n« consommation + exports » : sous les voisins.', p_iso=price(st, LOAD))
 save(fig, 'c5_2.png')
 # 3 ── importer, line not saturated
 st = stack(5, nuc=35)
-fig, ax = plt.subplots(figsize=(7.2, 4.9))
+fig, ax = plt.subplots(figsize=(7.2, 4.0))
 draw(ax, st, '3. Importatrice, ligne pas saturée', 48, 80, [(80, 'Prix des voisins 80 €', GREY)], (55, 48), f'import 7 GW\n(ligne : {LIM} GW)',
      'La France importe jusqu’à ce que son prix\négale celui des voisins : les imports remplacent\nses centrales les plus chères (gaz).', p_iso=price(st, LOAD), note_y=.5)
 save(fig, 'c5_3.png')
 # 4 ── importer, line saturated
 st = stack(5, nuc=30); q = LOAD - LIM
-fig, ax = plt.subplots(figsize=(7.2, 4.9))
+fig, ax = plt.subplots(figsize=(7.2, 4.0))
 draw(ax, st, '4. Importatrice, ligne saturée', q, price(st, q), [(80, 'Prix des voisins 80 €', GREY)], (55, q), f'import {LIM} GW :\nligne pleine',
      'La France manque plus que la ligne ne peut\napporter : son prix reste au-dessus des voisins.\nSeule, elle serait en pénurie.', p_iso=160, note_y=.5, iso_lab='seule : pénurie')
 save(fig, 'c5_4.png')
 # 5 ── cut off: no exchange at all
 st = stack(15)
-fig, ax = plt.subplots(figsize=(7.2, 4.9))
+fig, ax = plt.subplots(figsize=(7.2, 4.0))
 draw(ax, st, '5. Coupée : aucun échange', LOAD, price(st, LOAD), [(85, 'Prix des voisins 85 € (inaccessible)', GREY)], None, '',
      'Pas de ligne : la France produit exactement\nce qu’elle consomme. Son prix se lit sur son\nmerit order à la consommation. Jamais observé :\non ne peut que l’estimer.')
 save(fig, 'c5_5.png')
