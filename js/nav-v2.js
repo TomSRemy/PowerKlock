@@ -158,7 +158,9 @@
   SECTIONS.forEach(([sec, items], k) => {
     if (!sec) { h += '<div class="sidebar-section pk-nv-top-sec"><div class="sidebar-section-items">' + items.map(x => item(...x)).join('') + '</div></div>'; return; }
     const id = 'sec-' + slug(sec);
-    h += '<div class="sidebar-divider"></div><div class="sidebar-section' + (sec === 'General' ? ' collapsed' : '') + '" id="' + id + '">' +
+    // every section is born folded: mark() unfolds the page's own one (born open, all six showed unfolded for the
+    // first second at launch: note 75)
+    h += '<div class="sidebar-divider"></div><div class="sidebar-section collapsed" id="' + id + '">' +
       '<div class="sidebar-section-label" onclick="toggleSection(\'' + id + '\')">' + sec + ' ' + CHEV + '</div>' +
       '<div class="sidebar-section-items" id="' + id + '-items">' + items.map(x => item(...x)).join('') + '</div></div>';
   });

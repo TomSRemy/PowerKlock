@@ -144,7 +144,7 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
   <button class="mobile-burger" onclick="toggleMobileSidebar()" aria-label="Menu">
     <svg viewBox="0 0 24 24" fill="none"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
   </button>
-  <div class="logo">
+  <div class="logo" role="link" tabindex="0" aria-label="PowerKlock" style="cursor:pointer" onclick="location.hash='#today'" onkeydown="if(event.key==='Enter')location.hash='#today'">
     <img src="assets/logo-header.png" alt="PowerKlock" class="logo-img">
     <img src="assets/favicon-64.png" alt="PowerKlock" class="logo-img-icon">
   </div>
@@ -4391,7 +4391,7 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
         <div class="fuel-grid-2 mrn3-row">
           <div class="chart-container fuel-card">
             <div class="fuel-card-head"><div><div class="table-title">Solar · rolling capture rate</div><div class="fuel-card-sub" id="mrn-cr-sub">Last 30, 90 and 365 days and calendar years · 100 % = no cannibalisation</div></div></div>
-            <div style="position:relative;height:260px"><canvas id="mrn-cr" style="width:100%;height:260px"></canvas></div>
+            <div style="position:relative;height:260px"><canvas id="mrn-cr" data-period="2Y" style="width:100%;height:260px"></canvas></div>
           </div>
           <div class="chart-container fuel-card">
             <div class="fuel-card-head"><div><div class="table-title">Solar · capture rate by region</div><div class="fuel-card-sub" id="mrn-creg-sub">Each region’s output on the French day-ahead price, ranked</div></div><span class="mrn3-sel"><select id="mrn-creg-per" aria-label="Period"></select></span></div>
@@ -4401,7 +4401,7 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
         <div class="fuel-grid-2 mrn3-row">
           <div class="chart-container fuel-card">
             <div class="fuel-card-head"><div><div class="table-title">Wind · rolling capture rate</div><div class="fuel-card-sub" id="mrn-crw-sub">Same reading, wind</div></div></div>
-            <div style="position:relative;height:260px"><canvas id="mrn-crw" style="width:100%;height:260px"></canvas></div>
+            <div style="position:relative;height:260px"><canvas id="mrn-crw" data-period="2Y" style="width:100%;height:260px"></canvas></div>
           </div>
           <div class="chart-container fuel-card">
             <div class="fuel-card-head"><div><div class="table-title">Wind · capture rate by region</div><div class="fuel-card-sub" id="mrn-cregw-sub">Same period</div></div><span class="source-badge">RTE éCO2mix · ENTSO-E</span></div>

@@ -753,7 +753,7 @@ async function _mrnGoTable(host) {
   if (a) { const bt = a.by_technology || [], vol = bt.reduce((x, r) => x + (r.allocated_mwh || 0), 0), val = bt.reduce((x, r) => x + (r.allocated_mwh || 0) * (r.price_eur_mwh || 0), 0);
     const prev = tech => { const r = pa && (pa.by_technology || []).find(x => x.technology === tech); return r ? r.price_eur_mwh : null; };
     const pv = pa ? (() => { const b2 = pa.by_technology || [], v2 = b2.reduce((x, r) => x + (r.allocated_mwh || 0), 0); return v2 ? b2.reduce((x, r) => x + (r.allocated_mwh || 0) * (r.price_eur_mwh || 0), 0) / v2 : null; })() : null;
-    if (vol) h += `<tr class="mrn-fwd-g2"><th>${_mT('Enchère GO France', 'France GO auction')} (${a.auction_month})</th><th>€/MWh</th><th>${_mT('vs enchère préc.', 'vs previous')}${pa ? ' (' + pa.auction_month + ')' : ''}</th><th>TWh</th></tr>` +
+    if (vol) h += `<tr class="mrn-fwd-g2"><th>${_mT('Enchère GO France', 'France GO auction')} (${a.auction_month})</th><th>€/MWh</th><th${pa ? ` title="${_mT('vs l’enchère de ', 'vs the auction of ')}${pa.auction_month}"` : ''}>${_mT('vs préc.', 'vs prev.')}</th><th>TWh</th></tr>` +
       bt.filter(r => r.allocated_mwh).map(r => `<tr><td>${r.technology || ''}</td><td class="mrn-fwd-p">${_mN(r.price_eur_mwh, 3)}</td>${chg(r.price_eur_mwh, prev(r.technology))}<td>${_mN(r.allocated_mwh / 1e6, 2)}</td></tr>`).join('') +
       `<tr><td><b>${_mT('Moyenne', 'Average')}</b></td><td class="mrn-fwd-p"><b>${_mN(val / vol, 3)}</b></td>${chg(val / vol, pv)}<td><b>${_mN(vol / 1e6, 2)}</b></td></tr>`; }
   h += '</tbody></table>';
@@ -1108,7 +1108,7 @@ document.addEventListener('click', e => {   // a tile opens its chart full size 
   .mrn-neg{color:#7FC8F8}
   .mrn-movers{list-style:none;margin:0;padding:0} .mrn-movers li{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px;padding:5px 0;border-bottom:1px solid var(--bd);font-size:12.5px} .mrn-movers a{color:var(--tx);text-decoration:none;flex:1 1 60%} .mrn-movers a:hover{color:var(--acc)} .mrn-cat{width:18px;text-align:center;color:var(--tx3)} .mrn-vote{margin:0 0 0 auto}
   .mrn-fwd{width:100%;border-collapse:collapse;font-size:12px}
-  .mrn-fwd th{font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3);font-weight:600;text-align:right;padding:6px 8px;border-bottom:1px solid var(--bd)}
+  .mrn-fwd th{font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3);font-weight:600;text-align:right;padding:6px 8px;border-bottom:1px solid var(--bd);white-space:nowrap}   /* headers on one line (note 80) */
   .mrn-fwd th:first-child,.mrn-fwd td:first-child{text-align:left}
   .mrn-fwd td{padding:5px 8px;text-align:right;font-family:'IBM Plex Mono',monospace;color:var(--tx2);border-bottom:1px solid rgba(255,255,255,.03);white-space:nowrap}
   .mrn-fwd td:first-child{font-family:inherit;color:var(--tx)} .mrn-fwd td small{color:var(--tx3);font-size:10px}
@@ -1116,7 +1116,7 @@ document.addEventListener('click', e => {   // a tile opens its chart full size 
   .mrn-fwd .mrn-up{color:var(--down,#ED6965)} .mrn-fwd .mrn-down{color:var(--up,#14D3A9)}
   .mrn-fwd-g td{font-size:9.5px!important;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3)!important;padding-top:10px!important;font-family:inherit!important}
   .mrn-fwd-note{font-size:10px;color:var(--tx3);margin-top:8px}
-  @media (max-width:600px){ .mrn-fwd td,.mrn-fwd th{padding:5px 4px} .mrn-fwd td small{display:block;font-size:9px} .mrn-fwd{font-size:11px} }
+  @media (max-width:600px){ .mrn-fwd th{white-space:normal} .mrn-fwd td,.mrn-fwd th{padding:5px 4px} .mrn-fwd td small{display:block;font-size:9px} .mrn-fwd{font-size:11px} }
   .mrn2{display:flex;flex-direction:column;gap:14px;margin-bottom:16px}
   .mrn2-hdr{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
   .mrn2-hdr h1{font:600 22px 'Outfit',sans-serif;margin:0;color:var(--text)} .mrn2-hdr h1::first-letter{text-transform:uppercase} .mrn2-upd{font-size:12px;color:var(--text3)}

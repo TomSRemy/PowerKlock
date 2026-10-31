@@ -124,12 +124,14 @@
       var lf = lastNeg('FR').replace(/^none today · last /, '').replace(/^none today$/, '');
       if (!sec) { sec = document.createElement('div'); sec.id = 'neg-board-none'; sec.className = 'fuel-note'; sec.style.cssText = 'padding:12px 14px;margin:10px 0;border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text2)'; el.after(sec); }
       sec.setAttribute('translate', 'no');
-      sec.innerHTML = (fr2 ? 'Aucun prix négatif aujourd’hui dans les ' + z.length + ' zones.' + (lf ? ' Dernier en France : ' + lf + '.' : '') + ' L’historique sur un an est plus bas.'
-        : 'No negative price today in the ' + z.length + ' zones.' + (lf ? ' Last in France: ' + lf + '.' : '') + ' The one-year history is below.') +
+      sec.innerHTML = (fr2 ? 'Aucun prix négatif aujourd’hui dans les ' + z.length + ' zones.' + (lf ? ' Dernier en France : ' + lf + '.' : '') + ' Ouvrez une zone dans le tableau pour ses graphiques ; l’historique multi-zones est plus bas.'
+        : 'No negative price today in the ' + z.length + ' zones.' + (lf ? ' Last in France: ' + lf + '.' : '') + ' Open a zone in the table for its charts; the cross-zone history is below.') +
         ' <button type="button" class="pk-btn-ghost" id="neg-board-hist">' + (fr2 ? 'Voir l’historique ↓' : 'See the history ↓') + '</button>';
       sec.querySelector('#neg-board-hist').onclick = function () { var h = document.getElementById('hs-hist-neg') || document.getElementById('neg-s-cc'); if (h) { if (h.classList.contains('collapsed') && window.toggleStrongSection) toggleStrongSection(h.id); h.scrollIntoView({ behavior: 'smooth', block: 'start' }); } };
-      if (wrap) wrap.hidden = true;
-    } else { if (sec) sec.remove(); if (wrap) wrap.hidden = false; }
+    } else if (sec) sec.remove();
+    // the table stays even on a day without negatives: opening a zone gives its charts (month, year, calendar, daily
+    // bars…), which a folded table took away (note 86)
+    if (wrap) wrap.hidden = false;
   }
 
   function spark(hourly) {
@@ -234,12 +236,14 @@
     if (!NEG.zoneFilter) NEG.zoneFilter = new Set(all);
     if (NEG.zoneFilter.has(code)) NEG.zoneFilter.delete(code); else NEG.zoneFilter.add(code);
     if (NEG.zoneFilter.size === all.length) NEG.zoneFilter = null;
-    buildZoneChips(); syncZoneLabel(); renderBoardTable(); renderBoardKpis();
+    zonesChanged();
   };
   // Site scope (js/scope.js): null = all zones, or an array of zone codes.
-  window.negSetZones = function (codes) { NEG.zoneFilter = codes ? new Set(codes) : null; buildZoneChips(); syncZoneLabel(); try { renderBoardTable(); renderBoardKpis(); } catch (_) {} };
-  window.negZonesAll = function () { NEG.zoneFilter = null; buildZoneChips(); syncZoneLabel(); renderBoardTable(); renderBoardKpis(); };
-  window.negZonesNeg = function () { NEG.zoneFilter = new Set(getZones().filter(function (x) { return (x.negHours || 0) > 0; }).map(function (x) { return x.code; })); buildZoneChips(); syncZoneLabel(); renderBoardTable(); renderBoardKpis(); };
+  // the zone filter at the top drives the board and the cross-zone charts below (they ignored it: note 57)
+  function zonesChanged() { window.NEG_ZONE_FILTER = NEG.zoneFilter; buildZoneChips(); syncZoneLabel(); try { renderBoardTable(); renderBoardKpis(); renderCCChart(); } catch (_) {} }
+  window.negSetZones = function (codes) { NEG.zoneFilter = codes ? new Set(codes) : null; zonesChanged(); };
+  window.negZonesAll = function () { NEG.zoneFilter = null; zonesChanged(); };
+  window.negZonesNeg = function () { NEG.zoneFilter = new Set(getZones().filter(function (x) { return (x.negHours || 0) > 0; }).map(function (x) { return x.code; })); zonesChanged(); };
   document.addEventListener('click', function (e) {
     var p = document.getElementById('neg-zone-filter-panel'); if (!p || p.style.display === 'none') return;
     if (!e.target.closest('#neg-zone-filter-wrap')) p.style.display = 'none';

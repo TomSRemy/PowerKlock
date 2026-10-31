@@ -80,6 +80,8 @@
       const labels = ch.data.labels || [];
       if (['line', 'bar'].includes(ch.config.type) && labels.length >= 60 && toDate(labels[0]) && !card.querySelector('.pkw-period') &&
           (card.querySelector('.pk-auto-period') || !hasPeriodControl(card, canvas))) {
+        // a canvas can ask for a first window (data-period="2Y"): Today's rolling capture opens on two years (note 79)
+        if (!picked[canvas.id] && canvas.dataset.period) picked[canvas.id] = canvas.dataset.period;
         periodPills(card, canvas, ch);
         if (picked[canvas.id] && picked[canvas.id] !== 'all') applyWindow(ch, canvas.id);
       }
