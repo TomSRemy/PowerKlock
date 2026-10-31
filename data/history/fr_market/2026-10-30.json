@@ -2,16 +2,68 @@
  "date": "2026-10-30",
  "countries": {
   "FR": {
-   "spot": 238
+   "spot": 238,
+   "forwardCurve": {
+    "M+1": 230.35,
+    "M+2": 212.98,
+    "M+3": 229.01,
+    "Q+1": 205.41,
+    "Q+2": 83.91,
+    "Q+3": 99.15,
+    "S+1": 91.53,
+    "S+2": 120.23,
+    "Y+1": 128.16,
+    "Y+2": 70.94,
+    "Y+3": 62.97
+   }
   },
   "UK": {
-   "spot": 209
+   "spot": 209,
+   "forwardCurve": {
+    "M+1": null,
+    "M+2": 196.93,
+    "M+3": 211.38,
+    "Q+1": 200.96,
+    "Q+2": 142.55,
+    "Q+3": 132.38,
+    "S+1": 137.44,
+    "S+2": 136.63,
+    "Y+1": 152.03,
+    "Y+2": 101.67,
+    "Y+3": 81.1
+   }
   },
   "DE": {
-   "spot": 251.42
+   "spot": 251.42,
+   "forwardCurve": {
+    "M+1": 241.05,
+    "M+2": 223.04,
+    "M+3": 240,
+    "Q+1": 220.59,
+    "Q+2": 134.72,
+    "Q+3": 143.02,
+    "S+1": 138.87,
+    "S+2": 156.6,
+    "Y+1": 164.27,
+    "Y+2": 117.24,
+    "Y+3": 100.18
+   }
   },
   "NL": {
-   "spot": 249.71
+   "spot": 249.71,
+   "forwardCurve": {
+    "M+1": null,
+    "M+2": 225.92,
+    "M+3": 245.03,
+    "Q+1": 220.45,
+    "Q+2": 134.31,
+    "Q+3": 139.22,
+    "S+1": 136.78,
+    "S+2": 158.15,
+    "Y+1": 163.23,
+    "Y+2": 116.16,
+    "Y+3": 99.17
+   }
   }
  },
  "marketInsightsHtml": "<p>La charge de base allemande du 26 novembre a chuté de 3,55 € pour s'établir à 225,80 €/MWh, tandis que la France de novembre a perdu 4,70 € à 214,30 €/MWh et la Grande-Bretagne de novembre a chuté de 3,75 £ à 194,25 £/MWh. La livraison rapide Day-Ahead a également corrigé à la baisse par rapport aux sommets de mercredi, le Day-Ahead allemand en baisse de 41,50 € pour s'établir à 273,50 €/MWh, la France chutant de 27,05 € à 242,95 €/MWh, et le Day-Ahead britannique chutant de 12,20 £ à 201,40 £/MWh.</p><p>L’indisponibilité du nucléaire français en novembre a été révisée à la hausse de 1,4 GW au cours de la semaine dernière, pour atteindre une moyenne de 15,1 GW (bien au-dessus des 13,7 GW de l’année dernière), tandis que l’interconnexion IFA de 2 GW vers la Grande-Bretagne reste plafonnée à 500 MW dans chaque direction jusqu’au 13 novembre.</p>",
