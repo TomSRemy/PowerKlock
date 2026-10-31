@@ -1,21 +1,13 @@
 {
-"updated": "2026-10-31T06:21:38+00:00",
+"updated": "2026-10-31T21:34:33+00:00",
 "window": [
 "2026-09-15",
 "2026-10-30"
 ],
 "generation": {
-"agree_days": 45,
-"differ": 1,
-"days": [
-{
-"day": "2026-10-30",
-"field": "solar",
-"rte": 4282,
-"ec": 4104,
-"pct": 4.3
-}
-]
+"agree_days": 46,
+"differ": 0,
+"days": []
 },
 "brent": {
 "agree": 31,

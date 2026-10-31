@@ -2,7 +2,11 @@
 Second sources beyond the day-ahead prices (those are in scripts/verify_prices.py):
   generation  France production by source and consumption, RTE éCO2mix (data/history/rte) against
               Energy-Charts (Fraunhofer ISE) public_power, day by day: nuclear, wind, solar, hydro,
-              gas, load. A day is flagged when a field differs by more than 3 % and 150 MW on average.
+              gas, load. A day is flagged when a field differs by more than 3 % and 150 MW on average. Days
+              still in RTE's real-time data (ds 'tr') less than 3 days old are only flagged beyond 15 %: those
+              figures are estimates RTE revises later (30 Oct. 2026: solar 4 282 MW real-time against 4 104 MW at
+              Energy-Charts, 4.3 %, on a dull day), and a later run compares them again; a missing or broken day
+              still shows at once.
   brent       Brent (SEFE cockpit, ICE front month) against the Brent spot of the US EIA via FRED
               (DCOILBRENTEU). Different instruments: the gap is usually within 5 % but the physical spot
               ran 10 to 25 % above the futures in Apr and Sep-Oct 2026. So only what a second source can
@@ -64,12 +68,13 @@ def generation(d0, d1):
         if not r:
             continue
         ok = True
+        fresh = r.get('ds') == 'tr' and (date.today() - date.fromisoformat(day)).days < 3
         for f, vals in rec.items():
             arr = [x for x in (r.get(f) or []) if x is not None]
             if len(arr) < 88 or len(vals) < 88:
                 continue
             a, b = sum(arr) / len(arr), sum(vals) / len(vals)
-            if abs(a - b) > 150 and abs(a - b) > 0.03 * max(abs(b), 1):
+            if abs(a - b) > 150 and abs(a - b) > (0.15 if fresh else 0.03) * max(abs(b), 1):
                 ok = False
                 diff.append({'day': day, 'field': f, 'rte': round(a), 'ec': round(b), 'pct': round((a / b - 1) * 100, 1) if b else None})
         agree += ok
