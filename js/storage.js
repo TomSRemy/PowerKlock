@@ -124,7 +124,7 @@ _nucReg({
 });
 
 _nucReg({
-  id: 'remit-unavail', title: 'France · nuclear unavailability', page: 'nuclear', pageCanvas: 'remit-unavail', category: 'balancing',
+  id: 'remit-unavail', title: 'France · nuclear unavailability', page: 'remit', pageCanvas: 'remit-unavail', category: 'balancing',
   desc: 'Unavailable French nuclear capacity, actual and operator forecast (GW).',
   params: [PKW.PERIOD_PARAM], defaults: { period: '6M' },
   async draw(cid, p) {

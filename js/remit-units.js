@@ -76,6 +76,29 @@
         plugins: { legend: { position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10 } }, zoom: false,
           tooltip: { callbacks: { title: it => it[0].raw.e.unit, label: it => { const e = it.raw.e; return [`${it.dataset.label} · ${num(e.unavail, 0)} MW ${T('indisponibles', 'unavailable')}`, `${dlong(e.start)} → ${dlong(e.end)}`, e.reason ? e.reason : ''].filter(Boolean); } } } } }) }, 'nuclear-outages');
 
+    // announced availability, day by day for the next 120 days (notes 77, 97): installed capacity minus the outages
+    // announced for that day, one unit counted once with its largest unavailability; last year's actual alongside
+    try {
+      const days = [], avail = [], ly = [];
+      let lyPts = []; try { await PKC.ready; lyPts = PKC.pts('fr_nuc_avail', true); } catch (_) {}
+      const lyMap = new Map(lyPts.map(p => [p[0], p[1]]));
+      for (let k = 0; k <= 120; k++) {
+        const t = now + k * DAY, mid = t - (t % DAY) + DAY / 2, u = {};
+        ev.forEach(e => { if (dt(e.start) <= mid && dt(e.end) > mid && (!u[e.unit] || e.unavail > u[e.unit])) u[e.unit] = e.unavail; });
+        const iso = new Date(mid).toISOString().slice(0, 10);
+        days.push(iso); avail.push(Math.round((FR_NUC_INSTALLED_MW - Object.values(u).reduce((a, v) => a + v, 0)) / 100) / 10);
+        const l = lyMap.get(String(+iso.slice(0, 4) - 1) + iso.slice(4)); ly.push(l != null ? Math.round(l / 100) / 10 : null);
+      }
+      _fuelChart('ro-proj', { type: 'line', data: { labels: days.map(d => dshort(d + 'T12:00Z')), datasets: [
+        { label: T('Disponible annoncé (REMIT)', 'Announced available (REMIT)'), data: avail, borderColor: '#A87DC4', backgroundColor: 'rgba(168,125,196,.12)', borderWidth: 2.2, pointRadius: 0, fill: true, stepped: true },
+        { label: T('Disponible réalisé, même jour l’an dernier', 'Actual available, same day last year'), data: ly, borderColor: '#B8C9D9', borderDash: [5, 4], borderWidth: 1.4, pointRadius: 0, fill: false },
+        { label: T('Capacité installée', 'Installed capacity'), data: days.map(() => FR_NUC_INSTALLED_MW / 1000), borderColor: 'rgba(241,245,249,.35)', borderWidth: 1, pointRadius: 0, fill: false },
+      ] }, options: _fuelOpts({ scales: { x: Object.assign(_fuelXAxis(), { ticks: { color: C_TX3, font: { size: 10 }, maxTicksLimit: 9, maxRotation: 0 } }), y: _fuelAxis('GW') } }) }, 'nuclear-announced-availability');
+      const lo = Math.min(...avail), i = avail.indexOf(lo);
+      $('ro-proj-sub').textContent = T(`Capacité installée moins les arrêts déjà annoncés · plus bas annoncé : ${num(lo, 1)} GW le ${dshort(days[i] + 'T12:00Z')} · des arrêts fortuits s’ajouteront`,
+        `Installed capacity minus the outages already announced · lowest announced: ${num(lo, 1)} GW on ${dshort(days[i] + 'T12:00Z')} · forced outages will add to it`);
+    } catch (e) { console.warn('[remit projection]', e); }
+
     // table: out now first, then the next starts
     const rows = ev.filter(e => dt(e.end) > now);
     rows.sort((a, b) => { const A = dt(a.start) <= now, B = dt(b.start) <= now; return A !== B ? (A ? -1 : 1) : dt(a.start) - dt(b.start); });

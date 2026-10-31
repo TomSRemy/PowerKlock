@@ -13,7 +13,8 @@
     'prices:forward': [['Board', ['hs-prfwd-read', 'hs-prfwd-board']], ['Comparison', ['hs-prfwd-compare']], ['Calendar contracts', ['hs-cal-contracts']]],
     'prices:spread': [['Intraday spread', ['hs-spread-history']], ['Battery spreads', ['hs-spread-bess']]],
     renewables: [['Daily', ['hs-renewables-0']], ['Historical', ['hs-renewables-1']], ['M0', ['hs-renewables-2']], ['Cannibalisation', ['hs-renewables-cannib']], ['Forward capture', ['hs-renewables-capfwd']]],
-    nuclear: [['Availability', ['hs-nuclear-0', 'hs-nuclear-u']], ['Outages', ['hs-nuclear-1']]],
+    // outages live on Outages & REMIT only (notes 71, 98, 99): Nuclear keeps availability and output, and a link
+    nuclear: [['Availability', ['hs-nuclear-0', 'hs-nuclear-1']]],
     capacity: [['By year', ['hs-capacity-0']], ['Comparison', ['hs-capacity-1']]],
     frsystem: [['Daily', ['hs-frsystem-0']], ['Historical', ['hs-frsystem-1']]],
     regions: [['Daily', ['hs-regions-0']], ['Capacity & consumption', ['hs-regions-1']]],
@@ -24,7 +25,7 @@
     spark: [['Daily', ['hs-spark-0']], ['Historical', ['hs-spark-1']]],
     wxcities: [['Daily', ['hs-wxcities-0', 'hs-wxcities-1']], ['5-week outlook', ['hs-wxcities-outlook']], ['Hydro reservoirs', ['hs-wxcities-hydro']]],
     wxhdd: [['Daily', ['hs-wxhdd-0']], ['Weekly', ['hs-wxhdd-1']]],
-    remit: [['Outages', ['hs-remit-u']], ['Platforms', ['hs-remit-1']]],
+    remit: [['Outages', ['hs-nuclear-u', 'hs-remit-u']], ['Platforms', ['hs-remit-1']]],
     status: [['Sources', ['hs-status-0']], ['Feed problems', ['hs-status-1']]],
     // the PPA pricer: inputs and the price, the park, one tab per method (grouped under Methods), the comparison
     ppapricer: [['Inputs & price', ['hs-pp-in', 'hs-pp-sum']], ['The park', ['hs-pp-park']],
