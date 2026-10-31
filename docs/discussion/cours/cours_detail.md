@@ -11,7 +11,9 @@ Les schémas sont ceux de la version simple (`img/`). Les chiffres viennent :
 - du débrief pricing (`docs/discussion/pricing/debrief-2026-10-31.md`) ;
 - du dossier couplage (`docs/discussion/couplage/`) ;
 - des commentaires de test dans `scripts/ppa_scenarios.py` et `scripts/ppa_model_risk.py` ;
-- de `data/history/`, recalculés par `docs/discussion/cours/calc.py`.
+- de `data/history/`, recalculés par `docs/discussion/cours/calc.py` ;
+- de sources publiques vérifiées le 31 octobre 2026 (RTE, CRE, EDF, JAO, articles de recherche), listées en fin de
+  document avec leurs liens.
 
 Les chiffres des tests du 31 octobre qui ne sont écrits dans aucun fichier du dépôt sont signalés : analogues,
 couverture des Monte Carlo, dates sèches et venteuses, coût des écarts combiné.
@@ -21,7 +23,8 @@ couverture des Monte Carlo, dates sèches et venteuses, coût des écarts combin
 ## Chapitre 1 — Les bases
 
 ### 1.1 L'enchère de la veille
-- **Quoi.** Chaque jour à midi, la bourse (EPEX, Nord Pool…) reçoit les offres de vente et d'achat pour chaque pas de
+- **Quoi.** Chaque jour à midi (heure de Paris), le couplage européen (SDAC) clôt l'enchère : les bourses (EPEX,
+  Nord Pool…) ont reçu les offres de vente et d'achat pour chaque pas de
   temps du lendemain. Depuis le **1er octobre 2025**, ce pas de temps est le **quart d'heure** (avant : l'heure).
 - **Courbe d'offre.** On trie les offres de vente par prix croissant : c'est le **merit order**.
 - **Courbe de demande.** On trie les offres d'achat par prix décroissant.
@@ -68,8 +71,18 @@ Un producteur accepte d'être payé moins que zéro si arrêter lui coûte plus 
 Prix horaire = moyenne des quarts d'heure. RTE compte 352 heures négatives en 2024 et 513 en 2025 : notre comptage
 retombe dessus. Le plancher de l'enchère est passé de −500 à −600 €/MWh le 28 mai 2026.
 
-**Limite.** pv magazine (2 oct. 2026) annonce « environ 800 heures » nulles ou négatives en 2026. Je ne retrouve pas
-ce chiffre. Il compte peut-être les quarts d'heure, ou il extrapole l'année entière.
+**Compter au quart d'heure.** Depuis le 1er octobre 2025, le prix est fixé par quart d'heure. Si on fait d'abord la
+moyenne de chaque heure, on perd les quarts d'heure négatifs d'une heure dont la moyenne reste positive.
+
+| Prix ≤ 0 en 2026 (janv.–oct.) | Heures |
+|---|---|
+| Comptés au quart d'heure (quarts d'heure ÷ 4) | **805** |
+| Comptés sur la moyenne de chaque heure | 670 |
+| pv magazine, 2 oct. 2026 | « environ 800 » |
+
+C'est le comptage au quart d'heure qui retombe sur pv magazine. RTE compte **407 heures négatives au premier semestre
+2026** (363 au premier semestre 2025), avec des records à **−478,8 €/MWh (26 avril)** et **−498,7 €/MWh (1er mai)**
+(bilan du premier semestre 2026).
 
 ---
 
@@ -160,24 +173,48 @@ Au 31 octobre 2026 (débrief) : **solaire 47,07 €/MWh, éolien 77,78 €/MWh**
 
 ### 4.1 Nucléaire
 - **Minimum technique.** Un réacteur peut baisser sa puissance, mais avec des limites :
-  - de vitesse ;
+  - de vitesse (EDF : de 100 % à 20 % de la puissance en 30 minutes environ, deux fois par jour, pour un réacteur en
+    suivi de charge) ;
   - de nombre de cycles ;
-  - de fin de cycle de combustible, où il module moins.
+  - de cycle de combustible : RTE indique que le **minimum technique courant** d'un réacteur varie **entre 25 % et
+    100 %** de sa puissance nominale, « notamment [selon] l'avancement dans le cycle du combustible ». En fin de
+    cycle, un réacteur ne module presque plus.
 - **Le plus bas taux d'utilisation observé** (1er centile, production ÷ disponible) : **0,63 en 2024–2025**
   (`couplage/methodologie.md`).
-- **Accord RTE–EDF approuvé par la CRE le 27 mars 2026.** Il fixe un niveau minimum de production nucléaire, donc
-  moins de modulation. Conséquences :
-  - plus d'écrêtement du solaire et de l'éolien ;
-  - des prix négatifs plus longs.
+- **Printemps 2026 : un nucléaire moins flexible** (RTE, bilan du premier semestre 2026) :
+  - la modulation du parc a été d'environ **10 TWh**, contre près de **20 TWh** au premier semestre 2025, surtout
+    parce qu'il y a eu moins d'arrêts pour modulation ;
+  - le minimum technique du parc était d'environ **31 GW le 1er mai 2026** à midi, contre **19 GW le 1er mai 2025**,
+    surtout parce que plus de réacteurs ne pouvaient pas moduler pour des raisons de cycle de combustible ;
+  - conséquence : des prix négatifs plus profonds au printemps (records du 26 avril et du 1er mai).
+- **Accord RTE–EDF approuvé par la CRE le 27 mars 2026** (délibération n° 2026-67). C'est un contrat d'option
+  d'**imposition** sur tout le parc nucléaire, en quatre zones, du 4 avril au 30 octobre 2026 :
+  - RTE peut demander à certains réacteurs de **rester en marche** pour régler la **tension haute** du réseau. Un
+    réacteur arrêté pour des raisons économiques (prix bas) ne règle plus la tension ;
+  - EDF reçoit une compensation dont la formule est connue à l'avance.
+
+  **Effet réel :** d'après RTE, ces demandes « n'ont joué qu'un rôle marginal » dans la flexibilité du parc : la très
+  grande majorité visait des réacteurs qu'EDF avait déjà prévu de garder en marche. Notre débrief du 31 octobre le
+  présentait comme « un niveau minimum de production nucléaire » et comme la cause probable des erreurs de 2026 :
+  c'est **à corriger**.
+- **Volumes de modulation.** Kpler (février 2026) : la modulation du nucléaire français a augmenté de 17 % en 2025,
+  et 70 % de ses volumes sont désormais commerciaux (prix bas), pas techniques.
 - **Astier et Wolak (NBER, janvier 2026).** En 2024, les heures où toute la flexibilité disponible du nucléaire était
   déjà utilisée correspondent à des prix nuls ou négatifs. Piste non testée : nos données ne donnent pas la
-  flexibilité restante centrale par centrale.
-- **Arrêts programmés.** EDF les place au printemps et en été (schéma `07_nucleaire_dispo.png`). Le programme 2027
-  est lourd : jusqu'à environ 18 GW indisponibles en même temps, d'après les indisponibilités déclarées
-  (`data/history/fr_outages.json`, ENTSO-E A80/A77). Ce chiffre est à revérifier sur la page du site avant de s'en
-  servir dans un contrat.
+  flexibilité restante centrale par centrale. Les « chroniques Pmin » déclarées au titre de REMIT, qu'utilise RTE, la
+  donneraient.
+- **Arrêts programmés.** EDF les place au printemps et en été (schéma `07_nucleaire_dispo.png`). Pour 2027, les
+  arrêts déclarés à ENTSO-E (`fr_outages.json`, au 30 octobre 2026, `calc.py`) donnent :
+
+  | | Janv. | Févr. | Mars | Avr. | Mai | Juin | Juil. | Août | Sept. | Oct. | Nov. | Déc. |
+  |---|---|---|---|---|---|---|---|---|---|---|---|---|
+  | Pic indisponible (GW) | 7,0 | 11,0 | 15,8 | 18,0 | 20,7 | 19,8 | 17,2 | 17,4 | 14,7 | 10,0 | 4,2 | 2,7 |
+
+  En moyenne, 11,3 GW indisponibles. Ces plannings bougent souvent. EDF prévoit 350 à 370 TWh de nucléaire en 2026
+  comme en 2027.
 - **Chaleur et sécheresse.** Les centrales en bord de rivière doivent réduire leur production quand l'eau est trop
-  chaude ou trop basse (limites de rejet thermique).
+  chaude ou trop basse (limites de rejet thermique). RTE : en cas de sécheresse prolongée en fin d'été, l'effet
+  pourrait atteindre **2 à 3 GW** (Bugey, Chooz, voire Cattenom), mais il reste « de second ordre » en volume annuel.
 
 ### 4.2 Hydraulique
 Il y a trois sortes d'ouvrages :
@@ -205,6 +242,10 @@ Par frontière, en TWh :
 - Pour les voisins : leur rythme, plafonné par leurs objectifs 2030.
 - Les batteries absorbent une partie du midi solaire. Leur effet sur la capture est testé dans
   `scripts/ppa_storage_test.py`.
+- RTE (premier semestre 2026) : **7,4 GW** d'éolien et de solaire sous obligation d'achat peuvent désormais s'arrêter
+  aux prix négatifs, et **22 GW** peuvent moduler à la demande de RTE (quatre fois plus qu'avant). Modulation
+  renouvelable : 2,5 TWh au premier semestre 2026, contre 1,9 TWh un an plus tôt, soit environ 5 % de la production
+  éolienne et solaire.
 - RTE (bilan 2025) : la modulation de l'éolien et du solaire pendant les prix négatifs a doublé en 2025, à environ
   3 TWh (1,3 éolien, 1,6 solaire).
 
@@ -249,7 +290,7 @@ Limite Core moyenne (JAO, calcul PowerKlock) : **9,2 GW en 2023, 7,7 en 2024, 5,
 
 **Cause (Boerman, 2026, « Flowbased: export restrictions of France », boerman.dev) :**
 - les exports vers l'Italie passent par les lignes 400 kV **Creys–Saint-Vulbas** ;
-- la seconde de ces lignes contraint **49 % du temps en 2026** ;
+- la seconde de ces lignes contraint **49 % du temps en 2026**, contre 21 % en 2025 (la première : 17 % contre 5 %) ;
 - la valeur de ces lignes est passée de 183 à 318 €/MWh entre 2025 et 2026 ;
 - RTE réserve une marge élevée pour les flux qui ne passent pas par le marché Core (*FUAF*).
 
@@ -360,7 +401,9 @@ Les heures sans vent du tout ne sont pas les plus chères. Ce sont souvent des h
 1. le vent français descend dans le merit order français ;
 2. le vent allemand souffle en même temps (même météo), donc les voisins achètent moins et paient moins.
 
-**Mesure (Stiewe, Xu, Eicke et Hirth, 2025) :** valeur perdue par point de pénétration supplémentaire.
+**Mesure (Stiewe, Xu, Eicke et Hirth, régression sur 30 zones européennes, 2015–2023) :** valeur perdue, en points de
+« value factor », par point de pénétration supplémentaire (l'article donne −0,486 pour le vent des voisins, arrondi
+à 0,48 dans le résumé).
 
 | Filière | Pénétration nationale | Pénétration des voisins |
 |---|---|---|
@@ -426,13 +469,15 @@ l'eau des barrages se valorise au prix futur, qui dépend du gaz.
 |---|---|---|---|
 | Coût d'une centrale à gaz | 94 € (débrief) ; 96 € en janv.–oct. (`calc.py`) | 127 € | SEFE, calcul PowerKlock |
 | Prix spot France | 61 € | 90 € | ENTSO-E |
-| Heures ≤ 0 € | 735 | 685 | `calc.py` |
+| Heures ≤ 0 €, comptées au quart d'heure | 742 | 805 | `calc.py` |
 | Part de l'éolien de janv.–oct. produite en janv.–mars | 35,5 % | 43,7 % | RTE éCO2mix |
 | Limite d'export Core | 5,4 GW | 5,9 GW | JAO |
 
 À cela s'ajoutent :
-- l'**accord sur le minimum nucléaire** (27 mars 2026) ;
-- une **sécheresse** (réservoirs −14 %).
+- un **nucléaire moins flexible** au printemps : minimum technique du parc 31 GW le 1er mai, contre 19 GW en 2025
+  (RTE) ;
+- une **sécheresse** (réservoirs −14 % en moyenne annuelle ; RTE note des stocks proches de la moyenne à fin juin,
+  puis pv magazine relève −1,5 GW d'hydraulique en septembre).
 
 ### 8.2 Capture de l'éolien en 2026
 On mesure, pour janvier–octobre (`fr_capture.json`) :
@@ -448,7 +493,9 @@ soleil. C'est de la météo, pas une tendance.
 ### 8.3 Pourquoi 2026 met les modèles en difficulté
 - **Les pics des heures calmes.** Avec le gaz à 127 €, la règle de prix sous-estime les pics des heures calmes
   (erreur horaire de 33 €). Cela fausse la valeur relative du vent sur les vraies données.
-- **Le minimum nucléaire.** Aucune année d'apprentissage ne l'a connu. C'est la cause probable des erreurs sur 2026.
+- **Le nucléaire moins flexible.** Aucune année d'apprentissage n'a eu un minimum technique aussi haut au printemps
+  (31 GW contre 19 GW). C'est une cause probable des erreurs sur 2026. Ce n'est pas l'accord RTE–EDF sur la tension,
+  comme le disait le débrief : RTE juge son rôle marginal.
 - **Le biais du modèle couplage.** Celui de la France isolée monte à +8 € en 2026, contre +1 € en 2024–2025.
 
 ### 8.4 Leçon
@@ -571,7 +618,11 @@ la capture solaire est mal prévue.
 chiffré par variante n'est pas encore écrit en commentaire.
 
 ### 9.5 Ce que fait la littérature
-- **Qorbanian, Löhndorf et Wozabal (2024) :** l'apprentissage est pondéré par la production de la filière pricée.
+- **Qorbanian, Löhndorf et Wozabal** (arXiv 2024, *European Journal of Operational Research* 2025) : un modèle
+  fondamental dont les coûts sont appris sur l'historique, avec une erreur pondérée par la production de la filière
+  pricée (« we set w_t to the expected capacity factors […] of the technology we want to price »). Ils le testent sur
+  l'Espagne, l'Allemagne et la France, avec la vraie demande résiduelle et les vrais échanges. C'est **en France**
+  qu'il marche **le moins bien**.
   Chez nous, c'est le seul gain qui tient sur tous les tirages : éolien 2,62 → 2,10–2,20 sans ancrage, 0,84 → 0,48–0,71
   ancré. Mais il dégrade le solaire (0,76 → 1,41).
 - **Modo Energy :** sans aligner la météo des prix et celle de la production, on surestime les revenus de plus de 10 %
@@ -672,7 +723,8 @@ Les deux résultats viennent des tests de la session. Ils ne sont pas encore éc
 
 En mots : si le prix avait été fixé ainsi par le passé, il n'aurait pas dépassé la valeur réalisée 3 fois sur 4.
 
-**La théorie.** Barber, Candès, Ramdas et Tibshirani (2023), « Conformal prediction beyond exchangeability » :
+**La théorie.** Barber, Candès, Ramdas et Tibshirani, « Conformal prediction beyond exchangeability », *Annals of
+Statistics* 51(2), 2023, pp. 816–845 :
 - la prédiction conforme donne une marge garantie en prenant un quantile des erreurs passées ;
 - quand le monde change, pondérer davantage les erreurs récentes garde une garantie presque aussi bonne ;
 - la perte de garantie est bornée par la distance entre le passé pondéré et le présent.
@@ -792,6 +844,49 @@ Risque et écarts :
 
 ---
 
-*Sources détaillées : `docs/discussion/pricing/debrief-2026-10-31.md`, `docs/discussion/couplage/methodologie.md`,
+## Sources externes (vérifiées le 31 octobre 2026)
+
+**Marché et règles**
+- EPEX SPOT et al., *Euphemia public description* —
+  https://www.mercatoelettrico.org/EN/MenuBiblioteca/Documenti/20181212EuphemiaPublicDescription.pdf
+- CRE, annexe de la délibération 2018-176 sur le flow-based —
+  https://www.cre.fr/fileadmin/Documents/Deliberations/import/180906-2018-176_FLOW_BASED_annexe.pdf
+- JAO, outil de publication Core — https://publicationtool.jao.eu/core
+- CRE, règles du mécanisme d'ajustement et des responsables d'équilibre (délibération 2022-71) —
+  https://www.cre.fr/fileadmin/Documents/Deliberations/import/220310_2022-71_MA-RE.pdf
+
+**Système français**
+- RTE, *Bilan électrique 2025* —
+  https://assets.rte-france.com/prod/public/2026-02/Bilan-electrique-2025-principaux-resultats.pdf
+- RTE, *Bilan du système électrique, premier semestre 2026* —
+  https://assets.rte-france.com/prod/public/2026-07/2026-07-16-bilan-semestre1.pdf
+- CRE, délibération n° 2026-67 du 27 mars 2026 —
+  https://www.cre.fr/fileadmin/Documents/Deliberations/2026/260327_2026-67_Approbation_Accord_Injection_THT.pdf
+- CRE, *Rapport de surveillance des marchés de gros 2025* —
+  https://www.cre.fr/fileadmin/Documents/Rapports_et_etudes/2026/Rapport_de_surveillance_2025.pdf
+- EDF, estimation de production nucléaire —
+  https://www.edf.fr/groupe-edf/espaces-dedies/journalistes/tous-les-communiques-de-presse/estimation-de-production-nucleaire-d-edf-en-france
+- Kpler, « Nuclear modulation insights » (février 2026) —
+  https://www.kpler.com/blog/nuclear-modulation-insights-volumes-and-units-behaviours
+- pv magazine, 2 octobre 2026 —
+  https://www.pv-magazine.com/2026/10/02/france-hits-record-800-hours-of-negative-zero-electricity-prices/
+- Boerman (2026), « Flowbased: export restrictions of France » — https://boerman.dev/posts/flowbased/highfuaf2026/
+
+**Recherche**
+- Hirth (2013), « The market value of variable renewables », *Energy Economics* —
+  https://cadmus.eui.eu/bitstream/handle/1814/27135/RSCAS_2013_36.pdf
+- Stiewe, Xu, Eicke et Hirth, « Cross-border cannibalization » — https://arxiv.org/abs/2405.17166
+- Qorbanian, Löhndorf et Wozabal, « Valuation of Power Purchase Agreements… », *EJOR* 2025 —
+  https://arxiv.org/abs/2403.08846
+- Barber, Candès, Ramdas et Tibshirani, « Conformal prediction beyond exchangeability », *Annals of Statistics* 2023 —
+  https://arxiv.org/abs/2202.13415
+
+**Professionnels**
+- Pexapark : méthode, cannibalisation, prix de marché du risque —
+  https://help.platform.pexapark.com/en/articles/9582613-what-is-the-pexapark-calculation-methodology ;
+  https://help.platform.pexapark.com/en/articles/9577860-how-do-you-account-for-cannibalization
+- Modo Energy, « Capturing cannibalisation » — https://forecastdocs.modoenergy.com/docs/capturing-cannibalisation
+
+*Sources internes : `docs/discussion/pricing/debrief-2026-10-31.md`, `docs/discussion/couplage/methodologie.md`,
 `docs/discussion/couplage/sources.md`, `scripts/ppa_scenarios.py` (commentaires de test), `scripts/ppa_model_risk.py`,
 `data/history/` (recalcul : `docs/discussion/cours/calc.py`).*
