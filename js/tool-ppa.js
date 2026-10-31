@@ -470,9 +470,19 @@
     // 2023; the forwards × their 75th percentile come off, so the price would not have been above the realised value in
     // 3 cases out of 4. Taken off only when the model has erred on the high side
     const MR = D.fcst && D.fcst.generator && D.fcst.generator.modelRisk, mrT = MR && MR[st.tech];
-    o.modelRisk = mrT && mrT.qPts > 0 ? refW * mrT.qPts / 100 : 0;
+    // v2 (scripts/ppa_generator.py band): the generator's full Monte Carlo gives each delivery year's capture quantiles;
+    // the pricer's Monte Carlo takes its capture drift from P50 − P25 (÷ 0.6745 = one standard deviation, ÷ √years ahead),
+    // so the premium joins that risk with the forwards' and the volume's; it already holds the model's own error (P75 held
+    // in 78–89 % of the replayed deliveries), so no separate model-risk deduction
+    const BAND = D.fcst && D.fcst.generator && D.fcst.generator.band && D.fcst.generator.band[st.tech];
+    o.premiumGen = null; o.sigGen = null;
+    if (o.gen && BAND && o.mc) {
+      const sg = years.map(r => { const b = BAND[String(r.y)]; return b && b.p50 != null && b.p25 != null && b.p50 > b.p25 ? (b.p50 - b.p25) / 0.6745 / Math.sqrt(Math.max(1, r.y - o.lastYr)) : null; }).filter(v => v != null);
+      if (sg.length) { o.sigGen = mean(sg); const mg = simulate(Object.assign({}, o, { sig0: o.sigGen }), st); o.premiumGen = fair - qtl(mg.Us, alpha / 100); }
+    }
+    o.modelRisk = o.premiumGen != null ? 0 : mrT && mrT.qPts > 0 ? refW * mrT.qPts / 100 : 0;
     o.modelRiskInfo = mrT ? { level: MR.level, n: mrT.n, qPts: mrT.qPts, meanEur: mrT.meanEur, maeEur: mrT.maeEur, byH: mrT.byH, anchorMae: mrT.anchorMae } : null;
-    o.ppaGen = o.gen ? o.genFair - o.premium - o.modelRisk - refW * add / 100 - imb + goW - margin : null;
+    o.ppaGen = o.gen ? o.genFair - (o.premiumGen != null ? o.premiumGen : o.premium) - o.modelRisk - refW * add / 100 - imb + goW - margin : null;
     o.method = st.method;
     // asset-specific FPC method (three pricings): js/ppa-fpc.js
     o.capPathFor = capPath;
@@ -747,7 +757,9 @@
       if (GEN_ONLY()) {
         // the model risk taken off the price (scripts/ppa_model_risk.py, in o.modelRisk) and the replay behind it
         const I = o.modelRiskInfo, bh = I && I.byH ? [1, 2, 3].map(h => I.byH[String(h)] ? n2(I.byH[String(h)].maeEur) : '–').join(' / ') : null;
-        const mrTxt = !I ? '' : fr
+        const mrTxt = o.premiumGen != null ? (fr
+          ? ` Prime de risque : <b>${n2(o.premiumGen)} €/MWh</b>, tirée du Monte-Carlo complet du générateur (semaines analogues « chères » ou « bon marché », parc, nucléaire avec une crise rare, limite d’export, consommation, année sèche ou humide ; dérive de capture ${n2(o.sigGen * 100)} pts par √an) jointe aux risques de prix et de volume. Au rejeu, le prix prudent qu’elle donne a tenu dans 78 à 89 % des livraisons (cible 75 %) ; elle couvre aussi l’erreur du modèle, sans déduction séparée.`
+          : ` Risk premium: <b>${f2(o.premiumGen)} €/MWh</b>, from the generator's full Monte Carlo (analogue weeks drawn "dear" or "cheap", fleet, nuclear with a rare crisis, export limit, load, dry or wet year; capture drift ${f2(o.sigGen * 100)} pts per √year) joined with the price and volume risks. In the replay the prudent price it gives held in 78 to 89 % of deliveries (target 75 %); it also covers the model's own error, no separate deduction.`) : !I ? '' : fr
           ? ` Risque de modèle retiré du prix : <b>${n2(o.modelRisk)} €/MWh</b> (${I.level}e centile des erreurs passées du générateur sur la capture, ${I.n} cas : livraisons depuis 2023, pricées 1 à 3 ans avant ; il se trompe en moyenne de ${I.meanEur >= 0 ? '+' : ''}${n2(I.meanEur)} €, écart moyen ${bh} € à 1 / 2 / 3 ans). Ainsi le prix n’aurait pas dépassé la valeur réalisée dans 3 cas sur 4.`
           : ` Model risk taken off the price: <b>${f2(o.modelRisk)} €/MWh</b> (${I.level}th percentile of the generator's past errors on the capture, ${I.n} cases: deliveries since 2023, priced 1 to 3 years ahead; on average it errs by ${I.meanEur >= 0 ? '+' : ''}${f2(I.meanEur)} €, mean gap ${bh} € one / two / three years ahead). So the price would not have exceeded the realised value in 3 cases out of 4.`;
         // the anchoring this technology uses, chosen on the weekly replay (scripts/ppa_model_risk.py anchorMode)
