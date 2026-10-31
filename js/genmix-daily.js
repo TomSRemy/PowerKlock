@@ -138,7 +138,7 @@ function _gmdczValueFor(zone, metric) {
     case 'ren':   return st.renPct;
     case 'lowc':  return st.lowCPct;
     case 'co2':   return st.co2;
-    case 'total': return st.total;
+    case 'total': return st.total / 1000;   // GW (st.total is MW: the ranking read 59 106 GW for France, note 69)
     default:      return null;
   }
 }
@@ -288,11 +288,16 @@ function _gmdczSetTitle() {
 
   const longDate = _gmdLongDate();
 
-  if (eyebrowEl) eyebrowEl.textContent = `Genmix Daily · Cross-zone · ${viewLbl}`;
+  // in French by default (only the first view's title was in the dictionary: the others showed in English)
+  const FR = !window.PKI18n || PKI18n.lang !== 'en';
+  const V_FR = { ranking: 'Classement', heatmap: 'Carte thermique', profiles: 'Profils', spread: 'Écart' };
+  const M_FR = { ren: '% renouvelable', lowc: '% bas carbone', co2: 'CO₂ g/kWh', total: 'Production totale, GW' };
+  const vL = FR ? (V_FR[view] || viewLbl) : viewLbl, mL = FR ? (M_FR[metric] || metricLbl) : metricLbl;
+  if (eyebrowEl) eyebrowEl.textContent = FR ? `Mix du jour · multi-zones · ${vL}` : `Genmix Daily · Cross-zone · ${viewLbl}`;
   // Heatmap view shows all fuels by nature — title doesn't depend on Metric
   titleEl.textContent = (view === 'heatmap')
-    ? `Cross-zone — Heatmap · Mix structure (% share per fuel)`
-    : `Cross-zone — ${viewLbl} · ${metricLbl}`;
+    ? (FR ? 'Multi-zones — Carte thermique · structure du mix (% par filière)' : `Cross-zone — Heatmap · Mix structure (% share per fuel)`)
+    : (FR ? `Multi-zones — ${vL} · ${mL}` : `Cross-zone — ${viewLbl} · ${metricLbl}`);
   const zonesCount = Object.keys(window._genmixData || {}).length;
   if (subEl) subEl.textContent = `${longDate} · ${zonesCount} zones · ENTSO-E`;
 
@@ -322,7 +327,7 @@ function _gmdczRenderKpis() {
 
   const totalEU = zones.reduce((s, z) => {
     const t = _gmdczValueFor(z, 'total');
-    return s + (t || 0);
+    return s + (t || 0) * 1000;   // MW, shown in GW below
   }, 0);
 
   host.innerHTML = `
