@@ -72,6 +72,9 @@ class _cfg:
 
 
 V2 = os.environ.get('PK_PPA_V2', '1') == '1'
+BLEND_W = float(os.environ.get('PK_WIND_BLEND', '0'))   # share of the analogues in wind's central capture; off (Tom kept
+# the rule alone, 1 Nov. 2026): half-and-half erred 0.87 vs 0.98 €/MWh on average over three replay formats, but worse on
+# calendar years (0.89 vs 0.63)
 
 
 def main():
@@ -125,6 +128,11 @@ def main():
                     e['generator'] = round(m[mm][conv] * k[conv][mm], 5)
                     e['generatorPaid'] = round(m[mm]['paid'], 5)
                     e['generatorP10'], e['generatorP90'] = (round(v * k[conv][mm], 5) for v in dist[mm][conv])
+                    if V2 and tech == 'wind' and BLEND_W and mb.get(mm, {}).get(conv) is not None:
+                        # wind's centre: half the rule-based set-up, half the analogues of the full Monte Carlo (their errors do
+                        # not overlap: replayed 2023–2026 on calendar years, rest-of-year + next year and rolling 12 months,
+                        # the blend erred least on average, 0.87 €/MWh, and never most)
+                        e['generator'] = round((1 - BLEND_W) * e['generator'] + BLEND_W * mb[mm][conv], 5)
                     if V2 and conv == 'curt' and mm in bandm and mb.get(mm, {}).get('curt') is not None:
                         # the monthly band of the full Monte Carlo, placed around the central capture
                         c_ = e['generator'] - mb[mm]['curt']
