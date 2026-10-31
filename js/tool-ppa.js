@@ -364,8 +364,10 @@
     const known = Object.keys(D.fwd).map(Number).sort(), lastQ = known.length ? known[known.length - 1] : null;
     const t0 = pick('tenorStart', ty + 1, 'next calendar year');
     const t1 = Math.max(t0, pick('tenorEnd', lastQ != null && lastQ >= t0 ? Math.min(t0 + 4, lastQ) : t0 + 4, lastQ != null ? 'last Cal year quoted' : 'five years'));
-    // forwards: market quotes only, never invented; a year without a quote has to be entered
-    const fwdAuto = y => D.fwd[y] != null ? D.fwd[y] : null;
+    // forwards: market quotes; a year beyond the last quoted Cal takes that Cal (Tom 1 Nov. 2026: long tenors with a
+    // liquidity risk, js simulate sigL), or has to be entered when the measured step is not there
+    const LIQ = D.fcst && D.fcst.generator && D.fcst.generator.liquidity;
+    const fwdAuto = y => D.fwd[y] != null ? D.fwd[y] : LIQ && lastQ != null && y > lastQ ? D.fwd[lastQ] : null;
     const fwdFor = y => st.fwd[y] != null ? st.fwd[y] : fwdAuto(y);
     const tenor = []; for (let y = t0; y <= t1; y++) tenor.push(y);
     // the months delivered in each year: a delivery can start and end in any month (January to December by default)
@@ -419,12 +421,15 @@
     const part = partFactors(tenor, monthsOf, st);
     const years = tenor.map((y, i) => { const ns = negShare(y), M = monthsOf(y), ev = volume * Math.pow(1 - degr, i) * part[i].sh * (st.conv !== 'all' && ns != null ? 1 - ns : 1),
       df = Math.pow(1 + disc, -Math.max(0, y + (M[0] - 1 + M[M.length - 1]) / 24 - now)), bs = biasOf('step', y), fsd = proj(y) + bs / Math.max(0.05, kq[i] * part[i].g), cpY = fwds[i] * kq[i] * part[i].g * (1 - fsd);
-      return { y, months: M, fwd: fwds[i], kq: kq[i], bias: bs, g: part[i].g, sh: part[i].sh, ev, df, fsd, cp: cpY, go: goY[i], w: ev * df, sig: sigT(y - lastYr), negH: negHours(y), negShare: ns }; });
+      // liqK: years past the last quoted Cal, priced on that Cal and hedged with it (not entered by hand)
+      const liqK = st.fwd[y] == null && D.fwd[y] == null && lastQ != null && y > lastQ ? y - lastQ : 0;
+      return { y, months: M, fwd: fwds[i], kq: kq[i], bias: bs, g: part[i].g, sh: part[i].sh, ev, df, fsd, cp: cpY, go: goY[i], w: ev * df, sig: sigT(y - lastYr), negH: negHours(y), negShare: ns, liqK }; });
     const W = years.reduce((a, r) => a + r.w, 0) || 1;
     years.forEach(r => { r.wt = r.w / W; });
     const wavg = k => years.reduce((a, r) => a + r.wt * r[k], 0);
     const refW = wavg('fwd'), fair = wavg('cp'), goW = wavg('go'), sdW = wavg('fsd');
     const o = { st, stAt: { tech: st.tech, conv: st.conv }, biasOf, nat, ast, hist, useAsset, complete, monthsOf, m0, m1, sel: fitRows.map(x => x.year), histSd, reg, lastYr, anchor, proj, fitLine, model, cfit, capOff, capPath: cp, excluded, sig0, sigT,
+      sigL: LIQ && LIQ.sigStep ? LIQ.sigStep : 0, lastQ, liq: LIQ,
       tenor, negHours, negShare, nhReg, nhFitYears, shLast, fwds, fwdAuto, ref, refW, goVal, goMkt, goW, fair, sdW, volume, mw, lf, degr, disc, imb, margin, add, volRisk, priceRisk, alpha, volStress, spotStress, sigV, sigF, rho, years, auto };
     // Monte Carlo: the realised value of one MWh of the contract, 10,000 trajectories
     if (!st.noMC) o.mc = simulate(o, st);
@@ -484,13 +489,16 @@
     // so the premium joins that risk with the forwards' and the volume's; it already holds the model's own error (P75 held
     // in 78–89 % of the replayed deliveries), so no separate model-risk deduction
     const BAND = D.fcst && D.fcst.generator && D.fcst.generator.band && D.fcst.generator.band[st.tech];
-    o.premiumGen = null; o.sigGen = null; o.premVolGen = null;
+    o.premiumGen = null; o.sigGen = null; o.premVolGen = null; o.liqRisk = null;
     if (o.gen && BAND && o.mc) {
       const sg = years.map(r => { const b = BAND[String(r.y)]; return b && b.p50 != null && b.p25 != null && b.p50 > b.p25 ? (b.p50 - b.p25) / 0.6745 / Math.sqrt(Math.max(1, r.y - o.lastYr)) : null; }).filter(v => v != null);
       if (sg.length) {
         o.sigGen = mean(sg); const mg = simulate(Object.assign({}, o, { sig0: o.sigGen }), st); o.premiumGen = fair - qtl(mg.Us, alpha / 100);
         // the volume risk's share: the premium less the same Monte Carlo with the production held at its P50
-        const m0 = simulate(Object.assign({}, o, { sig0: o.sigGen, sigV: 0 }), st); o.premVolGen = o.premiumGen - (fair - qtl(m0.Us, alpha / 100));
+        const m0 = simulate(Object.assign({}, o, { sig0: o.sigGen, sigV: 0 }), st); o.premVolGen = Math.max(0, o.premiumGen - (fair - qtl(m0.Us, alpha / 100)));   // below 0 is the draws' noise
+        // the liquidity risk's share: the premium less the same Monte Carlo with every year hedged on its own Cal
+        if (years.some(r => r.liqK > 0) && o.sigL > 0) { const mL = simulate(Object.assign({}, o, { sig0: o.sigGen, sigL: 0 }), st); o.liqRisk = Math.max(0, o.premiumGen - (fair - qtl(mL.Us, alpha / 100))); }
+        else o.liqRisk = 0;
       }
     }
     o.modelRisk = o.premiumGen != null ? 0 : mrT && mrT.qPts > 0 ? refW * mrT.qPts / 100 : 0;
@@ -580,12 +588,15 @@
         const r = Y[t];
         w += Math.sqrt(tau[t] - tp) * gauss(); tp = tau[t];
         const spot = r.fwd * Math.exp(o.sigF * w - o.sigF * o.sigF * tau[t] / 2);
+        // liquidity: a year past the last quoted Cal is hedged with that Cal; its own price then strays from it by the
+        // measured step between neighbouring Cal years × √(years past), a risk the hedge does not cover
+        const sL = r.liqK > 0 && o.sigL > 0 ? spot * Math.exp(o.sigL * Math.sqrt(r.liqK) * gauss() - o.sigL * o.sigL * r.liqK / 2) : spot;
         const zv = gauss(), pr = r.ev * clamp(1 + o.sigV * zv, 0.3, 2);
         const dt = t === 0 ? Math.max(1, r.y - o.lastYr) : 1;
         rw += Math.sqrt(dt) * o.sig0 * (o.rho * zv + rc * gauss());
-        const sd = clamp(r.fsd + rw, 0, 0.95), cap = spot * (r.kq || 1) * (r.g || 1) * (1 - sd);
+        const sd = clamp(r.fsd + rw, 0, 0.95), cap = sL * (r.kq || 1) * (r.g || 1) * (1 - sd);
         const v = pr * cap + (hedged ? r.ev * (r.fwd - spot) : 0);
-        prod[t][i] = pr; val[t][i] = v; sdM[t][i] = sd; cpM[t][i] = cap; spM[t][i] = spot;
+        prod[t][i] = pr; val[t][i] = v; sdM[t][i] = sd; cpM[t][i] = cap; spM[t][i] = sL;
         num += r.df * v; den += r.df * pr;
       }
       U[i] = num / den;
@@ -673,8 +684,8 @@
     if (host.dataset.key === key) return;
     host.dataset.key = key;
     host.innerHTML = o.tenor.map((y, i) => { const man = S.fwd[y] != null, a = o.fwdAuto(y), need = !man && a == null;
-      return `<label class="cf-field${need ? ' pp-need' : ''}"><span>Cal ${y} <i class="pp-auto${man && a != null ? ' man' : ''}" data-fy="${y}">${man ? (a != null ? '↺ market ' + f2(a) : 'entered') : a == null ? 'not quoted · enter your price' : 'market'}</i></span><span class="cf-in"><input type="number" step="0.01" data-fy="${y}" placeholder="${a != null ? a.toFixed(2) : 'your price'}" value="${man ? S.fwd[y] : ''}"><em>€/MWh</em></span></label>`; }).join('') +
-      `<div class="pp-fwd-note">France baseload calendar contracts${D.fwdDate ? ', settlements of ' + D.fwdDate : ''}. A year without a quote is never filled in for you: enter your own price, or shorten the delivery period.</div>`;
+      return `<label class="cf-field${need ? ' pp-need' : ''}"><span>Cal ${y} <i class="pp-auto${man && a != null ? ' man' : ''}" data-fy="${y}">${man ? (a != null ? '↺ market ' + f2(a) : 'entered') : a == null ? 'not quoted · enter your price' : D.fwd[y] == null ? 'Cal ' + o.lastQ + ' · liquidity risk' : 'market'}</i></span><span class="cf-in"><input type="number" step="0.01" data-fy="${y}" placeholder="${a != null ? a.toFixed(2) : 'your price'}" value="${man ? S.fwd[y] : ''}"><em>€/MWh</em></span></label>`; }).join('') +
+      `<div class="pp-fwd-note">France baseload calendar contracts${D.fwdDate ? ', settlements of ' + D.fwdDate : ''}. A year past the last quoted Cal takes that Cal, and the risk that its own price strays from it comes off the price (liquidity risk): enter your own price if you have one.</div>`;
     host.querySelectorAll('input[data-fy]').forEach(inp => inp.addEventListener('change', () => { const v = parseFloat(inp.value); if (isFinite(v)) S.fwd[+inp.dataset.fy] = v; else delete S.fwd[+inp.dataset.fy]; run(); }));
     host.querySelectorAll('.pp-auto.man[data-fy]').forEach(t => t.addEventListener('click', e => { e.preventDefault(); delete S.fwd[+t.dataset.fy]; run(); }));
   }
@@ -1845,6 +1856,17 @@ ${FRDOC() ? `<p>RTE éCO2mix (production nationale, 15 min) · prix day-ahead EN
 
   let busy = false, again = false;
   // the partial stop, said under the price: the share stopped, the two cases blended, the charts showing the full stop
+  // years past the last quoted Cal: said under the price, with the liquidity risk taken off
+  function liqNote(o) {
+    let el = $('pp-liq-note'); const ys = (o.years || []).filter(r => r.liqK > 0);
+    if (!ys.length) { if (el) el.remove(); return; }
+    const st = $('pp-status'); if (!el && st) { el = document.createElement('div'); el.id = 'pp-liq-note'; el.className = 'fuel-note'; st.after(el); }
+    if (!el) return;
+    const fr = FRDOC(), n = (v, d) => v == null || !isFinite(v) ? '–' : (+v).toFixed(d).replace('.', fr ? ',' : '.'), L = o.liq || {};
+    const yl = ys.map(r => r.y).join(', ');
+    el.innerHTML = fr ? `<b>Au-delà du dernier Cal coté (${o.lastQ}) :</b> ${yl} pricé${ys.length > 1 ? 's' : ''} sur le Cal ${o.lastQ} et couvert${ys.length > 1 ? 's' : ''} avec lui. Le prix de ${ys.length > 1 ? 'ces années' : 'cette année'} s’en écartera : ${n(L.sigStep * 100, 1)} % par année d’écart (écart mesuré entre deux Cal voisins, ${L.n || '–'} séances), non couvert. Risque de liquidité retiré : <b>${n(o.liqRisk, 2)} €/MWh</b> ; saisissez votre forward à l’étape 2 si vous en avez un.`
+      : `<b>Past the last quoted Cal (${o.lastQ}):</b> ${yl} priced on Cal ${o.lastQ} and hedged with it. ${ys.length > 1 ? 'Their' : 'Its'} own price will stray from it: ${n(L.sigStep * 100, 1)} % per year apart (measured step between neighbouring Cal years, ${L.n || '–'} sessions), not hedged. Liquidity risk taken off: <b>${n(o.liqRisk, 2)} €/MWh</b>; enter your forward in step 2 if you have one.`;
+  }
   function partialNote(o) {
     let el = $('pp-partial-note');
     if (!o.partial) { if (el) el.remove(); return; }
@@ -1862,7 +1884,7 @@ ${FRDOC() ? `<p>RTE éCO2mix (production nationale, 15 min) · prix day-ahead EN
       if (o.missing) { S.last = null; renderForwards(o); renderYears(o); renderAuto(o); try { renderMarket(o); } catch (e) { console.warn('[ppa] market', e); }
         $('pp-status').innerHTML = `<b>No market price for Cal ${o.missing.join(', ')}.</b> Enter your forward for ${o.missing.length > 1 ? 'these years' : 'this year'} (step 2), or end the delivery in ${o.missing[0] - 1}. Nothing is priced until then.`;
         $('pp-kpis').innerHTML = ''; $('pp-build').innerHTML = ''; busy = false; if (again) { again = false; run(); } return; }
-      S.last = o; renderForwards(o); render(o); partialNote(o); renderScen(); document.dispatchEvent(new CustomEvent('pk-ppa-run')); try { renderMarket(o); } catch (e) { console.warn('[ppa] market', e); } try { renderMC(o); } catch (e) { console.warn('[ppa] mc', e); } $('pp-status').textContent = ''; }
+      S.last = o; renderForwards(o); render(o); partialNote(o); liqNote(o); renderScen(); document.dispatchEvent(new CustomEvent('pk-ppa-run')); try { renderMarket(o); } catch (e) { console.warn('[ppa] market', e); } try { renderMC(o); } catch (e) { console.warn('[ppa] mc', e); } $('pp-status').textContent = ''; }
     catch (e) { console.warn('[ppa]', e); $('pp-status').textContent = 'Pricing failed: ' + e.message; }
     busy = false; if (again) { again = false; run(); }
   }

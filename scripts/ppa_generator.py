@@ -77,6 +77,31 @@ BLEND_W = float(os.environ.get('PK_WIND_BLEND', '0'))   # share of the analogues
 # calendar years (0.89 vs 0.63)
 
 
+def liquidity_step():
+    """the step between neighbouring Cal years at the far end of the French curve (Tom 1 Nov. 2026, liquidity risk): the
+    root mean square of log(Cal Y+1 ÷ Cal Y) over every session both were quoted, on the rolling Cal+3 ÷ Cal+2 and on the
+    farthest pair of the chain. A year past the last quoted Cal is priced on that Cal, so this is how far its own price
+    tends to sit from it (France 2024–2026: about 5 %, as Germany, the UK and the Netherlands, 5–9 %)"""
+    try:
+        d = json.load(open(os.path.join(ROOT, 'data', 'history', 'fr_market_calchain.json')))['FR']
+    except (OSError, ValueError, KeyError):
+        return None
+    r = []
+    R = d.get('rolling', {})
+    if 'Cal+2' in R and 'Cal+3' in R:
+        a, b = dict(zip(R['Cal+2']['dates'], R['Cal+2']['values'])), dict(zip(R['Cal+3']['dates'], R['Cal+3']['values']))
+        r += [np.log(b[t] / a[t]) for t in a if t in b and a[t] and b[t] and a[t] > 0 and b[t] > 0]
+    Y = {int(y): dict(zip(v['dates'], v['values'])) for y, v in d.get('years', {}).items()}
+    if len(Y) >= 2:
+        y1 = max(Y); y0 = y1 - 1
+        if y0 in Y:
+            r += [np.log(Y[y1][t] / Y[y0][t]) for t in Y[y0] if t in Y[y1] and Y[y0][t] and Y[y1][t] and Y[y0][t] > 0 and Y[y1][t] > 0]
+    if len(r) < 60:
+        return None
+    r = np.array(r)
+    return {'sigStep': round(float(np.sqrt((r ** 2).mean())), 4), 'meanStep': round(float(r.mean()), 4), 'n': int(r.size)}
+
+
 def main():
     fc = json.load(open(F_PATH))
     settings = fc['settings']
@@ -151,6 +176,10 @@ def main():
         # yearly capture quantiles of the full Monte Carlo: the pricer sets its capture drift on P50 − P25
         fc['generator']['band'] = band
         fc['generator']['v2'] = True
+    liq = liquidity_step()
+    if liq:
+        fc['generator']['liquidity'] = liq
+        print('liquidity', liq, flush=True)
     if V2 and vols:
         # volume risk (Tom 1 Nov. 2026): in the same weather scenarios, the year's output per GW of a fixed park against
         # its capture and its mean price, each delivery year standardised then pooled. The pricer takes the volume–capture
