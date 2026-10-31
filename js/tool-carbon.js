@@ -318,7 +318,7 @@
     if (o.acc) { try { o.acc.fixed = await fixedPrice(o, st.fixPeriod, o.acc.shp); } catch (e) { console.warn('[carbon] ACC complement', e); } }
     if (o.acc) {   // national cost of solar forecast errors (€/MWh produced), ENTSO-E, scripts/fetch_fr_imbalance_cost.py
       const ic = await (imbP || (imbP = getJSON('history/fr_imbalance_cost.json')));
-      let c = 0, m = 0; if (ic && ic.months) Object.values(ic.months).forEach(x => { if (x.solar && x.solar.mwh) { c += x.solar.costEur; m += x.solar.mwh; } });
+      let c = 0, m = 0; if (ic && ic.months) { const own = Object.values(ic.months).filter(x => x.solar && x.solar.ours).length >= 3; Object.values(ic.months).forEach(x => { const b = x.solar && (own ? x.solar.ours : x.solar); if (b && b.mwh) { c += b.costEur; m += b.mwh; } }); }
       o.acc.imbNat = m ? c / m : null;
     }
     return o;
