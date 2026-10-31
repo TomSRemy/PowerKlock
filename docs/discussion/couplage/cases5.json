@@ -5,28 +5,36 @@
    "share": 0.389,
    "fr": 31.3,
    "de": 31.3,
-   "nx_gw": 6.1
+   "nx_gw": 6.1,
+   "rent_m": 123,
+   "nx_max_gw": 16.8
   },
   "exp_sat": {
    "hours": 3998,
    "share": 0.455,
    "fr": 28.2,
    "de": 26.3,
-   "nx_gw": 6.6
+   "nx_gw": 6.6,
+   "rent_m": 319,
+   "nx_max_gw": 16.3
   },
   "imp_free": {
    "hours": 508,
    "share": 0.058,
    "fr": 51.2,
    "de": 51.2,
-   "nx_gw": -2.0
+   "nx_gw": -2.0,
+   "rent_m": 17,
+   "nx_max_gw": 7.8
   },
   "imp_sat": {
    "hours": 858,
    "share": 0.098,
    "fr": 43.4,
    "de": 34.5,
-   "nx_gw": -2.4
+   "nx_gw": -2.4,
+   "rent_m": 45,
+   "nx_max_gw": 10.1
   }
  },
  "2021": {
@@ -35,28 +43,36 @@
    "share": 0.437,
    "fr": 89.0,
    "de": 89.0,
-   "nx_gw": 7.6
+   "nx_gw": 7.6,
+   "rent_m": 579,
+   "nx_max_gw": 16.9
   },
   "exp_sat": {
    "hours": 3123,
    "share": 0.357,
    "fr": 87.6,
    "de": 75.3,
-   "nx_gw": 7.0
+   "nx_gw": 7.0,
+   "rent_m": 880,
+   "nx_max_gw": 18.4
   },
   "imp_free": {
    "hours": 424,
    "share": 0.048,
    "fr": 182.6,
    "de": 182.6,
-   "nx_gw": -3.1
+   "nx_gw": -3.1,
+   "rent_m": 59,
+   "nx_max_gw": 12.6
   },
   "imp_sat": {
    "hours": 1385,
    "share": 0.158,
    "fr": 191.0,
    "de": 141.0,
-   "nx_gw": -3.8
+   "nx_gw": -3.8,
+   "rent_m": 419,
+   "nx_max_gw": 13.4
   }
  },
  "2022": {
@@ -65,28 +81,36 @@
    "share": 0.143,
    "fr": 213.6,
    "de": 213.6,
-   "nx_gw": 2.6
+   "nx_gw": 2.6,
+   "rent_m": 337,
+   "nx_max_gw": 11.9
   },
   "exp_sat": {
    "hours": 1619,
    "share": 0.185,
    "fr": 169.1,
    "de": 132.8,
-   "nx_gw": 3.2
+   "nx_gw": 3.2,
+   "rent_m": 776,
+   "nx_max_gw": 15.0
   },
   "imp_free": {
    "hours": 1678,
    "share": 0.192,
    "fr": 331.1,
    "de": 331.1,
-   "nx_gw": -3.4
+   "nx_gw": -3.4,
+   "rent_m": 908,
+   "nx_max_gw": 11.7
   },
   "imp_sat": {
    "hours": 4208,
    "share": 0.48,
    "fr": 313.6,
    "de": 243.4,
-   "nx_gw": -4.5
+   "nx_gw": -4.5,
+   "rent_m": 3538,
+   "nx_max_gw": 14.9
   }
  },
  "2023": {
@@ -95,28 +119,36 @@
    "share": 0.265,
    "fr": 95.1,
    "de": 95.1,
-   "nx_gw": 6.9
+   "nx_gw": 6.9,
+   "rent_m": 343,
+   "nx_max_gw": 17.0
   },
   "exp_sat": {
    "hours": 5358,
    "share": 0.612,
    "fr": 87.4,
    "de": 88.6,
-   "nx_gw": 7.1
+   "nx_gw": 7.1,
+   "rent_m": 1457,
+   "nx_max_gw": 18.7
   },
   "imp_free": {
    "hours": 163,
    "share": 0.019,
    "fr": 160.1,
    "de": 160.1,
-   "nx_gw": -2.9
+   "nx_gw": -2.9,
+   "rent_m": 19,
+   "nx_max_gw": 14.0
   },
   "imp_sat": {
    "hours": 919,
    "share": 0.105,
    "fr": 145.2,
    "de": 122.3,
-   "nx_gw": -3.8
+   "nx_gw": -3.8,
+   "rent_m": 240,
+   "nx_max_gw": 14.0
   }
  },
  "2024": {
@@ -125,28 +157,36 @@
    "share": 0.129,
    "fr": 68.2,
    "de": 68.2,
-   "nx_gw": 9.1
+   "nx_gw": 9.1,
+   "rent_m": 196,
+   "nx_max_gw": 20.0
   },
   "exp_sat": {
    "hours": 7446,
    "share": 0.848,
    "fr": 56.7,
    "de": 81.1,
-   "nx_gw": 10.6
+   "nx_gw": 10.6,
+   "rent_m": 3093,
+   "nx_max_gw": 20.1
   },
   "imp_free": {
    "hours": 38,
    "share": 0.004,
    "fr": 46.2,
    "de": 46.2,
-   "nx_gw": -1.7
+   "nx_gw": -1.7,
+   "rent_m": 5,
+   "nx_max_gw": 5.6
   },
   "imp_sat": {
    "hours": 166,
    "share": 0.019,
    "fr": 52.2,
    "de": 38.9,
-   "nx_gw": -1.8
+   "nx_gw": -1.8,
+   "rent_m": 40,
+   "nx_max_gw": 7.0
   }
  },
  "2025": {
@@ -155,28 +195,36 @@
    "share": 0.097,
    "fr": 75.2,
    "de": 75.2,
-   "nx_gw": 7.8
+   "nx_gw": 7.8,
+   "rent_m": 171,
+   "nx_max_gw": 19.1
   },
   "exp_sat": {
    "hours": 7805,
    "share": 0.891,
    "fr": 59.9,
    "de": 91.8,
-   "nx_gw": 11.0
+   "nx_gw": 11.0,
+   "rent_m": 4305,
+   "nx_max_gw": 21.0
   },
   "imp_free": {
    "hours": 14,
    "share": 0.002,
    "fr": 51.6,
    "de": 51.6,
-   "nx_gw": -1.2
+   "nx_gw": -1.2,
+   "rent_m": 3,
+   "nx_max_gw": 3.1
   },
   "imp_sat": {
    "hours": 90,
    "share": 0.01,
    "fr": 31.2,
    "de": 11.0,
-   "nx_gw": -1.9
+   "nx_gw": -1.9,
+   "rent_m": 39,
+   "nx_max_gw": 6.9
   }
  },
  "2026": {
@@ -185,28 +233,36 @@
    "share": 0.116,
    "fr": 122.3,
    "de": 122.3,
-   "nx_gw": 8.8
+   "nx_gw": 8.8,
+   "rent_m": 181,
+   "nx_max_gw": 17.6
   },
   "exp_sat": {
    "hours": 6283,
    "share": 0.867,
    "fr": 84.0,
    "de": 111.8,
-   "nx_gw": 11.1
+   "nx_gw": 11.1,
+   "rent_m": 4248,
+   "nx_max_gw": 23.7
   },
   "imp_free": {
    "hours": 50,
    "share": 0.007,
    "fr": 139.2,
    "de": 139.2,
-   "nx_gw": -2.6
+   "nx_gw": -2.6,
+   "rent_m": 9,
+   "nx_max_gw": 8.2
   },
   "imp_sat": {
    "hours": 76,
    "share": 0.01,
    "fr": 112.0,
    "de": 98.4,
-   "nx_gw": -1.2
+   "nx_gw": -1.2,
+   "rent_m": 20,
+   "nx_max_gw": 4.3
   }
  }
 }
