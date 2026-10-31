@@ -1453,6 +1453,7 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
     SUR = {y: _residuals(y, pm, st['regional']) for y in pool}
     GF = guard_floor(t, [y for y in known if L.DATA[y]['complete'] and y != 2022][-2:]) if guard else None
     BELOW = [0, 0]
+    DIV = []
     HN = {}
     if rule == 'fuel' and PriceModelFuel.HYDRO:
         for c in CS:
@@ -1473,6 +1474,13 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
         _av, _dm = fr_avail(demand_year), L.DATA[demand_year]['month']
         AVR = np.array([_av[_dm == m].mean() for m in range(1, 13)])
         NUCF = np.ones(12)
+        if NUC_Y == 'file' and os.environ.get('PK_NUC_FILE'):
+            # a monthly availability profile for the delivery year (MW, {month: MW}), e.g. from EDF's planned outages
+            import json as _json
+            prof = _json.load(open(os.environ['PK_NUC_FILE']))
+            for m_ in range(1, 13):
+                if str(m_) in prof:
+                    v_ = float(prof[str(m_)]); NUCF[m_ - 1] = v_ / AVR[m_ - 1]; AVR[m_ - 1] = v_
         if NUC_Y == 'oracle' and Y in L.DATA:
             # test: the delivery year's real available nuclear (not knowable when pricing) for its months seen
             _ay, _my = fr_avail(Y), L.DATA[Y]['month']
@@ -1564,6 +1572,9 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
             last = (y, r + min(weeks, D - i) - 1)
             prev = (starts[last[0]]['FR_w'][last[1]].mean(), starts[last[0]]['FR_ldev'][last[1]].mean())
             i += weeks
+        ys_ = [y for y, _, _ in src]
+        cnt_ = {y: ys_.count(y) for y in set(ys_)}
+        DIV.append((len(cnt_), max(cnt_.values()) / len(ys_)))
         S, W, Lo, N = {}, {}, {}, {}
         for c in CS:
             sv = np.stack([starts[y][f'{c}_s'][r] for y, r, _ in src])
@@ -1765,4 +1776,5 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
     if guard == 'measure':
         dist['belowFloor'] = BELOW[0] / BELOW[1] if BELOW[1] else None
     dist['scenarios'] = res   # each scenario's monthly rates (for annual percentiles)
+    dist['diversity'] = DIV   # per scenario: (distinct source years, share of its days from its most used year)
     return out, dist
