@@ -197,7 +197,7 @@
     }
     const out = [];
     for (const y of o.tenor) {
-      let num = 0, den = 0;
+      let num = 0, den = 0, pn = 0;
       const q = quotedShape(y);   // the quoted months ÷ Cal, else the day-ahead's historical month ÷ year ratios
       let rn = 0, hn = 0; for (let m = 1; m <= 12; m++) { const dm = new Date(Date.UTC(y, m, 0)).getUTCDate(); rn += ratio[m] * dm; hn += dm; } rn /= hn;
       const Mo = o.monthsOf ? o.monthsOf(y) : null;
@@ -206,11 +206,14 @@
         const e = f[`${y}-${String(m).padStart(2, '0')}`];
         if (!e || e[fld] == null || ratio[m] == null) return null;
         const w = sh(m) * (conv === 'curt' ? (e[fld + 'Paid'] != null ? e[fld + 'Paid'] : e.paid) : 1);
-        num += w * (q ? q[m - 1] : ratio[m] / rn) * (e[fld] + gap); den += w;
+        const qm = q ? q[m - 1] : ratio[m] / rn;
+        num += w * qm * (e[fld] + gap); pn += w * qm; den += w;
       }
       if (!(den > 0)) return null;
       const b = o.biasOf && fld !== 'anchored' && fld !== 'generator' ? o.biasOf('regional', y) : 0;
-      out.push({ y, capture: num / den - b, bias: b });
+      // prof: the output's value on the months' baseload forwards ÷ the Cal (the monthly profile alone); capture ÷ prof is
+      // what the hours within each month take off (the hourly cannibalisation)
+      out.push({ y, capture: num / den - b, bias: b, prof: pn / den });
     }
     return out;
   }
@@ -397,7 +400,12 @@
     const sigVAuto = astFull.length >= 3 ? std(astFull) / mean(astFull) : lfs.length >= 3 ? std(lfs) / mean(lfs) : 0.08;
     const sigV = pick('mcVol', +(Math.max(0.04, sigVAuto) * 100).toFixed(1), astFull.length >= 3 ? 'spread of the asset’s yearly output' : 'spread of the national load factor, 6 years') / 100;
     const sigF = pick('mcFwd', D.fwdVol ? +(clamp(D.fwdVol, 0.1, 0.8) * 100).toFixed(0) : 25, D.fwdVol ? `France Cal+1, ${D.fwdVolN} sessions` : 'assumption') / 100;
-    const rho = clamp(pick('rho', st.tech === 'solar' ? 0.3 : 0.2, 'assumption: a sunnier / windier year cannibalises more'), -0.95, 0.95);
+    // the link between a year's output and its discount, from the generator's weather scenarios when it has run
+    // (scripts/ppa_generator.py 'volume': output per GW against capture in the same draws, Tom 1 Nov. 2026), else an assumption
+    const VG = D.fcst && D.fcst.generator && D.fcst.generator.volume && D.fcst.generator.volume[st.tech];
+    const rho = clamp(VG && VG.corrCapture != null
+      ? pick('rho', +(-VG.corrCapture).toFixed(2), `generator weather scenarios (${VG.n} draws)`)
+      : pick('rho', st.tech === 'solar' ? 0.3 : 0.2, 'assumption: a sunnier / windier year cannibalises more'), -0.95, 0.95);
     // Year by year: expected production, discount factor, capture value
     const now = nowFrac();
     // the level month by month, as the common framework says: the yearly capture × the quoted-shape factor
@@ -466,6 +474,7 @@
     // no bias correction; since 31 Oct. 2026 it sets the published price for solar and wind
     o.gen = euYears(o, st, 'generator');
     o.genFair = o.gen ? years.reduce((a, r, i) => a + r.wt * r.fwd * o.gen[i].capture, 0) : null;
+    o.genProf = o.gen && o.gen.every(x => x.prof != null) ? years.reduce((a, r, i) => a + r.wt * r.fwd * o.gen[i].prof, 0) : null;
     // model risk (scripts/ppa_model_risk.py): the generator's past errors on the capture, replayed 1–3 years ahead from
     // 2023; the forwards × their 75th percentile come off, so the price would not have been above the realised value in
     // 3 cases out of 4. Taken off only when the model has erred on the high side
@@ -475,10 +484,14 @@
     // so the premium joins that risk with the forwards' and the volume's; it already holds the model's own error (P75 held
     // in 78–89 % of the replayed deliveries), so no separate model-risk deduction
     const BAND = D.fcst && D.fcst.generator && D.fcst.generator.band && D.fcst.generator.band[st.tech];
-    o.premiumGen = null; o.sigGen = null;
+    o.premiumGen = null; o.sigGen = null; o.premVolGen = null;
     if (o.gen && BAND && o.mc) {
       const sg = years.map(r => { const b = BAND[String(r.y)]; return b && b.p50 != null && b.p25 != null && b.p50 > b.p25 ? (b.p50 - b.p25) / 0.6745 / Math.sqrt(Math.max(1, r.y - o.lastYr)) : null; }).filter(v => v != null);
-      if (sg.length) { o.sigGen = mean(sg); const mg = simulate(Object.assign({}, o, { sig0: o.sigGen }), st); o.premiumGen = fair - qtl(mg.Us, alpha / 100); }
+      if (sg.length) {
+        o.sigGen = mean(sg); const mg = simulate(Object.assign({}, o, { sig0: o.sigGen }), st); o.premiumGen = fair - qtl(mg.Us, alpha / 100);
+        // the volume risk's share: the premium less the same Monte Carlo with the production held at its P50
+        const m0 = simulate(Object.assign({}, o, { sig0: o.sigGen, sigV: 0 }), st); o.premVolGen = o.premiumGen - (fair - qtl(m0.Us, alpha / 100));
+      }
     }
     o.modelRisk = o.premiumGen != null ? 0 : mrT && mrT.qPts > 0 ? refW * mrT.qPts / 100 : 0;
     o.modelRiskInfo = mrT ? { level: MR.level, n: mrT.n, qPts: mrT.qPts, meanEur: mrT.meanEur, maeEur: mrT.maeEur, byH: mrT.byH, anchorMae: mrT.anchorMae } : null;
@@ -815,13 +828,24 @@
     if (!use.length) return;
     const ref = wmean(use, 'ref'), fair = wmean(use, 'fair'), price = wmean(use, 'v');
     const risk = price - (fair - o.imb + o.goW - o.margin);
-    const st = [['Cal forward', ref, 1], [S.tech === 'wind' ? 'Wind profile' : 'Solar profile', fair - ref], ['Risk', risk], ['Imbalance', -o.imb], ['GO', o.goW], ['Margin', -o.margin], ['PPA price', price, 1]];
+    // the published price alone (the generator): the profile split into its monthly and hourly parts, the risk into
+    // volume, liquidity (when priced) and the rest (price level and capture drift), as Tom reads a PPA markup
+    const gen = use.length === 1 && use[0].k === 'int' && o.genProf != null && o.premVolGen != null;
+    const st = gen
+      ? [['Cal forward', ref, 1], ['Monthly profile', o.genProf - ref], ['Hourly cannibalisation', fair - o.genProf], ['Volume risk', -o.premVolGen],
+        ...(o.liqRisk != null ? [['Liquidity risk', -o.liqRisk]] : []), ['Price & capture risk', risk + o.premVolGen + (o.liqRisk || 0)],
+        ['Imbalance cost', -o.imb], ['GO', o.goW], ['Margin', -o.margin], ['PPA price', price, 1]]
+      : [['Cal forward', ref, 1], [S.tech === 'wind' ? 'Wind profile' : 'Solar profile', fair - ref], ['Risk', risk], ['Imbalance', -o.imb], ['GO', o.goW], ['Margin', -o.margin], ['PPA price', price, 1]];
+    const sub = $('pp-sum-wf-sub'), subT = gen ? '€/MWh · the published price, line by line' : '€/MWh · average of the methods ticked';
+    if (sub) sub.textContent = window.PKI18n ? PKI18n.tr(subT) : subT;
     let run0 = 0;
     const bars = st.map(([l, v, t]) => { if (t) { run0 = v; return [0, v]; } const a = run0; run0 += v; return [a, run0]; });
     const col = st.map(([, v, t], i) => t ? (i ? '#14D3A9' : '#8D99AE') : v < 0 ? '#ED6965' : '#14D3A9');
     _fuelChart('pp-sum-wf', { type: 'bar', data: { labels: st.map(x => window.PKI18n ? PKI18n.tr(x[0]) : x[0]), datasets: [{ label: '€/MWh', data: bars.map(b => [+b[0].toFixed(2), +b[1].toFixed(2)]), backgroundColor: col, borderRadius: 3, barPercentage: 0.7 }] },
-      options: _fuelOpts({ plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => { const v = st[c.dataIndex]; return ' ' + (v[2] ? '' : v[1] >= 0 ? '+' : '−') + f2(Math.abs(v[1])) + ' €/MWh'; } } }, pkHoverReadout: false },
-        scales: { x: Object.assign(_fuelXAxis(), { grid: { display: false } }), y: _fuelAxis('€/MWh', { beginAtZero: true }) } }) }, 'ppa-sum-waterfall');
+      // lying down when the published price is split line by line: ten names stay readable in a third of the page
+      options: _fuelOpts({ indexAxis: gen ? 'y' : 'x', plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => { const v = st[c.dataIndex]; return ' ' + (v[2] ? '' : v[1] >= 0 ? '+' : '−') + f2(Math.abs(v[1])) + ' €/MWh'; } } }, pkHoverReadout: false },
+        scales: gen ? { y: Object.assign(_fuelXAxis(), { grid: { display: false }, ticks: { autoSkip: false, font: { size: 10 } } }), x: _fuelAxis('€/MWh', { beginAtZero: true }) }
+          : { x: Object.assign(_fuelXAxis(), { grid: { display: false } }), y: _fuelAxis('€/MWh', { beginAtZero: true }) } }) }, 'ppa-sum-waterfall');
   }
 
   // price up in red, down in green, as everywhere on the site

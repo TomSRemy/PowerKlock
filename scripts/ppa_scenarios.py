@@ -1591,6 +1591,8 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
             if CF_LEVEL:
                 sv = sv * np.array([CFS[(c, 's', y)] for y, _, _ in src])[:, None]
                 wv = wv * np.array([CFS[(c, 'w', y)] for y, _, _ in src])[:, None]
+            if c == 'FR':
+                CFY = {'s': float(sv.mean()), 'w': float(wv.mean())}   # the scenario's output per GW of a fixed park
             if MC_FULL and g_fleet != 1.0:
                 # growth beyond the last known year scaled by g_fleet
                 capA_ = {tt: (L.cap(c, tt, demand_year) or capY[c][tt]) * 1000 for tt in 'sw'}
@@ -1760,6 +1762,10 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
                 for m_, c_ in gc.items():
                     if m_ in mr and c_ and g0.get(m_) and mr[m_].get('curt') is not None:
                         mr[m_]['curt'] *= c_ / g0[m_]
+            # the scenario's yearly volume and price level, for the volume risk (Tom 1 Nov. 2026): output per GW of a fixed
+            # park against the scenario's mean price, so the pricer draws volume with the weather's own link to price
+            mr['_cf'] = CFY[t]
+            mr['_base'] = float((f1 * cday).mean())
             res.append(mr)
             continue
         if pm2 is not None:
