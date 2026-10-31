@@ -484,8 +484,13 @@ On mesure, pour janvier–octobre (`fr_capture.json`) :
 - **valeur d'un MWh produit aux heures positives ÷ base** : **0,971 en 2025 → 0,976 en 2026** ;
 - **toute la production comptée** (non payée aux prix ≤ 0) : **0,891 → 0,888**.
 
-Le brief annonçait « 0,936 → 0,976 ». Je retrouve le 0,976, **pas le 0,936**. Le 0,936 vient peut-être d'une autre
-mesure, ou d'une prévision du générateur pour 2026. **À vérifier avec Tom.**
+- **convention du pricer (« curt »)** : capture des MWh payés, calculée **mois par mois** sur le prix moyen du mois,
+  puis moyenne pondérée par la production payée (`scripts/ppa_scenarios.py`, données horaires `ppa_lab`) :
+  **0,936 en 2025 → 0,976 en 2026**. C'est le chiffre du pricer (session du 31 octobre). Ce n'est pas un chiffre
+  RTE : les bilans RTE 2025 et du premier semestre 2026 ne donnent aucun taux de capture.
+
+Trois définitions, trois niveaux. Le sens est le même (2026 au moins aussi bon que 2025), mais on ne compare que des
+chiffres de même définition.
 
 **Pourquoi l'éolien a bien tenu.** Il a soufflé plus en hiver, aux heures chères, et moins en même temps que le
 soleil. C'est de la météo, pas une tendance.

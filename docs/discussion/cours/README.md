@@ -15,5 +15,5 @@ Sources externes vérifiées le 31 oct. 2026 (RTE, CRE, EDF, JAO, recherche) : l
 sert à la tension du réseau et RTE juge son rôle marginal ; la moindre modulation du nucléaire au printemps 2026 vient
 du cycle du combustible (RTE, bilan S1 2026), pas d'un « minimum national ».
 
-Point incertain, à vérifier avec Tom : la capture éolienne 2025 de « 0,936 » donnée dans le brief n'est pas
-retrouvée dans les données (chapitre 8).
+La capture éolienne « 0,936 → 0,976 » (chapitre 8) est un calcul du pricer PowerKlock (convention « curt », mois par
+mois), pas un chiffre RTE ; le cours donne les trois définitions et leurs valeurs.
