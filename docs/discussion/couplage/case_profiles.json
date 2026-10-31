@@ -1,0 +1,218 @@
+{
+ "exp_free": {
+  "year": 2025,
+  "share": 0.097,
+  "hours": 852,
+  "top_months": [
+   "f\u00e9vr.",
+   "ao\u00fbt",
+   "mars"
+  ],
+  "low_months": [
+   "oct.",
+   "nov.",
+   "d\u00e9c."
+  ],
+  "top_hours": [
+   13,
+   12,
+   11,
+   9
+  ],
+  "weekend_share": 0.097,
+  "fr": 75.3,
+  "de": 75.3,
+  "nx_gw": 7.7,
+  "load_gw": 53.5,
+  "nuclear_gw": 41.8,
+  "avail_gw": 46.8,
+  "wind_solar_gw": 9.1,
+  "de_vre": 0.49,
+  "year_avg": {
+   "load_gw": 50.7,
+   "nuclear_gw": 42.6,
+   "wind_solar_gw": 9.4,
+   "nx_gw": 10.5,
+   "de_vre": 0.43
+  },
+  "typical": {
+   "date": "2025-03-16",
+   "hour": 0,
+   "fr": 90.0,
+   "de": 90.0,
+   "be": 90.0,
+   "es": 82.9,
+   "it": 111.1,
+   "nx_gw": 7.8,
+   "load_gw": 61.3,
+   "nuclear_gw": 45.9,
+   "avail_gw": 47.9,
+   "wind_gw": 10.3,
+   "solar_gw": 0.0,
+   "gas_gw": 2.8,
+   "de_vre": 0.29
+  }
+ },
+ "exp_sat": {
+  "year": 2025,
+  "share": 0.661,
+  "hours": 5794,
+  "top_months": [
+   "nov.",
+   "avr.",
+   "sept."
+  ],
+  "low_months": [
+   "f\u00e9vr.",
+   "janv.",
+   "juin"
+  ],
+  "top_hours": [
+   17,
+   18,
+   6,
+   4
+  ],
+  "weekend_share": 0.661,
+  "fr": 57.9,
+  "de": 102.6,
+  "nx_gw": 12.0,
+  "load_gw": 48.6,
+  "nuclear_gw": 42.7,
+  "avail_gw": 46.7,
+  "wind_solar_gw": 9.0,
+  "de_vre": 0.36,
+  "year_avg": {
+   "load_gw": 50.7,
+   "nuclear_gw": 42.6,
+   "wind_solar_gw": 9.4,
+   "nx_gw": 10.5,
+   "de_vre": 0.43
+  },
+  "typical": {
+   "date": "2025-04-29",
+   "hour": 23,
+   "fr": 52.5,
+   "de": 97.8,
+   "be": 96.5,
+   "es": 17.9,
+   "it": 98.9,
+   "nx_gw": 11.8,
+   "load_gw": 45.0,
+   "nuclear_gw": 36.9,
+   "avail_gw": 40.3,
+   "wind_gw": 7.5,
+   "solar_gw": 0.0,
+   "gas_gw": 1.5,
+   "de_vre": 0.15
+  }
+ },
+ "imp_free": {
+  "year": 2022,
+  "share": 0.192,
+  "hours": 1678,
+  "top_months": [
+   "ao\u00fbt",
+   "sept.",
+   "juil."
+  ],
+  "low_months": [
+   "f\u00e9vr.",
+   "oct.",
+   "d\u00e9c."
+  ],
+  "top_hours": [
+   0,
+   7,
+   8,
+   1
+  ],
+  "weekend_share": 0.192,
+  "fr": 331.1,
+  "de": 331.1,
+  "nx_gw": -3.4,
+  "load_gw": 49.0,
+  "nuclear_gw": 29.8,
+  "avail_gw": 31.6,
+  "wind_solar_gw": 4.4,
+  "de_vre": 0.22,
+  "year_avg": {
+   "load_gw": 51.4,
+   "nuclear_gw": 31.8,
+   "wind_solar_gw": 6.5,
+   "nx_gw": -1.9,
+   "de_vre": 0.36
+  },
+  "typical": {
+   "date": "2022-07-24",
+   "hour": 5,
+   "fr": 302.8,
+   "de": 302.8,
+   "be": 302.8,
+   "es": 159.9,
+   "it": 336.4,
+   "nx_gw": -2.9,
+   "load_gw": 33.8,
+   "nuclear_gw": 23.3,
+   "avail_gw": 25.5,
+   "wind_gw": 0.8,
+   "solar_gw": 0.0,
+   "gas_gw": 3.9,
+   "de_vre": 0.21
+  }
+ },
+ "imp_sat": {
+  "year": 2022,
+  "share": 0.397,
+  "hours": 3473,
+  "top_months": [
+   "juil.",
+   "sept.",
+   "juin"
+  ],
+  "low_months": [
+   "f\u00e9vr.",
+   "mai",
+   "d\u00e9c."
+  ],
+  "top_hours": [
+   12,
+   11,
+   13,
+   14
+  ],
+  "weekend_share": 0.397,
+  "fr": 311.0,
+  "de": 230.3,
+  "nx_gw": -4.6,
+  "load_gw": 52.3,
+  "nuclear_gw": 30.6,
+  "avail_gw": 32.4,
+  "wind_solar_gw": 6.4,
+  "de_vre": 0.43,
+  "year_avg": {
+   "load_gw": 51.4,
+   "nuclear_gw": 31.8,
+   "wind_solar_gw": 6.5,
+   "nx_gw": -1.9,
+   "de_vre": 0.36
+  },
+  "typical": {
+   "date": "2022-10-08",
+   "hour": 9,
+   "fr": 268.4,
+   "de": 191.1,
+   "be": 167.5,
+   "es": 114.7,
+   "it": 275.8,
+   "nx_gw": -4.0,
+   "load_gw": 41.7,
+   "nuclear_gw": 25.5,
+   "avail_gw": 28.9,
+   "wind_gw": 1.7,
+   "solar_gw": 1.0,
+   "gas_gw": 5.2,
+   "de_vre": 0.47
+  }
+ }
+}
