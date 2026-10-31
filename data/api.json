@@ -1,6 +1,6 @@
 {
  "name": "PowerKlock data API",
- "updated": "2026-10-30T21:18:37Z",
+ "updated": "2026-10-31T10:37:11Z",
  "usage": "Plain HTTPS GET, JSON, no key. Cite the source of each dataset. Times are Paris delivery days unless stated.",
  "datasets": [
   {
@@ -33,7 +33,7 @@
    "content": "Per zone, every day: average, min, max, negative hours, peak / off-peak, rolling averages.",
    "refresh": "daily",
    "source": "ENTSO-E Transparency Platform",
-   "sizeKB": 18865
+   "sizeKB": 18868
   },
   {
    "url": "https://tomsremy.github.io/PowerKlock/data/history/fr_prices/{YYYY}.json",
@@ -105,7 +105,7 @@
    "content": "Generation mix, CO₂, renewable share and cross-border flows per country, every hour of a day (last 10 days).",
    "refresh": "every 3 hours",
    "source": "Energy-Charts (Fraunhofer ISE) — CC BY 4.0",
-   "example": "https://tomsremy.github.io/PowerKlock/data/map/2026-10-30.json"
+   "example": "https://tomsremy.github.io/PowerKlock/data/map/2026-10-31.json"
   },
   {
    "url": "https://tomsremy.github.io/PowerKlock/data/crossborder.json",
