@@ -391,7 +391,8 @@ en moyenne et plus souvent à zéro.
 - Environ **800 heures** de prix nul ou négatif (pv magazine ; **805** dans notre calcul au quart d'heure), contre
   549 sur toute l'année 2024.
 - Minimum technique du parc nucléaire : **31 GW** le 1er mai 2026, contre **19 GW** un an plus tôt (RTE).
-- L'éolien a gardé sa valeur : **43 % de sa production de janvier à octobre 2026 est tombée de janvier à mars**,
+- L'éolien a gagné de la valeur : capture **0,936 → 0,976** (pricer PowerKlock, convention « curt »,
+  janvier–octobre). **43 % de sa production de janvier à octobre 2026 est tombée de janvier à mars**,
   contre **35 %** en 2025. Plus de vent en hiver, moins en même temps que le soleil.
 
 ![Vent par mois](img/15_vent_saisons.png)
@@ -401,10 +402,12 @@ en moyenne et plus souvent à zéro.
 > - L'éolien a eu de la chance : il a soufflé l'hiver, aux heures chères.
 > - Une année aussi spéciale ne doit pas servir seule de modèle.
 
-**Point incertain.** Le brief parle d'une capture éolienne passée de 0,936 à 0,976. Je retrouve **0,976** pour 2026
-(valeur d'un MWh produit aux heures à prix positif ÷ prix moyen, janvier–octobre), mais **0,971** pour 2025 avec la
-même mesure, pas 0,936. Avec toute la production comptée (non payée aux prix ≤ 0), c'est 0,891 → 0,888 : stable.
-À vérifier ensemble : d'où vient le 0,936 ?
+**D'où vient « 0,936 → 0,976 ».** C'est un calcul PowerKlock (session du pricer, 31 octobre), pas un chiffre RTE :
+RTE ne publie pas de taux de capture de l'éolien dans ses bilans. Convention du pricer (« curt ») : on ne compte que
+les MWh payés (prix > 0), on calcule la capture **mois par mois** avec le prix moyen du mois, puis on fait la moyenne
+des mois pondérée par la production. Résultat sur janvier–octobre : **0,936 en 2025, 0,976 en 2026**. Calculée d'un
+seul bloc sur la période, la même idée donne 0,971 puis 0,976 ; avec toute la production comptée, 0,891 puis 0,888.
+Les chiffres changent avec la définition : il faut toujours dire laquelle on utilise.
 
 **Correction par rapport à nos notes de recherche.** Le débrief du 31 octobre disait que l'accord RTE–EDF fixait
 « un niveau minimum de production nucléaire » et qu'il était la cause probable des erreurs sur 2026. En lisant la
