@@ -1,0 +1,499 @@
+{
+ "2020": {
+  "cases": {
+   "up_coupled": {
+    "hours": 4614,
+    "share": 0.525,
+    "dp": 19.3,
+    "real": 30.4,
+    "iso": 11.1,
+    "nx_gw": 6.8,
+    "bill_bn": 4.37,
+    "rent_bn": 0.22,
+    "rent_per_h_k": 47
+   },
+   "up_cut": {
+    "hours": 1675,
+    "share": 0.191,
+    "dp": 21.2,
+    "real": 24.6,
+    "iso": 3.4,
+    "nx_gw": 8.2,
+    "bill_bn": 1.84,
+    "rent_bn": 0.18,
+    "rent_per_h_k": 109
+   },
+   "flat": {
+    "hours": 1883,
+    "share": 0.214,
+    "dp": 0.8,
+    "real": 39.6,
+    "iso": 38.8,
+    "nx_gw": 1.2,
+    "bill_bn": 0.08,
+    "rent_bn": 0.07,
+    "rent_per_h_k": 39
+   },
+   "down": {
+    "hours": 600,
+    "share": 0.068,
+    "dp": -11.6,
+    "real": 43.7,
+    "iso": 55.3,
+    "nx_gw": -2.5,
+    "bill_bn": -0.35,
+    "rent_bn": 0.03,
+    "rent_per_h_k": 47
+   },
+   "shortage": {
+    "hours": 11,
+    "share": 0.001,
+    "dp": null,
+    "real": 83.2,
+    "iso": null,
+    "nx_gw": -6.2,
+    "bill_bn": null,
+    "rent_bn": 0.0,
+    "rent_per_h_k": 207
+   }
+  },
+  "bill_bn": 5.94,
+  "export_fr_bn": 1.22,
+  "revenue_by_tech_bn": {
+   "Nucl\u00e9aire": 4.96,
+   "Hydraulique": 0.91,
+   "\u00c9olien et solaire": 0.82,
+   "Gaz, charbon, fioul": 0.45,
+   "Bio\u00e9nergies": 0.13
+  },
+  "revenue_total_bn": 7.27,
+  "rent_bn": 0.5,
+  "rent_hours_rent_but_no_rise": 1760
+ },
+ "2021": {
+  "cases": {
+   "up_coupled": {
+    "hours": 5005,
+    "share": 0.571,
+    "dp": 46.0,
+    "real": 95.0,
+    "iso": 49.0,
+    "nx_gw": 7.5,
+    "bill_bn": 10.66,
+    "rent_bn": 0.91,
+    "rent_per_h_k": 182
+   },
+   "up_cut": {
+    "hours": 1352,
+    "share": 0.154,
+    "dp": 45.0,
+    "real": 85.4,
+    "iso": 40.4,
+    "nx_gw": 8.1,
+    "bill_bn": 2.74,
+    "rent_bn": 0.48,
+    "rent_per_h_k": 352
+   },
+   "flat": {
+    "hours": 970,
+    "share": 0.111,
+    "dp": 0.4,
+    "real": 95.7,
+    "iso": 95.3,
+    "nx_gw": 1.0,
+    "bill_bn": 0.02,
+    "rent_bn": 0.16,
+    "rent_per_h_k": 169
+   },
+   "down": {
+    "hours": 1367,
+    "share": 0.156,
+    "dp": -31.1,
+    "real": 181.1,
+    "iso": 212.2,
+    "nx_gw": -2.7,
+    "bill_bn": -2.8,
+    "rent_bn": 0.35,
+    "rent_per_h_k": 257
+   },
+   "shortage": {
+    "hours": 65,
+    "share": 0.007,
+    "dp": null,
+    "real": 380.9,
+    "iso": null,
+    "nx_gw": -9.1,
+    "bill_bn": null,
+    "rent_bn": 0.04,
+    "rent_per_h_k": 551
+   }
+  },
+  "bill_bn": 10.61,
+  "export_fr_bn": 3.04,
+  "revenue_by_tech_bn": {
+   "Nucl\u00e9aire": 10.97,
+   "Hydraulique": 1.03,
+   "\u00c9olien et solaire": 1.46,
+   "Gaz, charbon, fioul": 0.1,
+   "Bio\u00e9nergies": 0.29
+  },
+  "revenue_total_bn": 13.85,
+  "rent_bn": 1.9,
+  "rent_hours_rent_but_no_rise": 930
+ },
+ "2022": {
+  "cases": {
+   "up_coupled": {
+    "hours": 2328,
+    "share": 0.266,
+    "dp": 38.4,
+    "real": 229.8,
+    "iso": 191.4,
+    "nx_gw": 1.4,
+    "bill_bn": 4.27,
+    "rent_bn": 0.96,
+    "rent_per_h_k": 414
+   },
+   "up_cut": {
+    "hours": 707,
+    "share": 0.081,
+    "dp": 45.3,
+    "real": 205.3,
+    "iso": 160.0,
+    "nx_gw": 2.5,
+    "bill_bn": 1.61,
+    "rent_bn": 0.48,
+    "rent_per_h_k": 686
+   },
+   "flat": {
+    "hours": 866,
+    "share": 0.099,
+    "dp": -0.1,
+    "real": 230.8,
+    "iso": 230.9,
+    "nx_gw": -0.6,
+    "bill_bn": -0.01,
+    "rent_bn": 0.42,
+    "rent_per_h_k": 480
+   },
+   "down": {
+    "hours": 4769,
+    "share": 0.544,
+    "dp": -65.0,
+    "real": 312.2,
+    "iso": 377.2,
+    "nx_gw": -3.9,
+    "bill_bn": -16.1,
+    "rent_bn": 3.56,
+    "rent_per_h_k": 745
+   },
+   "shortage": {
+    "hours": 89,
+    "share": 0.01,
+    "dp": null,
+    "real": 536.8,
+    "iso": null,
+    "nx_gw": -8.6,
+    "bill_bn": null,
+    "rent_bn": 0.14,
+    "rent_per_h_k": 1558
+   }
+  },
+  "bill_bn": -10.22,
+  "export_fr_bn": -6.86,
+  "revenue_by_tech_bn": {
+   "Nucl\u00e9aire": -7.45,
+   "Hydraulique": -4.5,
+   "\u00c9olien et solaire": -0.73,
+   "Gaz, charbon, fioul": -4.26,
+   "Bio\u00e9nergies": -0.22
+  },
+  "revenue_total_bn": -17.16,
+  "rent_bn": 5.42,
+  "rent_hours_rent_but_no_rise": 854
+ },
+ "2023": {
+  "cases": {
+   "up_coupled": {
+    "hours": 4262,
+    "share": 0.487,
+    "dp": 42.1,
+    "real": 98.7,
+    "iso": 56.7,
+    "nx_gw": 7.0,
+    "bill_bn": 8.16,
+    "rent_bn": 0.69,
+    "rent_per_h_k": 162
+   },
+   "up_cut": {
+    "hours": 2640,
+    "share": 0.301,
+    "dp": 44.1,
+    "real": 86.3,
+    "iso": 42.1,
+    "nx_gw": 7.8,
+    "bill_bn": 5.47,
+    "rent_bn": 0.81,
+    "rent_per_h_k": 307
+   },
+   "flat": {
+    "hours": 872,
+    "share": 0.1,
+    "dp": 0.6,
+    "real": 81.0,
+    "iso": 80.4,
+    "nx_gw": 3.1,
+    "bill_bn": 0.03,
+    "rent_bn": 0.27,
+    "rent_per_h_k": 313
+   },
+   "down": {
+    "hours": 947,
+    "share": 0.108,
+    "dp": -23.9,
+    "real": 127.9,
+    "iso": 151.8,
+    "nx_gw": -2.3,
+    "bill_bn": -1.43,
+    "rent_bn": 0.28,
+    "rent_per_h_k": 296
+   },
+   "shortage": {
+    "hours": 38,
+    "share": 0.004,
+    "dp": null,
+    "real": 213.2,
+    "iso": null,
+    "nx_gw": -7.7,
+    "bill_bn": null,
+    "rent_bn": 0.01,
+    "rent_per_h_k": 186
+   }
+  },
+  "bill_bn": 12.23,
+  "export_fr_bn": 4.07,
+  "revenue_by_tech_bn": {
+   "Nucl\u00e9aire": 11.35,
+   "Hydraulique": 1.68,
+   "\u00c9olien et solaire": 2.52,
+   "Gaz, charbon, fioul": 0.61,
+   "Bio\u00e9nergies": 0.32
+  },
+  "revenue_total_bn": 16.48,
+  "rent_bn": 2.05,
+  "rent_hours_rent_but_no_rise": 856
+ },
+ "2024": {
+  "cases": {
+   "up_coupled": {
+    "hours": 3403,
+    "share": 0.387,
+    "dp": 45.2,
+    "real": 69.3,
+    "iso": 24.1,
+    "nx_gw": 10.5,
+    "bill_bn": 7.83,
+    "rent_bn": 1.03,
+    "rent_per_h_k": 302
+   },
+   "up_cut": {
+    "hours": 4362,
+    "share": 0.497,
+    "dp": 43.3,
+    "real": 58.2,
+    "iso": 14.9,
+    "nx_gw": 11.0,
+    "bill_bn": 9.16,
+    "rent_bn": 1.87,
+    "rent_per_h_k": 428
+   },
+   "flat": {
+    "hours": 807,
+    "share": 0.092,
+    "dp": 1.4,
+    "real": 18.6,
+    "iso": 17.2,
+    "nx_gw": 7.2,
+    "bill_bn": 0.05,
+    "rent_bn": 0.36,
+    "rent_per_h_k": 450
+   },
+   "down": {
+    "hours": 211,
+    "share": 0.024,
+    "dp": -20.0,
+    "real": 23.9,
+    "iso": 43.9,
+    "nx_gw": 1.2,
+    "bill_bn": -0.22,
+    "rent_bn": 0.08,
+    "rent_per_h_k": 360
+   },
+   "shortage": {
+    "hours": 0,
+    "share": 0.0,
+    "dp": null,
+    "real": null,
+    "iso": null,
+    "nx_gw": null,
+    "bill_bn": null,
+    "rent_bn": 0.0,
+    "rent_per_h_k": null
+   }
+  },
+  "bill_bn": 16.81,
+  "export_fr_bn": 5.19,
+  "revenue_by_tech_bn": {
+   "Nucl\u00e9aire": 15.42,
+   "Hydraulique": 3.03,
+   "\u00c9olien et solaire": 2.57,
+   "Gaz, charbon, fioul": 0.81,
+   "Bio\u00e9nergies": 0.41
+  },
+  "revenue_total_bn": 22.24,
+  "rent_bn": 3.33,
+  "rent_hours_rent_but_no_rise": 797
+ },
+ "2025": {
+  "cases": {
+   "up_coupled": {
+    "hours": 3575,
+    "share": 0.408,
+    "dp": 44.8,
+    "real": 73.9,
+    "iso": 29.1,
+    "nx_gw": 10.9,
+    "bill_bn": 8.34,
+    "rent_bn": 1.58,
+    "rent_per_h_k": 441
+   },
+   "up_cut": {
+    "hours": 4091,
+    "share": 0.467,
+    "dp": 44.0,
+    "real": 61.4,
+    "iso": 17.4,
+    "nx_gw": 11.4,
+    "bill_bn": 8.93,
+    "rent_bn": 2.36,
+    "rent_per_h_k": 578
+   },
+   "flat": {
+    "hours": 897,
+    "share": 0.102,
+    "dp": 0.7,
+    "real": 14.5,
+    "iso": 13.8,
+    "nx_gw": 8.0,
+    "bill_bn": 0.03,
+    "rent_bn": 0.51,
+    "rent_per_h_k": 570
+   },
+   "down": {
+    "hours": 196,
+    "share": 0.022,
+    "dp": -21.5,
+    "real": 34.3,
+    "iso": 55.9,
+    "nx_gw": 2.2,
+    "bill_bn": -0.21,
+    "rent_bn": 0.06,
+    "rent_per_h_k": 324
+   },
+   "shortage": {
+    "hours": 0,
+    "share": 0.0,
+    "dp": null,
+    "real": null,
+    "iso": null,
+    "nx_gw": null,
+    "bill_bn": null,
+    "rent_bn": 0.0,
+    "rent_per_h_k": null
+   }
+  },
+  "bill_bn": 17.08,
+  "export_fr_bn": 5.51,
+  "revenue_by_tech_bn": {
+   "Nucl\u00e9aire": 16.19,
+   "Hydraulique": 2.62,
+   "\u00c9olien et solaire": 2.79,
+   "Gaz, charbon, fioul": 0.83,
+   "Bio\u00e9nergies": 0.42
+  },
+  "revenue_total_bn": 22.85,
+  "rent_bn": 4.52,
+  "rent_hours_rent_but_no_rise": 880
+ },
+ "2026": {
+  "cases": {
+   "up_coupled": {
+    "hours": 2896,
+    "share": 0.4,
+    "dp": 64.6,
+    "real": 114.2,
+    "iso": 49.6,
+    "nx_gw": 10.9,
+    "bill_bn": 8.91,
+    "rent_bn": 1.34,
+    "rent_per_h_k": 464
+   },
+   "up_cut": {
+    "hours": 3107,
+    "share": 0.429,
+    "dp": 61.1,
+    "real": 94.6,
+    "iso": 33.5,
+    "nx_gw": 11.3,
+    "bill_bn": 9.14,
+    "rent_bn": 2.14,
+    "rent_per_h_k": 689
+   },
+   "flat": {
+    "hours": 1026,
+    "share": 0.142,
+    "dp": 0.5,
+    "real": 15.2,
+    "iso": 14.7,
+    "nx_gw": 10.2,
+    "bill_bn": 0.03,
+    "rent_bn": 0.85,
+    "rent_per_h_k": 832
+   },
+   "down": {
+    "hours": 202,
+    "share": 0.028,
+    "dp": -40.8,
+    "real": 14.1,
+    "iso": 55.0,
+    "nx_gw": 3.5,
+    "bill_bn": -0.39,
+    "rent_bn": 0.12,
+    "rent_per_h_k": 574
+   },
+   "shortage": {
+    "hours": 15,
+    "share": 0.002,
+    "dp": null,
+    "real": 153.3,
+    "iso": null,
+    "nx_gw": -5.3,
+    "bill_bn": null,
+    "rent_bn": 0.0,
+    "rent_per_h_k": 266
+   }
+  },
+  "bill_bn": 17.7,
+  "export_fr_bn": 6.26,
+  "revenue_by_tech_bn": {
+   "Nucl\u00e9aire": 17.03,
+   "Hydraulique": 2.54,
+   "\u00c9olien et solaire": 3.23,
+   "Gaz, charbon, fioul": 0.93,
+   "Bio\u00e9nergies": 0.43
+  },
+  "revenue_total_bn": 24.16,
+  "rent_bn": 4.45,
+  "rent_hours_rent_but_no_rise": 1021
+ }
+}
