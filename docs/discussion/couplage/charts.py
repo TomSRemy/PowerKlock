@@ -148,3 +148,17 @@ e = C['cv'][sel] - D['p_FR'][sel]
 ax.text(-50, 200, f'Heures coupées 2024–2026 : {sel.sum():,} h\nécart moyen absolu {np.mean(np.abs(e)):.0f} €/MWh\nbiais moyen {np.mean(e):+.1f} €/MWh'.replace(',', ' '), fontsize=8.5, va='top', color=INK)
 save('validation.png')
 print('ok')
+
+# ── observed prices by coupling case, 2025 (4-slide deck) ───────────────────
+cases = [('core', 'Couplée avec\nBelgique + Allemagne'), ('partial', 'Couplée avec\nl’Espagne seulement'), ('cut_mid', 'Coupée de tous,\nentre ses voisins'), ('cut_exp', 'Coupée de tous,\nla moins chère')]
+sp = U['2025']['state_prices']; sh = U['2025']['shares']
+fig, ax = plt.subplots(figsize=(8.6, 4.8)); x = np.arange(len(cases))
+fr_ = [sp[k]['FR'] for k, _ in cases]; de_ = [sp[k]['DE_LU'] for k, _ in cases]
+ax.bar(x - .2, fr_, .4, color=BLUE, label='Prix France'); ax.bar(x + .2, de_, .4, color=GREY, label='Prix Allemagne')
+for i, (k, _) in enumerate(cases):
+    ax.text(x[i] - .2, fr_[i] + 2, f'{fr_[i]:.0f}', ha='center', fontsize=9, color=INK)
+    ax.text(x[i] + .2, de_[i] + 2, f'{de_[i]:.0f}', ha='center', fontsize=9, color=INK)
+    ax.text(x[i], -14, f'{sh[k] * 100:.0f} % des heures', ha='center', fontsize=8.5, color=INK)
+ax.set_xticks(x); ax.set_xticklabels([l for _, l in cases], fontsize=8.5); ax.set_ylabel('prix spot moyen 2025, €/MWh')
+ax.set_ylim(-20, 115); ax.axhline(0, color='#b9bcc2', lw=.8); clean(ax); ax.legend(frameon=False, loc='upper right', fontsize=8.5)
+save('state_prices.png')

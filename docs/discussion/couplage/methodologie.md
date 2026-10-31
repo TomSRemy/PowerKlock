@@ -210,3 +210,24 @@ tenor Y+1) au spot réalisé, en France et en Allemagne. L'écart Cal France −
 (2024 : 99,8 coté, 58,0 réalisé ; 2026 : 59,5 coté, 90,1 réalisé sur janvier–octobre). Le forward d'une France
 isolée n'a jamais existé : **l'effet du couplage sur la facture n'est pas chiffré**, seul le canal est montré. Le
 montant « +17 Md€ » est une valeur au prix spot de la consommation, pas une facture.
+
+## 7. Comparaison observée, sans modèle (`observed.py`, `observed.json`)
+
+Heures couplées avec Core (prix France = Belgique = Allemagne) comparées aux heures coupées de tous les voisins, **à
+situation française égale** : même année, même trimestre, même moment de la journée (nuit 0–7 h, jour 8–17 h, soir
+18–23 h), même surplus français à nucléaire plein (nucléaire disponible + éolien + solaire + fil de l'eau + bio −
+consommation, tranches de 2 GW). Une case doit compter au moins 10 heures de chaque état. L'écart est pondéré par les
+heures coupées de chaque case.
+
+| Année | France couplée (brut) | France coupée (brut) | Écart à situation égale | Heures coupées comparées |
+|---|---|---|---|---|
+| 2023 | 99,4 € | 86,3 € | +8,8 € | 66 % |
+| 2024 | 67,5 € | 53,7 € | +1,7 € | 39 % |
+| 2025 | 74,1 € | 56,1 € | −1,8 € | 23 % |
+
+L'écart brut (18 € en 2025) vient surtout de conditions différentes. À situation française égale, être couplée ou
+coupée change peu le prix : le prix français dépend d'abord de son surplus. Ce chiffre est observé, mais il ne
+mesure pas ce que serait une France sans échanges. Dans les deux états, la France échange, et à situation française
+égale, c'est le prix des voisins qui décide si elle les rejoint. Le prix « France isolée » (§ 2) reste la seule
+estimation de ce monde-là : c'est une borne théorique, présentée en annexe dans le jeu de diapos court
+(`couplage_4_diapos.pdf`, `deck4.py`).

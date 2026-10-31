@@ -12,7 +12,7 @@ def n(v, d=0):
 pc = lambda v: f"{v * 100:.0f} %"
 u = U['2025']; u24 = U['2024']; u26 = U['2026']; u22 = U['2022']; u23 = U['2023']; d25 = DR['2025']
 slides = []
-VALID_NOTE = 'France isolée : estimation de modèle, jamais observée ; erreur ± 15 à 20 €/MWh sur une heure, biais annuel +0,6 à +2,6 €/MWh en 2020–2025, +8 € en 2026 (page 13).'
+VALID_NOTE = 'France isolée : estimation de modèle, jamais observée ; erreur ± 15 à 20 €/MWh sur une heure, biais annuel +0,6 à +2,6 €/MWh en 2020–2025, +8 € en 2026 (page 14).'
 def sl(title, body, kicker=''):
     slides.append(f'<section><div class="k">{kicker}</div><h1>{title}</h1><div class="b">{body}</div><div class="f">PowerKlock · couplage des marchés</div></section>')
 
@@ -28,8 +28,8 @@ rows = ''.join(f"<tr><td>{U[y]['label']}</td><td>{n(U[y]['real'])}</td><td>{n(U[
 sl('La réponse en une page', f'''<div class="verdict">Probablement oui pour le prix spot, les années où la France exporte (presque toutes) ; non en 2022.</div>
 <table class="num"><tr><th>Année</th><th>Prix réel<br><span>€/MWh</span></th><th>France isolée<br><span>€/MWh, modèle</span></th><th>Écart moyen<br><span>€/MWh</span></th>
 <th>Heures où le<br>prix monte</th><th>de combien<br><span>€/MWh</span></th><th>Heures où le<br>prix baisse</th><th>de combien<br><span>€/MWh</span></th><th>Pas d’effet<br><span>moins de 5 €</span></th></tr>{rows}</table>
-<p class="sm" style="margin-top:14px">L’argent payé en plus ne disparaît pas : en 2025, la consommation française vaut 17,1 Md€ de plus au prix spot (ce n’est pas la facture : page 25), les acheteurs étrangers paient 10,0 Md€ pour les exports, et le nucléaire (EDF, détenue à 100 % par l’État) reçoit 16,2 Md€, l’éolien et le solaire 2,8 Md€ (ce qui allège d’autant le soutien public des parcs sous contrat), la rente de congestion 4,5 Md€ (moitié RTE, dont l’excédent baisse le TURPE). Pages 16 à 19.</p>
-<p class="note">{VALID_NOTE} Même parc et même consommation dans les deux mondes ; hors heures de pénurie de la France isolée (0 à 89 h par an, page 21). Sources : ENTSO-E, RTE éCO2mix, JAO, Energy-Charts ; calcul PowerKlock.</p>''', 'La réponse')
+<p class="sm" style="margin-top:14px">L’argent payé en plus ne disparaît pas : en 2025, la consommation française vaut 17,1 Md€ de plus au prix spot (ce n’est pas la facture : page 26), les acheteurs étrangers paient 10,0 Md€ pour les exports, et le nucléaire (EDF, détenue à 100 % par l’État) reçoit 16,2 Md€, l’éolien et le solaire 2,8 Md€ (ce qui allège d’autant le soutien public des parcs sous contrat), la rente de congestion 4,5 Md€ (moitié RTE, dont l’excédent baisse le TURPE). Pages 17 à 20.</p>
+<p class="note">{VALID_NOTE} Même parc et même consommation dans les deux mondes ; hors heures de pénurie de la France isolée (0 à 89 h par an, page 22). Sources : ENTSO-E, RTE éCO2mix, JAO, Energy-Charts ; calcul PowerKlock.</p>''', 'La réponse')
 
 # 3–6 ── basics (kept)
 sl('Le principe en trois règles', '''
@@ -72,7 +72,7 @@ c = S
 sl('France et Allemagne : des prix de plus en plus séparés', f'''<div class="two"><div><img src="{img('hours.png')}"></div><div>
 <ul><li>Heures où la France est moins chère que l’Allemagne d’au moins 5 € : <b>{n(c['2021']['cut'])} en 2021 → {n(c['2025']['cut'])} en 2025</b> (63 % de l’année).</li>
 <li>En 2022, l’inverse : la moitié du nucléaire à l’arrêt, la France plus chère {n(c['2022']['above'])} heures, elle importe.</li>
-<li><b>Attention</b> : en 2024–2025, les heures où la France est plus chère que l’Allemagne ne sont <b>pas</b> des heures où elle manque (page 17).</li>
+<li><b>Attention</b> : en 2024–2025, les heures où la France est plus chère que l’Allemagne ne sont <b>pas</b> des heures où elle manque (page 18).</li>
 <li>La limite d’export de la France dans Core (JAO) baisse : <b>9,2 GW en 2023 → 5,4 GW en 2025</b> en moyenne horaire.</li></ul>
 <p class="note">Sources : ENTSO-E, JAO ; calcul PowerKlock.</p></div></div>''', 'Les faits')
 
@@ -112,8 +112,17 @@ sl('2025 : combien d’heures, à quel prix, dans chaque état', f'''<table clas
 </table>
 <ul class="sm" style="margin-top:22px"><li>Plus la France est coupée, plus son prix est bas : {n(sp['core']['FR'])} € couplée, <b>{n(sp['cut_exp']['FR'])} €</b> quand elle est la moins chère de tous (l’Allemagne est alors à {n(sp['cut_exp']['DE_LU'])} €).</li>
 <li>Mais même là, elle exporte <b>{n(u['state_nx']['cut_exp'], 1)} GW</b> en moyenne : sans ces exports, son prix serait de l’ordre de {n(by['cut_exp']['iso'])} € (modèle).</li>
-<li>Les états sont comptés au quart d’heure ; le prix « France isolée » est horaire (page 12).</li></ul>
+<li>Les états sont comptés au quart d’heure ; le prix « France isolée » est horaire (page 13).</li></ul>
 <p class="note">Export net : échanges commerciaux programmés (ENTSO-E via Energy-Charts). Sources : ENTSO-E, Elexon ; calcul PowerKlock.</p>''', 'Les états de couplage')
+
+# 11b ── observed comparison
+O = json.load(open('observed.json'))
+orows = ''.join(f"<tr><td>{U[y]['label']}</td><td>{n(O[y]['raw_coupled'])} €</td><td>{n(O[y]['raw_cut'])} €</td><td>{n(O[y]['raw_de_in_cut'])} €</td><td><b>{O[y]['gap_coupled_minus_cut']:+.0f} €</b></td><td>{pc(O[y]['coverage'])}</td></tr>" for y in ys)
+sl('Sans modèle : couplée ou coupée, à situation française égale', f'''<table class="num"><tr><th>Année</th><th>France couplée<br><span>avec Core, moyenne brute</span></th><th>France coupée<br><span>moyenne brute</span></th><th>Allemagne<br><span>pendant ces heures coupées</span></th><th>Écart à situation égale<br><span>couplée − coupée</span></th><th>Heures coupées comparées</th></tr>{orows}</table>
+<ul class="sm" style="margin-top:14px"><li>Moyennes brutes : la France couplée paie plus cher que coupée (74 contre 56 € en 2025), mais ce ne sont pas les mêmes heures (vent, saison, consommation).</li>
+<li>À situation française égale (même année, trimestre, moment de la journée, surplus français par tranches de 2 GW), l’écart tombe à <b>−2 à +9 €/MWh en 2023–2025</b>. Le prix français dépend d’abord de son surplus ; le couplage décide surtout s’il rejoint ses voisins ou non.</li>
+<li>Ce chiffre est observé, sans modèle ; il ne dit pas ce que serait une France sans aucun échange (pages 13–16, borne théorique).</li></ul>
+<p class="note">Sources : ENTSO-E, RTE éCO2mix, ENTSO-E (nucléaire disponible) ; calcul PowerKlock (observed.py).</p>''', 'Les états de couplage')
 
 # 12 ── method
 sl('Comment estimer le prix d’une France isolée', '''<div class="two"><div>
@@ -135,13 +144,13 @@ sl('Validation : le modèle retrouve-t-il le prix des heures coupées ?', f'''<d
 <li>Le biais est positif chaque année : le prix isolé est plutôt <b>surestimé</b>, donc l’effet du couplage plutôt sous-estimé (surtout 2026 : +8 €).</li></ul></div></div>''', 'Le contrefactuel')
 
 # 14 ── result
-sl('Résultat : le prix réel contre celui d’une France isolée', f'''<div class="two"><div><img src="{img('real_vs_iso.png')}"></div><div>
+sl('Borne théorique : le prix réel contre celui d’une France isolée (modèle)', f'''<div class="two"><div><img src="{img('real_vs_iso.png')}"></div><div>
 <ul><li>2020–2021 : le couplage ajoute <b>14 puis 29 €/MWh</b> au prix français.</li>
 <li>2022 : l’inverse, <b>−22 €/MWh</b> : la France importe, les voisins font baisser son prix (et couvrent {u22['shortage_hours']} heures où elle aurait manqué d’énergie).</li>
 <li>2024–2025 : <b>+39 et +38 €/MWh</b>. Une France isolée aurait eu {n(u24['iso'])} et {n(u['iso'])} €/MWh : avec 90 TWh de trop, son nucléaire aurait modulé en permanence et elle aurait écrêté {n(u24['curtail_twh'], 1)} et {n(u['curtail_twh'], 1)} TWh.</li>
 <li>2026 (janv.–oct.) : <b>+51 €/MWh</b> : le gaz est cher chez les voisins, la France exporte toujours ~11 GW.</li>
 <li><b>Le paradoxe</b> : la France est de plus en plus coupée de l’Allemagne, mais l’écart avec une France isolée grandit, car elle a de plus en plus à exporter.</li></ul>
-<p class="note">Moyenne horaire hors heures de pénurie de la France isolée. Robustesse 2025 : 17 à 25 €/MWh selon le plancher d’écrêtement et le jeu d’apprentissage (page 29). Calcul PowerKlock.</p></div></div>''', 'Le résultat')
+<p class="note">Moyenne horaire hors heures de pénurie de la France isolée. Robustesse 2025 : 17 à 25 €/MWh selon le plancher d’écrêtement et le jeu d’apprentissage (page 30). Calcul PowerKlock.</p></div></div>''', 'Le résultat')
 
 # 15 ── monthly
 sl('Mois par mois, 2023 – octobre 2026', f'''<img class="wide" src="{img('monthly.png')}">
@@ -169,7 +178,7 @@ sl('Les heures, année par année', f'''<table class="num sm"><tr><th>Année</th
 r5 = F['2025']['revenue_by_tech_bn']
 sl('Où va l’argent (2025)', f'''<div class="two"><div>
 <table class="num sm"><tr><th>D’où vient l’argent (couplage comparé à France isolée)</th><th>Md€</th></tr>
-<tr><td>Consommation française, valeur au prix spot en plus <span style="color:#8a8f98">(pas la facture, page 25)</span></td><td>{n(F['2025']['bill_bn'], 1)}</td></tr>
+<tr><td>Consommation française, valeur au prix spot en plus <span style="color:#8a8f98">(pas la facture, page 26)</span></td><td>{n(F['2025']['bill_bn'], 1)}</td></tr>
 <tr><td>Acheteurs étrangers, pour les exports français</td><td>{n(u['export_value_nb'], 1)}</td></tr>
 <tr><th>Qui reçoit</th><th>Md€</th></tr>
 <tr><td>Nucléaire</td><td>{n(r5['Nucléaire'], 1)}</td></tr><tr><td>Hydraulique</td><td>{n(r5['Hydraulique'], 1)}</td></tr>
@@ -184,9 +193,9 @@ sl('Où va l’argent (2025)', f'''<div class="two"><div>
 # 19 ── where the money goes, every year
 fy = ''.join(f"<tr><td>{U[y]['label']}</td><td>{n(F[y]['bill_bn'], 1)}</td><td>{n(U[y]['export_value_nb'], 1)}</td><td>{n(F[y]['revenue_by_tech_bn']['Nucléaire'], 1)}</td><td>{n(F[y]['revenue_by_tech_bn']['Hydraulique'], 1)}</td><td>{n(F[y]['revenue_by_tech_bn']['Éolien et solaire'], 1)}</td><td>{n(F[y]['revenue_by_tech_bn']['Gaz, charbon, fioul'] + F[y]['revenue_by_tech_bn']['Bioénergies'], 1)}</td><td>{n(U[y]['rent'], 1)}</td></tr>" for y in ys)
 sl('Où va l’argent, année par année', f'''<table class="num"><tr><th>Md€</th><th>Consommation française<br><span>valeur au prix spot</span></th><th>Acheteurs étrangers<br><span>exports</span></th><th>Nucléaire<br><span>EDF (État)</span></th><th>Hydraulique</th><th>Éolien, solaire<br><span>allège le soutien public</span></th><th>Gaz, charbon,<br>fioul, bio</th><th>Rente<br><span>deux côtés</span></th></tr>{fy}</table>
-<ul class="sm" style="margin-top:14px"><li>Lecture : en 2025, la consommation française vaut 17,1 Md€ de plus au prix spot et les acheteurs étrangers paient 10,0 Md€ ; le nucléaire encaisse 16,2 Md€ de plus. La facture, elle, passe par les prix à terme (page 25).</li>
+<ul class="sm" style="margin-top:14px"><li>Lecture : en 2025, la consommation française vaut 17,1 Md€ de plus au prix spot et les acheteurs étrangers paient 10,0 Md€ ; le nucléaire encaisse 16,2 Md€ de plus. La facture, elle, passe par les prix à terme (page 26).</li>
 <li>2022 : tout s’inverse. La France importe : la consommation française vaut 10,2 Md€ de moins au prix spot, les producteurs encaissent moins, et les exports nets sont négatifs (la France paie l’étranger).</li>
-<li>Ce sont des montants au prix spot : la facture des ménages suit avec un à deux ans de retard et passe par l’ARENH puis le VNU (pages 24–25).</li></ul>
+<li>Ce sont des montants au prix spot : la facture des ménages suit avec un à deux ans de retard et passe par l’ARENH puis le VNU (pages 25–26).</li></ul>
 <p class="note">{VALID_NOTE} Hors heures de pénurie. Calcul PowerKlock.</p>''', 'Où va l’argent')
 
 # 18 ── congestion rent by border + checks
@@ -216,7 +225,7 @@ sl('Pourquoi la France s’est coupée de plus en plus', f'''<div class="two"><d
 <ul class="sm"><li><b>Plus de surplus</b> : nucléaire disponible {n(DR['2022']['nuclear_avail_gw'], 1)} GW en 2022 → {n(d25['nuclear_avail_gw'], 1)} GW en 2025 ; éolien + solaire {n(DR['2022']['wind_solar_gw'], 1)} → {n(d25['wind_solar_gw'], 1)} GW en moyenne ; consommation basse ({n(d25['load_gw'], 1)} GW en moyenne en 2025), « en retrait par rapport aux niveaux d’avant-crise » (RTE).</li>
 <li><b>Moins de place sur les lignes Core</b> : la limite d’export de la France (JAO maxNetPos) passe de 9,2 GW (2023) à 7,7 (2024) puis 5,4 (2025). Elle sort du calcul flow-based (en place depuis le 8 juin 2022), qui tient compte des lignes les plus chargées de toute la zone.</li>
 <li><b>Des lignes Core sous-utilisées</b> : selon l’ACER, les gestionnaires de Core n’ont offert en 2024 que 54 % de la capacité de leurs lignes les plus congestionnées, contre 70 % exigés par le droit européen ; atteindre 70 % aurait rapporté au moins 580 M€.</li>
-<li><b>Le vent et le soleil allemands</b> : quand ils débordent, c’est l’Allemagne qui passe sous la France (page 17).</li>
+<li><b>Le vent et le soleil allemands</b> : quand ils débordent, c’est l’Allemagne qui passe sous la France (page 18).</li>
 <li>RTE : exports « dans la limite des capacités d’interconnexion et des capacités de transit des réseaux nationaux ».</li></ul>
 <p class="note">Nous n’avons pas trouvé de source publique qui chiffre la part de chaque cause dans la baisse de la limite JAO. Sources : RTE, Bilan électrique 2025 ; ACER, communiqué du 5 septembre 2025 ; JAO ; ENTSO-E ; calcul PowerKlock.</p></div></div>''', 'Les causes')
 
@@ -250,7 +259,7 @@ sl('Du spot au forward : comment le couplage atteint (ou pas) la facture', f'''<
 sl('« L’Europe a fait monter le prix de l’électricité en France » : vrai ?', f'''<div class="verdict">Probablement oui pour le prix spot, quand la France exporte. Mais l’argent reste en grande partie en France.</div><ul class="lg">
 <li><b>Le sens de l’effet est solide</b> : un pays qui exporte voit son prix tiré vers celui de ses acheteurs (théorie du commerce ; la CRE écrit qu’un prix français baissé artificiellement « aurait conduit à des exports massifs vers les pays voisins »).</li>
 <li><b>L’ordre de grandeur est une estimation de modèle</b> : +30 à +40 €/MWh en 2023–2025, +51 € en 2026, −22 € en 2022. Aucune étude publiée ne le confirme ni ne le contredit pour la France.</li>
-<li><b>Pour le client, c’est indirect</b> : il paie des prix à terme, qui anticipent ce spot couplé ; l’effet sur la facture n’est pas mesurable directement (page 25).</li>
+<li><b>Pour le client, c’est indirect</b> : il paie des prix à terme, qui anticipent ce spot couplé ; l’effet sur la facture n’est pas mesurable directement (page 26).</li>
 <li><b>L’argent ne disparaît pas</b> : il va surtout à EDF (État actionnaire unique), allège le soutien public aux renouvelables, et la rente de RTE baisse le TURPE. Les acheteurs étrangers paient en plus ~10 Md€ par an.</li>
 <li><b>Ce n’est pas « de moins en moins vrai »</b> (version précédente, corrigée) : plus souvent coupée de l’Allemagne, la France exporte plus que jamais, et son prix reste au-dessus de celui d’une France isolée.</li></ul>
 <p class="note">{VALID_NOTE}</p>''', 'La question')
