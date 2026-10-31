@@ -52,8 +52,9 @@
     'markets/fuels/ttf': { page: 'euafwd', tab: 1 },
     'markets/fuels/spreads': { page: 'spark' },
     'markets/go': { page: 'goprices', go: 'eu' },
-    'markets/bess': { page: 'bess' },
+    'markets/bess': { page: 'bess', tab: 0 },   // opens on Europe: the index view is reached from Tools (note 87)
     'tools/bess': { page: 'bess' },   // the first address of the page (27 Oct.), kept for shared links
+    'tools/bess-index': { page: 'bess', tab: 6 },   // the BESS index view, from the Tools menu (note 87)
     'markets/go/auctions': { page: 'goprices', go: 'auctions' },
     'renewables/capture': { page: 'renewables', tab: 0 },
     'renewables/m0': { page: 'renewables', tab: 2 },
@@ -92,7 +93,7 @@
     ['Markets', [
       ['markets/spot', 'Power spot', 'prices', [['markets/spot/overview', 'Overview'], ['markets/spot', 'Day-ahead'], ['markets/spot/negative', 'Negative prices'], ['markets/spot/spread', 'Spreads'], ['markets/spot/imbalance', 'Imbalance']]],
       ['markets/forwards', 'Power forwards', 'forward'],
-      ['markets/fuels', 'Gas, carbon & oil', 'eua', [['markets/fuels', 'Spot prices'], ['markets/fuels/forwards', 'Forward curves'], ['markets/fuels/ttf', 'TTF forwards'], ['markets/fuels/spreads', 'Spark & dark spreads']]],
+      ['markets/fuels', 'Gas, carbon & oil', 'eua', [['markets/fuels', 'Spot prices'], ['markets/fuels/forwards', 'Forward curves'], ['markets/fuels/spreads', 'Spark & dark spreads']]],   // TTF forwards: same page, now one entry (notes 47, 48, 93); its address stays
       ['markets/go', 'Guarantees of origin', 'goprices', [['markets/go', 'EU prices'], ['markets/go/auctions', 'France auctions']]],
       ['markets/bess', 'Batteries (BESS)', 'bess'],
     ]],
@@ -109,7 +110,6 @@
       ['system/weather', 'Weather', 'wxcities', [['system/weather', 'Cities & outlook'], ['system/weather/hdd', 'HDD / CDD']]],
       ['system/bilan', 'Yearly review', 'genmix'],
       ['system/carbon', 'Carbon intensity', 'carbonintensity'],
-      ['system/replay', 'Replay a day', 'replay'],
     ]],
     ['Tools', [
       ['tools/ppa', 'PPA pricer', 'ppa'],
@@ -117,6 +117,8 @@
       ['tools/forecast', 'Production forecast', 'fcst'],
       ['tools/carbon', 'Carbon footprint', 'carbonfoot'],
       ['intel/analysis', 'Market analysis', 'analysis'],   // a tool more than news (note 19); its address stays
+      ['system/replay', 'Replay a day', 'replay'],   // a tool (note 110); its address stays
+      ['tools/bess-index', 'BESS index', 'bess'],      // the battery index as a tool (note 87); also a tab of Batteries
       ['tools/compare', 'Comparator', 'compare'],
       ['tools/converter', 'Converter', 'converter'],
     ]],
@@ -136,6 +138,7 @@
     if (group) { bars.push({ entry: route, label, sec, group }); group.forEach(([r]) => { owner[r] = route; }); }
   }));
   FOOT.forEach(([r]) => { owner[r] = r; });
+  owner['markets/fuels/ttf'] = 'markets/fuels';   // no menu entry of its own any more (notes 47, 93): its group lights
 
   // ── build: the previous menu's look (sections with a chevron, groups as a tree with the green path), new order ──
   const keep = nav.querySelector('.sidebar-dash-switch');
@@ -296,6 +299,8 @@
     if (id === 'goprices') return curGo() === 'auctions' ? 'markets/go/auctions' : 'markets/go';
     if (id === 'renewables') return current === 'renewables/m0' ? 'renewables/m0' : 'renewables/capture';
     if (id === 'euafwd') return current === 'markets/fuels/ttf' ? 'markets/fuels/ttf' : 'markets/fuels/forwards';
+    // Batteries: its last view, the index, belongs to Tools › BESS index (note 87)
+    if (id === 'bess') { const t = viewTabs(), i = t.findIndex(b => b.classList.contains('active')); return t.length && i === t.length - 1 ? 'tools/bess-index' : 'markets/bess'; }
     return Object.keys(R).find(r => R[r].page === id && R[r].tab == null && !R[r].sub && !R[r].go) || null;
   }
 
@@ -404,7 +409,7 @@
   window.pkGo = route => go(route, true);
 
   // an address may carry settings after the page (#tools/compare?s=…): kept for the page, which reads them once
-  const routeOfHash = () => { const m = location.hash.match(/^#([a-z0-9/]+)(?:\?([^#]*))?$/); if (!m || !R[m[1]]) return null; if (m[2]) { window.pkHashRoute = m[1]; window.pkHashParams = Object.fromEntries(new URLSearchParams(m[2])); } else if (window.pkHashParams) delete window.pkHashParams.v; return m[1]; };
+  const routeOfHash = () => { const m = location.hash.match(/^#([a-z0-9/-]+)(?:\?([^#]*))?$/); if (!m || !R[m[1]]) return null; if (m[2]) { window.pkHashRoute = m[1]; window.pkHashParams = Object.fromEntries(new URLSearchParams(m[2])); } else if (window.pkHashParams) delete window.pkHashParams.v; return m[1]; };
   const foreignHash = () => /^#(board|solo)=|access_token=|error_description=/.test(location.hash);
 
   // a click on any menu or bar link
