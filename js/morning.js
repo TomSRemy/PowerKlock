@@ -766,11 +766,12 @@ function _mrnReel(el, kind) {
   const src = k => 'reel.html?r=' + k + (_mrnFr() ? '' : '#en');
   el.innerHTML = '<div class="mrn-reel-tabs" role="tablist">' + _MRN_REELS.map(([k, fr, en]) =>
       `<button type="button" role="tab" class="mrn-reel-tab${k === k0 ? ' on' : ''}" data-k="${k}" aria-selected="${k === k0}">${_mT(fr, en)}</button>`).join('') +
-    '</div><div class="mrn-reel-frame"><iframe loading="lazy" title="' + _mT('Réel du matin', 'Morning reel') + '" src="' + src(k0) + '"></iframe></div>';
-  const fr = el.querySelector('iframe');
+    '</div><div class="mrn-reel-frame"><iframe loading="lazy" title="' + _mT('Réel du matin', 'Morning reel') + '" src="' + src(k0) + '"></iframe></div>' +
+    '<p class="fuel-note mrn-reel-note">' + _mT('Joué en boucle avec les chiffres du jour', 'Looping with today’s figures') + ' · <a class="mrn-reel-open" target="_blank" rel="noopener" href="' + src(k0) + '">' + _mT('Ouvrir en plein écran', 'Open full screen') + ' ↗</a></p>';
+  const fr = el.querySelector('iframe'), op = el.querySelector('.mrn-reel-open');
   el.querySelectorAll('.mrn-reel-tab').forEach(b => b.addEventListener('click', () => {
     el.querySelectorAll('.mrn-reel-tab').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-selected', x === b); });
-    fr.src = src(b.dataset.k);
+    fr.src = src(b.dataset.k); op.href = src(b.dataset.k);
   }));
 }
 function _mrnQuick(k, el) {
