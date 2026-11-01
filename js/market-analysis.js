@@ -51,7 +51,7 @@
 
 
   const EPISODE_KIND_COLOURS = {
-    floor: '#14D3A9', weekend: '#FBBF24', cannibalisation: '#A78BFA', peak: '#ED6965',
+    floor: '#14D3A9', weekend: '#FBBF24', cannibalisation: '#5FA8D3', peak: '#ED6965',
   };
 
   // Neighbour shown on the price panel
@@ -70,7 +70,7 @@
   }
 
   const DRIVER_COLOURS = {
-    ttf: '#F59E0B', eua: '#A78BFA', wind: '#14D3A9',
+    ttf: '#F59E0B', eua: '#5FA8D3', wind: '#14D3A9',
     temp: '#ED6965', nuc: '#A98BD4', flux: '#7A93AB',
   };
 
@@ -495,7 +495,7 @@
       } else if (moment.kind === 'cannibalisation') {
         const solarCover = demand ? ((solar || 0) / demand * 100).toFixed(0) : null;
         title = dowCap + ' ' + time + ' · courbe en canard';
-        body = 'Le solaire à ' + W(fmt2(solar) + ' GW') + (solarCover ? ' couvre ' + solarCover + ' % de la demande' : '') + ' à midi : cannibalisation classique, prix à <b style="color:#A78BFA">' + fmt2(price, 1) + ' €</b>. Le taux de capture solaire en pâtit.';
+        body = 'Le solaire à ' + W(fmt2(solar) + ' GW') + (solarCover ? ' couvre ' + solarCover + ' % de la demande' : '') + ' à midi : cannibalisation classique, prix à <b style="color:#5FA8D3">' + fmt2(price, 1) + ' €</b>. Le taux de capture solaire en pâtit.';
       } else {
         title = dowCap + ' · creux du week-end';
         body = (ok(demand) && demand > 0 ? 'Industrie à l’arrêt, demande ' + W(fmt2(demand) + ' GW') + ', ' : 'Industrie à l’arrêt, ') + 'le nucléaire module, l’hydraulique stocke. Pas de tension, prix ' + fmt2(price, 0) + ' €' + (ok(srmc) ? ' pour un coût de centrale gaz de ' + fmt2(srmc, 0) + ' €' : '') + '.';
@@ -519,7 +519,7 @@
     } else if (moment.kind === 'cannibalisation') {
       const solarCover = demand ? ((solar || 0) / demand * 100).toFixed(0) : null;
       title = dowCap + ' ' + time + ' · duck curve';
-      body = 'Solar at ' + W(fmt(solar) + ' GW') + (solarCover ? ' covers ' + solarCover + '% of demand' : '') + ' at midday: classic cannibalisation, price at <b style="color:#A78BFA">' + fmt(price, 1) + ' €</b>. Solar capture rate hit.';
+      body = 'Solar at ' + W(fmt(solar) + ' GW') + (solarCover ? ' covers ' + solarCover + '% of demand' : '') + ' at midday: classic cannibalisation, price at <b style="color:#5FA8D3">' + fmt(price, 1) + ' €</b>. Solar capture rate hit.';
     } else {
       title = dowCap + ' · weekend lull';
       body = (ok(demand) && demand > 0 ? 'Industry idle, load ' + W(fmt(demand) + ' GW') + ', ' : 'Industry idle, ') + 'nuclear modulating, hydro storing. No system stress, price ' + fmt(price, 0) + ' €' + (ok(srmc) ? ' vs a gas plant cost of ' + fmt(srmc, 0) + ' €' : '') + '.';

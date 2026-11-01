@@ -1139,7 +1139,7 @@ function _hszRenderYoY(filtered, zone, summary) {
         // ── Y-2 — fine, dashed, subordinate ──
         {
           label: 'Y-2', data: prev2,
-          borderColor: 'rgba(168,125,196,0.65)', borderWidth: 1.4, pointRadius: 0,
+          borderColor: 'rgba(95,168,211,0.65)', borderWidth: 1.4, pointRadius: 0,
           tension: 0, spanGaps: true, fill: false, borderDash: [8,4], order: 4,
         },
         // ── Y-1 — fine, dashed, subordinate ──
@@ -1281,7 +1281,7 @@ function _hszRenderYoYCalendar(filtered, zone, summary, all) {
   const labels = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
   // Color palette for past years (purple → teal → amber → coral)
-  const yearColors = ['rgba(123,75,156,0.5)', 'rgba(63,166,180,0.6)', 'rgba(186,117,23,0.6)', 'rgba(212,83,126,0.55)', 'rgba(20,158,117,0.55)'];
+  const yearColors = ['rgba(141,153,174,0.55)', 'rgba(63,166,180,0.6)', 'rgba(186,117,23,0.6)', 'rgba(212,83,126,0.55)', 'rgba(20,158,117,0.55)'];
 
   const datasets = years.map((y, i) => {
     const isCurrent = i === years.length - 1;
@@ -1483,7 +1483,7 @@ function _hszRenderWeeklyYoY(filtered, zone, summary) {
   if (yMinus2) {
     datasets.push({
       label: yMinus2, data: y2Arr,
-      borderColor: 'rgba(168,125,196,0.65)', borderWidth: 1.4,
+      borderColor: 'rgba(95,168,211,0.65)', borderWidth: 1.4,
       pointRadius: 0,
       tension: 0, spanGaps: true, fill: false, borderDash: [8,4], order: 4,
     });
@@ -1735,7 +1735,7 @@ function _hszRenderSeasonal(filtered, zone, summary) {
     datasets.push({
       label: yMinus2,
       data: byYear[yMinus2],
-      borderColor: 'rgba(168,125,196,0.60)',
+      borderColor: 'rgba(95,168,211,0.60)',
       borderWidth: 1.4, pointRadius: 0,
       tension: 0, spanGaps: true, fill: false, borderDash: [8,4], order: 4,
     });
@@ -2157,7 +2157,7 @@ function _hszRenderHourlyQuarter(zone, intraday) {
   legendEl.innerHTML = `
     <span><span style="display:inline-block;width:14px;height:2.4px;background:${color};vertical-align:middle;margin-right:5px"></span>${cur} (current)</span>
     ${n1 ? `<span><span style="display:inline-block;width:14px;height:1px;border-top:1.4px dashed rgba(255,255,255,0.55);vertical-align:middle;margin-right:5px"></span>${n1} (Y-1)</span>` : ''}
-    ${n2 ? `<span><span style="display:inline-block;width:14px;height:1px;border-top:1.4px dashed rgba(168,125,196,0.7);vertical-align:middle;margin-right:5px"></span>${n2} (Y-2)</span>` : ''}
+    ${n2 ? `<span><span style="display:inline-block;width:14px;height:1px;border-top:1.4px dashed rgba(95,168,211,0.7);vertical-align:middle;margin-right:5px"></span>${n2} (Y-2)</span>` : ''}
   `;
   // Place the legend right after the canvas wrap (so before the rest of detail content)
   if (wrap.nextSibling) wrap.parentNode.insertBefore(legendEl, wrap.nextSibling);
@@ -2172,7 +2172,7 @@ function _hszRenderHourlyQuarter(zone, intraday) {
   grid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:14px;height:520px;margin-bottom:8px';
 
   const Qmeta = [
-    { id: 'Q1', label: 'Q1 · Winter', sub: 'Jan-Mar', color: '#A87DC4' },
+    { id: 'Q1', label: 'Q1 · Winter', sub: 'Jan-Mar', color: '#5FA8D3' },
     { id: 'Q2', label: 'Q2 · Spring', sub: 'Apr-Jun', color: '#14D3A9' },
     { id: 'Q3', label: 'Q3 · Summer', sub: 'Jul-Sep', color: '#FBBF24' },
     { id: 'Q4', label: 'Q4 · Autumn', sub: 'Oct-Dec', color: '#ED6965' },
@@ -2253,7 +2253,7 @@ function _hszRenderHourlyQuarter(zone, intraday) {
     if (n2Profile) {
       datasets.push({
         label: n2 + ' (Y-2)', data: n2Profile,
-        borderColor: 'rgba(168,125,196,0.65)', borderWidth: 1.4,
+        borderColor: 'rgba(95,168,211,0.65)', borderWidth: 1.4,
         pointRadius: 0, tension: 0, spanGaps: true, fill: false, borderDash: [8,4], order: 4,
       });
     }
@@ -2519,7 +2519,7 @@ function _hszRenderHourlyYoYStatic(zone, intraday, summary) {
   if (n2Profile) {
     datasets.push({
       label: n2 + ' (Y-2)', data: n2Profile,
-      borderColor: 'rgba(168,125,196,0.65)', borderWidth: 1.4,
+      borderColor: 'rgba(95,168,211,0.65)', borderWidth: 1.4,
       pointRadius: 0, tension: 0, spanGaps: true, fill: false, borderDash: [8,4], order: 4,
     });
   }
@@ -2784,7 +2784,7 @@ function _hszRenderWeekly(filtered, zone) {
       // 1. Tinted background for weekend (Sat = idx 5, Sun = idx 6)
       const xSatLeft  = xScale.getPixelForValue(5) - (xScale.getPixelForValue(1) - xScale.getPixelForValue(0)) / 2;
       const xSunRight = xScale.getPixelForValue(6) + (xScale.getPixelForValue(1) - xScale.getPixelForValue(0)) / 2;
-      ctx.fillStyle = 'rgba(168,125,196,0.06)';
+      ctx.fillStyle = 'rgba(95,168,211,0.06)';
       ctx.fillRect(xSatLeft, chartArea.top, xSunRight - xSatLeft, chartArea.bottom - chartArea.top);
 
       // 2. Vertical separator between Fri and Sat
@@ -2798,7 +2798,7 @@ function _hszRenderWeekly(filtered, zone) {
       ctx.stroke();
       ctx.setLineDash([]);
       // "WEEKEND" label at top of tinted zone
-      ctx.fillStyle = 'rgba(168,125,196,0.7)';
+      ctx.fillStyle = 'rgba(95,168,211,0.7)';
       ctx.font = '600 9px "JetBrains Mono", monospace';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'top';

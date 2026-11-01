@@ -32,7 +32,7 @@ var SERIES_POOL = [
   '#CA6702',  // 5. Burnt Caramel
   '#BB3E03',  // 6. Rusty Spice
   '#7DD3FC',  // 7. Sky Blue
-  '#8B7FB5',  // 8. Slate Violet
+  '#C4A57B',  // 8. Sand (violet is kept for nuclear)
 ];
 var SERIES_NEUTRAL = '#7A93AB';
 var SERIES_MAX_DISTINCT = 8;
@@ -80,6 +80,7 @@ function getSeriesColor(index) {
     if (_seriesCache[i]) continue;
     var bestHex = null, bestMinDist = -1;
     for (var h = 0; h < 360; h += 12) {
+      if (h >= 250 && h <= 320) continue;   // violet hues are kept for nuclear
       var sats = [55, 70, 85];
       for (var si = 0; si < sats.length; si++) {
         var lights = [50, 62, 72];

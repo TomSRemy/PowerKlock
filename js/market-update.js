@@ -185,7 +185,7 @@ _muReg({
     const years = Object.keys(by).sort(), last3 = years.slice(-3), hist = years.filter(y => !last3.includes(y));
     const band = fn => Array.from({ length: 12 }, (_, m) => { const v = hist.map(y => val(y, m)).filter(x => x != null); return v.length ? Math.round(fn(v) * 100) / 100 : null; });
     const r1 = hist[0] + '–' + hist[hist.length - 1];
-    const cols = ['rgba(127,200,248,.7)', '#B48CF2', '#F4B740'];
+    const cols = ['rgba(127,200,248,.7)', '#C4A57B', '#F4B740'];
     _fuelChart(cid, { type: 'line', data: { labels: _muMon(), datasets: [
       { label: r1 + ' range', data: band(v => Math.max(...v)), borderWidth: 0, pointRadius: 0, fill: '+1', backgroundColor: 'rgba(122,147,171,.18)' },
       { label: '_min', data: band(v => Math.min(...v)), borderWidth: 0, pointRadius: 0, fill: false },
@@ -242,8 +242,8 @@ function _muCChart(cid, all, p, unit, tag) {
   const pick = _muLiquid(all, kinds, peak, p.set || 'liquid', p.front ? { month: 1, quarter: 1 } : null).filter(([, c]) => Object.keys(c.points).some(d => d >= from));
   if (!pick.length) { noDataMsg(cid, 'No contract of these types quoted in this window', ''); return null; }
   const dates = [...new Set(pick.flatMap(([, c]) => Object.keys(c.points).filter(d => d >= from)))].sort();
-  const PAL = { year: ['#14D3A9', '#7FC8F8', '#A87DC4', '#FBBF24', '#C4A57B', '#ED6965', '#34D399', '#94A3B8'], season: ['#F59E0B', '#60A5FA', '#F472B6', '#A3E635', '#FB7185', '#38BDF8'],
-    quarter: ['#22D3EE', '#FB923C', '#C084FC', '#4ADE80', '#F87171', '#FACC15', '#818CF8', '#2DD4BF'], month: ['#E6EDF3', '#93C5FD', '#FDA4AF', '#86EFAC', '#FCD34D', '#C4B5FD', '#67E8F9', '#FDBA74', '#F9A8D4', '#BEF264', '#A5B4FC', '#99F6E4'] };
+  const PAL = { year: ['#14D3A9', '#7FC8F8', '#8D99AE', '#FBBF24', '#C4A57B', '#ED6965', '#34D399', '#94A3B8'], season: ['#F59E0B', '#60A5FA', '#F472B6', '#A3E635', '#FB7185', '#38BDF8'],
+    quarter: ['#22D3EE', '#FB923C', '#F2A65A', '#4ADE80', '#F87171', '#FACC15', '#818CF8', '#2DD4BF'], month: ['#E6EDF3', '#93C5FD', '#FDA4AF', '#86EFAC', '#FCD34D', '#D6C4A8', '#67E8F9', '#FDBA74', '#F9A8D4', '#BEF264', '#A5B4FC', '#99F6E4'] };
   const n = {};
   const ds = pick.map(([k, c]) => { const i = (n[c.kind] = (n[c.kind] || 0) + 1) - 1;
     return _fuelLineDs(_muCLabel(k, c), dates.map(d => c.points[d] != null ? c.points[d] : null), PAL[c.kind][i % PAL[c.kind].length],
@@ -293,7 +293,7 @@ _muReg({
     _fuelChart(cid, { type: 'line', data: { labels: dates, datasets: [
       _fuelLineDs('Cal ' + k + ' ' + cc, idx(cal), '#14D3A9', { borderWidth: 2.4, spanGaps: true }),
       ...(ttfCal ? [_fuelLineDs('TTF Cal ' + k, idx(ttfCal), '#C4A57B', { borderWidth: 1.8, spanGaps: true })] : []),
-      _fuelLineDs('EUA', idx(eua), '#A87DC4', { borderWidth: 1.5, spanGaps: true }),
+      _fuelLineDs('EUA', idx(eua), '#5FA8D3', { borderWidth: 1.5, spanGaps: true }),
       _fuelLineDs('Coal API2 Cal+1', idx(coal), '#94A3B8', { borderWidth: 1.4, spanGaps: true }),
       _fuelLineDs('Brent', idx(oil), '#E6EDF3', { borderWidth: 1.2, borderDash: [4, 3], spanGaps: true }),
     ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('index, start = 100') }, plugins: { legend: _muLegend() } }) }, 'cal-drivers');
@@ -335,7 +335,7 @@ _muReg({
   },
 });
 // ── capture rates across Europe, year by year (note 68): data/history/country_capture.json (Energy-Charts) ──
-const MU_CEU = [['FR', 'France', '#7FC8F8'], ['DE', 'Germany', '#F4B740'], ['ES', 'Spain', '#ED6965'], ['NL', 'Netherlands', '#B48CF2'], ['BE', 'Belgium', '#C4A57B'], ['UK', 'Great Britain', '#94D2BD']];
+const MU_CEU = [['FR', 'France', '#7FC8F8'], ['DE', 'Germany', '#F4B740'], ['ES', 'Spain', '#ED6965'], ['NL', 'Netherlands', '#C4A57B'], ['BE', 'Belgium', '#C4A57B'], ['UK', 'Great Britain', '#94D2BD']];
 const _muCeuName = (c, n) => _muT({ FR: 'France', DE: 'Allemagne', ES: 'Espagne', NL: 'Pays-Bas', BE: 'Belgique', UK: 'Grande-Bretagne' }[c] || n, n);
 _muReg({
   id: 'ren-capture-europe', title: 'Capture rate by country, per year', category: 'renewables', page: 'renewables', pageCanvas: 'ceu-solar', source: 'Energy-Charts',

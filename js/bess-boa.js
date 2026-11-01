@@ -23,7 +23,7 @@
   const TINT = { ok: 'rgba(74,222,128,.10)', warn: 'rgba(251,191,36,.12)', bad: 'rgba(237,105,101,.12)', info: 'rgba(127,200,248,.12)' };
   const SKEYS = ['afrr', 'fcr', 'mfrr', 'da', 'id', 'cap', 'turpe'];
   const SLABELS = ['aFRR', 'FCR', 'mFRR', 'DA arb.', 'Intraday', 'Cap. mech.', 'TURPE 7'];
-  const SCOLORS = ['#7FC8F8', '#8D99AE', '#ED6965', '#FBBF24', '#F2A65A', '#A87DC4', '#C4A57B'];
+  const SCOLORS = ['#7FC8F8', '#8D99AE', '#ED6965', '#FBBF24', '#F2A65A', '#D6C4A8', '#C4A57B'];
   const fr = () => { try { return localStorage.getItem('pk-lang') !== 'en'; } catch (_) { return true; } };
   const T = (en, frs) => fr() ? frs : en;
   const SCEN = {

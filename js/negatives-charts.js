@@ -11,7 +11,7 @@
 (function () {
   'use strict';
   const RED = '#ED6965', RED_DEEP = '#A33A3A', GREYS = ['#3A4654', '#4E5D6E', '#677A8D', '#8597AA'];
-  const PAL = ['#14D3A9', '#7FC8F8', '#FBBF24', '#A87DC4', '#ED6965', '#C4A57B', '#3FA6B4', '#B8C9D9'];
+  const PAL = ['#14D3A9', '#7FC8F8', '#FBBF24', '#8D99AE', '#ED6965', '#C4A57B', '#3FA6B4', '#B8C9D9'];
   const MN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   const HRS = [...Array(24).keys()].map(h => String(h).padStart(2, '0') + 'h');
   const FEATURED = ['FR', 'DE_LU', 'BE', 'NL', 'ES', 'SE', 'PL', 'FI'];

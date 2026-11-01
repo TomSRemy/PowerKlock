@@ -12,7 +12,7 @@
 (function () {
   'use strict';
   const LS = 'pk-compare';
-  const COLORS = ['#14D3A9', '#F5A524', '#B794F6', '#7FC8F8', '#ED6965', '#94D2BD', '#FBBF24', '#E879F9'];
+  const COLORS = ['#14D3A9', '#F5A524', '#C4A57B', '#7FC8F8', '#ED6965', '#94D2BD', '#FBBF24', '#38BDF8'];
   const T = (fr, en) => (typeof _mT === 'function' ? _mT(fr, en) : en);
   const N = (v, d) => (typeof _mN === 'function' ? _mN(v, d) : v == null ? '–' : v.toFixed(d));
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));

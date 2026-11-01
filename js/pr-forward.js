@@ -25,9 +25,9 @@
     { code: 'FR', label: 'France', flag: '🇫🇷', colour: '#14D3A9' },
     { code: 'UK', label: 'UK', flag: '🇬🇧', colour: '#3FA6B4' },
     { code: 'DE', label: 'Germany', flag: '🇩🇪', colour: '#EE9B00' },
-    { code: 'NL', label: 'Netherlands', flag: '🇳🇱', colour: '#A87DC4' }
+    { code: 'NL', label: 'Netherlands', flag: '🇳🇱', colour: '#5FA8D3' }
   ];
-  var PALETTE = ['#14D3A9', '#EE9B00', '#3FA6B4', '#A87DC4', '#ED6965', '#FBBF24', '#7B4B9C', '#94D2BD'];
+  var PALETTE = ['#14D3A9', '#EE9B00', '#3FA6B4', '#C4A57B', '#ED6965', '#FBBF24', '#8D99AE', '#94D2BD'];
 
   var PF = {
     openCountry: null,

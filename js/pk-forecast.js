@@ -15,7 +15,7 @@
   'use strict';
   const _fT = (fr, en) => (!window.PKI18n || PKI18n.lang !== 'en') ? fr : en;   // French unless the site is in English
   const ZONES = { FR: 'France', DE_LU: 'Germany', BE: 'Belgium', NL: 'Netherlands', ES: 'Spain' };
-  const COL = { solar: '#F4C430', wind: '#14D3A9', load: '#E6EDF3', resid: '#A87DC4' };
+  const COL = { solar: '#F4C430', wind: '#14D3A9', load: '#E6EDF3', resid: '#5FA8D3' };
   const KIND = { solar: 'solar', wind: 'wind', load: 'load' };
   let fcP = null;
   const dayP = {};

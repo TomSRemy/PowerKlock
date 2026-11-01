@@ -52,7 +52,7 @@
       const tenors = ['M+1', 'M+2', 'M+3', 'Q+1', 'Q+2', 'Q+3', 'S+1', 'S+2', 'Y+1', 'Y+2', 'Y+3'];
       const ref = (C.FR && C.FR.forwardCurve) || [];
       const labels = tenors.map(t => { const r = ref.find(x => x.tenor === t); return r ? r.contract.replace(/^FR\s+/, '').replace(/\s+base$/, '') : t; });
-      const series = [['FR', '#14D3A9'], ['DE', '#FBBF24'], ['NL', '#A87DC4'], ['UK', '#7FC8F8']].map(([cc, color]) => {
+      const series = [['FR', '#14D3A9'], ['DE', '#FBBF24'], ['NL', '#C4A57B'], ['UK', '#7FC8F8']].map(([cc, color]) => {
         const fc = (C[cc] && C[cc].forwardCurve) || [];
         const conv = cc === 'UK' ? gbpEur : 1;
         return { label: cc === 'UK' ? 'GB (GBP→EUR)' : cc, data: tenors.map(t => { const r = fc.find(x => x.tenor === t); return r && r.value != null && conv ? +(r.value * conv).toFixed(2) : null; }),

@@ -107,7 +107,7 @@ if (window.PKW) {
       const ser = years.map(v => ({ y: v, s: _mrnGoSeries(rows, p.product, v) })).filter(x => x.s.length);
       if (!ser.length) { noDataMsg(cid, 'No ' + p.product + ' prices', ''); return null; }
       const dates = [...new Set(ser.flatMap(x => x.s.map(r => r.t)))].sort().filter(t => t >= _mrnAdd(_mrnToday(), -730));
-      const cols = ['#14D3A9', '#FBBF24', '#A87DC4'];
+      const cols = ['#14D3A9', '#FBBF24', '#5FA8D3'];
       _fuelChart(cid, { type: 'line', data: { labels: dates, datasets: ser.map((x, i) => {
         const m = new Map(x.s.map(r => [r.t, r.mid]));
         return _fuelLineDs('Cal ' + x.y, dates.map(t => m.has(t) ? Math.round(m.get(t) * 1000) / 1000 : null), cols[i], { borderWidth: i ? 1.5 : 2.2, spanGaps: true });
@@ -174,7 +174,7 @@ if (window.PKW) {
       const from = _mrnAdd(_mrnToday(), -({ '1M': 31, '3M': 92, '1Y': 366 }[p.win] || 92));
       const lines = [];
       const yrs = chain && chain[cc] && chain[cc].years || {};
-      const cols = { Y1: '#14D3A9', Y2: '#7FC8F8', Y3: '#A87DC4', M: '#FBBF24', Q: '#C4A57B' };
+      const cols = { Y1: '#14D3A9', Y2: '#7FC8F8', Y3: '#8D99AE', M: '#FBBF24', Q: '#C4A57B' };
       Object.keys(yrs).sort().forEach((y, i) => { const v = yrs[y]; lines.push({ label: 'Cal ' + y, pts: v.dates.map((d, k) => [d, v.values[k]]), col: [cols.Y1, cols.Y2, cols.Y3][i] || '#94A3B8' }); });
       const src = cc === 'FR' ? ser : (ser && ser.countries && ser.countries[cc]);
       const fc = src && src.forwardCurve, dates = src && (src.dates || (ser && ser.dates));
@@ -196,7 +196,7 @@ if (window.PKW) {
     async draw(cid, p) {
       const rows = (await _mrnFwdRows(p.country || 'FR')).filter(r => r.per);
       if (!rows.length) { noDataMsg(cid, 'Forward prices not available', ''); return null; }
-      const style = { Year: { col: '#14D3A9', w: 6, op: 0.55 }, Season: { col: '#A87DC4', w: 4, op: 0.8 }, Quarter: { col: '#C4A57B', w: 4, op: 0.9 }, Month: { col: '#FBBF24', w: 4, op: 1 } };
+      const style = { Year: { col: '#14D3A9', w: 6, op: 0.55 }, Season: { col: '#5FA8D3', w: 4, op: 0.8 }, Quarter: { col: '#C4A57B', w: 4, op: 0.9 }, Month: { col: '#FBBF24', w: 4, op: 1 } };
       const seg = (r, val) => [{ x: r.per.a, y: val, r }, { x: r.per.b - 864e5, y: val, r }, { x: r.per.b, y: null }];
       const ds = [];
       ['Year', 'Season', 'Quarter', 'Month'].forEach(k => {
@@ -1036,16 +1036,16 @@ async function renderMorning() {
 //    outside or the browser's Back close it and the page is where it was; ← → go to the next tile; a link opens the full page ──
 const MRN_WIN = {
   cal: k => { const c = k.cals; return { name: 'Cal ' + (c[0] && c[0].y) + ' France', unit: '€/MWh', dp: 1, look: 'power', route: 'markets/forwards', page: _mT('Marchés › Forwards', 'Markets › Forwards'),
-    series: c.map((x, i) => ['cal' + x.y, 'Cal ' + x.y, ['#14D3A9', '#7FC8F8', '#A87DC4'][i], 'y', true, x.pts]).concat([['ttf', _mT('Gaz TTF, €/MWh (axe droit)', 'TTF gas, €/MWh (right axis)'), '#FBBF24', 'y2', false, k.P('ttf')]]) }; },
+    series: c.map((x, i) => ['cal' + x.y, 'Cal ' + x.y, ['#14D3A9', '#7FC8F8', '#C4A57B'][i], 'y', true, x.pts]).concat([['ttf', _mT('Gaz TTF, €/MWh (axe droit)', 'TTF gas, €/MWh (right axis)'), '#FBBF24', 'y2', false, k.P('ttf')]]) }; },
   ttf: k => ({ name: 'TTF', unit: '€/MWh', dp: 1, look: 'gas', route: 'markets/fuels/ttf', page: _mT('Marchés › Combustibles › TTF', 'Markets › Fuels › TTF'),
     series: [['ttf', 'TTF', '#FBBF24', 'y', true, k.P('ttf')], ['agsi', _mT('Stocks de gaz UE, % (axe droit)', 'EU gas storage, % (right axis)'), '#7FC8F8', 'y2', true, k.P('agsi')]] }),
   eua: k => ({ name: 'EUA', unit: '€/t', dp: 1, look: 'carbon', route: 'markets/fuels', page: _mT('Marchés › Combustibles', 'Markets › Fuels'),
-    series: [['eua', 'EUA', '#A87DC4', 'y', true, k.P('eua')], ['coal', _mT('Charbon API2, $/t (axe droit)', 'Coal API2, $/t (right axis)'), '#C4A57B', 'y2', false, k.P('coal')]] }),
+    series: [['eua', 'EUA', '#5FA8D3', 'y', true, k.P('eua')], ['coal', _mT('Charbon API2, $/t (axe droit)', 'Coal API2, $/t (right axis)'), '#C4A57B', 'y2', false, k.P('coal')]] }),
   brent: k => ({ name: 'Brent', unit: '$/b', dp: 1, look: 'oil', route: 'markets/fuels', page: _mT('Marchés › Combustibles', 'Markets › Fuels'),
     series: [['brent', 'Brent', '#ED6965', 'y', true, k.P('brent')], ['coal', _mT('Charbon API2, $/t (axe droit)', 'Coal API2, $/t (right axis)'), '#C4A57B', 'y2', false, k.P('coal')]] }),
   go: k => { const y = +_mrnToday().slice(0, 4), g = yy => k.gos ? _mrnGoSeries(k.gos, 'GO AIB Renewable', yy).map(r => [r.t, r.mid]) : [];
     return { name: 'GO ' + (y + 1), unit: '€/MWh', dp: 3, look: null, route: 'markets/go', page: _mT('Marchés › Garanties d’origine', 'Markets › Guarantees of origin'), weekly: true,
-      series: [y, y + 1, y + 2].map((yy, i) => ['go' + yy, 'Cal ' + yy, ['#7FC8F8', '#14D3A9', '#A87DC4'][i], 'y', true, g(yy)]).filter(x => x[5].length) }; },
+      series: [y, y + 1, y + 2].map((yy, i) => ['go' + yy, 'Cal ' + yy, ['#7FC8F8', '#14D3A9', '#C4A57B'][i], 'y', true, g(yy)]).filter(x => x[5].length) }; },
   idx: k => { const I = k.idx; if (!I) return { name: '', series: [] };
     return { name: _mT('Indice PowerKlock · couverture bas carbone', 'PowerKlock index · low-carbon coverage'), unit: '%', dp: 0, look: null, pct: false, route: 'tools/compare', page: _mT('Outils › Comparateur', 'Tools › Comparator'),
       series: [['idx', _mT('Couverture bas carbone, %', 'Low-carbon coverage, %'), '#14D3A9', 'y', true, I.rows.map(x => [x.d, Math.round(x.cov * 10) / 10])],

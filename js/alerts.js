@@ -245,7 +245,7 @@
   .pk-al-sec{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);font-weight:600;margin-top:4px}
   .pk-al-hit{display:flex;gap:8px;align-items:flex-start;font-size:12.5px;color:var(--text2);padding:6px 0;border-bottom:1px solid var(--border)}
   .pk-al-hit b{color:var(--text)}
-  .pk-al-dot{width:8px;height:8px;border-radius:50%;margin-top:5px;flex:none;background:#60A5FA} .pk-al-dot.pp1,.pk-al-dot.pp2{background:#ED6965} .pk-al-dot.base_above{background:#F97316} .pk-al-dot.base_below{background:#14D3A9} .pk-al-dot.fwd_fr{background:#A78BFA}
+  .pk-al-dot{width:8px;height:8px;border-radius:50%;margin-top:5px;flex:none;background:#60A5FA} .pk-al-dot.pp1,.pk-al-dot.pp2{background:#ED6965} .pk-al-dot.base_above{background:#F97316} .pk-al-dot.base_below{background:#14D3A9} .pk-al-dot.fwd_fr{background:#C4A57B}
   .pk-al-empty{font-size:12px;color:var(--text3)}
   .pk-al-rule{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)}
   .pk-al-rule.off{opacity:.5}

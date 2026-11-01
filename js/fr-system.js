@@ -11,7 +11,7 @@
 // ════════════════════════════════════════════════════════════════════
 const FRS = { day: null, envSeries: 'nuclear', monthlyView: 'twh' };
 const FRS_COLORS = { nuclear: '#7B4B9C', hydro: '#3FA6B4', hydroPS: '#60A5FA', windOn: '#14D3A9', windOff: '#0EA5E9', wind: '#14D3A9', solar: '#FBBF24',
-  gas: '#F97316', coal: '#78716C', oil: '#B45309', bio: '#94D2BD', battery: '#E879F9', pumping: '#1E3A8A', load: '#F8FAFC' };
+  gas: '#F97316', coal: '#78716C', oil: '#B45309', bio: '#94D2BD', battery: '#38BDF8', pumping: '#1E3A8A', load: '#F8FAFC' };
 const FRS_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 function _frsToday() { return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris' }).format(new Date()); }
@@ -122,7 +122,7 @@ _frsReg({
     if (!R) { noDataMsg(cid, 'No RTE data for ' + _frsFmtDay(day), ''); return { day }; }
     const bar = (l, a, c) => Array.isArray(a) && a.some(v => v) ? { type: 'bar', label: l, data: _frsGW(a), backgroundColor: c, borderWidth: 0, stack: 's', barPercentage: 1, categoryPercentage: 1, yAxisID: 'y' } : null;
     const ds = [bar('Turbining', R.hydroPS, FRS_COLORS.hydroPS), bar('Pumping', R.pumping, FRS_COLORS.pumping),
-      bar('Battery discharge', R.batteryDischarge, FRS_COLORS.battery), bar('Battery charge', R.batteryCharge, '#A21CAF')].filter(Boolean);
+      bar('Battery discharge', R.batteryDischarge, FRS_COLORS.battery), bar('Battery charge', R.batteryCharge, '#0369A1')].filter(Boolean);
     const daily = await fetch(DATA_BASE + 'history/daily/' + day + '.json').then(r => r.ok ? r.json() : null).catch(() => null);
     const price = daily && daily.zones && daily.zones.FR && daily.zones.FR.hourly;
     if (Array.isArray(price)) ds.push({ type: 'line', label: 'Day-ahead FR', data: price, borderColor: '#F8FAFC', borderWidth: 1.4, pointRadius: 0, fill: false, yAxisID: 'y2', tension: 0 });

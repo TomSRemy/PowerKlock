@@ -53,10 +53,10 @@ if (window.PKW) {
       const firstFc = months.find(m => fcM.has(m));
       const ds = [
         { label: '_lo', data: months.map(m => fcM.has(m) ? conv(m, fcM.get(m)[tech + 'Lo']) : null), borderWidth: 0, pointRadius: 0, fill: false },
-        { label: 'Forecast range (3 years)', data: months.map(m => fcM.has(m) ? conv(m, fcM.get(m)[tech + 'Hi']) : null), borderWidth: 0, pointRadius: 0, backgroundColor: 'rgba(168,125,196,.18)', fill: '-1' },
+        { label: 'Forecast range (3 years)', data: months.map(m => fcM.has(m) ? conv(m, fcM.get(m)[tech + 'Hi']) : null), borderWidth: 0, pointRadius: 0, backgroundColor: 'rgba(95,168,211,.18)', fill: '-1' },
         { label: 'CRE M0 (official)', data: months.map(m => conv(m, off[m])), borderColor: col, backgroundColor: col, borderWidth: 2.4, pointRadius: 2.5, fill: false },
         { label: 'Estimated M0 (PowerKlock)', data: months.map(m => m === lastOff ? conv(m, off[m]) : conv(m, estOnly(m))), borderColor: col, borderDash: [2, 3], borderWidth: 1.8, pointRadius: months.map(m => estOnly(m) != null ? 3 : 0), pointStyle: 'rectRot', fill: false, spanGaps: true },
-        { label: 'Forecast M0', data: months.map(m => fcM.has(m) ? conv(m, fcM.get(m)[tech]) : m === months[months.indexOf(firstFc) - 1] ? conv(m, off[m] != null ? off[m] : estOnly(m)) : null), borderColor: '#A87DC4', borderDash: [6, 4], borderWidth: 2, pointRadius: months.map(m => fcM.has(m) ? 2.5 : 0), fill: false, spanGaps: true },
+        { label: 'Forecast M0', data: months.map(m => fcM.has(m) ? conv(m, fcM.get(m)[tech]) : m === months[months.indexOf(firstFc) - 1] ? conv(m, off[m] != null ? off[m] : estOnly(m)) : null), borderColor: '#5FA8D3', borderDash: [6, 4], borderWidth: 2, pointRadius: months.map(m => fcM.has(m) ? 2.5 : 0), fill: false, spanGaps: true },
         ...(tech !== 'base' ? [
           { label: 'Capture price (negative prices included)', data: months.map(m => est[m] ? conv(m, est[m][tech + 'Cap']) : null), borderColor: '#ED6965', borderWidth: 1.6, pointRadius: 1.5, fill: false, spanGaps: true },
           { label: 'Capture price forecast', data: months.map(m => fcM.has(m) ? conv(m, fcM.get(m)[tech + 'Cap']) : null), borderColor: '#ED6965', borderDash: [6, 4], borderWidth: 1.4, pointRadius: 0, fill: false, spanGaps: true },
@@ -106,7 +106,7 @@ if (window.PKW) {
 
 // ── CRE renewable tenders (data/cre_tenders.json): the price kept at each period, against the M0 the market paid
 //    the same technology over the 12 months before the result (CRE official monthly M0) ──
-const M0_AO = [['Photovoltaïque sol', 'Solar, ground', '#FBBF24', 'solar'], ['Photovoltaïque bâtiment', 'Solar, rooftop', '#F59E0B', 'solar'], ['Éolien terrestre', 'Onshore wind', '#7FC8F8', 'wind'], ['Neutre', 'Technology-neutral', '#A87DC4', 'solar']];
+const M0_AO = [['Photovoltaïque sol', 'Solar, ground', '#FBBF24', 'solar'], ['Photovoltaïque bâtiment', 'Solar, rooftop', '#F59E0B', 'solar'], ['Éolien terrestre', 'Onshore wind', '#7FC8F8', 'wind'], ['Neutre', 'Technology-neutral', '#C4A57B', 'solar']];
 let _aoData = null;
 const _aoLoad = () => _aoData || (_aoData = fetchJSON('cre_tenders.json').then(j => j && j.rows ? j : null));
 const _m0Trail = (off, ym) => { const ks = Object.keys(off || {}).filter(k => k < ym).sort().slice(-12); return ks.length >= 6 ? ks.reduce((a, k) => a + off[k], 0) / ks.length : null; };

@@ -60,12 +60,13 @@ Trois gabarits suffisent :
 | Repère « maintenant » | trait pointillé jaune `#FFFD82`, étiquette « MAINTENANT » / « NOW » |
 
 Palette des séries (`js/palette.js`, `SERIES_POOL`) : `#14D3A9`, `#ED6965`, `#FFFD82`, `#1A7B8C`, `#CA6702`, `#BB3E03`,
-`#7DD3FC`, `#8B7FB5`, neutre `#7A93AB`. Au-delà de 8 séries : petits multiples ou sélection, pas de nouvelles teintes.
+`#7DD3FC`, `#C4A57B`, neutre `#7A93AB`. Au-delà de 8 séries : petits multiples ou sélection, pas de nouvelles teintes.
 Couleurs fixes par filière (variables `--gen-*`) : nucléaire `#7B4B9C`, éolien `#14D3A9`, solaire `#FBBF24`,
 hydraulique `#3FA6B4`, fossile `#ED6965`, biomasse `#94D2BD`. Une filière garde sa couleur sur tous les graphiques.
 **Violet et pourpre réservés au nucléaire** (règle de Tom, 1er novembre 2026) : aucune autre série, tuile ou
-bordure en violet. À remplacer : `#8B7FB5` (8e couleur de `SERIES_POOL`), `#A87DC4` (`--cat-carbon`, charge
-résiduelle prévue), `#B48CF2` (carte de lecture forwards), `#E879F9` / `#A21CAF` (charge des batteries).
+bordure en violet. Appliqué le 1er novembre sur tout le site (pricer compris) : les anciens violets (`#8B7FB5`, `#A87DC4`,
+`#B48CF2`, `#E879F9`, `#A21CAF`, `#A78BFA`, `#B794F6`…) sont devenus bleu `#5FA8D3`, sable `#C4A57B`, gris `#8D99AE` ou orange
+`#F2A65A` ; `getSeriesColor` ne génère plus de teinte entre 250° et 320°.
 Une série ne se distingue jamais par la seule couleur rouge contre vert : ajouter un tiret, une épaisseur ou une étiquette.
 
 ## 4. Tableaux

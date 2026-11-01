@@ -142,7 +142,7 @@ _wxReg({
     const nowKey = new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Paris' }).slice(0, 13).replace(' ', 'T') + ':00';
     const nowI = Math.max(0, H.indexOf(nowKey));
     const w = _wxWeighted(res, p.cc, r => r.hourly[V.key]);
-    const pal = ['#7FC8F8', '#C4A57B', '#ED6965', '#A87DC4', '#FBBF24', '#94D2BD', '#F472B6', '#8D99AE'];
+    const pal = ['#7FC8F8', '#C4A57B', '#ED6965', '#F2A65A', '#FBBF24', '#94D2BD', '#F472B6', '#8D99AE'];
     const labels = H.map(t => t.slice(8, 10) + '/' + t.slice(5, 7) + ' ' + t.slice(11, 16));
     const ds = [{ label: WX_NAMES[p.cc] + ' (weighted)', data: w.map(v => v == null ? null : +v.toFixed(2)), borderColor: '#FFFFFF', borderWidth: 2.2, pointRadius: 0, tension: 0, fill: false, order: -1 }]
       .concat(res.map((r, k) => ({ label: cities[k][0], data: r.hourly[V.key], borderColor: rgba(pal[k % pal.length], .7), borderWidth: 1, pointRadius: 0, tension: 0, fill: false })));

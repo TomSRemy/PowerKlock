@@ -59,7 +59,7 @@ _nucReg({
     const g = a => a.map(v => v == null ? null : Math.round(v / 10) / 100);
     _fuelChart(cid, { type: 'line', data: { labels: j.labels, datasets: [
       _fuelLineDs('Available (actual)', g(j.cols[0]), C_NUC, { borderWidth: 2, fill: true, backgroundColor: rgba('#7B4B9C', .12) }),
-      _fuelLineDs('Operator forecast', g(j.cols[1]), '#C4A7E7', { borderDash: [5, 4], borderWidth: 1.3 }),
+      _fuelLineDs('Operator forecast', g(j.cols[1]), '#AEB8C6', { borderDash: [5, 4], borderWidth: 1.3 }),
     ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('GW', { min: 0, suggestedMax: 66 }) },
       plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 10 } }, zoom: ZOOM_CFG,
         annotation: { annotations: { inst: { type: 'line', yMin: FR_NUC_INSTALLED_MW / 1000, yMax: FR_NUC_INSTALLED_MW / 1000, borderColor: 'rgba(184,201,217,.45)', borderWidth: 1, borderDash: [4, 4],
@@ -113,7 +113,7 @@ _nucReg({
     }).filter(Boolean);
     if (!rows.length) { noDataMsg(cid, 'No ENTSO-E nuclear output archived in this period', 'Output history exists for the days with generation data (see Renewables coverage).'); return null; }
     _fuelChart(cid, { type: 'line', data: { labels: rows.map(r => r.d), datasets: [
-      _fuelLineDs('Available', rows.map(r => +r.avail.toFixed(2)), '#C4A7E7', { borderWidth: 1.5, pointRadius: 2 }),
+      _fuelLineDs('Available', rows.map(r => +r.avail.toFixed(2)), '#AEB8C6', { borderWidth: 1.5, pointRadius: 2 }),
       _fuelLineDs('Output', rows.map(r => +r.out.toFixed(2)), C_NUC, { borderWidth: 2, pointRadius: 2, fill: true, backgroundColor: rgba('#7B4B9C', .14) }),
     ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('GW', { suggestedMin: 25 }) } }) }, 'fr-nuclear-modulation');
     const mod = rows.map(r => r.avail - r.out).filter(v => v > 0);
