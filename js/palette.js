@@ -155,7 +155,8 @@ function nowLineAnnotation(opts) {
     borderDash: [3, 3],
     label: {
       display: true,
-      content: opts.label || 'NOW',
+      // drawn on the canvas: translated here (the page translation does not reach it)
+      content: (opts.label || 'NOW') === 'NOW' && window.PKI18n && PKI18n.lang === 'fr' ? 'MAINTENANT' : (opts.label || 'NOW'),
       position: 'start',
       yAdjust: 8,
       color: '#0A1218',

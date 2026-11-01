@@ -86,7 +86,7 @@
       if (!FUELS.every(f => pf.profile[f] && pf.profile[f][m] && pf.profile[f][m][0] != null)) return;
       FUELS.forEach(f => pf.profile[f][m].forEach((v, h) => { avg[f][h] += v * n; })); tot += n; });
     if (tot && ids.profile) _fuelChart(ids.profile, { type: 'line', data: { labels: Array.from({ length: 24 }, (_, h) => String(h).padStart(2, '0') + ':00'), datasets:
-      FUELS.map(f => ({ label: (M[f] || {}).label || f, data: avg[f].map(v => +(v / tot / 1000).toFixed(2)), borderColor: (M[f] || {}).color, backgroundColor: ((M[f] || {}).color || '#888') + 'CC', fill: true, pointRadius: 0, borderWidth: 1, tension: 0.3, stack: 'p' })) },
+      FUELS.map(f => ({ label: (M[f] || {}).label || f, data: avg[f].map(v => +(v / tot / 1000).toFixed(2)), borderColor: (M[f] || {}).color, backgroundColor: ((M[f] || {}).color || '#888') + 'CC', fill: true, pointRadius: 0, borderWidth: 1, tension: 0, stack: 'p' })) },
       options: _fuelOpts({ plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 8 } } },
         scales: { x: Object.assign(_fuelXAxis(), { ticks: { color: C_TX3, font: { size: 10 }, maxTicksLimit: 12 } }), y: Object.assign(_fuelAxis('GW', { beginAtZero: true }), { stacked: true }) } }) }, 'genmix-average-day');
     setSub('gms-profile-sub', `${ZONES[zone]} · average day over the period, by hour (Paris time) and fuel`);

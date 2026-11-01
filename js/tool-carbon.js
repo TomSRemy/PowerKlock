@@ -512,8 +512,8 @@
     const H = HRS, wd = [...o.wk.wd].map(v => o.wk.nwd ? v / o.wk.nwd : null), we = [...o.wk.we].map(v => o.wk.nwe ? v / o.wk.nwe : null);   // kWh in that hour per day = average kW
     // kWh per hour per day = average kW of that hour
     _fuelChart('cf-week', { type: 'line', data: { labels: H, datasets: [
-      { label: 'Working days (Mon–Fri)', data: wd.map(v => v == null ? null : Math.round(v)), borderColor: '#7FC8F8', borderWidth: 2.4, pointRadius: 0, tension: .3, fill: false },
-      { label: 'Weekends', data: we.map(v => v == null ? null : Math.round(v)), borderColor: '#A87DC4', borderWidth: 2, pointRadius: 0, tension: .3, borderDash: [5, 4], fill: false },
+      { label: 'Working days (Mon–Fri)', data: wd.map(v => v == null ? null : Math.round(v)), borderColor: '#7FC8F8', borderWidth: 2.4, pointRadius: 0, tension: 0, fill: false },
+      { label: 'Weekends', data: we.map(v => v == null ? null : Math.round(v)), borderColor: '#A87DC4', borderWidth: 2, pointRadius: 0, tension: 0, borderDash: [5, 4], fill: false },
       { label: 'Base load', data: H.map(() => Math.round(o.baseKW)), borderColor: 'rgba(184,201,217,.6)', borderWidth: 1, borderDash: [2, 3], pointRadius: 0, fill: false },
     ] }, options: _fuelOpts({ plugins: { legend: legend() }, scales: { x: _fuelXAxis(), y: _fuelAxis('kW (average)', { beginAtZero: true }) } }) }, 'carbon-weekday-weekend');
     const L = o.duration.map((_, i) => Math.round(i / (o.duration.length - 1) * 100) + ' %');
@@ -532,12 +532,12 @@
     const L = o.daily.map(x => x.d);
     _fuelChart('cf-daily', { type: 'bar', data: { labels: L, datasets: [
       { label: 'Consumption (MWh)', data: o.daily.map(x => x.E / 1000), backgroundColor: 'rgba(127,200,248,.45)', borderWidth: 0, yAxisID: 'y' },
-      { type: 'line', label: 'Carbon intensity of your consumption (g/kWh)', data: o.daily.map(x => x.ci == null ? null : Math.round(x.ci * 10) / 10), borderColor: '#A87DC4', borderWidth: 1.6, pointRadius: 0, tension: 0.2, yAxisID: 'y1' },
+      { type: 'line', label: 'Carbon intensity of your consumption (g/kWh)', data: o.daily.map(x => x.ci == null ? null : Math.round(x.ci * 10) / 10), borderColor: '#A87DC4', borderWidth: 1.6, pointRadius: 0, tension: 0, yAxisID: 'y1' },
     ] }, options: _fuelOpts({ plugins: { legend: legend() }, scales: { x: _fuelXAxis(), y: _fuelAxis('MWh', { beginAtZero: true }), y1: _fuelAxis('g CO₂/kWh', { position: 'right', beginAtZero: true, grid: { display: false } }) } }) }, 'carbon-daily');
     const nd = o.days.length;
     _fuelChart('cf-hours', { type: 'bar', data: { labels: HRS, datasets: [
       { label: 'Average consumption (kWh per hour)', data: [...o.hourC].map(v => Math.round(v / nd)), backgroundColor: 'rgba(127,200,248,.45)', borderWidth: 0, yAxisID: 'y' },
-      { type: 'line', label: 'Grid intensity when you consume (g/kWh)', data: [...o.hourI].map((v, h) => o.hourN[h] ? Math.round(v / o.hourN[h] * 10) / 10 : null), borderColor: '#A87DC4', borderWidth: 1.8, pointRadius: 0, tension: 0.3, yAxisID: 'y1' },
+      { type: 'line', label: 'Grid intensity when you consume (g/kWh)', data: [...o.hourI].map((v, h) => o.hourN[h] ? Math.round(v / o.hourN[h] * 10) / 10 : null), borderColor: '#A87DC4', borderWidth: 1.8, pointRadius: 0, tension: 0, yAxisID: 'y1' },
     ] }, options: _fuelOpts({ plugins: { legend: legend() }, scales: { x: _fuelXAxis(), y: _fuelAxis('kWh', { beginAtZero: true }), y1: _fuelAxis('g CO₂/kWh', { position: 'right', beginAtZero: true, grid: { display: false } }) } }) }, 'carbon-average-day');
     heat('cf-hm-ci', o.mh.map(m => [...m.ci].map((v, h) => m.cn[h] ? v / m.cn[h] : null)), 'g/kWh', [[20, 120, 100], [168, 125, 196]]);
     const tot = MIX.reduce((s, [k]) => s + o.mix[k], 0) || 1;
@@ -561,7 +561,7 @@
     const nd = o.days.length;
     _fuelChart('cf-cost-h', { type: 'bar', data: { labels: HRS, datasets: [
       { label: 'Average consumption (kWh per hour)', data: [...o.hourC].map(v => Math.round(v / nd)), backgroundColor: 'rgba(127,200,248,.45)', borderWidth: 0, yAxisID: 'y' },
-      { type: 'line', label: 'Average day-ahead price (€/MWh)', data: [...o.hourP].map((v, h) => o.hourPn[h] ? Math.round(v / o.hourPn[h] * 10) / 10 : null), borderColor: '#FBBF24', borderWidth: 2, pointRadius: 0, tension: .3, yAxisID: 'y1' },
+      { type: 'line', label: 'Average day-ahead price (€/MWh)', data: [...o.hourP].map((v, h) => o.hourPn[h] ? Math.round(v / o.hourPn[h] * 10) / 10 : null), borderColor: '#FBBF24', borderWidth: 2, pointRadius: 0, tension: 0, yAxisID: 'y1' },
     ] }, options: _fuelOpts({ plugins: { legend: legend() }, scales: { x: _fuelXAxis(), y: _fuelAxis('kWh', { beginAtZero: true }), y1: _fuelAxis('€/MWh', { position: 'right', grid: { display: false } }) } }) }, 'carbon-cost-hours');
     const cp = o.capacity, ce = $('cf-cap-kpis');
     if (ce) ce.innerHTML = cp ? [
@@ -577,8 +577,8 @@
       _fuelKpi('Emissions change', (fx.dCO2 > 0 ? '+' : '') + f0(fx.dCO2 / 1000), 'kg CO₂', o.em ? `${(fx.dCO2 / o.em * 100).toFixed(1)} % ${_c('en location-based', 'location-based')}` : '', fx.dCO2 < 0 ? 'up' : fx.dCO2 > 0 ? 'down' : ''),
     ].join('');
     _fuelChart('cf-flex', { type: 'line', data: { labels: HRS, datasets: [
-      { label: 'Today: average kWh per hour', data: fx.before.map(v => Math.round(v)), borderColor: 'rgba(127,200,248,.8)', borderWidth: 2, pointRadius: 0, tension: .3, fill: false },
-      { label: _c(`Après décalage de ${pct} %`, `After moving ${pct} %`), data: fx.after.map(v => Math.round(v)), borderColor: '#14D3A9', borderWidth: 2.4, pointRadius: 0, tension: .3, fill: { target: 0, above: 'rgba(20,211,169,.15)', below: 'rgba(237,105,101,.15)' } },
+      { label: 'Today: average kWh per hour', data: fx.before.map(v => Math.round(v)), borderColor: 'rgba(127,200,248,.8)', borderWidth: 2, pointRadius: 0, tension: 0, fill: false },
+      { label: _c(`Après décalage de ${pct} %`, `After moving ${pct} %`), data: fx.after.map(v => Math.round(v)), borderColor: '#14D3A9', borderWidth: 2.4, pointRadius: 0, tension: 0, fill: { target: 0, above: 'rgba(20,211,169,.15)', below: 'rgba(237,105,101,.15)' } },
     ] }, options: _fuelOpts({ plugins: { legend: legend() }, scales: { x: _fuelXAxis(), y: _fuelAxis('kWh per hour', { beginAtZero: true }) } }) }, 'carbon-flexibility');
   }
 
@@ -598,9 +598,9 @@
         _fuelKpi('CO₂ avoided', em(pv.co2, pv.co2 < 1e6).join(' '), '', 'location-based, on self-consumption', 'up'),
       ].join('');
       _fuelChart('cf-pv-day', { type: 'line', data: { labels: HRS, datasets: [
-        { label: 'Self-consumed solar', data: pv.hourS.map(v => Math.round(v)), borderColor: 'rgba(251,191,36,.9)', backgroundColor: 'rgba(251,191,36,.35)', fill: 'origin', borderWidth: 0, pointRadius: 0, tension: .3 },
-        { label: 'Solar production', data: pv.hourP.map(v => Math.round(v)), borderColor: '#FBBF24', borderWidth: 2, borderDash: [5, 4], pointRadius: 0, tension: .3, fill: false },
-        { label: 'Your consumption', data: pv.hourC.map(v => Math.round(v)), borderColor: '#7FC8F8', borderWidth: 2.4, pointRadius: 0, tension: .3, fill: false },
+        { label: 'Self-consumed solar', data: pv.hourS.map(v => Math.round(v)), borderColor: 'rgba(251,191,36,.9)', backgroundColor: 'rgba(251,191,36,.35)', fill: 'origin', borderWidth: 0, pointRadius: 0, tension: 0 },
+        { label: 'Solar production', data: pv.hourP.map(v => Math.round(v)), borderColor: '#FBBF24', borderWidth: 2, borderDash: [5, 4], pointRadius: 0, tension: 0, fill: false },
+        { label: 'Your consumption', data: pv.hourC.map(v => Math.round(v)), borderColor: '#7FC8F8', borderWidth: 2.4, pointRadius: 0, tension: 0, fill: false },
       ] }, options: _fuelOpts({ plugins: { legend: legend() }, scales: { x: _fuelXAxis(), y: _fuelAxis('kWh per hour (average day)', { beginAtZero: true }) } }) }, 'carbon-solar-day');
       const ms = Object.keys(pv.monthly).sort();
       _fuelChart('cf-pv-m', { type: 'bar', data: { labels: ms.map(m => MON[+m.slice(5) - 1] + ' ' + m.slice(2, 4)), datasets: [
@@ -613,7 +613,7 @@
     if (o.ppaMWh) {
       _fuelChart('cf-ppa-chart', { type: 'bar', data: { labels: HRS, datasets: [
         { label: 'Your consumption (kWh per hour)', data: [...o.hourC].map(v => Math.round(v / nd)), backgroundColor: 'rgba(127,200,248,.45)', borderWidth: 0 },
-        { type: 'line', label: S.settings.ppaTech === 'wind' ? _c('Production du PPA éolien (kWh par heure)', 'Wind PPA output (kWh per hour)') : _c('Production du PPA solaire (kWh par heure)', 'Solar PPA output (kWh per hour)'), data: [...o.ppa.prof].map(v => Math.round(v / nd)), borderColor: S.settings.ppaTech === 'wind' ? '#14D3A9' : '#FBBF24', borderWidth: 2.4, pointRadius: 0, tension: .3, fill: false },
+        { type: 'line', label: S.settings.ppaTech === 'wind' ? _c('Production du PPA éolien (kWh par heure)', 'Wind PPA output (kWh per hour)') : _c('Production du PPA solaire (kWh par heure)', 'Solar PPA output (kWh per hour)'), data: [...o.ppa.prof].map(v => Math.round(v / nd)), borderColor: S.settings.ppaTech === 'wind' ? '#14D3A9' : '#FBBF24', borderWidth: 2.4, pointRadius: 0, tension: 0, fill: false },
       ] }, options: _fuelOpts({ plugins: { legend: legend() }, scales: { x: _fuelXAxis(), y: _fuelAxis('kWh', { beginAtZero: true }) } }) }, 'carbon-ppa-hours');
       $('cf-ppa-note').textContent = _c(`Couverture en volume annuel ${pc(o.coverage)} ; heure par heure, seulement ${pc(o.hourly)} de votre consommation est couverte par la production du PPA au même moment (vue 24/7), ${MWh(o.ppa.surplus)} de production du PPA dépassent vos besoins au moment où ils sont produits.`,
         `Annual volume coverage ${pc(o.coverage)}; hour by hour only ${pc(o.hourly)} of your consumption is matched by the PPA output at the same time (24/7 view), ${MWh(o.ppa.surplus)} of PPA output exceed your needs at the time they are produced.`);
@@ -765,8 +765,8 @@
       { label: 'Covered by the ACC', data: x.map(r1), backgroundColor: 'rgba(251,191,36,.85)', stack: 's', borderWidth: 0, order: 2 },
       { label: 'Complement from the supplier', data: comp, backgroundColor: 'rgba(127,200,248,.55)', stack: 's', borderWidth: 0, order: 2 },
       { label: 'Surplus (your share not consumed)', data: sur, backgroundColor: 'rgba(237,105,101,.55)', stack: 's', borderWidth: 0, order: 2 },
-      { type: 'line', label: 'Your consumption', stack: 'lc', data: c.map(r1), borderColor: '#E6EDF3', borderWidth: 2, pointRadius: 0, tension: .3, fill: false, order: 1 },
-      { type: 'line', label: 'Your share of the ACC production', stack: 'lg', data: g.map(r1), borderColor: '#FBBF24', borderDash: [5, 4], borderWidth: 1.6, pointRadius: 0, tension: .3, fill: false, order: 1 },
+      { type: 'line', label: 'Your consumption', stack: 'lc', data: c.map(r1), borderColor: '#E6EDF3', borderWidth: 2, pointRadius: 0, tension: 0, fill: false, order: 1 },
+      { type: 'line', label: 'Your share of the ACC production', stack: 'lg', data: g.map(r1), borderColor: '#FBBF24', borderDash: [5, 4], borderWidth: 1.6, pointRadius: 0, tension: 0, fill: false, order: 1 },
     ] }, options: _fuelOpts({ plugins: { legend: legend(), tooltip: { callbacks: { label: t => ` ${t.dataset.label}: ${f1(t.raw)} kWh` } } },
       scales: { x: Object.assign(_fuelXAxis(), { stacked: true }), y: _fuelAxis('kWh per hour (average day)', { stacked: true, beginAtZero: true }) } }) }, 'carbon-acc-average-day');
     const S = v => v.reduce((a, b) => a + (b || 0), 0), sc = S(c), sx = S(x), sg = S(g);

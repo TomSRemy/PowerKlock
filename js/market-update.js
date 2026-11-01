@@ -70,12 +70,12 @@ _muReg({
     const r = v => v == null ? null : Math.round(v * 10) / 10;
     const ds = [
       { label: 'Normal ' + j.normal_years.join('–'), data: sl(s.normal).map(r), borderColor: 'rgba(184,201,217,.75)', borderDash: [5, 4], borderWidth: 1.4, pointRadius: 0, fill: false, order: 2 },
-      { label: 'Forecast (ensemble mean)', data: sl(s.mean).map(r), borderColor: st.col, borderWidth: 2.2, pointRadius: 0, tension: .25, order: 1,
+      { label: 'Forecast (ensemble mean)', data: sl(s.mean).map(r), borderColor: st.col, borderWidth: 2.2, pointRadius: 0, tension: 0, order: 1,
         fill: { target: 0, above: st.above, below: st.below } },
       { label: '_p90', data: sl(s.p90).map(r), borderWidth: 0, pointRadius: 0, fill: '+1', backgroundColor: 'rgba(122,147,171,.14)', order: 3 },
       { label: 'Ensemble 10–90 %', data: sl(s.p10).map(r), borderWidth: 0, pointRadius: 0, fill: false, backgroundColor: 'rgba(122,147,171,.14)', order: 3 },
     ];
-    if (s.actual && s.actual.some(v => v != null)) ds.push({ label: p.series === 'solar' || p.series === 'wind' ? (cc === 'FR' ? 'Actual (RTE)' : 'Actual (ENTSO-E)') : 'Observed', data: sl(s.actual), borderColor: '#FFFFFF', backgroundColor: '#FFFFFF', borderWidth: 1.8, pointRadius: 0, tension: .25, spanGaps: false, order: 0 });
+    if (s.actual && s.actual.some(v => v != null)) ds.push({ label: p.series === 'solar' || p.series === 'wind' ? (cc === 'FR' ? 'Actual (RTE)' : 'Actual (ENTSO-E)') : 'Observed', data: sl(s.actual), borderColor: '#FFFFFF', backgroundColor: '#FFFFFF', borderWidth: 1.8, pointRadius: 0, tension: 0, spanGaps: false, order: 0 });
     const ti = days.indexOf(_muToday());
     // the forecast part (days after the last observed one) sits on the hatched FORECAST band (js/pk-forecast.js)
     const obs = sl(s.actual); let fi = -1; obs.forEach((v, i) => { if (v != null) fi = i; });
@@ -463,7 +463,7 @@ _muReg({
     if (!rows.length) { noDataMsg(cid, 'Price history not available', ''); return null; }
     const v = rows.map(r => r[1]), mean = _muMean(v);
     _fuelChart(cid, { type: 'line', data: { labels: rows.map(r => _muDay(r[0])), datasets: [
-      { label: 'Daily baseload', data: v, borderColor: '#14D3A9', backgroundColor: 'rgba(20,211,169,.10)', fill: true, borderWidth: 2, pointRadius: 2.5, tension: .35 },
+      { label: 'Daily baseload', data: v, borderColor: '#14D3A9', backgroundColor: 'rgba(20,211,169,.10)', fill: true, borderWidth: 2, pointRadius: 2.5, tension: 0 },
       { label: '30-day mean ' + mean.toFixed(1), data: v.map(() => Math.round(mean * 10) / 10), borderColor: 'rgba(184,201,217,.7)', borderDash: [4, 3], borderWidth: 1.2, pointRadius: 0 },
     ] }, options: _fuelOpts({ scales: { x: Object.assign(_fuelXAxis(), { ticks: { color: C_TX3, font: { size: 10 }, maxTicksLimit: 10, maxRotation: 0 } }), y: _fuelAxis('€/MWh') }, plugins: { legend: _muLegend() } }) }, 'spot-30d-' + (p.zone || 'FR'));
     const last = rows[rows.length - 1];

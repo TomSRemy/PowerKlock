@@ -250,7 +250,7 @@
     _fuelChart('fc-hourly', { type: 'line', data: { labels: lbl, datasets: [
       { label: '_hi', data: sl(band.hi), borderWidth: 0, pointRadius: 0, fill: '+1', backgroundColor: 'rgba(127,200,248,.18)' },
       { label: 'P10–P90 (31 weather scenarios)', data: sl(band.lo), borderWidth: 0, pointRadius: 0, fill: false, backgroundColor: 'rgba(127,200,248,.18)' },
-      { label: 'Forecast (average of the weather models)', data: sl(P), borderColor: col, backgroundColor: col, borderWidth: 2.2, pointRadius: 0, tension: .25, fill: false },
+      { label: 'Forecast (average of the weather models)', data: sl(P), borderColor: col, backgroundColor: col, borderWidth: 2.2, pointRadius: 0, tension: 0, fill: false },
     ] }, options: _fuelOpts({ plugins: { pkFcZone: { from: Math.max(0, iNow), now: iNow, label: 'FORECAST' }, legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 8, filter: it => !/^_/.test(it.text) } } },
       scales: { x: Object.assign(_fuelXAxis(), { ticks: { color: C_TX3, font: { size: 10 }, autoSkip: false, maxRotation: 0, callback: (v, i) => /^[A-Z]/.test(lbl[i]) ? lbl[i] : '' } }), y: _fuelAxis('MW', { beginAtZero: true }) } }) }, 'production-forecast-hourly');
     // daily chart, 16 days
