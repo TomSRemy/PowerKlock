@@ -1,3 +1,5 @@
+**Pour reprendre la discussion avec Tom dans une autre session : lire d'abord [`SESSION_DISCUSSION.md`](SESSION_DISCUSSION.md).**
+
 # Cours pour Tom : le marché de l'électricité et le prix d'un PPA
 
 - `cours_simple.md` / `.pdf` : 13 chapitres courts. Chacun contient l'idée, un schéma, un vrai chiffre, un encadré
