@@ -17,6 +17,8 @@
 // ════════════════════════════════════════════════════════════════════════════
 (function () {
   'use strict';
+  // the unit as the rest of the site writes it: €/MWh, £/MWh (was EUR/MWh on this page only)
+  function pfSym(c) { return c === 'EUR' ? '€' : c === 'GBP' ? '£' : c; }
 
   var FORWARD_TENORS = ['M+1', 'M+2', 'M+3', 'Q+1', 'Q+2', 'Q+3', 'S+1', 'S+2', 'Y+1', 'Y+2', 'Y+3'];
   var COUNTRIES = [
@@ -128,7 +130,7 @@
       return {
         l: c.flag + ' ' + c.label + ' · Y+1',
         v: num(y1 && y1.value, 2),
-        u: cs.currency + '/MWh'
+        u: pfSym(cs.currency) + '/MWh'
       };
     });
     if (typeof window.setStats === 'function') window.setStats('prfwd-kpi-strip', stats);
@@ -142,8 +144,8 @@
       var y1 = tenorRow(cs, 'Y+1');
       return '<tr class="pf-row" data-country="' + c.code + '" style="cursor:pointer">' +
         '<td style="text-align:left;font-family:\'Inter\',sans-serif">' + c.flag + ' ' + c.label + '</td>' +
-        '<td>' + num(cs.spot && cs.spot.value, 2) + ' ' + cs.currency + '/MWh</td>' +
-        '<td>' + num(y1 && y1.value, 2) + ' ' + cs.currency + '/MWh</td>' +
+        '<td>' + num(cs.spot && cs.spot.value, 2) + ' ' + pfSym(cs.currency) + '/MWh</td>' +
+        '<td>' + num(y1 && y1.value, 2) + ' ' + pfSym(cs.currency) + '/MWh</td>' +
         '<td>' + deltaCell(y1 && y1.varD1Pct) + '</td>' +
         '<td>' + deltaCell(y1 && y1.varW1Pct) + '</td>' +
         '</tr>';
@@ -223,7 +225,7 @@
 
   function renderDrillKpis(cc) {
     var cs = PF.snap.countries[cc];
-    var unit = cs.currency + '/MWh';
+    var unit = pfSym(cs.currency) + '/MWh';
     var y1 = tenorRow(cs, 'Y+1');
     var y2 = tenorRow(cs, 'Y+2');
     var stats = [
@@ -311,7 +313,7 @@
     var host = document.getElementById('pf-drill-forward-table');
     if (!host) return;
     var cs = PF.snap.countries[cc];
-    var unit = cs.currency + '/MWh';
+    var unit = pfSym(cs.currency) + '/MWh';
     var rows = FORWARD_TENORS.map(function (t) {
       var row = tenorRow(cs, t);
       if (!row) return '<tr><td>' + t + '</td><td colspan="4" style="text-align:left;color:var(--text3)">unavailable</td></tr>';
@@ -405,10 +407,10 @@
             return { label: (s[1] === 'Latest' ? 'Latest' : 'On') + ' ' + (asOf2[s[0]] || s[0]), data: vals, borderColor: s[2], backgroundColor: s[2], borderWidth: s[3], borderDash: s[4], pointRadius: 3, tension: 0, fill: false, spanGaps: true };
           });
           var o2 = lineOpts(true);
-          o2.scales = { x: { grid: AX.grid, ticks: { color: '#7A93AB', font: { size: 10, family: "'JetBrains Mono', monospace" }, autoSkip: false, maxRotation: 0 } }, y: yAx(cur + '/MWh') };
+          o2.scales = { x: { grid: AX.grid, ticks: { color: '#7A93AB', font: { size: 10, family: "'JetBrains Mono', monospace" }, autoSkip: false, maxRotation: 0 } }, y: yAx(pfSym(cur) + '/MWh') };
           mkChart(cid, { type: 'line', data: { labels: labels2, datasets: ds2 }, options: o2 });
           var y1 = FORWARD_TENORS.indexOf('Y+1'), a = ds2[0].data[y1], b = ds2[1].data[y1];
-          return { sub: countryMeta(p.country).label + ' · tenor by tenor · ' + (asOf2[p.vs] || p.vs) + ' → ' + (asOf2[last] || last) + (a != null && b != null ? ' · Y+1 ' + (a - b >= 0 ? '+' : '') + num(a - b, 2) + ' ' + cur + '/MWh' : '') };
+          return { sub: countryMeta(p.country).label + ' · tenor by tenor · ' + (asOf2[p.vs] || p.vs) + ' → ' + (asOf2[last] || last) + (a != null && b != null ? ' · Y+1 ' + (a - b >= 0 ? '+' : '') + num(a - b, 2) + ' ' + pfSym(cur) + '/MWh' : '') };
         }
         // Compared tenor by tenor (rolling products): today's contract in brackets.
         var labels = FORWARD_TENORS.map(function (t) { var r = tenorRow(snap, t); return r ? t + ' · ' + r.contract.replace(/^[A-Z]{2}\s+/, '').replace(/\s+base$/i, '') : t; });
@@ -420,7 +422,7 @@
           return { label: s[1] + (asOf[s[0]] ? ' (' + asOf[s[0]] + ')' : ''), data: vals, borderColor: s[2], backgroundColor: s[2], borderWidth: s[3], borderDash: s[4], pointRadius: s[0] ? 0 : 3, tension: 0, fill: false, spanGaps: true };
         });
         var o = lineOpts(true);
-        o.scales = { x: { grid: AX.grid, ticks: { color: '#7A93AB', font: { size: 10, family: "'JetBrains Mono', monospace" }, autoSkip: false, maxRotation: 0 } }, y: yAx(cur + '/MWh') };
+        o.scales = { x: { grid: AX.grid, ticks: { color: '#7A93AB', font: { size: 10, family: "'JetBrains Mono', monospace" }, autoSkip: false, maxRotation: 0 } }, y: yAx(pfSym(cur) + '/MWh') };
         mkChart(cid, { type: 'line', data: { labels: labels, datasets: ds }, options: o });
         return { sub: countryMeta(p.country).label + ' · settlement ' + (asOf[0] || last) + ' · tenor by tenor' };
       });
@@ -437,7 +439,7 @@
         var rg = rangeOf(all, p);
         var vals = ((cs.forwardCurve || {})[p.tenor] || []).slice(rg[0], rg[1]);
         var cur = (PF.snap.countries[p.country] || {}).currency || 'EUR';
-        var o = lineOpts(false); o.scales = { x: AX, y: yAx(cur + '/MWh') };
+        var o = lineOpts(false); o.scales = { x: AX, y: yAx(pfSym(cur) + '/MWh') };
         mkChart(cid, { type: 'line', data: { labels: all.slice(rg[0], rg[1]), datasets: [{ label: p.tenor, data: vals, borderColor: countryMeta(p.country).colour, borderWidth: 1.6, pointRadius: 0, tension: 0, fill: false, spanGaps: true }] }, options: o });
         return { sub: countryMeta(p.country).label + ' · ' + p.tenor };
       });
@@ -462,7 +464,7 @@
         }).filter(function (d) { return d.data.some(function (v) { return v != null; }); });
         if (!ds.length) { noDataMsg(cid, 'No calendar contracts quoted for ' + countryMeta(p.country).label + ' in this window', ''); return null; }
         var cur = (PF.snap.countries[p.country] || {}).currency || 'EUR';
-        var o = lineOpts(true); o.scales = { x: AX, y: yAx(cur + '/MWh') };
+        var o = lineOpts(true); o.scales = { x: AX, y: yAx(pfSym(cur) + '/MWh') };
         mkChart(cid, { type: 'line', data: { labels: dates, datasets: ds }, options: o });
         return { sub: countryMeta(p.country).label };
       });
@@ -497,7 +499,7 @@
         }).filter(function (d) { return d.data.some(function (v) { return v != null; }); });
         if (!ds.length) { noDataMsg(cid, 'No ' + (KIND_NAME[kind] || kind) + ' quoted for ' + countryMeta(p.country).label + ' in this window', ''); return null; }
         var cur = (PF.snap.countries[p.country] || {}).currency || 'EUR';
-        var o = lineOpts(true); o.scales = { x: AX, y: yAx(cur + '/MWh') };
+        var o = lineOpts(true); o.scales = { x: AX, y: yAx(pfSym(cur) + '/MWh') };
         mkChart(cid, { type: 'line', data: { labels: dates, datasets: ds }, options: o });
         return { sub: 'next ' + ds.length + ' ' + (KIND_NAME[kind] || kind) + ' · baseload' };
       });
@@ -600,7 +602,7 @@
       return '<tr>' +
         '<td style="text-align:left;font-family:\'Inter\',sans-serif">' + c.flag + ' ' + c.label + '</td>' +
         '<td style="text-align:left;font-family:\'Inter\',sans-serif">' + row.contract + '</td>' +
-        '<td>' + num(row.value, 2) + ' ' + cs.currency + '/MWh</td>' +
+        '<td>' + num(row.value, 2) + ' ' + pfSym(cs.currency) + '/MWh</td>' +
         '<td>' + deltaCell(row.varD1Pct) + '</td>' +
         '<td>' + deltaCell(row.varW1Pct) + '</td>' +
         '</tr>';
