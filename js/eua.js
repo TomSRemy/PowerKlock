@@ -133,6 +133,19 @@ async function drawEUA() {
   const P = _fuelPageP('fuel');
   // EU gas storage: the year-by-year chart since 2019 is kept on the page, the 5-year band stays a dashboard widget (note 90)
   ['fuel-eua-ttf', 'fuel-switch', 'fuel-hubs', 'fuel-coal-oil', 'fuel-lng'].filter(id => document.getElementById(id)).forEach(id => PKW.draw(id, id, P));
+  // Coal & oil tab: coal and oil each on its own chart, LNG below, key figures on top (note 92)
+  if (document.getElementById('fuel-coal')) PKW.draw('fuel-coal-oil', 'fuel-coal', Object.assign({}, P, { series: 'coal' }));
+  if (document.getElementById('fuel-oil')) PKW.draw('fuel-coal-oil', 'fuel-oil', Object.assign({}, P, { series: 'oil' }));
+  const jkm = PKC.last('jkm'), kp2 = document.getElementById('fuel-co-kpis');
+  if (kp2) {
+    const ttfU = ttf && fx ? ttf.v * fx.v / 3.412 : null, lngSp = jkm && ttfU != null ? jkm.v - ttfU : null;
+    kp2.innerHTML =
+      _fuelKpi('API2 coal ' + PKC.contractLabel('coal'), _fuelFmt(coal && coal.v), '$/t', _fuelChg(coal)) +
+      _fuelKpi('Brent M+1', _fuelFmt(brent && brent.v), '$/bbl', _fuelChg(brent)) +
+      _fuelKpi('JKM M+1', _fuelFmt(jkm && jkm.v, 2), '$/MMBtu', _fuelChg(jkm, 2)) +
+      _fuelKpi('JKM − TTF', lngSp == null ? '–' : _fuelSigned(lngSp, 2), '$/MMBtu', lngSp == null ? '' : lngSp > 0 ? 'Asia pays more: LNG cargoes go east' : 'Europe pays more: LNG cargoes come to Europe') +
+      _fuelKpi('Coal→gas switch', _fuelFmt(sw, 1), '€/t', sw != null && eua ? (eua.v > sw ? 'EUA above → gas in merit' : 'EUA below → coal in merit') : '');
+  }
 
   const F = PKC.FUEL, fr = typeof _mrnFr === 'function' && _mrnFr(), n = (v, d) => fr ? v.toFixed(d).replace('.', ',') : v.toFixed(d);
   document.getElementById('fuel-note').innerHTML = fr
@@ -223,10 +236,16 @@ _fuelReg({
 _fuelReg({
   id: 'fuel-coal-oil', title: 'Coal & oil', category: 'fuels', page: 'eua', pageCanvas: 'fuel-coal-oil',
   desc: 'API2 coal ($/t) and Brent M+1 ($/bbl).',
-  params: [FUEL_PERIOD_PARAM], defaults: { period: '1Y' },
+  params: [FUEL_PERIOD_PARAM, { key: 'series', label: 'Series', options: [['both', 'Coal and oil'], ['coal', 'Coal'], ['oil', 'Oil']] }], defaults: { period: '1Y', series: 'both' },
   async draw(cid, p) {
     await _fuelData();
     const [from, to] = _fuelRange(p);
+    if (p.series === 'coal' || p.series === 'oil') {   // one series, one axis (note 92)
+      const coal = p.series === 'coal', j1 = _fuelJoin([PKC.asMap(coal ? 'coal' : 'brent', true)], from, to);
+      _fuelChart(cid, { type: 'line', data: { labels: j1.labels, datasets: [coal ? _fuelLineDs('API2 ' + PKC.contractLabel('coal') + ' ($/t)', j1.cols[0], C_COAL) : _fuelLineDs('Brent M+1 ($/bbl)', j1.cols[0], C_BRENT)] },
+        options: _fuelOpts({ plugins: { legend: { display: false } }, scales: { x: _fuelXAxis(), y: _fuelAxis(coal ? '$/t' : '$/bbl') } }) }, coal ? 'coal-api2' : 'brent');
+      return;
+    }
     const j = _fuelJoin([PKC.asMap('coal', true), PKC.asMap('brent', true)], from, to);
     _fuelChart(cid, { type: 'line', data: { labels: j.labels, datasets: [
       _fuelLineDs('API2 ' + PKC.contractLabel('coal') + ' ($/t)', j.cols[0], C_COAL, { yAxisID: 'y' }),
