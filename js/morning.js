@@ -971,7 +971,7 @@ async function renderMorning() {
     },
     'hs-morning-fund': () => {   // the CATE presentation's supply and demand charts
       [['gas-storage-years', 'mrn-gsy', {}], ['nuc-monthly-years', 'mrn-nucy', {}], ['hydro-reservoirs', 'mrn-hyd', { country: 'FR' }],
-        ['wx-outlook', 'mrn-wxt', { series: 'temp' }], ['fr-load-normal', 'mrn-fload', {}], ['remit-unavail', 'mrn-fremit', { period: '6M' }], ['fuel-coal-oil', 'mrn-coal', {}], ['wx-outlook', 'mrn-wxw', { series: 'wind' }], ['wx-outlook', 'mrn-wxs', { series: 'solar' }], ['wx-outlook', 'mrn-wxp', { series: 'precip' }]]
+        ['wx-outlook', 'mrn-wxt', { series: 'temp' }], ['fr-load-normal', 'mrn-fload', { days: '730' }], ['remit-unavail', 'mrn-fremit', { period: '6M' }], ['fuel-coal-oil', 'mrn-coal', {}], ['wx-outlook', 'mrn-wxw', { series: 'wind' }], ['wx-outlook', 'mrn-wxs', { series: 'solar' }], ['wx-outlook', 'mrn-wxp', { series: 'precip' }]]
         .forEach(([w, c, p]) => { if (PKW.get(w)) PKW.draw(w, c, p).then(r => sub(c + '-sub', r)).catch(() => {}); });
     },
     'hs-morning-3': () => {
@@ -986,7 +986,7 @@ async function renderMorning() {
     'hs-morning-idx': () => { if (MRN.k) _mrnFund(MRN.k);
       if (PKW.get('fc-neg')) PKW.draw('fc-neg', 'mrn-neg', {}).then(r => sub('mrn-neg-sub', r));
       if (PKW.get('fc-combined')) { PKW.draw('fc-combined', 'mrn-fcc', { tech: 'wind' }).then(r => sub('mrn-fcc-sub', r)); PKW.draw('fc-combined', 'mrn-fcs', { tech: 'solar' }).then(r => sub('mrn-fcs-sub', r)); } },
-    'hs-morning-4': () => { _mrnTiles2(); PKW.draw('fr-sys-prod', 'mrn-prod', { day: 'latest' }); if (PKW.get('fr-sys-monthly')) PKW.draw('fr-sys-monthly', 'mrn-sysm', { view: 'twh', win: '3Y' }); PKW.draw('remit-unavail', 'mrn-remit', { period: '3M' }); if (PKW.get('fr-load-normal')) PKW.draw('fr-load-normal', 'mrn-loadn', {}); },
+    'hs-morning-4': () => { _mrnTiles2(); PKW.draw('fr-sys-prod', 'mrn-prod', { day: 'latest' }); if (PKW.get('fr-sys-monthly')) PKW.draw('fr-sys-monthly', 'mrn-sysm', { view: 'twh', win: 'All' }); },
   };
   Object.entries(lazy).forEach(([id, fn]) => {
     const sec = document.getElementById(id); if (!sec) return;

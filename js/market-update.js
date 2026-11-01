@@ -149,21 +149,23 @@ _muReg({
 _muReg({
   id: 'fr-load-normal', title: 'France consumption vs normal', category: 'france', page: 'load', pageCanvas: 'load-normal', source: 'RTE éCO2mix',
   desc: 'French consumption over the last 60 days (daily and 7-day average) against the 2016–2025 average of the same calendar days (GWh/day).',
-  async draw(cid) {
+  params: [{ key: 'days', label: 'Window', options: [['60', '60 days'], ['365', '1 year'], ['730', '2 years']] }], defaults: { days: '60' },
+  async draw(cid, p) {
     const j = await _muGet('frd', 'history/rte/fr_daily.json');
     if (!j || !j.rows) { noDataMsg(cid, 'RTE history not available', ''); return null; }
     const norm = {}; j.rows.forEach(r => { const yy = +r.d.slice(0, 4); if (yy < 2016 || yy > 2025 || r.loadAvg == null) return; (norm[r.d.slice(5)] = norm[r.d.slice(5)] || []).push(r.loadAvg * 24 / 1000); });
-    const rows = j.rows.filter(r => r.loadAvg != null).slice(-60);
+    const nd = +((p && p.days) || 60), long = nd > 90;   // a long window keeps ISO labels so the period buttons can zoom it (note 82)
+    const rows = j.rows.filter(r => r.loadAvg != null).slice(-nd);
     const nv = rows.map(r => { const k = r.d.slice(5); const a = norm[k]; return a ? Math.round(a.reduce((s, v) => s + v, 0) / a.length) : null; });
     const act = rows.map(r => Math.round(r.loadAvg * 24 / 1000));
     // weekly cycle: compare the 7-day average with the (calendar-day) normal
     const all = j.rows.filter(r => r.loadAvg != null), off = all.length - rows.length;
     const roll7 = rows.map((_, i) => { const w = all.slice(off + i - 6, off + i + 1).map(r => r.loadAvg * 24 / 1000); return w.length === 7 ? Math.round(_muMean(w)) : null; });
-    _fuelChart(cid, { type: 'line', data: { labels: rows.map(r => _muDay(r.d)), datasets: [
+    _fuelChart(cid, { type: 'line', data: { labels: rows.map(r => long ? r.d : _muDay(r.d)), datasets: [
       { label: 'Normal 2016–2025', data: nv, borderColor: 'rgba(184,201,217,.75)', borderDash: [5, 4], borderWidth: 1.4, pointRadius: 0, fill: false },
-      { label: 'Consumption, 7-day average', data: roll7, borderColor: '#7FC8F8', borderWidth: 2.2, pointRadius: 0, tension: .2, fill: { target: 0, above: 'rgba(238,155,0,.20)', below: 'rgba(20,211,169,.20)' } },
-      { label: 'Daily consumption', data: act, borderColor: 'rgba(127,200,248,.35)', borderWidth: 1, pointRadius: 0, tension: .2, fill: false },
-    ] }, options: _fuelOpts({ scales: { x: Object.assign(_fuelXAxis(), { ticks: { color: C_TX3, font: { size: 10 }, maxTicksLimit: 10, maxRotation: 0 } }), y: _fuelAxis('GWh/day') }, plugins: { legend: _muLegend() } }) }, 'consumption-vs-normal');
+      { label: 'Consumption, 7-day average', data: roll7, borderColor: '#7FC8F8', borderWidth: 2.2, pointRadius: 0, fill: { target: 0, above: 'rgba(238,155,0,.20)', below: 'rgba(20,211,169,.20)' } },
+      { label: 'Daily consumption', data: act, borderColor: 'rgba(127,200,248,.35)', borderWidth: 1, pointRadius: 0, fill: false },
+    ] }, options: _fuelOpts({ scales: { x: Object.assign(_fuelXAxis(), { ticks: { color: C_TX3, font: { size: 10 }, maxTicksLimit: 10, maxRotation: 0, callback(v) { const l = this.getLabelForValue(v); return long ? _muDay(l) + ' ' + l.slice(2, 4) : l; } } }), y: _fuelAxis('GWh/day') }, plugins: { legend: _muLegend() } }) }, 'consumption-vs-normal');
     const a7 = roll7[roll7.length - 1], n7 = _muMean(nv.slice(-7));
     const dv = n7 ? ((a7 / n7 - 1) * 100 >= 0 ? '+' : '') + ((a7 / n7 - 1) * 100).toFixed(1) + ' %' : '';
     return { sub: _muT(`7 derniers jours : ${a7 ? a7.toFixed(0) : '–'} GWh/jour, ${dv} vs normale`, `Last 7 days ${a7 ? a7.toFixed(0) : '–'} GWh/day, ${dv} vs normal`) };

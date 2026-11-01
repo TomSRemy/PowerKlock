@@ -4343,7 +4343,7 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
           </div>
           <div class="chart-container fuel-card">
             <div class="fuel-card-head"><div><div class="table-title">France consumption vs normal</div><div class="fuel-card-sub" id="mrn-fload-sub"></div></div></div>
-            <div style="position:relative;height:280px"><canvas id="mrn-fload" style="width:100%;height:280px"></canvas></div>
+            <div style="position:relative;height:280px"><canvas id="mrn-fload" data-period="3M" style="width:100%;height:280px"></canvas></div>
           </div>
         </div>
         <div class="mrn-fund-grp">2 · Low-carbon supply</div>
@@ -4443,17 +4443,7 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
           </div>
           <div class="chart-container fuel-card">
             <div class="fuel-card-head"><div><div class="table-title">France production by month</div><div class="fuel-card-sub" id="mrn-sysm-sub">Monthly production by source since 2015</div></div><span class="source-badge">RTE éCO2mix</span></div>
-            <div style="position:relative;height:300px"><canvas id="mrn-sysm" style="width:100%;height:300px"></canvas></div>
-          </div>
-        </div>
-        <div class="fuel-grid-2 mrn3-row">
-          <div class="chart-container fuel-card">
-            <div class="fuel-card-head"><div><div class="table-title">Nuclear unavailability</div><div class="fuel-card-sub" id="mrn-remit-sub">Unavailable capacity, actual and operator forecast</div></div><span class="source-badge">RTE / REMIT</span></div>
-            <div style="position:relative;height:300px"><canvas id="mrn-remit" style="width:100%;height:300px"></canvas></div>
-          </div>
-          <div class="chart-container fuel-card">
-            <div class="fuel-card-head"><div><div class="table-title">France consumption vs normal</div><div class="fuel-card-sub" id="mrn-loadn-sub">Daily consumption against the seasonal normal</div></div><span class="source-badge">RTE éCO2mix</span></div>
-            <div style="position:relative;height:300px"><canvas id="mrn-loadn" style="width:100%;height:300px"></canvas></div>
+            <div style="position:relative;height:300px"><canvas id="mrn-sysm" data-period="3Y" style="width:100%;height:300px"></canvas></div>
           </div>
         </div>
 

@@ -574,5 +574,17 @@
  "65": {
   "status": "done",
   "reply": "Fait : l’onglet Quotidien a maintenant un graphique, le clean spark spread et le clean dark spread base de chaque zone pour le jour de livraison, au-dessus du tableau."
+ },
+ "82": {
+  "status": "done",
+  "reply": "Fait : « Production France par mois » montre maintenant tout l’historique depuis 2015, avec les boutons de période (3M à 5Y, Tout) en haut à droite ; il s’ouvre sur 3 ans."
+ },
+ "84": {
+  "status": "done",
+  "reply": "Fait : ce graphique était en double ; il reste en haut, dans Fondamentaux, et sort de Système électrique (comme le graphique des indisponibilités nucléaires, lui aussi en double). Il couvre maintenant 2 ans avec les boutons de période (ouvert sur 3 mois) et ses lignes ne sont plus lissées. Pour l’organisation : je propose de renommer « Fondamentaux » en « Météo, conso et nucléaire » et de garder « Système électrique » pour la production. Dis-moi si ça te va avant que je le fasse."
+ },
+ "94": {
+  "status": "done",
+  "reply": "Réponse : le premier graphique suit un seul produit (celui choisi, ici AIB renouvelable), une courbe par année de production (Cal-24, Cal-25…). Celui-ci compare les produits entre eux (hydro, éolien, solaire…) sur l’année de production la plus proche. Rien changé."
  }
 }
