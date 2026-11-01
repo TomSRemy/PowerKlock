@@ -1,6 +1,6 @@
 {
  "name": "PowerKlock data API",
- "updated": "2026-10-31T20:45:20Z",
+ "updated": "2026-11-01T11:49:17Z",
  "usage": "Plain HTTPS GET, JSON, no key. Cite the source of each dataset. Times are Paris delivery days unless stated.",
  "datasets": [
   {
@@ -9,7 +9,7 @@
    "content": "Every bidding zone: average, min, max, peak / off-peak, negative hours and the 96 quarter-hour prices of the latest delivery day.",
    "refresh": "twice a day",
    "source": "ENTSO-E Transparency Platform",
-   "sizeKB": 23
+   "sizeKB": 15
   },
   {
    "url": "https://tomsremy.github.io/PowerKlock/data/history/daily/{YYYY-MM-DD}.json",
@@ -25,7 +25,7 @@
    "content": "Per zone and day: average, min, max, negative hours.",
    "refresh": "daily",
    "source": "ENTSO-E Transparency Platform",
-   "example": "https://tomsremy.github.io/PowerKlock/data/history/monthly/2026-10.json"
+   "example": "https://tomsremy.github.io/PowerKlock/data/history/monthly/2026-11.json"
   },
   {
    "url": "https://tomsremy.github.io/PowerKlock/data/history/summary.json",
@@ -33,7 +33,7 @@
    "content": "Per zone, every day: average, min, max, negative hours, peak / off-peak, rolling averages.",
    "refresh": "daily",
    "source": "ENTSO-E Transparency Platform",
-   "sizeKB": 18868
+   "sizeKB": 18870
   },
   {
    "url": "https://tomsremy.github.io/PowerKlock/data/history/fr_prices/{YYYY}.json",
@@ -73,7 +73,7 @@
    "content": "Per day: price sums and counts, solar and wind output and revenue, for all hours and for hours with a price > 0 — aggregate any window into capture prices and rates.",
    "refresh": "daily",
    "source": "PowerKlock, from RTE and ENTSO-E",
-   "sizeKB": 482
+   "sizeKB": 486
   },
   {
    "url": "https://tomsremy.github.io/PowerKlock/data/cre_m0.json",
@@ -105,7 +105,7 @@
    "content": "Generation mix, CO₂, renewable share and cross-border flows per country, every hour of a day (last 10 days).",
    "refresh": "every 3 hours",
    "source": "Energy-Charts (Fraunhofer ISE) — CC BY 4.0",
-   "example": "https://tomsremy.github.io/PowerKlock/data/map/2026-10-31.json"
+   "example": "https://tomsremy.github.io/PowerKlock/data/map/2026-11-01.json"
   },
   {
    "url": "https://tomsremy.github.io/PowerKlock/data/crossborder.json",
