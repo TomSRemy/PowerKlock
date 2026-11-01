@@ -202,17 +202,18 @@
     return { c: p ? c / p : 1, p: w ? p / w : 1 };
   }
   // how much the technology's captured price moves when the baseload moves by 1 € (Tom 1 Nov. 2026): the same calendar
-  // month a year apart, the last three years, national, in the pricer's convention. Measured 0.84 for solar and 0.95–0.97
-  // for wind since 2024, against a capture rate of 0.69 / 0.89: the discount is largely a fixed amount in euros (midday
-  // hours stay low whatever gas does), not a fixed share. The Monte Carlo moves the captured price by this sensitivity
-  // around its expected level, instead of as a share of the spot
+  // month a year apart, BOTH years within the last two complete years and the running one (pairs that reach back into
+  // the 2021–2023 crisis read 0.96 for solar, when its capture rate was near 1), national, in the pricer's convention.
+  // Measured since 2024: solar 0.80 (capture rate 0.73), wind 0.97 (0.89): a little more than the share. On whole years
+  // the share holds better than a discount fixed in euros (replay 2023–2025: 5.2 against 29.5 pts for solar), so the
+  // central capture stays a share; only the Monte Carlo's moves around it use this sensitivity
   function captureBeta(st) {
     const t = st.tech === 'solar' ? 's' : 'w', c = cols(st), M = {};
     D.cap.forEach(r => { const k = r[0].slice(0, 7), m = M[k] || (M[k] = [0, 0, 0, 0]); m[0] += r[c.P]; m[1] += r[c.N]; m[2] += r[c.R]; m[3] += r[c.E]; });
-    const y0 = thisYear() - 3, xs = [], ys = [];
-    Object.keys(M).forEach(k => { const y = +k.slice(0, 4), p = M[(y - 1) + k.slice(4)], m = M[k]; if (y < y0 || !p || m[1] < 600 || p[1] < 600 || !m[3] || !p[3]) return;
+    const y0 = thisYear() - 2, xs = [], ys = [];
+    Object.keys(M).forEach(k => { const y = +k.slice(0, 4), p = M[(y - 1) + k.slice(4)], m = M[k]; if (y - 1 < y0 || !p || m[1] < 600 || p[1] < 600 || !m[3] || !p[3]) return;
       xs.push(m[0] / m[1] - p[0] / p[1]); ys.push(m[2] / m[3] - p[2] / p[3]); });
-    if (xs.length < 12) return null;
+    if (xs.length < 9) return null;
     const r = linreg(xs, ys);
     return { beta: clamp(r.sl, 0.3, 1.3), n: xs.length, r2: r.r2, from: y0 };
   }
