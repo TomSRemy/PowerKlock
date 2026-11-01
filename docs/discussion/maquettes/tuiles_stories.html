@@ -1,0 +1,71 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Maquettes · tuile unique et stories</title>
+<style>
+body{margin:0;background:#0b1016;color:#E6EDF3;font-family:Inter,system-ui,sans-serif;padding:28px 36px}
+h1{font-size:20px;margin:0 0 4px}h2{font-size:15px;margin:30px 0 6px;color:#7FC8F8;letter-spacing:.04em;text-transform:uppercase}
+p.n{color:#8A9BAD;font-size:13px;margin:0 0 14px;max-width:1100px;line-height:1.5}
+.row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;max-width:1240px}
+.t{background:#111821;border:1px solid #1f2a36;border-radius:10px;padding:12px 14px 10px;position:relative}
+.t .h{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.t .ti{font-size:11px;font-weight:700;letter-spacing:.07em;text-transform:uppercase}
+.t .su{font-size:11px;color:#8A9BAD;margin-top:2px}
+.b{font:600 11px 'JetBrains Mono',monospace;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.up .ti{color:#ED6965}.up .b{color:#ED6965;background:rgba(237,105,101,.13)}
+.dn .ti{color:#14D3A9}.dn .b{color:#14D3A9;background:rgba(20,211,169,.13)}
+.fl .ti{color:#B8C9D9}.fl .b{color:#B8C9D9;background:rgba(184,201,217,.12)}
+.v{font:600 26px 'JetBrains Mono',monospace;margin:8px 0 2px}.v span{font-size:12px;color:#8A9BAD;font-weight:400}
+.m{font-size:11px;color:#8A9BAD}
+svg.sp{width:100%;height:46px;margin-top:6px}
+.old{background:#111821;border:1px solid #1f2a36;border-left:3px solid #14D3A9;border-radius:8px;padding:12px 14px}
+.old .l{font-size:10px;color:#8A9BAD;letter-spacing:.08em;text-transform:uppercase}.old .v{font-size:24px}
+.cmp{display:grid;grid-template-columns:260px 40px 260px;align-items:center;gap:10px;margin-bottom:10px}
+.arrow{font-size:24px;color:#8A9BAD;text-align:center}
+.lab{font-size:11px;color:#8A9BAD;margin-bottom:4px}
+/* stories */
+.st{display:flex;gap:18px;margin:6px 0 14px}
+.st .c{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:11px;color:#B8C9D9;width:74px;text-align:center}
+.ring{width:62px;height:62px;border-radius:50%;padding:3px;background:conic-gradient(#F4B740,#ED6965,#B48CF2,#7FC8F8,#F4B740)}
+.ring.seen{background:#2a3644}
+.ring i{display:flex;width:100%;height:100%;border-radius:50%;background:#111821;border:3px solid #0b1016;box-sizing:border-box;align-items:center;justify-content:center;font-style:normal;font-size:22px}
+.phone{width:300px;height:540px;border-radius:22px;background:#0f151d;border:1px solid #243140;position:relative;overflow:hidden;padding:14px;box-sizing:border-box}
+.bars{display:flex;gap:4px;margin-bottom:10px}.bars b{flex:1;height:3px;border-radius:2px;background:#2a3644}.bars b.f{background:#E6EDF3}.bars b.h{background:linear-gradient(90deg,#E6EDF3 55%,#2a3644 55%)}
+.ph{display:flex;align-items:center;gap:8px;font-size:12px;margin-bottom:14px}.ph .ring{width:30px;height:30px;padding:2px}.ph .ring i{font-size:12px;border-width:2px}
+.big{font:600 34px 'JetBrains Mono',monospace;margin:30px 0 6px}
+.tap{position:absolute;bottom:14px;left:14px;right:14px;display:flex;justify-content:space-between;font-size:10px;color:#5d7083}
+.grid2{display:grid;grid-template-columns:auto 1fr;gap:28px;align-items:start;max-width:1240px}
+ul{font-size:13px;color:#B8C9D9;line-height:1.6;margin:0;padding-left:18px}
+</style></head><body>
+<h1>Maquettes PowerKlock · à valider avant de coder</h1>
+<p class="n">Notes 81, 103, 107 (une seule tuile partout) et 113-114 (le réel du matin en « stories »). Rien n’est en ligne : c’est un dessin pour décider ; les valeurs sont illustratives.</p>
+
+<h2>1 · Une seule tuile pour tout le site (notes 81, 103, 107)</h2>
+<p class="n">Le modèle est la tuile du haut d’Aujourd’hui (Électricité · France). Chaque tuile a : un titre en capitales, coloré selon le sens du mouvement (rouge = hausse du prix ou de la tension, vert = baisse, gris = stable) ; en haut à droite, un petit encart avec la variation et sa période ; le chiffre ; une ligne de contexte ; une courbe courte. Pour une grandeur dont la hausse n’est pas « mauvaise » (production éolienne, stocks de gaz), la couleur suit la règle du site : rouge quand l’effet sur le prix est haussier.</p>
+<div class="cmp"><div><div class="lab">Aujourd’hui (Système électrique, Bilan, France)</div><div class="old"><div class="l">Nucléaire</div><div class="v">45,1<span> GW</span></div><div class="m">disponible · 63 GW installés</div></div></div><div class="arrow">→</div><div><div class="lab">Proposé</div>
+<div class="t up"><div class="h"><div><div class="ti">Nucléaire</div><div class="su">disponible</div></div><span class="b">▼ −3,2 GW · 7 j</span></div><div class="v">45,1<span> GW</span></div><div class="m">63 GW installés · prévision EDF 48,2</div><svg class="sp" viewBox="0 0 100 30" preserveAspectRatio="none"><polyline fill="none" stroke="#ED6965" stroke-width="1.5" points="0,8 12,9 24,7 36,10 48,12 60,15 72,14 84,19 100,22"/></svg></div></div></div>
+<div class="row">
+<div class="t up"><div class="h"><div><div class="ti">Spot France</div><div class="su">base, aujourd’hui</div></div><span class="b">▲ +4,3 % · J-1</span></div><div class="v">233,7<span> €/MWh</span></div><div class="m">min 72,8 à 13 h · max 300 à 18 h</div><svg class="sp" viewBox="0 0 100 30" preserveAspectRatio="none"><polyline fill="none" stroke="#ED6965" stroke-width="1.5" points="0,20 12,18 24,21 36,17 48,15 60,16 72,12 84,10 100,8"/></svg></div>
+<div class="t dn"><div class="h"><div><div class="ti">Éolien</div><div class="su">production, moyenne du jour</div></div><span class="b">▲ +18 % · vs normale</span></div><div class="v">5,9<span> GW</span></div><div class="m">facteur de charge 24 %</div><svg class="sp" viewBox="0 0 100 30" preserveAspectRatio="none"><polyline fill="none" stroke="#14D3A9" stroke-width="1.5" points="0,22 12,20 24,18 36,21 48,14 60,12 72,13 84,9 100,10"/></svg></div>
+<div class="t up"><div class="h"><div><div class="ti">Consommation</div><div class="su">7 derniers jours</div></div><span class="b">▲ +2,1 % · vs normale</span></div><div class="v">1 172<span> GWh/j</span></div><div class="m">normale 2016–2025 : 1 148</div><svg class="sp" viewBox="0 0 100 30" preserveAspectRatio="none"><polyline fill="none" stroke="#ED6965" stroke-width="1.5" points="0,22 12,21 24,20 36,19 48,17 60,15 72,14 84,12 100,10"/></svg></div>
+<div class="t fl"><div class="h"><div><div class="ti">Solde des échanges</div><div class="su">moyenne du jour</div></div><span class="b">= 0,1 GW · J-1</span></div><div class="v">−10,2<span> GW</span></div><div class="m">exportatrice nette · 1re sortie : Italie</div><svg class="sp" viewBox="0 0 100 30" preserveAspectRatio="none"><polyline fill="none" stroke="#B8C9D9" stroke-width="1.5" points="0,15 12,14 24,16 36,15 48,15 60,14 72,16 84,15 100,15"/></svg></div>
+</div>
+<p class="n" style="margin-top:12px">Pages concernées : Aujourd’hui (Système électrique et toutes les rangées de tuiles), Système France (103), Bilan électrique (107). Une seule fonction de tuile pour tout le site, donc un changement de style se fera ensuite à un seul endroit.</p>
+
+<h2>2 · Le réel du matin en stories (notes 113-114)</h2>
+<div class="grid2"><div>
+<div class="st">
+<div class="c"><div class="ring"><i>€</i></div>Prix</div><div class="c"><div class="ring"><i>⚛</i></div>Nucléaire</div><div class="c"><div class="ring"><i>🌬</i></div>Vent & soleil</div><div class="c"><div class="ring"><i>🔥</i></div>Gaz & CO₂</div><div class="c"><div class="ring seen"><i>⇄</i></div>Échanges</div><div class="c"><div class="ring seen"><i>📈</i></div>Forwards</div></div>
+<div class="phone"><div class="bars"><b class="f"></b><b class="h"></b><b></b><b></b><b></b><b></b></div>
+<div class="ph"><div class="ring"><i>⚛</i></div><b>Nucléaire</b><span style="color:#8A9BAD">· ce matin</span></div>
+<div style="font-size:13px;color:#B8C9D9">Disponibilité nucléaire</div><div class="big">45,1 GW</div><div style="font-size:13px;color:#ED6965">▼ 3,2 GW de moins qu’il y a une semaine</div>
+<svg viewBox="0 0 100 40" style="width:100%;height:120px;margin-top:20px"><polyline fill="none" stroke="#ED6965" stroke-width="1.4" points="0,8 10,9 20,7 30,10 40,12 50,15 60,14 70,19 80,22 90,24 100,26"/></svg>
+<div style="font-size:12px;color:#8A9BAD;margin-top:10px;line-height:1.5">Moins de nucléaire : la France importe davantage aux heures de pointe, ce qui tire le spot vers le haut.</div>
+<div class="tap"><span>◀ tap : précédent</span><span>maintenir : pause</span><span>tap : suivant ▶</span></div></div>
+</div><div>
+<ul>
+<li>En haut d’Aujourd’hui, une rangée de ronds, un par section (Prix, Nucléaire, Vent & soleil, Gaz & CO₂, Échanges, Forwards). Anneau coloré = pas encore vu aujourd’hui, gris = vu.</li>
+<li>Un clic ouvre la story en plein écran : une carte par chiffre clé, 5 secondes chacune, barres de progression en haut, comme sur Instagram.</li>
+<li>Tap à droite : carte suivante ; à gauche : précédente ; glisser vers le bas : fermer ; à la fin d’une section, on passe à la suivante.</li>
+<li>Contenu : les chiffres et les phrases déjà calculés pour le « réel du matin », sans nouvelle donnée.</li>
+<li>Le bloc « Le réel du matin » actuel (mal placé selon la note 114) disparaît au profit des ronds.</li>
+<li>En français et en anglais, utilisable au clavier (flèches, Échap).</li>
+</ul></div></div>
+</body></html>
