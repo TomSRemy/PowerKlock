@@ -594,6 +594,18 @@ window.PKSpot = {
     const hist = () => PKW.draw('fr-cal-history', 'cal-history', { country: c, win: W.h, kinds, load, set }).then(r => sub('cal-history-sub', r));
     const drv = () => PKW.draw('fr-cal-drivers', 'cal-drivers', { country: c, win: W.d }).then(r => sub('cal-drivers-sub', r));
     hist(); drv();
+    // key figures and the table of the same contracts, as on the day-ahead pages (note 89)
+    _muContracts(c).then(all => {
+      const unit = c === 'UK' ? '£/MWh' : '€/MWh', peak = load === 'peak', kp = document.getElementById('cal-kpis'), tb = document.getElementById('cal-table');
+      const rows = all ? _muCRows(all, kinds.split(','), peak, set) : [];
+      if (tb) tb.innerHTML = rows.length ? _muCTable(rows, unit, (peak ? 'Peakload. ' : 'Baseload. ')) : '<div class="fuel-note">No contract for this choice.</div>';
+      if (!kp) return;
+      const first = all ? _muCRows(all, ['month', 'quarter', 'year'], peak, 'liquid') : [];
+      const pick = [['month', 0, _muT('Mois prochain', 'Front month')], ['quarter', 0, _muT('Trimestre prochain', 'Front quarter')], ['year', 0, 'Cal+1'], ['year', 1, 'Cal+2']]
+        .map(([kd, n, lbl]) => { const r = first.filter(x => x.kind === kd)[n]; return r ? { r, lbl } : null; }).filter(Boolean);
+      kp.innerHTML = pick.map(({ r, lbl }) => _fuelKpi(lbl + ' · ' + r.label, r.s.v.toFixed(2), unit,
+        r.s.w1 == null ? '' : `<span style="color:${r.s.w1 > 0 ? 'var(--down)' : r.s.w1 < 0 ? 'var(--up)' : 'var(--text3)'}">${r.s.w1 >= 0 ? '▲ +' : '▼ '}${r.s.w1.toFixed(2)} (${r.s.pw >= 0 ? '+' : ''}${r.s.pw.toFixed(1)} %)</span> ${_muT('sur 7 j', 'w/w')}`, r.s.w1 == null ? null : r.s.w1 > 0 ? 'down' : 'up')).join('');   // a rise reads red
+    });
     // period buttons in each card's header (the history goes back to 2022)
     PKW.periodButtons('cal-history', [['3M', '3M'], ['6M', '6M'], ['1Y', '1Y'], ['3Y', '3Y'], ['all', 'All']], W.h, v => { W.h = v; hist(); });
     PKW.periodButtons('cal-drivers', [['3M', '3M'], ['6M', '6M'], ['1Y', '1Y'], ['3Y', '3Y']], W.d, v => { W.d = v; drv(); });
