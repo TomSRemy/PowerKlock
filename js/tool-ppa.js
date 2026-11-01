@@ -1023,15 +1023,19 @@
     const avg = f => MN.map((_, i) => { const v = per(i + 1, f); return v.length ? +mean(v).toFixed(2) : null; });
     const volU = useA ? 'MWh' : 'GWh', volK = useA ? 1 : 1000, vol = b => b.g / volK;
     _fuelChart('pp-ph-vol', { type: 'bar', data: { labels: MN, datasets: [
-      { label: tr('Min – max over the years'), data: rng(vol), backgroundColor: 'rgba(127,200,248,.35)', borderColor: 'rgba(127,200,248,.8)', borderWidth: 1, borderRadius: 3, order: 2 },
+      { label: tr('Min – max over the years'), data: rng(vol), backgroundColor: 'rgba(127,200,248,.85)', barThickness: 2, order: 3 },
+      { type: 'line', label: '_lo', data: rng(vol).map(v => v && v[0]), showLine: false, pointStyle: 'line', pointRadius: 7, borderWidth: 2, borderColor: 'rgba(127,200,248,.85)', order: 2 },
+      { type: 'line', label: '_hi', data: rng(vol).map(v => v && v[1]), showLine: false, pointStyle: 'line', pointRadius: 7, borderWidth: 2, borderColor: 'rgba(127,200,248,.85)', order: 2 },
       { type: 'line', label: tr('Average'), data: avg(vol), borderColor: '#7FC8F8', backgroundColor: '#7FC8F8', showLine: false, pointRadius: 5, pointStyle: 'rectRot', order: 1 }] },
-      options: _fuelOpts({ scales: { x: Object.assign(_fuelXAxis(), { grid: { display: false } }), y: _fuelAxis(volU, { beginAtZero: true }) } }) }, 'ppa-volume-spread');
+      options: _fuelOpts({ plugins: { legend: { display: true, position: 'bottom', labels: { color: '#B8C9D9', font: { size: 10 }, boxWidth: 10, filter: it => !/^_/.test(it.text) } } }, scales: { x: Object.assign(_fuelXAxis(), { grid: { display: false } }), y: _fuelAxis(volU, { beginAtZero: true }) } }) }, 'ppa-volume-spread');
     const cap = b => b.g ? b.gp / b.g : null, spot = b => b.ps / b.pn;
     _fuelChart('pp-ph-cap', { type: 'bar', data: { labels: MN, datasets: [
-      { label: tr('Captured price, min – max over the years'), data: rng(cap), backgroundColor: 'rgba(224,123,57,.35)', borderColor: 'rgba(224,123,57,.85)', borderWidth: 1, borderRadius: 3, order: 3 },
+      { label: tr('Captured price, min – max over the years'), data: rng(cap), backgroundColor: 'rgba(224,123,57,.85)', barThickness: 2, order: 4 },
+      { type: 'line', label: '_lo', data: rng(cap).map(v => v && v[0]), showLine: false, pointStyle: 'line', pointRadius: 7, borderWidth: 2, borderColor: 'rgba(224,123,57,.85)', order: 3 },
+      { type: 'line', label: '_hi', data: rng(cap).map(v => v && v[1]), showLine: false, pointStyle: 'line', pointRadius: 7, borderWidth: 2, borderColor: 'rgba(224,123,57,.85)', order: 3 },
       { type: 'line', label: tr('Captured price, average'), data: avg(cap), borderColor: '#E07B39', backgroundColor: '#E07B39', showLine: false, pointRadius: 5, pointStyle: 'rectRot', order: 1 },
       { type: 'line', label: tr('Average spot'), data: avg(spot), borderColor: '#D4BE96', backgroundColor: '#D4BE96', borderDash: [4, 3], borderWidth: 1.5, pointRadius: 2, order: 2 }] },
-      options: _fuelOpts({ scales: { x: Object.assign(_fuelXAxis(), { grid: { display: false } }), y: _fuelAxis('€/MWh', { beginAtZero: false }) } }) }, 'ppa-captured-spread');
+      options: _fuelOpts({ plugins: { legend: { display: true, position: 'bottom', labels: { color: '#B8C9D9', font: { size: 10 }, boxWidth: 10, filter: it => !/^_/.test(it.text) } } }, scales: { x: Object.assign(_fuelXAxis(), { grid: { display: false } }), y: _fuelAxis('€/MWh', { beginAtZero: false }) } }) }, 'ppa-captured-spread');
     const sv = $('pp-ph-vol-sub'); if (sv) sv.textContent = fr ? `${volU} par mois · ${full[0]}–${full[full.length - 1]}, fourchette des années et moyenne` : `${volU} per month · ${full[0]}–${full[full.length - 1]}, range of the years and average`;
     const sc = $('pp-ph-cap-sub'); if (sc) sc.textContent = fr ? `€/MWh · ${full[0]}–${full[full.length - 1]}, prix capté du ${useA ? 'parc' : 'profil national'} par mois et spot moyen` : `€/MWh · ${full[0]}–${full[full.length - 1]}, ${useA ? 'park' : 'national profile'} captured price by month and average spot`;
     // 5 · month by month over time: spot, the park's captured price, the national one (the M0 of the technology, all hours)
@@ -1434,8 +1438,8 @@
     const hrs = [...Array(24).keys()].map(h => h + 'h');
     const profChart = (cid, grid, unit, file) => {
       const avg = hrs.map((_, h) => { const v = grid.map(r => r[h]).filter(x => x != null); return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length * 100) / 100 : null; });
-      _fuelChart(cid, { type: 'line', data: { labels: hrs, datasets: grid.map((r, m) => ({ label: MONTHS[m], data: r, borderColor: MCOL[m], borderWidth: 1.2, pointRadius: 0, tension: .35, fill: false }))
-        .concat([{ label: 'Annual average', data: avg, borderColor: '#FFFFFF', borderWidth: 2.6, pointRadius: 2.5, tension: .35, fill: false }]) },
+      _fuelChart(cid, { type: 'line', data: { labels: hrs, datasets: grid.map((r, m) => ({ label: MONTHS[m], data: r, borderColor: MCOL[m], borderWidth: 1.2, pointRadius: 0, tension: 0, fill: false }))
+        .concat([{ label: 'Annual average', data: avg, borderColor: '#FFFFFF', borderWidth: 2.6, pointRadius: 2.5, tension: 0, fill: false }]) },
         options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis(unit, { beginAtZero: true }) } }) }, file);
     };
     if (prof) { if (has('profNat')) profChart(ids.profNat, prof, 'MW', 'ppa-profile-national'); setT('profNatSub', `Average MW by hour, one line per month · France ${profYear} (RTE)`); }
