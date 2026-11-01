@@ -217,8 +217,11 @@
     const now = new Date(), nowKey = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Paris', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', hour12: false }).format(now).replace(' ', 'T').slice(0, 13) + ':00';
     const iNow = T.indexOf(nowKey);
     render({ T, P, band, iNow });
-    const calTxt = !sc && p50k ? `level set on the P50 entered (${S.p50} kWh/kWc, model ×${p50k.toFixed(2)})` : sc ? `calibrated on the site’s metered output (${sc.period}, error ${(sc.nmae0 * 100).toFixed(1)} → ${(sc.nmae1 * 100).toFixed(1)} % of capacity)` : S.tech === 'solar' && S.calFr ? 'monthly correction learned on French solar output' : 'generic model';
-    if (st) st.textContent = `${S.tech === 'solar' ? 'Solar' : 'Wind'} · ${f2(S.lat)}, ${f2(S.lon)} · ${f1(S.mw)} MW · average of ${nModels} weather models · ${calTxt} · fetched ${now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' })}`;
+    // in French by default (the status line mixes figures and words: the page translation could not match it)
+    const calTxt = !sc && p50k ? TT(`niveau calé sur le P50 saisi (${S.p50} kWh/kWc, modèle ×${p50k.toFixed(2)})`, `level set on the P50 entered (${S.p50} kWh/kWc, model ×${p50k.toFixed(2)})`)
+      : sc ? TT(`calé sur la production mesurée du site (${sc.period}, erreur ${(sc.nmae0 * 100).toFixed(1)} → ${(sc.nmae1 * 100).toFixed(1)} % de la capacité)`, `calibrated on the site’s metered output (${sc.period}, error ${(sc.nmae0 * 100).toFixed(1)} → ${(sc.nmae1 * 100).toFixed(1)} % of capacity)`)
+      : S.tech === 'solar' && S.calFr ? TT('correction mensuelle apprise sur la production solaire française', 'monthly correction learned on French solar output') : TT('modèle générique', 'generic model');
+    if (st) st.textContent = `${S.tech === 'solar' ? TT('Solaire', 'Solar') : TT('Éolien', 'Wind')} · ${f2(S.lat)}, ${f2(S.lon)} · ${f1(S.mw)} MW · ${TT('moyenne de', 'average of')} ${nModels} ${TT('modèles météo', 'weather models')} · ${calTxt} · ${TT('relevé à', 'fetched')} ${now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' })}`;
   }
 
   function render(R) {
@@ -638,7 +641,7 @@
         { label: 'Capture rate (%)', data: capY.map(y => +(cap[y].v / cap[y].e / (cap[y].b / cap[y].n) * 100).toFixed(1)), borderColor: '#F4C430', borderWidth: 2.2, pointRadius: 3, yAxisID: 'y' },
         { type: 'bar', label: 'Output at prices ≤ 0 (%)', data: capY.map(y => +(cap[y].neg / Y[y] * 100).toFixed(1)), backgroundColor: 'rgba(237,105,101,.45)', borderRadius: 3, yAxisID: 'y1' }] },
         options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('capture rate, %'), y1: _fuelAxis('% of output', { position: 'right', beginAtZero: true, grid: { display: false } }) } }) }, 'park-capture-rate');
-      if (st) st.textContent = `${S.tech === 'solar' ? 'Solar' : 'Wind'} park at ${(+S.lat).toFixed(3)}, ${(+S.lon).toFixed(3)}${com ? ' (' + com.nom + ')' : ''} · ${S.mw} MW · history built ${new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' })}`;
+      if (st) st.textContent = `${S.tech === 'solar' ? TT('Parc solaire', 'Solar park') : TT('Parc éolien', 'Wind park')} ${TT('à', 'at')} ${(+S.lat).toFixed(3)}, ${(+S.lon).toFixed(3)}${com ? ' (' + com.nom + ')' : ''} · ${S.mw} MW · ${TT('historique construit à', 'history built')} ${new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' })}`;
       const sb = $('fc-hist-send'); if (sb) sb.hidden = false; const pb = $('fc-hist-pptx'); if (pb) pb.hidden = !window.PKExport;
     } catch (e) { if (st) st.textContent = 'History not built: ' + e.message; }
   }

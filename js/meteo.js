@@ -233,6 +233,8 @@ async function renderHDD() {
   const S = await _wxSeries(cc);
   if (!S) {
     kp.innerHTML = '<div class="fuel-note" style="grid-column:1/-1">Open-Meteo did not respond (rate limit or network). Change country or reload to retry.</div>';
+    // the weekly chart says why it is empty instead of showing a blank card
+    if (document.getElementById('hdd-weekly') && typeof noDataMsg === 'function') noDataMsg('hdd-weekly', 'Open-Meteo did not respond', 'Rate limit or network; retry later.');
     return;
   }
   const { today, T, day, series, curCum, prevCum, normCum } = S;
