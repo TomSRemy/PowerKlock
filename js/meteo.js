@@ -266,6 +266,13 @@ async function renderHDD() {
     const dt = new Date(x.d + 'T12:00:00Z'), wd = (dt.getUTCDay() + 6) % 7, mon = _renAdd(x.d, -wd);
     (weeks[mon] = weeks[mon] || []).push(x);
   });
+  // the same weeks as a chart, oldest first: actual (forecast weeks paler) against the normal (note 106)
+  const wks = Object.keys(weeks).sort().slice(-10).filter(m => weeks[m].some(x => x.t != null));
+  const wsum = (m, k) => Math.round(weeks[m].filter(x => x.t != null).reduce((s, x) => s + (_hdd(x[k]) || 0), 0));
+  if (document.getElementById('hdd-weekly')) _fuelChart('hdd-weekly', { type: 'bar', data: { labels: wks.map(m => (m > today ? '› ' : '') + m.slice(8) + '/' + m.slice(5, 7)), datasets: [
+    { label: 'HDD (paler: forecast)', data: wks.map(m => wsum(m, 't')), backgroundColor: wks.map(m => _renAdd(m, 6) > today ? 'rgba(127,200,248,.4)' : 'rgba(127,200,248,.9)'), borderRadius: 3 },
+    { label: 'Normal 2016–2025', data: wks.map(m => wsum(m, 'n')), backgroundColor: 'rgba(184,201,217,.45)', borderRadius: 3 },
+  ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('HDD per week') } }) }, 'hdd-weekly');
   document.getElementById('hdd-tbody').innerHTML = Object.keys(weeks).sort().reverse().slice(0, 10).map(m => {
     const w = weeks[m].filter(x => x.t != null);
     if (!w.length) return '';
