@@ -18,3 +18,4 @@ methods, before anything reaches the site. This branch (`discussion`) is never p
 - [roles.md](roles.md) — who does what, how a change reaches the site
 - [site.md](site.md) — the whole site: pages, figures, data, languages, phones
 - [decisions.md](decisions.md) — decisions taken, dated
+- [cours/SESSION_DISCUSSION.md](cours/SESSION_DISCUSSION.md) — Tom's market & PPA course: everything needed to carry on the tutoring discussion in another session
