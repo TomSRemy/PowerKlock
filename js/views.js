@@ -18,6 +18,8 @@
     nuclear: [['Availability', ['hs-nuclear-0', 'hs-nuclear-1']]],
     capacity: [['By year', ['hs-capacity-0']], ['Comparison', ['hs-capacity-1']]],
     frsystem: [['Daily', ['hs-frsystem-0']], ['Historical', ['hs-frsystem-1']]],
+    // Consumption: the day, the grid operators' forecast, the history since 2015 (note 100)
+    load: [['Daily', ['hs-load-0']], ['Forecast', ['hs-load-fc']], ['History', ['hs-load-hist']]],
     regions: [['Daily', ['hs-regions-0']], ['Capacity & consumption', ['hs-regions-1']]],
     crossborder: [['Daily', ['hs-crossborder-0']], ['Borders', ['hs-crossborder-1']]],
     // the mFRR chart belonged to no tab and showed on both (note 61): it opens the second tab, now named mFRR
