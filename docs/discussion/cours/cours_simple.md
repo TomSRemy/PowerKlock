@@ -132,10 +132,11 @@ Convention du site : **la production n'est pas payée quand le prix est ≤ 0** 
 paie pas).
 
 ### Le vrai chiffre
-Prix publiés au 31 octobre 2026 (pricer PowerKlock, contrat 2027–2029) : **solaire 47,07 €/MWh, éolien
-77,78 €/MWh**. Ils bougent chaque jour avec les forwards.
+Prix publiés par le pricer **v2** (en ligne depuis le 31 octobre 2026, forwards des 30–31 octobre, contrat
+2027–2029) : **solaire 49,75 €/MWh, éolien 80,69 €/MWh**. Ils bougent chaque jour avec les forwards. Le prix publié
+est le **prix prudent** : il tient 3 fois sur 4 (chapitre 11).
 
-![Le pricer PowerKlock](../img/schema_prix_ppa.png)
+![Le pricer PowerKlock v2](../pricing-v2/schema_v2.png)
 
 > **À retenir**
 > - PPA pay-as-produced : l'acheteur prend tout, quand ça vient.
@@ -549,11 +550,12 @@ connaît que les risques qu'on lui donne**.
 - Monte Carlo avec la **météo seule** : la bande P10–P90 contenait la réalité dans **environ 45 % des mois** (il en
   faudrait 80 %). Trop étroit.
 - Monte Carlo **complet** (semaines tirées « chères ou bon marché », croissance du parc, nucléaire avec une année
-  rare type 2022, limite d'export Core, consommation) : le P75 a tenu dans **78 à 89 % des cas**.
+  rare type 2022, limite d'export Core, consommation, année sèche ou humide) : le prix prudent a tenu dans **78 % des
+  cas en solaire et 78 à 100 % en éolien**. Il est **en ligne depuis le 31 octobre** (pricer v2).
 
 ![Couverture](img/19_couverture.png)
 
-Autre méthode : regarder **nos erreurs passées** et prendre leur 75e centile, en donnant plus de poids aux années
+Autre méthode, utilisée jusqu'au 31 octobre pour le risque de modèle : regarder **nos erreurs passées** et prendre leur 75e centile, en donnant plus de poids aux années
 récentes (Barber, Candès, Ramdas et Tibshirani, *Annals of Statistics*, 2023).
 
 ![Le bus en retard](img/21_bus.png)
@@ -580,7 +582,8 @@ que les risques qu'on lui a appris. Si on ne lui donne que la météo, il oublie
 que la ligne vers l'Allemagne peut rétrécir, que le parc peut grandir plus vite. Résultat : quand on l'a testé, la
 réalité tombait dans sa bande seulement une fois sur deux. Il était trop sûr de lui.
 
-Avec tous ces risques ajoutés, le P75 a tenu dans 78 à 89 % des cas. C'est ce qu'on voulait : au moins trois fois
+Avec tous ces risques ajoutés, le prix prudent a tenu dans 78 % des cas en solaire, 78 à 100 % en éolien. C'est ce
+qu'on voulait : au moins trois fois
 sur quatre.
 
 Il y a une autre façon de faire, très simple. Pense à ton bus. Il est souvent en retard. Pour être à l'heure trois
@@ -635,25 +638,39 @@ qui s'est le moins trompée sur l'année passée. »
 
 ### Le tableau
 
+Erreur de rejeu en €/MWh (livraisons 2023–2026, 9 cas). « v2 » = le pricer en ligne depuis le 31 octobre 2026.
+
 | Test | Résultat | Verdict |
 |---|---|---|
-| Règle par cases, publiée | solaire 0,76 sans ancrage ; éolien 2,62 sans ancrage, 0,84 ancré | **gardée** |
-| Pondérer l'apprentissage par la production de la filière | éolien 2,15 sans ancrage, 0,61 ancré ; solaire 1,41 | mieux pour l'éolien, pire pour le solaire : **à décider** |
-| Pondération + grille surplus × vent | éolien ancré 0,56 | meilleur éolien ancré : **à décider** |
+| Moyenne des 4 anciennes méthodes | solaire 2,59 ; éolien 2,84 | **remplacée** : le générateur seul fait le prix (v2) |
+| Générateur, règle par cases | solaire 0,76 sans ancrage ; éolien 2,62 sans ancrage, 0,84 ancré | **gardé** |
+| Règle éolienne pondérée par la production (+ part du vent quand la France est coupée) | éolien ancré 0,84 → **0,56** | **adoptée en v2** |
 | Pondération + pente du vent | biais éolien +0,45 seulement, erreur 1,93 | presque plus de biais, encore dispersé |
-| Analogues | éolien ≈ 1,1 sans ancrage ; solaire mauvais | **testé, pas branché** |
+| Analogues seuls | éolien ≈ 1,1 sans ancrage ; solaire 4,1 | écartés |
+| Mélange 50/50 analogues + règle | 0,89 sur années civiles, contre 0,63 pour la v2 | **refusé** |
+| Ancrage sur 12 mois roulants | éolien 1,47 → 1,67 (6 cas) | pas mieux |
+| Merit order avec courbes d'offre (v1 à v3) | bon à 1 an, casse à 2–3 ans | écarté |
 | Modèle d'optimisation par semaine | surpaye le vent autant que la règle | écarté |
 | Régression mensuelle de la capture | instable (éolien 1,7 à 3,4) | écartée |
 | Grande-Bretagne, Pays-Bas, Autriche comme modèles | pas mieux | écartés |
-| Monte Carlo météo seule | bande trop étroite (≈ 45 %) | insuffisant |
-| Monte Carlo complet | P75 tenu 78–89 % | **en test, pas publié** |
+| Monte Carlo météo seule | bande trop étroite (≈ 45 % des mois ; prix prudent éolien tenu 0 % des cas) | insuffisant |
+| Monte Carlo complet | prix prudent tenu : solaire 78 %, éolien 78 à 100 % | **adopté en v2** |
 | Prévision des écarts combinée | éolien 3,06 → 2,82 | **gardée pour l'éolien** |
 
-### Les décisions qui restent à Tom
-1. Pondérer par la production pour l'éolien seulement, ou pour les deux filières ?
-2. Garder l'ancrage de l'éolien (aucune méthode ne s'en passe encore).
-3. Stabilité du choix de méthode : choix annuel, seuil de 0,2 € ?
-4. Brancher le Monte Carlo complet pour la prime de risque ?
+### Ce qui a été décidé (pricer v2, 31 octobre 2026)
+1. **Une seule méthode**, le générateur, pour le solaire et l'éolien ; les anciennes méthodes restent affichées
+   comme repères, hors du prix.
+2. **L'ancrage choisi par une règle** chaque semaine (le mode qui s'est le moins trompé au rejeu) : aujourd'hui
+   solaire sans ancrage, éolien hiver/été.
+3. **La règle éolienne pondérée par la production.**
+4. **Un prix prudent** (tient 3 fois sur 4), avec P25, P50 et P75 affichés.
+5. **Le Monte Carlo complet** donne la bande ; plus de déduction séparée pour le risque de modèle.
+
+### Ce qui reste ouvert
+- L'éolien reste ancré : sans ancrage, tous les modèles le surévaluent de 2 à 2,7 €.
+- Convention des prix négatifs : passage de « ≤ 0 » à « strictement < 0 » en cours.
+- Captures calculées jusqu'en 2030 seulement : à prolonger pour les PPA longs.
+- Les arrêts nucléaires 2027 : une option seulement, impossible à tester sur le passé.
 
 ### Ce que font les professionnels
 - **Pexapark** : calibre ses courbes de capture sur les prix de PPA observés, « le consensus du marché, pas une
@@ -664,18 +681,20 @@ qui s'est le moins trompée sur l'année passée. »
 > **À retenir**
 > - Beaucoup de tests, peu de vainqueurs : c'est normal.
 > - L'ancrage reste nécessaire pour l'éolien ; le marché fait pareil.
-> - Les décisions ouvertes sont des choix de prudence, pas des erreurs.
+> - Le pricer v2 : une méthode, un prix prudent, une bande qui contient aussi l'erreur du modèle.
 
 ### À dire à voix haute
 « Récapitulons. On a testé une vingtaine d'idées. La plupart n'ont pas battu le modèle publié. C'est normal : un bon
 modèle est difficile à battre, et neuf cas de rejeu, c'est peu pour trancher.
 
-Ce qui marche : pondérer l'apprentissage par la production de l'éolien améliore l'éolien. Les analogues enlèvent
-presque toute l'erreur du vent, mais cassent le solaire. Le Monte Carlo complet donne enfin un P75 qui tient. Et notre
-prévision combinée fait baisser le coût des écarts de l'éolien.
+Ce qui a gagné est maintenant en ligne, dans le pricer v2 depuis le 31 octobre. Un seul générateur fait le prix,
+au lieu de la moyenne de quatre méthodes. La règle de l'éolien apprend en donnant plus de poids aux heures où le vent
+produit : l'erreur passe de 84 à 56 centimes. Le Monte Carlo complet donne la bande de risque, et le prix publié est
+le prix prudent, qui tient trois fois sur quatre. Les analogues, eux, ont été écartés : très bons pour le vent, mais
+4 euros d'erreur sur le solaire.
 
-Ce qui reste à décider, c'est à toi : est-ce qu'on accepte une règle différente pour l'éolien et le solaire ? Est-ce
-qu'on garde l'ancrage ? Est-ce qu'on publie le Monte Carlo complet ?
+Ce qui reste ouvert : l'éolien a toujours besoin de l'ancrage, et la règle des prix négatifs va passer de « nul ou
+négatif » à « strictement négatif ».
 
 Et les pros ? Pexapark fait en gros de l'ancrage, mais sur des prix de contrats réels qu'on n'a pas. Aurora et AFRY
 font tourner des modèles géants, centrale par centrale. Nous, on est entre les deux : simple, transparent, testé
