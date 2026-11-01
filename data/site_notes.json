@@ -1499,26 +1499,6 @@
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
-   "id": 117,
-   "status": "wontfix",
-   "created_at": "2026-10-28T22:27+00:00",
-   "author": "Tom",
-   "route": "markets/spot",
-   "page": "Marchés › Électricité spot › Day-ahead",
-   "tab": "Quotidien",
-   "target_id": "hs-spot-trend",
-   "target_label": "Spot · 30 derniers jours (graphique)",
-   "settings": {
-    "_page": "prices",
-    "_path": "#hs-spot-trend",
-    "pk-zone": "France",
-    "spt-zone": "France"
-   },
-   "body": "est-ce que ça devrait pasêtre dans daily ça ?",
-   "reply": "Doublon de la note 59 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 59.",
-   "done_at": "2026-10-31T22:50+00:00"
-  },
-  {
    "id": 59,
    "status": "done",
    "created_at": "2026-10-28T22:27+00:00",
@@ -1539,22 +1519,23 @@
    "done_at": "2026-11-01T08:36+00:00"
   },
   {
-   "id": 118,
+   "id": 117,
    "status": "wontfix",
    "created_at": "2026-10-28T22:27+00:00",
    "author": "Tom",
-   "route": "markets/spot/overview",
-   "page": "Marchés › Électricité spot › Vue d'ensemble",
-   "tab": "FR · DE_LU · ES",
-   "target_id": "pr-home-heatmap",
-   "target_label": "Carte thermique heure × jour (bloc)",
+   "route": "markets/spot",
+   "page": "Marchés › Électricité spot › Day-ahead",
+   "tab": "Quotidien",
+   "target_id": "hs-spot-trend",
+   "target_label": "Spot · 30 derniers jours (graphique)",
    "settings": {
     "_page": "prices",
-    "_path": "#page-prices > div:nth-of-type(1) > div:nth-of-type(11) > div:nth-of-type(2) > div:nth-of-type(2)",
-    "pk-zone": "France"
+    "_path": "#hs-spot-trend",
+    "pk-zone": "France",
+    "spt-zone": "France"
    },
-   "body": "on la retrouve pas dans historique celle la si ? ou alors elle ets juste plus belle ici",
-   "reply": "Doublon de la note 60 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 60.",
+   "body": "est-ce que ça devrait pasêtre dans daily ça ?",
+   "reply": "Doublon de la note 59 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 59.",
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
@@ -1575,6 +1556,25 @@
    "body": "on la retrouve pas dans historique celle la si ? ou alors elle ets juste plus belle ici",
    "reply": "Réponse : non, elle n’est pas dans Historique. Historique a une carte thermique différente (zones × jours, prix moyen du jour). Celle-ci, heure × jour sur 14 jours, n’existe que dans la vue d’ensemble (et comme widget pour les tableaux de bord). Je peux l’ajouter dans Historique avec un choix de zone et de période si tu veux.",
    "done_at": "2026-11-01T08:36+00:00"
+  },
+  {
+   "id": 118,
+   "status": "wontfix",
+   "created_at": "2026-10-28T22:27+00:00",
+   "author": "Tom",
+   "route": "markets/spot/overview",
+   "page": "Marchés › Électricité spot › Vue d'ensemble",
+   "tab": "FR · DE_LU · ES",
+   "target_id": "pr-home-heatmap",
+   "target_label": "Carte thermique heure × jour (bloc)",
+   "settings": {
+    "_page": "prices",
+    "_path": "#page-prices > div:nth-of-type(1) > div:nth-of-type(11) > div:nth-of-type(2) > div:nth-of-type(2)",
+    "pk-zone": "France"
+   },
+   "body": "on la retrouve pas dans historique celle la si ? ou alors elle ets juste plus belle ici",
+   "reply": "Doublon de la note 60 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 60.",
+   "done_at": "2026-10-31T22:50+00:00"
   },
   {
    "id": 61,
@@ -1617,27 +1617,6 @@
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
-   "id": 120,
-   "status": "wontfix",
-   "created_at": "2026-10-28T22:29+00:00",
-   "author": "Tom",
-   "route": "markets/forwards",
-   "page": "Marchés › Électricité forwards",
-   "tab": "Tableau · Semaine",
-   "target_id": "hs-prfwd-read",
-   "target_label": "Lecture analyste · Cal+1 France (bloc)",
-   "settings": {
-    "_page": "prices",
-    "_path": "#hs-prfwd-read",
-    "pk-zone": "France",
-    "pf-fwd-mkt": "France",
-    "pf-fwd-set": "Liquides (produits de bourse)"
-   },
-   "body": "peut faire plus beau",
-   "reply": "Doublon de la note 62 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 62.",
-   "done_at": "2026-10-31T22:50+00:00"
-  },
-  {
    "id": 62,
    "status": "done",
    "created_at": "2026-10-28T22:29+00:00",
@@ -1659,22 +1638,24 @@
    "done_at": "2026-11-01T08:36+00:00"
   },
   {
-   "id": 63,
-   "status": "done",
+   "id": 120,
+   "status": "wontfix",
    "created_at": "2026-10-28T22:29+00:00",
    "author": "Tom",
    "route": "markets/forwards",
    "page": "Marchés › Électricité forwards",
-   "tab": "Comparaison",
-   "target_id": "hs-prfwd-compare",
-   "target_label": "Comparaison par pays Un produit, les 4 zones sur le même graphique (graphique)",
+   "tab": "Tableau · Semaine",
+   "target_id": "hs-prfwd-read",
+   "target_label": "Lecture analyste · Cal+1 France (bloc)",
    "settings": {
     "_page": "prices",
-    "_path": "#hs-prfwd-compare",
-    "pk-zone": "France"
+    "_path": "#hs-prfwd-read",
+    "pk-zone": "France",
+    "pf-fwd-mkt": "France",
+    "pf-fwd-set": "Liquides (produits de bourse)"
    },
-   "body": "vide ?",
-   "reply": "Vérifié le 31 octobre : l’onglet Comparaison affiche bien les 4 zones (France, UK, Allemagne, Pays-Bas) sur le produit choisi. Il était vide le 28, corrigé depuis.",
+   "body": "peut faire plus beau",
+   "reply": "Doublon de la note 62 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 62.",
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
@@ -1694,6 +1675,25 @@
    },
    "body": "vide ?",
    "reply": "Doublon de la note 63 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 63.",
+   "done_at": "2026-10-31T22:50+00:00"
+  },
+  {
+   "id": 63,
+   "status": "done",
+   "created_at": "2026-10-28T22:29+00:00",
+   "author": "Tom",
+   "route": "markets/forwards",
+   "page": "Marchés › Électricité forwards",
+   "tab": "Comparaison",
+   "target_id": "hs-prfwd-compare",
+   "target_label": "Comparaison par pays Un produit, les 4 zones sur le même graphique (graphique)",
+   "settings": {
+    "_page": "prices",
+    "_path": "#hs-prfwd-compare",
+    "pk-zone": "France"
+   },
+   "body": "vide ?",
+   "reply": "Vérifié le 31 octobre : l’onglet Comparaison affiche bien les 4 zones (France, UK, Allemagne, Pays-Bas) sur le produit choisi. Il était vide le 28, corrigé depuis.",
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
@@ -1773,25 +1773,6 @@
    "done_at": "2026-11-01T07:53+00:00"
   },
   {
-   "id": 124,
-   "status": "wontfix",
-   "created_at": "2026-10-28T22:31+00:00",
-   "author": "Tom",
-   "route": "markets/bess",
-   "page": "Marchés › Batteries (BESS)",
-   "tab": "Valeur day-ahead",
-   "target_id": "hs-bess-da",
-   "target_label": "Une journée type, quart d’heure par quart d’heure (graphique)",
-   "settings": {
-    "_page": "bess",
-    "_path": "#hs-bess-da",
-    "pk-zone": "France"
-   },
-   "body": "on a pas un graph avec leTB 1 TB2 TB3 et TB4 ?",
-   "reply": "Doublon de la note 66 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 66.",
-   "done_at": "2026-10-31T22:50+00:00"
-  },
-  {
    "id": 66,
    "status": "done",
    "created_at": "2026-10-28T22:31+00:00",
@@ -1809,6 +1790,25 @@
    "body": "on a pas un graph avec leTB 1 TB2 TB3 et TB4 ?",
    "reply": "Fait : graphique « Spreads batterie TB1 à TB4 · France, 90 jours » en tête de l’onglet Valeur day-ahead de la page Batteries (TB3 ajouté).",
    "done_at": "2026-11-01T07:53+00:00"
+  },
+  {
+   "id": 124,
+   "status": "wontfix",
+   "created_at": "2026-10-28T22:31+00:00",
+   "author": "Tom",
+   "route": "markets/bess",
+   "page": "Marchés › Batteries (BESS)",
+   "tab": "Valeur day-ahead",
+   "target_id": "hs-bess-da",
+   "target_label": "Une journée type, quart d’heure par quart d’heure (graphique)",
+   "settings": {
+    "_page": "bess",
+    "_path": "#hs-bess-da",
+    "pk-zone": "France"
+   },
+   "body": "on a pas un graph avec leTB 1 TB2 TB3 et TB4 ?",
+   "reply": "Doublon de la note 66 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 66.",
+   "done_at": "2026-10-31T22:50+00:00"
   },
   {
    "id": 67,
@@ -1853,25 +1853,6 @@
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
-   "id": 126,
-   "status": "wontfix",
-   "created_at": "2026-10-28T22:33+00:00",
-   "author": "Tom",
-   "route": "renewables/capture",
-   "page": "Renouvelables › Capture & cannibalisation",
-   "tab": "Quotidien",
-   "target_id": null,
-   "target_label": null,
-   "settings": {
-    "_page": "renewables",
-    "pk-zone": "France",
-    "ren-country": "France"
-   },
-   "body": "on a que la france? PK pas une vision comme les prix day ahead ?",
-   "reply": "Doublon de la note 68 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 68.",
-   "done_at": "2026-10-31T22:50+00:00"
-  },
-  {
    "id": 68,
    "status": "done",
    "created_at": "2026-10-28T22:33+00:00",
@@ -1889,6 +1870,25 @@
    "body": "on a que la france? PK pas une vision comme les prix day ahead ?",
    "reply": "Fait : nouvel onglet « Europe » sur la page Capture : taux de capture du solaire et de l’éolien de la France, l’Allemagne, l’Espagne, les Pays-Bas, la Belgique et la Grande-Bretagne, chaque année depuis 2016 (deux graphiques), avec le choix de la convention (toutes les heures ou heures à prix > 0) et un tableau de l’année en cours (prix base, taux et prix capté par pays). Source Energy-Charts. Le Quotidien par pays demanderait la production quart d’heure de chaque pays, que nous n’avons pas encore pour tous : à voir avec la note 72.",
    "done_at": "2026-11-01T08:36+00:00"
+  },
+  {
+   "id": 126,
+   "status": "wontfix",
+   "created_at": "2026-10-28T22:33+00:00",
+   "author": "Tom",
+   "route": "renewables/capture",
+   "page": "Renouvelables › Capture & cannibalisation",
+   "tab": "Quotidien",
+   "target_id": null,
+   "target_label": null,
+   "settings": {
+    "_page": "renewables",
+    "pk-zone": "France",
+    "ren-country": "France"
+   },
+   "body": "on a que la france? PK pas une vision comme les prix day ahead ?",
+   "reply": "Doublon de la note 68 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 68.",
+   "done_at": "2026-10-31T22:50+00:00"
   },
   {
    "id": 69,
@@ -1931,25 +1931,6 @@
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
-   "id": 128,
-   "status": "wontfix",
-   "created_at": "2026-10-28T22:34+00:00",
-   "author": "Tom",
-   "route": "system/generation/outages",
-   "page": "Système électrique › Production › Indisponibilités & REMIT",
-   "tab": "Indisponibilités",
-   "target_id": "hs-remit-u",
-   "target_label": "Planning des arrêts · réacteurs nucléaires (graphique)",
-   "settings": {
-    "_page": "remit",
-    "_path": "#hs-remit-u",
-    "pk-zone": "France"
-   },
-   "body": "vide ?",
-   "reply": "Doublon de la note 70 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 70.",
-   "done_at": "2026-10-31T22:50+00:00"
-  },
-  {
    "id": 70,
    "status": "done",
    "created_at": "2026-10-28T22:34+00:00",
@@ -1966,6 +1947,25 @@
    },
    "body": "vide ?",
    "reply": "Vérifié le 31 octobre : le planning des arrêts est rempli (46 réacteurs, planifiés et fortuits, d’il y a 14 jours à 4 mois).",
+   "done_at": "2026-10-31T22:50+00:00"
+  },
+  {
+   "id": 128,
+   "status": "wontfix",
+   "created_at": "2026-10-28T22:34+00:00",
+   "author": "Tom",
+   "route": "system/generation/outages",
+   "page": "Système électrique › Production › Indisponibilités & REMIT",
+   "tab": "Indisponibilités",
+   "target_id": "hs-remit-u",
+   "target_label": "Planning des arrêts · réacteurs nucléaires (graphique)",
+   "settings": {
+    "_page": "remit",
+    "_path": "#hs-remit-u",
+    "pk-zone": "France"
+   },
+   "body": "vide ?",
+   "reply": "Doublon de la note 70 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 70.",
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
@@ -2072,24 +2072,6 @@
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
-   "id": 74,
-   "status": "done",
-   "created_at": "2026-10-31T21:26+00:00",
-   "author": "Tom",
-   "route": "status",
-   "page": "status",
-   "tab": "Sources",
-   "target_id": null,
-   "target_label": null,
-   "settings": {
-    "_page": "status",
-    "pk-zone": "France"
-   },
-   "body": "logo PowerKlock quand j'appuies dessus j'arrive sur lapage de garde.",
-   "reply": "Fait : un clic sur le logo PowerKlock ramène à Aujourd’hui.",
-   "done_at": "2026-10-31T22:50+00:00"
-  },
-  {
    "id": 132,
    "status": "wontfix",
    "created_at": "2026-10-31T21:26+00:00",
@@ -2108,9 +2090,9 @@
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
-   "id": 75,
+   "id": 74,
    "status": "done",
-   "created_at": "2026-10-31T21:27+00:00",
+   "created_at": "2026-10-31T21:26+00:00",
    "author": "Tom",
    "route": "status",
    "page": "status",
@@ -2121,8 +2103,8 @@
     "_page": "status",
     "pk-zone": "France"
    },
-   "body": "quand on lance le site, la vue est un peu bizarre. Tous les menus sont ovuert. C'est pas terrible. Signe ça",
-   "reply": "Fait : au lancement, toutes les sections du menu sont repliées dès le départ et seule celle de la page s’ouvre (elles s’affichaient toutes dépliées pendant la première seconde).",
+   "body": "logo PowerKlock quand j'appuies dessus j'arrive sur lapage de garde.",
+   "reply": "Fait : un clic sur le logo PowerKlock ramène à Aujourd’hui.",
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
@@ -2141,6 +2123,24 @@
    },
    "body": "quand on lance le site, la vue est un peu bizarre. Tous les menus sont ovuert. C'est pas terrible. Signe ça",
    "reply": "Doublon de la note 75 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 75.",
+   "done_at": "2026-10-31T22:50+00:00"
+  },
+  {
+   "id": 75,
+   "status": "done",
+   "created_at": "2026-10-31T21:27+00:00",
+   "author": "Tom",
+   "route": "status",
+   "page": "status",
+   "tab": "Sources",
+   "target_id": null,
+   "target_label": null,
+   "settings": {
+    "_page": "status",
+    "pk-zone": "France"
+   },
+   "body": "quand on lance le site, la vue est un peu bizarre. Tous les menus sont ovuert. C'est pas terrible. Signe ça",
+   "reply": "Fait : au lancement, toutes les sections du menu sont repliées dès le départ et seule celle de la page s’ouvre (elles s’affichaient toutes dépliées pendant la première seconde).",
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
@@ -2184,26 +2184,6 @@
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
-   "id": 77,
-   "status": "done",
-   "created_at": "2026-10-31T21:30+00:00",
-   "author": "Tom",
-   "route": "today",
-   "page": "Aujourd'hui",
-   "tab": "Expert · ⓘ Expliquer · Tout",
-   "target_id": "mrn-fremit",
-   "target_label": "Indisponibilités nucléaires (graphique)",
-   "settings": {
-    "_page": "morning",
-    "_path": "#hs-body-morning-fund > div:nth-of-type(4) > div:nth-of-type(2)",
-    "pk-zone": "France",
-    "mrn-creg-per": "Année 2026 (à fin août)"
-   },
-   "body": "est-ce qu'on a la projection ? pas forcémnt à mette ici mais j'aimerais la retrouver quelque part",
-   "reply": "Fait : nouvelle projection « Disponibilité nucléaire annoncée · 4 prochains mois » sur la page Indisponibilités & REMIT : capacité installée moins les arrêts déjà annoncés par EDF (REMIT), jour par jour, avec le réalisé du même jour l’an dernier ; les arrêts fortuits s’y ajouteront.",
-   "done_at": "2026-11-01T07:28+00:00"
-  },
-  {
    "id": 135,
    "status": "wontfix",
    "created_at": "2026-10-31T21:30+00:00",
@@ -2222,6 +2202,26 @@
    "body": "est-ce qu'on a la projection ? pas forcémnt à mette ici mais j'aimerais la retrouver quelque part",
    "reply": "Doublon de la note 77 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 77.",
    "done_at": "2026-10-31T22:50+00:00"
+  },
+  {
+   "id": 77,
+   "status": "done",
+   "created_at": "2026-10-31T21:30+00:00",
+   "author": "Tom",
+   "route": "today",
+   "page": "Aujourd'hui",
+   "tab": "Expert · ⓘ Expliquer · Tout",
+   "target_id": "mrn-fremit",
+   "target_label": "Indisponibilités nucléaires (graphique)",
+   "settings": {
+    "_page": "morning",
+    "_path": "#hs-body-morning-fund > div:nth-of-type(4) > div:nth-of-type(2)",
+    "pk-zone": "France",
+    "mrn-creg-per": "Année 2026 (à fin août)"
+   },
+   "body": "est-ce qu'on a la projection ? pas forcémnt à mette ici mais j'aimerais la retrouver quelque part",
+   "reply": "Fait : nouvelle projection « Disponibilité nucléaire annoncée · 4 prochains mois » sur la page Indisponibilités & REMIT : capacité installée moins les arrêts déjà annoncés par EDF (REMIT), jour par jour, avec le réalisé du même jour l’an dernier ; les arrêts fortuits s’y ajouteront.",
+   "done_at": "2026-11-01T07:28+00:00"
   },
   {
    "id": 136,
@@ -2264,26 +2264,6 @@
    "done_at": "2026-11-01T07:53+00:00"
   },
   {
-   "id": 137,
-   "status": "wontfix",
-   "created_at": "2026-10-31T21:33+00:00",
-   "author": "Tom",
-   "route": "today",
-   "page": "Aujourd'hui",
-   "tab": "Expert · ⓘ Expliquer · Tout",
-   "target_id": "mrn-cr",
-   "target_label": "Solaire · taux de capture glissant (graphique)",
-   "settings": {
-    "_page": "morning",
-    "_path": "#hs-body-morning-3 > div:nth-of-type(2) > div:nth-of-type(1)",
-    "pk-zone": "France",
-    "mrn-creg-per": "Année 2026 (à fin août)"
-   },
-   "body": "toujours illisibles ces graphs. Mettre sur 2y de base. ET ce violet ça va pas.",
-   "reply": "Doublon de la note 79 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 79.",
-   "done_at": "2026-10-31T22:50+00:00"
-  },
-  {
    "id": 79,
    "status": "done",
    "created_at": "2026-10-31T21:33+00:00",
@@ -2301,6 +2281,26 @@
    },
    "body": "toujours illisibles ces graphs. Mettre sur 2y de base. ET ce violet ça va pas.",
    "reply": "Fait : sur Aujourd’hui, les deux graphiques de capture glissante s’ouvrent sur 2 ans (les autres périodes restent dans les boutons, « Tout » compris) ; la ligne « Année civile » n’est plus violette (gris clair).",
+   "done_at": "2026-10-31T22:50+00:00"
+  },
+  {
+   "id": 137,
+   "status": "wontfix",
+   "created_at": "2026-10-31T21:33+00:00",
+   "author": "Tom",
+   "route": "today",
+   "page": "Aujourd'hui",
+   "tab": "Expert · ⓘ Expliquer · Tout",
+   "target_id": "mrn-cr",
+   "target_label": "Solaire · taux de capture glissant (graphique)",
+   "settings": {
+    "_page": "morning",
+    "_path": "#hs-body-morning-3 > div:nth-of-type(2) > div:nth-of-type(1)",
+    "pk-zone": "France",
+    "mrn-creg-per": "Année 2026 (à fin août)"
+   },
+   "body": "toujours illisibles ces graphs. Mettre sur 2y de base. ET ce violet ça va pas.",
+   "reply": "Doublon de la note 79 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 79.",
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
@@ -2364,26 +2364,6 @@
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
-   "id": 140,
-   "status": "wontfix",
-   "created_at": "2026-10-31T21:35+00:00",
-   "author": "Tom",
-   "route": "today",
-   "page": "Aujourd'hui",
-   "tab": "Expert · ⓘ Expliquer · Tout",
-   "target_id": "mrn-sysm",
-   "target_label": "Production France par mois (graphique)",
-   "settings": {
-    "_page": "morning",
-    "_path": "#hs-body-morning-4 > div:nth-of-type(2) > div:nth-of-type(2)",
-    "pk-zone": "France",
-    "mrn-creg-per": "Année 2026 (à fin août)"
-   },
-   "body": "pas de filtre sur le temps ici ? pas top ça",
-   "reply": "Doublon de la note 82 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 82.",
-   "done_at": "2026-10-31T22:50+00:00"
-  },
-  {
    "id": 82,
    "status": "done",
    "created_at": "2026-10-31T21:35+00:00",
@@ -2404,24 +2384,24 @@
    "done_at": "2026-11-01T07:53+00:00"
   },
   {
-   "id": 83,
-   "status": "done",
+   "id": 140,
+   "status": "wontfix",
    "created_at": "2026-10-31T21:35+00:00",
    "author": "Tom",
    "route": "today",
    "page": "Aujourd'hui",
    "tab": "Expert · ⓘ Expliquer · Tout",
-   "target_id": "mrn-remit",
-   "target_label": "Indisponibilités nucléaires (graphique)",
+   "target_id": "mrn-sysm",
+   "target_label": "Production France par mois (graphique)",
    "settings": {
     "_page": "morning",
-    "_path": "#hs-body-morning-4 > div:nth-of-type(3) > div:nth-of-type(1)",
+    "_path": "#hs-body-morning-4 > div:nth-of-type(2) > div:nth-of-type(2)",
     "pk-zone": "France",
     "mrn-creg-per": "Année 2026 (à fin août)"
    },
-   "body": "on a deja ce graph. Choisir ou le mettre. Plutot ici je dirais.",
-   "reply": "D’accord : le graphique reste sur Aujourd’hui ; ailleurs il n’est plus que sur la page Indisponibilités & REMIT (retiré de la page Nucléaire).",
-   "done_at": "2026-11-01T07:28+00:00"
+   "body": "pas de filtre sur le temps ici ? pas top ça",
+   "reply": "Doublon de la note 82 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 82.",
+   "done_at": "2026-10-31T22:50+00:00"
   },
   {
    "id": 141,
@@ -2444,24 +2424,24 @@
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
-   "id": 142,
-   "status": "wontfix",
-   "created_at": "2026-10-31T21:36+00:00",
+   "id": 83,
+   "status": "done",
+   "created_at": "2026-10-31T21:35+00:00",
    "author": "Tom",
    "route": "today",
    "page": "Aujourd'hui",
    "tab": "Expert · ⓘ Expliquer · Tout",
-   "target_id": "mrn-loadn",
-   "target_label": "Consommation France vs normale (graphique)",
+   "target_id": "mrn-remit",
+   "target_label": "Indisponibilités nucléaires (graphique)",
    "settings": {
     "_page": "morning",
-    "_path": "#hs-body-morning-4 > div:nth-of-type(3) > div:nth-of-type(2)",
+    "_path": "#hs-body-morning-4 > div:nth-of-type(3) > div:nth-of-type(1)",
     "pk-zone": "France",
     "mrn-creg-per": "Année 2026 (à fin août)"
    },
-   "body": "pareil pour ce graph. je le laisserais plutot en haut. SAuf si tu proposes une nouvelle orga (fondamentaux peut être pas le meileur titre ?, mettre tout dans système électrique ? Je te laisse y réléchir et proposer quelque chose)",
-   "reply": "Doublon de la note 84 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 84.",
-   "done_at": "2026-10-31T22:50+00:00"
+   "body": "on a deja ce graph. Choisir ou le mettre. Plutot ici je dirais.",
+   "reply": "D’accord : le graphique reste sur Aujourd’hui ; ailleurs il n’est plus que sur la page Indisponibilités & REMIT (retiré de la page Nucléaire).",
+   "done_at": "2026-11-01T07:28+00:00"
   },
   {
    "id": 84,
@@ -2480,28 +2460,28 @@
     "mrn-creg-per": "Année 2026 (à fin août)"
    },
    "body": "pareil pour ce graph. je le laisserais plutot en haut. SAuf si tu proposes une nouvelle orga (fondamentaux peut être pas le meileur titre ?, mettre tout dans système électrique ? Je te laisse y réléchir et proposer quelque chose)",
-   "reply": "Fait : ce graphique était en double ; il reste en haut, dans Fondamentaux, et sort de Système électrique (comme le graphique des indisponibilités nucléaires, lui aussi en double). Il couvre maintenant 2 ans avec les boutons de période (ouvert sur 3 mois) et ses lignes ne sont plus lissées. Pour l’organisation : je propose de renommer « Fondamentaux » en « Météo, conso et nucléaire » et de garder « Système électrique » pour la production. Dis-moi si ça te va avant que je le fasse.",
+   "reply": "Fait : la section « Fondamentaux » d’Aujourd’hui s’appelle maintenant « Météo, conso et nucléaire » (aussi dans le tableau de bord Aujourd’hui · Expert).",
    "done_at": "2026-11-01T07:53+00:00"
   },
   {
-   "id": 85,
-   "status": "done",
-   "created_at": "2026-10-31T21:37+00:00",
+   "id": 142,
+   "status": "wontfix",
+   "created_at": "2026-10-31T21:36+00:00",
    "author": "Tom",
    "route": "today",
    "page": "Aujourd'hui",
    "tab": "Expert · ⓘ Expliquer · Tout",
-   "target_id": "mu-day-b0m1jx",
-   "target_label": "élément sans titre (graphique)",
+   "target_id": "mrn-loadn",
+   "target_label": "Consommation France vs normale (graphique)",
    "settings": {
     "_page": "morning",
-    "_path": "#mrn2 > div:nth-of-type(2) > section:nth-of-type(3)",
+    "_path": "#hs-body-morning-4 > div:nth-of-type(3) > div:nth-of-type(2)",
     "pk-zone": "France",
     "mrn-creg-per": "Année 2026 (à fin août)"
    },
-   "body": "Quand on est en mode pévision, même design que France · éolien, solaire et consommation",
-   "reply": "Fait : quand le prix de demain n’est pas encore publié et que la carte montre la prévision PowerKlock, elle prend le même habillage que « France · éolien, solaire et consommation » : fond hachuré avec l’étiquette PRÉVISION · PowerKlock, courbe en pointillés bleus. Les plages moins cher / plus cher restent indiquées.",
-   "done_at": "2026-11-01T08:36+00:00"
+   "body": "pareil pour ce graph. je le laisserais plutot en haut. SAuf si tu proposes une nouvelle orga (fondamentaux peut être pas le meileur titre ?, mettre tout dans système électrique ? Je te laisse y réléchir et proposer quelque chose)",
+   "reply": "Doublon de la note 84 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 84.",
+   "done_at": "2026-10-31T22:50+00:00"
   },
   {
    "id": 143,
@@ -2524,23 +2504,24 @@
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
-   "id": 86,
+   "id": 85,
    "status": "done",
-   "created_at": "2026-10-31T21:41+00:00",
+   "created_at": "2026-10-31T21:37+00:00",
    "author": "Tom",
-   "route": "markets/spot/negative",
-   "page": "Marchés › Électricité spot › Prix négatifs",
-   "tab": null,
-   "target_id": "neg-s-board",
-   "target_label": "Tableau des prix négatifs30 zones · 0 en négatif (tableau)",
+   "route": "today",
+   "page": "Aujourd'hui",
+   "tab": "Expert · ⓘ Expliquer · Tout",
+   "target_id": "mu-day-b0m1jx",
+   "target_label": "élément sans titre (graphique)",
    "settings": {
-    "_page": "prices",
-    "_path": "#neg-s-board",
-    "pk-zone": "France"
+    "_page": "morning",
+    "_path": "#mrn2 > div:nth-of-type(2) > section:nth-of-type(3)",
+    "pk-zone": "France",
+    "mrn-creg-per": "Année 2026 (à fin août)"
    },
-   "body": "On perd tous les graphs du coup ? pas ok",
-   "reply": "Fait : le tableau des 30 zones reste affiché même un jour sans prix négatif ; ouvrir une zone donne tous ses graphiques (par mois, par an, cumul, calendrier, barres quotidiennes, mois × heure). Le message du jour le dit.",
-   "done_at": "2026-10-31T22:50+00:00"
+   "body": "Quand on est en mode pévision, même design que France · éolien, solaire et consommation",
+   "reply": "Fait : quand le prix de demain n’est pas encore publié et que la carte montre la prévision PowerKlock, elle prend le même habillage que « France · éolien, solaire et consommation » : fond hachuré avec l’étiquette PRÉVISION · PowerKlock, courbe en pointillés bleus. Les plages moins cher / plus cher restent indiquées.",
+   "done_at": "2026-11-01T08:36+00:00"
   },
   {
    "id": 144,
@@ -2562,21 +2543,22 @@
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
-   "id": 145,
-   "status": "wontfix",
+   "id": 86,
+   "status": "done",
    "created_at": "2026-10-31T21:41+00:00",
    "author": "Tom",
-   "route": "markets/bess",
-   "page": "Marchés › Batteries (BESS)",
-   "tab": "Indice · Tout",
-   "target_id": null,
-   "target_label": null,
+   "route": "markets/spot/negative",
+   "page": "Marchés › Électricité spot › Prix négatifs",
+   "tab": null,
+   "target_id": "neg-s-board",
+   "target_label": "Tableau des prix négatifs30 zones · 0 en négatif (tableau)",
    "settings": {
-    "_page": "bess",
+    "_page": "prices",
+    "_path": "#neg-s-board",
     "pk-zone": "France"
    },
-   "body": "je mettrais cette section dans TOOL",
-   "reply": "Doublon de la note 87 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 87.",
+   "body": "On perd tous les graphs du coup ? pas ok",
+   "reply": "Fait : le tableau des 30 zones reste affiché même un jour sans prix négatif ; ouvrir une zone donne tous ses graphiques (par mois, par an, cumul, calendrier, barres quotidiennes, mois × heure). Le message du jour le dit.",
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
@@ -2598,22 +2580,21 @@
    "done_at": "2026-11-01T07:28+00:00"
   },
   {
-   "id": 146,
+   "id": 145,
    "status": "wontfix",
-   "created_at": "2026-10-31T21:42+00:00",
+   "created_at": "2026-10-31T21:41+00:00",
    "author": "Tom",
-   "route": "markets/spot/spread",
-   "page": "Marchés › Électricité spot › Spreads",
-   "tab": "Intraday spread",
+   "route": "markets/bess",
+   "page": "Marchés › Batteries (BESS)",
+   "tab": "Indice · Tout",
    "target_id": null,
    "target_label": null,
    "settings": {
-    "_page": "prices",
-    "pk-zone": "France",
-    "hz-spread": "France"
+    "_page": "bess",
+    "pk-zone": "France"
    },
-   "body": "ici je mettrais TB1, TB2, TB3, TB4. ET réorégnaise pour respecter le schéma du site. (la base étant DAy-Ahead)",
-   "reply": "Doublon de la note 88 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 88.",
+   "body": "je mettrais cette section dans TOOL",
+   "reply": "Doublon de la note 87 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 87.",
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
@@ -2634,6 +2615,25 @@
    "body": "ici je mettrais TB1, TB2, TB3, TB4. ET réorégnaise pour respecter le schéma du site. (la base étant DAy-Ahead)",
    "reply": "Fait : la page Spreads n’a plus d’onglets ; elle commence par l’arbitrage batterie TB1, TB2, TB3 et TB4 (graphique et chiffres clés), puis le spread journalier day-ahead, dans les sections repliables du site comme Day-ahead.",
    "done_at": "2026-11-01T07:53+00:00"
+  },
+  {
+   "id": 146,
+   "status": "wontfix",
+   "created_at": "2026-10-31T21:42+00:00",
+   "author": "Tom",
+   "route": "markets/spot/spread",
+   "page": "Marchés › Électricité spot › Spreads",
+   "tab": "Intraday spread",
+   "target_id": null,
+   "target_label": null,
+   "settings": {
+    "_page": "prices",
+    "pk-zone": "France",
+    "hz-spread": "France"
+   },
+   "body": "ici je mettrais TB1, TB2, TB3, TB4. ET réorégnaise pour respecter le schéma du site. (la base étant DAy-Ahead)",
+   "reply": "Doublon de la note 88 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 88.",
+   "done_at": "2026-10-31T22:50+00:00"
   },
   {
    "id": 147,
@@ -2678,26 +2678,6 @@
    "done_at": "2026-11-01T08:36+00:00"
   },
   {
-   "id": 90,
-   "status": "done",
-   "created_at": "2026-10-31T21:44+00:00",
-   "author": "Tom",
-   "route": "markets/fuels",
-   "page": "Marchés › Gaz, carbone, pétrole › Prix spot",
-   "tab": "Gaz",
-   "target_id": null,
-   "target_label": null,
-   "settings": {
-    "_page": "eua",
-    "fuel-to": "",
-    "pk-zone": "France",
-    "fuel-from": ""
-   },
-   "body": "on a deux fois le meme graph sur les sock gaz. GArder le plus complet",
-   "reply": "Fait : un seul graphique des stocks de gaz UE, le plus complet (chaque année depuis 2019, avec la moyenne et la fourchette), à côté des hubs ; légendes en français.",
-   "done_at": "2026-11-01T07:53+00:00"
-  },
-  {
    "id": 148,
    "status": "wontfix",
    "created_at": "2026-10-31T21:44+00:00",
@@ -2716,6 +2696,26 @@
    "body": "on a deux fois le meme graph sur les sock gaz. GArder le plus complet",
    "reply": "Doublon de la note 90 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 90.",
    "done_at": "2026-10-31T22:50+00:00"
+  },
+  {
+   "id": 90,
+   "status": "done",
+   "created_at": "2026-10-31T21:44+00:00",
+   "author": "Tom",
+   "route": "markets/fuels",
+   "page": "Marchés › Gaz, carbone, pétrole › Prix spot",
+   "tab": "Gaz",
+   "target_id": null,
+   "target_label": null,
+   "settings": {
+    "_page": "eua",
+    "fuel-to": "",
+    "pk-zone": "France",
+    "fuel-from": ""
+   },
+   "body": "on a deux fois le meme graph sur les sock gaz. GArder le plus complet",
+   "reply": "Fait : un seul graphique des stocks de gaz UE, le plus complet (chaque année depuis 2019, avec la moyenne et la fourchette), à côté des hubs ; légendes en français.",
+   "done_at": "2026-11-01T07:53+00:00"
   },
   {
    "id": 91,
@@ -2880,24 +2880,6 @@
    "done_at": "2026-11-01T07:53+00:00"
   },
   {
-   "id": 153,
-   "status": "wontfix",
-   "created_at": "2026-10-31T21:46+00:00",
-   "author": "Tom",
-   "route": "markets/go/auctions",
-   "page": "Marchés › Garanties d'origine › Enchères France",
-   "tab": "Enchères France",
-   "target_id": null,
-   "target_label": null,
-   "settings": {
-    "_page": "goprices",
-    "pk-zone": "France"
-   },
-   "body": "on pourrait mieux peupler cette page. Et mêtre des dates et l'agenda des enchères. Regarde sur internet ce que les entreprises mettent (regarde les trader de GO français)",
-   "reply": "Doublon de la note 95 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 95.",
-   "done_at": "2026-10-31T22:50+00:00"
-  },
-  {
    "id": 95,
    "status": "done",
    "created_at": "2026-10-31T21:46+00:00",
@@ -2916,22 +2898,21 @@
    "done_at": "2026-11-01T08:36+00:00"
   },
   {
-   "id": 154,
+   "id": 153,
    "status": "wontfix",
-   "created_at": "2026-10-31T21:47+00:00",
+   "created_at": "2026-10-31T21:46+00:00",
    "author": "Tom",
-   "route": "renewables/capture",
-   "page": "Renouvelables › Capture & cannibalisation",
-   "tab": "Quotidien",
+   "route": "markets/go/auctions",
+   "page": "Marchés › Garanties d'origine › Enchères France",
+   "tab": "Enchères France",
    "target_id": null,
    "target_label": null,
    "settings": {
-    "_page": "renewables",
-    "pk-zone": "France",
-    "ren-country": "France"
+    "_page": "goprices",
+    "pk-zone": "France"
    },
-   "body": "bizarre le menu.",
-   "reply": "Doublon de la note 96 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 96.",
+   "body": "on pourrait mieux peupler cette page. Et mêtre des dates et l'agenda des enchères. Regarde sur internet ce que les entreprises mettent (regarde les trader de GO français)",
+   "reply": "Doublon de la note 95 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 95.",
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
@@ -2952,6 +2933,25 @@
    "body": "bizarre le menu.",
    "reply": "Corrigé : le fil d’Ariane affichait « Renouvelables › Renouvelables » au lieu du nom de la page (la comparaison se faisait avant la traduction). Il affiche maintenant « Renouvelables › Capture & cannibalisation » (ou « Contrat M0 »), et la correction vaut pour toutes les pages dans le même cas.",
    "done_at": "2026-11-01T07:53+00:00"
+  },
+  {
+   "id": 154,
+   "status": "wontfix",
+   "created_at": "2026-10-31T21:47+00:00",
+   "author": "Tom",
+   "route": "renewables/capture",
+   "page": "Renouvelables › Capture & cannibalisation",
+   "tab": "Quotidien",
+   "target_id": null,
+   "target_label": null,
+   "settings": {
+    "_page": "renewables",
+    "pk-zone": "France",
+    "ren-country": "France"
+   },
+   "body": "bizarre le menu.",
+   "reply": "Doublon de la note 96 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 96.",
+   "done_at": "2026-10-31T22:50+00:00"
   },
   {
    "id": 155,
@@ -2994,27 +2994,6 @@
    "done_at": "2026-11-01T07:28+00:00"
   },
   {
-   "id": 156,
-   "status": "wontfix",
-   "created_at": "2026-10-31T21:49+00:00",
-   "author": "Tom",
-   "route": "system/generation/nuclear",
-   "page": "Système électrique › Production › Nucléaire",
-   "tab": "Disponibilité",
-   "target_id": "hs-nuclear-u",
-   "target_label": "Indisponibilités nucléaires françaises (graphique)",
-   "settings": {
-    "_page": "nuclear",
-    "_path": "#hs-nuclear-u",
-    "nuc-to": "",
-    "pk-zone": "France",
-    "nuc-from": ""
-   },
-   "body": "pas au bon endroit si ?",
-   "reply": "Doublon de la note 98 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 98.",
-   "done_at": "2026-10-31T22:50+00:00"
-  },
-  {
    "id": 98,
    "status": "done",
    "created_at": "2026-10-31T21:49+00:00",
@@ -3036,22 +3015,25 @@
    "done_at": "2026-11-01T07:28+00:00"
   },
   {
-   "id": 99,
-   "status": "done",
+   "id": 156,
+   "status": "wontfix",
    "created_at": "2026-10-31T21:49+00:00",
    "author": "Tom",
-   "route": "system/generation/outages",
-   "page": "Système électrique › Production › Indisponibilités & REMIT",
-   "tab": "Indisponibilités",
-   "target_id": null,
-   "target_label": null,
+   "route": "system/generation/nuclear",
+   "page": "Système électrique › Production › Nucléaire",
+   "tab": "Disponibilité",
+   "target_id": "hs-nuclear-u",
+   "target_label": "Indisponibilités nucléaires françaises (graphique)",
    "settings": {
-    "_page": "remit",
-    "pk-zone": "France"
+    "_page": "nuclear",
+    "_path": "#hs-nuclear-u",
+    "nuc-to": "",
+    "pk-zone": "France",
+    "nuc-from": ""
    },
-   "body": "on a de l'indispo partout. Rationnaliser.",
-   "reply": "Fait : une seule page pour les indisponibilités (Indisponibilités & REMIT) : total indisponible avec la prévision de l’exploitant, nouvelle projection des 4 prochains mois, planning et liste réacteur par réacteur. Aujourd’hui garde son graphique (note 83).",
-   "done_at": "2026-11-01T07:28+00:00"
+   "body": "pas au bon endroit si ?",
+   "reply": "Doublon de la note 98 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 98.",
+   "done_at": "2026-10-31T22:50+00:00"
   },
   {
    "id": 157,
@@ -3070,6 +3052,24 @@
    "body": "on a de l'indispo partout. Rationnaliser.",
    "reply": "Doublon de la note 99 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 99.",
    "done_at": "2026-10-31T22:50+00:00"
+  },
+  {
+   "id": 99,
+   "status": "done",
+   "created_at": "2026-10-31T21:49+00:00",
+   "author": "Tom",
+   "route": "system/generation/outages",
+   "page": "Système électrique › Production › Indisponibilités & REMIT",
+   "tab": "Indisponibilités",
+   "target_id": null,
+   "target_label": null,
+   "settings": {
+    "_page": "remit",
+    "pk-zone": "France"
+   },
+   "body": "on a de l'indispo partout. Rationnaliser.",
+   "reply": "Fait : une seule page pour les indisponibilités (Indisponibilités & REMIT) : total indisponible avec la prévision de l’exploitant, nouvelle projection des 4 prochains mois, planning et liste réacteur par réacteur. Aujourd’hui garde son graphique (note 83).",
+   "done_at": "2026-11-01T07:28+00:00"
   },
   {
    "id": 158,
@@ -3324,25 +3324,6 @@
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
-   "id": 108,
-   "status": "done",
-   "created_at": "2026-10-31T21:55+00:00",
-   "author": "Tom",
-   "route": "system/bilan",
-   "page": "Système électrique › Bilan électrique",
-   "tab": "2026 à date",
-   "target_id": "bl-spot",
-   "target_label": "Prix (graphique)",
-   "settings": {
-    "_page": "bilan",
-    "_path": "#bilan-host > section:nth-of-type(2)",
-    "pk-zone": "France"
-   },
-   "body": "mieux organsier",
-   "reply": "Réorganisé : le graphique Prix mélangeait deux axes (prix et heures négatives). Il y a maintenant deux graphiques côte à côte, alignés : le spot moyen de chaque mois contre l’année précédente, et les heures à prix négatif de chaque mois contre l’année précédente ; les 4 chiffres (spot moyen, heures négatives, heures au-dessus de 100 €, journée la plus chère) passent en ligne dessous.",
-   "done_at": "2026-11-01T08:36+00:00"
-  },
-  {
    "id": 166,
    "status": "wontfix",
    "created_at": "2026-10-31T21:55+00:00",
@@ -3362,21 +3343,22 @@
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
-   "id": 109,
+   "id": 108,
    "status": "done",
-   "created_at": "2026-10-31T21:56+00:00",
+   "created_at": "2026-10-31T21:55+00:00",
    "author": "Tom",
    "route": "system/bilan",
    "page": "Système électrique › Bilan électrique",
    "tab": "2026 à date",
-   "target_id": null,
-   "target_label": null,
+   "target_id": "bl-spot",
+   "target_label": "Prix (graphique)",
    "settings": {
     "_page": "bilan",
+    "_path": "#bilan-host > section:nth-of-type(2)",
     "pk-zone": "France"
    },
-   "body": "il y a de la place pour faire mieux. ET en plus il manque des graphs. Essaye d'en faire plus du rapport",
-   "reply": "Ajouté, comme dans le Bilan de RTE : une section « Nucléaire et renouvelables · facteurs de charge » avec, mois par mois, le facteur de charge du nucléaire, de l’éolien et du solaire contre l’année précédente (production ÷ capacité installée × heures ; capacité interpolée entre deux fins d’année ; pour l’année en cours, la capacité de fin d’année précédente, ce qui surestime un peu l’éolien et le solaire, c’est écrit sous le graphique). Plus les heures négatives par mois (note 108). Pour l’harmonisation des tuiles, voir la maquette de la note 107.",
+   "body": "mieux organsier",
+   "reply": "Réorganisé : le graphique Prix mélangeait deux axes (prix et heures négatives). Il y a maintenant deux graphiques côte à côte, alignés : le spot moyen de chaque mois contre l’année précédente, et les heures à prix négatif de chaque mois contre l’année précédente ; les 4 chiffres (spot moyen, heures négatives, heures au-dessus de 100 €, journée la plus chère) passent en ligne dessous.",
    "done_at": "2026-11-01T08:36+00:00"
   },
   {
@@ -3396,6 +3378,24 @@
    "body": "il y a de la place pour faire mieux. ET en plus il manque des graphs. Essaye d'en faire plus du rapport",
    "reply": "Doublon de la note 109 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 109.",
    "done_at": "2026-10-31T22:50+00:00"
+  },
+  {
+   "id": 109,
+   "status": "done",
+   "created_at": "2026-10-31T21:56+00:00",
+   "author": "Tom",
+   "route": "system/bilan",
+   "page": "Système électrique › Bilan électrique",
+   "tab": "2026 à date",
+   "target_id": null,
+   "target_label": null,
+   "settings": {
+    "_page": "bilan",
+    "pk-zone": "France"
+   },
+   "body": "il y a de la place pour faire mieux. ET en plus il manque des graphs. Essaye d'en faire plus du rapport",
+   "reply": "Ajouté, comme dans le Bilan de RTE : une section « Nucléaire et renouvelables · facteurs de charge » avec, mois par mois, le facteur de charge du nucléaire, de l’éolien et du solaire contre l’année précédente (production ÷ capacité installée × heures ; capacité interpolée entre deux fins d’année ; pour l’année en cours, la capacité de fin d’année précédente, ce qui surestime un peu l’éolien et le solaire, c’est écrit sous le graphique). Plus les heures négatives par mois (note 108). Pour l’harmonisation des tuiles, voir la maquette de la note 107.",
+   "done_at": "2026-11-01T08:36+00:00"
   },
   {
    "id": 110,
@@ -3470,30 +3470,6 @@
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
-   "id": 112,
-   "status": "done",
-   "created_at": "2026-10-31T21:57+00:00",
-   "author": "Tom",
-   "route": "system/replay",
-   "page": "Système électrique › Rejouer une journée",
-   "tab": "Jour · Prix · Normal",
-   "target_id": null,
-   "target_label": null,
-   "settings": {
-    "_page": "replay",
-    "rp-to": "24:00",
-    "rp-cmp": "",
-    "pk-zone": "France",
-    "rp-date": "2026-10-30",
-    "rp-from": "00:00",
-    "rp-music": false,
-    "rp-scrub": "95"
-   },
-   "body": "ça prend toujours pas tout l'espace latéral ces schémas",
-   "reply": "Fait : en 16:9, le schéma prend toute la largeur de la page (il était limité par la hauteur de l’écran et laissait du vide sur les côtés d’un grand écran) ; le plein écran et les formats carré et vertical restent calés sur la hauteur.",
-   "done_at": "2026-11-01T07:28+00:00"
-  },
-  {
    "id": 170,
    "status": "wontfix",
    "created_at": "2026-10-31T21:57+00:00",
@@ -3516,6 +3492,30 @@
    "body": "ça prend toujours pas tout l'espace latéral ces schémas",
    "reply": "Doublon de la note 112 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 112.",
    "done_at": "2026-10-31T22:50+00:00"
+  },
+  {
+   "id": 112,
+   "status": "done",
+   "created_at": "2026-10-31T21:57+00:00",
+   "author": "Tom",
+   "route": "system/replay",
+   "page": "Système électrique › Rejouer une journée",
+   "tab": "Jour · Prix · Normal",
+   "target_id": null,
+   "target_label": null,
+   "settings": {
+    "_page": "replay",
+    "rp-to": "24:00",
+    "rp-cmp": "",
+    "pk-zone": "France",
+    "rp-date": "2026-10-30",
+    "rp-from": "00:00",
+    "rp-music": false,
+    "rp-scrub": "95"
+   },
+   "body": "ça prend toujours pas tout l'espace latéral ces schémas",
+   "reply": "Fait : en 16:9, le schéma prend toute la largeur de la page (il était limité par la hauteur de l’écran et laissait du vide sur les côtés d’un grand écran) ; le plein écran et les formats carré et vertical restent calés sur la hauteur.",
+   "done_at": "2026-11-01T07:28+00:00"
   },
   {
    "id": 171,
