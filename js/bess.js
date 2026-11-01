@@ -252,6 +252,14 @@
       _fuelKpi('Certified capacity', num(cert, 1), 'MW', 'power × coefficient') +
       _fuelKpi('Revenue', num(rev, 0), 'k€/yr', 'certified MW × price') +
       _fuelKpi('Per MW installed', num(mw ? rev / mw : 0, 1), 'k€/MW/yr', 'adds to the other streams');
+    // every duration at the same price, the chosen one highlighted (note 67)
+    if ($('cm-chart') && window._fuelChart) {
+      const hs = Object.keys(KJKH).map(Number).sort((a, b) => a - b);
+      _fuelChart('cm-chart', { type: 'bar', data: { labels: hs.map(x => (x < 1 ? '30 min' : x + ' h')), datasets: [
+        { label: 'k€ per installed MW per year', data: hs.map(x => Math.round(KJKH[x] * price * 10) / 10), backgroundColor: hs.map(x => x === h ? 'rgba(127,200,248,.95)' : 'rgba(127,200,248,.35)'), borderRadius: 3 },
+      ] }, options: _fuelOpts({ plugins: { legend: { display: false }, tooltip: { callbacks: { afterLabel: c => 'coefficient ' + num(KJKH[hs[c.dataIndex]], 2) } } },
+        scales: { x: _fuelXAxis(), y: _fuelAxis('k€/MW/yr', { beginAtZero: true }) } }) }, 'capacity-by-duration');
+    }
   }
 
   function wire() {

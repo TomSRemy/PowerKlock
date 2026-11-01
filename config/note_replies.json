@@ -634,5 +634,9 @@
  "85": {
   "status": "done",
   "reply": "Fait : quand le prix de demain n’est pas encore publié et que la carte montre la prévision PowerKlock, elle prend le même habillage que « France · éolien, solaire et consommation » : fond hachuré avec l’étiquette PRÉVISION · PowerKlock, courbe en pointillés bleus. Les plages moins cher / plus cher restent indiquées."
+ },
+ "67": {
+  "status": "done",
+  "reply": "Un peu moins austère : l’onglet a maintenant un graphique du revenu de capacité par MW installé pour chaque durée de batterie (30 min à 8 h) au prix choisi, avec la durée choisie en surbrillance ; il suit le curseur. Si tu veux aller plus loin (capacité face aux autres revenus de la batterie, historique des prix de capacité), dis-moi."
  }
 }
