@@ -3226,6 +3226,10 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
     <label>Capacity price (€/kW per year)<input type="range" id="cm-p" min="0" max="70" step="1" value="20"><span class="bess-val" id="cm-p-d">20</span></label>
   </div>
   <div class="kpi-strip fuel-kpis" id="cm-kpis"></div>
+  <div class="chart-container fuel-card" style="margin:12px 0">
+    <div class="fuel-card-head"><div><div class="table-title">Capacity revenue by battery duration</div><div class="fuel-card-sub" id="cm-chart-sub">k€ per installed MW per year at the chosen price</div></div><span class="source-badge">RTE rules</span></div>
+    <div style="position:relative;height:240px"><canvas id="cm-chart" style="width:100%;height:240px"></canvas></div>
+  </div>
   <div class="fuel-note">The price is yours to set: RTE publishes the single capacity price every year by 1 October. The coefficients below come from the rules of the mechanism that ends on 31 October 2026 (RTE, April 2022); check them against the rules of the new mechanism.</div>
 </div>
 <div class="chart-container fuel-card">
