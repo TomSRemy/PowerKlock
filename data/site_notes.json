@@ -1,5 +1,5 @@
 {
- "open": 55,
+ "open": 41,
  "notes": [
   {
    "id": 29,
@@ -56,42 +56,6 @@
    },
    "body": "il faut retravailler cette page elle apporte pas grand chose",
    "reply": "D’accord. Je prépare une maquette de refonte de la page Intensité carbone (ce qu’elle doit apporter : heures vertes de demain, comparaison des pays, tendance) ; je la montre avant de coder.",
-   "done_at": null
-  },
-  {
-   "id": 47,
-   "status": "open",
-   "created_at": "2026-10-26T21:41+00:00",
-   "author": "Tom",
-   "route": "markets/fuels/forwards",
-   "page": "Marchés › Gaz, carbone, pétrole › Courbes forward",
-   "tab": "Cotations",
-   "target_id": null,
-   "target_label": null,
-   "settings": {
-    "_page": "euafwd",
-    "pk-zone": "France"
-   },
-   "body": "est-ce que cotations et forward TTF devraient pas être dans le même ?",
-   "reply": "Oui, cotations et forwards TTF se recoupent. Proposition : une seule page « Forwards gaz » avec la courbe, l’historique par échéance et le tableau des cotations. Je la montre en maquette avant de toucher au menu.",
-   "done_at": null
-  },
-  {
-   "id": 48,
-   "status": "open",
-   "created_at": "2026-10-26T21:42+00:00",
-   "author": "Tom",
-   "route": "markets/fuels/forwards",
-   "page": "Marchés › Gaz, carbone, pétrole › Courbes forward",
-   "tab": "Curves",
-   "target_id": null,
-   "target_label": null,
-   "settings": {
-    "_page": "euafwd",
-    "pk-zone": "France"
-   },
-   "body": "Un seule page TTf est pas suffisante ?",
-   "reply": "Même réponse que la note précédente : une seule page TTF suffit. Fusion proposée en maquette, avec la note 47.",
    "done_at": null
   },
   {
@@ -194,25 +158,6 @@
    "done_at": null
   },
   {
-   "id": 64,
-   "status": "open",
-   "created_at": "2026-10-28T22:30+00:00",
-   "author": "Tom",
-   "route": "markets/fuels/forwards",
-   "page": "Marchés › Gaz, carbone, pétrole › Courbes forward",
-   "tab": "Cotations",
-   "target_id": "hs-euafwd-1",
-   "target_label": "TTF & EUA — cotation J-1 (tableau)",
-   "settings": {
-    "_page": "euafwd",
-    "_path": "#hs-euafwd-1",
-    "pk-zone": "France"
-   },
-   "body": "pas de gaph ? Différence avec forward TTF ?",
-   "reply": null,
-   "done_at": null
-  },
-  {
    "id": 65,
    "status": "open",
    "created_at": "2026-10-28T22:31+00:00",
@@ -291,47 +236,6 @@
    "done_at": null
   },
   {
-   "id": 69,
-   "status": "open",
-   "created_at": "2026-10-28T22:34+00:00",
-   "author": "Tom",
-   "route": "system/generation",
-   "page": "Système électrique › Production › Mix de production",
-   "tab": "Quotidien",
-   "target_id": "hs-gmdcz",
-   "target_label": "Analyse multi-zones jeu. 29 oct. 2026 (tableau)",
-   "settings": {
-    "_page": "genmix",
-    "_path": "#hs-gmdcz",
-    "pk-zone": "France",
-    "gm-date-picker-input": ""
-   },
-   "body": "bug quand jec hange de graph. Soit ilsapparaisent pas soit ils changent pas,",
-   "reply": null,
-   "done_at": null
-  },
-  {
-   "id": 71,
-   "status": "open",
-   "created_at": "2026-10-28T22:35+00:00",
-   "author": "Tom",
-   "route": "system/generation/nuclear",
-   "page": "Système électrique › Production › Nucléaire",
-   "tab": "Indisponibilités",
-   "target_id": "hs-nuclear-1",
-   "target_label": "Indisponibilités par unité (bloc)",
-   "settings": {
-    "_page": "nuclear",
-    "_path": "#hs-nuclear-1",
-    "nuc-to": "",
-    "pk-zone": "France",
-    "nuc-from": ""
-   },
-   "body": "pk mettre ça si on met l'info ailleurs",
-   "reply": null,
-   "done_at": null
-  },
-  {
    "id": 72,
    "status": "open",
    "created_at": "2026-10-28T22:36+00:00",
@@ -347,26 +251,6 @@
     "reg-region": "Occitanie"
    },
    "body": "PK pas avoir ça pour tous les pays ? et faire comme dans prix day ahead ? Et filtrer ? (section pay et section comparison)",
-   "reply": null,
-   "done_at": null
-  },
-  {
-   "id": 77,
-   "status": "open",
-   "created_at": "2026-10-31T21:30+00:00",
-   "author": "Tom",
-   "route": "today",
-   "page": "Aujourd'hui",
-   "tab": "Expert · ⓘ Expliquer · Tout",
-   "target_id": "mrn-fremit",
-   "target_label": "Indisponibilités nucléaires (graphique)",
-   "settings": {
-    "_page": "morning",
-    "_path": "#hs-body-morning-fund > div:nth-of-type(4) > div:nth-of-type(2)",
-    "pk-zone": "France",
-    "mrn-creg-per": "Année 2026 (à fin août)"
-   },
-   "body": "est-ce qu'on a la projection ? pas forcémnt à mette ici mais j'aimerais la retrouver quelque part",
    "reply": null,
    "done_at": null
   },
@@ -431,26 +315,6 @@
    "done_at": null
   },
   {
-   "id": 83,
-   "status": "open",
-   "created_at": "2026-10-31T21:35+00:00",
-   "author": "Tom",
-   "route": "today",
-   "page": "Aujourd'hui",
-   "tab": "Expert · ⓘ Expliquer · Tout",
-   "target_id": "mrn-remit",
-   "target_label": "Indisponibilités nucléaires (graphique)",
-   "settings": {
-    "_page": "morning",
-    "_path": "#hs-body-morning-4 > div:nth-of-type(3) > div:nth-of-type(1)",
-    "pk-zone": "France",
-    "mrn-creg-per": "Année 2026 (à fin août)"
-   },
-   "body": "on a deja ce graph. Choisir ou le mettre. Plutot ici je dirais.",
-   "reply": null,
-   "done_at": null
-  },
-  {
    "id": 84,
    "status": "open",
    "created_at": "2026-10-31T21:36+00:00",
@@ -487,24 +351,6 @@
     "mrn-creg-per": "Année 2026 (à fin août)"
    },
    "body": "Quand on est en mode pévision, même design que France · éolien, solaire et consommation",
-   "reply": null,
-   "done_at": null
-  },
-  {
-   "id": 87,
-   "status": "open",
-   "created_at": "2026-10-31T21:41+00:00",
-   "author": "Tom",
-   "route": "markets/bess",
-   "page": "Marchés › Batteries (BESS)",
-   "tab": "Indice · Tout",
-   "target_id": null,
-   "target_label": null,
-   "settings": {
-    "_page": "bess",
-    "pk-zone": "France"
-   },
-   "body": "je mettrais cette section dans TOOL",
    "reply": null,
    "done_at": null
   },
@@ -609,26 +455,6 @@
    "done_at": null
   },
   {
-   "id": 93,
-   "status": "open",
-   "created_at": "2026-10-31T21:44+00:00",
-   "author": "Tom",
-   "route": "markets/fuels/forwards",
-   "page": "Marchés › Gaz, carbone, pétrole › Courbes forward",
-   "tab": "Forwards TTF",
-   "target_id": null,
-   "target_label": null,
-   "settings": {
-    "_page": "euafwd",
-    "pk-zone": "France",
-    "ttf-set": "Liquides (produits de bourse)",
-    "ttf-cal-win": "6 mois"
-   },
-   "body": "courbes fprward et forwatds TTF amènent au même endroit",
-   "reply": null,
-   "done_at": null
-  },
-  {
    "id": 94,
    "status": "open",
    "created_at": "2026-10-31T21:46+00:00",
@@ -687,65 +513,6 @@
    "done_at": null
   },
   {
-   "id": 97,
-   "status": "open",
-   "created_at": "2026-10-31T21:49+00:00",
-   "author": "Tom",
-   "route": "system/generation/nuclear",
-   "page": "Système électrique › Production › Nucléaire",
-   "tab": "Disponibilité",
-   "target_id": null,
-   "target_label": null,
-   "settings": {
-    "_page": "nuclear",
-    "nuc-to": "",
-    "pk-zone": "France",
-    "nuc-from": ""
-   },
-   "body": "pas de prévision pour le future ici ? dommage",
-   "reply": null,
-   "done_at": null
-  },
-  {
-   "id": 98,
-   "status": "open",
-   "created_at": "2026-10-31T21:49+00:00",
-   "author": "Tom",
-   "route": "system/generation/nuclear",
-   "page": "Système électrique › Production › Nucléaire",
-   "tab": "Disponibilité",
-   "target_id": "hs-nuclear-u",
-   "target_label": "Indisponibilités nucléaires françaises (graphique)",
-   "settings": {
-    "_page": "nuclear",
-    "_path": "#hs-nuclear-u",
-    "nuc-to": "",
-    "pk-zone": "France",
-    "nuc-from": ""
-   },
-   "body": "pas au bon endroit si ?",
-   "reply": null,
-   "done_at": null
-  },
-  {
-   "id": 99,
-   "status": "open",
-   "created_at": "2026-10-31T21:49+00:00",
-   "author": "Tom",
-   "route": "system/generation/outages",
-   "page": "Système électrique › Production › Indisponibilités & REMIT",
-   "tab": "Indisponibilités",
-   "target_id": null,
-   "target_label": null,
-   "settings": {
-    "_page": "remit",
-    "pk-zone": "France"
-   },
-   "body": "on a de l'indispo partout. Rationnaliser.",
-   "reply": null,
-   "done_at": null
-  },
-  {
    "id": 100,
    "status": "open",
    "created_at": "2026-10-31T21:50+00:00",
@@ -781,7 +548,7 @@
     "load-country": "France (FR)"
    },
    "body": "full scenn ne marche pas.Je suis sur Opera?",
-   "reply": null,
+   "reply": "Je ne reproduis pas : le plein écran de « Consommation France vs normale » s’ouvre bien sur Chromium, le moteur d’Opera (graphique à gauche, tableau des valeurs à droite). Au passage, les dates de l’axe étaient en anglais (« 2 Sep ») : corrigé. Si ça bloque encore chez toi : quel bouton (⛶ en haut à droite de la carte ?) et que se passe-t-il (rien, page noire, erreur) ?",
    "done_at": null
   },
   {
@@ -938,30 +705,6 @@
    "done_at": null
   },
   {
-   "id": 110,
-   "status": "open",
-   "created_at": "2026-10-31T21:56+00:00",
-   "author": "Tom",
-   "route": "system/replay",
-   "page": "Système électrique › Rejouer une journée",
-   "tab": "Jour · Prix · Normal",
-   "target_id": null,
-   "target_label": null,
-   "settings": {
-    "_page": "replay",
-    "rp-to": "24:00",
-    "rp-cmp": "",
-    "pk-zone": "France",
-    "rp-date": "2026-10-30",
-    "rp-from": "00:00",
-    "rp-music": false,
-    "rp-scrub": "95"
-   },
-   "body": "c'et un tools ça",
-   "reply": null,
-   "done_at": null
-  },
-  {
    "id": 111,
    "status": "open",
    "created_at": "2026-10-31T21:57+00:00",
@@ -982,30 +725,6 @@
     "rp-scrub": "95"
    },
    "body": "plus globalement je truove pas le prix des dernières enchères AO CRe sur le site",
-   "reply": null,
-   "done_at": null
-  },
-  {
-   "id": 112,
-   "status": "open",
-   "created_at": "2026-10-31T21:57+00:00",
-   "author": "Tom",
-   "route": "system/replay",
-   "page": "Système électrique › Rejouer une journée",
-   "tab": "Jour · Prix · Normal",
-   "target_id": null,
-   "target_label": null,
-   "settings": {
-    "_page": "replay",
-    "rp-to": "24:00",
-    "rp-cmp": "",
-    "pk-zone": "France",
-    "rp-date": "2026-10-30",
-    "rp-from": "00:00",
-    "rp-music": false,
-    "rp-scrub": "95"
-   },
-   "body": "ça prend toujours pas tout l'espace latéral ces schémas",
    "reply": null,
    "done_at": null
   },
@@ -2036,6 +1755,42 @@
    "done_at": "2026-10-27T00:39+00:00"
   },
   {
+   "id": 47,
+   "status": "done",
+   "created_at": "2026-10-26T21:41+00:00",
+   "author": "Tom",
+   "route": "markets/fuels/forwards",
+   "page": "Marchés › Gaz, carbone, pétrole › Courbes forward",
+   "tab": "Cotations",
+   "target_id": null,
+   "target_label": null,
+   "settings": {
+    "_page": "euafwd",
+    "pk-zone": "France"
+   },
+   "body": "est-ce que cotations et forward TTF devraient pas être dans le même ?",
+   "reply": "Fait : contrats forward TTF et cotations J-1 réunis dans un même onglet « TTF : contrats et cotations » de la page Courbes forward.",
+   "done_at": "2026-11-01T07:28+00:00"
+  },
+  {
+   "id": 48,
+   "status": "done",
+   "created_at": "2026-10-26T21:42+00:00",
+   "author": "Tom",
+   "route": "markets/fuels/forwards",
+   "page": "Marchés › Gaz, carbone, pétrole › Courbes forward",
+   "tab": "Curves",
+   "target_id": null,
+   "target_label": null,
+   "settings": {
+    "_page": "euafwd",
+    "pk-zone": "France"
+   },
+   "body": "Un seule page TTf est pas suffisante ?",
+   "reply": "Fait : une seule page pour le TTF (voir note 47).",
+   "done_at": "2026-11-01T07:28+00:00"
+  },
+  {
    "id": 50,
    "status": "done",
    "created_at": "2026-10-26T21:58+00:00",
@@ -2354,6 +2109,25 @@
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
+   "id": 63,
+   "status": "done",
+   "created_at": "2026-10-28T22:29+00:00",
+   "author": "Tom",
+   "route": "markets/forwards",
+   "page": "Marchés › Électricité forwards",
+   "tab": "Comparaison",
+   "target_id": "hs-prfwd-compare",
+   "target_label": "Comparaison par pays Un produit, les 4 zones sur le même graphique (graphique)",
+   "settings": {
+    "_page": "prices",
+    "_path": "#hs-prfwd-compare",
+    "pk-zone": "France"
+   },
+   "body": "vide ?",
+   "reply": "Vérifié le 31 octobre : l’onglet Comparaison affiche bien les 4 zones (France, UK, Allemagne, Pays-Bas) sur le produit choisi. Il était vide le 28, corrigé depuis.",
+   "done_at": "2026-10-31T22:50+00:00"
+  },
+  {
    "id": 121,
    "status": "wontfix",
    "created_at": "2026-10-28T22:29+00:00",
@@ -2373,23 +2147,23 @@
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
-   "id": 63,
+   "id": 64,
    "status": "done",
-   "created_at": "2026-10-28T22:29+00:00",
+   "created_at": "2026-10-28T22:30+00:00",
    "author": "Tom",
-   "route": "markets/forwards",
-   "page": "Marchés › Électricité forwards",
-   "tab": "Comparaison",
-   "target_id": "hs-prfwd-compare",
-   "target_label": "Comparaison par pays Un produit, les 4 zones sur le même graphique (graphique)",
+   "route": "markets/fuels/forwards",
+   "page": "Marchés › Gaz, carbone, pétrole › Courbes forward",
+   "tab": "Cotations",
+   "target_id": "hs-euafwd-1",
+   "target_label": "TTF & EUA — cotation J-1 (tableau)",
    "settings": {
-    "_page": "prices",
-    "_path": "#hs-prfwd-compare",
+    "_page": "euafwd",
+    "_path": "#hs-euafwd-1",
     "pk-zone": "France"
    },
-   "body": "vide ?",
-   "reply": "Vérifié le 31 octobre : l’onglet Comparaison affiche bien les 4 zones (France, UK, Allemagne, Pays-Bas) sur le produit choisi. Il était vide le 28, corrigé depuis.",
-   "done_at": "2026-10-31T22:50+00:00"
+   "body": "pas de gaph ? Différence avec forward TTF ?",
+   "reply": "Fait : le tableau des cotations J-1 TTF et EUA est maintenant dans le même onglet que le graphique des contrats forward TTF (la différence : le tableau donne la dernière clôture et ses variations, le graphique l’historique de chaque contrat).",
+   "done_at": "2026-11-01T07:28+00:00"
   },
   {
    "id": 122,
@@ -2489,6 +2263,26 @@
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
+   "id": 69,
+   "status": "done",
+   "created_at": "2026-10-28T22:34+00:00",
+   "author": "Tom",
+   "route": "system/generation",
+   "page": "Système électrique › Production › Mix de production",
+   "tab": "Quotidien",
+   "target_id": "hs-gmdcz",
+   "target_label": "Analyse multi-zones jeu. 29 oct. 2026 (tableau)",
+   "settings": {
+    "_page": "genmix",
+    "_path": "#hs-gmdcz",
+    "pk-zone": "France",
+    "gm-date-picker-input": ""
+   },
+   "body": "bug quand jec hange de graph. Soit ilsapparaisent pas soit ils changent pas,",
+   "reply": "Fait : les vues changeaient bien, mais en « Total GW » le classement affichait les MW comme des GW (France « 59 106 GW » au lieu de 59,1) ; corrigé. Titres et onglets de l’analyse multi-zones en français (Classement, Carte thermique, Profils, % EnR, % bas carbone).",
+   "done_at": "2026-11-01T07:28+00:00"
+  },
+  {
    "id": 127,
    "status": "wontfix",
    "created_at": "2026-10-28T22:34+00:00",
@@ -2568,6 +2362,27 @@
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
+   "id": 71,
+   "status": "done",
+   "created_at": "2026-10-28T22:35+00:00",
+   "author": "Tom",
+   "route": "system/generation/nuclear",
+   "page": "Système électrique › Production › Nucléaire",
+   "tab": "Indisponibilités",
+   "target_id": "hs-nuclear-1",
+   "target_label": "Indisponibilités par unité (bloc)",
+   "settings": {
+    "_page": "nuclear",
+    "_path": "#hs-nuclear-1",
+    "nuc-to": "",
+    "pk-zone": "France",
+    "nuc-from": ""
+   },
+   "body": "pk mettre ça si on met l'info ailleurs",
+   "reply": "Fait : la liste réacteur par réacteur n’est plus sur la page Nucléaire ; tout est sur Indisponibilités & REMIT (la page Nucléaire garde la disponibilité et la production, avec un lien).",
+   "done_at": "2026-11-01T07:28+00:00"
+  },
+  {
    "id": 130,
    "status": "wontfix",
    "created_at": "2026-10-28T22:36+00:00",
@@ -2629,24 +2444,6 @@
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
-   "id": 74,
-   "status": "done",
-   "created_at": "2026-10-31T21:26+00:00",
-   "author": "Tom",
-   "route": "status",
-   "page": "status",
-   "tab": "Sources",
-   "target_id": null,
-   "target_label": null,
-   "settings": {
-    "_page": "status",
-    "pk-zone": "France"
-   },
-   "body": "logo PowerKlock quand j'appuies dessus j'arrive sur lapage de garde.",
-   "reply": "Fait : un clic sur le logo PowerKlock ramène à Aujourd’hui.",
-   "done_at": "2026-10-31T22:50+00:00"
-  },
-  {
    "id": 132,
    "status": "wontfix",
    "created_at": "2026-10-31T21:26+00:00",
@@ -2665,9 +2462,9 @@
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
-   "id": 133,
-   "status": "wontfix",
-   "created_at": "2026-10-31T21:27+00:00",
+   "id": 74,
+   "status": "done",
+   "created_at": "2026-10-31T21:26+00:00",
    "author": "Tom",
    "route": "status",
    "page": "status",
@@ -2678,8 +2475,8 @@
     "_page": "status",
     "pk-zone": "France"
    },
-   "body": "quand on lance le site, la vue est un peu bizarre. Tous les menus sont ovuert. C'est pas terrible. Signe ça",
-   "reply": "Doublon de la note 75 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 75.",
+   "body": "logo PowerKlock quand j'appuies dessus j'arrive sur lapage de garde.",
+   "reply": "Fait : un clic sur le logo PowerKlock ramène à Aujourd’hui.",
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
@@ -2698,6 +2495,24 @@
    },
    "body": "quand on lance le site, la vue est un peu bizarre. Tous les menus sont ovuert. C'est pas terrible. Signe ça",
    "reply": "Fait : au lancement, toutes les sections du menu sont repliées dès le départ et seule celle de la page s’ouvre (elles s’affichaient toutes dépliées pendant la première seconde).",
+   "done_at": "2026-10-31T22:50+00:00"
+  },
+  {
+   "id": 133,
+   "status": "wontfix",
+   "created_at": "2026-10-31T21:27+00:00",
+   "author": "Tom",
+   "route": "status",
+   "page": "status",
+   "tab": "Sources",
+   "target_id": null,
+   "target_label": null,
+   "settings": {
+    "_page": "status",
+    "pk-zone": "France"
+   },
+   "body": "quand on lance le site, la vue est un peu bizarre. Tous les menus sont ovuert. C'est pas terrible. Signe ça",
+   "reply": "Doublon de la note 75 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 75.",
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
@@ -2739,6 +2554,26 @@
    "body": "il y a de l'anglais",
    "reply": "Fait : légendes en français (« Consommation journalière », « Consommation, moyenne 7 jours », « Observé »). L’alerte « données incomplètes » venait d’une fausse alerte du contrôle du solaire, corrigée le 31 octobre.",
    "done_at": "2026-10-31T22:50+00:00"
+  },
+  {
+   "id": 77,
+   "status": "done",
+   "created_at": "2026-10-31T21:30+00:00",
+   "author": "Tom",
+   "route": "today",
+   "page": "Aujourd'hui",
+   "tab": "Expert · ⓘ Expliquer · Tout",
+   "target_id": "mrn-fremit",
+   "target_label": "Indisponibilités nucléaires (graphique)",
+   "settings": {
+    "_page": "morning",
+    "_path": "#hs-body-morning-fund > div:nth-of-type(4) > div:nth-of-type(2)",
+    "pk-zone": "France",
+    "mrn-creg-per": "Année 2026 (à fin août)"
+   },
+   "body": "est-ce qu'on a la projection ? pas forcémnt à mette ici mais j'aimerais la retrouver quelque part",
+   "reply": "Fait : nouvelle projection « Disponibilité nucléaire annoncée · 4 prochains mois » sur la page Indisponibilités & REMIT : capacité installée moins les arrêts déjà annoncés par EDF (REMIT), jour par jour, avec le réalisé du même jour l’an dernier ; les arrêts fortuits s’y ajouteront.",
+   "done_at": "2026-11-01T07:28+00:00"
   },
   {
    "id": 135,
@@ -2921,6 +2756,26 @@
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
+   "id": 83,
+   "status": "done",
+   "created_at": "2026-10-31T21:35+00:00",
+   "author": "Tom",
+   "route": "today",
+   "page": "Aujourd'hui",
+   "tab": "Expert · ⓘ Expliquer · Tout",
+   "target_id": "mrn-remit",
+   "target_label": "Indisponibilités nucléaires (graphique)",
+   "settings": {
+    "_page": "morning",
+    "_path": "#hs-body-morning-4 > div:nth-of-type(3) > div:nth-of-type(1)",
+    "pk-zone": "France",
+    "mrn-creg-per": "Année 2026 (à fin août)"
+   },
+   "body": "on a deja ce graph. Choisir ou le mettre. Plutot ici je dirais.",
+   "reply": "D’accord : le graphique reste sur Aujourd’hui ; ailleurs il n’est plus que sur la page Indisponibilités & REMIT (retiré de la page Nucléaire).",
+   "done_at": "2026-11-01T07:28+00:00"
+  },
+  {
    "id": 142,
    "status": "wontfix",
    "created_at": "2026-10-31T21:36+00:00",
@@ -2961,6 +2816,25 @@
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
+   "id": 144,
+   "status": "wontfix",
+   "created_at": "2026-10-31T21:41+00:00",
+   "author": "Tom",
+   "route": "markets/spot/negative",
+   "page": "Marchés › Électricité spot › Prix négatifs",
+   "tab": null,
+   "target_id": "neg-s-board",
+   "target_label": "Tableau des prix négatifs30 zones · 0 en négatif (tableau)",
+   "settings": {
+    "_page": "prices",
+    "_path": "#neg-s-board",
+    "pk-zone": "France"
+   },
+   "body": "On perd tous les graphs du coup ? pas ok",
+   "reply": "Doublon de la note 86 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 86.",
+   "done_at": "2026-10-31T22:50+00:00"
+  },
+  {
    "id": 86,
    "status": "done",
    "created_at": "2026-10-31T21:41+00:00",
@@ -2980,23 +2854,22 @@
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
-   "id": 144,
-   "status": "wontfix",
+   "id": 87,
+   "status": "done",
    "created_at": "2026-10-31T21:41+00:00",
    "author": "Tom",
-   "route": "markets/spot/negative",
-   "page": "Marchés › Électricité spot › Prix négatifs",
-   "tab": null,
-   "target_id": "neg-s-board",
-   "target_label": "Tableau des prix négatifs30 zones · 0 en négatif (tableau)",
+   "route": "markets/bess",
+   "page": "Marchés › Batteries (BESS)",
+   "tab": "Indice · Tout",
+   "target_id": null,
+   "target_label": null,
    "settings": {
-    "_page": "prices",
-    "_path": "#neg-s-board",
+    "_page": "bess",
     "pk-zone": "France"
    },
-   "body": "On perd tous les graphs du coup ? pas ok",
-   "reply": "Doublon de la note 86 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 86.",
-   "done_at": "2026-10-31T22:50+00:00"
+   "body": "je mettrais cette section dans TOOL",
+   "reply": "Fait : l’indice BESS est dans Outils › Indice BESS (il reste le dernier onglet de la page Batteries, qui s’ouvre maintenant sur Europe).",
+   "done_at": "2026-11-01T07:28+00:00"
   },
   {
    "id": 145,
@@ -3137,6 +3010,26 @@
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
+   "id": 93,
+   "status": "done",
+   "created_at": "2026-10-31T21:44+00:00",
+   "author": "Tom",
+   "route": "markets/fuels/forwards",
+   "page": "Marchés › Gaz, carbone, pétrole › Courbes forward",
+   "tab": "Forwards TTF",
+   "target_id": null,
+   "target_label": null,
+   "settings": {
+    "_page": "euafwd",
+    "pk-zone": "France",
+    "ttf-set": "Liquides (produits de bourse)",
+    "ttf-cal-win": "6 mois"
+   },
+   "body": "courbes fprward et forwatds TTF amènent au même endroit",
+   "reply": "Fait : une seule entrée « Courbes forward » dans le menu (l’entrée « Forwards TTF » menait à la même page) ; les anciens liens marchent toujours.",
+   "done_at": "2026-11-01T07:28+00:00"
+  },
+  {
    "id": 152,
    "status": "wontfix",
    "created_at": "2026-10-31T21:46+00:00",
@@ -3195,6 +3088,26 @@
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
+   "id": 97,
+   "status": "done",
+   "created_at": "2026-10-31T21:49+00:00",
+   "author": "Tom",
+   "route": "system/generation/nuclear",
+   "page": "Système électrique › Production › Nucléaire",
+   "tab": "Disponibilité",
+   "target_id": null,
+   "target_label": null,
+   "settings": {
+    "_page": "nuclear",
+    "nuc-to": "",
+    "pk-zone": "France",
+    "nuc-from": ""
+   },
+   "body": "pas de prévision pour le future ici ? dommage",
+   "reply": "Fait : la prévision est sur la page Indisponibilités & REMIT (voir note 77), à un clic de la page Nucléaire ; la page Nucléaire garde aussi la prévision de l’exploitant (pointillés) sur la capacité disponible.",
+   "done_at": "2026-11-01T07:28+00:00"
+  },
+  {
    "id": 155,
    "status": "wontfix",
    "created_at": "2026-10-31T21:49+00:00",
@@ -3236,6 +3149,27 @@
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
+   "id": 98,
+   "status": "done",
+   "created_at": "2026-10-31T21:49+00:00",
+   "author": "Tom",
+   "route": "system/generation/nuclear",
+   "page": "Système électrique › Production › Nucléaire",
+   "tab": "Disponibilité",
+   "target_id": "hs-nuclear-u",
+   "target_label": "Indisponibilités nucléaires françaises (graphique)",
+   "settings": {
+    "_page": "nuclear",
+    "_path": "#hs-nuclear-u",
+    "nuc-to": "",
+    "pk-zone": "France",
+    "nuc-from": ""
+   },
+   "body": "pas au bon endroit si ?",
+   "reply": "Fait : le graphique « Indisponibilités nucléaires françaises » et ses chiffres clés sont passés en tête de la page Indisponibilités & REMIT.",
+   "done_at": "2026-11-01T07:28+00:00"
+  },
+  {
    "id": 157,
    "status": "wontfix",
    "created_at": "2026-10-31T21:49+00:00",
@@ -3252,6 +3186,24 @@
    "body": "on a de l'indispo partout. Rationnaliser.",
    "reply": "Doublon de la note 99 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 99.",
    "done_at": "2026-10-31T22:50+00:00"
+  },
+  {
+   "id": 99,
+   "status": "done",
+   "created_at": "2026-10-31T21:49+00:00",
+   "author": "Tom",
+   "route": "system/generation/outages",
+   "page": "Système électrique › Production › Indisponibilités & REMIT",
+   "tab": "Indisponibilités",
+   "target_id": null,
+   "target_label": null,
+   "settings": {
+    "_page": "remit",
+    "pk-zone": "France"
+   },
+   "body": "on a de l'indispo partout. Rationnaliser.",
+   "reply": "Fait : une seule page pour les indisponibilités (Indisponibilités & REMIT) : total indisponible avec la prévision de l’exploitant, nouvelle projection des 4 prochains mois, planning et liste réacteur par réacteur. Aujourd’hui garde son graphique (note 83).",
+   "done_at": "2026-11-01T07:28+00:00"
   },
   {
    "id": 158,
@@ -3446,6 +3398,30 @@
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
+   "id": 110,
+   "status": "done",
+   "created_at": "2026-10-31T21:56+00:00",
+   "author": "Tom",
+   "route": "system/replay",
+   "page": "Système électrique › Rejouer une journée",
+   "tab": "Jour · Prix · Normal",
+   "target_id": null,
+   "target_label": null,
+   "settings": {
+    "_page": "replay",
+    "rp-to": "24:00",
+    "rp-cmp": "",
+    "pk-zone": "France",
+    "rp-date": "2026-10-30",
+    "rp-from": "00:00",
+    "rp-music": false,
+    "rp-scrub": "95"
+   },
+   "body": "c'et un tools ça",
+   "reply": "Fait : « Rejouer une journée » est dans Outils ; son adresse reste la même.",
+   "done_at": "2026-11-01T07:28+00:00"
+  },
+  {
    "id": 168,
    "status": "wontfix",
    "created_at": "2026-10-31T21:56+00:00",
@@ -3492,6 +3468,30 @@
    "body": "plus globalement je truove pas le prix des dernières enchères AO CRe sur le site",
    "reply": "Doublon de la note 111 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 111.",
    "done_at": "2026-10-31T22:50+00:00"
+  },
+  {
+   "id": 112,
+   "status": "done",
+   "created_at": "2026-10-31T21:57+00:00",
+   "author": "Tom",
+   "route": "system/replay",
+   "page": "Système électrique › Rejouer une journée",
+   "tab": "Jour · Prix · Normal",
+   "target_id": null,
+   "target_label": null,
+   "settings": {
+    "_page": "replay",
+    "rp-to": "24:00",
+    "rp-cmp": "",
+    "pk-zone": "France",
+    "rp-date": "2026-10-30",
+    "rp-from": "00:00",
+    "rp-music": false,
+    "rp-scrub": "95"
+   },
+   "body": "ça prend toujours pas tout l'espace latéral ces schémas",
+   "reply": "Fait : en 16:9, le schéma prend toute la largeur de la page (il était limité par la hauteur de l’écran et laissait du vide sur les côtés d’un grand écran) ; le plein écran et les formats carré et vertical restent calés sur la hauteur.",
+   "done_at": "2026-11-01T07:28+00:00"
   },
   {
    "id": 170,
