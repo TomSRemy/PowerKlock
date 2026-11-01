@@ -5,6 +5,20 @@
 Ce document suffit pour reprendre la discussion avec Tom dans une autre instance, sans relire la conversation
 d'origine. Il dit qui est Tom, ce qu'il veut, ce qui est fait, où on en est, les pièges, et comment travailler.
 
+## 0. Comment ça marche entre les sessions
+
+- **Cette session (l'auteur du cours)** a tout écrit : le cours simple, le cours détaillé, les 13 chapitres à l'oral
+  dans `oral/`, les schémas.
+- **L'instance « discussion »** parle avec Tom. Elle répond à ses questions à partir de ces fichiers, raconte les
+  chapitres, dessine des schémas, et vérifie sa compréhension.
+- **Ce qu'elle renvoie à l'auteur** : une question qu'elle ne peut pas trancher avec les fichiers et une source
+  publique, un chiffre qui semble contredire le cours, ou une correction à faire dans le cours. Elle l'envoie avec
+  l'outil `send_message` (serveur MCP Claude Code Remote) à la session `session_019SBz1e2qLZZsXjHd8pNxgU`. Il faut
+  mettre dans le message la question de Tom mot pour mot, ce qui a déjà été vérifié, et le fichier concerné.
+- **Ce qu'elle peut faire seule** : répondre, ajouter un schéma ou un chapitre oral sur la branche `discussion-bridge`
+  (dossier `docs/discussion/cours/`), en suivant les règles de la section 2. Si le cours contient une erreur, elle la
+  signale à l'auteur au lieu de réécrire les chapitres.
+
 ---
 
 ## 1. La demande de Tom
@@ -54,7 +68,8 @@ Deux consignes données en cours de route :
 |---|---|
 | `cours_simple.md` / `.pdf` | 13 chapitres. Chacun a : l'idée, un schéma, un vrai chiffre, « à retenir », « pour aller plus loin » (liens) et un texte à dire à voix haute |
 | `cours_detail.md` / `.pdf` | Les mêmes chapitres en profondeur : formules expliquées, tous les tests chiffrés, limites, questions ouvertes, sources externes en fin de document |
-| `oral/chapitre_05.md` | Chapitre 5 (couplage européen), raconté en entier pour l'oral |
+| `oral/chapitre_01.md` à `chapitre_13.md` | Les 13 chapitres racontés en entier pour l'oral (environ 15 minutes chacun), avec une question de vérification à la fin |
+| `oral/cours_oral_complet.md` / `.pdf` | Les 13 chapitres oraux réunis (76 pages) |
 | `img/` | 23 schémas (`01_merit_order` à `23_etats_couplage`) |
 | `calc.py` → `calc.json` | Recalcule les chiffres depuis `data/history/` : captures, heures ≤ 0 (horaires et au quart d'heure), coût du gaz, réservoirs, France–Allemagne, arrêts nucléaires 2027 |
 | `charts.py` | Redessine tous les schémas |
@@ -129,9 +144,10 @@ Réponse attendue :
 - (c) la rente baisse par MWh, puisque l'écart de prix se réduit. Sur le total, c'est plus incertain : plus de
   volume, mais un plus petit écart.
 
-**Suite prévue :** le chapitre 6 (France couplée ou coupée) à l'oral, sur le même modèle que le chapitre 5. Écrire
-le texte dans `oral/chapitre_06.md`. Puis continuer avec les autres chapitres, ou ce que Tom demande.
-
+**Suite :** les 13 chapitres sont écrits à l'oral (`oral/`). L'instance « discussion » peut les raconter dans
+l'ordre ou à la demande, poser la question de fin de chapitre, et approfondir avec le cours détaillé. Les chapitres
+oraux citent des chiffres RTE en plus du cours (bilan 2025, bilan du premier semestre 2026), vérifiés dans les PDF
+de RTE le 1er novembre.
 ---
 
 ## 5. Corrections déjà faites (ne pas les réintroduire)
@@ -159,7 +175,16 @@ le texte dans `oral/chapitre_06.md`. Puis continuer avec les autres chapitres, o
    - ancrage choisi chaque semaine par le rejeu (aujourd'hui solaire sans ancrage, éolien hiver/été) ;
    - Monte Carlo complet, et le prix publié est le prix prudent (il tient 3 fois sur 4) ;
    - plus de déduction séparée du risque de modèle ;
-   - prix au 30–31 octobre : **solaire 49,75 €/MWh, éolien 80,69 €/MWh**.
+   - le prix a bougé trois fois en un jour, pour des raisons de méthode (pas de marché) :
+     - 31 oct., 20 h 57 : pricer v2 en ligne, **49,75 / 80,69** €/MWh (solaire / éolien) ;
+     - 1er nov., 8 h 12 : le parc s'arrête seulement **strictement sous 0 €** (une heure à 0 € est produite et payée 0) :
+       le même revenu se répartit sur plus de MWh payés, **42,88 / 77,20** ;
+     - 1er nov., 12 h 25 : la prime de risque suit la sensibilité mesurée du prix capté au prix de base (0,96 € par €
+       en solaire, 0,95 en éolien) ; la prime solaire passe de 5,98 à 2,2 € : **46,64 / 77,39** (prix publié actuel).
+   - convention depuis le 1er novembre : production non payée seulement aux prix **strictement négatifs** ;
+   - paramètres à jour : `pricing-v2/parametres.md` (dérive de capture 2,38 / 1,90 pt/√an ; lien volume–capture
+     0,24 / 0,32 ; prix prudent tenu 78–89 %). `choix_v2.md` date du 31 octobre au soir et contient des valeurs
+     antérieures (2,75 / 2,12 ; 0,06 / 0,26 ; 49,75 / 80,69).
 
 ---
 
@@ -184,7 +209,8 @@ le texte dans `oral/chapitre_06.md`. Puis continuer avec les autres chapitres, o
 | Minimum technique d'un réacteur | 25 à 100 % de sa puissance, selon le cycle du combustible | RTE, bilan S1 2026 |
 | Coût des écarts éolien (12 mois) | 3,06 € (prévision du gestionnaire) → 2,82 € (notre prévision combinée) | pricer, `fr_imbalance_cost.json` |
 | Rejeu, pricer v2 | solaire 0,76 ; éolien 0,56 €/MWh ; bruit des tirages 0,2 € | `pricing-v2/choix_v2.md` |
-| Prix prudent tenu (Monte Carlo complet) | solaire 78 %, éolien 78–100 % (cible 75 %) | `pricing-v2/choix_v2.md` |
+| Prix prudent tenu (Monte Carlo complet) | 78–89 % des cas (cible 75 %) | `pricing-v2/parametres.md` |
+| Prix PPA publié (2027–2029, 1er nov.) | solaire 46,64 ; éolien 77,39 €/MWh | `pricing-v2/parametres.md`, commit 800d685c |
 
 **Sources externes principales** (liens dans `cours_detail.md`, section « Sources externes ») :
 - RTE, bilans 2025 et premier semestre 2026 ;

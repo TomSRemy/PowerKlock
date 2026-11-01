@@ -133,7 +133,9 @@ paie pas).
 
 ### Le vrai chiffre
 Prix publiés par le pricer **v2** (en ligne depuis le 31 octobre 2026, forwards des 30–31 octobre, contrat
-2027–2029) : **solaire 49,75 €/MWh, éolien 80,69 €/MWh**. Ils bougent chaque jour avec les forwards. Le prix publié
+2027–2029) : **solaire 46,64 €/MWh, éolien 77,39 €/MWh** au 1er novembre (après deux réglages de méthode le 1er
+novembre : arrêt strictement sous 0 €, prime de risque recalculée ; le soir du 31 octobre, c'était 49,75 / 80,69).
+Ils bougent chaque jour avec les forwards. Le prix publié
 est le **prix prudent** : il tient 3 fois sur 4 (chapitre 11).
 
 ![Le pricer PowerKlock v2](../pricing-v2/schema_v2.png)
@@ -550,8 +552,8 @@ connaît que les risques qu'on lui donne**.
 - Monte Carlo avec la **météo seule** : la bande P10–P90 contenait la réalité dans **environ 45 % des mois** (il en
   faudrait 80 %). Trop étroit.
 - Monte Carlo **complet** (semaines tirées « chères ou bon marché », croissance du parc, nucléaire avec une année
-  rare type 2022, limite d'export Core, consommation, année sèche ou humide) : le prix prudent a tenu dans **78 % des
-  cas en solaire et 78 à 100 % en éolien**. Il est **en ligne depuis le 31 octobre** (pricer v2).
+  rare type 2022, limite d'export Core, consommation, année sèche ou humide) : le prix prudent a tenu dans **78 à 89 % des
+  cas** (cible 75 %). Il est **en ligne depuis le 31 octobre** (pricer v2).
 
 ![Couverture](img/19_couverture.png)
 
@@ -582,7 +584,7 @@ que les risques qu'on lui a appris. Si on ne lui donne que la météo, il oublie
 que la ligne vers l'Allemagne peut rétrécir, que le parc peut grandir plus vite. Résultat : quand on l'a testé, la
 réalité tombait dans sa bande seulement une fois sur deux. Il était trop sûr de lui.
 
-Avec tous ces risques ajoutés, le prix prudent a tenu dans 78 % des cas en solaire, 78 à 100 % en éolien. C'est ce
+Avec tous ces risques ajoutés, le prix prudent a tenu dans 78 à 89 % des cas. C'est ce
 qu'on voulait : au moins trois fois
 sur quatre.
 
@@ -654,7 +656,7 @@ Erreur de rejeu en €/MWh (livraisons 2023–2026, 9 cas). « v2 » = le pricer
 | Régression mensuelle de la capture | instable (éolien 1,7 à 3,4) | écartée |
 | Grande-Bretagne, Pays-Bas, Autriche comme modèles | pas mieux | écartés |
 | Monte Carlo météo seule | bande trop étroite (≈ 45 % des mois ; prix prudent éolien tenu 0 % des cas) | insuffisant |
-| Monte Carlo complet | prix prudent tenu : solaire 78 %, éolien 78 à 100 % | **adopté en v2** |
+| Monte Carlo complet | prix prudent tenu dans 78 à 89 % des cas | **adopté en v2** |
 | Prévision des écarts combinée | éolien 3,06 → 2,82 | **gardée pour l'éolien** |
 
 ### Ce qui a été décidé (pricer v2, 31 octobre 2026)
@@ -668,7 +670,8 @@ Erreur de rejeu en €/MWh (livraisons 2023–2026, 9 cas). « v2 » = le pricer
 
 ### Ce qui reste ouvert
 - L'éolien reste ancré : sans ancrage, tous les modèles le surévaluent de 2 à 2,7 €.
-- Convention des prix négatifs : passage de « ≤ 0 » à « strictement < 0 » en cours.
+- Convention des prix négatifs : depuis le 1er novembre, non payé seulement **strictement sous 0 €** (225 heures à
+  0 € pile en 2025) ; le seuil est réglable, à choisir selon la clause de chaque contrat.
 - Captures calculées jusqu'en 2030 seulement : à prolonger pour les PPA longs.
 - Les arrêts nucléaires 2027 : une option seulement, impossible à tester sur le passé.
 
@@ -693,8 +696,8 @@ produit : l'erreur passe de 84 à 56 centimes. Le Monte Carlo complet donne la b
 le prix prudent, qui tient trois fois sur quatre. Les analogues, eux, ont été écartés : très bons pour le vent, mais
 4 euros d'erreur sur le solaire.
 
-Ce qui reste ouvert : l'éolien a toujours besoin de l'ancrage, et la règle des prix négatifs va passer de « nul ou
-négatif » à « strictement négatif ».
+Ce qui reste ouvert : l'éolien a toujours besoin de l'ancrage. Et depuis le 1er novembre, une heure à zéro euro pile
+est produite et payée zéro : seules les heures strictement négatives sont perdues.
 
 Et les pros ? Pexapark fait en gros de l'ancrage, mais sur des prix de contrats réels qu'on n'a pas. Aurora et AFRY
 font tourner des modèles géants, centrale par centrale. Nous, on est entre les deux : simple, transparent, testé

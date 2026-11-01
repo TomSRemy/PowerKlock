@@ -146,26 +146,37 @@ Chaque terme :
   On ne prend que des produits liquides (SEFE / EEX).
 - **Capture du mois.** Elle sort du générateur de scénarios (chapitre 9).
 - **Prime de risque** (pricer v2, depuis le 31 octobre 2026) :
-  - la bande P10–P90 du générateur, avec le Monte Carlo complet, donne une **dérive de capture** : solaire 2,75,
-    éolien 2,12 points par √année ;
+  - la bande P10–P90 du générateur, avec le Monte Carlo complet, donne une **dérive de capture** : solaire 2,38,
+    éolien 1,90 point par √année (fiche des paramètres du 1er novembre ; 2,75 / 2,12 le 31 octobre) ;
   - le pricer tire **10 000 trajectoires** (forward, volume, capture, liquidité), couvre le volume attendu au Cal, et
     retire **prime = valeur juste − 25e centile**. Le prix publié est donc le niveau qui tient 3 fois sur 4 ;
   - plus de déduction séparée pour le risque de modèle : la bande complète le contient déjà (chapitre 11). Avant le
     31 octobre, on retirait aussi le 75e centile des erreurs passées ;
-  - la corrélation volume–capture est mesurée (0,06 solaire, 0,26 éolien) au lieu d'être supposée.
+  - la corrélation volume–capture est mesurée dans le générateur (0,24 solaire, 0,32 éolien au 1er novembre) au lieu
+    d'être supposée ;
+  - depuis le 1er novembre, le prix capté suit le prix de base selon sa sensibilité mesurée (0,96 € par € en solaire,
+    0,95 en éolien), et la volatilité des forwards dépend de l'échéance (Cal+1 34 %, Cal+2 et Cal+3 21 %/an).
 - **Coût des écarts.** Chapitre 12.
 - **Garanties d'origine.** Prix des enchères (EEX).
 - **Marge de gestion.** 1 €/MWh.
 
-### 3.2 Pourquoi « non payé aux prix ≤ 0 »
+### 3.2 Pourquoi « non payé aux prix négatifs »
 Les PPA récents prévoient souvent que l'acheteur ne paie pas les MWh produits à prix négatif (clause de
 *curtailment*). Le parc s'arrête, ou il produit sans être payé. Ne pas compter ces MWh évite de surestimer la valeur :
 - en 2025, 735 heures ≤ 0 tombaient presque toutes à midi, au printemps et en été ;
 - c'est le cœur de la production solaire.
 
 ### 3.3 Prix publiés
-Pricer v2, forwards des 30–31 octobre 2026 : **solaire 49,75 €/MWh, éolien 80,69 €/MWh** (le débrief de la nuit
-d'avant, en v1, donnait 47,07 et 77,78). Méthode :
+Pricer v2, forwards des 30–31 octobre 2026, PPA 2027–2029 : **solaire 46,64 €/MWh, éolien 77,39 €/MWh**
+(`pricing-v2/parametres.md`). Historique, le prix a bougé trois fois en un jour, pour des raisons de méthode (pas de marché) :
+  - 31 oct., 20 h 57 : pricer v2 en ligne, **49,75 / 80,69** €/MWh (solaire / éolien) ;
+  - 1er nov., 8 h 12 : le parc s'arrête seulement **strictement sous 0 €** (une heure à 0 € est produite et payée 0) :
+    le même revenu se répartit sur plus de MWh payés, **42,88 / 77,20** ;
+  - 1er nov., 12 h 25 : la prime de risque suit la sensibilité mesurée du prix capté au prix de base (0,96 € par €
+    en solaire, 0,95 en éolien) ; la prime solaire passe de 5,98 à 2,2 € : **46,64 / 77,39** (prix publié actuel).
+- (la v1, la nuit d'avant, donnait 47,07 / 77,78).
+
+Méthode :
 - **une seule méthode**, le générateur, au lieu de la moyenne de quatre (qui se trompait de 2,59 € en solaire et
   2,84 € en éolien au rejeu, contre 0,76 et 0,56 pour le générateur seul) ;
 - solaire **sans ancrage**, éolien **ancré** par un facteur hiver et un facteur été, choisis chaque semaine par le
@@ -726,7 +737,8 @@ contenu la réalité dans **environ 45 % des mois**. Il en faudrait 80 %.
 - la **disponibilité nucléaire de la semaine tirée** ;
 - une **année sèche ou humide**.
 
-**Résultat :** le prix prudent a tenu dans **78 % des cas en solaire et 78 à 100 % en éolien** (cible : 75 %). Avec
+**Résultat :** le prix prudent a tenu dans **78 à 89 % des cas** (cible : 75 % ; fiche des paramètres du 1er novembre ;
+la note du 31 octobre donnait 78 % en solaire, 78–100 % en éolien). Avec
 la bande météo seule, le prix prudent éolien n'avait tenu dans **aucun** cas (note v2). Un premier test du 31 octobre
 donnait 78 à 89 %.
 
@@ -832,7 +844,7 @@ Risque et écarts :
 | Test | Résultat | Verdict |
 |---|---|---|
 | Monte Carlo météo seule | P10–P90 ≈ 45 % | trop étroit |
-| Monte Carlo complet | prix prudent tenu : solaire 78 %, éolien 78–100 % | **adopté en v2** |
+| Monte Carlo complet | prix prudent tenu 78–89 % | **adopté en v2** |
 | Prévision combinée des écarts | éolien 3,06 → 2,82 | gardée pour l'éolien |
 
 ### 13.2 Ce qui a été décidé, ce qui reste ouvert
@@ -846,7 +858,7 @@ Risque et écarts :
 **Ouvert** :
 1. l'éolien reste ancré : sans ancrage, tous les modèles le surévaluent de 2 à 2,7 €, et le biais est dans les heures
    coupées (règle 6,9 € trop haute) ;
-2. convention des prix négatifs : passage de « ≤ 0 » à « strictement < 0 » en cours ;
+2. convention des prix négatifs : depuis le 1er novembre, arrêt strictement sous 0 € (seuil réglable par contrat) ;
 3. captures jusqu'en 2030 : à prolonger pour les PPA longs ;
 4. arrêts nucléaires 2027 : une option (éolien +2 points), impossible à tester sur le passé ;
 5. prix de PPA observés comme repère (abonnement Pexapark, usage interne).
