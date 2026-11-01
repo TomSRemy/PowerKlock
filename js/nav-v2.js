@@ -99,7 +99,7 @@
     ]],
     ['Renewables', [
       ['renewables/capture', 'Capture & cannibalisation', 'renewables'],
-      ['renewables/m0', 'M0 contract', 'm0'],
+      ['renewables/m0', 'M0 contract & CRE tenders', 'm0'],
       ['renewables/capacity', 'Installed capacity', 'capacity'],
     ]],
     ['Power system', [

@@ -1,0 +1,39 @@
+name: Check CRE tender results
+
+# Weekly watchdog (scripts/check_cre_tenders.py): e-mails when the CRE tender results stop being refreshed,
+# lose rows or show no new result for 9 months, so that a new tender result is never missed.
+
+on:
+  schedule:
+    - cron: "17 7 * * 3"       # Wednesdays 07:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Check
+        run: python scripts/check_cre_tenders.py
+      - name: Keep the count for the next check
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/cre_tenders_check.json
+          git diff --cached --quiet || git commit -m "data: CRE tenders check $(date +%Y-%m-%d)"
+          for i in 1 2 3 4 5; do git pull -q --rebase -X theirs origin main && git push && exit 0; git rebase --abort 2>/dev/null || true; sleep 8; done; exit 1
+      - name: E-mail on failure
+        if: failure()
+        env:
+          GO_GMAIL_USER: ${{ secrets.GO_GMAIL_USER }}
+          GO_GMAIL_APP_PASSWORD: ${{ secrets.GO_GMAIL_APP_PASSWORD }}
+          WORKFLOW: ${{ github.workflow }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: python3 scripts/notify_failure.py || true

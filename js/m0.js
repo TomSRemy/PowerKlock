@@ -137,10 +137,16 @@ if (window.PKW) {
       const [ao, j] = await Promise.all([_aoLoad(), _m0Load()]);
       if (!ao) { host.innerHTML = '<div class="fuel-note">Tender results not available.</div>'; return; }
       const f = v => v == null ? '–' : v.toFixed(2);
-      const rows = M0_AO.map(([k, lab, , t]) => { const rs = ao.rows.filter(r => r.tech === k && r.result); return rs.length ? [lab, t, rs[rs.length - 1], rs[rs.length - 2]] : null; }).filter(Boolean);
+      // every tender with a result in the last three years, newest result first (note 111), not only the four of the chart
+      const AO_EXTRA = { 'Petit Photovoltaïque bâtiment': ['Solar, small rooftop', 'solar'], 'Innovant': ['Innovative solar', 'solar'], 'Autoconsommation 2': ['Self-consumption', null]   /* a premium on self-consumed power, not a full price: no M0 comparison */, 'ZNI': ['Non-interconnected zones', null] };
+      const since = new Date(Date.now() - 3 * 365.25 * 864e5).toISOString().slice(0, 10), fresh = new Date(Date.now() - 45 * 864e5).toISOString().slice(0, 10);
+      const techs = [...new Set(ao.rows.filter(r => r.result && r.result >= since).map(r => r.tech))];
+      const rows = techs.map(k => { const def = M0_AO.find(x => x[0] === k), lab = def ? def[1] : (AO_EXTRA[k] || [k])[0], t = def ? def[3] : (AO_EXTRA[k] || [])[1] || null;
+        const rs = ao.rows.filter(r => r.tech === k && r.result).sort((a, b) => a.result < b.result ? -1 : 1); return rs.length ? [lab, t, rs[rs.length - 1], rs[rs.length - 2]] : null; })
+        .filter(Boolean).sort((a, b) => a[2].result < b[2].result ? 1 : -1);
       host.innerHTML = `<div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">Tender</th><th style="text-align:left">Period</th><th>Result</th><th>MW kept / offered</th><th>Price kept</th><th>vs previous</th><th>M0, 12 months</th><th>Price − M0</th></tr></thead><tbody>` +
-        rows.map(([lab, t, r, p]) => { const m0 = j ? _m0Trail(j.official[t], r.result.slice(0, 7)) : null, g = m0 != null ? r.price - m0 : null, dp = p ? r.price - p.price : null;
-          return `<tr><td style="text-align:left">${lab}</td><td style="text-align:left">${r.ao} ${r.period}</td><td>${r.result}</td><td>${r.kept_mw != null ? Math.round(r.kept_mw) : '–'} / ${r.offered_mw != null ? Math.round(r.offered_mw) : '–'}</td><td><b>${f(r.price)}</b></td><td class="${dp > 0 ? 'mu-up' : dp < 0 ? 'mu-dn' : ''}">${dp == null ? '–' : (dp > 0 ? '+' : '') + f(dp)}</td><td>${f(m0)}</td><td class="${g > 0 ? 'mu-up' : g < 0 ? 'mu-dn' : ''}">${g == null ? '–' : (g > 0 ? '+' : '') + f(g)}</td></tr>`; }).join('') +
+        rows.map(([lab, t, r, p]) => { const m0 = j && t ? _m0Trail(j.official[t], r.result.slice(0, 7)) : null, g = m0 != null ? r.price - m0 : null, dp = p ? r.price - p.price : null;
+          return `<tr><td style="text-align:left">${lab}${r.result >= fresh ? ' <span class="mu-new">NEW</span>' : ''}</td><td style="text-align:left">${r.ao} ${r.period}</td><td>${r.result}</td><td>${r.kept_mw != null ? Math.round(r.kept_mw) : '–'} / ${r.offered_mw != null ? Math.round(r.offered_mw) : '–'}</td><td><b>${f(r.price)}</b></td><td class="${dp > 0 ? 'mu-up' : dp < 0 ? 'mu-dn' : ''}">${dp == null ? '–' : (dp > 0 ? '+' : '') + f(dp)}</td><td>${f(m0)}</td><td class="${g > 0 ? 'mu-up' : g < 0 ? 'mu-dn' : ''}">${g == null ? '–' : (g > 0 ? '+' : '') + f(g)}</td></tr>`; }).join('') +
         `</tbody></table></div><div class="fuel-note">€/MWh. Price kept: average of the projects the CRE proposes to keep. Price − M0 below zero: over the last 12 months the market paid that technology more than the tender price, so the contract would pay back. Source: CRE open data, updated at each result.</div>`;
     },
   });

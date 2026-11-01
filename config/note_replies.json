@@ -624,8 +624,8 @@
   "reply": "Pas encore fait : RTE publie ces données régionales pour la France seulement. Pour les autres pays, il faudrait une autre source par pays (ENTSO-E ne publie pas de régions). Je propose plutôt une vue par pays (production, facteurs de charge éolien/solaire par pays ENTSO-E) avec filtre et comparaison comme le Day-ahead : à valider, c’est une nouvelle page."
  },
  "111": {
-  "status": "open",
-  "reply": "Pas sur le site, et voici pourquoi : les résultats des appels d’offres CRE (PPE2 sol, bâtiment, neutre, éolien) ne sont publiés qu’en PDF (délibérations de la CRE, listes de lauréats du ministère), sans fichier ni API mis à jour automatiquement. La règle du site exclut ces sources. Deux options : (1) un job qui lit chaque nouvelle délibération CRE (même format à chaque période) et en sort le prix moyen pondéré par famille ; (2) une table tenue à la main avec la source de chaque ligne. Je recommande (1). Dis-moi si tu valides."
+  "status": "done",
+  "reply": "Correction de ma réponse précédente : la CRE publie ces résultats en open data (fichier Synthese_AO.csv), et le site les lit déjà trois fois par jour. Ils étaient cachés dans l’onglet M0 : le menu dit maintenant « Contrat M0 et appels d’offres CRE ». Le tableau des derniers résultats montre tous les appels d’offres ayant un résultat depuis 3 ans (dernier : éolien terrestre P11, 77,08 €/MWh, 808 MW, 24 juin 2026), avec une étiquette NOUVEAU pendant 45 jours. Pour ne rien rater : un contrôle chaque mercredi envoie un e-mail si le fichier n’est plus rafraîchi depuis 3 jours, perd des lignes, ou n’a aucun nouveau résultat depuis 9 mois."
  },
  "102": {
   "status": "done",
