@@ -968,34 +968,54 @@
     Object.entries(subs).forEach(([id, v]) => { const e = $(id); if (e) e.textContent = v; });
     const years = [...new Set(rows.map(r => r[0]))].sort(), ty = thisYear();
     const ylab = y => y === ty ? y + (fr ? ' (à date)' : ' (to date)') : String(y);
-    // 1 · price occurrence, last complete year: share of hours and share of output by 10 € bin
+    // 1 · price occurrence by 10 € bin: the output of the last complete year (bars) against how often each price came
+    //    up, one line per complete year (Tom's workbook compares the years)
     const yLast = years.filter(y => y < ty).pop() || years[years.length - 1];
+    const occY = years.filter(y => y < ty && y !== 2022).slice(-5);   // 2022 (gas crisis) left out, as everywhere in the pricer: half its hours sit above 250 €
     const bins = []; for (let b = -50; b <= 250; b += 10) bins.push(b);
     const bi = p => Math.max(0, Math.min(bins.length - 1, Math.floor((p + 50) / 10)));
-    const hH = bins.map(() => 0), hG = bins.map(() => 0); let nH = 0, nG = 0;
-    rows.forEach(r => { if (r[0] !== yLast) return; const k = bi(r[3]); hH[k]++; nH++; if (run(r[3])) { hG[k] += r[4]; nG += r[4]; } });
+    const hH = {}, nH = {}; occY.forEach(y => { hH[y] = bins.map(() => 0); nH[y] = 0; });
+    const hG = bins.map(() => 0); let nG = 0;
+    rows.forEach(r => { if (hH[r[0]]) { hH[r[0]][bi(r[3])]++; nH[r[0]]++; } if (r[0] === yLast && run(r[3])) { const k = bi(r[3]); hG[k] += r[4]; nG += r[4]; } });
     const blab = bins.map((b, i) => i === 0 ? '< −40' : i === bins.length - 1 ? '≥ 250' : String(b));
+    const RAMP = ['#5E5444', '#7D6E52', '#A08C63', '#C7AC78', '#EBCB8B'], ramp = occY.map((_, i) => RAMP[RAMP.length - occY.length + i]);
     _fuelChart('pp-ph-occ', { type: 'bar', data: { labels: blab, datasets: [
-      { label: tr('Share of hours'), data: hH.map(v => +(v / nH * 100).toFixed(2)), backgroundColor: 'rgba(212,190,150,.75)', borderRadius: 2 },
-      { label: tr('Share of output'), data: hG.map(v => nG ? +(v / nG * 100).toFixed(2) : null), backgroundColor: 'rgba(127,200,248,.85)', borderRadius: 2 }] },
-      options: _fuelOpts({ scales: { x: Object.assign(_fuelXAxis(), { title: { display: true, text: '€/MWh', color: '#8D99AE', font: { size: 10 } } }), y: _fuelAxis('%', { beginAtZero: true }) } }) }, 'ppa-price-occurrence');
-    const so = $('pp-ph-occ-sub'); if (so) so.textContent = fr ? `${yLast} · part des heures et de la production par tranche de 10 €/MWh` : `${yLast} · share of hours and of output by 10 €/MWh bin`;
+      { label: (fr ? 'Part de la production, ' : 'Share of output, ') + yLast, data: hG.map(v => nG ? +(v / nG * 100).toFixed(2) : null), backgroundColor: 'rgba(127,200,248,.55)', borderRadius: 2, order: 9 }]
+      .concat(occY.map((y, i) => ({ type: 'line', label: (fr ? 'Part des heures, ' : 'Share of hours, ') + y, data: hH[y].map(v => nH[y] ? +(v / nH[y] * 100).toFixed(2) : null),
+        borderColor: ramp[i], backgroundColor: ramp[i], borderWidth: y === yLast ? 2.4 : 1.4, pointRadius: 0, tension: 0, order: i }))) },
+      options: _fuelOpts({ plugins: { legend: { display: true, position: 'bottom', labels: { color: '#B8C9D9', font: { size: 10 }, boxWidth: 10 } } },
+        scales: { x: Object.assign(_fuelXAxis(), { title: { display: true, text: '€/MWh', color: '#8D99AE', font: { size: 10 } } }), y: _fuelAxis('%', { beginAtZero: true }) } }) }, 'ppa-price-occurrence');
+    const so = $('pp-ph-occ-sub'); if (so) so.textContent = fr ? `Par tranche de 10 €/MWh · barres : part de la production en ${yLast} ; lignes : part des heures, une par année (${occY[0]}–${occY[occY.length - 1]}${occY[0] < 2022 ? ', sans 2022, crise du gaz' : ''})` : `By 10 €/MWh bin · bars: share of output in ${yLast}; lines: share of hours, one per year (${occY[0]}–${occY[occY.length - 1]}${occY[0] < 2022 ? ', without 2022, the gas crisis' : ''})`;
     // per year and per year × month aggregates
     const A = {}, M = {};
-    rows.forEach(([y, m, h, p, g, nv]) => { const a = A[y] || (A[y] = { ps: 0, pn: 0, gp: 0, g: 0, gBelow: 0, np: 0, n: 0 }), k = y + '-' + m, b = M[k] || (M[k] = { y, m, ps: 0, pn: 0, gp: 0, g: 0, np: 0, n: 0 });
-      a.ps += p; a.pn++; b.ps += p; b.pn++;
+    rows.forEach(([y, m, h, p, g, nv]) => { const a = A[y] || (A[y] = { ps: 0, pn: 0, gp: 0, g: 0, gt: 0, gBelow: 0, np: 0, n: 0 }), k = y + '-' + m, b = M[k] || (M[k] = { y, m, ps: 0, pn: 0, gp: 0, g: 0, np: 0, n: 0 });
+      a.ps += p; a.pn++; a.gt += g; b.ps += p; b.pn++;
       if (run(p)) { a.gp += g * p; a.g += g; b.gp += g * p; b.g += g; }
       a.np += nv * p; a.n += nv; b.np += nv * p; b.n += nv; });
     // share of the output sold below the year's average spot
     rows.forEach(([y, , , p, g]) => { const a = A[y]; if (run(p) && p < a.ps / a.pn) a.gBelow += g; });
     // 2 · cannibalisation by year
-    _fuelChart('pp-ph-cy', { type: 'bar', data: { labels: years.map(ylab), datasets: [
+    const below = y => A[y].g ? Math.round(A[y].gBelow / A[y].g * 100) : null;
+    _fuelChart('pp-ph-cy', { type: 'bar', data: { labels: years.map(y => below(y) == null ? String(y) : [String(y), below(y) + ' %']), datasets: [
       { label: tr('Average spot'), data: years.map(y => +(A[y].ps / A[y].pn).toFixed(2)), backgroundColor: 'rgba(212,190,150,.75)', borderRadius: 3 },
       { label: tr('Captured price'), data: years.map(y => A[y].g ? +(A[y].gp / A[y].g).toFixed(2) : null), backgroundColor: 'rgba(127,200,248,.85)', borderRadius: 3 }] },
       options: _fuelOpts({ plugins: { legend: { display: true, position: 'bottom', labels: { color: '#B8C9D9', font: { size: 10 }, boxWidth: 10 } },
         tooltip: { callbacks: { afterBody: it => { const y = years[it[0].dataIndex], a = A[y]; if (!a.g) return ''; const cr = a.gp / a.g / (a.ps / a.pn);
           return fr ? `Taux de capture ${(cr * 100).toFixed(1).replace('.', ',')} % · ${(a.gBelow / a.g * 100).toFixed(0)} % du volume vendu sous le spot moyen` : `Capture rate ${(cr * 100).toFixed(1)} % · ${(a.gBelow / a.g * 100).toFixed(0)} % of the volume sold below the average spot`; } } }, pkHoverReadout: false },
-        scales: { x: Object.assign(_fuelXAxis(), { grid: { display: false } }), y: _fuelAxis('€/MWh', { beginAtZero: true }) } }) }, 'ppa-cannib-by-year');
+        scales: { x: Object.assign(_fuelXAxis(), { grid: { display: false } }, { ticks: Object.assign(_fuelXAxis().ticks, { autoSkip: false }) }), y: _fuelAxis('€/MWh', { beginAtZero: true }) } }) }, 'ppa-cannib-by-year');
+    const scy = $('pp-ph-cy-sub'); if (scy) scy.textContent = fr ? `€/MWh · spot moyen et prix capté ; % sous chaque année : part du volume vendue sous le spot moyen de l’année ; ${ty} à date ; au survol, le taux de capture` : `€/MWh · average spot and captured price; % under each year: share of the volume sold below that year’s average spot; ${ty} to date; hover for the capture rate`;
+    // annual production, one bar per year (Tom's workbook): the park's curve when loaded, else the national output;
+    //    the current year is to date (lighter), the dashed line is the average of the complete years
+    const fullP = years.filter(y => y < ty && A[y].gt > 0), pK = useA ? 1000 : 1e6, pU = useA ? 'GWh' : 'TWh';
+    const prodAvg = fullP.length ? mean(fullP.map(y => A[y].gt / pK)) : null;
+    const annCard = $('pp-annual') && $('pp-annual').closest('.chart-container'); if (annCard) annCard.hidden = false;
+    _fuelChart('pp-annual', { type: 'bar', data: { labels: years.map(ylab), datasets: [
+      { label: (fr ? 'Production, ' : 'Production, ') + pU, data: years.map(y => A[y].gt ? +(A[y].gt / pK).toFixed(useA ? 2 : 1) : null), backgroundColor: years.map(y => y < ty ? 'rgba(127,200,248,.85)' : 'rgba(127,200,248,.35)'), borderRadius: 3, order: 2 },
+      { type: 'line', label: fr ? 'Moyenne des années complètes' : 'Average of the complete years', data: years.map(() => prodAvg != null ? +prodAvg.toFixed(useA ? 2 : 1) : null), borderColor: '#D4BE96', borderDash: [5, 4], borderWidth: 1.6, pointRadius: 0, tension: 0, order: 1 }] },
+      options: _fuelOpts({ plugins: { legend: { display: true, position: 'bottom', labels: { color: '#B8C9D9', font: { size: 10 }, boxWidth: 10 } } },
+        scales: { x: Object.assign(_fuelXAxis(), { grid: { display: false } }), y: _fuelAxis(pU, { beginAtZero: true }) } }) }, 'ppa-annual-production');
+    const sa = $('pp-annual-sub'); if (sa) sa.textContent = fr ? `${pU} par an · ${useA ? 'production du parc' : 'production nationale ' + (st.tech === 'solar' ? 'solaire' : 'éolienne')}${prodAvg != null ? ', moyenne ' + (useA ? prodAvg.toFixed(2) : prodAvg.toFixed(1)).replace('.', ',') + ' ' + pU : ''} · ${ty} à date` : `${pU} per year · ${useA ? 'park output' : 'national ' + st.tech + ' output'}${prodAvg != null ? ', average ' + (useA ? prodAvg.toFixed(2) : prodAvg.toFixed(1)) + ' ' + pU : ''} · ${ty} to date`;
+    const sas = $('pp-annual-src'); if (sas) sas.textContent = useA ? (fr ? 'Votre courbe' : 'Your curve') : 'RTE';
     // 3 and 4 · month by month across the complete years: min–max range and average
     const full = years.filter(y => y < ty), MN = fr ? ['janv', 'févr', 'mars', 'avr', 'mai', 'juin', 'juil', 'août', 'sept', 'oct', 'nov', 'déc'] : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const per = (m, f) => full.map(y => M[y + '-' + m]).filter(Boolean).map(f).filter(v => v != null && isFinite(v));
@@ -1422,7 +1442,7 @@
     // asset profile / monthly / annual
     const A = st.asset && st.asset.slots;
     if (A) {
-      if (ids === IDS) ['profAsset', 'annual'].filter(has).forEach(k => { const c = $(ids[k]).closest('.chart-container'); if (c) c.hidden = false; });
+      if (ids === IDS) ['profAsset'].filter(has).forEach(k => { const c = $(ids[k]).closest('.chart-container'); if (c) c.hidden = false; });
       const grid = MONTHS.map(() => new Array(24).fill(0)), cnt = MONTHS.map(() => new Array(24).fill(0)), monthE = new Array(12).fill(0), monthDays = new Array(12).fill(0), yearE = {};
       A.forEach((arr, d) => { const m = +d.slice(5, 7) - 1, y = d.slice(0, 4); monthDays[m]++; let tot = 0;
         for (let q = 0; q < 96; q++) { const e = arr[q] || 0; tot += e; grid[m][Math.floor(q / 4)] += e * 4 / 1000 / 4; } for (let h = 0; h < 24; h++) cnt[m][h]++; monthE[m] += tot; yearE[y] = (yearE[y] || 0) + tot; });
@@ -1433,12 +1453,9 @@
         { label: st.assetName + ' (GWh per month, average year)', data: monthE.map((v, m) => monthDays[m] ? Math.round(v / 1e6 * (30.4 / (monthDays[m] / yrsN)) / yrsN * 100) / 100 : null), backgroundColor: tc, borderRadius: 3, yAxisID: 'y' },
         { type: 'line', label: 'National average MW', data: natMW, borderColor: '#FFFFFF', borderDash: [5, 4], borderWidth: 1.6, pointRadius: 3, yAxisID: 'y1' },
       ] }, options: _fuelOpts({ scales: { x: Object.assign(_fuelXAxis(), { grid: { display: false } }), y: _fuelAxis('GWh / month', { beginAtZero: true }), y1: _fuelAxis('MW national', { position: 'right', beginAtZero: true, grid: { display: false } }) } }) }, 'ppa-monthly-production');
-      const ys = Object.keys(yearE).sort();
-      if (has('annual')) _fuelChart(ids.annual, { type: 'bar', data: { labels: ys, datasets: [{ label: st.assetName + ' (GWh per year)', data: ys.map(y => Math.round(yearE[y] / 1e6 * 100) / 100), backgroundColor: tc, borderRadius: 3 }] },
-        options: _fuelOpts({ plugins: { legend: { display: false } }, scales: { x: Object.assign(_fuelXAxis(), { grid: { display: false } }), y: _fuelAxis('GWh', { beginAtZero: true }) } }) }, 'ppa-annual-production');
     } else {
-      ['profAsset', 'annual'].filter(has).forEach(k => noDataMsg(ids[k], 'Load an asset production curve above', 'Same view for the asset'));
-      if (ids === IDS) ['profAsset', 'annual'].filter(has).forEach(k => { const c = $(ids[k]).closest('.chart-container'); if (c) c.hidden = true; });
+      ['profAsset'].filter(has).forEach(k => noDataMsg(ids[k], 'Load an asset production curve above', 'Same view for the asset'));
+      if (ids === IDS) ['profAsset'].filter(has).forEach(k => { const c = $(ids[k]).closest('.chart-container'); if (c) c.hidden = true; });
       const natMW = prof ? prof.map(r => Math.round(r.reduce((a, b) => a + (b || 0), 0) / 24)) : [];
       if (has('monthly')) _fuelChart(ids.monthly, { type: 'line', data: { labels: MONTHS, datasets: [{ label: 'National average MW', data: natMW, borderColor: '#FFFFFF', borderDash: [5, 4], borderWidth: 1.6, pointRadius: 3 }] },
         options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('MW national', { beginAtZero: true }) } }) }, 'ppa-monthly-production');
