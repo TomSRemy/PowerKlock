@@ -131,7 +131,8 @@ async function drawEUA() {
       sw != null && eua ? (eua.v > sw ? 'up' : 'down') : null);
 
   const P = _fuelPageP('fuel');
-  ['fuel-eua-ttf', 'fuel-switch', 'fuel-hubs', 'fuel-storage', 'fuel-coal-oil', 'fuel-lng'].forEach(id => PKW.draw(id, id, P));
+  // EU gas storage: the year-by-year chart since 2019 is kept on the page, the 5-year band stays a dashboard widget (note 90)
+  ['fuel-eua-ttf', 'fuel-switch', 'fuel-hubs', 'fuel-coal-oil', 'fuel-lng'].filter(id => document.getElementById(id)).forEach(id => PKW.draw(id, id, P));
 
   const F = PKC.FUEL, fr = typeof _mrnFr === 'function' && _mrnFr(), n = (v, d) => fr ? v.toFixed(d).replace('.', ',') : v.toFixed(d);
   document.getElementById('fuel-note').innerHTML = fr
@@ -152,15 +153,16 @@ async function _fuelData() {
 
 _fuelReg({
   id: 'fuel-eua-ttf', title: 'EUA & TTF', category: 'fuels', page: 'eua', pageCanvas: 'fuel-eua-ttf',
-  desc: 'EUA front-December (€/t) and TTF day-ahead (€/MWh), daily closes.',
+  desc: 'EUA front-December (€/t), TTF and PEG day-ahead (€/MWh), daily closes.',
   params: [FUEL_PERIOD_PARAM], defaults: { period: '1Y' },
   async draw(cid, p) {
     await _fuelData();
     const [from, to] = _fuelRange(p);
-    const j = _fuelJoin([PKC.asMap('eua', true), PKC.asMap('ttf', true)], from, to);
+    const j = _fuelJoin([PKC.asMap('eua', true), PKC.asMap('ttf', true), PKC.asMap('peg', true)], from, to);
     _fuelChart(cid, { type: 'line', data: { labels: j.labels, datasets: [
       _fuelLineDs('EUA ' + PKC.contractLabel('eua') + ' (€/t)', j.cols[0], C_EUA, { yAxisID: 'y' }),
       _fuelLineDs('TTF DA (€/MWh)', j.cols[1], C_TTF, { yAxisID: 'y1' }),
+      _fuelLineDs('PEG DA (€/MWh)', j.cols[2], C_PEG, { yAxisID: 'y1' }),   // the French gas hub beside the TTF (note 91)
     ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('€/t', { position: 'left' }), y1: _fuelAxis('€/MWh', { position: 'right', grid: { display: false } }) } }) }, 'eua-ttf');
   },
 });

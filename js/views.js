@@ -19,7 +19,8 @@
     frsystem: [['Daily', ['hs-frsystem-0']], ['Historical', ['hs-frsystem-1']]],
     regions: [['Daily', ['hs-regions-0']], ['Capacity & consumption', ['hs-regions-1']]],
     crossborder: [['Daily', ['hs-crossborder-0']], ['Borders', ['hs-crossborder-1']]],
-    imbalance: [['Daily', ['hs-imbalance-0']], ['Deviations', ['hs-imbalance-1']]],
+    // the mFRR chart belonged to no tab and showed on both (note 61): it opens the second tab, now named mFRR
+    imbalance: [['Daily', ['hs-imbalance-0']], ['mFRR', ['hs-imbalance-fr', 'hs-imbalance-1']]],
     eua: [['Overview', ['hs-eua-0']], ['Gas', ['hs-eua-1']], ['Coal & oil', ['hs-eua-2']]],
     euafwd: [['Curves', ['hs-euafwd-0']], ['TTF contracts & settlements', ['hs-euafwd-ttf', 'hs-euafwd-1']]],   // TTF forwards and settlements together (notes 47, 64)
     spark: [['Daily', ['hs-spark-0']], ['Historical', ['hs-spark-1']]],
