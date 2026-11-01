@@ -622,5 +622,9 @@
  "72": {
   "status": "open",
   "reply": "Pas encore fait : RTE publie ces données régionales pour la France seulement. Pour les autres pays, il faudrait une autre source par pays (ENTSO-E ne publie pas de régions). Je propose plutôt une vue par pays (production, facteurs de charge éolien/solaire par pays ENTSO-E) avec filtre et comparaison comme le Day-ahead : à valider, c’est une nouvelle page."
+ },
+ "111": {
+  "status": "open",
+  "reply": "Pas sur le site, et voici pourquoi : les résultats des appels d’offres CRE (PPE2 sol, bâtiment, neutre, éolien) ne sont publiés qu’en PDF (délibérations de la CRE, listes de lauréats du ministère), sans fichier ni API mis à jour automatiquement. La règle du site exclut ces sources. Deux options : (1) un job qui lit chaque nouvelle délibération CRE (même format à chaque période) et en sort le prix moyen pondéré par famille ; (2) une table tenue à la main avec la source de chaque ligne. Je recommande (1). Dis-moi si tu valides."
  }
 }
