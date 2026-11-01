@@ -2041,6 +2041,19 @@ ${FRDOC() ? `<p>RTE éCO2mix (production nationale, 15 min) · prix day-ahead EN
   let busy = false, again = false;
   // the partial stop, said under the price: the share stopped, the two cases blended, the charts showing the full stop
   // years past the last quoted Cal: said under the price, with the liquidity risk taken off
+  // the scenario generator missing, put back from an earlier week, or older than 10 days (Tom 1 Nov. 2026: on
+  // 1 Nov. a failed weekly run left the site on the old method without a word): said in a banner above the price
+  function genNote(o) {
+    let el = $('pp-gen-note'); const G = D.fcst && D.fcst.generator, fr = FRDOC();
+    const age = G && G.asOf ? (Date.now() - Date.parse(G.asOf + 'T12:00:00Z')) / 864e5 : null;
+    const msg = !G || o.ppaGen == null
+      ? (fr ? '<b>Générateur de scénarios indisponible :</b> le prix affiché retombe sur les méthodes de référence. Le job hebdomadaire est à relancer.' : '<b>Scenario generator unavailable:</b> the price shown falls back on the reference methods. The weekly job needs a rerun.')
+      : G.restored ? (fr ? `<b>Générateur remis depuis la semaine précédente (${G.asOf}) :</b> le calcul de cette semaine a échoué, le prix publié reste celui du générateur mais n’est pas à jour.` : `<b>Generator put back from the previous week (${G.asOf}):</b> this week's run failed; the published price stays the generator's but is not up to date.`)
+      : age != null && age > 10 ? (fr ? `<b>Générateur daté du ${G.asOf} :</b> plus de 10 jours, le job hebdomadaire n’a pas tourné.` : `<b>Generator dated ${G.asOf}:</b> over 10 days old, the weekly job has not run.`) : '';
+    if (!msg) { if (el) el.remove(); return; }
+    const st = $('pp-status'); if (!el && st) { el = document.createElement('div'); el.id = 'pp-gen-note'; el.className = 'fuel-note'; el.style.borderLeft = '3px solid var(--red, #ED6965)'; el.style.paddingLeft = '8px'; st.before(el); }
+    if (el) el.innerHTML = msg;
+  }
   function liqNote(o) {
     let el = $('pp-liq-note'); const ys = (o.years || []).filter(r => r.liqK > 0);
     if (!ys.length) { if (el) el.remove(); return; }
@@ -2069,7 +2082,7 @@ ${FRDOC() ? `<p>RTE éCO2mix (production nationale, 15 min) · prix day-ahead EN
       if (o.missing) { S.last = null; renderForwards(o); renderYears(o); renderAuto(o); try { renderMarket(o); } catch (e) { console.warn('[ppa] market', e); }
         $('pp-status').innerHTML = `<b>No market price for Cal ${o.missing.join(', ')}.</b> Enter your forward for ${o.missing.length > 1 ? 'these years' : 'this year'} (step 2), or end the delivery in ${o.missing[0] - 1}. Nothing is priced until then.`;
         $('pp-kpis').innerHTML = ''; $('pp-build').innerHTML = ''; busy = false; if (again) { again = false; run(); } return; }
-      S.last = o; renderForwards(o); render(o); partialNote(o); liqNote(o); renderScen(); document.dispatchEvent(new CustomEvent('pk-ppa-run')); try { renderMarket(o); } catch (e) { console.warn('[ppa] market', e); } try { renderMC(o); } catch (e) { console.warn('[ppa] mc', e); } $('pp-status').textContent = ''; }
+      S.last = o; renderForwards(o); render(o); partialNote(o); liqNote(o); genNote(o); renderScen(); document.dispatchEvent(new CustomEvent('pk-ppa-run')); try { renderMarket(o); } catch (e) { console.warn('[ppa] market', e); } try { renderMC(o); } catch (e) { console.warn('[ppa] mc', e); } $('pp-status').textContent = ''; }
     catch (e) { console.warn('[ppa]', e); $('pp-status').textContent = 'Pricing failed: ' + e.message; }
     busy = false; if (again) { again = false; run(); }
   }
