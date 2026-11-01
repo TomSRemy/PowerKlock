@@ -548,7 +548,7 @@
     // so the premium joins that risk with the forwards' and the volume's; it already holds the model's own error (P75 held
     // in 78–89 % of the replayed deliveries), so no separate model-risk deduction
     const BAND = D.fcst && D.fcst.generator && D.fcst.generator.band && D.fcst.generator.band[st.tech];
-    o.premiumGen = null; o.sigGen = null; o.premVolGen = null; o.liqRisk = null;
+    o.premiumGen = null; o.sigGen = null; o.premVolGen = null; o.liqRisk = null; o.premNoPrice = null;
     if (o.gen && BAND && o.mc) {
       const sg = years.map(r => { const b = BAND[String(r.y)]; return b && b.p50 != null && b.p25 != null && b.p50 > b.p25 ? (b.p50 - b.p25) / 0.6745 / Math.sqrt(Math.max(1, r.y - o.lastYr)) : null; }).filter(v => v != null);
       if (sg.length) {
@@ -558,6 +558,9 @@
         // the liquidity risk's share: the premium less the same Monte Carlo with every year hedged on its own Cal
         if (years.some(r => r.liqK > 0) && o.sigL > 0) { const mL = simulate(Object.assign({}, o, { sig0: o.sigGen, sigL: 0 }), st); o.liqRisk = Math.max(0, o.premiumGen - (fair - qtl(mL.Us, alpha / 100))); }
         else o.liqRisk = 0;
+        // the premium once the price level is no longer the buyer's (indexed products: Cal or month fixed at a date, the
+        // buyer hedging at that same price): what is left is capture drift and volume (js/ppa-products.js)
+        const mN = simulate(Object.assign({}, o, { sig0: o.sigGen, noPriceRisk: true }), st); o.premNoPrice = Math.max(0, fair - qtl(mN.Us, alpha / 100));
       }
     }
     o.modelRisk = o.premiumGen != null ? 0 : mrT && mrT.qPts > 0 ? refW * mrT.qPts / 100 : 0;
@@ -646,7 +649,7 @@
       for (let t = 0; t < T; t++) {
         const r = Y[t];
         w += Math.sqrt(tau[t] - tp) * gauss(); tp = tau[t];
-        const sF = r.sigY || o.sigF, spot = r.fwd * Math.exp(sF * w - sF * sF * tau[t] / 2);
+        const sF = o.noPriceRisk ? 0 : (r.sigY || o.sigF), spot = r.fwd * Math.exp(sF * w - sF * sF * tau[t] / 2);
         // liquidity: a year past the last quoted Cal is hedged with that Cal; its own price then strays from it by the
         // measured step between neighbouring Cal years × √(years past), a risk the hedge does not cover
         const sL = r.liqK > 0 && o.sigL > 0 ? spot * Math.exp(o.sigL * Math.sqrt(r.liqK) * gauss() - o.sigL * o.sigL * r.liqK / 2) : spot;
