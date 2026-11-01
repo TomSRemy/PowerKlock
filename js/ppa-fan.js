@@ -33,16 +33,16 @@
     // the fan starts from the last complete realised year
     const fut = p => years.map((y, i) => i === iLast ? sc(lastH[k]) : i >= iP ? sc(q(p)[i - iP]) : null);
     const band = (hi, lo, col, lbl) => [
-      { label: '_' + lbl + 'hi', data: fut(hi), borderWidth: 0, pointRadius: 0, fill: '+1', backgroundColor: col, tension: .25, spanGaps: true },
-      { label: lbl, data: fut(lo), borderWidth: 0, pointRadius: 0, fill: false, backgroundColor: col, tension: .25, spanGaps: true },
+      { label: '_' + lbl + 'hi', data: fut(hi), borderWidth: 0, pointRadius: 0, fill: '+1', backgroundColor: col, tension: 0, spanGaps: true },
+      { label: lbl, data: fut(lo), borderWidth: 0, pointRadius: 0, fill: false, backgroundColor: col, tension: 0, spanGaps: true },
     ];
     const pick = String(S.p);
     const ds = [
       ...band(10, 90, 'rgba(127,200,248,.13)', 'P10–P90'),
       ...band(25, 75, 'rgba(127,200,248,.24)', 'P25–P75'),
-      { label: 'P50 (central)', data: fut(50), borderColor: 'rgba(230,237,243,.75)', borderDash: [5, 4], borderWidth: 1.4, pointRadius: 0, fill: false, tension: .25, spanGaps: true },
-      { label: 'P' + pick + ' (picked)', data: fut(S.p), borderColor: '#FBBF24', borderWidth: 3, pointRadius: 3, pointBackgroundColor: '#FBBF24', fill: false, tension: .25, spanGaps: true },
-      { label: 'Realised', data: years.map(y => byY.has(y) && byY.get(y).complete ? sc(byY.get(y)[k]) : null), borderColor: '#E6EDF3', backgroundColor: '#E6EDF3', borderWidth: 2.4, pointRadius: 3, fill: false, tension: .2, spanGaps: true },
+      { label: 'P50 (central)', data: fut(50), borderColor: 'rgba(230,237,243,.75)', borderDash: [5, 4], borderWidth: 1.4, pointRadius: 0, fill: false, tension: 0, spanGaps: true },
+      { label: 'P' + pick + ' (picked)', data: fut(S.p), borderColor: '#FBBF24', borderWidth: 3, pointRadius: 3, pointBackgroundColor: '#FBBF24', fill: false, tension: 0, spanGaps: true },
+      { label: 'Realised', data: years.map(y => byY.has(y) && byY.get(y).complete ? sc(byY.get(y)[k]) : null), borderColor: '#E6EDF3', backgroundColor: '#E6EDF3', borderWidth: 2.4, pointRadius: 3, fill: false, tension: 0, spanGaps: true },
     ];
     const ytd = D.history.find(h => !h.complete);
     if (ytd) ds.push({ label: ytd.year + ' to date', data: years.map(y => y === ytd.year ? sc(ytd[k]) : null), borderColor: '#E6EDF3', backgroundColor: 'transparent', pointStyle: 'circle', pointRadius: 5, pointBorderWidth: 2, showLine: false });

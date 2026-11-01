@@ -104,9 +104,11 @@
     const SH = fr() ? { none: 'Aucune', b2b: 'Back to back', b2b70: 'B2B 70 %', delta0: 'Delta signature', minvar: 'Variance min.', dyn: 'Delta dynamique' }
       : { none: 'None', b2b: 'Back to back', b2b70: 'B2B 70 %', delta0: 'Delta at signing', minvar: 'Min. variance', dyn: 'Dynamic delta' };
     _fuelChart('pp-hedge-chart', { type: 'bar', data: { labels: st.map(r => SH[r.k]), datasets: [
-      { label: fr() ? 'P10 – P90' : 'P10 – P90', data: st.map(r => [+r.p10.toFixed(2), +r.p90.toFixed(2)]), backgroundColor: st.map(r => r.k === best.k ? 'rgba(127,200,248,.75)' : 'rgba(159,180,199,.45)'), borderRadius: 3, order: 2 },
+      { label: fr() ? 'P10 – P90' : 'P10 – P90', data: st.map(r => [+r.p10.toFixed(2), +r.p90.toFixed(2)]), backgroundColor: st.map(r => r.k === best.k ? 'rgba(127,200,248,.95)' : 'rgba(159,180,199,.85)'), barThickness: 2, order: 3 },
+      { type: 'line', label: '_lo', data: st.map(r => +r.p10.toFixed(2)), showLine: false, pointStyle: 'line', rotation: 90, pointRadius: 7, borderWidth: 2, borderColor: 'rgba(159,180,199,.95)', order: 2 },
+      { type: 'line', label: '_hi', data: st.map(r => +r.p90.toFixed(2)), showLine: false, pointStyle: 'line', rotation: 90, pointRadius: 7, borderWidth: 2, borderColor: 'rgba(159,180,199,.95)', order: 2 },
       { type: 'line', label: fr() ? 'Moyenne' : 'Mean', data: st.map(r => +r.m.toFixed(2)), showLine: false, pointRadius: 5, pointStyle: 'rectRot', borderColor: '#D4BE96', backgroundColor: '#D4BE96', order: 1 }] },
-      options: _fuelOpts({ indexAxis: 'y', plugins: { legend: { display: true, position: 'bottom' }, pkHoverReadout: false }, scales: { y: Object.assign(_fuelXAxis(), { grid: { display: false }, ticks: { autoSkip: false, font: { size: 10 } } }), x: _fuelAxis(fr() ? 'ce que rapporte un MWh, €/MWh' : 'what one MWh earns, €/MWh') } }) }, 'ppa-hedge-strategies');
+      options: _fuelOpts({ indexAxis: 'y', plugins: { legend: { display: true, position: 'bottom', labels: { color: '#B8C9D9', font: { size: 10 }, boxWidth: 10, filter: it => !/^_/.test(it.text) } }, pkHoverReadout: false }, scales: { y: Object.assign(_fuelXAxis(), { grid: { display: false }, ticks: { autoSkip: false, font: { size: 10 } } }), x: _fuelAxis(fr() ? 'ce que rapporte un MWh, €/MWh' : 'what one MWh earns, €/MWh') } }) }, 'ppa-hedge-strategies');
   }
   function bind() {
     const b = $('pp-hedge-bidask'); if (b) { b.value = S.bidask; b.addEventListener('change', () => { const v = parseFloat(b.value); S.bidask = isFinite(v) && v >= 0 ? v : 0.10; run(); }); }
