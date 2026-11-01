@@ -586,5 +586,9 @@
  "94": {
   "status": "done",
   "reply": "Réponse : le premier graphique suit un seul produit (celui choisi, ici AIB renouvelable), une courbe par année de production (Cal-24, Cal-25…). Celui-ci compare les produits entre eux (hydro, éolien, solaire…) sur l’année de production la plus proche. Rien changé."
+ },
+ "106": {
+  "status": "done",
+  "reply": "Fait : l’onglet Hebdomadaire a maintenant un graphique, les degrés-jours de chauffage de chaque semaine contre la normale 2016–2025, sur les 10 dernières semaines et les 2 semaines de prévision (barres plus pâles), au-dessus du tableau."
  }
 }
