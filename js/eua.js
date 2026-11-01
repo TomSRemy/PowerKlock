@@ -445,6 +445,14 @@ async function renderSpark() {
     `<td class="l" style="color:var(--text2);text-align:left">${merit(r)}</td></tr>`).join('')
     : '<tr><td colspan="10" style="text-align:center;color:var(--text3);padding:20px">' + ((!window.PKI18n || PKI18n.lang !== 'en') ? 'Prix day-ahead indisponibles pour ce jour.' : 'No day-ahead prices for this day.') + '</td></tr>';
 
+  // the table as a chart: CSS and CDS baseload of each zone, zones in the table's order (note 65)
+  if (document.getElementById('spark-bars')) {
+    const dd = data.filter(r => r.cssB != null);
+    _fuelChart('spark-bars', { type: 'bar', data: { labels: dd.map(r => r.z.code), datasets: [
+      { label: 'Clean spark spread, base', data: dd.map(r => Math.round(r.cssB * 10) / 10), backgroundColor: 'rgba(127,200,248,.85)', borderRadius: 3 },
+      { label: 'Clean dark spread, base', data: dd.map(r => r.cdsB == null ? null : Math.round(r.cdsB * 10) / 10), backgroundColor: 'rgba(217,154,30,.85)', borderRadius: 3 },
+    ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('€/MWh') } }) }, 'spark-dark-by-zone');
+  }
   const by = c => data.find(r => r.z.code === c);
   const fr = by('FR'), de = by('DE_LU');
   const pos = data.filter(r => r.cssB != null && r.cssB > 0).length;
