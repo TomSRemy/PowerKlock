@@ -562,5 +562,13 @@
  "61": {
   "status": "done",
   "reply": "Fait : le graphique mFRR n’était rangé dans aucun onglet, il s’affichait donc partout ; il est maintenant dans le second onglet, renommé « mFRR » (avec le tableau des plus grands écarts)."
+ },
+ "66": {
+  "status": "done",
+  "reply": "Fait : graphique « Spreads batterie TB1 à TB4 · France, 90 jours » en tête de l’onglet Valeur day-ahead de la page Batteries (TB3 ajouté)."
+ },
+ "88": {
+  "status": "done",
+  "reply": "Fait : la page Spreads n’a plus d’onglets ; elle commence par l’arbitrage batterie TB1, TB2, TB3 et TB4 (graphique et chiffres clés), puis le spread journalier day-ahead, dans les sections repliables du site comme Day-ahead."
  }
 }

@@ -233,6 +233,7 @@
     const doc = await load();
     if (!doc || !doc.months) { $('bess-da-kpis').innerHTML = '<div class="fuel-note">No battery data yet: the daily job writes data/history/bess_da.json.</div>'; return; }
     kpis(doc); charts(doc); years(doc); day(doc);
+    if ($('bess-tb-canvas') && window.PKW && PKW.get('bess-spreads')) PKW.draw('bess-spreads', 'bess-tb-canvas', { zone: 'FR', n: '90' });   // TB1–TB4 (note 66)
     loadRes().then(reserves);
     loadIdx().then(index);
     loadEu().then(europe);

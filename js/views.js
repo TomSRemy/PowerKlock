@@ -11,7 +11,8 @@
   const VIEWS = {
     morning: [['Quick look', ['mrn-quick']], ['Discovery', ['mrn-learn']], ['Expert', ['mrn2', 'hs-morning-2', 'hs-morning-fund', 'hs-morning-3', 'hs-morning-4', 'hs-morning-fc', 'hs-morning-idx']]],
     'prices:forward': [['Board', ['hs-prfwd-read', 'hs-prfwd-board']], ['Comparison', ['hs-prfwd-compare']], ['Calendar contracts', ['hs-cal-contracts']]],
-    'prices:spread': [['Intraday spread', ['hs-spread-history']], ['Battery spreads', ['hs-spread-bess']]],
+    // Spreads: the battery spreads TB1–TB4 first, then the intraday spread, on one page without tabs (note 88)
+    'prices:spread': [],
     renewables: [['Daily', ['hs-renewables-0']], ['Historical', ['hs-renewables-1']], ['M0', ['hs-renewables-2']], ['Cannibalisation', ['hs-renewables-cannib']], ['Forward capture', ['hs-renewables-capfwd']]],
     // outages live on Outages & REMIT only (notes 71, 98, 99): Nuclear keeps availability and output, and a link
     nuclear: [['Availability', ['hs-nuclear-0', 'hs-nuclear-1']]],
