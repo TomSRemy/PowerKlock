@@ -332,8 +332,10 @@
     const sec = sectionOf[own] || (e0 ? e0.textContent.trim() : null), pg = document.querySelector('.page.active');
     if (sec && pg) pg.querySelectorAll('.pr-breadcrumb-parent').forEach(c => { if (c.textContent !== sec) c.textContent = sec; });
     // the page's own name after it, when the page only repeated the section ("Renouvelables › Renouvelables")
+    // compared in English and lower case: the page text and the menu may not be translated at the same moment
+    const same = (a, b) => { const n = t => String(window.pkEN ? pkEN(t.trim()) : t.trim()).toLowerCase(); return n(a) === n(b); };
     const it = nav.querySelector('.pk-nv-item[aria-current]'), itName = it && (it.querySelector('span') || it).textContent.trim();
-    if (sec && pg && itName) pg.querySelectorAll('.pr-breadcrumb-current').forEach(c => { if (c.textContent.trim() === sec || c.dataset.pkAuto) { c.textContent = itName; c.dataset.pkAuto = '1'; } });
+    if (sec && pg && itName) pg.querySelectorAll('.pr-breadcrumb-current').forEach(c => { if (same(c.textContent, sec) || c.dataset.pkAuto) { c.textContent = itName; c.dataset.pkAuto = '1'; } });
     document.querySelectorAll('.pk-gbar').forEach(g => { g.hidden = g.dataset.entry !== own; });
     document.querySelectorAll('.pk-gbar a').forEach(a => a.classList.toggle('on', a.dataset.route === route));
   }

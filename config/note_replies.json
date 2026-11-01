@@ -594,5 +594,9 @@
  "105": {
   "status": "done",
   "reply": "Fait : l’onglet Réservoirs hydrauliques a maintenant 4 chiffres clés (stock, écart à la normale, écart à l’an dernier, rang en Europe) et un second graphique à côté : l’écart de chaque pays européen à sa normale et à l’an dernier pour la même semaine. La France est à −36 % de sa normale mi-octobre."
+ },
+ "96": {
+  "status": "done",
+  "reply": "Corrigé : le fil d’Ariane affichait « Renouvelables › Renouvelables » au lieu du nom de la page (la comparaison se faisait avant la traduction). Il affiche maintenant « Renouvelables › Capture & cannibalisation » (ou « Contrat M0 »), et la correction vaut pour toutes les pages dans le même cas."
  }
 }
