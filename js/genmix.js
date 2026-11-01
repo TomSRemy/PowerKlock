@@ -191,7 +191,7 @@ function _gmBuildMarketBanner({ line1, verdict, icon }) {
   if (!line1) return '';
   const ICO = icon || '◈';
   const verdictHtml = verdict
-    ? `<span style="display:block;margin-top:6px;padding-top:6px;border-top:1px dashed rgba(251,191,36,0.22);font-style:italic;color:rgba(255,255,255,0.82)">Market read : ${verdict}</span>`
+    ? `<span style="display:block;margin-top:6px;padding-top:6px;border-top:1px dashed rgba(251,191,36,0.22);font-style:italic;color:rgba(255,255,255,0.82)">Market read : <span>${verdict}</span></span>`   // the verdict in its own element: translated whole (assets/i18n_fr*.json)
     : '';
   return `<div class="ho-analyst-banner" style="margin-top:14px;padding:11px 14px;font-size:11.5px;border-radius:3px;color:#FBBF24;background:rgba(251,191,36,0.08);border-left:3px solid #FBBF24;line-height:1.6">
     <span style="margin-right:8px">${ICO}</span>${line1}${verdictHtml}
