@@ -67,6 +67,11 @@
     let fwdVol = null, fwdVolN = 0;
     const c1 = chain && chain.FR && chain.FR.rolling && chain.FR.rolling['Cal+1'];
     if (c1 && c1.values) { const v = c1.values.filter(x => x > 0), r = []; for (let i = 1; i < v.length; i++) r.push(Math.log(v[i] / v[i - 1])); if (r.length > 40) { fwdVol = std(r) * Math.sqrt(252); fwdVolN = r.length; } }
+    // the forward's volatility by maturity, Cal+1 to Cal+3 (Tom 1 Nov. 2026: far years move less, the Samuelson effect;
+    // measured 34 / 21 / 21 %/yr on 2024–2026), the roll to the next contract at the turn of the year left out
+    const volTerm = [1, 2, 3].map(h => { const R = chain && chain.FR && chain.FR.rolling && chain.FR.rolling['Cal+' + h]; if (!R || !R.values) return null;
+      const r = []; for (let i = 1; i < R.values.length; i++) { if (R.dates[i].slice(0, 4) !== R.dates[i - 1].slice(0, 4)) continue; const a = R.values[i - 1], b = R.values[i]; if (a > 0 && b > 0) r.push(Math.log(b / a)); }
+      return r.length > 60 ? { v: std(r) * Math.sqrt(252), n: r.length } : null; });
     const F = cap ? cap.fields : [], ix = Object.fromEntries(F.map((f, i) => [f, i + 1]));
     // national imbalance cost per technology, last 12 months with data (scripts/fetch_fr_imbalance_cost.py)
     const imbCost = {};
@@ -74,7 +79,7 @@
     // less than the TSO's over the last 12 months (imbc.use, scripts/fetch_fr_imbalance_cost.py), else the TSO's
     if (imbc && imbc.months) ['solar', 'wind'].forEach(k => { const all = Object.keys(imbc.months).filter(m => imbc.months[m][k]).sort().slice(-12), withO = all.filter(m => imbc.months[m][k].ours), own = withO.length >= 3 && (!imbc.use || imbc.use[k] === 'ours'), ms = own ? withO : all; let c = 0, e = 0; ms.forEach(m => { const x = own ? imbc.months[m][k].ours : imbc.months[m][k]; c += x.costEur; e += x.mwh; }); if (ms.length >= 3 && e > 0) imbCost[k] = { v: c / e, n: ms.length, from: ms[0], to: ms[ms.length - 1], own }; });
     const fwdRows = ((mkt && mkt.forwardCurve) || []).filter(r => r.value != null).map(r => ({ contract: r.contract, value: r.value }));
-    D = { hc: hcan || null, cc: (ccap && ccap.countries) || null, fwdRows, imbCost, cap: (cap && cap.days) || [], ix, profile: (cap && cap.profile) || {}, stopT: (cap && cap.stopT) || null, capGW, fwd, fwdDate: mkt && mkt.forwardCurve && mkt.forwardCurve[0] && mkt.forwardCurve[0].date, go, fwdVol, fwdVolN,
+    D = { hc: hcan || null, cc: (ccap && ccap.countries) || null, fwdRows, imbCost, cap: (cap && cap.days) || [], ix, profile: (cap && cap.profile) || {}, stopT: (cap && cap.stopT) || null, capGW, fwd, fwdDate: mkt && mkt.forwardCurve && mkt.forwardCurve[0] && mkt.forwardCurve[0].date, go, fwdVol, fwdVolN, volTerm,
       fcst: fcst || null, fwRatio: (fwm && fwm.ratios && fwm.ratios.year) || null, fwM: (fwm && fwm.months) || null, bias: pbias || null };
     D.weights = await pwts;
     // hours with a day-ahead price at or below zero, per year (YTD annualised): the hours the PPA Dashboard convention leaves unpaid
@@ -195,6 +200,21 @@
     const nat = D.fcst && D.fcst.share && D.fcst.share[st.tech]; let c = 0, p = 0, w = 0;
     for (let m = 1; m <= 12; m++) { const sh = nat ? nat[m] : 1 / 12, r = stopRatio(st, m); c += sh * r.c * r.p; p += sh * r.p; w += sh; }
     return { c: p ? c / p : 1, p: w ? p / w : 1 };
+  }
+  // how much the technology's captured price moves when the baseload moves by 1 € (Tom 1 Nov. 2026): the same calendar
+  // month a year apart, the last three years, national, in the pricer's convention. Measured 0.84 for solar and 0.95–0.97
+  // for wind since 2024, against a capture rate of 0.69 / 0.89: the discount is largely a fixed amount in euros (midday
+  // hours stay low whatever gas does), not a fixed share. The Monte Carlo moves the captured price by this sensitivity
+  // around its expected level, instead of as a share of the spot
+  function captureBeta(st) {
+    const t = st.tech === 'solar' ? 's' : 'w', c = cols(st), M = {};
+    D.cap.forEach(r => { const k = r[0].slice(0, 7), m = M[k] || (M[k] = [0, 0, 0, 0]); m[0] += r[c.P]; m[1] += r[c.N]; m[2] += r[c.R]; m[3] += r[c.E]; });
+    const y0 = thisYear() - 3, xs = [], ys = [];
+    Object.keys(M).forEach(k => { const y = +k.slice(0, 4), p = M[(y - 1) + k.slice(4)], m = M[k]; if (y < y0 || !p || m[1] < 600 || p[1] < 600 || !m[3] || !p[3]) return;
+      xs.push(m[0] / m[1] - p[0] / p[1]); ys.push(m[2] / m[3] - p[2] / p[3]); });
+    if (xs.length < 12) return null;
+    const r = linreg(xs, ys);
+    return { beta: clamp(r.sl, 0.3, 1.3), n: xs.length, r2: r.r2, from: y0 };
   }
   function euYears(o, st, fld = 'regional') {   // fld: 'regional' (central), 'p10' / 'p90' (the simulated weather's spread), 'anchored' (the integrated method, no bias correction)
     const conv = st.conv === 'all' ? 'all' : 'curt';
@@ -450,18 +470,25 @@
       const e = ((B.bias[st.tech] || {})[k] || {})[conv], v = e && e[String(Math.min(3, Math.max(1, y - B.lastYear)))]; return v ? v.value : 0; };
     // a year delivered only in part: its share of the year's output, and its months' value against the whole year's
     const part = partFactors(tenor, monthsOf, st);
-    const SRY = stopRatioYear(st);
+    const SRY = stopRatioYear(st), BETA = st.conv === 'pos' ? null : captureBeta(st);
     const years = tenor.map((y, i) => { const ns = negShare(y), M = monthsOf(y), ev = volume * Math.pow(1 - degr, i) * part[i].sh * (st.conv !== 'all' && ns != null ? 1 - ns : 1) * SRY.p,
       df = Math.pow(1 + disc, -Math.max(0, y + (M[0] - 1 + M[M.length - 1]) / 24 - now)), bs = biasOf('step', y), fsd = proj(y) + bs / Math.max(0.05, kq[i] * part[i].g), cpY = fwds[i] * kq[i] * part[i].g * (1 - fsd) * SRY.c;
+      // sigY: the year's forward volatility to delivery, each stretch at the volatility of the maturity it then is (Cal+3,
+      // then Cal+2, then Cal+1 and the delivery year itself); flat at the Cal+1 one when entered by hand or not measured
+      const sigY = (() => { const VT = D.volTerm, at = h => { const k = Math.min(3, Math.max(1, h)); return VT && VT[k - 1] ? VT[k - 1].v : sigF; };
+        if (st.mcFwd != null || !VT || !VT[0]) return sigF;
+        let v2 = 0, tt = 0; const add = (dtt, h) => { if (dtt > 0) { v2 += at(h) ** 2 * dtt; tt += dtt; } };
+        add(Math.ceil(now) - now, y - Math.floor(now)); for (let yy = Math.floor(now) + 1; yy < y; yy++) add(1, y - yy); add(0.5, 1);
+        return tt > 0 ? Math.sqrt(v2 / tt) : sigF; })();
       // liqK: years past the last quoted Cal, priced on that Cal and hedged with it (not entered by hand)
       const liqK = st.fwd[y] == null && D.fwd[y] == null && lastQ != null && y > lastQ ? y - lastQ : 0;
-      return { y, months: M, fwd: fwds[i], kq: kq[i], bias: bs, g: part[i].g, sh: part[i].sh, ev, df, fsd, cp: cpY, go: goY[i], w: ev * df, sig: sigT(y - lastYr), negH: negHours(y), negShare: ns, liqK, sr: SRY.c }; });
+      return { y, months: M, fwd: fwds[i], kq: kq[i], bias: bs, g: part[i].g, sh: part[i].sh, ev, df, fsd, cp: cpY, go: goY[i], w: ev * df, sig: sigT(y - lastYr), negH: negHours(y), negShare: ns, liqK, sr: SRY.c, sigY }; });
     const W = years.reduce((a, r) => a + r.w, 0) || 1;
     years.forEach(r => { r.wt = r.w / W; });
     const wavg = k => years.reduce((a, r) => a + r.wt * r[k], 0);
     const refW = wavg('fwd'), fair = wavg('cp'), goW = wavg('go'), sdW = wavg('fsd');
     const o = { st, stAt: { tech: st.tech, conv: st.conv }, biasOf, nat, ast, hist, useAsset, complete, monthsOf, m0, m1, sel: fitRows.map(x => x.year), histSd, reg, lastYr, anchor, proj, fitLine, model, cfit, capOff, capPath: cp, excluded, sig0, sigT,
-      sigL: LIQ && LIQ.sigStep ? LIQ.sigStep : 0, lastQ, liq: LIQ,
+      sigL: LIQ && LIQ.sigStep ? LIQ.sigStep : 0, lastQ, liq: LIQ, capBeta: BETA,
       tenor, negHours, negShare, nhReg, nhFitYears, shLast, fwds, fwdAuto, ref, refW, goVal, goMkt, goW, fair, sdW, volume, mw, lf, degr, disc, imb, margin, add, volRisk, priceRisk, alpha, volStress, spotStress, sigV, sigF, rho, years, auto };
     // Monte Carlo: the realised value of one MWh of the contract, 10,000 trajectories
     if (!st.noMC) o.mc = simulate(o, st);
@@ -619,14 +646,17 @@
       for (let t = 0; t < T; t++) {
         const r = Y[t];
         w += Math.sqrt(tau[t] - tp) * gauss(); tp = tau[t];
-        const spot = r.fwd * Math.exp(o.sigF * w - o.sigF * o.sigF * tau[t] / 2);
+        const sF = r.sigY || o.sigF, spot = r.fwd * Math.exp(sF * w - sF * sF * tau[t] / 2);
         // liquidity: a year past the last quoted Cal is hedged with that Cal; its own price then strays from it by the
         // measured step between neighbouring Cal years × √(years past), a risk the hedge does not cover
         const sL = r.liqK > 0 && o.sigL > 0 ? spot * Math.exp(o.sigL * Math.sqrt(r.liqK) * gauss() - o.sigL * o.sigL * r.liqK / 2) : spot;
         const zv = gauss(), pr = r.ev * clamp(1 + o.sigV * zv, 0.3, 2);
         const dt = t === 0 ? Math.max(1, r.y - o.lastYr) : 1;
         rw += Math.sqrt(dt) * o.sig0 * (o.rho * zv + rc * gauss());
-        const sd = clamp(r.fsd + rw, 0, 0.95), cap = sL * (r.kq || 1) * (r.g || 1) * (1 - sd) * (r.sr || 1);
+        const sd = clamp(r.fsd + rw, 0, 0.95);
+        // the captured price: its expected level (forward × capture rate) moved by the measured sensitivity to the spot
+        // (captureBeta); without it, as before, a share of the spot
+        const cap = (o.capBeta ? Math.max(0, r.fwd * (1 - sd) + o.capBeta.beta * (sL - r.fwd)) : sL * (1 - sd)) * (r.kq || 1) * (r.g || 1) * (r.sr || 1);
         const v = pr * cap + (hedged ? r.ev * (r.fwd - spot) : 0);
         prod[t][i] = pr; val[t][i] = v; sdM[t][i] = sd; cpM[t][i] = cap; spM[t][i] = sL;
         num += r.df * v; den += r.df * pr;
@@ -978,8 +1008,8 @@
       options: _fuelOpts({ scales: { x: Object.assign(_fuelXAxis(), { grid: { display: false } }), y: _fuelAxis(volU, { beginAtZero: true }) } }) }, 'ppa-volume-spread');
     const cap = b => b.g ? b.gp / b.g : null, spot = b => b.ps / b.pn;
     _fuelChart('pp-ph-cap', { type: 'bar', data: { labels: MN, datasets: [
-      { label: tr('Captured price, min – max over the years'), data: rng(cap), backgroundColor: 'rgba(168,125,196,.35)', borderColor: 'rgba(168,125,196,.85)', borderWidth: 1, borderRadius: 3, order: 3 },
-      { type: 'line', label: tr('Captured price, average'), data: avg(cap), borderColor: '#A87DC4', backgroundColor: '#A87DC4', showLine: false, pointRadius: 5, pointStyle: 'rectRot', order: 1 },
+      { label: tr('Captured price, min – max over the years'), data: rng(cap), backgroundColor: 'rgba(224,123,57,.35)', borderColor: 'rgba(224,123,57,.85)', borderWidth: 1, borderRadius: 3, order: 3 },
+      { type: 'line', label: tr('Captured price, average'), data: avg(cap), borderColor: '#E07B39', backgroundColor: '#E07B39', showLine: false, pointRadius: 5, pointStyle: 'rectRot', order: 1 },
       { type: 'line', label: tr('Average spot'), data: avg(spot), borderColor: '#D4BE96', backgroundColor: '#D4BE96', borderDash: [4, 3], borderWidth: 1.5, pointRadius: 2, order: 2 }] },
       options: _fuelOpts({ scales: { x: Object.assign(_fuelXAxis(), { grid: { display: false } }), y: _fuelAxis('€/MWh', { beginAtZero: false }) } }) }, 'ppa-captured-spread');
     const sv = $('pp-ph-vol-sub'); if (sv) sv.textContent = fr ? `${volU} par mois · ${full[0]}–${full[full.length - 1]}, fourchette des années et moyenne` : `${volU} per month · ${full[0]}–${full[full.length - 1]}, range of the years and average`;
@@ -989,7 +1019,7 @@
     const ml = ks.map(k => MN[M[k].m - 1] + ' ' + String(M[k].y).slice(2));
     const ds5 = [{ label: tr('Average spot'), data: ks.map(k => +spot(M[k]).toFixed(2)), borderColor: '#D4BE96', borderWidth: 1.5, pointRadius: 0, tension: 0 },
       { label: useA ? tr('Park captured price') : tr('National captured price'), data: ks.map(k => cap(M[k]) != null ? +cap(M[k]).toFixed(2) : null), borderColor: '#7FC8F8', borderWidth: 2, pointRadius: 0, tension: 0 }];
-    if (useA) ds5.push({ label: tr('National captured price (≈ M0)'), data: ks.map(k => M[k].n ? +(M[k].np / M[k].n).toFixed(2) : null), borderColor: '#A87DC4', borderWidth: 1.5, borderDash: [4, 3], pointRadius: 0, tension: 0 });
+    if (useA) ds5.push({ label: tr('National captured price (≈ M0)'), data: ks.map(k => M[k].n ? +(M[k].np / M[k].n).toFixed(2) : null), borderColor: '#9FB4C7', borderWidth: 1.5, borderDash: [4, 3], pointRadius: 0, tension: 0 });
     _fuelChart('pp-ph-ts', { type: 'line', data: { labels: ml, datasets: ds5 }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('€/MWh') } }) }, 'ppa-monthly-captured');
     // 6 · hour by hour (last complete year): spot, the park's captured price, the national one
     const HH = Array.from({ length: 24 }, () => ({ ps: 0, pn: 0, gp: 0, g: 0, np: 0, n: 0 }));
@@ -998,7 +1028,7 @@
     const gMin = 0.02 * Math.max(...HH.map(b => b.g));
     const ds6 = [{ label: tr('Average spot'), data: HH.map(b => b.pn ? +(b.ps / b.pn).toFixed(2) : null), borderColor: '#D4BE96', borderWidth: 1.5, pointRadius: 2, tension: 0 },
       { label: useA ? tr('Park captured price') : tr('National captured price'), data: HH.map(b => b.g > gMin ? +(b.gp / b.g).toFixed(2) : null), borderColor: '#7FC8F8', borderWidth: 2, pointRadius: 2, tension: 0 }];
-    if (useA) ds6.push({ label: tr('National captured price (≈ M0)'), data: HH.map(b => b.n > 0.02 * Math.max(...HH.map(x => x.n)) ? +(b.np / b.n).toFixed(2) : null), borderColor: '#A87DC4', borderWidth: 1.5, borderDash: [4, 3], pointRadius: 2, tension: 0 });
+    if (useA) ds6.push({ label: tr('National captured price (≈ M0)'), data: HH.map(b => b.n > 0.02 * Math.max(...HH.map(x => x.n)) ? +(b.np / b.n).toFixed(2) : null), borderColor: '#9FB4C7', borderWidth: 1.5, borderDash: [4, 3], pointRadius: 2, tension: 0 });
     _fuelChart('pp-ph-hour', { type: 'line', data: { labels: Array.from({ length: 24 }, (_, h) => String(h)), datasets: ds6 },
       options: _fuelOpts({ scales: { x: Object.assign(_fuelXAxis(), { title: { display: true, text: fr ? 'heure (Paris)' : 'hour (Paris)', color: '#8D99AE', font: { size: 10 } } }), y: _fuelAxis('€/MWh') } }) }, 'ppa-captured-by-hour');
     const shh = $('pp-ph-hour-sub'); if (shh) shh.textContent = fr ? `€/MWh · ${yLast}, moyenne par heure de la journée (heures avec moins de 2 % de la production de l’heure la plus productive : pas de prix capté)` : `€/MWh · ${yLast}, average by hour of the day (hours with under 2 % of the busiest hour’s output: no captured price)`;
@@ -1195,7 +1225,7 @@
 
   // ── Market & methodology charts (the PPA Dashboard Overview and Market Evolution tabs) ──
   const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const MCOL = ['#3B82F6', '#7FC8F8', '#ED6965', '#F4A7A3', '#14D3A9', '#6EE7B7', '#F59E0B', '#FBBF24', '#A87DC4', '#C9CED6', '#1D4ED8', '#93C5FD'];
+  const MCOL = ['#3B82F6', '#7FC8F8', '#ED6965', '#F4A7A3', '#14D3A9', '#6EE7B7', '#F59E0B', '#FBBF24', '#E07B39', '#C9CED6', '#1D4ED8', '#93C5FD'];
   // Text labels drawn on given points: [{ ds, i, text, dy }]
   const labelPlugin = (marks) => ({ id: 'ppMarks', afterDatasetsDraw(ch) {
     const g = ch.ctx, placed = []; g.save(); g.font = '600 10.5px "JetBrains Mono", monospace'; g.textAlign = 'center';
@@ -1221,7 +1251,7 @@
   // capture rate vs installed capacity, France and its neighbours. x axis: GW installed, % of average load, or % of the installed fleet.
   // Each country: one point per complete year (2022 left out, as in the French fit) and its trend, capture = a + b · ln(x).
   // The legend switches a country on and off, its trend with it.
-  const CCOL = { FR: '#FBBF24', DE: '#7FC8F8', BE: '#ED6965', NL: '#F2A65A', ES: '#A87DC4', UK: '#94D2BD' }, CNAME = { FR: 'France', DE: 'Germany', BE: 'Belgium', NL: 'Netherlands', ES: 'Spain', UK: 'United Kingdom' };
+  const CCOL = { FR: '#FBBF24', DE: '#7FC8F8', BE: '#ED6965', NL: '#F2A65A', ES: '#E07B39', UK: '#94D2BD' }, CNAME = { FR: 'France', DE: 'Germany', BE: 'Belgium', NL: 'Netherlands', ES: 'Spain', UK: 'United Kingdom' };
   const XC_AX = { gw: ['GW installed', f => f.g], load: ['% of average load', f => f.g / f.avgLoadGW * 100], share: ['% of the installed fleet', f => f.totalGW ? f.g / f.totalGW * 100 : null] };
   const xcHidden = {};
   function drawXC(cid, subId, st) {
@@ -1351,7 +1381,7 @@
     if (has('xc') && D.cc) drawXC(ids.xc, ids.xcSub, st);
     if (has('hc') && D.hc) drawHC(ids.hc, ids.hcSub, st);
     if (has('xcy') && D.cc) {
-      const CCOL = { FR: '#FBBF24', DE: '#7FC8F8', BE: '#ED6965', NL: '#F2A65A', ES: '#A87DC4', UK: '#94D2BD' }, CNAME = { FR: 'France', DE: 'Germany', BE: 'Belgium', NL: 'Netherlands', ES: 'Spain', UK: 'United Kingdom' };
+      const CCOL = { FR: '#FBBF24', DE: '#7FC8F8', BE: '#ED6965', NL: '#F2A65A', ES: '#E07B39', UK: '#94D2BD' }, CNAME = { FR: 'France', DE: 'Germany', BE: 'Belgium', NL: 'Netherlands', ES: 'Spain', UK: 'United Kingdom' };
       const key = st.tech === 'solar' ? (st.conv === 'pos' ? 'solarRatePos' : 'solarRate') : (st.conv === 'pos' ? 'windRatePos' : 'windRate');
       const yrs = [...new Set(Object.values(D.cc).flatMap(d => Object.keys(d.years)))].sort();
       const ds4 = Object.keys(CNAME).filter(c => D.cc[c]).map(c => ({ label: CNAME[c], data: yrs.map(y => { const f = D.cc[c].years[y]; return f && f[key] ? pc1(f[key]) : null; }),
@@ -1468,7 +1498,7 @@
     $('pp-mc-draws-note').innerHTML = `Each future draws, year after year, a spot price around the forward, a production around the expected one and a shape discount drifting away from its projection. It then counts what one MWh of the contract earned, hedge included: the value per MWh. In the bad future, the spot of ${Y[Y.length - 1].y} is ${f2(mc.spM[Y.length - 1][bi])} €/MWh and the discount ${pc(mc.sdM[Y.length - 1][bi])}, so one MWh earned <b>${f2(mc.U[bi])} €</b>; in the middle one <b>${f2(mc.U[mi])} €</b>. The PPA price is then set so that only ${o.alpha} % of the 10,000 futures earn less than what is paid.`;
     // 2a · the premium, source by source
     if (o.premSrc) {
-      const src = [['Cannibalisation drift', o.premSrc.shape, '#FBBF24'], ['Production', o.premSrc.volume, '#7FC8F8'], ['Price level' + (mc.hedged ? ' (hedged)' : ''), o.premSrc.price, '#A87DC4'], ['All together', o.premium, '#ED6965']];
+      const src = [['Cannibalisation drift', o.premSrc.shape, '#FBBF24'], ['Production', o.premSrc.volume, '#7FC8F8'], ['Price level' + (mc.hedged ? ' (hedged)' : ''), o.premSrc.price, '#E07B39'], ['All together', o.premium, '#ED6965']];
       _fuelChart('pp-mc-src', { type: 'bar', data: { labels: src.map(x => x[0]), datasets: [{ label: '€/MWh', data: src.map(x => +x[1].toFixed(2)), backgroundColor: src.map(x => x[2]), borderRadius: 3 }] },
         options: _fuelOpts({ indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: _fuelAxis('risk premium, €/MWh', { beginAtZero: true }), y: Object.assign(_fuelXAxis(), { grid: { display: false } }) } }) }, 'ppa-risk-premium-sources');
     }
@@ -1558,7 +1588,7 @@
     if (!$('pp-bt-chart')) return;
     if (!BT) BT = await get('history/ppa_backtest.json');
     if (!BT) { $('pp-bt-table').innerHTML = '<div class="fuel-note">Replay not available.</div>'; return; }
-    const tech = S.tech, rs = BT.rows.filter(r => r.tech === tech), M = [['dashboard', 'Past discount', '#B8C9D9'], ['step', 'Capacity trend', '#14D3A9'], ['fpc', 'Forward shape', '#FBBF24'], ['weather', 'Weather simulation', '#A87DC4']];
+    const tech = S.tech, rs = BT.rows.filter(r => r.tech === tech), M = [['dashboard', 'Past discount', '#B8C9D9'], ['step', 'Capacity trend', '#14D3A9'], ['fpc', 'Forward shape', '#FBBF24'], ['weather', 'Weather simulation', '#E07B39']];
     const L = rs.map(r => String(r.year)), p1 = v => +(v * 100).toFixed(1);
     _fuelChart('pp-bt-chart', { type: 'line', data: { labels: L, datasets: [
       { label: 'Actual', data: rs.map(r => p1(r.actual)), borderColor: '#FFFFFF', backgroundColor: '#FFFFFF', borderWidth: 2.6, pointRadius: 4, fill: false },
@@ -1601,7 +1631,7 @@
     const fr = FRDOC(), M = fanMethods(o), keys = ['avg', 'build', 'fpc', 'wx', 'eu'].filter(k => M[k]);
     if (!M[FANM]) FANM = keys[0];
     const NAMES = { avg: fr ? 'Moyenne des 4' : 'Average of 4', build: fr ? 'Tendance de capacité' : 'Capacity trend', fpc: fr ? 'Forme forward' : 'Forward shape', wx: fr ? 'Simulation météo' : 'Weather simulation', eu: fr ? 'Modèle européen' : 'European price model' };
-    const COL = { avg: '#E6EDF3', build: '#14D3A9', fpc: '#FBBF24', wx: '#A87DC4', eu: '#5B9BD5' };
+    const COL = { avg: '#E6EDF3', build: '#14D3A9', fpc: '#FBBF24', wx: '#E07B39', eu: '#5B9BD5' };
     const bar = $('pp-fanm-pick');
     if (bar) { bar.innerHTML = keys.map(k => `<button type="button" class="pp-chip${k === FANM ? ' on' : ''}" data-fm="${k}">${NAMES[k]}</button>`).join('');
       bar.querySelectorAll('[data-fm]').forEach(b => b.addEventListener('click', () => { FANM = b.dataset.fm; renderFanM(S.last); })); }
@@ -1641,7 +1671,7 @@
       const D = j && j.tech && j.tech[t] && j.tech[t][c] && j.tech[t][c][VSH]; if (!D) return;
       const ys = Object.keys(D).sort(), n2 = v => v == null ? '–' : fr ? f2(v).replace('.', ',') : f2(v);
       const M = [['step', fr ? 'Tendance de capacité' : 'Capacity trend', '#14D3A9'], ['fpc', fr ? 'Forme forward' : 'Forward shape', '#FBBF24'],
-        ['weather', fr ? 'Simulation météo' : 'Weather simulation', '#A87DC4'], ['regional', fr ? 'Modèle européen' : 'European price model', '#5B9BD5'], ['avg4', fr ? 'Moyenne des 4' : 'Average of 4', '#8A99A6']];
+        ['weather', fr ? 'Simulation météo' : 'Weather simulation', '#E07B39'], ['regional', fr ? 'Modèle européen' : 'European price model', '#5B9BD5'], ['avg4', fr ? 'Moyenne des 4' : 'Average of 4', '#8A99A6']];
       const lbl = y => y + (D[y].partial ? (fr ? ' (à date)' : ' (to date)') : '');
       const ds = [{ label: fr ? 'Réalisé' : 'Realised', data: ys.map(y => D[y].actual), borderColor: '#E6EDF3', backgroundColor: '#E6EDF3', borderWidth: 3.2, pointRadius: 4, fill: false, tension: 0 }]
         .concat(M.map(([k, n, col]) => ({ label: n, data: ys.map(y => D[y][k]), borderColor: col, backgroundColor: col, borderWidth: k === 'avg4' ? 2.4 : 1.6, borderDash: k === 'avg4' ? [5, 4] : [], pointRadius: 2.5, fill: false, tension: 0 })));
@@ -1721,7 +1751,7 @@
     const atA = a => mc ? qtl(mc.Us, a) - o.refW * o.add / 100 - o.imb + o.goW - o.margin : null;
     const meth = [['Past discount', o.ppaPct, null, null, '#B8C9D9'], ['Capacity trend', o.ppaBuild, atA(0.10), atA(0.50), '#14D3A9'],
       ['Forward shape', o.ppaFpc, m3c ? o.ppaFpc + m3c.premium - m3c.refW * m3c.sigC * 1.2816 : null, m3c ? o.ppaFpc + m3c.premium : null, '#FBBF24'],
-      ['Weather simulation', o.ppaWx, o.m4 ? quantFloat(o.m4.U, 0.10) - o.m4.refW * o.add / 100 - o.imb + o.goW - o.margin : null, o.m4 ? quantFloat(o.m4.U, 0.50) - o.m4.refW * o.add / 100 - o.imb + o.goW - o.margin : null, '#A87DC4'],
+      ['Weather simulation', o.ppaWx, o.m4 ? quantFloat(o.m4.U, 0.10) - o.m4.refW * o.add / 100 - o.imb + o.goW - o.margin : null, o.m4 ? quantFloat(o.m4.U, 0.50) - o.m4.refW * o.add / 100 - o.imb + o.goW - o.margin : null, '#E07B39'],
       // the European model carries the capacity trend's risk: its range is that Monte Carlo's, moved to its own value
       ['European price model', o.ppaEu, o.eu && mc ? atA(0.10) + o.euFair - o.fair : null, o.eu && mc ? atA(0.50) + o.euFair - o.fair : null, '#5B9BD5']].filter(x => x[1] != null);
     $('pp-cmp-kpis').innerHTML = meth.map(([l, v, lo, hi]) => _fuelKpi(l, f2(v), '€/MWh', lo != null ? `${f2(lo)} – ${f2(hi)} at 10–50 % risk` : 'risks entered by hand')).join('') +
@@ -1736,7 +1766,7 @@
       { label: 'Past discount', data: o.years.map((r, i) => +(r.fwd * (1 - (o.sdPctY ? o.sdPctY[i] : o.sdCh))).toFixed(2)), backgroundColor: '#B8C9D9AA', borderRadius: 3 },
       { label: 'Capacity trend', data: o.years.map(r => +r.cp.toFixed(2)), backgroundColor: '#14D3A9AA', borderRadius: 3 },
       ...(m3c ? [{ label: 'Forward shape', data: m3c.fwd.map(r => +r.capture.toFixed(2)), backgroundColor: '#FBBF24AA', borderRadius: 3 }] : []),
-      ...(o.m4 ? [{ label: 'Weather simulation', data: o.m4.years.map(r => +r.capture.toFixed(2)), backgroundColor: '#A87DC4AA', borderRadius: 3 }] : []),
+      ...(o.m4 ? [{ label: 'Weather simulation', data: o.m4.years.map(r => +r.capture.toFixed(2)), backgroundColor: '#E07B39AA', borderRadius: 3 }] : []),
       ...(o.eu ? [{ label: 'European price model', data: o.years.map((r, i) => +(r.fwd * o.eu[i].capture).toFixed(2)), backgroundColor: '#5B9BD5AA', borderRadius: 3 }] : []),
     ] }, options: _fuelOpts({ plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 8 } } }, scales: { x: Object.assign(_fuelXAxis(), { grid: { display: false } }), y: _fuelAxis('€/MWh', { beginAtZero: true }) } }) }, 'ppa-methods-years');
     // Cannibalisation by method: the capture rate measured on the past years, then what each method projects for the
@@ -1753,7 +1783,7 @@
         line('Past discount', o.years.map((r, i) => 1 - (o.sdPctY ? o.sdPctY[i] : o.sdCh)), '#B8C9D9', { borderDash: [5, 4], borderWidth: 1.6 }),
         line('Capacity trend', o.years.map(r => r.cp / r.fwd), '#14D3A9', { borderWidth: 3 }),
         ...(m3c ? [line('Forward shape', m3c.fwd.map((r, i) => r.capture / o.years[i].fwd), '#FBBF24')] : []),
-        ...(o.m4 ? [line('Weather simulation', o.m4.years.map((r, i) => r.capture / o.years[i].fwd), '#A87DC4')] : []),
+        ...(o.m4 ? [line('Weather simulation', o.m4.years.map((r, i) => r.capture / o.years[i].fwd), '#E07B39')] : []),
         ...(o.eu ? [line('European price model', o.eu.map(e => e.capture), '#5B9BD5')] : []),
       ];
       const sub = $('pp-cmp-cannib-sub');
@@ -1789,7 +1819,7 @@
   function renderFpc(o) {
     const m3 = o.m3, sec = $('hs-pp-fpc'); if (!sec) return;
     if (!m3) { $('pp-fpc-note').textContent = 'Not enough hourly history for the years used.'; return; }
-    const MO = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], cols = ['#7FC8F8', '#FBBF24', '#A87DC4', '#14D3A9', '#ED6965'];
+    const MO = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], cols = ['#7FC8F8', '#FBBF24', '#E07B39', '#14D3A9', '#ED6965'];
     _fuelChart('pp-fpc-curve', { type: 'line', data: { labels: MO, datasets: m3.fwd.map((r, i) => ({ label: 'FPC ' + r.y + ' · Cal ' + f2(r.cal), data: r.months.map(v => v == null ? null : +v.toFixed(1)), borderColor: cols[i % 5], borderWidth: 2, pointRadius: 3, fill: false })) },
       options: _fuelOpts({ plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 8 } } }, scales: { x: _fuelXAxis(), y: _fuelAxis('€/MWh, monthly average') } }) }, 'ppa-fpc-monthly');
     const W = m3.week, mx = Math.max(...W.map(p => p.prod)) || 1;
@@ -2125,5 +2155,5 @@ ${FRDOC() ? `<p>RTE éCO2mix (production nationale, 15 min) · prix day-ahead EN
     return o.years.map((r, i) => { const c = o.gen[i].capture, b = B && B[String(r.y)], k = b && b.p50 ? c / b.p50 : null;
       return { y: r.y, fwd: r.fwd, capture: c, m0: r.fwd * c, p10: k ? r.fwd * b.p10 * k : null, p90: k ? r.fwd * b.p90 * k : null, w: r.wt }; });
   }
-  window.PKPpa = { compute: () => compute(), state: S, run, avg4Of, m0Years };
+  window.PKPpa = { compute: () => compute(), state: S, run, avg4Of, m0Years, last: () => S.last };
 })();
