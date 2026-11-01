@@ -334,6 +334,46 @@ _muReg({
     host.innerHTML = _muCTable(rows, cc === 'UK' ? '£/MWh' : '€/MWh', 'Baseload. ');
   },
 });
+// ── capture rates across Europe, year by year (note 68): data/history/country_capture.json (Energy-Charts) ──
+const MU_CEU = [['FR', 'France', '#7FC8F8'], ['DE', 'Germany', '#F4B740'], ['ES', 'Spain', '#ED6965'], ['NL', 'Netherlands', '#B48CF2'], ['BE', 'Belgium', '#C4A57B'], ['UK', 'Great Britain', '#94D2BD']];
+const _muCeuName = (c, n) => _muT({ FR: 'France', DE: 'Allemagne', ES: 'Espagne', NL: 'Pays-Bas', BE: 'Belgique', UK: 'Grande-Bretagne' }[c] || n, n);
+_muReg({
+  id: 'ren-capture-europe', title: 'Capture rate by country, per year', category: 'renewables', page: 'renewables', pageCanvas: 'ceu-solar', source: 'Energy-Charts',
+  desc: 'Solar or wind capture rate (capture price ÷ baseload) of France, Germany, Spain, the Netherlands, Belgium and Great Britain, each calendar year since 2016.',
+  params: [{ key: 'tech', label: 'Technology', inTitle: true, options: [['solar', 'Solar'], ['wind', 'Wind']] }, { key: 'conv', label: 'Convention', options: [['all', 'All hours'], ['pos', 'Hours with price > 0']] }], defaults: { tech: 'solar', conv: 'all' },
+  async draw(cid, p) {
+    const j = await _muGet('ccap', 'history/country_capture.json'), C = j && j.countries;
+    if (!C) { noDataMsg(cid, 'Capture rates not available', ''); return null; }
+    const key = (p.tech === 'wind' ? 'windRate' : 'solarRate') + (p.conv === 'pos' ? 'Pos' : '');
+    const years = [...new Set(Object.values(C).flatMap(c => Object.keys(c.years || {})))].sort();
+    const cur = years[years.length - 1];
+    _fuelChart(cid, { type: 'line', data: { labels: years.map(y => y === cur && !Object.values(C).every(c => c.years[y] && c.years[y].complete) ? y + '*' : y), datasets: MU_CEU.filter(([c]) => C[c]).map(([c, n, col]) => ({
+      label: _muCeuName(c, n), data: years.map(y => { const r = C[c].years[y]; return r && r[key] != null ? Math.round(r[key] * 1000) / 10 : null; }), borderColor: col, backgroundColor: col, borderWidth: c === 'FR' ? 2.6 : 1.6, pointRadius: 2, tension: 0, spanGaps: false })) },
+      options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('% of baseload') }, plugins: { legend: _muLegend() } }) }, 'capture-europe-' + p.tech);
+    return { sub: years[0] + '–' + cur };
+  },
+});
+window.PKCeu = {
+  async draw() {
+    const conv = (document.getElementById('ceu-conv') || {}).value || 'all';
+    ['solar', 'wind'].forEach(t => PKW.draw('ren-capture-europe', 'ceu-' + t, { tech: t, conv }));
+    const j = await _muGet('ccap', 'history/country_capture.json'), C = j && j.countries, tb = document.getElementById('ceu-table'); if (!C || !tb) return;
+    const y = [...new Set(Object.values(C).flatMap(c => Object.keys(c.years || {})))].sort().pop(), sfx = conv === 'pos' ? 'Pos' : '';
+    const f = (v, d) => v == null || !isFinite(v) ? '–' : v.toFixed(d);
+    const rows = MU_CEU.filter(([c]) => C[c] && C[c].years[y]).map(([c, n]) => { const r = C[c].years[y], u = c === 'UK' ? '£' : '€';
+      return `<tr><td class="l" style="text-align:left;font-weight:600">${_muCeuName(c, n)}</td><td>${f(r.base, 1)} ${u}</td><td>${f(r['solarRate' + sfx] * 100, 1)} %</td><td>${f(r['solarRate' + sfx] * r.base, 1)} ${u}</td><td>${f(r['windRate' + sfx] * 100, 1)} %</td><td>${f(r['windRate' + sfx] * r.base, 1)} ${u}</td></tr>`; });
+    tb.innerHTML = `<thead><tr><th style="text-align:left">${_muT('Pays', 'Country')}</th><th>${_muT('Base', 'Baseload')}</th><th>${_muT('Taux solaire', 'Solar rate')}</th><th>${_muT('Prix capté solaire', 'Solar capture price')}</th><th>${_muT('Taux éolien', 'Wind rate')}</th><th>${_muT('Prix capté éolien', 'Wind capture price')}</th></tr></thead><tbody>${rows.join('')}</tbody>`;
+    const t = document.getElementById('ceu-table-title'); if (t) t.textContent = _muT(`${y} à date`, `${y} to date`);
+    const nt = document.getElementById('ceu-note'); if (nt) nt.textContent = _muT('Taux de capture = prix moyen pondéré par la production ÷ prix base de l’année, prix day-ahead et production publics d’Energy-Charts (Fraunhofer ISE). « Heures à prix > 0 » : les heures à prix négatif ne comptent pas, comme pour un parc qui s’arrête. Grande-Bretagne en £/MWh. Pays-Bas : Energy-Charts ne couvre qu’une partie du solaire (pas les toitures), le taux solaire y est indicatif. * année en cours, à date.',
+      'Capture rate = production-weighted average price ÷ the year’s baseload, from Energy-Charts (Fraunhofer ISE) public day-ahead prices and production. “Hours with price > 0”: negative hours left out, as for a park that stops. Great Britain in £/MWh. Netherlands: Energy-Charts covers only part of the solar fleet (not rooftops), so its solar rate is indicative. * current year, to date.');
+  },
+};
+(function () {
+  const go = () => { const c = document.getElementById('ceu-solar'), sel = document.getElementById('ceu-conv'); if (!c || !window.PKW) return;
+    if (sel) sel.addEventListener('change', () => PKCeu.draw());
+    const io = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) { io.disconnect(); PKCeu.draw(); } }, { rootMargin: '200px' }); io.observe(c); };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go); else go();
+})();
 // on Prices › Forward: the table drawn when it comes into view, redrawn when the market changes
 (function () {
   const go = () => { const h = document.getElementById('pf-fwd-host'), sel = document.getElementById('pf-fwd-mkt'); if (!h || !sel || !window.PKW) return;

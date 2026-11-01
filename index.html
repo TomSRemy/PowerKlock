@@ -3485,6 +3485,27 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
 <div class="fuel-note">CRE method: mean of the day-ahead prices ≥ 0 (negative steps left out), weighted at the market time step (15 min since May 2026, hourly before) by the national wind or solar production; base M0 = plain mean of the prices ≥ 0. Source: CRE open data, <a href="https://www.cre.fr/documents/open-data/donnees-necessaires-au-calcul-des-complements-de-remuneration.html" target="_blank" rel="noopener" style="color:var(--accent)">données nécessaires au calcul des compléments de rémunération</a>.</div>
         </div>
       </div>
+      <div class="hist-section hist-section-strong" id="hs-renewables-eu">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-renewables-eu')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>Capture rates across Europe<span class="pk-hs-meta">six countries, by year since 2016 · Energy-Charts</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-renewables-eu">
+          <div class="pk-sec-controls"><span class="fuel-toolbar-lbl">Convention</span><select class="country-select" id="ceu-conv" aria-label="Capture convention"><option value="all">All hours</option><option value="pos">Hours with price &gt; 0</option></select></div>
+          <div class="fuel-grid-2">
+            <div class="chart-container fuel-card">
+              <div class="fuel-card-head"><div><div class="table-title">Solar capture rate by country</div><div class="fuel-card-sub">Capture price ÷ baseload, per calendar year (current year to date)</div></div><span class="source-badge">Energy-Charts</span></div>
+              <div style="position:relative;height:300px"><canvas id="ceu-solar" style="width:100%;height:300px"></canvas></div>
+            </div>
+            <div class="chart-container fuel-card">
+              <div class="fuel-card-head"><div><div class="table-title">Wind capture rate by country</div><div class="fuel-card-sub">Capture price ÷ baseload, per calendar year (current year to date)</div></div><span class="source-badge">Energy-Charts</span></div>
+              <div style="position:relative;height:300px"><canvas id="ceu-wind" style="width:100%;height:300px"></canvas></div>
+            </div>
+          </div>
+          <div class="table-wrap" style="margin-top:14px"><div class="table-header"><span class="table-title" id="ceu-table-title">This year so far</span><span class="source-badge">Energy-Charts</span></div><table class="fuel-table" id="ceu-table"></table></div>
+          <div class="fuel-note" id="ceu-note"></div>
+        </div>
+      </div>
       <div class="hist-section hist-section-strong" id="hs-renewables-cannib">
         <div class="hist-section-header open" onclick="toggleStrongSection('hs-renewables-cannib')">
           <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>Cannibalisation<span class="pk-hs-meta">Capture rate history, projection, link with installed capacity, rolling capture</span></div>

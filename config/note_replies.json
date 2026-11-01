@@ -690,5 +690,9 @@
  "109": {
   "status": "done",
   "reply": "Ajouté, comme dans le Bilan de RTE : une section « Nucléaire et renouvelables · facteurs de charge » avec, mois par mois, le facteur de charge du nucléaire, de l’éolien et du solaire contre l’année précédente (production ÷ capacité installée × heures ; capacité interpolée entre deux fins d’année ; pour l’année en cours, la capacité de fin d’année précédente, ce qui surestime un peu l’éolien et le solaire, c’est écrit sous le graphique). Plus les heures négatives par mois (note 108). Pour l’harmonisation des tuiles, voir la maquette de la note 107."
+ },
+ "68": {
+  "status": "done",
+  "reply": "Fait : nouvel onglet « Europe » sur la page Capture : taux de capture du solaire et de l’éolien de la France, l’Allemagne, l’Espagne, les Pays-Bas, la Belgique et la Grande-Bretagne, chaque année depuis 2016 (deux graphiques), avec le choix de la convention (toutes les heures ou heures à prix > 0) et un tableau de l’année en cours (prix base, taux et prix capté par pays). Source Energy-Charts. Le Quotidien par pays demanderait la production quart d’heure de chaque pays, que nous n’avons pas encore pour tous : à voir avec la note 72."
  }
 }

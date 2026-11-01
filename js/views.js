@@ -13,7 +13,7 @@
     'prices:forward': [['Board', ['hs-prfwd-read', 'hs-prfwd-board']], ['Comparison', ['hs-prfwd-compare']], ['Calendar contracts', ['hs-cal-contracts']]],
     // Spreads: the battery spreads TB1–TB4 first, then the intraday spread, on one page without tabs (note 88)
     'prices:spread': [],
-    renewables: [['Daily', ['hs-renewables-0']], ['Historical', ['hs-renewables-1']], ['M0', ['hs-renewables-2']], ['Cannibalisation', ['hs-renewables-cannib']], ['Forward capture', ['hs-renewables-capfwd']]],
+    renewables: [['Daily', ['hs-renewables-0']], ['Historical', ['hs-renewables-1']], ['M0', ['hs-renewables-2']], ['Cannibalisation', ['hs-renewables-cannib']], ['Forward capture', ['hs-renewables-capfwd']], ['Europe', ['hs-renewables-eu']]],
     // outages live on Outages & REMIT only (notes 71, 98, 99): Nuclear keeps availability and output, and a link
     nuclear: [['Availability', ['hs-nuclear-0', 'hs-nuclear-1']]],
     capacity: [['By year', ['hs-capacity-0']], ['Comparison', ['hs-capacity-1']]],
