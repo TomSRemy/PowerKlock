@@ -570,5 +570,9 @@
  "88": {
   "status": "done",
   "reply": "Fait : la page Spreads n’a plus d’onglets ; elle commence par l’arbitrage batterie TB1, TB2, TB3 et TB4 (graphique et chiffres clés), puis le spread journalier day-ahead, dans les sections repliables du site comme Day-ahead."
+ },
+ "65": {
+  "status": "done",
+  "reply": "Fait : l’onglet Quotidien a maintenant un graphique, le clean spark spread et le clean dark spread base de chaque zone pour le jour de livraison, au-dessus du tableau."
  }
 }

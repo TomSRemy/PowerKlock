@@ -3755,6 +3755,10 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
         </div>
         <div class="hist-section-body open" id="hs-body-spark-0">
 <div class="kpi-strip fuel-kpis" id="spark-kpis"></div>
+<div class="chart-container fuel-card" style="margin-bottom:14px">
+  <div class="fuel-card-head"><div><div class="table-title">Clean spark and dark spreads by zone</div><div class="fuel-card-sub" id="spark-bars-sub">Baseload, this delivery day (€/MWh)</div></div><span class="source-badge">ENTSO-E · Market data</span></div>
+  <div style="position:relative;height:280px"><canvas id="spark-bars" style="width:100%;height:280px"></canvas></div>
+</div>
 <div class="table-wrap" style="margin-bottom:14px">
         <div class="table-header"><span class="table-title" id="spark-table-title">Spreads by zone</span><span class="source-badge" id="spark-refs"></span></div>
         <table class="fuel-table"><thead><tr><th style="text-align:left">Zone</th><th>Base</th><th>Peak</th><th title="TTF ÷ 49.1 % (CCGT efficiency)">Gas cost (CCGT 49.1 %)</th><th>CO₂ cost (gas)</th><th>CSS base</th><th>CSS peak</th><th>Coal + CO₂</th><th>CDS base</th><th style="text-align:left">Most profitable thermal</th></tr></thead><tbody id="spark-tbody"><tr class="loading-row"><td colspan="10"><span class="spinner"></span>Loading…</td></tr></tbody></table>
