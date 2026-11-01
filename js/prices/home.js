@@ -157,6 +157,8 @@
     const avg = loaded.reduce((s, z) => s + z.today, 0) / loaded.length;
     const fr = loaded.find(z => z.code === 'FR');
 
+    // French by default: the sentence is cut by the coloured figures, the page translation could not match it
+    const LG = (f, e) => (!window.PKI18n || PKI18n.lang !== 'en') ? f : e;
     // J-1 movement of the panel average (if available)
     let panelMove = '';
     const withYday = loaded.filter(z => _yday(z) != null);
@@ -167,16 +169,16 @@
       const dAvg = tAvg - yAvg;
       const sign = dAvg >= 0 ? '+' : '';
       const col = dAvg >= 0 ? '#ED6965' : '#14D3A9';
-      panelMove = ` EU panel <span style="color:${col};font-weight:600">${sign}${dAvg.toFixed(2)} €/MWh vs J-1</span>.`;
+      panelMove = ` ${LG('Panel UE', 'EU panel')} <span style="color:${col};font-weight:600">${sign}${dAvg.toFixed(2)} €/MWh vs J-1</span>.`;
     }
 
     let frPart = '';
     if (fr) {
       const gap = fr.today - cheap.today;
       if (Math.abs(gap) < 1) {
-        frPart = ` FR is among the cheapest markets.`;
+        frPart = LG(' La France est parmi les marchés les moins chers.', ` FR is among the cheapest markets.`);
       } else {
-        frPart = ` FR sits <span style="color:#FBBF24;font-weight:600">+${gap.toFixed(2)} €/MWh</span> above ${cheap.code}.`;
+        frPart = ` ${LG('La France est à', 'FR sits')} <span style="color:#FBBF24;font-weight:600">+${gap.toFixed(2)} €/MWh</span> ${LG('au-dessus de', 'above')} ${cheap.code}.`;
       }
     }
 
@@ -187,15 +189,15 @@
     const sd = Math.sqrt(loaded.reduce((s, z) => s + (z.today - avg) ** 2, 0) / loaded.length);
     const cv = Math.abs(avg) > 1 ? sd / Math.abs(avg) : 0;
     let regime;
-    if (cv > 0.5) regime = `<b>Highly fragmented European zones</b>`;
-    else if (cv > 0.3) regime = `<b>Pronounced cross-zone divergence</b>`;
-    else if (cv > 0.15) regime = `<b>Moderate cross-zone gap</b>`;
-    else regime = `<b>Tightly aligned zones</b>`;
+    if (cv > 0.5) regime = `<b>${LG('Zones européennes très fragmentées', 'Highly fragmented European zones')}</b>`;
+    else if (cv > 0.3) regime = `<b>${LG('Forte divergence entre zones', 'Pronounced cross-zone divergence')}</b>`;
+    else if (cv > 0.15) regime = `<b>${LG('Écart modéré entre zones', 'Moderate cross-zone gap')}</b>`;
+    else regime = `<b>${LG('Zones très alignées', 'Tightly aligned zones')}</b>`;
 
     host.innerHTML = `
       <div style="padding:10px 14px;font-size:11.5px;border-radius:3px;color:#FBBF24;background:rgba(251,191,36,0.08);border-left:3px solid #FBBF24;line-height:1.55">
-        <strong>◈ MARKET READ · </strong>
-        ${regime}. Cheapest <span style="color:#14D3A9;font-weight:600">${cheap.code} ${cheap.today.toFixed(2)}</span>, most expensive <span style="color:#ED6965;font-weight:600">${pricey.code} ${pricey.today.toFixed(2)}</span> · spread <span style="font-weight:600">${spread.toFixed(2)} €/MWh</span>.${panelMove}${frPart}
+        <strong>◈ ${LG('LECTURE DU MARCHÉ', 'MARKET READ')} · </strong>
+        ${regime}. ${LG('La moins chère', 'Cheapest')} <span style="color:#14D3A9;font-weight:600">${cheap.code} ${cheap.today.toFixed(2)}</span>, ${LG('la plus chère', 'most expensive')} <span style="color:#ED6965;font-weight:600">${pricey.code} ${pricey.today.toFixed(2)}</span> · ${LG('écart', 'spread')} <span style="font-weight:600">${spread.toFixed(2)} €/MWh</span>.${panelMove}${frPart}
       </div>`;
   }
 

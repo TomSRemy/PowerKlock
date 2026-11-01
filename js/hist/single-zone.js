@@ -396,28 +396,31 @@ function _buildAnalystBanner(mode, p) {
     const cheapStr  = cheap  ? `${W(cheap.z + ' ' + cheap.avg.toFixed(2) + ' €/MWh')}`  : '--';
     const priceyStr = pricey ? `${W(pricey.z + ' ' + pricey.avg.toFixed(2) + ' €/MWh')}` : '--';
     const spread    = (cheap && pricey) ? (pricey.avg - cheap.avg) : null;
-    line1 = `${W(zoneCount)} zones · avg ${W(loadedAvg != null ? loadedAvg.toFixed(2) + ' €/MWh' : '--')}. Cheapest ${cheapStr}, most expensive ${priceyStr}` +
-      (spread != null ? `. Spread ${A(spread.toFixed(2) + ' €/MWh')}.` : '.');
+    // French by default: the sentence is cut by the highlighted figures, so the page translation could not match it
+    const L = (fr, en) => (!window.PKI18n || PKI18n.lang !== 'en') ? fr : en;
+    line1 = L(`${W(zoneCount)} zones · moy. ${W(loadedAvg != null ? loadedAvg.toFixed(2) + ' €/MWh' : '--')}. La moins chère ${cheapStr}, la plus chère ${priceyStr}`,
+      `${W(zoneCount)} zones · avg ${W(loadedAvg != null ? loadedAvg.toFixed(2) + ' €/MWh' : '--')}. Cheapest ${cheapStr}, most expensive ${priceyStr}`) +
+      (spread != null ? `. ${L('Écart', 'Spread')} ${A(spread.toFixed(2) + ' €/MWh')}.` : '.');
     // Verdict depends on spread magnitude and FR positioning
     let read;
     if (spread != null && cheap && cheap.avg > 0) {
       const spreadPct = (spread / cheap.avg) * 100;
       const frPart = (frGap != null && frGap > 0)
-        ? ` FR sits ${A('+' + frGap.toFixed(2) + ' €/MWh')} above ${cheap.z}.`
+        ? L(` La France est ${A('+' + frGap.toFixed(2) + ' €/MWh')} au-dessus de ${cheap.z}.`, ` FR sits ${A('+' + frGap.toFixed(2) + ' €/MWh')} above ${cheap.z}.`)
         : (frGap != null && frGap <= 0)
-          ? ` FR is the cheapest market.`
+          ? L(' La France est le marché le moins cher.', ` FR is the cheapest market.`)
           : '';
       if (spreadPct > 100) {
-        read = `<b>Highly fragmented zones</b>. Spread exceeds 100% of the cheapest level.${frPart}`;
+        read = L(`<b>Zones très fragmentées</b>. L'écart dépasse 100 % du prix le plus bas.`, `<b>Highly fragmented zones</b>. Spread exceeds 100% of the cheapest level.`) + frPart;
       } else if (spreadPct > 40) {
-        read = `<b>Pronounced cross-zone divergence</b>. Arbitrage potential significant.${frPart}`;
+        read = L(`<b>Forte divergence entre zones</b>. Potentiel d'arbitrage important.`, `<b>Pronounced cross-zone divergence</b>. Arbitrage potential significant.`) + frPart;
       } else if (spreadPct > 15) {
-        read = `<b>Moderate cross-zone gap</b>. Zones diverge but stay within a common band.${frPart}`;
+        read = L(`<b>Écart modéré entre zones</b>. Les zones divergent mais restent dans une même bande.`, `<b>Moderate cross-zone gap</b>. Zones diverge but stay within a common band.`) + frPart;
       } else {
-        read = `<b>Tightly aligned zones</b>. European prices move close together.${frPart}`;
+        read = L(`<b>Zones très alignées</b>. Les prix européens évoluent ensemble.`, `<b>Tightly aligned zones</b>. European prices move close together.`) + frPart;
       }
     } else {
-      read = `<b>Insufficient data</b>. Add zones to enable comparison.`;
+      read = L(`<b>Données insuffisantes</b>. Ajoutez des zones pour comparer.`, `<b>Insufficient data</b>. Add zones to enable comparison.`);
     }
     verdict = `${VR_OPEN}${read}${VR_CLOSE}`;
   }
