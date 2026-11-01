@@ -4254,10 +4254,10 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
       <div class="pr-tabs-sticky">
         <div class="pr-tabs-bar">
           <div class="pr-breadcrumb"><span class="pr-breadcrumb-parent pk-bc-static">France</span><span class="pr-breadcrumb-sep">›</span><span class="pr-breadcrumb-current">Morning brief</span></div>
-          <div class="pr-tabs-bar-filters"><button class="pk-btn-ghost" type="button" onclick="MRN.cache = {}; renderMorning()">↻ Refresh</button></div>
+          <div class="pr-tabs-bar-filters"><button type="button" class="mrn-xbtn" id="mrn-xbtn" aria-pressed="false" title="Show a line under each figure and chart on what it is and why it moves">ⓘ Explain</button><button class="pk-btn-ghost" type="button" onclick="MRN.cache = {}; renderMorning()">↻ Refresh</button></div>
         </div>
       </div>
-      <div class="mrn2-hdr mrn3-hdr"><div class="mrn-hdr-l"><h1 id="mrn-date">Today</h1><p class="mrn-promise">The morning brief on electricity markets: spot and forwards in France and Europe, fundamentals, PPA and M0 tools. Free, from public sources checked every day.</p></div><span class="mrn-xbtn-w"><button type="button" class="mrn-xbtn" id="mrn-xbtn" aria-pressed="false" title="Show a line under each figure on what it is and why it moves">ⓘ Explain</button><span class="mrn2-upd" id="mrn-upd"></span></span></div>
+      <div class="mrn2-hdr mrn3-hdr"><div class="mrn-hdr-l"><h1 id="mrn-date">Today</h1><p class="mrn-promise">The morning brief on electricity markets: spot and forwards in France and Europe, fundamentals, PPA and M0 tools. Free, from public sources checked every day.</p></div><span class="mrn-xbtn-w"><span class="mrn2-upd" id="mrn-upd"></span></span></div>
       <div class="mrn-first" id="mrn-first" hidden></div>
       <!-- Quick look (default): one screen, no scrolling -->
       <div class="mrn2" id="mrn-quick">

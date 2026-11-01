@@ -873,7 +873,42 @@ const MRN_EX = {
   go: ['Le prix d’un certificat qui prouve qu’un MWh est renouvelable. Un revenu en plus pour les parcs, un coût pour ceux qui veulent de l’électricité verte.', 'The price of a certificate proving a MWh is renewable. Extra income for parks, a cost for green buyers.'],
   idx: ['Le spot attendu sur 4 semaines d’après la météo, le nucléaire et le gaz. « Haussier » : plus cher que le spot des 7 derniers jours. La ligne du mois le compare au forward : en dessous, les fondamentaux disent moins cher que le marché.', 'The expected spot over 4 weeks from the weather, nuclear and gas. “Bullish”: dearer than the spot of the last 7 days. The month line compares it with the forward: below it, the fundamentals say cheaper than the market.'],
 };
+// Explain on the Expert charts: what the chart shows and how to read it (note 78)
+const MRN_EXC = {
+  'mrn-sptm': ['Le prix spot moyen de chaque mois sur un an : base (toutes les heures) et pointe (8 h – 20 h).', 'The average spot price of each month over a year: baseload (every hour) and peak (8:00–20:00).'],
+  'mrn-sp30': ['Le prix spot de chaque jour du dernier mois. Les creux suivent le vent, le soleil et les week-ends ; les pics, le froid et le gaz.', 'The spot price of each day of the last month. Dips follow wind, sun and weekends; spikes follow cold spells and gas.'],
+  'mrn-fwdp': ['Le prix, jour après jour, des contrats à terme (mois, trimestres, années) : ce que le marché paie aujourd’hui pour une livraison future.', 'The price, day after day, of forward contracts (months, quarters, years): what the market pays today for future delivery.'],
+  'mrn-ttfc': ['La même chose pour le gaz TTF. Le gaz fixe souvent le prix de l’électricité, les deux courbes bougent ensemble.', 'The same for TTF gas. Gas often sets the power price, so the two curves move together.'],
+  'mrn-drv': ['Le Cal+1 France face à ce qui le fait bouger : le gaz de l’an prochain, le CO₂ et le Cal+1 allemand.', 'France Cal+1 against what moves it: next year’s gas, CO₂ and the German Cal+1.'],
+  'mrn-wxt': ['La température prévue contre la normale du même jour. Plus froid que la normale : plus de chauffage électrique, donc plus de consommation et des prix plus hauts en hiver.', 'The forecast temperature against the normal for the same day. Colder than normal means more electric heating, so more demand and higher prices in winter.'],
+  'mrn-fload': ['La consommation française contre la moyenne 2016–2025 des mêmes jours. Au-dessus : la demande pousse les prix.', 'French consumption against the 2016–2025 average of the same days. Above it, demand pushes prices up.'],
+  'mrn-nucy': ['La production nucléaire de chaque mois, année contre année. C’est la première source française : un mois faible se voit sur les prix.', 'Nuclear output month by month, year against year. It is France’s first source: a weak month shows in prices.'],
+  'mrn-fremit': ['La puissance nucléaire indisponible (arrêts annoncés par EDF), réalisée et prévue. Plus elle est haute, plus la France importe et plus le prix monte.', 'Unavailable nuclear capacity (outages announced by EDF), actual and planned. The higher it is, the more France imports and the higher the price.'],
+  'mrn-wxw': ['Le vent prévu contre la normale. Beaucoup de vent fait baisser le prix, parfois sous zéro.', 'The forecast wind against the normal. Plenty of wind lowers the price, sometimes below zero.'],
+  'mrn-wxs': ['Le soleil prévu contre la normale. Le solaire fait baisser le prix en milieu de journée.', 'The forecast sunshine against the normal. Solar lowers the price around midday.'],
+  'mrn-hyd': ['L’énergie stockée dans les barrages français contre les années passées. Des réservoirs bas laissent moins d’eau à turbiner l’hiver.', 'The energy stored in French dams against past years. Low reservoirs leave less water to run in winter.'],
+  'mrn-wxp': ['Les pluies prévues contre la normale : elles remplissent les barrages et soutiennent l’hydraulique.', 'The forecast rain against the normal: it fills the dams and supports hydro output.'],
+  'mrn-gsy': ['Le remplissage des stocks de gaz européens, année contre année. Des stocks bas avant l’hiver font monter le gaz, donc l’électricité.', 'The filling of European gas storage, year against year. Low stocks before winter push gas, and so power, up.'],
+  'mrn-coal': ['Le charbon et le pétrole. Ils pèsent peu en France, mais le charbon compte en Allemagne et le pétrole entraîne le gaz.', 'Coal and oil. They weigh little in France, but coal matters in Germany and oil pulls gas along.'],
+  'mrn-cr': ['Le taux de capture du solaire : le prix moyen touché par un parc solaire divisé par le prix base. Sous 100 %, le solaire vend moins cher que la moyenne (cannibalisation).', 'The solar capture rate: the average price earned by a solar park divided by the baseload price. Below 100 %, solar sells below average (cannibalisation).'],
+  'mrn-creg': ['Le taux de capture du solaire région par région, avec les profils de production régionaux.', 'The solar capture rate region by region, from regional production profiles.'],
+  'mrn-crw': ['Le même taux de capture pour l’éolien.', 'The same capture rate for wind.'],
+  'mrn-cregw': ['Le taux de capture de l’éolien région par région.', 'The wind capture rate region by region.'],
+  'mrn-go': ['Le prix des garanties d’origine (certificats verts) par année de production.', 'The price of guarantees of origin (green certificates) by production year.'],
+  'mrn-prod': ['La production française de la journée par source, quart d’heure par quart d’heure, avec la consommation.', 'Today’s French production by source, quarter-hour by quarter-hour, with consumption.'],
+  'mrn-sysm': ['La production de chaque mois par source depuis 2015, avec la consommation (ligne).', 'Each month’s production by source since 2015, with consumption (line).'],
+  'mrn-fc': ['Les prévisions d’éolien, de solaire et de consommation des prochains jours.', 'The wind, solar and consumption forecasts for the next days.'],
+};
+function _mrnExplainCharts() {
+  Object.entries(MRN_EXC).forEach(([id, x]) => {
+    const c = document.getElementById(id), card = c && c.closest('.chart-container, .fuel-card'); if (!card) return;
+    let p = card.querySelector(':scope > p.mrn-x');
+    if (!p) { p = document.createElement('p'); p.className = 'mrn-x'; const h = card.querySelector('.fuel-card-head'); if (h) h.after(p); else card.prepend(p); }
+    p.textContent = _mT(x[0], x[1]);
+  });
+}
 function _mrnExplain(on) {
+  _mrnExplainCharts();
   const b = document.getElementById('mrn-xbtn');
   if (on == null) { try { on = localStorage.getItem('pk-explain') === '1'; } catch (_) { on = false; } }
   document.body.classList.toggle('mrn-explain', !!on);

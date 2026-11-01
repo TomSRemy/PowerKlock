@@ -598,5 +598,9 @@
  "96": {
   "status": "done",
   "reply": "Corrigé : le fil d’Ariane affichait « Renouvelables › Renouvelables » au lieu du nom de la page (la comparaison se faisait avant la traduction). Il affiche maintenant « Renouvelables › Capture & cannibalisation » (ou « Contrat M0 »), et la correction vaut pour toutes les pages dans le même cas."
+ },
+ "78": {
+  "status": "done",
+  "reply": "Fait : le bouton « Expliquer » est maintenant toujours visible dans la barre du haut, juste à gauche de Refresh. Activé, il affiche aussi sous chaque graphique de la vue Expert (Fondamentaux compris) une ligne qui dit ce que montre le graphique et comment le lire, en plus des lignes sous les tuiles."
  }
 }
