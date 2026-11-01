@@ -59,6 +59,8 @@
     const k = tech === 'solar' ? 's' : 'w';
     return { tech, own: false, name: `national ${tech} profile`, get: d => { const y = HOURLY[+d.slice(0, 4)]; const r = y && y[d]; return r && r[k] ? r[k] : null; } };
   }
+  // the stop threshold of the pricer (0 by default: the park stops strictly below 0 €/MWh, as the M0 leaves those hours out)
+  const stopT = st => st && st.stopT != null && st.stopT !== '' && isFinite(+st.stopT) ? +st.stopT : 0;
   // month by month: what the park earned on the market against the M0
   function monthly(st) {
     const P = profile(st), rows = {};
@@ -66,7 +68,7 @@
       const pr = HOURLY[y][d].p, g = P.get(d); if (!pr || !g) return;
       const ym = d.slice(0, 7), o = rows[ym] || (rows[ym] = { ym, e: 0, v: 0, eNeg: 0, days: 0 }); o.days++;
       for (let h = 0; h < 24; h++) { const x = +g[h] || 0, p = pr[h]; if (p == null || !x) continue;
-        if (p < 0) { o.eNeg += x; if (S.stop) continue; } o.e += x; o.v += x * p; }
+        if (p < stopT(st)) { o.eNeg += x; if (S.stop) continue; } o.e += x; o.v += x * p; }
     }));
     return Object.values(rows).filter(r => r.e > 0 && r.days >= 25).map(r => { const m = m0(P.tech, r.ym); return m ? Object.assign(r, { price: r.v / r.e, m0: m.v, src: m.src, ratio: r.v / r.e / m.v }) : null; }).filter(Boolean).sort((a, b) => a.ym < b.ym ? -1 : 1);
   }
@@ -125,7 +127,13 @@
     const typ = m => { const a = mean[m]; return a ? a.reduce((s, x) => s + x, 0) / a.length : 0; };
     const fc = (M0 && M0.forecast || []).filter(x => x[tech] != null).slice(0, 12).map(x => ({ v: x[tech], w: typ(+x.month.slice(5, 7)) })).filter(x => x.w > 0);
     const fcW = fc.reduce((s, x) => s + x.w, 0);
-    const L = S.level === 'fwd' && fc.length >= 6 && fcW > 0 ? fc.reduce((s, x) => s + x.v * x.w, 0) / fcW : null;
+    // 'v2': the M0 of each delivery year of the pricer's tenor = the published generator's national capture × the Cal
+    // (window.PKPpa.m0Years), the years weighted as in the pricer; the contract then prices the cannibalisation to come
+    let M0Y = null;
+    if (S.level === 'v2' && window.PKPpa && PKPpa.m0Years) { try { M0Y = await PKPpa.m0Years(); } catch (e) { M0Y = null; } }
+    const wY = M0Y ? M0Y.reduce((s, r) => s + r.w, 0) : 0;
+    const L = M0Y && wY > 0 ? M0Y.reduce((s, r) => s + r.m0 * r.w, 0) / wY
+      : (S.level === 'fwd' || S.level === 'v2') && fc.length >= 6 && fcW > 0 ? fc.reduce((s, x) => s + x.v * x.w, 0) / fcW : null;
     const sol = solve(rows, cost, L);
     const kL = sol.L / sol.mx, ab = sol.out[S.formula], sim = simulate(rows, S.formula, ab.A, ab.B, imb, S.feeMWh, feeMonthMWh, kL);
     const simAll = Object.fromEntries(['a', 'b', 'ab'].map(f => [f, simulate(rows, f, sol.out[f].A, sol.out[f].B, imb, S.feeMWh, feeMonthMWh, kL)]));
@@ -138,7 +146,9 @@
       _fuelKpi('Park vs M0', f1((sol.ratio - 1) * 100), '%', `the park earns ${f1(sol.ratio * 100)} % of the M0 (${yrs[0]}–${yrs[yrs.length - 1]}, ${P.own ? 'its own curve' : 'national profile'})`),
       _fuelKpi('Costs to cover', f2(cost), '€/MWh', `imbalance ${f2(imb)} + fees ${f2(S.feeMWh + feeMonthMWh)} + margin ${f2(S.margin)}`),
       _fuelKpi('Selfee margin, P10', sim ? f2(sim.p10) : '–', '€/MWh', sim ? `P50 ${f2(sim.p50)} · P90 ${f2(sim.p90)} · loss in ${Math.round(sim.loss * 100)} % of years` : ''),
-      _fuelKpi('M0 level priced', f2(sol.L), '€/MWh', L ? `expected from the forwards, next ${fc.length} months, weighted by output` : 'average of the months used')].join('');
+      _fuelKpi('M0 level priced', f2(sol.L), '€/MWh', M0Y ? `Cal ${M0Y[0].y}–${M0Y[M0Y.length - 1].y} × national capture of the generator (v2)` : L ? `expected from the forwards, next ${fc.length} months, weighted by output` : 'average of the months used')].join('');
+    const m0t = $('pp-cr-m0y');
+    if (m0t) m0t.innerHTML = M0Y ? `<div class="table-scroll"><table class="data-table"><thead><tr><th style="text-align:left">Year</th><th>Cal €/MWh</th><th>National capture</th><th>M0 expected</th><th>M0 P10</th><th>M0 P90</th></tr></thead><tbody>${M0Y.map(r => `<tr><td style="text-align:left">${r.y}</td><td>${f2(r.fwd)}</td><td>${f1(r.capture * 100)} %</td><td>${f2(r.m0)}</td><td>${f2(r.p10)}</td><td>${f2(r.p90)}</td></tr>`).join('')}</tbody></table></div><div class="fuel-note">M0 expected = the Cal of the year (read month by month) × the national capture rate of the technology from the scenario generator (the published method), stopping below ${f2(stopT(st))} €/MWh; P10 and P90 from its full Monte Carlo. The contract's A and B are set at the tenor's average.</div>` : '';
     // the three formulas side by side
     const fx = f => { const s = simAll[f]; return `<tr${f === S.formula ? ' style="font-weight:600"' : ''}><td style="text-align:left">${f === 'a' ? 'A % × M0' : f === 'b' ? 'M0 − B' : 'A % × M0 − B'}</td><td>${fm(f)}</td><td>${s ? f2(s.p10) : '–'}</td><td>${s ? f2(s.p50) : '–'}</td><td>${s ? f2(s.p90) : '–'}</td><td>${s ? f2(s.p90 - s.p10) : '–'}</td><td>${s ? Math.round(s.loss * 100) + ' %' : '–'}</td></tr>`; };
     host.innerHTML = `<div class="fuel-grid-2"><div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">The three formulas, same expected margin</div><div class="fuel-card-sub">Selfee margin per MWh in a contract year · 4,000 years drawn month by month from ${esc(yrs.join(', '))}, scaled to the M0 level priced</div></div></div>
@@ -171,7 +181,7 @@
     sel('pp-cr-formula', 'formula'); sel('pp-cr-years', 'years'); sel('pp-cr-level', 'level');
     const st = $('pp-cr-stop'); if (st) { st.checked = S.stop; st.addEventListener('change', () => { S.stop = st.checked; run(); }); }
   }
-  S.level = 'fwd'; S.volIn = null;
+  S.level = 'v2'; S.volIn = null;
   document.addEventListener('DOMContentLoaded', bind);
   document.addEventListener('pk-ppa-run', () => { if ($('hs-pp-cr') && $('hs-pp-cr').offsetParent) run(); });
   document.addEventListener('pk-view', e => { if (e.detail && e.detail.key === 'ppapricer' && /M0/.test(e.detail.label)) setTimeout(run, 50); });

@@ -319,7 +319,7 @@ class PriceModel:
                 if k.sum() >= 15:
                     v = r[k]
                     self.lists[(gi, bi)] = v
-                    mean[gi, bi], mpos[gi, bi], ppos[gi, bi] = v.mean(), (v * (v > 0)).mean(), (v > 0).mean()
+                    mean[gi, bi], mpos[gi, bi], ppos[gi, bi] = v.mean(), (v * (v > 0)).mean(), (v >= 0).mean()
         # empty bins take the nearest filled bin of the same season × time of day
         self.near = np.zeros((G, self.nb), int)
         for gi in range(G):
@@ -582,7 +582,7 @@ def regional(t, Y, train_w, pm, demand_year, capY, sims=0, levels=None, region=T
             x = residual_share(None, region, h['s'], h['w'], h['l'], h['n'], h['pump'])
             x = batteries_on(t, Y, demand_year, region, h, x)
             r = pm.draw(x, g)
-            allm.append(month_rates(month, h[t]['FR'], r, r * (r > 0), (r > 0).astype(float)))
+            allm.append(month_rates(month, h[t]['FR'], r, r * (r > 0), (r >= 0).astype(float)))
         m5 = {m: {k: float(np.mean([a[m][k] for a in allm if m in a and a[m][k] is not None])) for k in ('all', 'curt', 'paid', 'negH')} for m in range(1, 13)}
         dist = {m: {k: [float(np.percentile([a[m][k] for a in allm if m in a and a[m][k] is not None], q)) for q in (10, 50, 90)] for k in ('all', 'curt')} for m in range(1, 13)}
         # yearly value spread, production-weighted, for the band
@@ -620,9 +620,9 @@ def actual(t, Y):
             continue
         Pm, Vm = P[k], V[k]
         base = Pm.mean()
-        pos = Pm > 0
+        pos = Pm >= 0   # the park stops strictly below 0 €/MWh (Tom 1 Nov. 2026): an hour at 0 is produced and paid 0
         out[m] = {'all': float((Vm * Pm).sum() / Vm.sum() / base), 'curt': float((Vm[pos] * Pm[pos]).sum() / Vm[pos].sum() / base) if Vm[pos].sum() > 0 else None,
-                  'paid': float(Vm[pos].sum() / Vm.sum()), 'negH': int((Pm <= 0).sum()), 'base': float(base), 'mwh': float(Vm.sum()), 'days': int(k.sum())}
+                  'paid': float(Vm[pos].sum() / Vm.sum()), 'negH': int((Pm < 0).sum()), 'base': float(base), 'mwh': float(Vm.sum()), 'days': int(k.sum())}
     return out
 
 

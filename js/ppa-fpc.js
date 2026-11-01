@@ -133,11 +133,11 @@
       days.forEach(d => { const pr = prodOf(y, d), m = +d.slice(5, 7); for (let h = 0; h < 24; h++) { const p = H[y].days[d].p[h]; P.push(p); V.push(pr ? pr[h] : null); S.push(shape(K, d, h)); M.push(m); } });
       // decorrelated curve: the skeleton, each month scaled to its realised average
       const Pt = S.slice(); for (let m = 1; m <= 12; m++) { const idx = []; M.forEach((x, i) => x === m && idx.push(i)); if (!idx.length || mAvg[m] == null) continue; const s = mean(idx.map(i => S[i])); idx.forEach(i => { Pt[i] = S[i] / s * mAvg[m]; }); }
-      // each pricing stops at prices ≤ 0 on its own curve: (1) on the realised prices, (3) on the decorrelated ones. Masking
+      // each pricing stops at prices < 0 on its own curve: (1) on the realised prices, (3) on the decorrelated ones. Masking
       // (3) on the realised prices (until 30 Oct. 2026) brought the realised stop, correlated with the output, into (3): the
       // cannibalisation (1) − (3) lost it and the forward term (2), which cannot know it, never got it back (solar 2025:
       // (3) −19.9 % on the realised mask, −30.1 % on its own; the test bench, scripts/ppa_backtest_detail.py, masks on its own)
-      const mask = pos ? P.map(p => p != null && p > 0) : null, maskD = pos ? Pt.map(p => p != null && p > 0) : null;
+      const mask = pos ? P.map(p => p != null && p >= 0) : null, maskD = pos ? Pt.map(p => p != null && p >= 0) : null;   // stops strictly below 0 (1 Nov. 2026)
       const hasV = V.some(v => v != null && v > 0);
       if (!hasV) return null;
       const h = profileCost(V, P, mask, baseAll), d = profileCost(V, Pt, maskD, baseAll);

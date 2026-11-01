@@ -171,7 +171,7 @@ class PriceModel2:
             sel = key == k
             if sel.sum() >= 20:
                 v = r[sel]
-                self.tab[int(k)] = (v.mean(), (v * (v > 0)).mean(), (v > 0).mean())
+                self.tab[int(k)] = (v.mean(), (v * (v > 0)).mean(), (v >= 0).mean())
         self.lclass = self.one.lclass
 
     def expected(self, x, f, g):
@@ -473,7 +473,7 @@ class PriceModelFuel:
                 k = (g == gi) & (b == bi)
                 if k.sum() >= 15:
                     v = r[k]; ww = wv[k]
-                    mean[gi, bi], mpos[gi, bi], ppos[gi, bi] = _wm(v, ww), _wm(v * (v > 0), ww), _wm(v > 0, ww)
+                    mean[gi, bi], mpos[gi, bi], ppos[gi, bi] = _wm(v, ww), _wm(v * (v > 0), ww), _wm(v >= 0, ww)
                     neg[gi, bi] = _wm(e[k], ww)
                     if self.MO_EUR:
                         eur[gi, bi], me[gi, bi], mpe[gi, bi] = self._pick(pe_[k], ce_[k], ye_[k])
@@ -626,7 +626,7 @@ class PriceModelFuel:
             sel = k == kk
             if sel.sum() >= 20:
                 v = r[sel]; ww = wv[sel]
-                self.tab2[int(kk)] = (_wm(v, ww), _wm(v * (v > 0), ww), _wm(v > 0, ww), _wm(e[sel], ww)) + \
+                self.tab2[int(kk)] = (_wm(v, ww), _wm(v * (v > 0), ww), _wm(v >= 0, ww), _wm(e[sel], ww)) + \
                     (self._pick(pe_[sel], ce_[sel], ye_[sel]) if self.MO_EUR else (False, 0.0, 0.0))
         if CELL_W and not getattr(self, 'DAY2', False):
             # test: the French wind share as a third input of the cells (bins of CELL_W), where a cell has CELL_MIN hours
@@ -638,7 +638,7 @@ class PriceModelFuel:
                 sel = k3 == kk
                 if sel.sum() >= CELL_MIN:
                     v = r[sel]
-                    self.tab3[int(kk)] = (v.mean(), (v * (v > 0)).mean(), (v > 0).mean(), e[sel].mean())
+                    self.tab3[int(kk)] = (v.mean(), (v * (v > 0)).mean(), (v >= 0).mean(), e[sel].mean())
         if self.FR_LIN:
             # the slope of price ÷ cost per GW of French residual load, by season × time of day (one line per group, so
             # each slope rests on thousands of hours), applied around each cell's own mean residual load
@@ -853,7 +853,7 @@ class KNNRule:
             f = self.feats(x_, xf_, need, wsh_, ssh_, a['month'], month_ratio(y) if KNN_SPR else None)
             ok = np.isfinite(c) & (c > 5) & np.isfinite(a['fr_p']) & np.isfinite(f).all(-1)
             r = a['fr_p'] / c
-            X.append(f[ok]); R.append(r[ok]); RP.append(np.maximum(r, 0)[ok]); PP.append((r > 0)[ok].astype(float)); NG.append(np.minimum(a['fr_p'], 0)[ok])
+            X.append(f[ok]); R.append(r[ok]); RP.append(np.maximum(r, 0)[ok]); PP.append((r >= 0)[ok].astype(float)); NG.append(np.minimum(a['fr_p'], 0)[ok])
             if self.rule is not None:
                 g_ = PriceModelFuel.groups(a['month'], [L.day_kind(d) for d in a['days']])
                 cc_ = np.where(np.isfinite(c), c, np.nanmean(c))
@@ -1013,7 +1013,7 @@ class MCKNNRule:
         f = self.feats(self._S, self._W, self._N, self._L, self._month)
         _, ii = self.tree.query(((f.reshape(-1, f.shape[-1]) - self.mu) / self.sd * self.W_), k=KNN, workers=-1)
         R = self.R[ii]; sh = x.shape
-        rp, pp, rm = np.maximum(R, 0).mean(1).reshape(sh), (R > 0).mean(1).reshape(sh), R.mean(1).reshape(sh)
+        rp, pp, rm = np.maximum(R, 0).mean(1).reshape(sh), (R >= 0).mean(1).reshape(sh), R.mean(1).reshape(sh)
         return rm, rp, pp   # shapes (÷ the month's mean): the capture is a ratio, the level cancels
 
     def pdec(self, g, need):
@@ -1740,7 +1740,7 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
                 ry = set(fy) if RESID_RECENT else None
                 rr = np.stack([rule_resid(pmf, y, RESID)[r] if ry is None or y in ry else np.zeros(24) for y, r, _ in src]) * RESID_K
                 P = f1 * cday + (rr if RESID == 'eur' else rr * cday)
-                f1, fp, fq = P / cday, np.maximum(P, 0) / cday, (P > 0).astype(float)
+                f1, fp, fq = P / cday, np.maximum(P, 0) / cday, (P >= 0).astype(float)
             v = S['FR'] if t == 's' else W['FR']
             mr = L.month_rates(month, v, f1 * cday, fp * cday, fq)
             if pmf_b is not None:
@@ -1776,7 +1776,7 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
         sur = np.stack([SUR[y][r] for y, r, _ in src])
         ratio = rm + (sur / lvl_eur if surprise == 'eur' else sur)
         v = S['FR'] if t == 's' else W['FR']
-        res.append(L.month_rates(month, v, ratio, ratio * (ratio > 0), (ratio > 0).astype(float)))
+        res.append(L.month_rates(month, v, ratio, ratio * (ratio > 0), (ratio >= 0).astype(float)))
     out = {m: {k: float(np.nanmean([r[m][k] for r in res if m in r and r[m].get(k) is not None])) for k in ('all', 'curt', 'paid')} for m in range(1, 13)}
     dist = {m: {k: [float(np.nanpercentile([r[m][k] for r in res if m in r and r[m].get(k) is not None], q)) for q in (10, 90)] for k in ('all', 'curt')} for m in range(1, 13)}
     if guard == 'measure':

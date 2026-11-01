@@ -74,7 +74,7 @@
     // less than the TSO's over the last 12 months (imbc.use, scripts/fetch_fr_imbalance_cost.py), else the TSO's
     if (imbc && imbc.months) ['solar', 'wind'].forEach(k => { const all = Object.keys(imbc.months).filter(m => imbc.months[m][k]).sort().slice(-12), withO = all.filter(m => imbc.months[m][k].ours), own = withO.length >= 3 && (!imbc.use || imbc.use[k] === 'ours'), ms = own ? withO : all; let c = 0, e = 0; ms.forEach(m => { const x = own ? imbc.months[m][k].ours : imbc.months[m][k]; c += x.costEur; e += x.mwh; }); if (ms.length >= 3 && e > 0) imbCost[k] = { v: c / e, n: ms.length, from: ms[0], to: ms[ms.length - 1], own }; });
     const fwdRows = ((mkt && mkt.forwardCurve) || []).filter(r => r.value != null).map(r => ({ contract: r.contract, value: r.value }));
-    D = { hc: hcan || null, cc: (ccap && ccap.countries) || null, fwdRows, imbCost, cap: (cap && cap.days) || [], ix, profile: (cap && cap.profile) || {}, capGW, fwd, fwdDate: mkt && mkt.forwardCurve && mkt.forwardCurve[0] && mkt.forwardCurve[0].date, go, fwdVol, fwdVolN,
+    D = { hc: hcan || null, cc: (ccap && ccap.countries) || null, fwdRows, imbCost, cap: (cap && cap.days) || [], ix, profile: (cap && cap.profile) || {}, stopT: (cap && cap.stopT) || null, capGW, fwd, fwdDate: mkt && mkt.forwardCurve && mkt.forwardCurve[0] && mkt.forwardCurve[0].date, go, fwdVol, fwdVolN,
       fcst: fcst || null, fwRatio: (fwm && fwm.ratios && fwm.ratios.year) || null, fwM: (fwm && fwm.months) || null, bias: pbias || null };
     D.weights = await pwts;
     // hours with a day-ahead price at or below zero, per year (YTD annualised): the hours the PPA Dashboard convention leaves unpaid
@@ -100,16 +100,16 @@
     const caps = o.eu ? o.eu.map(x => `${x.y} ${pc(x.capture)}`).join(', ') : null;
     return FRDOC() ? `<h4>Modèle européen</h4>
 <ol>
-<li><b>Prix horaires.</b> Le prix de chaque heure ÷ la moyenne du mois, en fonction de la charge résiduelle de la France, de l’Allemagne, de la Belgique et de l’Espagne ensemble (consommation − solaire − éolien − nucléaire, ÷ consommation), par saison × moment de la journée, appris sur les cinq dernières années complètes (banc d’essai, scripts/ppa_lab.py). Le parc de chaque année de livraison est posé sur chaque année météo passée : la cannibalisation sort des prix horaires, pas d’une tendance. La consommation et le nucléaire viennent de la dernière année complète, du jour de même type le plus proche (jour ouvré, samedi, dimanche ou férié), pour que les heures à prix ≤ 0 tombent sur les bons jours (scripts/ppa_calendar_test.py).</li>
-<li><b>Capture des années du ténor</b>, mois par mois (data/history/ppa_forecast.json, mis à jour chaque dimanche), pondérée par la production de chaque mois (× sa part payée quand la production est arrêtée aux prix ≤ 0) et par le forward de chaque mois ÷ Cal (mois coté, sinon trimestre, saison, puis Cal découpé par l’historique) : ${caps || 'pas de prévision pour ce ténor (le banc d’essai s’arrête en 2030)'}.</li>
+<li><b>Prix horaires.</b> Le prix de chaque heure ÷ la moyenne du mois, en fonction de la charge résiduelle de la France, de l’Allemagne, de la Belgique et de l’Espagne ensemble (consommation − solaire − éolien − nucléaire, ÷ consommation), par saison × moment de la journée, appris sur les cinq dernières années complètes (banc d’essai, scripts/ppa_lab.py). Le parc de chaque année de livraison est posé sur chaque année météo passée : la cannibalisation sort des prix horaires, pas d’une tendance. La consommation et le nucléaire viennent de la dernière année complète, du jour de même type le plus proche (jour ouvré, samedi, dimanche ou férié), pour que les heures à prix < 0 tombent sur les bons jours (scripts/ppa_calendar_test.py).</li>
+<li><b>Capture des années du ténor</b>, mois par mois (data/history/ppa_forecast.json, mis à jour chaque dimanche), pondérée par la production de chaque mois (× sa part payée quand la production est arrêtée aux prix < 0) et par le forward de chaque mois ÷ Cal (mois coté, sinon trimestre, saison, puis Cal découpé par l’historique) : ${caps || 'pas de prévision pour ce ténor (le banc d’essai s’arrête en 2030)'}.</li>
 <li><b>Prix du PPA</b> = Σ poids × forward Cal × capture − la prime de risque de la tendance de capacité (même Monte Carlo, ${f2(o.premium)} €/MWh) − décote additionnelle − écarts + GO − marge${o.eu ? ` = <code>${f2(o.ppaEu)} €/MWh</code>` : ''}, pour comparer les méthodes à l’identique.</li>
 <li><b>Correction de biais.</b>${biasLine(o, 'regional')}</li>
 <li><b>Flexibilité et voisins.</b> Éolien : les batteries ajoutées depuis la dernière année complète chargent aux heures de charge résiduelle la plus basse de la région et rendent 85 % aux plus hautes, chaque jour. France au-delà des ~0,7 GW qui servent les réserves (Bilan prévisionnel 2025 de RTE : socle +0,3 GW par an, 2 h, puis +5 GW d’ici 2035, 4 h) ; Allemagne selon le parc d’Energy-Charts, compté à 50 % (surtout des batteries domestiques). Les classes de niveau de prix (sous 60 €, 60–110, au-dessus) se fondent progressivement à ±15 € des seuils. Solaire : ni l’un ni l’autre, ils dégradaient l’erreur rejouée (scripts/ppa_storage_test.py, scripts/ppa_level_soft_test.py). L’Espagne et l’Allemagne ne dépassent pas la trajectoire vers leurs objectifs 2030 (PNIEC : 76 GW solaire, 62 GW éolien ; EEG : 215 GW solaire, 145 GW éolien).</li>
 <li><b>Limites.</b> Même avec ces batteries, la région sature à midi à partir de 2028 environ : quelques GW déplacés sur 2 à 4 h n’absorbent pas un surplus de plusieurs dizaines de GW sur toute la journée (constat du Bilan prévisionnel de RTE) ; ils relèvent surtout la capture des heures payées. La capacité française ne fait presque plus bouger cette méthode. Pricée 1, 2 et 3 ans à l’avance sur 2024–2026, elle tient mieux que les méthodes de tendance à 3 ans (scripts/ppa_horizon_test.py).</li>
 </ol>` : `<h4>European price model</h4>
 <ol>
-<li><b>Hourly prices.</b> The price of each hour ÷ the month’s average, as a function of the residual load of France, Germany, Belgium and Spain together (consumption − solar − wind − nuclear, ÷ consumption), by season × time of day, learnt on the last five complete years (test bench, scripts/ppa_lab.py). The fleet of each delivery year is put over every past weather year, so cannibalisation comes out of the hourly prices, not out of a trend. Consumption and nuclear come from the last complete year, on the nearest day of the same kind (weekday, Saturday, Sunday or public holiday), so the hours at prices ≤ 0 fall on the right days (scripts/ppa_calendar_test.py).</li>
-<li><b>Capture of the tenor years</b>, month by month (data/history/ppa_forecast.json, updated every Sunday), weighted by each month’s output (× its paid share when output stops at prices ≤ 0) and by each month’s forward ÷ Cal (the month quoted, else its quarter, season, then the Cal shaped by history): ${caps || 'no forecast for this tenor (the test bench stops in 2030)'}.</li>
+<li><b>Hourly prices.</b> The price of each hour ÷ the month’s average, as a function of the residual load of France, Germany, Belgium and Spain together (consumption − solar − wind − nuclear, ÷ consumption), by season × time of day, learnt on the last five complete years (test bench, scripts/ppa_lab.py). The fleet of each delivery year is put over every past weather year, so cannibalisation comes out of the hourly prices, not out of a trend. Consumption and nuclear come from the last complete year, on the nearest day of the same kind (weekday, Saturday, Sunday or public holiday), so the hours at prices < 0 fall on the right days (scripts/ppa_calendar_test.py).</li>
+<li><b>Capture of the tenor years</b>, month by month (data/history/ppa_forecast.json, updated every Sunday), weighted by each month’s output (× its paid share when output stops at prices < 0) and by each month’s forward ÷ Cal (the month quoted, else its quarter, season, then the Cal shaped by history): ${caps || 'no forecast for this tenor (the test bench stops in 2030)'}.</li>
 <li><b>PPA price</b> = Σ weight × Cal forward × capture − the capacity trend’s risk premium (same Monte Carlo, ${f2(o.premium)} €/MWh) − additional discount − imbalance + GO − margin${o.eu ? ` = <code>${f2(o.ppaEu)} €/MWh</code>` : ''}, so the methods compare like for like.</li>
 <li><b>Bias correction.</b>${biasLine(o, 'regional')}</li>
 <li><b>Flexibility and neighbours.</b> Wind: the batteries added since the last complete year charge in the region’s lowest residual-load hours and give back 85 % in the highest, every day. France beyond the ~0.7 GW serving reserves (RTE Bilan prévisionnel 2025: base +0.3 GW a year, 2 h, then +5 GW by 2035, 4 h); Germany from Energy-Charts’ fleet, counted at 50 % (mostly home batteries). The price-level classes (below 60 €, 60–110, above) blend gradually within ±15 € of the thresholds. Solar: neither, they made the replayed error worse (scripts/ppa_storage_test.py, scripts/ppa_level_soft_test.py). Spain and Germany do not go beyond the path to their 2030 targets (PNIEC: 76 GW solar, 62 GW wind; EEG: 215 GW solar, 145 GW wind).</li>
@@ -118,7 +118,7 @@
   }
 
   // European price model, year by year on the tenor: capture of each month (data/history/ppa_forecast.json,
-  // 'regional') weighted by its output (× its paid share when curtailed at prices ≤ 0) and by the month's
+  // 'regional') weighted by its output (× its paid share when curtailed at prices < 0) and by the month's
   // quoted forward ÷ Cal (quotedShape), so that × the Cal forward it gives the value of one MWh. The asset's own monthly
   // shape and its capture gap to the national profile (last three complete years) when its curve is used.
   // null when a month of the tenor has no forecast (the test bench forecasts up to 2030).
@@ -180,6 +180,22 @@
       return { g: wM > 0 && aA > 0 ? (aM / wM) / (aA / wA) : 1, sh };
     });
   }
+  // a stop threshold T other than 0 (the park stops when the price is below T, Tom 1 Nov. 2026): each month's capture and
+  // paid share × their ratio at T ÷ at 0, measured on the last two complete years (scripts/build_fr_capture.py stopT),
+  // interpolated between the grid's thresholds; 1 at T = 0 or when not stopping
+  function stopRatio(st, m) {
+    const T = +st.stopT, Z = D.stopT;
+    if (!T || !isFinite(T) || (st.conv !== 'curt' && st.conv !== 'part') || !Z || !Z[st.tech]) return { c: 1, p: 1 };
+    const g = Z.grid, t = clamp(T, g[0], g[g.length - 1]); let i = 0; while (i < g.length - 2 && g[i + 1] < t) i++;
+    const w = (t - g[i]) / (g[i + 1] - g[i]), at = (k, j) => { const v = Z[st.tech][k][String(g[j])][m - 1]; return v == null ? 1 : v; };
+    return { c: at('capture', i) * (1 - w) + at('capture', i + 1) * w, p: at('paid', i) * (1 - w) + at('paid', i + 1) * w };
+  }
+  // the same over a year, weighted by the national output of each month
+  function stopRatioYear(st) {
+    const nat = D.fcst && D.fcst.share && D.fcst.share[st.tech]; let c = 0, p = 0, w = 0;
+    for (let m = 1; m <= 12; m++) { const sh = nat ? nat[m] : 1 / 12, r = stopRatio(st, m); c += sh * r.c * r.p; p += sh * r.p; w += sh; }
+    return { c: p ? c / p : 1, p: w ? p / w : 1 };
+  }
   function euYears(o, st, fld = 'regional') {   // fld: 'regional' (central), 'p10' / 'p90' (the simulated weather's spread), 'anchored' (the integrated method, no bias correction)
     const conv = st.conv === 'all' ? 'all' : 'curt';
     const f = D.fcst && D.fcst.forecast && D.fcst.forecast[st.tech] && D.fcst.forecast[st.tech][conv];
@@ -205,9 +221,9 @@
         if (Mo && !Mo.includes(m)) continue;   // a year delivered in part: its months only
         const e = f[`${y}-${String(m).padStart(2, '0')}`];
         if (!e || e[fld] == null || ratio[m] == null) return null;
-        const w = sh(m) * (conv === 'curt' ? (e[fld + 'Paid'] != null ? e[fld + 'Paid'] : e.paid) : 1);
+        const sr = stopRatio(st, m), w = sh(m) * (conv === 'curt' ? (e[fld + 'Paid'] != null ? e[fld + 'Paid'] : e.paid) * sr.p : 1);
         const qm = q ? q[m - 1] : ratio[m] / rn;
-        num += w * qm * (e[fld] + gap); pn += w * qm; den += w;
+        num += w * qm * (e[fld] * sr.c + gap); pn += w * qm; den += w;
       }
       if (!(den > 0)) return null;
       const b = o.biasOf && fld !== 'anchored' && fld !== 'generator' ? o.biasOf('regional', y) : 0;
@@ -219,10 +235,10 @@
   }
 
   // Column indexes of a day row for the technology and convention:
-  // 'curt' = curtailment: output at prices ≤ 0 is stopped and not paid; capture over the paid hours against the
+  // 'curt' = curtailment: output at prices < 0 is stopped and not paid; capture over the paid hours against the
   //          baseload of every hour (the Cal settles on every hour)
   // 'all'  = no curtailment: every hour produced and paid, negative prices included
-  // 'pos'  = PPA Dashboard convention (legacy): hours ≤ 0 left out of the capture AND of the baseload
+  // 'pos'  = PPA Dashboard convention (legacy): hours < 0 left out of the capture AND of the baseload
   function cols(st = S) {
     const t = st.tech === 'solar' ? 's' : 'w', c = st.conv, ix = D.ix, pe = c === 'all' ? '' : 'Pos', pb = c === 'pos' ? 'Pos' : '';
     return { E: ix[t + 'E' + pe], R: ix[t + 'R' + pe], P: ix['pSum' + pb], N: ix['pN' + pb], Eall: ix[t + 'E'] };
@@ -259,8 +275,8 @@
     const pos = st.conv === 'pos', curt = st.conv === 'curt';
     days.forEach(d => { const p = P[d]; if (!p) return; const c = slots.get(d), y = +d.slice(0, 4), a = acc[y] || (acc[y] = { n: 0, bs: 0, bn: 0, e: 0, rev: 0, all: 0, neg: 0 }); a.n++;
       for (let q = 0; q < 96; q++) { if (p[q] == null) continue; const e = c[q] || 0; a.all += e;
-        if (curt && p[q] <= 0) { a.neg += e; a.bs += p[q]; a.bn++; continue; }   // curtailed: not produced, not paid; the baseload keeps the hour
-        if (pos && p[q] <= 0) { a.neg += e; continue; }   // PPA Dashboard convention: hours ≤ 0 €/MWh left out
+        if (curt && p[q] < 0) { a.neg += e; a.bs += p[q]; a.bn++; continue; }   // curtailed: not produced, not paid; the baseload keeps the hour
+        if (pos && p[q] < 0) { a.neg += e; continue; }   // PPA Dashboard convention: hours < 0 €/MWh left out
         a.bs += p[q]; a.bn++; if (!e) continue; a.e += e; a.rev += e * p[q]; } });
     return Object.keys(acc).map(Number).sort().map(y => { const a = acc[y], base = a.bs / a.bn, cp = a.e ? a.rev / a.e : null;
       return { year: y, base, cp, cpPct: cp != null && base > 0 ? cp / base : null, sd: cp != null && base > 0 ? 1 - cp / base : null, days: a.n, mwh: a.e / 1000, mwhAll: a.all / 1000, negMwh: a.neg / 1000, complete: a.n >= 330 && y < thisYear() }; })
@@ -299,10 +315,10 @@
 
   async function compute(st = S) {
     await load();
-    // Partial stop at prices ≤ 0 (contract parameter, decided 27 Oct. 2026): a share k of the output at those hours is
+    // Partial stop at prices < 0 (contract parameter, decided 27 Oct. 2026): a share k of the output at those hours is
     // stopped and not paid, the rest runs and is paid the negative price. Each method is priced with full stop and with
     // no stop; its price per paid MWh is the blend of the two revenues over the paid volume:
-    //   p = ((1 − k) × p_all + k × p_stop × (1 − s)) ÷ (1 − k × s),  s = share of the output at prices ≤ 0 (weighted over the tenor)
+    //   p = ((1 − k) × p_all + k × p_stop × (1 − s)) ÷ (1 − k × s),  s = share of the output at prices < 0 (weighted over the tenor)
     // The charts and tables show the full-stop case.
     if (st.conv === 'part') {
       const k = clamp((st.curtPct == null || st.curtPct === '' ? 50 : +st.curtPct) / 100, 0, 1);
@@ -399,8 +415,23 @@
     const volStress = pick('volStress', 20, 'Past discount'), spotStress = pick('spotStress', 20, 'Past discount');
     // Monte Carlo inputs
     const lfs = nat.filter(x => x.complete && x.lf).slice(-6).map(x => x.lf), astFull = fullA.map(x => x.mwh);
-    const sigVAuto = astFull.length >= 3 ? std(astFull) / mean(astFull) : lfs.length >= 3 ? std(lfs) / mean(lfs) : 0.08;
-    const sigV = pick('mcVol', +(Math.max(0.04, sigVAuto) * 100).toFixed(1), astFull.length >= 3 ? 'spread of the asset’s yearly output' : 'spread of the national load factor, 6 years') / 100;
+    // the yearly output's spread: the asset's own when it has many years (e.g. the twenty ERA5 weather years sent by Tools ›
+    // Production forecast); with a few metered years (Tom 1 Nov. 2026: a real park, 3 years, one of them very windy) their
+    // raw spread is mostly noise, so the park's years are read against the national load factor of the same years: its
+    // sensitivity β to the national swing × the national spread (6 years), plus its own residual spread
+    const sigNat = lfs.length >= 3 ? std(lfs) / mean(lfs) : 0.08;
+    const natLFy = new Map(nat.filter(x => x.complete && x.lf).map(x => [x.year, x.lf]));
+    const pairs = fullA.filter(x => x.complete && natLFy.has(x.year)).map(x => [x.mwh, natLFy.get(x.year)]);
+    let sigVAuto = sigNat, sigVSrc = 'spread of the national load factor, 6 years', volBeta = null;
+    if (astFull.length >= 8) { sigVAuto = std(astFull) / mean(astFull); sigVSrc = 'spread of the asset’s yearly output'; }
+    else if (pairs.length >= 2) {
+      const ma = mean(pairs.map(q => q[0])), mn = mean(pairs.map(q => q[1])), pr = pairs.map(q => q[0] / ma - 1), nr = pairs.map(q => q[1] / mn - 1);
+      const snn = nr.reduce((a, v) => a + v * v, 0), beta = snn > 1e-6 ? clamp(pr.reduce((a, v, i) => a + v * nr[i], 0) / snn, 0.5, 2) : 1;
+      const idio = Math.sqrt(pr.reduce((a, v, i) => a + (v - beta * nr[i]) ** 2, 0) / Math.max(1, pr.length - 1));
+      sigVAuto = Math.sqrt((beta * sigNat) ** 2 + idio * idio); volBeta = { beta, idio, n: pairs.length, sigNat };
+      sigVSrc = `asset’s ${pairs.length} years against the national spread (×${beta.toFixed(2)}) plus its own (${(idio * 100).toFixed(1)} %)`;
+    }
+    const sigV = pick('mcVol', +(Math.max(0.04, sigVAuto) * 100).toFixed(1), sigVSrc) / 100;
     const sigF = pick('mcFwd', D.fwdVol ? +(clamp(D.fwdVol, 0.1, 0.8) * 100).toFixed(0) : 25, D.fwdVol ? `France Cal+1, ${D.fwdVolN} sessions` : 'assumption') / 100;
     // the link between a year's output and its discount, from the generator's weather scenarios when it has run
     // (scripts/ppa_generator.py 'volume': output per GW against capture in the same draws, Tom 1 Nov. 2026), else an assumption
@@ -419,11 +450,12 @@
       const e = ((B.bias[st.tech] || {})[k] || {})[conv], v = e && e[String(Math.min(3, Math.max(1, y - B.lastYear)))]; return v ? v.value : 0; };
     // a year delivered only in part: its share of the year's output, and its months' value against the whole year's
     const part = partFactors(tenor, monthsOf, st);
-    const years = tenor.map((y, i) => { const ns = negShare(y), M = monthsOf(y), ev = volume * Math.pow(1 - degr, i) * part[i].sh * (st.conv !== 'all' && ns != null ? 1 - ns : 1),
-      df = Math.pow(1 + disc, -Math.max(0, y + (M[0] - 1 + M[M.length - 1]) / 24 - now)), bs = biasOf('step', y), fsd = proj(y) + bs / Math.max(0.05, kq[i] * part[i].g), cpY = fwds[i] * kq[i] * part[i].g * (1 - fsd);
+    const SRY = stopRatioYear(st);
+    const years = tenor.map((y, i) => { const ns = negShare(y), M = monthsOf(y), ev = volume * Math.pow(1 - degr, i) * part[i].sh * (st.conv !== 'all' && ns != null ? 1 - ns : 1) * SRY.p,
+      df = Math.pow(1 + disc, -Math.max(0, y + (M[0] - 1 + M[M.length - 1]) / 24 - now)), bs = biasOf('step', y), fsd = proj(y) + bs / Math.max(0.05, kq[i] * part[i].g), cpY = fwds[i] * kq[i] * part[i].g * (1 - fsd) * SRY.c;
       // liqK: years past the last quoted Cal, priced on that Cal and hedged with it (not entered by hand)
       const liqK = st.fwd[y] == null && D.fwd[y] == null && lastQ != null && y > lastQ ? y - lastQ : 0;
-      return { y, months: M, fwd: fwds[i], kq: kq[i], bias: bs, g: part[i].g, sh: part[i].sh, ev, df, fsd, cp: cpY, go: goY[i], w: ev * df, sig: sigT(y - lastYr), negH: negHours(y), negShare: ns, liqK }; });
+      return { y, months: M, fwd: fwds[i], kq: kq[i], bias: bs, g: part[i].g, sh: part[i].sh, ev, df, fsd, cp: cpY, go: goY[i], w: ev * df, sig: sigT(y - lastYr), negH: negHours(y), negShare: ns, liqK, sr: SRY.c }; });
     const W = years.reduce((a, r) => a + r.w, 0) || 1;
     years.forEach(r => { r.wt = r.w / W; });
     const wavg = k => years.reduce((a, r) => a + r.wt * r[k], 0);
@@ -594,7 +626,7 @@
         const zv = gauss(), pr = r.ev * clamp(1 + o.sigV * zv, 0.3, 2);
         const dt = t === 0 ? Math.max(1, r.y - o.lastYr) : 1;
         rw += Math.sqrt(dt) * o.sig0 * (o.rho * zv + rc * gauss());
-        const sd = clamp(r.fsd + rw, 0, 0.95), cap = sL * (r.kq || 1) * (r.g || 1) * (1 - sd);
+        const sd = clamp(r.fsd + rw, 0, 0.95), cap = sL * (r.kq || 1) * (r.g || 1) * (1 - sd) * (r.sr || 1);
         const v = pr * cap + (hedged ? r.ev * (r.fwd - spot) : 0);
         prod[t][i] = pr; val[t][i] = v; sdM[t][i] = sd; cpM[t][i] = cap; spM[t][i] = sL;
         num += r.df * v; den += r.df * pr;
@@ -637,7 +669,8 @@
     'pp-file': 'Hourly or 15-minute production of the asset (CSV or Excel). The price then reflects this asset; without it the national profile is used.',
     'pp-model': 'How the discount is carried into the future: with the installed capacity (PPE3 targets), flat at the last year, or a trend.',
     'pp-pct': 'Past-discount method only: which percentile of the past discounts is used. Projected mode: the trend is shifted by this percentile minus the median. Higher = more cautious.',
-    'pp-conv': 'Curtailed: the asset stops when the price is ≤ 0 €; that output is neither produced nor paid, and the forward (Cal) still settles on every hour. No curtailment: every hour is produced and paid, negative prices included. Partial stop: only the share entered stops (for instance the parks under the stop obligation), the rest runs and is paid the negative price. PPA Dashboard convention: the team’s former rule, kept to compare.',
+    'pp-stopt': 'The park stops when the day-ahead price is below this value: 0 by default (an hour at exactly 0 is produced and paid 0). Another value, positive or negative, scales each month’s capture and paid output by their ratio measured on the last two complete years.',
+    'pp-conv': 'Curtailed: the asset stops when the price is < 0 €; that output is neither produced nor paid, and the forward (Cal) still settles on every hour. No curtailment: every hour is produced and paid, negative prices included. Partial stop: only the share entered stops (for instance the parks under the stop obligation), the rest runs and is paid the negative price. PPA Dashboard convention: the team’s former rule, kept to compare.',
     'pp-alpha': 'The chance of losing money you accept. Lower = a more cautious price and a bigger risk premium.',
     'pp-hedge': 'Whether the expected volume is sold forward at the Cal price. Hedged: only the volume and profile risks remain.',
     'pp-imb': 'Cost of forecast errors per MWh produced. Default: national estimate (error of the site\u2019s combined forecast or the TSO\u2019s, whichever erred less over 12 months, × gap between imbalance and spot prices).',
@@ -663,7 +696,7 @@
   };
 
   // input id → state key; an empty field takes the automatic value
-  const FIELDS = { 'pp-curtpct': 'curtPct', 'pp-t0': 'tenorStart', 'pp-t1': 'tenorEnd', 'pp-mw': 'mw', 'pp-volume': 'volume', 'pp-degr': 'degr', 'pp-alpha': 'alpha', 'pp-imb': 'imb', 'pp-go': 'go', 'pp-margin': 'margin',
+  const FIELDS = { 'pp-stopt': 'stopT', 'pp-curtpct': 'curtPct', 'pp-t0': 'tenorStart', 'pp-t1': 'tenorEnd', 'pp-mw': 'mw', 'pp-volume': 'volume', 'pp-degr': 'degr', 'pp-alpha': 'alpha', 'pp-imb': 'imb', 'pp-go': 'go', 'pp-margin': 'margin',
     'pp-disc': 'disc', 'pp-add': 'add', 'pp-volrisk': 'volRisk', 'pp-pricerisk': 'priceRisk', 'pp-mcvol': 'mcVol', 'pp-mcfwd': 'mcFwd', 'pp-mcsd': 'mcSd', 'pp-rho': 'rho', 'pp-vs': 'volStress', 'pp-ss': 'spotStress' };
   function renderAuto(o) {
     Object.entries(FIELDS).forEach(([id, k]) => {
@@ -878,6 +911,100 @@
   // ── Tab 2 · the park: tiles, a schema, the map, production paid by delivery year ──
   let GEO = null;
   const n1 = v => v == null || !isFinite(v) ? '–' : (+v).toFixed(1);
+  // ── Tab 2 · the park's history with prices (Tom 1 Nov. 2026, from his pricing workbook): price occurrence, cannibalisation
+  //    by year, the spread across years month by month (volume, captured price), spot / park / national month by month and
+  //    hour by hour. Hourly: the asset curve when loaded, else the national output (RTE); prices ENTSO-E day-ahead France.
+  //    The stop rule of the pricer applies (curtailed: hours below the threshold not produced, not paid)
+  let PH_KEY = null;
+  const PH_YEARS = () => { const y = thisYear(), a = []; for (let k = y - 5; k <= y; k++) a.push(k); return a; };
+  async function renderParkHist(o, st = S) {
+    if (!$('pp-ph-occ') || !o) return;
+    const tr = x => window.PKI18n ? PKI18n.tr(x) : x, fr = FRDOC(), n1f = v => v == null || !isFinite(v) ? '–' : (fr ? (+v).toFixed(0).replace('.', ',') : (+v).toFixed(0));
+    const t = st.tech === 'solar' ? 's' : 'w', T = (st.conv === 'curt' || st.conv === 'part') && isFinite(+st.stopT) ? +st.stopT : null;
+    const useA = !!(o.useAsset && st.asset && st.asset.slots);
+    const key = [st.tech, useA ? st.assetName : 'nat', T, st.conv].join('|'); if (PH_KEY === key) return; PH_KEY = key;
+    const files = await Promise.all(PH_YEARS().map(y => get('history/fr_hourly/' + y + '.json')));
+    // hourly rows: [year, month, hour, price, output MWh, national output MW]
+    const rows = [];
+    files.forEach((f, i) => { if (!f || !f.days) return; const y = PH_YEARS()[i];
+      Object.keys(f.days).sort().forEach(d => { const r = f.days[d], m = +d.slice(5, 7); let a = null;
+        if (useA) { const q = st.asset.slots.get(d); if (!q) return; a = []; for (let h = 0; h < 24; h++) a.push(((q[4 * h] || 0) + (q[4 * h + 1] || 0) + (q[4 * h + 2] || 0) + (q[4 * h + 3] || 0)) / 1000); }
+        for (let h = 0; h < 24; h++) { const p = r.p && r.p[h], nv = r[t] && r[t][h]; if (p == null) continue;
+          const g = useA ? a[h] : (nv || 0); rows.push([y, m, h, p, Math.max(0, g || 0), Math.max(0, nv || 0)]); } }); });
+    if (!rows.length) return;
+    const run = p => T == null || p >= T;
+    const src = useA ? (st.assetName || tr('asset')) : tr(st.tech === 'solar' ? 'national solar' : 'national wind');
+    const subs = { 'pp-ph-src': (fr ? `Horaire, ${useA ? 'courbe de l’actif' : 'production nationale RTE'} × prix day-ahead France${T != null ? `, arrêt sous ${n1f(T)} €/MWh` : ''}` : `Hourly, ${useA ? 'asset curve' : 'RTE national output'} × France day-ahead prices${T != null ? `, stop below ${n1f(T)} €/MWh` : ''}`) };
+    Object.entries(subs).forEach(([id, v]) => { const e = $(id); if (e) e.textContent = v; });
+    const years = [...new Set(rows.map(r => r[0]))].sort(), ty = thisYear();
+    const ylab = y => y === ty ? y + (fr ? ' (à date)' : ' (to date)') : String(y);
+    // 1 · price occurrence, last complete year: share of hours and share of output by 10 € bin
+    const yLast = years.filter(y => y < ty).pop() || years[years.length - 1];
+    const bins = []; for (let b = -50; b <= 250; b += 10) bins.push(b);
+    const bi = p => Math.max(0, Math.min(bins.length - 1, Math.floor((p + 50) / 10)));
+    const hH = bins.map(() => 0), hG = bins.map(() => 0); let nH = 0, nG = 0;
+    rows.forEach(r => { if (r[0] !== yLast) return; const k = bi(r[3]); hH[k]++; nH++; if (run(r[3])) { hG[k] += r[4]; nG += r[4]; } });
+    const blab = bins.map((b, i) => i === 0 ? '< −40' : i === bins.length - 1 ? '≥ 250' : String(b));
+    _fuelChart('pp-ph-occ', { type: 'bar', data: { labels: blab, datasets: [
+      { label: tr('Share of hours'), data: hH.map(v => +(v / nH * 100).toFixed(2)), backgroundColor: 'rgba(212,190,150,.75)', borderRadius: 2 },
+      { label: tr('Share of output'), data: hG.map(v => nG ? +(v / nG * 100).toFixed(2) : null), backgroundColor: 'rgba(127,200,248,.85)', borderRadius: 2 }] },
+      options: _fuelOpts({ scales: { x: Object.assign(_fuelXAxis(), { title: { display: true, text: '€/MWh', color: '#8D99AE', font: { size: 10 } } }), y: _fuelAxis('%', { beginAtZero: true }) } }) }, 'ppa-price-occurrence');
+    const so = $('pp-ph-occ-sub'); if (so) so.textContent = fr ? `${yLast} · part des heures et de la production par tranche de 10 €/MWh` : `${yLast} · share of hours and of output by 10 €/MWh bin`;
+    // per year and per year × month aggregates
+    const A = {}, M = {};
+    rows.forEach(([y, m, h, p, g, nv]) => { const a = A[y] || (A[y] = { ps: 0, pn: 0, gp: 0, g: 0, gBelow: 0, np: 0, n: 0 }), k = y + '-' + m, b = M[k] || (M[k] = { y, m, ps: 0, pn: 0, gp: 0, g: 0, np: 0, n: 0 });
+      a.ps += p; a.pn++; b.ps += p; b.pn++;
+      if (run(p)) { a.gp += g * p; a.g += g; b.gp += g * p; b.g += g; }
+      a.np += nv * p; a.n += nv; b.np += nv * p; b.n += nv; });
+    // share of the output sold below the year's average spot
+    rows.forEach(([y, , , p, g]) => { const a = A[y]; if (run(p) && p < a.ps / a.pn) a.gBelow += g; });
+    // 2 · cannibalisation by year
+    _fuelChart('pp-ph-cy', { type: 'bar', data: { labels: years.map(ylab), datasets: [
+      { label: tr('Average spot'), data: years.map(y => +(A[y].ps / A[y].pn).toFixed(2)), backgroundColor: 'rgba(212,190,150,.75)', borderRadius: 3 },
+      { label: tr('Captured price'), data: years.map(y => A[y].g ? +(A[y].gp / A[y].g).toFixed(2) : null), backgroundColor: 'rgba(127,200,248,.85)', borderRadius: 3 }] },
+      options: _fuelOpts({ plugins: { legend: { display: true, position: 'bottom', labels: { color: '#B8C9D9', font: { size: 10 }, boxWidth: 10 } },
+        tooltip: { callbacks: { afterBody: it => { const y = years[it[0].dataIndex], a = A[y]; if (!a.g) return ''; const cr = a.gp / a.g / (a.ps / a.pn);
+          return fr ? `Taux de capture ${(cr * 100).toFixed(1).replace('.', ',')} % · ${(a.gBelow / a.g * 100).toFixed(0)} % du volume vendu sous le spot moyen` : `Capture rate ${(cr * 100).toFixed(1)} % · ${(a.gBelow / a.g * 100).toFixed(0)} % of the volume sold below the average spot`; } } }, pkHoverReadout: false },
+        scales: { x: Object.assign(_fuelXAxis(), { grid: { display: false } }), y: _fuelAxis('€/MWh', { beginAtZero: true }) } }) }, 'ppa-cannib-by-year');
+    // 3 and 4 · month by month across the complete years: min–max range and average
+    const full = years.filter(y => y < ty), MN = fr ? ['janv', 'févr', 'mars', 'avr', 'mai', 'juin', 'juil', 'août', 'sept', 'oct', 'nov', 'déc'] : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const per = (m, f) => full.map(y => M[y + '-' + m]).filter(Boolean).map(f).filter(v => v != null && isFinite(v));
+    const rng = f => MN.map((_, i) => { const v = per(i + 1, f); return v.length ? [+Math.min(...v).toFixed(2), +Math.max(...v).toFixed(2)] : null; });
+    const avg = f => MN.map((_, i) => { const v = per(i + 1, f); return v.length ? +mean(v).toFixed(2) : null; });
+    const volU = useA ? 'MWh' : 'GWh', volK = useA ? 1 : 1000, vol = b => b.g / volK;
+    _fuelChart('pp-ph-vol', { type: 'bar', data: { labels: MN, datasets: [
+      { label: tr('Min – max over the years'), data: rng(vol), backgroundColor: 'rgba(127,200,248,.35)', borderColor: 'rgba(127,200,248,.8)', borderWidth: 1, borderRadius: 3, order: 2 },
+      { type: 'line', label: tr('Average'), data: avg(vol), borderColor: '#7FC8F8', backgroundColor: '#7FC8F8', showLine: false, pointRadius: 5, pointStyle: 'rectRot', order: 1 }] },
+      options: _fuelOpts({ scales: { x: Object.assign(_fuelXAxis(), { grid: { display: false } }), y: _fuelAxis(volU, { beginAtZero: true }) } }) }, 'ppa-volume-spread');
+    const cap = b => b.g ? b.gp / b.g : null, spot = b => b.ps / b.pn;
+    _fuelChart('pp-ph-cap', { type: 'bar', data: { labels: MN, datasets: [
+      { label: tr('Captured price, min – max over the years'), data: rng(cap), backgroundColor: 'rgba(168,125,196,.35)', borderColor: 'rgba(168,125,196,.85)', borderWidth: 1, borderRadius: 3, order: 3 },
+      { type: 'line', label: tr('Captured price, average'), data: avg(cap), borderColor: '#A87DC4', backgroundColor: '#A87DC4', showLine: false, pointRadius: 5, pointStyle: 'rectRot', order: 1 },
+      { type: 'line', label: tr('Average spot'), data: avg(spot), borderColor: '#D4BE96', backgroundColor: '#D4BE96', borderDash: [4, 3], borderWidth: 1.5, pointRadius: 2, order: 2 }] },
+      options: _fuelOpts({ scales: { x: Object.assign(_fuelXAxis(), { grid: { display: false } }), y: _fuelAxis('€/MWh', { beginAtZero: false }) } }) }, 'ppa-captured-spread');
+    const sv = $('pp-ph-vol-sub'); if (sv) sv.textContent = fr ? `${volU} par mois · ${full[0]}–${full[full.length - 1]}, fourchette des années et moyenne` : `${volU} per month · ${full[0]}–${full[full.length - 1]}, range of the years and average`;
+    const sc = $('pp-ph-cap-sub'); if (sc) sc.textContent = fr ? `€/MWh · ${full[0]}–${full[full.length - 1]}, prix capté du ${useA ? 'parc' : 'profil national'} par mois et spot moyen` : `€/MWh · ${full[0]}–${full[full.length - 1]}, ${useA ? 'park' : 'national profile'} captured price by month and average spot`;
+    // 5 · month by month over time: spot, the park's captured price, the national one (the M0 of the technology, all hours)
+    const ks = Object.keys(M).sort((a, b) => M[a].y - M[b].y || M[a].m - M[b].m);
+    const ml = ks.map(k => MN[M[k].m - 1] + ' ' + String(M[k].y).slice(2));
+    const ds5 = [{ label: tr('Average spot'), data: ks.map(k => +spot(M[k]).toFixed(2)), borderColor: '#D4BE96', borderWidth: 1.5, pointRadius: 0, tension: 0 },
+      { label: useA ? tr('Park captured price') : tr('National captured price'), data: ks.map(k => cap(M[k]) != null ? +cap(M[k]).toFixed(2) : null), borderColor: '#7FC8F8', borderWidth: 2, pointRadius: 0, tension: 0 }];
+    if (useA) ds5.push({ label: tr('National captured price (≈ M0)'), data: ks.map(k => M[k].n ? +(M[k].np / M[k].n).toFixed(2) : null), borderColor: '#A87DC4', borderWidth: 1.5, borderDash: [4, 3], pointRadius: 0, tension: 0 });
+    _fuelChart('pp-ph-ts', { type: 'line', data: { labels: ml, datasets: ds5 }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('€/MWh') } }) }, 'ppa-monthly-captured');
+    // 6 · hour by hour (last complete year): spot, the park's captured price, the national one
+    const HH = Array.from({ length: 24 }, () => ({ ps: 0, pn: 0, gp: 0, g: 0, np: 0, n: 0 }));
+    rows.forEach(([y, , h, p, g, nv]) => { if (y !== yLast) return; const b = HH[h]; b.ps += p; b.pn++; if (run(p)) { b.gp += g * p; b.g += g; } b.np += nv * p; b.n += nv; });
+    // an hour where the output is under 2 % of the busiest hour's: no captured price (a few summer MWh would read as a level)
+    const gMin = 0.02 * Math.max(...HH.map(b => b.g));
+    const ds6 = [{ label: tr('Average spot'), data: HH.map(b => b.pn ? +(b.ps / b.pn).toFixed(2) : null), borderColor: '#D4BE96', borderWidth: 1.5, pointRadius: 2, tension: 0 },
+      { label: useA ? tr('Park captured price') : tr('National captured price'), data: HH.map(b => b.g > gMin ? +(b.gp / b.g).toFixed(2) : null), borderColor: '#7FC8F8', borderWidth: 2, pointRadius: 2, tension: 0 }];
+    if (useA) ds6.push({ label: tr('National captured price (≈ M0)'), data: HH.map(b => b.n > 0.02 * Math.max(...HH.map(x => x.n)) ? +(b.np / b.n).toFixed(2) : null), borderColor: '#A87DC4', borderWidth: 1.5, borderDash: [4, 3], pointRadius: 2, tension: 0 });
+    _fuelChart('pp-ph-hour', { type: 'line', data: { labels: Array.from({ length: 24 }, (_, h) => String(h)), datasets: ds6 },
+      options: _fuelOpts({ scales: { x: Object.assign(_fuelXAxis(), { title: { display: true, text: fr ? 'heure (Paris)' : 'hour (Paris)', color: '#8D99AE', font: { size: 10 } } }), y: _fuelAxis('€/MWh') } }) }, 'ppa-captured-by-hour');
+    const shh = $('pp-ph-hour-sub'); if (shh) shh.textContent = fr ? `€/MWh · ${yLast}, moyenne par heure de la journée (heures avec moins de 2 % de la production de l’heure la plus productive : pas de prix capté)` : `€/MWh · ${yLast}, average by hour of the day (hours with under 2 % of the busiest hour’s output: no captured price)`;
+    const sts = $('pp-ph-ts-sub'); if (sts) sts.textContent = useA ? (fr ? '€/MWh · le parc face au prix capté national de la filière (proche du M0 de la CRE)' : '€/MWh · the park against the national captured price of the technology (close to the CRE M0)')
+      : (fr ? '€/MWh · le prix capté national de la filière (proche du M0 de la CRE) face au spot moyen' : '€/MWh · the national captured price of the technology (close to the CRE M0) against the average spot');
+  }
   function renderPark(o) {
     if (!$('pp-park-tiles') || !o) return;
     // capacity left blank: the one that gives the expected production at the national load factor
@@ -886,18 +1013,18 @@
     $('pp-park-tiles').innerHTML = _fuelKpi('Technology', tech, '', o.useAsset ? 'own production curve' : 'national profile (RTE)') +
       _fuelKpi('Installed capacity', n1(mwE), 'MW', o.mw ? 'input' : 'from production ÷ national load factor') + _fuelKpi('Expected production', f0(o.volume), 'MWh/yr', 'P50') +
       _fuelKpi('Load factor', flh ? n1(flh / 87.6) : '–', '%', 'production ÷ (capacity × 8 760 h)') + _fuelKpi('Full-load hours', flh ? f0(flh) : '–', 'h/yr', 'production ÷ capacity') +
-      _fuelKpi('Lost at prices ≤ 0', S.conv === 'all' ? '0' : n1(negLost * 100), '%', S.conv === 'all' ? 'all hours paid' : 'average over the delivery years');
+      _fuelKpi('Lost at prices < 0', S.conv === 'all' ? '0' : n1(negLost * 100), '%', S.conv === 'all' ? 'all hours paid' : 'average over the delivery years');
     $('pp-park-schema-sub').textContent = o.useAsset ? S.assetName : (S.tech === 'wind' ? 'National wind profile' : 'National solar profile');
     const box = (x, a, b) => `<rect x="${x}" y="30" width="120" height="70" rx="10" fill="var(--bg3)" stroke="var(--border2)"/><text x="${x + 60}" y="60" text-anchor="middle" font-size="13" font-weight="700" fill="var(--text)">${a}</text><text x="${x + 60}" y="82" text-anchor="middle" font-size="11" fill="var(--text3)">${b}</text>`;
     const arr = x => `<line x1="${x}" x2="${x + 34}" y1="65" y2="65" stroke="#14D3A9" stroke-width="2"/><polygon points="${x + 34},60 ${x + 42},65 ${x + 34},70" fill="#14D3A9"/>`;
-    $('pp-park-schema').innerHTML = `<svg viewBox="0 0 570 130" style="width:100%;height:auto;font-family:'JetBrains Mono',monospace">${box(0, tech, n1(mwE) + ' MW')}${arr(124)}${box(150, f0(o.volume / 1000 * 10) / 10 + ' GWh', 'per year, P50')}${arr(274)}${box(300, 'Grid', S.conv === 'all' ? 'all hours paid' : 'stops at ≤ 0 €')}${arr(424)}${box(450, 'Buyer', 'PPA ' + o.tenor[0] + '–' + o.tenor[o.tenor.length - 1])}</svg>`;
+    $('pp-park-schema').innerHTML = `<svg viewBox="0 0 570 130" style="width:100%;height:auto;font-family:'JetBrains Mono',monospace">${box(0, tech, n1(mwE) + ' MW')}${arr(124)}${box(150, f0(o.volume / 1000 * 10) / 10 + ' GWh', 'per year, P50')}${arr(274)}${box(300, 'Grid', S.conv === 'all' ? 'all hours paid' : 'stops at < 0 €')}${arr(424)}${box(450, 'Buyer', 'PPA ' + o.tenor[0] + '–' + o.tenor[o.tenor.length - 1])}</svg>`;
     // the asset's own daily profile only means something when a curve is loaded
     const pa = $('pp-prof-asset'); if (pa) { const c = pa.closest('.chart-container'); if (c) c.style.display = o.useAsset ? '' : 'none'; }
-    // production paid by delivery year, and what the hours at prices ≤ 0 take away
+    // production paid by delivery year, and what the hours at prices < 0 take away
     const lost = o.years.map((r, i) => S.conv === 'all' || r.negShare == null ? 0 : o.volume * Math.pow(1 - o.degr, i) * r.negShare);
     _fuelChart('pp-park-years', { type: 'bar', data: { labels: o.years.map(r => String(r.y)), datasets: [
       { label: 'Production paid', data: o.years.map(r => Math.round(r.ev)), backgroundColor: S.tech === 'wind' ? '#7FC8F8CC' : '#FBBF24CC', borderRadius: 3, stack: 's' },
-      { label: 'Not paid, prices ≤ 0', data: lost.map(Math.round), backgroundColor: '#ED696566', borderRadius: 3, stack: 's' },
+      { label: 'Not paid, prices < 0', data: lost.map(Math.round), backgroundColor: '#ED696566', borderRadius: 3, stack: 's' },
     ] }, options: _fuelOpts({ scales: { x: Object.assign(_fuelXAxis(), { stacked: true, grid: { display: false } }), y: _fuelAxis('MWh', { stacked: true, beginAtZero: true }) } }) }, 'ppa-park-years');
     // the map: France, the park when its location is known (Tools › Production forecast › Price this park)
     const loc = S.loc && S.useLoc !== false && o.useAsset ? S.loc : null;
@@ -918,7 +1045,7 @@
     renderYears(o); renderAuto(o); addHelp();
     inSummary(o);
     renderRest(o);
-    renderResBar(o); renderBand(o); renderSumWf(o); renderPark(o); renderSens(o); advCount(); clampNotes();
+    renderResBar(o); renderBand(o); renderSumWf(o); renderPark(o); renderParkHist(o).catch(e => console.warn('[ppa] park history', e)); renderSens(o); advCount(); clampNotes();
   }
   // inputs fingerprint: a price computed on other inputs is never shown as current
   function fp() { const c = Object.assign({}, S, { method: null, view: null, last: null, wxLast: null, asset: S.asset ? S.assetName + ':' + (S.asset.slots ? S.asset.slots.length : 0) : null }); return JSON.stringify(c); }
@@ -1041,8 +1168,8 @@
         scales: { x: Object.assign(_fuelXAxis(), { grid: { display: false }, ticks: { color: C_TX2, font: { size: 10 }, autoSkip: false, maxRotation: 0 } }), y: _fuelAxis('€/MWh', { beginAtZero: true }) } }) }, 'ppa-waterfall');
     // year table
     $('pp-years').innerHTML = `<div style="overflow-x:auto"><table class="fuel-table pp-ptab"><thead><tr><th style="text-align:left">Year</th><th>Forward</th><th>Shape disc.</th><th>Capture</th><th>Neg. hours</th><th>MWh${S.conv === 'pos' ? ' paid' : ''}</th><th>P&L k€</th></tr></thead><tbody>` +
-      o.years.map(r => `<tr><td style="text-align:left">${r.y}</td><td>${f2(r.fwd)}</td><td>${pc(r.fsd)} <span class="pp-hint">± ${(r.sig * 100).toFixed(1)}</span></td><td>${f2(r.cp)}</td><td title="${r.negShare != null ? (r.negShare * 100).toFixed(1) + ' % of the output at prices ≤ 0' : ''}">${f0(r.negH)}</td><td>${f0(r.ev)}</td><td class="${r.pnlK >= 0 ? 'pp-pos' : 'pp-neg'}">${sgn(r.pnlK)}</td></tr>`).join('') +
-      `</tbody></table></div><div class="fuel-note">${o.years.some(r => r.kq != null && Math.abs(r.kq - 1) > 0.0005) ? (FRDOC() ? `Facteur des mois cotés k (le niveau lu mois par mois, comme le reste de l’outil) : ${o.years.map(r => r.y + ' ' + (r.kq || 1).toFixed(3)).join(', ')} ; valeur captée = forward × k × capture. ` : `Quoted-month factor k (the level read month by month, as the rest of the tool does): ${o.years.map(r => r.y + ' ' + (r.kq || 1).toFixed(3)).join(', ')}; capture value = forward × k × capture. `) : ''}Shape discount ${MODEL_T[o.model]}, from ${o.lastYr} (${pc(o.proj(o.lastYr))}, ${o.useAsset ? 'asset' : 'national'}); ± = 1 σ of the projection. Negative hours projected with the solar build-out${S.conv === 'pos' ? '; with the PPA Dashboard convention the output at prices ≤ 0 is not paid, so the volume paid shrinks as they grow' : ''}. P&L = production × (capture − imbalance + GO − PPA price), central case.</div>`;
+      o.years.map(r => `<tr><td style="text-align:left">${r.y}</td><td>${f2(r.fwd)}</td><td>${pc(r.fsd)} <span class="pp-hint">± ${(r.sig * 100).toFixed(1)}</span></td><td>${f2(r.cp)}</td><td title="${r.negShare != null ? (r.negShare * 100).toFixed(1) + ' % of the output at prices < 0' : ''}">${f0(r.negH)}</td><td>${f0(r.ev)}</td><td class="${r.pnlK >= 0 ? 'pp-pos' : 'pp-neg'}">${sgn(r.pnlK)}</td></tr>`).join('') +
+      `</tbody></table></div><div class="fuel-note">${o.years.some(r => r.kq != null && Math.abs(r.kq - 1) > 0.0005) ? (FRDOC() ? `Facteur des mois cotés k (le niveau lu mois par mois, comme le reste de l’outil) : ${o.years.map(r => r.y + ' ' + (r.kq || 1).toFixed(3)).join(', ')} ; valeur captée = forward × k × capture. ` : `Quoted-month factor k (the level read month by month, as the rest of the tool does): ${o.years.map(r => r.y + ' ' + (r.kq || 1).toFixed(3)).join(', ')}; capture value = forward × k × capture. `) : ''}Shape discount ${MODEL_T[o.model]}, from ${o.lastYr} (${pc(o.proj(o.lastYr))}, ${o.useAsset ? 'asset' : 'national'}); ± = 1 σ of the projection. Negative hours projected with the solar build-out${S.conv === 'pos' ? '; with the PPA Dashboard convention the output at prices < 0 is not paid, so the volume paid shrinks as they grow' : ''}. P&L = production × (capture − imbalance + GO − PPA price), central case.</div>`;
     // P&L vs percentile
     _fuelChart('pp-pnl', { type: 'line', data: { labels: o.pcts.map(p => 'P' + p), datasets: [
       { label: 'Annual P&L (k€)', data: o.pnlCurve.map(v => Math.round(v)), borderColor: '#FFFFFF', borderWidth: 2, pointRadius: 0, fill: { target: { value: 0 }, above: 'rgba(20,211,169,.18)', below: 'rgba(237,105,101,.22)' } },
@@ -1056,7 +1183,7 @@
       `</tbody></table></div><div class="fuel-note">${build ? 'Low / high: projected shape discount ± 1.28 σ (P90 / P10 of the projection).' : 'Low / high: 90th / 10th percentile of the historical shape discount.'} Spot stress scales the forward; cannibalisation stress shifts the shape discount; volume stress scales production. Beyond history: shocks the past years never showed (amplified gap, 1-in-100 tail, named situations), on the same low / central / high discount. No hedge in this table.</div>`;
     // asset diagnostics
     const ad = $('pp-asset-info');
-    if (ad) ad.textContent = o.ast ? `${S.assetName}: capture rate ${o.ast.map(x => x.year + ' ' + pc(x.cpPct) + (x.negMwh > 0.05 && S.conv !== 'all' ? ' (' + f0(x.negMwh) + ' MWh at prices ≤ 0 left out)' : '')).join(' · ')}` : `No asset curve: national ${tech.toLowerCase()} profile (RTE) used. Load a curve or a test curve to price an asset's own profile.`;
+    if (ad) ad.textContent = o.ast ? `${S.assetName}: capture rate ${o.ast.map(x => x.year + ' ' + pc(x.cpPct) + (x.negMwh > 0.05 && S.conv !== 'all' ? ' (' + f0(x.negMwh) + ' MWh at prices < 0 left out)' : '')).join(' · ')}` : `No asset curve: national ${tech.toLowerCase()} profile (RTE) used. Load a curve or a test curve to price an asset's own profile.`;
     renderDoc(o);
     renderCompare(o);
     renderBacktest();
@@ -1216,7 +1343,7 @@
       if (has('capfit')) _fuelChart(ids.capfit, { type: 'scatter', data: { datasets: ds2 }, plugins: [labelPlugin(marks2)],
         options: _fuelOpts({ interaction: { mode: 'nearest', intersect: true }, plugins: { pkHoverReadout: false, tooltip: { enabled: true, callbacks: { label: c => ` ${c.raw.yr || ''} ${c.raw.x.toFixed(1)} GW · ${c.raw.y.toFixed(1)} %` } } },
           layout: { padding: { right: 30, top: 10 } }, scales: { x: Object.assign(_fuelAxis(tech + ' installed capacity (GW)'), { type: 'linear' }), y: _fuelAxis('capture rate, % of baseload') } }) }, 'ppa-cp-vs-capacity');
-      setT('capfitSub', `Each point = one year (${(st.conv === 'curt' ? 'curtailment at prices ≤ 0' : st.conv === 'pos' ? 'hours > 0 €/MWh' : 'all hours')}). Log fit on ${fit.use.join(', ')}; PPE3 targets ${Object.entries(PPE3[st.tech]).map(([y, g]) => y + ' ' + g + ' GW').join(', ')}${o.model === 'capacity' ? ' · drives the projection (anchored on ' + lastY + ')' : ''}.`);
+      setT('capfitSub', `Each point = one year (${(st.conv === 'curt' ? 'curtailment at prices < 0' : st.conv === 'pos' ? 'hours > 0 €/MWh' : 'all hours')}). Log fit on ${fit.use.join(', ')}; PPE3 targets ${Object.entries(PPE3[st.tech]).map(([y, g]) => y + ' ' + g + ' GW').join(', ')}${o.model === 'capacity' ? ' · drives the projection (anchored on ' + lastY + ')' : ''}.`);
     } else if (has('capfit')) noDataMsg(ids.capfit, 'Installed capacity not available', '');
     // France and its neighbours: capture rate against installed capacity, one colour per country with its trend (log fit)
     if (has('xc') && D.cc) drawXC(ids.xc, ids.xcSub, st);
@@ -1244,7 +1371,7 @@
       _fuelChart(ids.negh, { type: 'bar', data: { labels: NY, datasets: [
         { label: 'Hours at or below 0 €/MWh, France', data: hist, backgroundColor: NY.map(y => y >= ty ? 'rgba(237,105,101,.35)' : 'rgba(237,105,101,.8)'), borderRadius: 3, yAxisID: 'y' },
         { type: 'line', label: 'Projection (solar build-out to PPE3)', data: proj, borderColor: '#FFFFFF', borderDash: [5, 4], borderWidth: 2, pointRadius: NY.map(y => tenorSet.has(y) ? 4 : 2), spanGaps: true, fill: false, yAxisID: 'y' },
-        { type: 'line', label: tech + ' output at prices ≤ 0 (%)', data: share, borderColor: tc, borderWidth: 1.6, pointRadius: 2, fill: false, yAxisID: 'y1' },
+        { type: 'line', label: tech + ' output at prices < 0 (%)', data: share, borderColor: tc, borderWidth: 1.6, pointRadius: 2, fill: false, yAxisID: 'y1' },
       ] }, options: _fuelOpts({ plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 10 } } },
         scales: { x: Object.assign(_fuelXAxis(), { grid: { display: false } }), y: _fuelAxis('hours per year', { beginAtZero: true }), y1: _fuelAxis('% of output', { position: 'right', beginAtZero: true, grid: { display: false } }) } }) }, 'negative-hours-projection');
       setT('neghSub', o.nhReg ? `Hours with a day-ahead price at or below zero; ${ty} annualised from ${D.negH[ty] ? D.negH[ty].d : 0} days (light bar). Projection: +${Math.max(0, o.nhReg.sl).toFixed(0)} h per GW of solar, fitted on ${o.nhFitYears.join(', ')}, solar capacity to the PPE3 targets; line = ${tech.toLowerCase()} output in those hours (${o.useAsset ? 'asset' : 'national'}).` : 'Not enough history');
@@ -1681,10 +1808,10 @@
       `</tbody></table></div>`;
     { const fr = FRDOC(), yrs = m3.years.join(', '), gaps = Object.entries(m3.calGap || {}).filter(([, g]) => Math.abs(g) > 0.05), f2c = v => (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v).toFixed(2).replace('.', fr ? ',' : '.');
       const tech = fr ? (S.tech === 'solar' ? 'solaire' : 'éolien') : S.tech;
-      const conv = S.conv === 'pos' ? (fr ? 'heures à prix ≤ 0 retirées de (1) et (3)' : 'hours with a price ≤ 0 left out of (1) and (3)') : S.conv === 'curt' ? (fr ? 'production arrêtée et non payée aux prix ≤ 0, baseload sur toutes les heures' : 'output stopped and not paid at prices ≤ 0, baseload on every hour') : (fr ? 'toutes les heures payées' : 'every hour paid');
+      const conv = S.conv === 'pos' ? (fr ? 'heures à prix < 0 retirées de (1) et (3)' : 'hours with a price < 0 left out of (1) and (3)') : S.conv === 'curt' ? (fr ? 'production arrêtée et non payée aux prix < 0, baseload sur toutes les heures' : 'output stopped and not paid at prices < 0, baseload on every hour') : (fr ? 'toutes les heures payées' : 'every hour paid');
       $('pp-fpc-note').innerHTML = (fr
-        ? `${m3.asset ? 'Production : la courbe du parc (années ' + yrs + ').' : 'Production : ' + tech + ' national (RTE), années ' + yrs + '.'} Coefficients de mise en forme (mois, type de jour, heure) moyennés sur ces années${m3.half ? ', en penchant vers les plus récentes (poids divisé par deux chaque année en arrière)' : ''}. La FPC est calée sur ${m3.used.join(', ') || 'aucune cotation'} : les mois d’abord, puis trimestres et saisons (une période déjà fixée ne bouge plus), puis chaque année est remise à l’échelle pour valoir exactement son Cal${gaps.map(([y, g]) => ` (${y} : les cotations plus courtes donnaient ${f2c(g)} €/MWh par rapport au Cal)`).join('')}. Cannibalisation = historique (1) − décorrélé (3), chacun arrêté aux prix ≤ 0 de sa propre courbe (prix réels pour (1), squelette recalé pour (3), comme le banc d’essai), année par année et par saison (avril–septembre, octobre–mars), ${m3.flat ? 'à plat à sa moyenne ' + pc(m3.meanC) : 'projetée avec le parc solaire installé (log' + (S.tech === 'wind' ? ', aussi pour l’éolien : son été est mangé par les heures solaires à prix ≤ 0 et son propre parc croît lentement ; erreur rejouée 1,64 → 1,31 €/MWh' : '') + '), ancrée sur ' + H[H.length - 1].y}, puis pondérée par la valeur de la production de chaque saison · dispersion ± ${(m3.sigC * 100).toFixed(1)} pts. Convention : ${conv}. Au walk-forward 2024–2026 (réglages choisis sur 2019–2023, arrêt aux prix ≤ 0), ces deux choix font passer l’erreur de 7,64 à 5,84 €/MWh en solaire et de 6,23 à 4,94 en éolien ; en toutes heures, éolien −6 %, solaire +2 % (scripts/ppa_fpc_variants.py).`
-        : `${m3.asset ? 'Production: the asset’s curve (years ' + yrs + ').' : 'Production: national ' + tech + ' (RTE), years ' + yrs + '.'} Shaping coefficients (month, day type, hour) averaged on the same years${m3.half ? ', leaning towards the recent ones (the weight halves every year back)' : ''}. The FPC is calibrated on ${m3.used.join(', ') || 'no quote'}: months first, then quarters and seasons (a period already set is not changed), then each year is rescaled so that it averages exactly its Cal${gaps.map(([y, g]) => ` (${y}: the shorter quotes gave ${f2c(g)} €/MWh vs the Cal)`).join('')}. Cannibalisation = historical (1) − decorrelated (3), each stopped at prices ≤ 0 on its own curve (realised prices for (1), the rescaled skeleton for (3), as the test bench), year by year and per season (April–September, October–March), ${m3.flat ? 'flat at its average ' + pc(m3.meanC) : 'projected with the installed solar fleet (log' + (S.tech === 'wind' ? ', for wind too: its summer is eaten by the solar hours at prices ≤ 0 and its own fleet grows slowly; replayed error 1.64 → 1.31 €/MWh' : '') + '), anchored on ' + H[H.length - 1].y}, then weighted by the value of the output in each season · spread ± ${(m3.sigC * 100).toFixed(1)} pts. Convention: ${conv}. On the 2024–2026 walk-forward (settings chosen on 2019–2023, output stopped at prices ≤ 0), these two choices take the error from 7.64 to 5.84 €/MWh for solar and from 6.23 to 4.94 for wind; with every hour paid, wind −6 %, solar +2 % (scripts/ppa_fpc_variants.py).`) + biasLine(o, 'fpc'); }
+        ? `${m3.asset ? 'Production : la courbe du parc (années ' + yrs + ').' : 'Production : ' + tech + ' national (RTE), années ' + yrs + '.'} Coefficients de mise en forme (mois, type de jour, heure) moyennés sur ces années${m3.half ? ', en penchant vers les plus récentes (poids divisé par deux chaque année en arrière)' : ''}. La FPC est calée sur ${m3.used.join(', ') || 'aucune cotation'} : les mois d’abord, puis trimestres et saisons (une période déjà fixée ne bouge plus), puis chaque année est remise à l’échelle pour valoir exactement son Cal${gaps.map(([y, g]) => ` (${y} : les cotations plus courtes donnaient ${f2c(g)} €/MWh par rapport au Cal)`).join('')}. Cannibalisation = historique (1) − décorrélé (3), chacun arrêté aux prix < 0 de sa propre courbe (prix réels pour (1), squelette recalé pour (3), comme le banc d’essai), année par année et par saison (avril–septembre, octobre–mars), ${m3.flat ? 'à plat à sa moyenne ' + pc(m3.meanC) : 'projetée avec le parc solaire installé (log' + (S.tech === 'wind' ? ', aussi pour l’éolien : son été est mangé par les heures solaires à prix < 0 et son propre parc croît lentement ; erreur rejouée 1,64 → 1,31 €/MWh' : '') + '), ancrée sur ' + H[H.length - 1].y}, puis pondérée par la valeur de la production de chaque saison · dispersion ± ${(m3.sigC * 100).toFixed(1)} pts. Convention : ${conv}. Au walk-forward 2024–2026 (réglages choisis sur 2019–2023, arrêt aux prix < 0), ces deux choix font passer l’erreur de 7,64 à 5,84 €/MWh en solaire et de 6,23 à 4,94 en éolien ; en toutes heures, éolien −6 %, solaire +2 % (scripts/ppa_fpc_variants.py).`
+        : `${m3.asset ? 'Production: the asset’s curve (years ' + yrs + ').' : 'Production: national ' + tech + ' (RTE), years ' + yrs + '.'} Shaping coefficients (month, day type, hour) averaged on the same years${m3.half ? ', leaning towards the recent ones (the weight halves every year back)' : ''}. The FPC is calibrated on ${m3.used.join(', ') || 'no quote'}: months first, then quarters and seasons (a period already set is not changed), then each year is rescaled so that it averages exactly its Cal${gaps.map(([y, g]) => ` (${y}: the shorter quotes gave ${f2c(g)} €/MWh vs the Cal)`).join('')}. Cannibalisation = historical (1) − decorrelated (3), each stopped at prices < 0 on its own curve (realised prices for (1), the rescaled skeleton for (3), as the test bench), year by year and per season (April–September, October–March), ${m3.flat ? 'flat at its average ' + pc(m3.meanC) : 'projected with the installed solar fleet (log' + (S.tech === 'wind' ? ', for wind too: its summer is eaten by the solar hours at prices < 0 and its own fleet grows slowly; replayed error 1.64 → 1.31 €/MWh' : '') + '), anchored on ' + H[H.length - 1].y}, then weighted by the value of the output in each season · spread ± ${(m3.sigC * 100).toFixed(1)} pts. Convention: ${conv}. On the 2024–2026 walk-forward (settings chosen on 2019–2023, output stopped at prices < 0), these two choices take the error from 7.64 to 5.84 €/MWh for solar and from 6.23 to 4.94 for wind; with every hour paid, wind −6 %, solar +2 % (scripts/ppa_fpc_variants.py).`) + biasLine(o, 'fpc'); }
   }
 
   // ── Methodology (with the proposed updates) ──
@@ -1694,9 +1821,9 @@
 <h4>Capacity-trend method (default)</h4>
 <ol>
 <li><b>Forward.</b> France baseload Cal contracts of each delivery year (latest settlements), editable. Weighted by the expected production of each year (degradation ${(o.degr * 100).toFixed(2)} %/yr) and a discount factor at ${(o.disc * 100).toFixed(1)} %/yr.</li>
-${FRDOC() ? `<li><b>Cannibalisation.</b> Décote de profil = 1 − prix capté ÷ prix base, par année civile : nationale (production RTE éCO2mix × day-ahead ENTSO-E) ou celle du parc (sa courbe × prix quart-horaires France). Convention : ${S.conv === 'pos' ? 'heures à prix ≤ 0 retirées du prix capté et du prix base (décote passée)' : 'toutes les heures (comme le M0 de la CRE)'}.
+${FRDOC() ? `<li><b>Cannibalisation.</b> Décote de profil = 1 − prix capté ÷ prix base, par année civile : nationale (production RTE éCO2mix × day-ahead ENTSO-E) ou celle du parc (sa courbe × prix quart-horaires France). Convention : ${S.conv === 'pos' ? 'heures à prix < 0 retirées du prix capté et du prix base (décote passée)' : 'toutes les heures (comme le M0 de la CRE)'}.
 Projection depuis la dernière année utilisée (${o.lastYr}) : ${MODEL_T[o.model]}.${o.cfit ? ` Modèle de capacité : taux de capture = a + b × ln(GW installés), ajusté sur ${o.cfit.use.join(', ')} (b = ${(o.cfit.sl * 100).toFixed(1).replace('.', ',')} pts par ln GW, R² ${o.cfit.r2.toFixed(2).replace('.', ',')}), parc installé (RTE, ODRÉ) au rythme de la dernière année, jamais sous la ligne droite vers les objectifs PPE3 (${Object.entries(PPE3[S.tech]).map(([y, g]) => y + ' : ' + String(g).replace('.', ',') + ' GW').join(', ')}) : sur 2017–2025, toutes les extrapolations simples sont restées sous le parc réel, ancré sur ${o.lastYr}.` : ''}
-Incertitude : ${(o.sig0 * 100).toFixed(1).replace('.', ',')} pts × √années après ${o.lastYr} (les bandes du graphique).</li>` : `<li><b>Cannibalisation.</b> Shape discount = 1 − capture price ÷ baseload, per calendar year: national (RTE éCO2mix production × ENTSO-E day-ahead) or the asset (its curve × France quarter-hour prices). Convention: ${S.conv === 'pos' ? 'hours with a price ≤ 0 left out of both the capture price and the baseload (Past discount)' : 'all hours (as the CRE M0)'}.
+Incertitude : ${(o.sig0 * 100).toFixed(1).replace('.', ',')} pts × √années après ${o.lastYr} (les bandes du graphique).</li>` : `<li><b>Cannibalisation.</b> Shape discount = 1 − capture price ÷ baseload, per calendar year: national (RTE éCO2mix production × ENTSO-E day-ahead) or the asset (its curve × France quarter-hour prices). Convention: ${S.conv === 'pos' ? 'hours with a price < 0 left out of both the capture price and the baseload (Past discount)' : 'all hours (as the CRE M0)'}.
 Projection from the last year used (${o.lastYr}): ${MODEL_T[o.model]}.${o.cfit ? ` Capacity model: capture rate = a + b × ln(installed GW), fitted on ${o.cfit.use.join(', ')} (b = ${(o.cfit.sl * 100).toFixed(1)} pts per ln GW, R² ${o.cfit.r2.toFixed(2)}), installed capacity going at the last year's pace, never below the straight line to the PPE3 targets (${Object.entries(PPE3[S.tech]).map(([y, g]) => y + ': ' + g + ' GW').join(', ')}): on 2017–2025 every simple extrapolation stayed below the real fleet, anchored on ${o.lastYr}.` : ''}
 Uncertainty: ${(o.sig0 * 100).toFixed(1)} pts × √years after ${o.lastYr} (the bands of the chart).</li>`}
 <li><b>Capture value</b> ${FRDOC() ? `= Σ poids × forward Cal × k × (1 − décote de profil projetée) = <code>${f2(o.fair)} €/MWh</code>. <b>k</b>, le facteur des mois cotés, met le niveau au mois comme le reste de l’outil : la valeur de la production sur les forwards des mois (produits liquides seulement : mois M+1 à M+3, trimestres Q+1 à Q+4, puis Cal découpé par la forme de la dernière année couverte par des trimestres liquides, pesée ½ l’année suivante, ¼ celle d’après, et par l’historique pour le reste, data/history/fr_forward_monthly.json ; même courbe pour le modèle européen, la méthode intégrée et la simulation météo) ÷ sa valeur sur le Cal avec la forme saisonnière historique, que porte la capture annuelle. k = ${o.years.map(r => r.y + ' ' + (r.kq || 1).toFixed(3).replace('.', ',')).join(' ; ')} (proche de 1 quand rien n’est coté sous le Cal : la forme ne s’appuie alors qu’à moitié sur la dernière année cotée, puis au quart).${o.years.some(r => r.g !== 1) ? ` Livraison sur une partie d’année : la capture annuelle est ramenée aux mois livrés par <b>g</b> = valeur d’un MWh sur ces mois ÷ sur l’année entière (forward des mois × capture mensuelle prévue × production de chaque mois), et le volume à leur part de la production annuelle : ${o.years.filter(r => r.g !== 1).map(r => r.y + ' g ' + r.g.toFixed(3).replace('.', ',') + ', ' + Math.round(r.sh * 100) + ' % du volume').join(' ; ')}.` : ''}` : `= Σ weight × Cal forward × k × (1 − projected shape discount) = <code>${f2(o.fair)} €/MWh</code>. <b>k</b>, the quoted-month factor, puts the level month by month as the rest of the tool does: the output's value on the months' forwards (liquid products only: months M+1 to M+3, quarters Q+1 to Q+4, then the Cal shaped by the last year covered by liquid quarters, weighted ½ the year after, ¼ the next, and by history for the rest, data/history/fr_forward_monthly.json; the same curve for the European model, the integrated method and the weather simulation) ÷ its value on the Cal with the historical seasonal shape that the yearly capture carries. k = ${o.years.map(r => r.y + ' ' + (r.kq || 1).toFixed(3)).join(', ')} (close to 1 when nothing below the Cal is quoted: the shape then leans on the last quoted year's only half way, then a quarter).${o.years.some(r => r.g !== 1) ? ` A year delivered in part: the yearly capture is brought to the months delivered by <b>g</b> = value of one MWh on those months ÷ on the whole year (months' forwards × forecast monthly capture × each month's output), and the volume to their share of the year's output: ${o.years.filter(r => r.g !== 1).map(r => r.y + ' g ' + r.g.toFixed(3) + ', ' + Math.round(r.sh * 100) + ' % of the volume').join('; ')}.` : ''}`}</li>
@@ -1705,7 +1832,7 @@ Uncertainty: ${(o.sig0 * 100).toFixed(1)} pts × √years after ${o.lastYr} (the
 <li><b>PPA price</b> = value at risk − additional discount − imbalance + GO − margin = <code>${f2(o.ppaBuild)} €/MWh</code>. The margin is what the buyer keeps, so it is deducted.</li>
 </ol>
 <h4>Hours at zero or negative prices</h4>
-<p>Hours with a French day-ahead price ≤ 0 per year (${Object.keys(D.negH).filter(y => +y < thisYear()).slice(-3).map(y => y + ': ' + Math.round(D.negH[y].h) + ' h').join(', ')}), projected in a straight line with installed solar capacity (fitted on ${o.nhFitYears.join(', ')}, capacity at the last year's pace, never below the PPE3 path, at most 2,500 h). The share of the output produced in those hours follows 1 − exp(−hours ÷ h₀), calibrated on the last complete year (${o.shLast != null ? (o.shLast * 100).toFixed(1) + ' %' : '–'}). With the PPA Dashboard convention (hours > 0 only), that output is not paid: the volume paid each year is reduced accordingly, which changes the weights and the P&L.</p>
+<p>Hours with a French day-ahead price < 0 per year (${Object.keys(D.negH).filter(y => +y < thisYear()).slice(-3).map(y => y + ': ' + Math.round(D.negH[y].h) + ' h').join(', ')}), projected in a straight line with installed solar capacity (fitted on ${o.nhFitYears.join(', ')}, capacity at the last year's pace, never below the PPE3 path, at most 2,500 h). The share of the output produced in those hours follows 1 − exp(−hours ÷ h₀), calibrated on the last complete year (${o.shLast != null ? (o.shLast * 100).toFixed(1) + ' %' : '–'}). With the PPA Dashboard convention (hours > 0 only), that output is not paid: the volume paid each year is reduced accordingly, which changes the weights and the P&L.</p>
 <h4>${FRDOC() ? 'Méthode de la décote passée' : 'Past-discount method'}</h4>
 <p>${FRDOC() ? '<b>Repère seulement</b> (revue du 27 oct. 2026) : affichée pour comparaison, elle n’entre jamais dans le prix du PPA.' : '<b>A reference only</b> (review of 27 Oct 2026): shown for comparison, it never enters the PPA price.'}</p>
 ${FRDOC() ? `<p>Mode projeté (par défaut) : <code>décote(a) = tendance des N dernières années utilisées (a) + [P${S.pct} − P50] des décotes passées</code>, puis <code>PPA = Σ p(a) × F(a) × (1 − décote(a)) − F × (décote additionnelle + risque volume + risque prix) − écarts + GO − marge</code>. Mode passé seul : <code>PPA = F − F × (décote de profil au P${S.pct} des années utilisées + décote additionnelle + risque volume + risque prix) − écarts + GO − marge</code> = <code>${f2(o.ppaPct)} €/MWh</code>, F = moyenne simple des Cal. Comme dans l’outil Streamlit de l’équipe, sauf la marge : il l’ajoutait, ici elle est déduite comme dans toutes les autres méthodes.</p>` : `<p>Projected mode (default): <code>discount(y) = trend of the last N years used (y) + [P${S.pct} − P50] of the past discounts</code>, then <code>PPA = Σ w(y) × F(y) × (1 − discount(y)) − F × (add. discount + volume risk + price risk) − imbalance + GO − margin</code>. Past-only mode: <code>PPA = F − F × (shape discount at P${S.pct} of the years used + add. discount + volume risk + price risk) − imbalance + GO − margin</code> = <code>${f2(o.ppaPct)} €/MWh</code>, F = simple average of the Cal contracts. As in the team's Streamlit tool, except the margin: it added it, here it is deducted like in every other method.</p>`}
@@ -1808,7 +1935,7 @@ ${FRDOC() ? `<p>RTE éCO2mix (production nationale, 15 min) · prix day-ahead EN
       const a = o.auto, line = (l, k, u) => `${l}: ${a[k] ? a[k][0] : '–'}${u || ''}${S[k] != null ? ' (entered: ' + S[k] + ')' : ' · ' + (a[k] ? a[k][1] : '')}`;
       specs.push({ k: 'note', title: 'Assumptions', text: [line('Production', 'volume', ' MWh/yr'), line('Degradation', 'degr', ' %/yr'), line('Imbalance', 'imb', ' €/MWh'), line('GO', 'go', ' €/MWh'), line('Margin', 'margin', ' €/MWh'), line('Discount rate', 'disc', ' %'),
         line('Risk accepted', 'alpha', ' %'), line('Production uncertainty', 'mcVol', ' %'), line('Forward volatility', 'mcFwd', ' %/√yr'), line('Cannibalisation drift', 'mcSd', ' pts/√yr'), line('Production ↔ cannibalisation', 'rho', ''),
-        `Years fitted: ${o.sel.join(', ')} · capture convention: ${S.conv === 'curt' ? 'curtailment at prices ≤ 0' : S.conv === 'pos' ? 'hours with price > 0' : 'all hours'} · forwards of ${D.fwdDate || '–'}`].join('\n') });
+        `Years fitted: ${o.sel.join(', ')} · capture convention: ${S.conv === 'curt' ? 'curtailment at prices < 0' : S.conv === 'pos' ? 'hours with price > 0' : 'all hours'} · forwards of ${D.fwdDate || '–'}`].join('\n') });
       await PKExport.deck(`PPA pricing · ${tech} ${T}`, specs);
     } catch (e) { console.warn('[ppa] pptx', e); $('pp-status').textContent = 'PowerPoint report failed: ' + (e.message || e); }
     btn.disabled = false; btn.textContent = label;
@@ -1831,7 +1958,7 @@ ${FRDOC() ? `<p>RTE éCO2mix (production nationale, 15 min) · prix day-ahead EN
         { Item: 'Method', Value: S.method === 'pct' ? 'Past discount (percentile of history)' : 'Capacity trend (projection + Monte Carlo premium)' },
         { Item: 'PPA price (€/MWh)', Value: r2(o.ppa) }, { Item: 'Capacity-trend price (€/MWh)', Value: r2(o.ppaBuild) }, { Item: 'Past discount price (€/MWh)', Value: r2(o.ppaPct) }, { Item: 'European price model price (€/MWh)', Value: r2(o.ppaEu) },
         { Item: 'Technology', Value: S.tech }, { Item: 'Tenor', Value: o.tenor[0] + '–' + o.tenor[o.tenor.length - 1] }, { Item: 'Production (MWh/yr)', Value: r2(o.volume) }, { Item: 'Capacity (MW)', Value: o.mw },
-        { Item: 'Basis', Value: o.useAsset ? 'asset curve ' + S.assetName : 'national profile' }, { Item: 'Capture convention', Value: S.conv === 'curt' ? 'curtailment at prices ≤ 0' : S.conv === 'pos' ? 'hours with price > 0 (Past discount)' : 'all hours' },
+        { Item: 'Basis', Value: o.useAsset ? 'asset curve ' + S.assetName : 'national profile' }, { Item: 'Capture convention', Value: S.conv === 'curt' ? 'curtailment at prices < 0' : S.conv === 'pos' ? 'hours with price > 0 (Past discount)' : 'all hours' },
         { Item: 'Years used', Value: o.sel.join(', ') }, { Item: 'Projection', Value: MODEL_T[o.model] }, { Item: 'Forward, weighted (€/MWh)', Value: r2(o.refW) }, { Item: 'Forward, simple average (€/MWh)', Value: r2(o.ref) },
         { Item: 'Capture value (€/MWh)', Value: r2(o.fair) }, { Item: 'Risk accepted (% chance of loss)', Value: o.alpha }, { Item: 'Risk premium (€/MWh)', Value: r2(o.premium) },
         { Item: 'Percentile (past discount)', Value: 'P' + S.pct }, { Item: 'Shape discount at the percentile', Value: r4(o.sdCh) },
@@ -1873,13 +2000,14 @@ ${FRDOC() ? `<p>RTE éCO2mix (production nationale, 15 min) · prix day-ahead EN
     const st = $('pp-status'); if (!el && st) { el = document.createElement('div'); el.id = 'pp-partial-note'; el.className = 'fuel-note'; st.after(el); }
     if (!el) return;
     const P = o.partial, fr = FRDOC(), n = (v, d) => v == null || !isFinite(v) ? '–' : (+v).toFixed(d).replace('.', fr ? ',' : '.');
-    el.innerHTML = fr ? `<b>Arrêt partiel aux prix ≤ 0 :</b> ${n(P.k * 100, 0)} % de la production de ces heures s’arrête (non payée), le reste tourne et touche le prix négatif ; ${n(P.ns * 100, 1)} % de la production tombe à ces heures sur le ténor. Chaque méthode mélange ses deux prix : arrêt total ${n(P.stop.ppa, 2)} €/MWh, sans arrêt ${n(P.run.ppa, 2)} €/MWh → <b>${n(o.ppa, 2)} €/MWh</b>, pondéré par les volumes payés. Les graphiques et tableaux montrent le cas d’arrêt total ; la précision mesurée est celle de l’arrêt total.`
-      : `<b>Partial stop at prices ≤ 0:</b> ${n(P.k * 100, 0)} % of the output at those hours stops (not paid), the rest runs and is paid the negative price; ${n(P.ns * 100, 1)} % of the output falls in those hours over the tenor. Each method blends its two prices: full stop ${n(P.stop.ppa, 2)} €/MWh, no stop ${n(P.run.ppa, 2)} €/MWh → <b>${n(o.ppa, 2)} €/MWh</b>, weighted by the paid volumes. Charts and tables show the full-stop case; the measured precision is the full-stop one.`;
+    el.innerHTML = fr ? `<b>Arrêt partiel aux prix < 0 :</b> ${n(P.k * 100, 0)} % de la production de ces heures s’arrête (non payée), le reste tourne et touche le prix négatif ; ${n(P.ns * 100, 1)} % de la production tombe à ces heures sur le ténor. Chaque méthode mélange ses deux prix : arrêt total ${n(P.stop.ppa, 2)} €/MWh, sans arrêt ${n(P.run.ppa, 2)} €/MWh → <b>${n(o.ppa, 2)} €/MWh</b>, pondéré par les volumes payés. Les graphiques et tableaux montrent le cas d’arrêt total ; la précision mesurée est celle de l’arrêt total.`
+      : `<b>Partial stop at prices < 0:</b> ${n(P.k * 100, 0)} % of the output at those hours stops (not paid), the rest runs and is paid the negative price; ${n(P.ns * 100, 1)} % of the output falls in those hours over the tenor. Each method blends its two prices: full stop ${n(P.stop.ppa, 2)} €/MWh, no stop ${n(P.run.ppa, 2)} €/MWh → <b>${n(o.ppa, 2)} €/MWh</b>, weighted by the paid volumes. Charts and tables show the full-stop case; the measured precision is the full-stop one.`;
   }
   async function run() {
     if (busy) { again = true; return; }
     busy = true;
     const cpf = $('pp-curtpct-field'); if (cpf) cpf.hidden = S.conv !== 'part';
+    const stf = $('pp-stopt-field'); if (stf) stf.hidden = S.conv !== 'curt' && S.conv !== 'part';
     try { await load(); const o = await compute();
       if (o.missing) { S.last = null; renderForwards(o); renderYears(o); renderAuto(o); try { renderMarket(o); } catch (e) { console.warn('[ppa] market', e); }
         $('pp-status').innerHTML = `<b>No market price for Cal ${o.missing.join(', ')}.</b> Enter your forward for ${o.missing.length > 1 ? 'these years' : 'this year'} (step 2), or end the delivery in ${o.missing[0] - 1}. Nothing is priced until then.`;
@@ -1985,5 +2113,15 @@ ${FRDOC() ? `<p>RTE éCO2mix (production nationale, 15 min) · prix day-ahead EN
   window.PKCannib = { render() { const p = pageP(); [['cannib-projection', 'cn-proj'], ['cannib-capacity', 'cn-capfit'], ['cannib-countries-years', 'cn-xcy'], ['cannib-countries', 'cn-xc'], ['cannib-hourly', 'cn-hc'], ['cannib-neghours', 'cn-negh'], ['cannib-rolling', 'cn-roll'], ['cannib-rolling-eur', 'cn-roll-eur'], ['cannib-profile', 'cn-prof'], ['cannib-penetration-years', 'cn-pen']].forEach(([w, c]) => PKW.get(w) && PKW.draw(w, c, p)); } };
   // the published average for the benchmark (scripts/ppa_daily.py): the four methods with their weights
   const avg4Of = o => { if (GEN_ONLY(o.stAt || o.st)) return o.ppaGen != null && isFinite(o.ppaGen) ? o.ppaGen : null; const it = [['build', o.ppaBuild], ['fpc', o.ppaFpc], ['wx', o.ppaWx], ['eu', o.ppaEu]].map(([k, x]) => ({ k, x })); return it.every(m => m.x != null && isFinite(m.x)) ? wmean(it, 'x', o.stAt || o.st) : null; };   // stAt: the state may be restored before this is read
-  window.PKPpa = { compute: () => compute(), state: S, run, avg4Of };
+  // the M0 expected for each delivery year (Tom 1 Nov. 2026, aggregation contracts under complément de rémunération): the
+  // published generator's NATIONAL capture × the year's Cal (read month by month), with the stop rule of the pricer; P10 /
+  // P90 from the full Monte Carlo band's capture quantiles. Read by js/ppa-cr.js
+  async function m0Years() {
+    const o = await compute(Object.assign({}, S, { asset: null, assetName: '', noMC: true }));
+    if (!o || !o.gen || !o.years) return null;
+    const B = D.fcst && D.fcst.generator && D.fcst.generator.band && D.fcst.generator.band[S.tech === 'wind' ? 'wind' : 'solar'];
+    return o.years.map((r, i) => { const c = o.gen[i].capture, b = B && B[String(r.y)], k = b && b.p50 ? c / b.p50 : null;
+      return { y: r.y, fwd: r.fwd, capture: c, m0: r.fwd * c, p10: k ? r.fwd * b.p10 * k : null, p90: k ? r.fwd * b.p90 * k : null, w: r.wt }; });
+  }
+  window.PKPpa = { compute: () => compute(), state: S, run, avg4Of, m0Years };
 })();
