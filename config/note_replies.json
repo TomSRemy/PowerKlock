@@ -682,5 +682,13 @@
  "114": {
   "status": "open",
   "reply": "Maquette faite, à valider avant que je code (c’est un changement de style sur tout le site) : docs/discussion/maquettes/tuiles_stories.png sur la branche discussion-bridge. Partie 2 : une rangée de ronds en haut d’Aujourd’hui, un par section, ouverts en plein écran avec barres de progression, tap pour passer, comme sur Instagram."
+ },
+ "108": {
+  "status": "done",
+  "reply": "Réorganisé : le graphique Prix mélangeait deux axes (prix et heures négatives). Il y a maintenant deux graphiques côte à côte, alignés : le spot moyen de chaque mois contre l’année précédente, et les heures à prix négatif de chaque mois contre l’année précédente ; les 4 chiffres (spot moyen, heures négatives, heures au-dessus de 100 €, journée la plus chère) passent en ligne dessous."
+ },
+ "109": {
+  "status": "done",
+  "reply": "Ajouté, comme dans le Bilan de RTE : une section « Nucléaire et renouvelables · facteurs de charge » avec, mois par mois, le facteur de charge du nucléaire, de l’éolien et du solaire contre l’année précédente (production ÷ capacité installée × heures ; capacité interpolée entre deux fins d’année ; pour l’année en cours, la capacité de fin d’année précédente, ce qui surestime un peu l’éolien et le solaire, c’est écrit sous le graphique). Plus les heures négatives par mois (note 108). Pour l’harmonisation des tuiles, voir la maquette de la note 107."
  }
 }

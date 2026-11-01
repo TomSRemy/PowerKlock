@@ -57,9 +57,11 @@
       <section class="bl-blk"><div class="bl-t"><h2>${T('Production par filière', 'Production by source')}</h2><span class="bl-src">RTE éCO2mix · TWh</span></div>
         <div class="bl-cols"><div class="bl-c" style="height:300px"><canvas id="bl-src"></canvas></div><div class="bl-c" style="height:300px"><canvas id="bl-mon"></canvas></div></div></section>
       <section class="bl-blk"><div class="bl-t"><h2>${T('Prix', 'Prices')}</h2><span class="bl-src">ENTSO-E day-ahead · €/MWh</span></div>
-        <div class="bl-cols"><div class="bl-c" style="height:280px"><canvas id="bl-spot"></canvas></div>
-        <div class="bl-mini">${[[N(sp.avg, 1) + ' €', T('spot moyen', 'average spot')], [N(sp.neg_h, 0) + ' h', T('à prix négatif', 'at a negative price')], [N(sp.high_h, 0) + ' h', T('au-dessus de 100 €/MWh', 'above 100 €/MWh')],
-          [N(sp.max_day_avg, 0) + ' €', T('journée la plus chère', 'dearest day') + ' (' + (sp.max_day ? new Date(sp.max_day + 'T12:00:00Z').toLocaleDateString(T('fr-FR', 'en-GB'), { day: 'numeric', month: 'short', timeZone: 'UTC' }) : '–') + ')']].map(([v, l]) => `<div><b>${v}</b>${l}</div>`).join('')}</div></div></section>
+        <div class="bl-cols"><div class="bl-c" style="height:260px"><canvas id="bl-spot"></canvas></div><div class="bl-c" style="height:260px"><canvas id="bl-neg"></canvas></div></div>
+        <div class="bl-mini bl-mini-row">${[[N(sp.avg, 1) + ' €', T('spot moyen', 'average spot')], [N(sp.neg_h, 0) + ' h', T('à prix négatif', 'at a negative price')], [N(sp.high_h, 0) + ' h', T('au-dessus de 100 €/MWh', 'above 100 €/MWh')],
+          [N(sp.max_day_avg, 0) + ' €', T('journée la plus chère', 'dearest day') + ' (' + (sp.max_day ? new Date(sp.max_day + 'T12:00:00Z').toLocaleDateString(T('fr-FR', 'en-GB'), { day: 'numeric', month: 'short', timeZone: 'UTC' }) : '–') + ')']].map(([v, l]) => `<div><b>${v}</b>${l}</div>`).join('')}</div></section>
+      <section class="bl-blk"><div class="bl-t"><h2>${T('Nucléaire et renouvelables · facteurs de charge', 'Nuclear and renewables · load factors')}</h2><span class="bl-src">RTE éCO2mix · Energy-Charts · ${T('production ÷ (capacité × heures)', 'output ÷ (capacity × hours)')}</span></div>
+        <div class="bl-c" style="height:260px"><canvas id="bl-lf"></canvas></div><p class="bl-foot" id="bl-lf-note" style="margin:6px 0 0"></p></section>
       <div class="bl-cols">
         <section class="bl-blk"><div class="bl-t"><h2>${T('Consommation', 'Consumption')}</h2><span class="bl-src">RTE éCO2mix · TWh ${T('par mois', 'per month')}</span></div><div class="bl-c" style="height:240px"><canvas id="bl-load"></canvas></div></section>
         <section class="bl-blk"><div class="bl-t"><h2>${T('Échanges par frontière', 'Exchanges by border')}</h2><span class="bl-src">Energy-Charts · ${T('solde physique, TWh', 'physical balance, TWh')}</span></div><div class="bl-c" style="height:240px"><canvas id="bl-bord"></canvas></div></section>
@@ -88,7 +90,7 @@
     // monthly: only the current year and the one before carry months
     const M = D.months[year], P = D.months[String(+year - 1)], mons = M ? Object.keys(M).sort() : [];
     const box = id => { const c = document.getElementById(id); if (c) c.closest('.bl-c').hidden = !mons.length; };
-    ['bl-mon', 'bl-spot', 'bl-load'].forEach(box);
+    ['bl-mon', 'bl-spot', 'bl-neg', 'bl-lf', 'bl-load'].forEach(box);
     if (mons.length) {
       const at = (src, m, k) => { const r = src && src[(+m.slice(0, 4) - (src === P ? 1 : 0)) + m.slice(4)]; return r ? r[k] : null; };
       const lab = mons.map(m => m);   // ISO months: the regulatory milestones find their place
@@ -97,10 +99,35 @@
         options: opts({ scales: { x: { stacked: true, ticks: tick, grid: { display: false } }, y: { stacked: true, ticks: { color: '#7A93AB' }, grid: { color: 'rgba(255,255,255,.05)' }, title: { display: true, text: T('TWh par mois', 'TWh per month'), color: '#7A93AB' } } } }) }, 'bilan-prod');
       mk('bl-spot', { type: 'line', data: { labels: lab, datasets: [
         { label: year, data: mons.map(m => M[m].spot), borderColor: '#14D3A9', borderWidth: 2.4, pointRadius: 2, tension: 0 },
-        { label: String(+year - 1), data: mons.map(m => at(P, m, 'spot')), borderColor: '#7A93AB', borderDash: [4, 3], borderWidth: 1.6, pointRadius: 0, tension: 0 },
-        { type: 'bar', label: T('heures négatives', 'negative hours'), data: mons.map(m => M[m].neg_h), backgroundColor: 'rgba(237,105,101,.45)', yAxisID: 'y1' }] },
-        options: opts({ scales: { x: { ticks: tick, grid: { display: false } }, y: { ticks: { color: '#7A93AB' }, grid: { color: 'rgba(255,255,255,.05)' }, title: { display: true, text: '€/MWh', color: '#7A93AB' } },
-          y1: { position: 'right', ticks: { color: '#ED6965' }, grid: { display: false }, title: { display: true, text: T('h négatives', 'negative h'), color: '#ED6965' } } } }) }, 'bilan-spot');
+        { label: String(+year - 1), data: mons.map(m => at(P, m, 'spot')), borderColor: '#7A93AB', borderDash: [4, 3], borderWidth: 1.6, pointRadius: 0, tension: 0 }] },
+        options: opts({ scales: { x: { ticks: tick, grid: { display: false } }, y: { ticks: { color: '#7A93AB' }, grid: { color: 'rgba(255,255,255,.05)' }, title: { display: true, text: T('spot moyen du mois, €/MWh', 'monthly average spot, €/MWh'), color: '#7A93AB' } } } }) }, 'bilan-spot');
+      // negative-price hours month by month, against the year before
+      mk('bl-neg', { type: 'bar', data: { labels: lab, datasets: [
+        { label: year, data: mons.map(m => M[m].neg_h), backgroundColor: '#7FC8F8', borderRadius: 2 },
+        { label: String(+year - 1), data: mons.map(m => at(P, m, 'neg_h')), backgroundColor: 'rgba(127,200,248,.3)', borderRadius: 2 }] },
+        options: opts({ scales: { x: { ticks: tick, grid: { display: false } }, y: { beginAtZero: true, ticks: { color: '#7A93AB' }, grid: { color: 'rgba(255,255,255,.05)' }, title: { display: true, text: T('heures à prix négatif', 'negative-price hours'), color: '#7A93AB' } } } }) }, 'bilan-neg');
+      // side by side charts start at the same height: the spot chart carries the milestone labels on top, the negative hours follow it
+      const alignNeg = () => { const a = Chart.getChart(document.getElementById('bl-spot')), n = Chart.getChart(document.getElementById('bl-neg'));
+        if (!a || !n || !a.chartArea || !n.chartArea || Math.abs(a.chartArea.top - n.chartArea.top) < 1) return;
+        const pad = n.options.layout && n.options.layout.padding, cur = pad && typeof pad === 'object' ? pad.top || 0 : +pad || 0;
+        n.options.layout = Object.assign({}, n.options.layout, { padding: { top: Math.max(0, cur + a.chartArea.top - n.chartArea.top) } }); n.update('none'); };
+      [400, 1500].forEach(t => setTimeout(alignNeg, t));
+      // load factors: monthly output over installed capacity × hours; capacity at the end of the year, or of the year before when not yet known
+      // capacity of a month: interpolated between the end of the year before and the end of the year (a fleet grows during the year);
+      // the end of the year before alone while the year's figure is not published
+      const capEnd = y => D.years[y] && D.years[y].capacity, gwOf = (c, k) => !c ? null : k === 'wind' ? (c.wind_on || 0) + (c.wind_off || 0) : c[k];
+      const capAt = (y, m, k) => { const c0 = gwOf(capEnd(String(+y - 1)), k), c1 = gwOf(capEnd(y), k), f = (+m.slice(5, 7) - 0.5) / 12; return c0 && c1 ? c0 + (c1 - c0) * f : c1 || c0 || null; };
+      const hrs = m => { const y = +m.slice(0, 4), mo = +m.slice(5, 7), full = new Date(Date.UTC(y, mo, 0)).getUTCDate(); const to = D.to || ''; return 24 * (to.slice(0, 7) === m ? +to.slice(8, 10) : full); };
+      const lf = (src, m, yy, k) => { const r = src && src[m], gw = capAt(yy, m, k); if (!r) return null; return gw && r[k] != null ? Math.round(r[k] * 1e6 / (gw * hrs(m))) / 10 : null; };   // TWh·10⁶ ÷ (GW·10³ × h) × 100, one decimal
+      const pm = m => (+m.slice(0, 4) - 1) + m.slice(4);
+      const LFS = [['nuclear', T('Nucléaire', 'Nuclear'), '#B48CF2'], ['wind', T('Éolien', 'Wind'), '#7FC8F8'], ['solar', T('Solaire', 'Solar'), '#F4B740']];
+      mk('bl-lf', { type: 'line', data: { labels: lab, datasets: LFS.flatMap(([k, n, c]) => [
+        { label: n + ' ' + year, data: mons.map(m => lf(M, m, year, k)), borderColor: c, borderWidth: 2.2, pointRadius: 2, tension: 0 },
+        { label: n + ' ' + (+year - 1), data: mons.map(m => lf(P, pm(m), String(+year - 1), k)), borderColor: c, borderDash: [4, 3], borderWidth: 1.3, pointRadius: 0, tension: 0 }]) },
+        options: opts({ scales: { x: { ticks: tick, grid: { display: false } }, y: { beginAtZero: true, ticks: { color: '#7A93AB', callback: v => v + ' %' }, grid: { color: 'rgba(255,255,255,.05)' }, title: { display: true, text: T('facteur de charge', 'load factor'), color: '#7A93AB' } } } }) }, 'bilan-load-factors');
+      const ln = document.getElementById('bl-lf-note'), known = !!capEnd(year);
+      if (ln) ln.textContent = T(`Capacité installée (Energy-Charts) interpolée mois par mois entre deux fins d’année${known ? '' : ' ; pour ' + year + ', celle de fin ' + (+year - 1) + ', la fin ' + year + ' n’étant pas publiée : le facteur de charge de l’éolien et du solaire est donc un peu surestimé'} ; le mois en cours est compté jusqu’au dernier jour publié.`,
+        `Installed capacity (Energy-Charts) interpolated month by month between two year-ends${known ? '' : '; for ' + year + ', the end-' + (+year - 1) + ' figure, end-' + year + ' not being published: wind and solar load factors are therefore slightly overstated'}; the current month counts up to the last published day.`);
       mk('bl-load', { type: 'bar', data: { labels: lab, datasets: [
         { label: year, data: mons.map(m => M[m].load), backgroundColor: '#7FC8F8', borderRadius: 2 },
         { label: String(+year - 1), data: mons.map(m => at(P, m, 'load')), backgroundColor: 'rgba(127,200,248,.3)', borderRadius: 2 }] },
