@@ -172,6 +172,33 @@ _muReg({
   },
 });
 
+_muReg({
+  id: 'fr-load-monthly', title: 'France consumption by month, year against year', category: 'france', page: 'load', pageCanvas: 'load-monthly', source: 'RTE éCO2mix',
+  desc: 'French consumption of each month (TWh), the last three years against the range and mean of the earlier years since 2015.',
+  async draw(cid) {
+    const j = await _muGet('frd', 'history/rte/fr_daily.json');
+    if (!j || !j.rows) { noDataMsg(cid, 'RTE history not available', ''); return null; }
+    const by = {}; j.rows.forEach(r => { if (r.loadAvg == null) return; const y = r.d.slice(0, 4), m = +r.d.slice(5, 7) - 1; const o = (by[y] = by[y] || Array.from({ length: 12 }, () => ({ e: 0, n: 0 })))[m]; o.e += r.loadAvg * 24 / 1e6; o.n++; });
+    const dim = (y, m) => new Date(Date.UTC(+y, m + 1, 0)).getUTCDate();
+    // a month counts only when complete (no partial current month)
+    const val = (y, m) => { const o = by[y] && by[y][m]; return o && o.n >= dim(y, m) ? Math.round(o.e * 100) / 100 : null; };
+    const years = Object.keys(by).sort(), last3 = years.slice(-3), hist = years.filter(y => !last3.includes(y));
+    const band = fn => Array.from({ length: 12 }, (_, m) => { const v = hist.map(y => val(y, m)).filter(x => x != null); return v.length ? Math.round(fn(v) * 100) / 100 : null; });
+    const r1 = hist[0] + '–' + hist[hist.length - 1];
+    const cols = ['rgba(127,200,248,.7)', '#B48CF2', '#F4B740'];
+    _fuelChart(cid, { type: 'line', data: { labels: _muMon(), datasets: [
+      { label: r1 + ' range', data: band(v => Math.max(...v)), borderWidth: 0, pointRadius: 0, fill: '+1', backgroundColor: 'rgba(122,147,171,.18)' },
+      { label: '_min', data: band(v => Math.min(...v)), borderWidth: 0, pointRadius: 0, fill: false },
+      { label: r1 + ' mean', data: band(v => v.reduce((a, b) => a + b, 0) / v.length), borderColor: 'rgba(184,201,217,.7)', borderDash: [5, 4], borderWidth: 1.3, pointRadius: 0, fill: false },
+      ...last3.map((y, i) => ({ label: y, data: Array.from({ length: 12 }, (_, m) => val(y, m)), borderColor: cols[i], borderWidth: i === 2 ? 2.6 : 1.6, pointRadius: 2, fill: false })),
+    ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('TWh') }, plugins: { legend: _muLegend() } }) }, 'consumption-monthly');
+    const y = last3[2], ms = Array.from({ length: 12 }, (_, m) => val(y, m)), lm = ms.map((v, m) => v != null ? m : -1).filter(m => m >= 0).pop();
+    if (lm == null) return null;
+    const prev = val(last3[1], lm);
+    return { sub: _muT(`${_muMon()[lm]} ${y} : ${ms[lm].toFixed(1)} TWh`, `${_muMon()[lm]} ${y}: ${ms[lm].toFixed(1)} TWh`) + (prev ? ` · ${ms[lm] >= prev ? '+' : ''}${((ms[lm] / prev - 1) * 100).toFixed(1)} % vs ${last3[1]}` : '') };
+  },
+});
+
 // ── forward contracts, contract by contract (power: fr_market_contracts.json, TTF: ttf_contracts.json) ──
 async function _muContracts(cc) {
   if (cc === 'TTF') { const j = await _muGet('ttfc', 'history/ttf_contracts.json'); return j && j.TTF; }
@@ -578,7 +605,15 @@ window.PKSpot = {
     if (note) note.textContent = sel && cc !== sel.value ? 'No outlook for ' + sel.options[sel.selectedIndex].text + ': France shown.' : '';
     ['temp', 'wind', 'solar', 'precip'].forEach(k => PKW.draw('wx-outlook', 'wx-out-' + k, { country: cc, series: k }).then(r => { const e = document.getElementById('wx-out-' + k + '-sub'); if (e) e.textContent = r && r.sub ? r.sub : ''; }));
   },
-  load() { if (window.PKW) PKW.draw('fr-load-normal', 'load-normal', {}).then(r => { const e = document.getElementById('load-normal-sub'); if (e && r && r.sub) e.textContent = r.sub; }); },
+  load() {
+    if (!window.PKW) return;
+    const sub = id => r => { const e = document.getElementById(id); if (e && r && r.sub) e.textContent = r.sub; };
+    PKW.draw('fr-load-normal', 'load-normal', { days: '730' }).then(sub('load-normal-sub'));
+    PKW.draw('fr-load-monthly', 'load-monthly', {}).then(sub('load-monthly-sub'));
+    // the grid operators' forecast for the zone chosen on the page (France when the forecast has no such zone)
+    const sel = document.getElementById('load-country'), z = sel && sel.value && sel.value !== 'FR' ? sel.value : 'FR';
+    if (PKW.get('fc-48h')) PKW.draw('fc-48h', 'load-fc', { zone: z }).then(r => { sub('load-fc-sub')(r); if (!r && z !== 'FR') PKW.draw('fc-48h', 'load-fc', { zone: 'FR' }).then(sub('load-fc-sub')); });
+  },
 };
 window.addEventListener('load', () => setTimeout(() => {
   const done = {};

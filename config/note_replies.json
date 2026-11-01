@@ -602,5 +602,17 @@
  "78": {
   "status": "done",
   "reply": "Fait : le bouton « Expliquer » est maintenant toujours visible dans la barre du haut, juste à gauche de Refresh. Activé, il affiche aussi sous chaque graphique de la vue Expert (Fondamentaux compris) une ligne qui dit ce que montre le graphique et comment le lire, en plus des lignes sous les tuiles."
+ },
+ "100": {
+  "status": "done",
+  "reply": "Fait : la page Consommation a maintenant trois onglets. Quotidien (comme avant), Prévision (consommation, éolien et solaire prévus par les gestionnaires de réseau pour aujourd’hui et demain, avec le réalisé) et Historique (consommation vs normale sur 2 ans avec les boutons de période, et un nouveau graphique : la consommation de chaque mois, 2024-2025-2026 contre la fourchette et la moyenne 2015–2023)."
+ },
+ "59": {
+  "status": "done",
+  "reply": "Réponse : ce graphique est bien dans l’onglet Quotidien (vérifié). Si tu voulais dire qu’il irait mieux dans Historique (il montre 30 jours et les mois), dis-le-moi et je le déplace."
+ },
+ "60": {
+  "status": "done",
+  "reply": "Réponse : non, elle n’est pas dans Historique. Historique a une carte thermique différente (zones × jours, prix moyen du jour). Celle-ci, heure × jour sur 14 jours, n’existe que dans la vue d’ensemble (et comme widget pour les tableaux de bord). Je peux l’ajouter dans Historique avec un choix de zone et de période si tu veux."
  }
 }
