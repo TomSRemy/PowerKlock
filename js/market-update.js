@@ -514,7 +514,7 @@ if (window.PKW) PKW.register({
         segment: { borderColor: c => !fcast && (c.p0.parsed.y < 0 || c.p1.parsed.y < 0) ? '#ED6965' : undefined },   // below 0 €: the price line turns red
         pointRadius: h.map((_, i) => i === lo || i === hi ? 5 : 0), pointBackgroundColor: h.map((_, i) => fcast ? fcCol : i === lo ? '#14D3A9' : '#ED6965'), pointBorderColor: '#0a0e13' },
       { label: T('Moyenne', 'Average'), data: h.map(() => Math.round(avg * 100) / 100), borderColor: avgCol, borderDash: [5, 4], borderWidth: 1.2, pointRadius: 0 },
-    ] }, plugins: [bands], options: { responsive: true, maintainAspectRatio: false, animation: false, interaction: { mode: 'index', intersect: false }, plugins: { legend: { display: false } },
+    ] }, plugins: [bands], options: { responsive: true, maintainAspectRatio: false, animation: false, interaction: { mode: 'index', intersect: false }, plugins: { legend: { display: false }, pkFcZone: fcast ? { from: 0, label: 'FORECAST · PowerKlock' } : undefined },
       scales: { x: { ticks: { color: '#7A93AB', font: { size: 11 }, maxTicksLimit: 8 }, grid: { color: 'rgba(255,255,255,.04)' }, title: { display: true, text: T('heure (Paris)', 'hour (Paris)'), color: '#7A93AB', font: { size: 11 } } }, y: { ticks: { color: '#7A93AB', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,.04)' }, title: { display: true, text: '€/MWh', color: '#7A93AB', font: { size: 11 } } } } } });
     dayCh.$muZone = Z; dayCh.canvas.dataset.fsTitle = _muZoneName(Z) + ' · ' + dl + (fcast ? ' · ' + T('prévision', 'forecast') : ''); _muSyncDays(Z);
   },

@@ -630,5 +630,9 @@
  "102": {
   "status": "done",
   "reply": "Fait : un encart « Lecture du jour » sous les chiffres clés de la page Échanges (France). Il dit si la France était exportatrice ou importatrice nette, rappelle le principe (le courant va du moins cher au plus cher tant que le réseau le permet ; quand une limite est atteinte, un écart de prix apparaît), puis, frontière par frontière et quart d’heure par quart d’heure : combien d’heures au même prix, combien d’heures France moins chère ou plus chère, l’écart moyen, et les heures d’échange à contre-sens. Suisse et Grande-Bretagne sont hors calcul car hors couplage européen."
+ },
+ "85": {
+  "status": "done",
+  "reply": "Fait : quand le prix de demain n’est pas encore publié et que la carte montre la prévision PowerKlock, elle prend le même habillage que « France · éolien, solaire et consommation » : fond hachuré avec l’étiquette PRÉVISION · PowerKlock, courbe en pointillés bleus. Les plages moins cher / plus cher restent indiquées."
  }
 }
