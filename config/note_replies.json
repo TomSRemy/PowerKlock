@@ -626,5 +626,9 @@
  "111": {
   "status": "open",
   "reply": "Pas sur le site, et voici pourquoi : les résultats des appels d’offres CRE (PPE2 sol, bâtiment, neutre, éolien) ne sont publiés qu’en PDF (délibérations de la CRE, listes de lauréats du ministère), sans fichier ni API mis à jour automatiquement. La règle du site exclut ces sources. Deux options : (1) un job qui lit chaque nouvelle délibération CRE (même format à chaque période) et en sort le prix moyen pondéré par famille ; (2) une table tenue à la main avec la source de chaque ligne. Je recommande (1). Dis-moi si tu valides."
+ },
+ "102": {
+  "status": "done",
+  "reply": "Fait : un encart « Lecture du jour » sous les chiffres clés de la page Échanges (France). Il dit si la France était exportatrice ou importatrice nette, rappelle le principe (le courant va du moins cher au plus cher tant que le réseau le permet ; quand une limite est atteinte, un écart de prix apparaît), puis, frontière par frontière et quart d’heure par quart d’heure : combien d’heures au même prix, combien d’heures France moins chère ou plus chère, l’écart moyen, et les heures d’échange à contre-sens. Suisse et Grande-Bretagne sont hors calcul car hors couplage européen."
  }
 }

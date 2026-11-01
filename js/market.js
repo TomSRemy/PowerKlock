@@ -64,6 +64,7 @@ async function _cbFrance(day) {
   PKW.periodButtons('cb-days', CB_DAYS_PARAM.options.map(o => [o[0], o[0] + 'D']), cbN, v => { window._cbDaysN = v; PKW.draw('cb-days', 'cb-days', { day, n: v }); });
   document.getElementById('cb-intraday-title').textContent = 'Intraday exchanges by border · ' + _renFmtDay(day);
 
+  _cbReading(day, d, avgNet).catch(() => {});
   document.getElementById('cb-table-title').textContent = 'Borders · ' + _renFmtDay(day);
   document.getElementById('cb-updated').textContent = 'RTE éCO2mix · commercial';
   document.getElementById('cb-tbody').innerHTML = stats.map(st => {
@@ -73,6 +74,53 @@ async function _cbFrance(day) {
       `<td>${st.hExp.toFixed(1)} h</td><td>${_fuelSigned(st.gwh, 1)} GWh</td><td class="l" style="text-align:left">${dir}</td></tr>`;
   }).join('');
   document.getElementById('cb-note').textContent = 'Commercial exchanges scheduled per border, RTE sign convention (negative = export from France); "Germany + Belgium" is reported jointly by RTE. Energy = Σ 15-min values × 0.25 h.';
+}
+
+// ── Reading of the day: why power flowed where it did (note 102) ──
+// For each border, quarter-hour by quarter-hour: same price on both sides = the markets were coupled and the line had room;
+// a price gap = the line was full, the cheaper side could not export more. Flows go from the cheaper zone to the dearer one.
+// Switzerland is left out: it is not in the European market coupling, so equal prices are not expected there.
+const CB_ZONES = { ech_comm_allemagne_belgique: ['DE_LU', 'BE'], ech_comm_italie: ['IT_NORD'], ech_comm_espagne: ['ES'] };
+async function _cbReading(day, d, avgNet) {
+  const host = document.getElementById('cb-read'); if (!host) return;
+  const T = (fr, en) => (!window.PKI18n || PKI18n.lang !== 'en') ? fr : en;
+  const P = await fetchHistoricalDaily(day), fr = P && P.zones && P.zones.FR && P.zones.FR.hourly;
+  if (!fr || fr.length !== 96) { host.style.display = 'none'; return; }
+  const nm = { ech_comm_allemagne_belgique: T('l’Allemagne et la Belgique', 'Germany and Belgium'), ech_comm_suisse: T('la Suisse', 'Switzerland'), ech_comm_italie: T('l’Italie', 'Italy'), ech_comm_espagne: T('l’Espagne', 'Spain') };
+  const rows = Object.entries(CB_ZONES).map(([key, zs]) => {
+    const px = zs.map(z => P.zones[z] && P.zones[z].hourly).filter(a => a && a.length === 96); if (!px.length) return null;
+    let same = 0, frCheap = 0, frDear = 0, gapSum = 0, gapN = 0, against = 0;
+    for (let i = 0; i < 96; i++) {
+      const f = fr[i], n = px.map(a => a[i]).filter(v => v != null); if (f == null || !n.length) continue;
+      if (n.some(v => Math.abs(v - f) < 0.01)) { same++; continue; }    // coupled with at least one side of the border
+      const g = n.reduce((a, b) => a + b, 0) / n.length - f;          // neighbour minus France
+      if (g > 0) frCheap++; else frDear++;
+      gapSum += Math.abs(g); gapN++;
+      const fl = d[key] && d[key][i];                                    // + = import into France
+      if (fl != null && ((g > 0 && fl > 0) || (g < 0 && fl < 0))) against++;
+    }
+    return { key, same, frCheap, frDear, gap: gapN ? gapSum / gapN : null, against };
+  }).filter(Boolean);
+  if (!rows.length) { host.style.display = 'none'; return; }
+  const h = q => (q / 4).toFixed(q % 4 ? 2 : 0).replace(/0$/, '').replace('.', T(',', '.')) + ' h';
+  const B = t => '<b>' + t + '</b>';
+  let html = T('La France a été ', 'France was a ') + B(avgNet < 0 ? T('exportatrice nette', 'net exporter') : T('importatrice nette', 'net importer')) +
+    T(' ce jour (', ' on this day (') + (Math.abs(avgNet) / 1000).toFixed(1).replace('.', T(',', '.')) + T(' GW en moyenne). ', ' GW on average). ') +
+    T('Le couplage envoie le courant de la zone la moins chère vers la plus chère tant que le réseau le permet : s’il reste de la place, les prix s’égalisent ; quand une limite est atteinte (la ligne elle-même, ou une contrainte du calcul flow-based côté Allemagne-Belgique), un écart de prix apparaît.',
+      'Coupling sends power from the cheaper zone to the dearer one as long as the grid allows: while there is room, prices converge; once a limit binds (the line itself, or a flow-based constraint on the Germany-Belgium side), a price gap opens.');
+  html += '<ul style="margin:6px 0 0 18px;padding:0">' + rows.map(r => {
+    const parts = [];
+    if (r.same) parts.push(T('même prix ', 'same price ') + h(r.same) + T(' (réseau non contraint)', ' (grid not constrained)'));
+    if (r.frCheap) parts.push(T('France moins chère ', 'France cheaper ') + h(r.frCheap) + T(' (la France ne peut pas exporter davantage)', ' (France cannot export more)'));
+    if (r.frDear) parts.push(T('France plus chère ', 'France dearer ') + h(r.frDear) + T(' (la France ne peut pas importer davantage)', ' (France cannot import more)'));
+    const gap = r.gap != null ? T(', écart moyen ', ', average gap ') + r.gap.toFixed(0) + ' €/MWh' : '';
+    const ag = r.against >= 4 ? T(' · ' + h(r.against) + ' d’échange dans le sens contraire de l’écart de prix (programmes fixés avant le day-ahead ou effets du réseau maillé)', ' · ' + h(r.against) + ' of exchange against the price gap (schedules set before the day-ahead or meshed-grid effects)') : '';
+    return '<li>' + B(T('Avec ', 'With ') + nm[r.key]) + ' : ' + parts.join(' ; ') + gap + ag + '</li>';
+  }).join('') + '</ul>';
+  host.innerHTML = '<div class="table-title" style="margin-bottom:6px">' + T('Lecture du jour', 'Reading of the day') + '</div>' + html +
+    '<div style="margin-top:6px;color:var(--text3);font-size:11px">' + T('Prix day-ahead au quart d’heure (ENTSO-E) et échanges commerciaux par frontière (RTE). « Même prix » : écart de moins d’un centime avec au moins une zone voisine. Grande-Bretagne et Suisse hors calcul : elles ne sont pas dans le couplage européen.',
+      'Quarter-hourly day-ahead prices (ENTSO-E) and commercial exchanges per border (RTE). “Same price”: gap below one cent with at least one neighbouring zone. Great Britain and Switzerland left out: they are not in the European coupling.') + '</div>';
+  host.style.display = '';
 }
 
 // ── Other countries: physical flows from Energy-Charts (repo files) ──
@@ -212,6 +260,7 @@ async function _cbEcDays(cid, country, n, day) {
 
 // Page view for countries other than France.
 async function _cbOther(country) {
+  { const h = document.getElementById('cb-read'); if (h) h.style.display = 'none'; }
   const day = window._cbDay || await _cbEcLatest(country);
   document.getElementById('cb-day').textContent = _renFmtDay(day);
   document.getElementById('cb-updated').textContent = 'Energy-Charts · physical flows';
