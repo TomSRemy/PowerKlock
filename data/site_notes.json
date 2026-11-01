@@ -1,5 +1,5 @@
 {
- "open": 41,
+ "open": 28,
  "notes": [
   {
    "id": 29,
@@ -117,26 +117,6 @@
    "done_at": null
   },
   {
-   "id": 61,
-   "status": "open",
-   "created_at": "2026-10-28T22:29+00:00",
-   "author": "Tom",
-   "route": "markets/spot/imbalance",
-   "page": "Marchés › Électricité spot › Déséquilibre",
-   "tab": "Quotidien",
-   "target_id": "imb-fr-act",
-   "target_label": "France · prix d'activation mFRR vs day-ahead (graphique)",
-   "settings": {
-    "_page": "imbalance",
-    "_path": "#hs-body-imbalance-fr > div:nth-of-type(1)",
-    "pk-zone": "France",
-    "imb-zone": "France (RTE) — pas encore intégré"
-   },
-   "body": "pas besoin de le mettredes fois. Il est déjà dans écarts qui devrait s'appeler MFRRje pense",
-   "reply": null,
-   "done_at": null
-  },
-  {
    "id": 62,
    "status": "open",
    "created_at": "2026-10-28T22:29+00:00",
@@ -154,44 +134,6 @@
     "pf-fwd-set": "Liquides (produits de bourse)"
    },
    "body": "peut faire plus beau",
-   "reply": null,
-   "done_at": null
-  },
-  {
-   "id": 65,
-   "status": "open",
-   "created_at": "2026-10-28T22:31+00:00",
-   "author": "Tom",
-   "route": "markets/fuels/spreads",
-   "page": "Marchés › Gaz, carbone, pétrole › Spark & dark spreads",
-   "tab": "Quotidien",
-   "target_id": "hs-spark-0",
-   "target_label": "Spreads par zone · livraison 27 oct. 2026 (tableau)",
-   "settings": {
-    "_page": "spark",
-    "_path": "#hs-spark-0",
-    "pk-zone": "France"
-   },
-   "body": "pas de graphs ?",
-   "reply": null,
-   "done_at": null
-  },
-  {
-   "id": 66,
-   "status": "open",
-   "created_at": "2026-10-28T22:31+00:00",
-   "author": "Tom",
-   "route": "markets/bess",
-   "page": "Marchés › Batteries (BESS)",
-   "tab": "Valeur day-ahead",
-   "target_id": "hs-bess-da",
-   "target_label": "Une journée type, quart d’heure par quart d’heure (graphique)",
-   "settings": {
-    "_page": "bess",
-    "_path": "#hs-bess-da",
-    "pk-zone": "France"
-   },
-   "body": "on a pas un graph avec leTB 1 TB2 TB3 et TB4 ?",
    "reply": null,
    "done_at": null
   },
@@ -255,26 +197,6 @@
    "done_at": null
   },
   {
-   "id": 78,
-   "status": "open",
-   "created_at": "2026-10-31T21:31+00:00",
-   "author": "Tom",
-   "route": "today",
-   "page": "Aujourd'hui",
-   "tab": "Expert · ⓘ Expliquer · Tout",
-   "target_id": "hs-morning-fund",
-   "target_label": "Température prévue vs normale (graphique)",
-   "settings": {
-    "_page": "morning",
-    "_path": "#hs-morning-fund",
-    "pk-zone": "France",
-    "mrn-creg-per": "Année 2026 (à fin août)"
-   },
-   "body": "pas d'explication dans cette section sur ce que montre les graphs quand on appuie sur expiquer. Je mettrait bien expliquer en visible tout le temps (juste à gauche de refresh)",
-   "reply": null,
-   "done_at": null
-  },
-  {
    "id": 81,
    "status": "open",
    "created_at": "2026-10-31T21:34+00:00",
@@ -295,46 +217,6 @@
    "done_at": null
   },
   {
-   "id": 82,
-   "status": "open",
-   "created_at": "2026-10-31T21:35+00:00",
-   "author": "Tom",
-   "route": "today",
-   "page": "Aujourd'hui",
-   "tab": "Expert · ⓘ Expliquer · Tout",
-   "target_id": "mrn-sysm",
-   "target_label": "Production France par mois (graphique)",
-   "settings": {
-    "_page": "morning",
-    "_path": "#hs-body-morning-4 > div:nth-of-type(2) > div:nth-of-type(2)",
-    "pk-zone": "France",
-    "mrn-creg-per": "Année 2026 (à fin août)"
-   },
-   "body": "pas de filtre sur le temps ici ? pas top ça",
-   "reply": null,
-   "done_at": null
-  },
-  {
-   "id": 84,
-   "status": "open",
-   "created_at": "2026-10-31T21:36+00:00",
-   "author": "Tom",
-   "route": "today",
-   "page": "Aujourd'hui",
-   "tab": "Expert · ⓘ Expliquer · Tout",
-   "target_id": "mrn-loadn",
-   "target_label": "Consommation France vs normale (graphique)",
-   "settings": {
-    "_page": "morning",
-    "_path": "#hs-body-morning-4 > div:nth-of-type(3) > div:nth-of-type(2)",
-    "pk-zone": "France",
-    "mrn-creg-per": "Année 2026 (à fin août)"
-   },
-   "body": "pareil pour ce graph. je le laisserais plutot en haut. SAuf si tu proposes une nouvelle orga (fondamentaux peut être pas le meileur titre ?, mettre tout dans système électrique ? Je te laisse y réléchir et proposer quelque chose)",
-   "reply": null,
-   "done_at": null
-  },
-  {
    "id": 85,
    "status": "open",
    "created_at": "2026-10-31T21:37+00:00",
@@ -351,25 +233,6 @@
     "mrn-creg-per": "Année 2026 (à fin août)"
    },
    "body": "Quand on est en mode pévision, même design que France · éolien, solaire et consommation",
-   "reply": null,
-   "done_at": null
-  },
-  {
-   "id": 88,
-   "status": "open",
-   "created_at": "2026-10-31T21:42+00:00",
-   "author": "Tom",
-   "route": "markets/spot/spread",
-   "page": "Marchés › Électricité spot › Spreads",
-   "tab": "Intraday spread",
-   "target_id": null,
-   "target_label": null,
-   "settings": {
-    "_page": "prices",
-    "pk-zone": "France",
-    "hz-spread": "France"
-   },
-   "body": "ici je mettrais TB1, TB2, TB3, TB4. ET réorégnaise pour respecter le schéma du site. (la base étant DAy-Ahead)",
    "reply": null,
    "done_at": null
   },
@@ -395,46 +258,6 @@
    "done_at": null
   },
   {
-   "id": 90,
-   "status": "open",
-   "created_at": "2026-10-31T21:44+00:00",
-   "author": "Tom",
-   "route": "markets/fuels",
-   "page": "Marchés › Gaz, carbone, pétrole › Prix spot",
-   "tab": "Gaz",
-   "target_id": null,
-   "target_label": null,
-   "settings": {
-    "_page": "eua",
-    "fuel-to": "",
-    "pk-zone": "France",
-    "fuel-from": ""
-   },
-   "body": "on a deux fois le meme graph sur les sock gaz. GArder le plus complet",
-   "reply": null,
-   "done_at": null
-  },
-  {
-   "id": 91,
-   "status": "open",
-   "created_at": "2026-10-31T21:44+00:00",
-   "author": "Tom",
-   "route": "markets/fuels",
-   "page": "Marchés › Gaz, carbone, pétrole › Prix spot",
-   "tab": "Vue d'ensemble",
-   "target_id": null,
-   "target_label": null,
-   "settings": {
-    "_page": "eua",
-    "fuel-to": "",
-    "pk-zone": "France",
-    "fuel-from": ""
-   },
-   "body": "on met que le TTF, pas le PEG ?",
-   "reply": null,
-   "done_at": null
-  },
-  {
    "id": 92,
    "status": "open",
    "created_at": "2026-10-31T21:44+00:00",
@@ -455,27 +278,6 @@
    "done_at": null
   },
   {
-   "id": 94,
-   "status": "open",
-   "created_at": "2026-10-31T21:46+00:00",
-   "author": "Tom",
-   "route": "markets/go",
-   "page": "Marchés › Garanties d'origine › Prix Europe",
-   "tab": "EU · Tout · Hydro/Éolien/Solaire",
-   "target_id": "go-hist-canvas",
-   "target_label": "Indications de prix hebdomadaires — prix mid (€/MWh) (graphique)",
-   "settings": {
-    "_page": "goprices",
-    "_path": "#hs-body-go-eu > div:nth-of-type(10)",
-    "pk-zone": "France",
-    "go-date-to": "",
-    "go-date-from": ""
-   },
-   "body": "quelle différence avec le premier graph ?",
-   "reply": null,
-   "done_at": null
-  },
-  {
    "id": 95,
    "status": "open",
    "created_at": "2026-10-31T21:46+00:00",
@@ -490,25 +292,6 @@
     "pk-zone": "France"
    },
    "body": "on pourrait mieux peupler cette page. Et mêtre des dates et l'agenda des enchères. Regarde sur internet ce que les entreprises mettent (regarde les trader de GO français)",
-   "reply": null,
-   "done_at": null
-  },
-  {
-   "id": 96,
-   "status": "open",
-   "created_at": "2026-10-31T21:47+00:00",
-   "author": "Tom",
-   "route": "renewables/capture",
-   "page": "Renouvelables › Capture & cannibalisation",
-   "tab": "Quotidien",
-   "target_id": null,
-   "target_label": null,
-   "settings": {
-    "_page": "renewables",
-    "pk-zone": "France",
-    "ren-country": "France"
-   },
-   "body": "bizarre le menu.",
    "reply": null,
    "done_at": null
   },
@@ -607,45 +390,6 @@
     "reg-region": "Occitanie"
    },
    "body": "facteur de charge histoirque avec  jours roulant et  mois roulant et YTD et années passé? Come le capture rate (l schéma pas encore clair)",
-   "reply": null,
-   "done_at": null
-  },
-  {
-   "id": 105,
-   "status": "open",
-   "created_at": "2026-10-31T21:54+00:00",
-   "author": "Tom",
-   "route": "system/weather",
-   "page": "Système électrique › Météo › Villes & prévisions",
-   "tab": "Réservoirs hydrauliques",
-   "target_id": null,
-   "target_label": null,
-   "settings": {
-    "_page": "wxcities",
-    "pk-zone": "France",
-    "wx-country": "France",
-    "hydro-country": "France"
-   },
-   "body": "un eu vide ici",
-   "reply": null,
-   "done_at": null
-  },
-  {
-   "id": 106,
-   "status": "open",
-   "created_at": "2026-10-31T21:54+00:00",
-   "author": "Tom",
-   "route": "system/weather/hdd",
-   "page": "Système électrique › Météo › DJU chauffage / climatisation",
-   "tab": "Hebdomadaire",
-   "target_id": null,
-   "target_label": null,
-   "settings": {
-    "_page": "wxhdd",
-    "pk-zone": "France",
-    "hdd-country": "France"
-   },
-   "body": "pas de graphs ? un peu vide",
    "reply": null,
    "done_at": null
   },
@@ -1989,26 +1733,6 @@
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
-   "id": 58,
-   "status": "done",
-   "created_at": "2026-10-28T22:26+00:00",
-   "author": "Tom",
-   "route": "markets/spot",
-   "page": "Marchés › Électricité spot › Day-ahead",
-   "tab": "Quotidien",
-   "target_id": "prices-table",
-   "target_label": "CODE ↕ (tableau)",
-   "settings": {
-    "_page": "prices",
-    "_path": "#prices-table",
-    "pk-zone": "France",
-    "spt-zone": "France"
-   },
-   "body": "plus de graphs...régler vite",
-   "reply": "Vérifié le 31 octobre : les graphiques sont revenus (ouvrir une zone du tableau affiche son profil quart d’heure par quart d’heure ; courbes multi-zones et tendance spot en dessous). Corrigé entre-temps par une autre mise à jour.",
-   "done_at": "2026-10-31T22:50+00:00"
-  },
-  {
    "id": 116,
    "status": "wontfix",
    "created_at": "2026-10-28T22:26+00:00",
@@ -2026,6 +1750,26 @@
    },
    "body": "plus de graphs...régler vite",
    "reply": "Doublon de la note 58 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 58.",
+   "done_at": "2026-10-31T22:50+00:00"
+  },
+  {
+   "id": 58,
+   "status": "done",
+   "created_at": "2026-10-28T22:26+00:00",
+   "author": "Tom",
+   "route": "markets/spot",
+   "page": "Marchés › Électricité spot › Day-ahead",
+   "tab": "Quotidien",
+   "target_id": "prices-table",
+   "target_label": "CODE ↕ (tableau)",
+   "settings": {
+    "_page": "prices",
+    "_path": "#prices-table",
+    "pk-zone": "France",
+    "spt-zone": "France"
+   },
+   "body": "plus de graphs...régler vite",
+   "reply": "Vérifié le 31 octobre : les graphiques sont revenus (ouvrir une zone du tableau affiche son profil quart d’heure par quart d’heure ; courbes multi-zones et tendance spot en dessous). Corrigé entre-temps par une autre mise à jour.",
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
@@ -2066,6 +1810,26 @@
    "body": "on la retrouve pas dans historique celle la si ? ou alors elle ets juste plus belle ici",
    "reply": "Doublon de la note 60 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 60.",
    "done_at": "2026-10-31T22:50+00:00"
+  },
+  {
+   "id": 61,
+   "status": "done",
+   "created_at": "2026-10-28T22:29+00:00",
+   "author": "Tom",
+   "route": "markets/spot/imbalance",
+   "page": "Marchés › Électricité spot › Déséquilibre",
+   "tab": "Quotidien",
+   "target_id": "imb-fr-act",
+   "target_label": "France · prix d'activation mFRR vs day-ahead (graphique)",
+   "settings": {
+    "_page": "imbalance",
+    "_path": "#hs-body-imbalance-fr > div:nth-of-type(1)",
+    "pk-zone": "France",
+    "imb-zone": "France (RTE) — pas encore intégré"
+   },
+   "body": "pas besoin de le mettredes fois. Il est déjà dans écarts qui devrait s'appeler MFRRje pense",
+   "reply": "Fait : le graphique mFRR n’était rangé dans aucun onglet, il s’affichait donc partout ; il est maintenant dans le second onglet, renommé « mFRR » (avec le tableau des plus grands écarts).",
+   "done_at": "2026-11-01T07:53+00:00"
   },
   {
    "id": 119,
@@ -2109,25 +1873,6 @@
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
-   "id": 63,
-   "status": "done",
-   "created_at": "2026-10-28T22:29+00:00",
-   "author": "Tom",
-   "route": "markets/forwards",
-   "page": "Marchés › Électricité forwards",
-   "tab": "Comparaison",
-   "target_id": "hs-prfwd-compare",
-   "target_label": "Comparaison par pays Un produit, les 4 zones sur le même graphique (graphique)",
-   "settings": {
-    "_page": "prices",
-    "_path": "#hs-prfwd-compare",
-    "pk-zone": "France"
-   },
-   "body": "vide ?",
-   "reply": "Vérifié le 31 octobre : l’onglet Comparaison affiche bien les 4 zones (France, UK, Allemagne, Pays-Bas) sur le produit choisi. Il était vide le 28, corrigé depuis.",
-   "done_at": "2026-10-31T22:50+00:00"
-  },
-  {
    "id": 121,
    "status": "wontfix",
    "created_at": "2026-10-28T22:29+00:00",
@@ -2144,6 +1889,25 @@
    },
    "body": "vide ?",
    "reply": "Doublon de la note 63 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 63.",
+   "done_at": "2026-10-31T22:50+00:00"
+  },
+  {
+   "id": 63,
+   "status": "done",
+   "created_at": "2026-10-28T22:29+00:00",
+   "author": "Tom",
+   "route": "markets/forwards",
+   "page": "Marchés › Électricité forwards",
+   "tab": "Comparaison",
+   "target_id": "hs-prfwd-compare",
+   "target_label": "Comparaison par pays Un produit, les 4 zones sur le même graphique (graphique)",
+   "settings": {
+    "_page": "prices",
+    "_path": "#hs-prfwd-compare",
+    "pk-zone": "France"
+   },
+   "body": "vide ?",
+   "reply": "Vérifié le 31 octobre : l’onglet Comparaison affiche bien les 4 zones (France, UK, Allemagne, Pays-Bas) sur le produit choisi. Il était vide le 28, corrigé depuis.",
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
@@ -2185,6 +1949,25 @@
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
+   "id": 65,
+   "status": "done",
+   "created_at": "2026-10-28T22:31+00:00",
+   "author": "Tom",
+   "route": "markets/fuels/spreads",
+   "page": "Marchés › Gaz, carbone, pétrole › Spark & dark spreads",
+   "tab": "Quotidien",
+   "target_id": "hs-spark-0",
+   "target_label": "Spreads par zone · livraison 27 oct. 2026 (tableau)",
+   "settings": {
+    "_page": "spark",
+    "_path": "#hs-spark-0",
+    "pk-zone": "France"
+   },
+   "body": "pas de graphs ?",
+   "reply": "Fait : l’onglet Quotidien a maintenant un graphique, le clean spark spread et le clean dark spread base de chaque zone pour le jour de livraison, au-dessus du tableau.",
+   "done_at": "2026-11-01T07:53+00:00"
+  },
+  {
    "id": 123,
    "status": "wontfix",
    "created_at": "2026-10-28T22:31+00:00",
@@ -2221,6 +2004,25 @@
    "body": "on a pas un graph avec leTB 1 TB2 TB3 et TB4 ?",
    "reply": "Doublon de la note 66 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 66.",
    "done_at": "2026-10-31T22:50+00:00"
+  },
+  {
+   "id": 66,
+   "status": "done",
+   "created_at": "2026-10-28T22:31+00:00",
+   "author": "Tom",
+   "route": "markets/bess",
+   "page": "Marchés › Batteries (BESS)",
+   "tab": "Valeur day-ahead",
+   "target_id": "hs-bess-da",
+   "target_label": "Une journée type, quart d’heure par quart d’heure (graphique)",
+   "settings": {
+    "_page": "bess",
+    "_path": "#hs-bess-da",
+    "pk-zone": "France"
+   },
+   "body": "on a pas un graph avec leTB 1 TB2 TB3 et TB4 ?",
+   "reply": "Fait : graphique « Spreads batterie TB1 à TB4 · France, 90 jours » en tête de l’onglet Valeur day-ahead de la page Batteries (TB3 ajouté).",
+   "done_at": "2026-11-01T07:53+00:00"
   },
   {
    "id": 125,
@@ -2263,26 +2065,6 @@
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
-   "id": 69,
-   "status": "done",
-   "created_at": "2026-10-28T22:34+00:00",
-   "author": "Tom",
-   "route": "system/generation",
-   "page": "Système électrique › Production › Mix de production",
-   "tab": "Quotidien",
-   "target_id": "hs-gmdcz",
-   "target_label": "Analyse multi-zones jeu. 29 oct. 2026 (tableau)",
-   "settings": {
-    "_page": "genmix",
-    "_path": "#hs-gmdcz",
-    "pk-zone": "France",
-    "gm-date-picker-input": ""
-   },
-   "body": "bug quand jec hange de graph. Soit ilsapparaisent pas soit ils changent pas,",
-   "reply": "Fait : les vues changeaient bien, mais en « Total GW » le classement affichait les MW comme des GW (France « 59 106 GW » au lieu de 59,1) ; corrigé. Titres et onglets de l’analyse multi-zones en français (Classement, Carte thermique, Profils, % EnR, % bas carbone).",
-   "done_at": "2026-11-01T07:28+00:00"
-  },
-  {
    "id": 127,
    "status": "wontfix",
    "created_at": "2026-10-28T22:34+00:00",
@@ -2301,6 +2083,26 @@
    "body": "bug quand jec hange de graph. Soit ilsapparaisent pas soit ils changent pas,",
    "reply": "Doublon de la note 69 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 69.",
    "done_at": "2026-10-31T22:50+00:00"
+  },
+  {
+   "id": 69,
+   "status": "done",
+   "created_at": "2026-10-28T22:34+00:00",
+   "author": "Tom",
+   "route": "system/generation",
+   "page": "Système électrique › Production › Mix de production",
+   "tab": "Quotidien",
+   "target_id": "hs-gmdcz",
+   "target_label": "Analyse multi-zones jeu. 29 oct. 2026 (tableau)",
+   "settings": {
+    "_page": "genmix",
+    "_path": "#hs-gmdcz",
+    "pk-zone": "France",
+    "gm-date-picker-input": ""
+   },
+   "body": "bug quand jec hange de graph. Soit ilsapparaisent pas soit ils changent pas,",
+   "reply": "Fait : les vues changeaient bien, mais en « Total GW » le classement affichait les MW comme des GW (France « 59 106 GW » au lieu de 59,1) ; corrigé. Titres et onglets de l’analyse multi-zones en français (Classement, Carte thermique, Profils, % EnR, % bas carbone).",
+   "done_at": "2026-11-01T07:28+00:00"
   },
   {
    "id": 70,
@@ -2444,24 +2246,6 @@
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
-   "id": 132,
-   "status": "wontfix",
-   "created_at": "2026-10-31T21:26+00:00",
-   "author": "Tom",
-   "route": "status",
-   "page": "status",
-   "tab": "Sources",
-   "target_id": null,
-   "target_label": null,
-   "settings": {
-    "_page": "status",
-    "pk-zone": "France"
-   },
-   "body": "logo PowerKlock quand j'appuies dessus j'arrive sur lapage de garde.",
-   "reply": "Doublon de la note 74 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 74.",
-   "done_at": "2026-10-31T22:50+00:00"
-  },
-  {
    "id": 74,
    "status": "done",
    "created_at": "2026-10-31T21:26+00:00",
@@ -2480,9 +2264,9 @@
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
-   "id": 75,
-   "status": "done",
-   "created_at": "2026-10-31T21:27+00:00",
+   "id": 132,
+   "status": "wontfix",
+   "created_at": "2026-10-31T21:26+00:00",
    "author": "Tom",
    "route": "status",
    "page": "status",
@@ -2493,8 +2277,8 @@
     "_page": "status",
     "pk-zone": "France"
    },
-   "body": "quand on lance le site, la vue est un peu bizarre. Tous les menus sont ovuert. C'est pas terrible. Signe ça",
-   "reply": "Fait : au lancement, toutes les sections du menu sont repliées dès le départ et seule celle de la page s’ouvre (elles s’affichaient toutes dépliées pendant la première seconde).",
+   "body": "logo PowerKlock quand j'appuies dessus j'arrive sur lapage de garde.",
+   "reply": "Doublon de la note 74 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 74.",
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
@@ -2516,23 +2300,21 @@
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
-   "id": 134,
-   "status": "wontfix",
-   "created_at": "2026-10-31T21:30+00:00",
+   "id": 75,
+   "status": "done",
+   "created_at": "2026-10-31T21:27+00:00",
    "author": "Tom",
-   "route": "today",
-   "page": "Aujourd'hui",
-   "tab": "Expert · ⓘ Expliquer · Tout",
-   "target_id": "mrn-fload",
-   "target_label": "Consommation France vs normale (graphique)",
+   "route": "status",
+   "page": "status",
+   "tab": "Sources",
+   "target_id": null,
+   "target_label": null,
    "settings": {
-    "_page": "morning",
-    "_path": "#hs-body-morning-fund > div:nth-of-type(2) > div:nth-of-type(2)",
-    "pk-zone": "France",
-    "mrn-creg-per": "Année 2026 (à fin août)"
+    "_page": "status",
+    "pk-zone": "France"
    },
-   "body": "il y a de l'anglais",
-   "reply": "Doublon de la note 76 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 76.",
+   "body": "quand on lance le site, la vue est un peu bizarre. Tous les menus sont ovuert. C'est pas terrible. Signe ça",
+   "reply": "Fait : au lancement, toutes les sections du menu sont repliées dès le départ et seule celle de la page s’ouvre (elles s’affichaient toutes dépliées pendant la première seconde).",
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
@@ -2553,6 +2335,26 @@
    },
    "body": "il y a de l'anglais",
    "reply": "Fait : légendes en français (« Consommation journalière », « Consommation, moyenne 7 jours », « Observé »). L’alerte « données incomplètes » venait d’une fausse alerte du contrôle du solaire, corrigée le 31 octobre.",
+   "done_at": "2026-10-31T22:50+00:00"
+  },
+  {
+   "id": 134,
+   "status": "wontfix",
+   "created_at": "2026-10-31T21:30+00:00",
+   "author": "Tom",
+   "route": "today",
+   "page": "Aujourd'hui",
+   "tab": "Expert · ⓘ Expliquer · Tout",
+   "target_id": "mrn-fload",
+   "target_label": "Consommation France vs normale (graphique)",
+   "settings": {
+    "_page": "morning",
+    "_path": "#hs-body-morning-fund > div:nth-of-type(2) > div:nth-of-type(2)",
+    "pk-zone": "France",
+    "mrn-creg-per": "Année 2026 (à fin août)"
+   },
+   "body": "il y a de l'anglais",
+   "reply": "Doublon de la note 76 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 76.",
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
@@ -2594,6 +2396,26 @@
    "body": "est-ce qu'on a la projection ? pas forcémnt à mette ici mais j'aimerais la retrouver quelque part",
    "reply": "Doublon de la note 77 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 77.",
    "done_at": "2026-10-31T22:50+00:00"
+  },
+  {
+   "id": 78,
+   "status": "done",
+   "created_at": "2026-10-31T21:31+00:00",
+   "author": "Tom",
+   "route": "today",
+   "page": "Aujourd'hui",
+   "tab": "Expert · ⓘ Expliquer · Tout",
+   "target_id": "hs-morning-fund",
+   "target_label": "Température prévue vs normale (graphique)",
+   "settings": {
+    "_page": "morning",
+    "_path": "#hs-morning-fund",
+    "pk-zone": "France",
+    "mrn-creg-per": "Année 2026 (à fin août)"
+   },
+   "body": "pas d'explication dans cette section sur ce que montre les graphs quand on appuie sur expiquer. Je mettrait bien expliquer en visible tout le temps (juste à gauche de refresh)",
+   "reply": "Fait : le bouton « Expliquer » est maintenant toujours visible dans la barre du haut, juste à gauche de Refresh. Activé, il affiche aussi sous chaque graphique de la vue Expert (Fondamentaux compris) une ligne qui dit ce que montre le graphique et comment le lire, en plus des lignes sous les tuiles.",
+   "done_at": "2026-11-01T07:53+00:00"
   },
   {
    "id": 136,
@@ -2716,6 +2538,26 @@
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
+   "id": 82,
+   "status": "done",
+   "created_at": "2026-10-31T21:35+00:00",
+   "author": "Tom",
+   "route": "today",
+   "page": "Aujourd'hui",
+   "tab": "Expert · ⓘ Expliquer · Tout",
+   "target_id": "mrn-sysm",
+   "target_label": "Production France par mois (graphique)",
+   "settings": {
+    "_page": "morning",
+    "_path": "#hs-body-morning-4 > div:nth-of-type(2) > div:nth-of-type(2)",
+    "pk-zone": "France",
+    "mrn-creg-per": "Année 2026 (à fin août)"
+   },
+   "body": "pas de filtre sur le temps ici ? pas top ça",
+   "reply": "Fait : « Production France par mois » montre maintenant tout l’historique depuis 2015, avec les boutons de période (3M à 5Y, Tout) en haut à droite ; il s’ouvre sur 3 ans.",
+   "done_at": "2026-11-01T07:53+00:00"
+  },
+  {
    "id": 140,
    "status": "wontfix",
    "created_at": "2026-10-31T21:35+00:00",
@@ -2794,6 +2636,26 @@
    "body": "pareil pour ce graph. je le laisserais plutot en haut. SAuf si tu proposes une nouvelle orga (fondamentaux peut être pas le meileur titre ?, mettre tout dans système électrique ? Je te laisse y réléchir et proposer quelque chose)",
    "reply": "Doublon de la note 84 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 84.",
    "done_at": "2026-10-31T22:50+00:00"
+  },
+  {
+   "id": 84,
+   "status": "done",
+   "created_at": "2026-10-31T21:36+00:00",
+   "author": "Tom",
+   "route": "today",
+   "page": "Aujourd'hui",
+   "tab": "Expert · ⓘ Expliquer · Tout",
+   "target_id": "mrn-loadn",
+   "target_label": "Consommation France vs normale (graphique)",
+   "settings": {
+    "_page": "morning",
+    "_path": "#hs-body-morning-4 > div:nth-of-type(3) > div:nth-of-type(2)",
+    "pk-zone": "France",
+    "mrn-creg-per": "Année 2026 (à fin août)"
+   },
+   "body": "pareil pour ce graph. je le laisserais plutot en haut. SAuf si tu proposes une nouvelle orga (fondamentaux peut être pas le meileur titre ?, mettre tout dans système électrique ? Je te laisse y réléchir et proposer quelque chose)",
+   "reply": "Fait : ce graphique était en double ; il reste en haut, dans Fondamentaux, et sort de Système électrique (comme le graphique des indisponibilités nucléaires, lui aussi en double). Il couvre maintenant 2 ans avec les boutons de période (ouvert sur 3 mois) et ses lignes ne sont plus lissées. Pour l’organisation : je propose de renommer « Fondamentaux » en « Météo, conso et nucléaire » et de garder « Système électrique » pour la production. Dis-moi si ça te va avant que je le fasse.",
+   "done_at": "2026-11-01T07:53+00:00"
   },
   {
    "id": 143,
@@ -2909,6 +2771,25 @@
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
+   "id": 88,
+   "status": "done",
+   "created_at": "2026-10-31T21:42+00:00",
+   "author": "Tom",
+   "route": "markets/spot/spread",
+   "page": "Marchés › Électricité spot › Spreads",
+   "tab": "Intraday spread",
+   "target_id": null,
+   "target_label": null,
+   "settings": {
+    "_page": "prices",
+    "pk-zone": "France",
+    "hz-spread": "France"
+   },
+   "body": "ici je mettrais TB1, TB2, TB3, TB4. ET réorégnaise pour respecter le schéma du site. (la base étant DAy-Ahead)",
+   "reply": "Fait : la page Spreads n’a plus d’onglets ; elle commence par l’arbitrage batterie TB1, TB2, TB3 et TB4 (graphique et chiffres clés), puis le spread journalier day-ahead, dans les sections repliables du site comme Day-ahead.",
+   "done_at": "2026-11-01T07:53+00:00"
+  },
+  {
    "id": 147,
    "status": "wontfix",
    "created_at": "2026-10-31T21:43+00:00",
@@ -2930,6 +2811,26 @@
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
+   "id": 90,
+   "status": "done",
+   "created_at": "2026-10-31T21:44+00:00",
+   "author": "Tom",
+   "route": "markets/fuels",
+   "page": "Marchés › Gaz, carbone, pétrole › Prix spot",
+   "tab": "Gaz",
+   "target_id": null,
+   "target_label": null,
+   "settings": {
+    "_page": "eua",
+    "fuel-to": "",
+    "pk-zone": "France",
+    "fuel-from": ""
+   },
+   "body": "on a deux fois le meme graph sur les sock gaz. GArder le plus complet",
+   "reply": "Fait : un seul graphique des stocks de gaz UE, le plus complet (chaque année depuis 2019, avec la moyenne et la fourchette), à côté des hubs ; légendes en français.",
+   "done_at": "2026-11-01T07:53+00:00"
+  },
+  {
    "id": 148,
    "status": "wontfix",
    "created_at": "2026-10-31T21:44+00:00",
@@ -2948,6 +2849,26 @@
    "body": "on a deux fois le meme graph sur les sock gaz. GArder le plus complet",
    "reply": "Doublon de la note 90 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 90.",
    "done_at": "2026-10-31T22:50+00:00"
+  },
+  {
+   "id": 91,
+   "status": "done",
+   "created_at": "2026-10-31T21:44+00:00",
+   "author": "Tom",
+   "route": "markets/fuels",
+   "page": "Marchés › Gaz, carbone, pétrole › Prix spot",
+   "tab": "Vue d'ensemble",
+   "target_id": null,
+   "target_label": null,
+   "settings": {
+    "_page": "eua",
+    "fuel-to": "",
+    "pk-zone": "France",
+    "fuel-from": ""
+   },
+   "body": "on met que le TTF, pas le PEG ?",
+   "reply": "Fait : le PEG (hub français) est ajouté à côté du TTF sur le graphique de la vue d’ensemble.",
+   "done_at": "2026-11-01T07:53+00:00"
   },
   {
    "id": 149,
@@ -3030,6 +2951,27 @@
    "done_at": "2026-11-01T07:28+00:00"
   },
   {
+   "id": 94,
+   "status": "done",
+   "created_at": "2026-10-31T21:46+00:00",
+   "author": "Tom",
+   "route": "markets/go",
+   "page": "Marchés › Garanties d'origine › Prix Europe",
+   "tab": "EU · Tout · Hydro/Éolien/Solaire",
+   "target_id": "go-hist-canvas",
+   "target_label": "Indications de prix hebdomadaires — prix mid (€/MWh) (graphique)",
+   "settings": {
+    "_page": "goprices",
+    "_path": "#hs-body-go-eu > div:nth-of-type(10)",
+    "pk-zone": "France",
+    "go-date-to": "",
+    "go-date-from": ""
+   },
+   "body": "quelle différence avec le premier graph ?",
+   "reply": "Réponse : le premier graphique suit un seul produit (celui choisi, ici AIB renouvelable), une courbe par année de production (Cal-24, Cal-25…). Celui-ci compare les produits entre eux (hydro, éolien, solaire…) sur l’année de production la plus proche. Rien changé.",
+   "done_at": "2026-11-01T07:53+00:00"
+  },
+  {
    "id": 152,
    "status": "wontfix",
    "created_at": "2026-10-31T21:46+00:00",
@@ -3086,6 +3028,25 @@
    "body": "bizarre le menu.",
    "reply": "Doublon de la note 96 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 96.",
    "done_at": "2026-10-31T22:50+00:00"
+  },
+  {
+   "id": 96,
+   "status": "done",
+   "created_at": "2026-10-31T21:47+00:00",
+   "author": "Tom",
+   "route": "renewables/capture",
+   "page": "Renouvelables › Capture & cannibalisation",
+   "tab": "Quotidien",
+   "target_id": null,
+   "target_label": null,
+   "settings": {
+    "_page": "renewables",
+    "pk-zone": "France",
+    "ren-country": "France"
+   },
+   "body": "bizarre le menu.",
+   "reply": "Corrigé : le fil d’Ariane affichait « Renouvelables › Renouvelables » au lieu du nom de la page (la comparaison se faisait avant la traduction). Il affiche maintenant « Renouvelables › Capture & cannibalisation » (ou « Contrat M0 »), et la correction vaut pour toutes les pages dans le même cas.",
+   "done_at": "2026-11-01T07:53+00:00"
   },
   {
    "id": 97,
@@ -3304,6 +3265,26 @@
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
+   "id": 105,
+   "status": "done",
+   "created_at": "2026-10-31T21:54+00:00",
+   "author": "Tom",
+   "route": "system/weather",
+   "page": "Système électrique › Météo › Villes & prévisions",
+   "tab": "Réservoirs hydrauliques",
+   "target_id": null,
+   "target_label": null,
+   "settings": {
+    "_page": "wxcities",
+    "pk-zone": "France",
+    "wx-country": "France",
+    "hydro-country": "France"
+   },
+   "body": "un eu vide ici",
+   "reply": "Fait : l’onglet Réservoirs hydrauliques a maintenant 4 chiffres clés (stock, écart à la normale, écart à l’an dernier, rang en Europe) et un second graphique à côté : l’écart de chaque pays européen à sa normale et à l’an dernier pour la même semaine. La France est à −36 % de sa normale mi-octobre.",
+   "done_at": "2026-11-01T07:53+00:00"
+  },
+  {
    "id": 163,
    "status": "wontfix",
    "created_at": "2026-10-31T21:54+00:00",
@@ -3341,6 +3322,25 @@
    "body": "pas de graphs ? un peu vide",
    "reply": "Doublon de la note 106 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 106.",
    "done_at": "2026-10-31T22:50+00:00"
+  },
+  {
+   "id": 106,
+   "status": "done",
+   "created_at": "2026-10-31T21:54+00:00",
+   "author": "Tom",
+   "route": "system/weather/hdd",
+   "page": "Système électrique › Météo › DJU chauffage / climatisation",
+   "tab": "Hebdomadaire",
+   "target_id": null,
+   "target_label": null,
+   "settings": {
+    "_page": "wxhdd",
+    "pk-zone": "France",
+    "hdd-country": "France"
+   },
+   "body": "pas de graphs ? un peu vide",
+   "reply": "Fait : l’onglet Hebdomadaire a maintenant un graphique, les degrés-jours de chauffage de chaque semaine contre la normale 2016–2025, sur les 10 dernières semaines et les 2 semaines de prévision (barres plus pâles), au-dessus du tableau.",
+   "done_at": "2026-11-01T07:53+00:00"
   },
   {
    "id": 165,
