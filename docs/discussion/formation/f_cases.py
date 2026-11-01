@@ -51,13 +51,15 @@ def fig(i):
     plt.tight_layout(rect=(0,.06,1,1)); plt.savefig(OUT+f'fm_{i}.png',dpi=170,facecolor='white'); plt.close(); return q,p
 RES={i:fig(i) for i in range(5)}
 H=json.load(open(SRC+'cases_hist.json')); yh=sorted(H)
+# drawn at their size on the slide (4.1 × 1.75 in) so the type keeps its real size
 for k,c in (('exp_free','#3B6FB6'),('exp_sat','#7FB3E0'),('imp_free','#E0A030'),('imp_sat','#C8463C')):
     v=[H[y][k]['share']*100 for y in yh]
-    f,ax=plt.subplots(figsize=(5.2,2.3)); ax.bar(range(len(yh)),v,.66,color=c)
+    f,ax=plt.subplots(figsize=(4.1,1.75)); ax.bar(range(len(yh)),v,.7,color=c)
     for i,x in enumerate(v):
-        if x>=1: ax.text(i,x+1.5,f'{x:.0f}',ha='center',fontsize=9,color=INK)
-    ax.set_xticks(range(len(yh))); ax.set_xticklabels([("'"+y[2:]) if y!='2026' else "'26*" for y in yh],fontsize=9)
-    ax.set_ylim(0,max(max(v)*1.25,10)); ax.set_yticks([]); ax.spines['left'].set_visible(False)
-    for s in ('top','right'): ax.spines[s].set_visible(False)
-    plt.tight_layout(); plt.savefig(OUT+f'fh_{k}.png',dpi=170,facecolor='white'); plt.close()
+        if x>=1: ax.text(i,x+max(v)*.04,f'{x:.0f}',ha='center',va='bottom',fontsize=10,color=INK,fontweight='bold' if x==max(v) else 'normal')
+    ax.set_xticks(range(len(yh))); ax.set_xticklabels([("'"+y[2:]) if y!='2026' else "'26*" for y in yh],fontsize=9.5)
+    ax.set_ylim(0,max(max(v)*1.3,10)); ax.set_yticks([]); ax.spines['left'].set_visible(False)
+    ax.set_title('% du temps, chaque année', fontsize=10, loc='left', color='#5d636d')
+    for s_ in ('top','right'): ax.spines[s_].set_visible(False)
+    plt.tight_layout(pad=.3); plt.savefig(OUT+f'fh_{k}.png',dpi=220,facecolor='white'); plt.close()
 json.dump({str(k):[round(v[0],1),round(v[1],1)] for k,v in RES.items()},open(OUT+'fm.json','w')); print(RES)

@@ -74,7 +74,7 @@ takeaway(s, 3983951, 1500000, 'Le principe', ['Le calcul envoie l’électricit�
     'Cet écart × le flux = la « rente de congestion », encaissée par les gestionnaires de réseau (RTE pour la France).'])
 # 3 · the reference, then one slide per case (merit order large, what happens on the right, how often below)
 H=json.load(open('/tmp/coupl/disc/docs/discussion/couplage/cases_hist.json'))
-CW=7000000   # chart width
+CW=6400000   # chart width
 def case_slide(title, sub, img, head, bullets, hist=None, when=None):
     s=base(title, sub, 'Illustration PowerKlock : parc et prix indicatifs, lignes de 10 GW' + (' ; fréquences : ENTSO-E, Energy-Charts' if hist else ''))
     s.shapes.add_picture(img, X0-60000, 1300000, width=Emu(CW))
@@ -85,9 +85,9 @@ def case_slide(title, sub, img, head, bullets, hist=None, when=None):
     tb=clone(s,shp(ref,'TextBox 20')); tb.left=col; tb.top=1330000; tb.width=cw; tb.height=2300000
     set_text(tb,[head]+bullets); para(tb,12.5)
     if hist:
-        t2=clone(s,shp(ref,'TextBox 20')); t2.left=col; t2.top=3800000; t2.width=cw; t2.height=900000
+        t2=clone(s,shp(ref,'TextBox 20')); t2.left=col; t2.top=3700000; t2.width=cw; t2.height=800000
         set_text(t2,['Quand ?', when]); para(t2,12.5)
-        s.shapes.add_picture(hist, col, 4950000, width=Emu(cw), height=Emu(1080000))
+        s.shapes.add_picture(hist, col, 4520000, width=Emu(cw))
     return s
 case_slide('La référence : la France seule', 'Le prix est fixé par la dernière centrale appelée pour couvrir la consommation', '/tmp/coupl/form/fm_0.png',
     'Comment lire le dessin', ['Les moyens de production sont rangés du moins cher au plus cher : éolien et solaire, nucléaire, hydraulique, gaz.',
@@ -99,7 +99,7 @@ case_slide('Cas 1 · Exportatrice, lignes libres', 'Les voisins paient 58 € : 
 case_slide('Cas 2 · Exportatrice, lignes pleines', 'Les voisins paient 95 € : la France exporte au maximum', '/tmp/coupl/form/fm_2.png',
     'Ce qui se passe', ['Les lignes sont pleines à 10 GW : impossible d’exporter plus.', 'Le prix français monte à 65 €, mais reste loin des 95 € des voisins.',
     'L’écart de 30 € × 10 GW est la rente de congestion, encaissée par les gestionnaires de réseau.'],
-    '/tmp/coupl/form/fh_exp_sat.png', 'Devenu majoritaire : 66 % du temps en 2025, avec la France à 57,5 €/MWh contre 102,4 € en Allemagne sur ces heures.')
+    '/tmp/coupl/form/fh_exp_sat.png', 'Majoritaire : 66 % du temps en 2025, France à 57,5 €/MWh, Allemagne à 102,4 €.')
 case_slide('Cas 3 · Importatrice, lignes libres', 'Les voisins vendent à 45 € : la France achète chez eux', '/tmp/coupl/form/fm_3.png',
     'Ce qui se passe', ['La France produit 5 GW de moins et les importe.', 'Son prix baisse de 50 à 45 €, le prix des voisins.',
     'Ses centrales les plus chères s’arrêtent : importer coûte moins cher qu’elles.'],
