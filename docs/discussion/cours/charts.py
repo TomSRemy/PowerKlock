@@ -291,3 +291,40 @@ ax.set_xticks(range(len(late)), [f'j{i+1}' for i in range(len(late))]); ax.set_y
 ax.set_title('Le bus en retard : on règle sa marge sur ses retards passés')
 save(fig, '21_bus', 'image illustrative (retards inventés pour l\'exemple)')
 print('ok')
+
+
+# 22 flow-based : un échange passe par plusieurs chemins (schéma)
+fig, ax = plt.subplots(figsize=(10.5, 6)); ax.axis('off'); ax.set_xlim(0, 10.5); ax.set_ylim(0, 6)
+P = {'FR': (2.0, 2.6), 'BE': (3.8, 5.0), 'DE': (7.6, 4.2), 'CH': (5.6, 1.6), 'IT': (8.6, 0.6)}
+for k, (x, y) in P.items():
+    box(ax, x - 0.75, y - 0.4, 1.5, 0.8, {'FR': 'France', 'BE': 'Belgique', 'DE': 'Allemagne', 'CH': 'Suisse', 'IT': 'Italie'}[k],
+        '#e8f0fa' if k != 'FR' else '#f1ebf7', BLUE if k != 'FR' else VIOLET, 11, True)
+def line(a, b, txt, col, lw, off=(0, 0.18)):
+    (x1, y1), (x2, y2) = P[a], P[b]
+    ax.add_patch(FancyArrowPatch((x1, y1), (x2, y2), arrowstyle='-|>', mutation_scale=15, color=col, lw=lw, shrinkA=32, shrinkB=32))
+    ax.text((x1 + x2) / 2 + off[0], (y1 + y2) / 2 + off[1], txt, ha='center', fontsize=10, color=col)
+line('FR', 'BE', '≈ 40 %', BLUE, 2.4, (-0.45, 0.1)); line('BE', 'DE', '≈ 40 %', BLUE, 2.4)
+line('FR', 'DE', '≈ 35 %', BLUE, 2.0, (0, 0.2)); line('FR', 'CH', '≈ 25 %', BLUE, 1.6, (-0.3, -0.35)); line('CH', 'DE', '≈ 25 %', BLUE, 1.6, (0.55, 0))
+line('CH', 'IT', 'exports vers l\'Italie', AMBER, 2.4, (0.9, 0.05))
+ax.text(2.6, 0.75, 'lignes 400 kV Creys–Saint-Vulbas (près de Lyon) :\nelles portent une partie des échanges vers Core\nET des exports vers l\'Italie', fontsize=10, color=VIOLET, ha='center')
+ax.text(5.2, 5.75, 'La France vend 1 000 MW à l\'Allemagne : l\'électricité prend tous les chemins à la fois', ha='center', fontsize=12, fontweight='bold')
+ax.text(5.2, 0.05, 'Pourcentages illustratifs. Le vrai calcul (PTDF) est fait par les gestionnaires de réseau pour chaque ligne critique.', ha='center', fontsize=9, color=GREY)
+save(fig, '22_flow_based', 'schéma illustratif ; idée : CRE, délibération 2018-176 (annexe flow-based) ; lignes : Boerman (2026)')
+
+# 23 états de couplage de la France, par année
+yy = [str(y) for y in range(2020, 2027)]
+keys = [('core', 'Couplée avec Core (= Belgique et Allemagne)', BLUE), ('partial', 'Couplée avec une partie (souvent l\'Espagne seule)', '#6b9bd1'),
+        ('cut_mid', 'Coupée de tous, prix entre ses voisins', VIOLET), ('cut_exp', 'Coupée de tous, la moins chère', AMBER),
+        ('cut_imp', 'Coupée de tous, la plus chère', GREY)]
+fig, ax = plt.subplots(figsize=(9, 5.2)); bot = np.zeros(7)
+for k, lab, col in keys:
+    v = np.array([S[y]['shares'][k] * 100 for y in yy]); ax.bar(yy, v, bottom=bot, color=col, label=lab, edgecolor='white')
+    for i in range(7):
+        if v[i] >= 6:
+            ax.text(i, bot[i] + v[i] / 2, f'{v[i]:.0f} %', ha='center', va='center', fontsize=9, color='white' if col != SAND else INK)
+    bot += v
+ax.set_ylim(0, 100); ax.set_ylabel('% du temps (quarts d\'heure)'); ax.set_xticks(range(7), yy[:-1] + ['2026\n(janv.–oct.)'])
+ax.legend(frameon=False, fontsize=9, loc='center left', bbox_to_anchor=(1.0, 0.5))
+ax.set_title('Dans quel état est la France ? Prix égal au centime près à celui des voisins')
+save(fig, '23_etats_couplage', 'ENTSO-E, Elexon ; calcul PowerKlock (docs/discussion/couplage/summary.json)')
+print('ok2')
