@@ -33,6 +33,8 @@ jobs:
         run: python scripts/ppa_backtest_detail.py --sims 40
       - name: Regional capture (France, 12 regions)
         run: python scripts/fetch_fr_regions_capture.py --recent || echo "::warning::regional capture not updated"
+      - name: Keep last week's forecast file (to restore the generator if it fails)
+        run: cp data/history/ppa_forecast.json /tmp/ppa_forecast_prev.json
       - name: Test bench and forecasts
         run: python scripts/ppa_lab.py --sims 300
       - name: Integrated method (realised last year × the European model's change)
@@ -40,7 +42,15 @@ jobs:
       - name: Model risk of the scenario generator (its past errors, deliveries since 2023, complete months)
         run: python scripts/ppa_model_risk.py || echo "::warning::model risk not updated"
       - name: Scenario generator (sets the published price, solar and wind)
-        run: python scripts/ppa_generator.py || echo "::warning::scenario generator not updated"
+        # a failure is retried once; a second failure puts back last week's results (scripts/ppa_generator_restore.py)
+        # instead of leaving the site on the old method, and e-mails (step below)
+        run: |
+          python scripts/ppa_generator.py && exit 0
+          echo "::warning::scenario generator failed, retrying once"
+          python scripts/ppa_generator.py && exit 0
+          echo "::error::scenario generator failed twice: last week's results put back"
+          python scripts/ppa_generator_restore.py /tmp/ppa_forecast_prev.json || true
+          echo "GEN_FAILED=1" >> "$GITHUB_ENV"
       - name: Walk-forward test, year by year
         run: python scripts/ppa_walkforward.py || echo "::warning::walk-forward not updated"
       - name: Capture fan
@@ -70,6 +80,17 @@ jobs:
           git commit -m "data: PPA test bench $(date -u '+%Y-%m-%d')"
           for i in 1 2 3 4 5; do git pull -q --rebase -X theirs origin main && git push && exit 0; git rebase --abort 2>/dev/null || true; sleep 5; done
           exit 1
+
+      - name: E-mail when the scenario generator failed
+        if: env.GEN_FAILED == '1'
+        env:
+          GO_GMAIL_USER: ${{ secrets.GO_GMAIL_USER }}
+          GO_GMAIL_APP_PASSWORD: ${{ secrets.GO_GMAIL_APP_PASSWORD }}
+          WORKFLOW: ${{ github.workflow }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          SUBJECT: "PowerKlock · le générateur de scénarios a échoué (résultats de la semaine précédente remis)"
+          BODY: "Le générateur de scénarios (prix PPA publié) a échoué deux fois dans le job hebdomadaire. Les résultats de la semaine précédente ont été remis en place : le prix publié reste celui du générateur, mais il n'est pas à jour. Le pricer l'indique par un bandeau. Détail : ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        run: python3 scripts/notify_failure.py || true
 
       - name: E-mail on failure
         if: failure()
