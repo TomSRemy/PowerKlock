@@ -44,18 +44,53 @@
     PKW.register(Object.assign({ category: 'france', page: 'regions', source: 'RTE · ODRÉ', size: { w: 6, h: 5 } }, def));
   }
 
+  // Load factors over a window: the latest day, rolling 7 or 30 days, the year to date or a past calendar year (note 104).
+  // Days come from the real-time regional data; years from the monthly averages of the consolidated and real-time data,
+  // weighted by the number of quarter-hours behind each month.
+  const LF_Y = new Date().getFullYear();
+  const LF_WIN = { key: 'win', label: 'Window', options: [['day', 'Latest day'], ['7', '7 days'], ['30', '30 days'], ['ytd', 'Year to date'],
+    [String(LF_Y - 1), String(LF_Y - 1)], [String(LF_Y - 2), String(LF_Y - 2)], [String(LF_Y - 3), String(LF_Y - 3)]] };
+  let lfMonthsP = null;
+  function lfMonthsAll() {
+    if (lfMonthsP) return lfMonthsP;
+    const one = ds => fetch(API + ds + '/exports/json?' + [['select', 'libelle_region, avg(tch_eolien) as wind, avg(tch_solaire) as solar, count(tch_eolien) as n'],
+      ['where', `date_heure >= "${LF_Y - 3}-01-01"`], ['group_by', "libelle_region, date_format(date_heure, 'yyyy-MM') as ym"]].map(([k, v]) => k + '=' + encodeURIComponent(v)).join('&'))
+      .then(r => r.ok ? r.json() : []).catch(() => []);
+    return (lfMonthsP = Promise.all([one('eco2mix-regional-cons-def'), one('eco2mix-regional-tr')]).then(([def, tr]) => {
+      const m = new Map();   // consolidated first, real-time only for the months not yet consolidated
+      def.concat(tr).forEach(r => { const k = r.libelle_region + '|' + r.ym; if ((r.wind != null || r.solar != null) && !m.has(k)) m.set(k, r); });
+      return [...m.values()];
+    }));
+  }
+  async function lfWindow(win, L) {
+    if (win === '7' || win === '30') {
+      const [a] = PK_E2M.dayBoundsUTC(_renAdd(L.day, 1 - +win)), [, b] = PK_E2M.dayBoundsUTC(L.day);
+      const rows = await q('eco2mix-regional-tr', { select: 'libelle_region, avg(tch_eolien) as lf_wind, avg(tch_solaire) as lf_solar',
+        where: `date_heure >= "${a}" and date_heure < "${b}"`, group_by: 'libelle_region', limit: 20 });
+      return rows && rows.length ? { rows, label: _renFmtDay(_renAdd(L.day, 1 - +win)) + ' → ' + _renFmtDay(L.day) } : null;
+    }
+    const y = win === 'ytd' ? String(LF_Y) : win, all = (await lfMonthsAll()).filter(r => r.ym.slice(0, 4) === y);
+    if (!all.length) return null;
+    const by = {};
+    all.forEach(r => { const o = by[r.libelle_region] = by[r.libelle_region] || { libelle_region: r.libelle_region, w: 0, s: 0, n: 0 }; const n = +r.n || 0; o.w += (+r.wind || 0) * n; o.s += (+r.solar || 0) * n; o.n += n; });
+    const rows = Object.values(by).filter(o => o.n).map(o => ({ libelle_region: o.libelle_region, lf_wind: o.w / o.n, lf_solar: o.s / o.n }));
+    return { rows, label: win === 'ytd' ? y + ' → ' + _renFmtDay(L.day) : y };
+  }
   reg({
     id: 'fr-reg-lf', title: 'France regions · wind & solar load factors', pageCanvas: 'reg-lf',
-    desc: 'Average load factor (output ÷ installed capacity) of wind and solar per region, latest complete day.',
-    async draw(cid) {
+    desc: 'Average load factor (output ÷ installed capacity) of wind and solar per region, over the latest complete day, 7 or 30 days, the year to date or a past year.',
+    params: [LF_WIN], defaults: { win: 'day' },
+    async draw(cid, p) {
       const L = await latestDay();
       if (!L) { noDataMsg(cid, 'Regional éCO2mix not reachable', 'ODRÉ'); return null; }
-      const rows = L.rows.slice().sort((x, y) => (y.lf_wind || 0) - (x.lf_wind || 0));
+      const win = (p && p.win) || 'day', W = win === 'day' ? { rows: L.rows, label: _renFmtDay(L.day) } : await lfWindow(win, L);
+      if (!W) { noDataMsg(cid, 'No regional load factors for this window', 'ODRÉ'); return { L }; }
+      const rows = W.rows.slice().sort((x, y) => (y.lf_wind || 0) - (x.lf_wind || 0));
       _fuelChart(cid, { type: 'bar', data: { labels: rows.map(r => SHORT[r.libelle_region] || r.libelle_region), datasets: [
         { label: 'Wind load factor (%)', data: rows.map(r => r.lf_wind == null ? null : +(+r.lf_wind).toFixed(1)), backgroundColor: rgba('#14D3A9', .75), borderRadius: 2 },
         { label: 'Solar load factor (%)', data: rows.map(r => r.lf_solar == null ? null : +(+r.lf_solar).toFixed(1)), backgroundColor: rgba('#FBBF24', .75), borderRadius: 2 },
-      ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('% of installed capacity', { beginAtZero: true }) } }) }, 'regional-load-factors-' + L.day);
-      return { sub: _renFmtDay(L.day), L };
+      ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('% of installed capacity', { beginAtZero: true }) } }) }, 'regional-load-factors-' + win + '-' + L.day);
+      return { sub: W.label, label: W.label, L };
     },
   });
 
@@ -145,7 +180,12 @@
 
   window.renderRegions = async function () {
     const upd = document.getElementById('reg-upd');
-    const lf = await PKW.draw('fr-reg-lf', 'reg-lf');
+    const lw = window._regLfWin || 'day';
+    const lf = await PKW.draw('fr-reg-lf', 'reg-lf', { win: lw });
+    PKW.periodButtons('reg-lf', LF_WIN.options.map(o => [o[0], { day: 'D', '7': '7D', '30': '30D', ytd: 'YTD' }[o[0]] || o[0]]), lw, v => {
+      window._regLfWin = v;
+      PKW.draw('fr-reg-lf', 'reg-lf', { win: v }).then(r => { if (r && r.label) document.getElementById('reg-lf-title').textContent = 'Wind & solar load factors · ' + r.label; });
+    });
     const sel = document.getElementById('reg-region');
     if (sel && !sel.options.length) { sel.innerHTML = REGIONS.map(r => `<option value="${r}">${r}</option>`).join(''); sel.value = 'Occitanie'; }
     const drawHist = () => PKW.draw('fr-reg-lf-history', 'reg-lf-hist', { region: sel ? sel.value : 'Occitanie' }).then(r => {
@@ -165,7 +205,7 @@
     const L = lf && lf.L;
     if (!L) { if (upd) upd.textContent = 'Regional éCO2mix not reachable'; return; }
     if (upd) upd.textContent = 'RTE éCO2mix régional · ' + _renFmtDay(L.day);
-    document.getElementById('reg-lf-title').textContent = 'Wind & solar load factors · ' + _renFmtDay(L.day);
+    document.getElementById('reg-lf-title').textContent = 'Wind & solar load factors · ' + (lf.label || _renFmtDay(L.day));
     document.getElementById('reg-table-title').textContent = 'Regions · daily averages · ' + _renFmtDay(L.day);
     const rows = L.rows.slice().sort((a, b) => (b.cons || 0) - (a.cons || 0));
     const sum = k => rows.reduce((a, r) => a + (+r[k] || 0), 0);

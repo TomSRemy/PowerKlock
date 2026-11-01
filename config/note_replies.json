@@ -614,5 +614,13 @@
  "60": {
   "status": "done",
   "reply": "Réponse : non, elle n’est pas dans Historique. Historique a une carte thermique différente (zones × jours, prix moyen du jour). Celle-ci, heure × jour sur 14 jours, n’existe que dans la vue d’ensemble (et comme widget pour les tableaux de bord). Je peux l’ajouter dans Historique avec un choix de zone et de période si tu veux."
+ },
+ "104": {
+  "status": "done",
+  "reply": "Fait : le graphique des facteurs de charge par région a des boutons de fenêtre : dernier jour, 7 jours glissants, 30 jours glissants, depuis le 1er janvier, et les 3 années passées (2025, 2024, 2023). Les années viennent des données consolidées RTE, pondérées par le nombre de quarts d’heure de chaque mois. L’historique mensuel par région reste dessous. Pour un schéma « comme le capture rate » (plusieurs fenêtres sur un même graphique), dis-moi si tu le veux en plus."
+ },
+ "72": {
+  "status": "open",
+  "reply": "Pas encore fait : RTE publie ces données régionales pour la France seulement. Pour les autres pays, il faudrait une autre source par pays (ENTSO-E ne publie pas de régions). Je propose plutôt une vue par pays (production, facteurs de charge éolien/solaire par pays ENTSO-E) avec filtre et comparaison comme le Day-ahead : à valider, c’est une nouvelle page."
  }
 }
