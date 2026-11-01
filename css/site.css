@@ -3305,12 +3305,13 @@ details.cf-contracts[open] > summary { margin-bottom: 8px; }
 .mrn-cfcard .mrn3-cat { margin: 0; }
 /* Today: Explain switch, Discovery story and quiz */
 .mrn-xbtn-w { display: inline-flex; align-items: center; gap: 12px; }
-.mrn-xbtn { border: 1px solid var(--border2, rgba(255,255,255,.15)); background: transparent; color: var(--text2); border-radius: 999px; padding: 4px 12px; font-size: 12px; cursor: pointer; }
+.mrn-xbtn { border: 1px solid var(--border2, rgba(255,255,255,.15)); background: transparent; color: var(--text2); border-radius: 999px; padding: 0 12px; height: 26px; font-size: 11px; cursor: pointer; white-space: nowrap; }
 .mrn-xbtn.on { border-color: var(--accent, #14D3A9); color: var(--accent, #14D3A9); background: rgba(20,211,169,.1); }
 .mrn-x { display: none !important; }
 body.mrn-explain .mrn-x { display: block !important; }
 .mrn2-tile .mrn-x { font-size: 11.5px; line-height: 1.45; color: var(--text2); border-top: 1px dashed var(--border, rgba(255,255,255,.1)); padding-top: 6px; margin-top: 6px; }
 p.mrn-x { margin: 0 0 8px; border-left: 2px solid var(--accent, #14D3A9); padding-left: 8px; }
+.fuel-card > p.mrn-x { font-size: 12px; line-height: 1.45; color: var(--text2); margin: 4px 0 10px; }
 .mrn-disc { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 14px; margin-bottom: 14px; }
 @media (max-width: 1000px) { .mrn-disc { grid-template-columns: 1fr; } }
 .mrn-story, .mrn-quiz { display: grid; gap: 10px; align-content: start; padding: 18px 20px; }
