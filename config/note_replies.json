@@ -581,7 +581,7 @@
  },
  "84": {
   "status": "done",
-  "reply": "Fait : ce graphique était en double ; il reste en haut, dans Fondamentaux, et sort de Système électrique (comme le graphique des indisponibilités nucléaires, lui aussi en double). Il couvre maintenant 2 ans avec les boutons de période (ouvert sur 3 mois) et ses lignes ne sont plus lissées. Pour l’organisation : je propose de renommer « Fondamentaux » en « Météo, conso et nucléaire » et de garder « Système électrique » pour la production. Dis-moi si ça te va avant que je le fasse."
+  "reply": "Fait : la section « Fondamentaux » d’Aujourd’hui s’appelle maintenant « Météo, conso et nucléaire » (aussi dans le tableau de bord Aujourd’hui · Expert)."
  },
  "94": {
   "status": "done",
