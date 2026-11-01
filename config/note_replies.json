@@ -662,5 +662,25 @@
  "174": {
   "status": "open",
   "reply": "Noté. La lenteur et la lisibilité du pricer sont le sujet du brainstorming lancé cette nuit avec les autres sessions (synthèse dans docs/discussion/pricer-ux/synthese.md, envoyée à la session principale qui s’occupe du pricer). La refonte se fera après ta validation de la maquette."
+ },
+ "81": {
+  "status": "open",
+  "reply": "Maquette faite, à valider avant que je code (c’est un changement de style sur tout le site) : docs/discussion/maquettes/tuiles_stories.png sur la branche discussion-bridge. Partie 1 : une seule tuile partout, sur le modèle de celles du haut d’Aujourd’hui : encart de variation en haut à droite, titre coloré selon le sens, petite courbe."
+ },
+ "103": {
+  "status": "open",
+  "reply": "Maquette faite, à valider avant que je code (c’est un changement de style sur tout le site) : docs/discussion/maquettes/tuiles_stories.png sur la branche discussion-bridge. Les tuiles de Système France prendraient ce même modèle unique (partie 1)."
+ },
+ "107": {
+  "status": "open",
+  "reply": "Maquette faite, à valider avant que je code (c’est un changement de style sur tout le site) : docs/discussion/maquettes/tuiles_stories.png sur la branche discussion-bridge. Les tuiles du Bilan prendraient ce même modèle unique (partie 1) : un seul style, défini à un seul endroit."
+ },
+ "113": {
+  "status": "open",
+  "reply": "Maquette faite, à valider avant que je code (c’est un changement de style sur tout le site) : docs/discussion/maquettes/tuiles_stories.png sur la branche discussion-bridge. Partie 2 : une rangée de ronds en haut d’Aujourd’hui, un par section, ouverts en plein écran avec barres de progression, tap pour passer, comme sur Instagram."
+ },
+ "114": {
+  "status": "open",
+  "reply": "Maquette faite, à valider avant que je code (c’est un changement de style sur tout le site) : docs/discussion/maquettes/tuiles_stories.png sur la branche discussion-bridge. Partie 2 : une rangée de ronds en haut d’Aujourd’hui, un par section, ouverts en plein écran avec barres de progression, tap pour passer, comme sur Instagram."
  }
 }
