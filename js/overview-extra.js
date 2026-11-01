@@ -133,7 +133,7 @@
 })();
 
 // ════════════════════════════════════════════════════════════════════
-// SPREAD PAGE · battery arbitrage (TB1 / TB2 / TB4)
+// SPREAD PAGE · battery arbitrage (TB1 / TB2 / TB3 / TB4)
 // TBn = mean of the n most expensive hours − mean of the n cheapest hours
 // of the delivery day (hourly averages of the 15-min prices).
 // Revenue proxy: 1 MW / 2 MWh battery, one cycle a day, 85% round trip:
@@ -159,13 +159,13 @@ async function _bessRows(zone, n, end) {
     const srt = h.slice().sort((a, b) => a - b), m = a => a.reduce((x, y) => x + y, 0) / a.length;
     const tb = k2 => m(srt.slice(-k2)) - m(srt.slice(0, k2));
     const rev2 = 2 * (m(srt.slice(-2)) * 0.85 - m(srt.slice(0, 2)));
-    rows.push({ d, tb1: tb(1), tb2: tb(2), tb4: tb(4), rev2 });
+    rows.push({ d, tb1: tb(1), tb2: tb(2), tb3: tb(3), tb4: tb(4), rev2 });
   });
   return { days, rows };
 }
 if (window.PKW) PKW.register({
-  id: 'bess-spreads', title: 'Battery spreads TB1 / TB2 / TB4', category: 'spreads', page: 'prices', pageCanvas: 'bess-canvas', source: 'ENTSO-E', size: { w: 6, h: 5 },
-  desc: 'Daily top-n minus bottom-n hourly day-ahead prices: the DA arbitrage of 1, 2 and 4-hour batteries.',
+  id: 'bess-spreads', title: 'Battery spreads TB1 to TB4', category: 'spreads', page: 'prices', pageCanvas: 'bess-canvas', source: 'ENTSO-E', size: { w: 6, h: 5 },
+  desc: 'Daily top-n minus bottom-n hourly day-ahead prices: the DA arbitrage of 1, 2, 3 and 4-hour batteries.',
   params: [{ key: 'zone', label: 'Zone', inTitle: true, options: [['FR', 'France'], ['DE_LU', 'Germany'], ['BE', 'Belgium'], ['NL', 'Netherlands'], ['ES', 'Spain'], ['IT_NORD', 'Italy North'], ['AT', 'Austria'], ['PL', 'Poland']] },
     { key: 'n', label: 'Window', options: [['7', '7 days'], ['30', '30 days'], ['90', '90 days']] }],
   defaults: { zone: 'FR', n: '30' },
@@ -177,6 +177,7 @@ if (window.PKW) PKW.register({
     _fuelChart(cid, { type: 'line', data: { labels: rows.map(r => r.d), datasets: [
       _fuelLineDs('TB1', rows.map(r => r2(r.tb1)), '#ED6965', { borderWidth: 1.3 }),
       _fuelLineDs('TB2', rows.map(r => r2(r.tb2)), '#14D3A9', { borderWidth: 2, pointRadius: 2 }),
+      _fuelLineDs('TB3', rows.map(r => r2(r.tb3)), '#D99A1E', { borderWidth: 1.3 }),   // TB3 too (notes 66, 88)
       _fuelLineDs('TB4', rows.map(r => r2(r.tb4)), '#7FC8F8', { borderWidth: 1.3 }),
     ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('€/MWh', { beginAtZero: true }) } }) }, 'tb-spreads-' + p.zone);
     return { sub: rows.length + '/' + R.days.length + ' days with prices' };
@@ -198,6 +199,7 @@ async function renderBess() {
   document.getElementById('bess-kpis').innerHTML =
     _fuelKpi('TB1 average', avg('tb1').toFixed(1), '€/MWh', 'best hour − worst hour') +
     _fuelKpi('TB2 average', avg('tb2').toFixed(1), '€/MWh', '2-hour battery reference') +
+    _fuelKpi('TB3 average', avg('tb3').toFixed(1), '€/MWh', '3-hour battery reference') +
     _fuelKpi('TB4 average', avg('tb4').toFixed(1), '€/MWh', '4-hour battery reference') +
     _fuelKpi('Max TB2', Math.max(...rows.map(r => r.tb2)).toFixed(1), '€/MWh', rows.reduce((a, b) => b.tb2 > a.tb2 ? b : a).d) +
     _fuelKpi('2h BESS DA margin', avg('rev2').toFixed(0), '€/MW/day', '1 MW / 2 MWh, 1 cycle, 85% RTE') +
