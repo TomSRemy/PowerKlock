@@ -1,0 +1,16 @@
+# Contributions brutes au brainstorming pricer (1er novembre 2026)
+
+## Session principale
+
+a. Parcours : 1) technologie et parc, avec un seul point d'entrée « Mon parc » (charger une courbe, localiser le parc via Prévision de production pour l'ERA5, ou juste les MW) ; 2) période de livraison ; 3) règle de prix négatif (arrêt sous 0 € par défaut, seuil réglable, ajouté cette nuit) ; puis le résultat tout de suite en haut : prix prudent P75 + P25/P50, la cascade (Cal, profil mensuel, cannibalisation horaire, risque volume, risque liquidité, risque prix et capture, écarts, GO, marge) et le champ « offre reçue ». Forwards remplis seuls (modifiables).
+b. Toujours visible : prix publié (générateur v2), fourchette, cascade, offre reçue, onglet Le parc (profil et historique des prix, 6 graphiques ajoutés cette nuit). À replier ou déplacer dans « Méthodes » : les 5 méthodes de référence (décote P74, tendance de capacité, forme forward, simulation météo, modèle européen), le rejeu, le détail du Monte-Carlo, les réglages avancés.
+c. Vitesse : un calcul lance environ 7 Monte-Carlo de 10 000 trajectoires (prime, 3 pour la décomposition, prime du générateur, volume, liquidité), 2 fois plus en arrêt partiel ; fr_capture.json (486 Ko) chargé d'entrée ; historique horaire (6 × 250 Ko) au premier affichage du parc. À faire : décomposition à 4 000 trajectoires et seulement à l'ouverture de la section Risque, Monte-Carlo dans un Web Worker, cache du dernier calcul par clé (localStorage), prix par défaut pré-calculé par le job quotidien (affiché tout de suite, puis recalculé).
+d. Priorités : 1) premier écran « Prix », 4 champs à gauche, prix + cascade à droite ; 2) Web Worker et calculs différés ; 3) point d'entrée unique « Mon parc » (volume, risque volume, profil, M0).
+
+## Session « Cours marché & pricing PPA »
+
+a. Parcours : 1) filière + profil (national ou CSV du parc) + période de livraison + convention (payé ou non aux prix ≤ 0, cochée par défaut) ; 2) d'abord UN prix P50 et le prix prudent P75, avec la date des forwards ; 3) juste dessous, la cascade forward × capture − risque − écarts + GO − marge en € ; 4) ensuite les risques (bande P10–P90, chance de perte) puis le détail par année.
+b. Visibles : prix, cascade, capture retenue et sa définition en une ligne, méthode utilisée (ancrée ou non) et son erreur de rejeu. Repliés : les 5 méthodes et leur moyenne, Monte Carlo détaillé, trajectoires, stress, réglages.
+c. Confus : 1) plusieurs définitions de « capture » (payée mois par mois 0,936/0,976, d'un bloc 0,971, toute production 0,891) ; 2) l'ancrage jamais dit simplement ; 3) deux primes de risque (Monte Carlo + modèle P75) qui se ressemblent ; 4) trop de méthodes au même niveau que le prix publié ; 5) prix négatifs comptés horaire vs quart d'heure (670 vs 805 h en 2026).
+d. Priorités : 1) écran de résultat unique « P50 / P75 + cascade + 1 phrase FR/EN » au-dessus de tout ; 2) une seule méthode mise en avant (badge « fait foi » + erreur de rejeu), les autres dans « comparer les méthodes » ; 3) glossaire au survol (capture, ancrage, P75, écarts, convention ≤ 0), avec les images du cours.
+Vitesse : précalculer le cas national par filière côté job (JSON) ; Monte Carlo/générateur dans le navigateur seulement pour un profil chargé.
