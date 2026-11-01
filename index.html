@@ -593,11 +593,18 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
           </div>
           <div class="hist-section-body open" id="hs-body-cal-contracts">
             <div class="pk-sec-controls"><span class="fuel-toolbar-lbl">Market</span><select class="country-select" id="cal-country" onchange="PKSpot.drawCal()" aria-label="Market"><option value="FR">France</option><option value="DE">Germany</option><option value="NL">Netherlands</option><option value="UK">Great Britain</option></select><select class="country-select" id="cal-load" onchange="PKSpot.drawCal()" aria-label="Load"><option value="base">Baseload</option><option value="peak">Peakload</option></select><select class="country-select" id="cal-set" onchange="PKSpot.drawCal()" aria-label="Products"><option value="liquid" selected>Liquid (exchange strip)</option><option value="all">All quoted</option></select><span class="fuel-toolbar-lbl" style="margin-left:10px">Products</span><span id="cal-kinds" class="pk-sec-checks"><label><input type="checkbox" value="year" checked onchange="PKSpot.drawCal()"> Years</label><label><input type="checkbox" value="season" checked onchange="PKSpot.drawCal()"> Seasons</label><label><input type="checkbox" value="quarter" checked onchange="PKSpot.drawCal()"> Quarters</label><label><input type="checkbox" value="month" checked onchange="PKSpot.drawCal()"> Months</label></span></div>
-        <div class="fuel-grid-2 pk-stack">
+        <div class="kpi-strip fuel-kpis" id="cal-kpis"></div>
+        <div class="fuel-grid-2">
           <div class="chart-container fuel-card">
             <div class="fuel-card-head"><div><div class="table-title">Forward contracts</div><div class="fuel-card-sub" id="cal-history-sub">Baseload, contracts still to deliver · 3 months</div></div><span class="source-badge">Market data</span></div>
             <div style="position:relative;height:320px"><canvas id="cal-history" style="width:100%;height:320px"></canvas></div>
           </div>
+          <div class="chart-container fuel-card">
+            <div class="fuel-card-head"><div><div class="table-title">Contracts table</div><div class="fuel-card-sub" id="cal-table-sub">Last settlement, change on the day and on the week</div></div><span class="source-badge">Market data</span></div>
+            <div id="cal-table" style="max-height:330px;overflow:auto"></div>
+          </div>
+        </div>
+        <div style="margin-top:14px">
           <div class="chart-container fuel-card">
             <div class="fuel-card-head"><div><div class="table-title">Cal+1 and its drivers</div><div class="fuel-card-sub" id="cal-drivers-sub">Indexed to 100 · 6 months</div></div><span class="source-badge">Market data</span></div>
             <div style="position:relative;height:320px"><canvas id="cal-drivers" style="width:100%;height:320px"></canvas></div>

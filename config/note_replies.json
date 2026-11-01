@@ -650,5 +650,17 @@
  "95": {
   "status": "done",
   "reply": "Fait : la page Enchères France commence par 5 chiffres clés (dernière enchère et date des résultats, prix moyen pondéré et variation, volume attribué, prix de réserve, date des prochains résultats), puis un graphique par région de la dernière enchère et un calendrier : les dates de publication des résultats (lues dans les fichiers EEX), avec la prochaine date estimée. Les résultats sortent un mercredi, en général le 3e du mois ; la prochaine date est donc une estimation, signalée comme telle. Au passage, j’ai corrigé l’affichage des prix du tableau en français (1 746 au lieu de 1,746)."
+ },
+ "89": {
+  "status": "done",
+  "reply": "Réorganisé sur le modèle du Day-ahead : les filtres en haut, puis 4 chiffres clés (mois prochain, trimestre prochain, Cal+1, Cal+2, avec leur variation sur 7 jours, en rouge si hausse), puis le graphique des contrats à côté d’un tableau des mêmes contrats (dernier cours, variation sur le jour et sur la semaine), et le Cal+1 face à ses moteurs en dessous. Les filtres (marché, base/pointe, produits) agissent sur les chiffres, le graphique et le tableau."
+ },
+ "173": {
+  "status": "open",
+  "reply": "Noté. La lenteur et la lisibilité du pricer sont le sujet du brainstorming lancé cette nuit avec les autres sessions (synthèse dans docs/discussion/pricer-ux/synthese.md, envoyée à la session principale qui s’occupe du pricer). La refonte se fera après ta validation de la maquette."
+ },
+ "174": {
+  "status": "open",
+  "reply": "Noté. La lenteur et la lisibilité du pricer sont le sujet du brainstorming lancé cette nuit avec les autres sessions (synthèse dans docs/discussion/pricer-ux/synthese.md, envoyée à la session principale qui s’occupe du pricer). La refonte se fera après ta validation de la maquette."
  }
 }
