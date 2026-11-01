@@ -550,5 +550,17 @@
  "97": {
   "status": "done",
   "reply": "Fait : la prévision est sur la page Indisponibilités & REMIT (voir note 77), à un clic de la page Nucléaire ; la page Nucléaire garde aussi la prévision de l’exploitant (pointillés) sur la capacité disponible."
+ },
+ "90": {
+  "status": "done",
+  "reply": "Fait : un seul graphique des stocks de gaz UE, le plus complet (chaque année depuis 2019, avec la moyenne et la fourchette), à côté des hubs ; légendes en français."
+ },
+ "91": {
+  "status": "done",
+  "reply": "Fait : le PEG (hub français) est ajouté à côté du TTF sur le graphique de la vue d’ensemble."
+ },
+ "61": {
+  "status": "done",
+  "reply": "Fait : le graphique mFRR n’était rangé dans aucun onglet, il s’affichait donc partout ; il est maintenant dans le second onglet, renommé « mFRR » (avec le tableau des plus grands écarts)."
  }
 }
