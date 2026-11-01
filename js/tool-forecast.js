@@ -536,7 +536,7 @@
       _fuelChart(cid, { type: 'line', data: { labels: L, datasets: [
         { label: 'ENTSO-E', data: L.map(k => m[k].ent), borderColor: 'rgba(122,147,171,.9)', borderWidth: 1.6, pointRadius: 2, fill: false },
         { label: 'Ours', data: L.map(k => m[k].n2), borderColor: t === 'solar' ? '#F4C430' : '#14D3A9', borderWidth: 2, pointRadius: 2, fill: false },
-        { label: 'Average of both', data: L.map(k => m[k].mix), borderColor: '#A87DC4', borderDash: [5, 4], borderWidth: 1.6, pointRadius: 0, fill: false },
+        { label: 'Average of both', data: L.map(k => m[k].mix), borderColor: '#5FA8D3', borderDash: [5, 4], borderWidth: 1.6, pointRadius: 0, fill: false },
         ...(L.some(k => m[k].stack != null) ? [{ label: 'PowerKlock combined', data: L.map(k => m[k].stack), borderColor: '#E6EDF3', borderWidth: 2, pointRadius: 0, fill: false }] : []),
       ] }, options: _fuelOpts({ plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 8 } } }, scales: { x: _fuelXAxis(), y: _fuelAxis('hourly error, % of capacity', { beginAtZero: true }) } }) }, cid); };
     draw('fc-nat-solar', 'solar'); draw('fc-nat-wind', 'wind');

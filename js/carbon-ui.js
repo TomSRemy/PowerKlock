@@ -198,7 +198,7 @@
     _carbCharts[idx] = new Chart(ctx, {
       type:'line',
       data:{ labels, datasets:[
-        { label:((!window.PKI18n || PKI18n.lang !== 'en') ? 'Intensité de la consommation' : 'Consumption intensity'), data:ciArr, borderColor:'#A87DC4', backgroundColor:'rgba(168,125,196,.08)', borderWidth:2, pointRadius:0, fill:true, tension: 0 },
+        { label:((!window.PKI18n || PKI18n.lang !== 'en') ? 'Intensité de la consommation' : 'Consumption intensity'), data:ciArr, borderColor:'#5FA8D3', backgroundColor:'rgba(95,168,211,.08)', borderWidth:2, pointRadius:0, fill:true, tension: 0 },
         { label:((!window.PKI18n || PKI18n.lang !== 'en') ? 'Intensité de la production' : 'Production intensity'), data:piArr, borderColor:'#7A93AB', borderWidth:1.3, borderDash:[4,3], pointRadius:0, tension: 0 },
       ]},
       options:{
@@ -263,7 +263,7 @@
   function _residualBlock(r, res){
     const delta = (res.off!=null && res.est!=null) ? (res.est-res.off) : null;
     return `<div style="background:var(--bg3);border:1px solid var(--bd2);border-radius:7px;padding:10px">
-      <div style="font-size:10px;color:var(--cat-carbon,#A87DC4);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">Residual mix · GHG Scope 2 market-based</div>
+      <div style="font-size:10px;color:var(--cat-carbon,#5FA8D3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">Residual mix · GHG Scope 2 market-based</div>
       <div style="display:flex;justify-content:space-between;font-size:11px;padding:2px 0"><span style="color:var(--tx3)">Officiel AIB</span><span style="font-family:'JetBrains Mono',monospace;color:var(--tx2)">${res.off!=null?res.off+' g':'n/a'}</span></div>
       <div style="display:flex;justify-content:space-between;font-size:11px;padding:2px 0"><span style="color:var(--tx3)">Estimation live</span><span style="font-family:'JetBrains Mono',monospace;color:var(--warn)">${res.est!=null?res.est+' g':'n/a'}</span></div>
       <div style="display:flex;justify-content:space-between;font-size:11px;padding:2px 0"><span style="color:var(--tx3)">Gap (±MAE)</span><span style="font-family:'JetBrains Mono',monospace;color:var(--tx2)">${delta!=null?(delta>=0?'+':'')+delta+' g (±'+res.mae+')':'–'}</span></div>

@@ -13,7 +13,7 @@ const FUEL_STATE = {
   nuc:  { w: '1Y', from: null, to: null },
 };
 const FUEL_RENDER = { fuel: () => drawEUA(), sprh: () => renderSparkHistory(), nuc: () => drawNuclear() };
-const C_EUA = '#A87DC4', C_TTF = '#14D3A9', C_PEG = '#7FC8F8', C_THE = '#FBBF24', C_NBP = '#ED6965',
+const C_EUA = '#C4A57B', C_TTF = '#14D3A9', C_PEG = '#7FC8F8', C_THE = '#FBBF24', C_NBP = '#ED6965',
       C_COAL = '#8D99AE', C_BRENT = '#D6A77A', C_JKM = '#F472B6';
 
 // ── Shared helpers ───────────────────────────────────────────────────

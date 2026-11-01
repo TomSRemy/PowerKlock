@@ -20,7 +20,7 @@ async function _gcLoad() {
   }
   return _gcRows;
 }
-const GC_COLORS = ['#7FC8F8', '#14D3A9', '#FBBF24', '#ED6965', '#C4A57B', '#A78BFA'];
+const GC_COLORS = ['#7FC8F8', '#14D3A9', '#FBBF24', '#ED6965', '#C4A57B', '#8D99AE'];
 
 if (window.PKW) PKW.register({
   id: 'fr-capacity-gc', title: 'France capacity guarantees · OTC prices', category: 'prices', page: 'france', pageCanvas: 'fr-chart-gc',

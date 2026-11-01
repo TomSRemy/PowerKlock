@@ -1561,7 +1561,7 @@
     const max = Math.max(...sorted.map(z => Math.abs(_gmhczMetricValue(pdata[z], metric))));
     const FLAGS = window.FLAG_MAP || {};
     const unit = _gmhczMetricUnit(metric);
-    const accent = metric === 'co2' ? '#A78BFA' : '#14D3A9';
+    const accent = metric === 'co2' ? '#5FA8D3' : '#14D3A9';
 
     host.innerHTML = `
       <div style="display:flex;flex-direction:column;gap:6px">
@@ -1646,7 +1646,7 @@
 
     // Pick the longest daily series
     const labels = pdata[zones[0]]?.dailySeries.date || [];
-    const PALETTE = ['#14D3A9', '#FBBF24', '#A78BFA', '#ED6965', '#60A5FA', '#34D399', '#F472B6', '#FB923C', '#22D3EE', '#A3E635'];
+    const PALETTE = ['#14D3A9', '#FBBF24', '#C4A57B', '#ED6965', '#60A5FA', '#34D399', '#F472B6', '#FB923C', '#22D3EE', '#A3E635'];
     // Series per zone
     const datasets = zones.slice(0, 12).map((z, i) => {
       const ds = pdata[z].dailySeries;

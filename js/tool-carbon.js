@@ -501,7 +501,7 @@
     const ms = Object.keys(o.monthly).sort();
     _fuelChart('cf-monthly-ov', { type: 'bar', data: { labels: ms.map(m => MON[+m.slice(5) - 1] + ' ' + m.slice(2, 4)), datasets: [
       { label: 'Consumption (MWh)', data: ms.map(m => +(o.monthly[m].E / 1000).toFixed(2)), backgroundColor: 'rgba(127,200,248,.55)', borderRadius: 3, yAxisID: 'y' },
-      { type: 'line', label: 'Emissions, location-based (t CO₂)', data: ms.map(m => +(o.monthly[m].em / 1e6).toFixed(3)), borderColor: '#A87DC4', borderWidth: 2, pointRadius: 3, yAxisID: 'y1' },
+      { type: 'line', label: 'Emissions, location-based (t CO₂)', data: ms.map(m => +(o.monthly[m].em / 1e6).toFixed(3)), borderColor: '#5FA8D3', borderWidth: 2, pointRadius: 3, yAxisID: 'y1' },
       { type: 'line', label: 'Spot cost (k€)', data: ms.map(m => +(o.monthly[m].cost / 1000).toFixed(2)), borderColor: '#FBBF24', borderWidth: 1.6, borderDash: [5, 4], pointRadius: 2, yAxisID: 'y2' },
     ] }, options: _fuelOpts({ plugins: { legend: legend() }, scales: { x: xCat(), y: _fuelAxis('MWh', { beginAtZero: true }), y1: _fuelAxis('t CO₂', { position: 'right', beginAtZero: true, grid: { display: false } }), y2: { display: false, beginAtZero: true } } }) }, 'carbon-monthly-overview');
   }
@@ -513,7 +513,7 @@
     // kWh per hour per day = average kW of that hour
     _fuelChart('cf-week', { type: 'line', data: { labels: H, datasets: [
       { label: 'Working days (Mon–Fri)', data: wd.map(v => v == null ? null : Math.round(v)), borderColor: '#7FC8F8', borderWidth: 2.4, pointRadius: 0, tension: 0, fill: false },
-      { label: 'Weekends', data: we.map(v => v == null ? null : Math.round(v)), borderColor: '#A87DC4', borderWidth: 2, pointRadius: 0, tension: 0, borderDash: [5, 4], fill: false },
+      { label: 'Weekends', data: we.map(v => v == null ? null : Math.round(v)), borderColor: '#5FA8D3', borderWidth: 2, pointRadius: 0, tension: 0, borderDash: [5, 4], fill: false },
       { label: 'Base load', data: H.map(() => Math.round(o.baseKW)), borderColor: 'rgba(184,201,217,.6)', borderWidth: 1, borderDash: [2, 3], pointRadius: 0, fill: false },
     ] }, options: _fuelOpts({ plugins: { legend: legend() }, scales: { x: _fuelXAxis(), y: _fuelAxis('kW (average)', { beginAtZero: true }) } }) }, 'carbon-weekday-weekend');
     const L = o.duration.map((_, i) => Math.round(i / (o.duration.length - 1) * 100) + ' %');
@@ -532,12 +532,12 @@
     const L = o.daily.map(x => x.d);
     _fuelChart('cf-daily', { type: 'bar', data: { labels: L, datasets: [
       { label: 'Consumption (MWh)', data: o.daily.map(x => x.E / 1000), backgroundColor: 'rgba(127,200,248,.45)', borderWidth: 0, yAxisID: 'y' },
-      { type: 'line', label: 'Carbon intensity of your consumption (g/kWh)', data: o.daily.map(x => x.ci == null ? null : Math.round(x.ci * 10) / 10), borderColor: '#A87DC4', borderWidth: 1.6, pointRadius: 0, tension: 0, yAxisID: 'y1' },
+      { type: 'line', label: 'Carbon intensity of your consumption (g/kWh)', data: o.daily.map(x => x.ci == null ? null : Math.round(x.ci * 10) / 10), borderColor: '#5FA8D3', borderWidth: 1.6, pointRadius: 0, tension: 0, yAxisID: 'y1' },
     ] }, options: _fuelOpts({ plugins: { legend: legend() }, scales: { x: _fuelXAxis(), y: _fuelAxis('MWh', { beginAtZero: true }), y1: _fuelAxis('g CO₂/kWh', { position: 'right', beginAtZero: true, grid: { display: false } }) } }) }, 'carbon-daily');
     const nd = o.days.length;
     _fuelChart('cf-hours', { type: 'bar', data: { labels: HRS, datasets: [
       { label: 'Average consumption (kWh per hour)', data: [...o.hourC].map(v => Math.round(v / nd)), backgroundColor: 'rgba(127,200,248,.45)', borderWidth: 0, yAxisID: 'y' },
-      { type: 'line', label: 'Grid intensity when you consume (g/kWh)', data: [...o.hourI].map((v, h) => o.hourN[h] ? Math.round(v / o.hourN[h] * 10) / 10 : null), borderColor: '#A87DC4', borderWidth: 1.8, pointRadius: 0, tension: 0, yAxisID: 'y1' },
+      { type: 'line', label: 'Grid intensity when you consume (g/kWh)', data: [...o.hourI].map((v, h) => o.hourN[h] ? Math.round(v / o.hourN[h] * 10) / 10 : null), borderColor: '#5FA8D3', borderWidth: 1.8, pointRadius: 0, tension: 0, yAxisID: 'y1' },
     ] }, options: _fuelOpts({ plugins: { legend: legend() }, scales: { x: _fuelXAxis(), y: _fuelAxis('kWh', { beginAtZero: true }), y1: _fuelAxis('g CO₂/kWh', { position: 'right', beginAtZero: true, grid: { display: false } }) } }) }, 'carbon-average-day');
     heat('cf-hm-ci', o.mh.map(m => [...m.ci].map((v, h) => m.cn[h] ? v / m.cn[h] : null)), 'g/kWh', [[20, 120, 100], [168, 125, 196]]);
     const tot = MIX.reduce((s, [k]) => s + o.mix[k], 0) || 1;
@@ -546,7 +546,7 @@
       options: _fuelOpts({ indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: _fuelAxis('%', { beginAtZero: true }), y: { grid: { display: false }, ticks: { color: C_TX2, font: { size: 11 } } } } }) }, 'carbon-mix');
     const ms = Object.keys(o.monthly).sort(), share = o.E ? 1 - o.covered * 1000 / o.E : 1;
     _fuelChart('cf-monthly', { type: 'bar', data: { labels: ms.map(m => MON[+m.slice(5) - 1] + ' ' + m.slice(2, 4)), datasets: [
-      { label: 'Location-based (t CO₂)', data: ms.map(m => +(o.monthly[m].em / 1e6).toFixed(3)), backgroundColor: 'rgba(168,125,196,.75)', borderRadius: 3 },
+      { label: 'Location-based (t CO₂)', data: ms.map(m => +(o.monthly[m].em / 1e6).toFixed(3)), backgroundColor: 'rgba(95,168,211,.75)', borderRadius: 3 },
       { label: 'Market-based (t CO₂)', data: ms.map(m => o.factorRest == null ? null : +(o.monthly[m].E * share * o.factorRest / 1e6).toFixed(3)), backgroundColor: 'rgba(20,211,169,.7)', borderRadius: 3 },
     ] }, options: _fuelOpts({ plugins: { legend: legend() }, scales: { x: xCat(), y: _fuelAxis('t CO₂', { beginAtZero: true }) } }) }, 'carbon-monthly');
   }
@@ -694,7 +694,7 @@
       <div style="position:relative;height:200px"><canvas id="cf-ex-day" style="width:100%;height:200px"></canvas></div>`;
     _fuelChart('cf-ex-day', { type: 'bar', data: { labels: L, datasets: [
       { label: 'Your power (kW)', data: e.map(x => Math.round((x || 0) * 4)), backgroundColor: 'rgba(127,200,248,.5)', yAxisID: 'y' },
-      { type: 'line', label: 'Grid g/kWh', data: r && r.co2 ? r.co2.map(v => v == null ? null : Math.round(v)) : [], borderColor: '#A87DC4', borderWidth: 1.6, pointRadius: 0, yAxisID: 'y1' },
+      { type: 'line', label: 'Grid g/kWh', data: r && r.co2 ? r.co2.map(v => v == null ? null : Math.round(v)) : [], borderColor: '#5FA8D3', borderWidth: 1.6, pointRadius: 0, yAxisID: 'y1' },
       { type: 'line', label: 'Price €/MWh', data: p ? p.map(v => v == null ? null : +(+v).toFixed(1)) : [], borderColor: '#FBBF24', borderWidth: 1.4, borderDash: [4, 3], pointRadius: 0, yAxisID: 'y2' }] },
       options: _fuelOpts({ plugins: { legend: legend() }, scales: { x: _fuelXAxis(), y: _fuelAxis('kW', { beginAtZero: true }), y1: _fuelAxis('g/kWh', { position: 'right', grid: { display: false } }), y2: { display: false } } }) }, 'carbon-day-detail');
   }
@@ -841,7 +841,7 @@
       `<tr><td style="text-align:left"><b>Total before VAT</b></td><td><b>${f2(per(tA, E))}</b></td><td><b>${f1(tA / 1000)}</b></td>${A ? `<td><b>${f2(per(tB, E))}</b></td><td><b>${f1(tB / 1000)}</b></td>` : ''}<td style="text-align:left;color:var(--tx3)">${_c(`€/MWh de votre consommation totale · TVA ${BE ? 21 : 20} % en sus (récupérable pour la plupart des entreprises)`, `€/MWh of your total consumption · VAT ${BE ? 21 : 20} % on top (recoverable for most businesses)`)}</td></tr></tbody></table></div>` +
       `<div class="fuel-note">${A ? _c(`ACC : ${f1(A.prod / 1000)} MWh produits pour vous sur la période de vos données, ${pc(A.self / (A.prod || 1))} consommés sur site quart d’heure par quart d’heure, ${f1(A.surplus / 1000)} MWh de surplus (vendus par le producteur, hors de votre facture). Sans les heures solaires, le reste de votre fourniture coûte plus cher au MWh : c’est l’écart à garder en tête. `, `ACC: ${f1(A.prod / 1000)} MWh produced for you over your data period, ${pc(A.self / (A.prod || 1))} consumed on site quarter-hour by quarter-hour, ${f1(A.surplus / 1000)} MWh surplus (sold by the producer, outside your bill). Without the solar hours, the rest of your supply costs more per MWh: that is the spread to keep in mind. `) : ''}${BE ? _c(`Belgique (${reg}) : énergie valorisée sur les prix à terme français (les prix à terme belges ne sont pas dans PowerKlock ; les deux marchés sont couplés et en général à quelques €/MWh : ajustez la marge si votre offre diffère). Pas de bloc capacité (le mécanisme de capacité belge passe par les tarifs réseau). Partage d’énergie : l’énergie partagée paie l’accise et la cotisation énergie comme toute autre ; les frais de réseau sont ceux de votre GRD, réduits dans certaines régions pour le partage local : saisissez ce tarif comme tarif réseau ACC. Tranches d’accise et certificats verts indicatifs : vérifiez la grille de votre fournisseur.`, `Belgium (${reg}): energy priced on the French forwards (Belgian forwards are not in PowerKlock; the two markets are coupled and usually within a few €/MWh: adjust the margin if your offer differs). No capacity block (the Belgian capacity mechanism is paid through the grid tariffs). Energy sharing (partage d'énergie / energiedelen): the shared energy pays the excise and the energy contribution like any other; grid fees are your DSO's, reduced in some regions for local sharing: enter that rate as the ACC grid rate. Excise bands and green certificates are indicative: check your supplier's tariff card.`) : _c(`Exonération d’accise pour l’ACC : chaque installation renouvelable de moins de 1 MW (avec deux parcs, vérifiez la lecture du seuil pour le vôtre), consommation par les participants (CIBS L. 312-79 et L. 312-87, loi de finances 2025 art. 75, confirmée par le Conseil d’État le 30 mars 2026). CEE : environ 10 €/MWh en période 6 (2026-2030) ; appliqués ici à l’énergie du fournisseur seulement. Taux d’accise réduits (électro-intensifs, certaines activités) et TURPE dépendent de votre contrat : saisissez ce que montre votre facture.`, `Excise exemption for ACC: each renewable installation under 1 MW (with two parks, check how the threshold is read for yours), consumption by the participants (CIBS L. 312-79 and L. 312-87, Finance Law 2025 art. 75, upheld by the Conseil d’État on 30 March 2026). CEE: around 10 €/MWh in period 6 (2026-2030); applied here to the supplier's energy only. Reduced excise rates (electro-intensive, some activities) and grid fees depend on your contract: enter what your bill shows.`)}</div>`;
     // stacked bar: one bar per scenario, one block per component, totals at the end
-    const COL = { 'Energy (fixed price)': '#7FC8F8', 'Energy (fixed price, French forwards)': '#7FC8F8', 'Capacity': '#A87DC4', 'Energy savings certificates (CEE)': '#F59E0B', 'Guarantees of origin': '#34D399', 'Supplier margin': '#94A3B8',
+    const COL = { 'Energy (fixed price)': '#7FC8F8', 'Energy (fixed price, French forwards)': '#7FC8F8', 'Capacity': '#C4A57B', 'Energy savings certificates (CEE)': '#F59E0B', 'Guarantees of origin': '#34D399', 'Supplier margin': '#94A3B8',
       'ACC energy (to the producer)': '#FBBF24', 'PMO fees': '#FDE68A', 'Excise (accise)': '#ED6965', 'Complement risk (ACC volume)': '#F97316', 'TURPE · variable part': '#64748B', 'TURPE · fixed part': '#475569', 'CTA': '#334155',
       'Green certificates (regional quota)': '#22C55E', 'Federal special excise': '#ED6965', 'Energy contribution': '#F87171', 'Grid fees · variable part': '#64748B', 'Grid fees · fixed part': '#475569' };
     const bars = A ? ['Supplier only', 'With ACC'] : ['Supplier only'];

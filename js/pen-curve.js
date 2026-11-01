@@ -17,7 +17,7 @@
   // and dotted, the older years thin and grey
   const RECENT = ['#E8A33D', '#4FB3BF', '#5B9BD5'];
   function style(y, full, partial) {
-    if (partial) return { c: '#A87DC4', w: 2.6, dash: [6, 4] };
+    if (partial) return { c: '#5FA8D3', w: 2.6, dash: [6, 4] };
     const k = full.slice(-3).indexOf(y);
     if (k >= 0) return { c: RECENT[k], w: 2.4, dash: [] };
     if (y === '2022') return { c: '#B8A07E', w: 1.4, dash: [2, 3] };

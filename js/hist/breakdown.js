@@ -464,7 +464,7 @@ function _bdHourlyQuarter(zone, summary) {
   return `<table style="${_BD_TABLE_STYLE}">
     <thead><tr>
       <th style="${_BD_TH_STYLE};text-align:left">Hour ${cy}</th>
-      <th style="${_BD_TH_STYLE};color:#A87DC4">Q1 Winter</th>
+      <th style="${_BD_TH_STYLE};color:#5FA8D3">Q1 Winter</th>
       <th style="${_BD_TH_STYLE};color:#14D3A9">Q2 Spring</th>
       <th style="${_BD_TH_STYLE};color:#FBBF24">Q3 Summer</th>
       <th style="${_BD_TH_STYLE};color:#ED6965">Q4 Autumn</th>
@@ -534,7 +534,7 @@ function _bdWeekday(zone, series) {
       <th style="${_BD_TH_STYLE}">n</th>
     </tr></thead>
     <tbody>
-      ${rows.map(r => `<tr style="${r.isWeekend ? 'background:rgba(168,125,196,0.06)' : ''}">
+      ${rows.map(r => `<tr style="${r.isWeekend ? 'background:rgba(95,168,211,0.06)' : ''}">
         <td style="${_BD_TD_LABEL}">${r.day}</td>
         <td style="${_BD_TD_STYLE};color:var(--tx)">${_bdFmt(r.med)}</td>
         <td style="${_BD_TD_STYLE}">${_bdFmt(r.p25)}</td>

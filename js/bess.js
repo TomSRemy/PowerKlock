@@ -9,7 +9,7 @@
   'use strict';
   const $ = id => document.getElementById(id);
   const S = { doc: null, h: '2h', loading: null };
-  const C_PF = '#7FC8F8', C_PW = '#A87DC4', C_NV = '#FBBF24';   // blue, violet, amber: the site's palette, little green
+  const C_PF = '#7FC8F8', C_PW = '#C4A57B', C_NV = '#FBBF24';   // blue, sand, amber (violet is for nuclear only): the site's palette, little green
   const fr = () => { try { return localStorage.getItem('pk-lang') !== 'en'; } catch (_) { return true; } };
   const num = (v, d) => v == null || isNaN(v) ? '–' : Number(v).toFixed(d == null ? 0 : d);
 
@@ -81,7 +81,7 @@
     const lab = Z.map(x => nm(x.z)), v = f => Z.map(x => x[f] != null ? x[f] : null);
     _fuelChart('bess-eu-c', { type: 'bar', data: { labels: lab, datasets: [
       { label: T('Co-optimisé : day-ahead', 'Co-optimised: day-ahead'), data: v('co_da30'), backgroundColor: 'rgba(127,200,248,.8)', borderWidth: 0, stack: 'co', order: 3 },
-      { label: T('Co-optimisé : FCR', 'Co-optimised: FCR'), data: v('co_fcr30'), backgroundColor: 'rgba(168,125,196,.8)', borderWidth: 0, stack: 'co', order: 3 },
+      { label: T('Co-optimisé : FCR', 'Co-optimised: FCR'), data: v('co_fcr30'), backgroundColor: 'rgba(95,168,211,.8)', borderWidth: 0, stack: 'co', order: 3 },
       { label: T('Co-optimisé : aFRR', 'Co-optimised: aFRR'), data: Z.map(x => x.co_afrr30 ? x.co_afrr30 : null), backgroundColor: 'rgba(237,105,101,.8)', borderWidth: 0, stack: 'co', order: 3 },
       { label: T('Day-ahead seul (pas de réserve en open data)', 'Day-ahead alone (no open reserve data)'), data: Z.map(x => x.co30 == null ? x.da30 : null), backgroundColor: 'rgba(127,200,248,.35)', borderWidth: 0, stack: 'co', order: 3 },
       ...(Z.some(x => x.co_rl30 != null || x.rl_da30 != null) ? [{ type: 'line', label: T('Réaliste, sans anticipation', 'Realistic, no foresight'), data: Z.map(x => x.co_rl30 != null ? x.co_rl30 : x.rl_da30 != null ? x.rl_da30 : null), showLine: false, pointStyle: 'triangle', pointRadius: 6, pointHoverRadius: 7, backgroundColor: '#FBBF24', borderColor: '#FBBF24', stack: 'mk2', order: 0 }] : []),
@@ -103,7 +103,7 @@
   // ── PowerKlock BESS index (data/history/bess_index.json, scripts/bess_optim.py): forward and realised, 1 MW / 2 h ──
   let idxP = null;
   const loadIdx = () => idxP || (idxP = fetch('data/history/bess_index.json').then(r => r.ok ? r.json() : null).catch(() => null));
-  const C_BEST = '#A87DC4', C_FCR = '#8D99AE', C_AF = '#ED6965';
+  const C_BEST = '#5FA8D3', C_FCR = '#8D99AE', C_AF = '#ED6965';
   // mean of the last n delivery days that have a value for field f, annualised; and the count
   function lastN(J, f, n) {
     const ks = Object.keys(J.realised).sort().filter(d => J.realised[d][f] != null).slice(-n);
@@ -142,7 +142,7 @@
     const M = J.months.filter(m => m.m >= '2025-01');
     const ds = [
       { type: 'bar', label: T('Co-optimisé : part day-ahead', 'Co-optimised: day-ahead part'), data: M.map(m => m.co_da == null ? null : m.co_da), backgroundColor: 'rgba(127,200,248,.55)', borderWidth: 0, stack: 'co', order: 4 },
-      { type: 'bar', label: T('Co-optimisé : part FCR', 'Co-optimised: FCR part'), data: M.map(m => m.co_fcr == null ? null : m.co_fcr), backgroundColor: 'rgba(168,125,196,.6)', borderWidth: 0, stack: 'co', order: 3 },
+      { type: 'bar', label: T('Co-optimisé : part FCR', 'Co-optimised: FCR part'), data: M.map(m => m.co_fcr == null ? null : m.co_fcr), backgroundColor: 'rgba(95,168,211,.6)', borderWidth: 0, stack: 'co', order: 3 },
       Object.assign(_fuelLineDs(T('Meilleur marché seul', 'Best single market'), M.map(m => m.best), '#C4A57B', { borderWidth: 1.4, borderDash: [2, 3] }), { type: 'line', order: 0, stack: 'l0' }),
       Object.assign(_fuelLineDs('Day-ahead', M.map(m => m.da), C_PF, { borderWidth: 2 }), { type: 'line', order: 1, stack: 'l1' }),
       ...(M.some(m => m.co_rl != null) ? [Object.assign(_fuelLineDs(T('Co-optimisé réaliste (sans anticipation)', 'Co-optimised, realistic (no foresight)'), M.map(m => m.co_rl == null ? null : m.co_rl), '#E6EDF3', { borderWidth: 2, borderDash: [6, 3] }), { type: 'line', order: 0, stack: 'l5' })] : []),
@@ -217,7 +217,7 @@
       `${dd}, ${k.replace('h', ' h')} battery: <b>€${nf(x.rev)}</b> earned per MW on the day-ahead, of which €${nf(x.wear)} wear · perfect schedule net of wear`);
     _fuelChart('bess-day-canvas', { type: 'bar', data: { labels: lab, datasets: [
       { type: 'line', label: T('Prix day-ahead', 'Day-ahead price'), data: E.price, borderColor: '#E6EDF3', borderWidth: 1.8, pointRadius: 0, tension: 0, yAxisID: 'p', order: 0 },
-      { type: 'line', label: T('État de charge', 'State of charge'), data: x.soc.map(v => +(v * 100).toFixed(0)), borderColor: '#A87DC4', borderWidth: 1.4, borderDash: [4, 3], pointRadius: 0, tension: 0, yAxisID: 'soc', order: 1 },
+      { type: 'line', label: T('État de charge', 'State of charge'), data: x.soc.map(v => +(v * 100).toFixed(0)), borderColor: '#5FA8D3', borderWidth: 1.4, borderDash: [4, 3], pointRadius: 0, tension: 0, yAxisID: 'soc', order: 1 },
       { label: T('Vend (décharge)', 'Sells (discharge)'), data: x.discharge, backgroundColor: 'rgba(251,191,36,.85)', borderWidth: 0, yAxisID: 'mw', order: 2, barPercentage: 1, categoryPercentage: 1 },
       { label: T('Achète (charge)', 'Buys (charge)'), data: x.charge.map(v => -v), backgroundColor: 'rgba(127,200,248,.75)', borderWidth: 0, yAxisID: 'mw', order: 3, barPercentage: 1, categoryPercentage: 1 },
     ] }, options: _fuelOpts({ scales: {

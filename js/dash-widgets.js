@@ -83,7 +83,7 @@
       const val = r => r.co != null ? r.co : r.best, RK = Object.keys(j.realised).sort().filter(d => val(j.realised[d]) != null);
       const roll = days.map(d => { const w = RK.filter(x => x <= d).slice(-30); return w.length >= 20 && w[w.length - 1] >= new Date(Date.parse(d) - 5 * 864e5).toISOString().slice(0, 10) ? +(w.reduce((a, x) => a + val(j.realised[x]), 0) / w.length * 0.365).toFixed(1) : null; });
       _fuelChart(cid, { type: 'line', data: { labels: days, datasets: [
-        _fuelLineDs(_mT('Indice forward', 'Forward index'), days.map(d => j.forward[d].v), '#A87DC4', { borderWidth: 2 }),
+        _fuelLineDs(_mT('Indice forward', 'Forward index'), days.map(d => j.forward[d].v), '#5FA8D3', { borderWidth: 2 }),
         _fuelLineDs(_mT('Réalisé co-optimisé, day-ahead + FCR (30 j glissants)', 'Realised co-optimised, day-ahead + FCR (rolling 30 d)'), roll, '#8D99AE', { borderWidth: 1.5, borderDash: [5, 3] }),
       ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis(_mT('k€/MW/an', 'k€/MW/yr'), { beginAtZero: true }) }, plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 10 } } } }) }, 'bess-index');
       const L = j.forward[last], wk = F.filter(d => d <= new Date(Date.parse(last) - 7 * 864e5).toISOString().slice(0, 10)).pop();

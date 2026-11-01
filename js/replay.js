@@ -208,9 +208,9 @@
     return { light, bg: v('--bg2', '#0f1419'), panel: v('--bg3', '#151c24'), text: v('--text', '#FFFFFF'), text2: v('--text2', '#B8C9D9'), text3: v('--text3', '#7A93AB'),
       grid: v('--border', '#1e2d3d'), axis: v('--border2', '#243447'), accent: v('--accent', '#14D3A9'), down: v('--down', '#ED6965'),
       series: light ? { short: '#D2453F', long: '#EC8B86', da: '#5F738A', load: '#13202E', nuc: '#7C4DDB', wind: '#0E8FA3', solar: '#D98A06', exch: '#C2410C', p0: '#0E9E7E', p1: '#D98A06', p2: '#7C4DDB', p3: '#0E8FA3', cmp: '#8DA3BA',
-          z_FR: '#0E9E7E', z_DE_LU: '#13202E', z_BE: '#D98A06', z_NL: '#C2410C', z_ES: '#D2453F', z_IT_NORD: '#7C4DDB' }
+          z_FR: '#0E9E7E', z_DE_LU: '#13202E', z_BE: '#D98A06', z_NL: '#C2410C', z_ES: '#D2453F', z_IT_NORD: '#2C7DA0' }
         : { short: '#ED6965', long: '#F2A3A0', da: '#B8C9D9', load: '#FFFFFF', nuc: '#B794F6', wind: '#7FC8F8', solar: '#FBBF24', exch: '#FB923C', p0: '#14D3A9', p1: '#FBBF24', p2: '#B794F6', p3: '#7FC8F8', cmp: '#7A93AB',
-          z_FR: '#14D3A9', z_DE_LU: '#FFFFFF', z_BE: '#FBBF24', z_NL: '#FB923C', z_ES: '#ED6965', z_IT_NORD: '#B794F6' } };
+          z_FR: '#14D3A9', z_DE_LU: '#FFFFFF', z_BE: '#FBBF24', z_NL: '#FB923C', z_ES: '#ED6965', z_IT_NORD: '#5FA8D3' } };
   }
   // the site's logo (icon only), dark and light versions
   const LOGO = {}; ['logo-icon.png', 'logo-icon-light.png'].forEach(f => { const im = new Image(); im.onload = () => { if (S.data) draw(); }; im.src = 'assets/' + f; LOGO[f] = im; });
@@ -592,7 +592,7 @@
         '<div class="cmp-grp">' + pill('mode', 'prices', T('Prix', 'Prices'), S.mode === 'prices') + pill('mode', 'production', T('Production', 'Production'), S.mode === 'production') + pill('mode', 'europe', T('Europe', 'Europe'), S.mode === 'europe') + '</div>' +
         `<label class="cmp-dates">${T('Comparer avec', 'Compare with')} <input type="date" id="rp-cmp" value="${S.cmp || ''}"></label>`;
     } else if (window.PKCompare) {
-      h += '<div class="cmp-grp">' + (S.prods || []).map((id, i) => `<span class="cmp-chip" style="padding:4px 8px"><i style="background:${['#14D3A9', '#FBBF24', '#B794F6', '#7FC8F8'][i]}"></i><span>${PKCompare.label(id)}</span><button type="button" data-delp="${id}" aria-label="${T('Retirer', 'Remove')}">×</button></span>`).join('') + '</div>';
+      h += '<div class="cmp-grp">' + (S.prods || []).map((id, i) => `<span class="cmp-chip" style="padding:4px 8px"><i style="background:${['#14D3A9', '#FBBF24', '#C4A57B', '#7FC8F8'][i]}"></i><span>${PKCompare.label(id)}</span><button type="button" data-delp="${id}" aria-label="${T('Retirer', 'Remove')}">×</button></span>`).join('') + '</div>';
       if ((S.prods || []).length < 4) h += `<select id="rp-addp" aria-label="${T('Ajouter un produit', 'Add a product')}"><option value="">${T('+ Ajouter un produit', '+ Add a product')}</option>` + PKCompare.groups().map(([g, n, ids]) => `<optgroup label="${n}">` + ids.filter(id => !(S.prods || []).includes(id)).map(id => `<option value="${id}">${PKCompare.label(id)}</option>`).join('') + '</optgroup>').join('') + '</select>';
       h += `<label class="cmp-dates">${T('Du', 'From')} <input type="date" id="rp-lfrom" value="${S.lfrom}"> ${T('au', 'to')} <input type="date" id="rp-lto" value="${S.lto}"></label>`;
     }

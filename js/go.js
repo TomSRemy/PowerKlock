@@ -4,7 +4,7 @@
 // individually; the live weekly mail since 2026 quotes Renewable + the
 // combined HWS bucket — see scripts/fetch_go_prices.py.
 const GO_SERIES = {
-  renewable: {l:'GO AIB Renewable', c:'#A87DC4'},
+  renewable: {l:'GO AIB Renewable', c:'#5FA8D3'},
   wind:      {l:'GO AIB Wind',      c:'#3FA6B4'},
   solar:     {l:'GO AIB Solar',     c:'#FBBF24'},
   hydro:     {l:'GO AIB Hydro',     c:'#14D3A9'},
@@ -13,7 +13,7 @@ const GO_SERIES = {
 };
 // Palette for the "one line per vintage year" chart (chart5 in the Commerg
 // reference workbook — GOs Price Indications).
-const GO_YEAR_COLORS = ['#5B7A99', '#3FA6B4', '#14D3A9', '#7FD858', '#FBBF24', '#F08A3C', '#ED6965', '#A87DC4', '#f472b6'];
+const GO_YEAR_COLORS = ['#5B7A99', '#3FA6B4', '#14D3A9', '#7FD858', '#FBBF24', '#F08A3C', '#ED6965', '#C4A57B', '#f472b6'];
 let goHistPeriod = 9999;    // week count from the end — used when goCustomRange is null
 let goCustomRange = null;   // { from:'YYYY-MM-DD', to:'YYYY-MM-DD' } — overrides goHistPeriod when set
 let goHistFilter = 'all';

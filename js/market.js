@@ -131,7 +131,7 @@ const CB_EC = { DE: 'Germany', BE: 'Belgium', NL: 'Netherlands', ES: 'Spain', IT
 const CB_NB_NAME = { AT: 'Austria', BE: 'Belgium', CZ: 'Czechia', DK: 'Denmark', FR: 'France', DE: 'Germany', LU: 'Luxembourg',
   NL: 'Netherlands', NO: 'Norway', PL: 'Poland', SE: 'Sweden', CH: 'Switzerland', IT: 'Italy', ES: 'Spain', PT: 'Portugal',
   GB: 'Great Britain', SI: 'Slovenia', SK: 'Slovakia', HU: 'Hungary', LT: 'Lithuania', GR: 'Greece', ME: 'Montenegro', MT: 'Malta', IE: 'Ireland' };
-const CB_NB_COL = ['#FBBF24', '#7FC8F8', '#ED6965', '#14D3A9', '#C4A57B', '#A87DC4', '#94D2BD', '#F472B6', '#8D99AE', '#D6A77A', '#3FA6B4'];
+const CB_NB_COL = ['#FBBF24', '#7FC8F8', '#ED6965', '#14D3A9', '#C4A57B', '#F2A65A', '#94D2BD', '#F472B6', '#8D99AE', '#D6A77A', '#3FA6B4'];
 const _cbEcCache = new Map();
 function _cbEcMonth(ym) {
   if (!_cbEcCache.has(ym)) _cbEcCache.set(ym, fetch(DATA_BASE + 'history/flows/' + ym + '.json').then(r => r.ok ? r.json() : null).catch(() => null));

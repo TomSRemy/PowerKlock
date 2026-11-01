@@ -7,7 +7,7 @@
   'use strict';
   if (!window.PKTile) return;
   const { rule, data: D, T } = PKTile;
-  const C = { a: '#14D3A9', b: '#7FC8F8', c: '#A87DC4', d: '#FBBF24', e: '#ED6965', f: '#C4A57B', g: '#B8C9D9' };
+  const C = { a: '#14D3A9', b: '#7FC8F8', c: '#8D99AE', d: '#FBBF24', e: '#ED6965', f: '#C4A57B', g: '#B8C9D9' };
   const ZN = { FR: 'France', DE_LU: T('Allemagne', 'Germany') };
   const mean = a => { const v = a.filter(x => x != null); return v.length ? v.reduce((s, x) => s + x, 0) / v.length : null; };
   const roll = (pts, n) => pts.map((p, i) => [p[0], i + 1 >= Math.min(n, 5) ? mean(pts.slice(Math.max(0, i - n + 1), i + 1).map(x => x[1])) : null]);

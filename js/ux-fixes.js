@@ -70,7 +70,7 @@
   .ticker .ticker-val.up, .ticker .ticker-chg.up { color: var(--down); }
   .ticker .ticker-val.down, .ticker .ticker-chg.down { color: var(--up); }
   /* contrast (WCAG 1.4.3): inline nuclear purple and plain links in text blocks */
-  html:not([data-theme="light"]) [style*="#7B4B9C"]:not(canvas):not(svg *) { color: #A98BD4 !important; }
+  html:not([data-theme="light"]) [style*="#7B4B9C"]:not(canvas):not(svg *) { color: #8D99AE !important; }
   .mrn-moves a:not([class]), .fuel-note a:not([class]) { color: var(--accent); }
   .news-vote .nv { opacity: .8; min-width: 28px; min-height: 28px; justify-content: center; }
   /* phone: one-line top bar, the scrolling ticker and the clock hidden */

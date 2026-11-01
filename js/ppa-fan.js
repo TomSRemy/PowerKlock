@@ -46,7 +46,7 @@
     ];
     const ytd = D.history.find(h => !h.complete);
     if (ytd) ds.push({ label: ytd.year + ' to date', data: years.map(y => y === ytd.year ? sc(ytd[k]) : null), borderColor: '#E6EDF3', backgroundColor: 'transparent', pointStyle: 'circle', pointRadius: 5, pointBorderWidth: 2, showLine: false });
-    if (val) ds.push({ label: 'Forward baseload (weighted by output)', data: years.map((y, i) => i >= iP ? P[i - iP].forward : null), borderColor: 'rgba(168,125,196,.8)', borderDash: [2, 3], borderWidth: 1.3, pointRadius: 0, fill: false });
+    if (val) ds.push({ label: 'Forward baseload (weighted by output)', data: years.map((y, i) => i >= iP ? P[i - iP].forward : null), borderColor: 'rgba(95,168,211,.8)', borderDash: [2, 3], borderWidth: 1.3, pointRadius: 0, fill: false });
     _fuelChart('pp-fan', { type: 'line', data: { labels, datasets: ds },
       options: _fuelOpts({ plugins: { pkFcZone: { from: iP, label: 'PROJECTION' }, legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 8, filter: it => !/^_/.test(it.text) } },
         tooltip: { callbacks: { label: c => /^_/.test(c.dataset.label) || c.raw == null ? null : ` ${c.dataset.label}: ${val ? f2(c.raw) + ' €/MWh' : (+c.raw).toFixed(1) + ' %'}` } } },

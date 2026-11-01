@@ -23,7 +23,7 @@
   // summary.json ne contient que 5 zones : FR, DE_LU, ES, BE, NL
   var NEIGHBOURS = [
     { code: 'DE_LU', label: 'DE/LU', flag: '\uD83C\uDDE9\uD83C\uDDEA', colour: '#EE9B00' },
-    { code: 'BE',    label: 'BE',    flag: '\uD83C\uDDE7\uD83C\uDDEA', colour: '#A87DC4' },
+    { code: 'BE',    label: 'BE',    flag: '\uD83C\uDDE7\uD83C\uDDEA', colour: '#5FA8D3' },
     { code: 'NL',    label: 'NL',    flag: '\uD83C\uDDF3\uD83C\uDDF1', colour: '#3FA6B4' },
     { code: 'ES',    label: 'ES',    flag: '\uD83C\uDDEA\uD83C\uDDF8', colour: '#ED6965' }
   ];

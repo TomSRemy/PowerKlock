@@ -245,7 +245,7 @@ function loadOverview() {
     ${fr ? `FR day-ahead at ${fr.today.toFixed(2)} €/MWh. ${fr.negHrs > 0 ? `${fr.negHrs}h of negative prices.` : 'No negative hours.'}` : 'Day-ahead prices not loaded.'}</div>
     <div style="margin-bottom:10px"><span style="color:#C4A57B">${_newsIc('gas')}Gas</span><br>
     ${ttf ? `TTF day-ahead at ${ttf.v.toFixed(2)} €/MWh, ${pct(ttf)}.` : 'Gas data not loaded.'}</div>
-    <div><span style="color:#A87DC4">${_newsIc('carbon')}Carbon</span><br>
+    <div><span style="color:#5FA8D3">${_newsIc('carbon')}Carbon</span><br>
     ${eua ? `EUA ${P.contractLabel('eua')} at ${eua.v.toFixed(2)} €/t, ${pct(eua)}.` : 'Carbon data not loaded.'}</div>
   `;
 }
