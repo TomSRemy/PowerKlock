@@ -3085,6 +3085,7 @@
   .pp-rb.on { border-color:var(--accent); background:rgba(20,211,169,.10); } .pp-rb.on b { color:var(--accent); }
   .pp-rb:hover { border-color:var(--text3); }
   .pp-rb .na { font:400 11px 'Inter',sans-serif; color:var(--text3); }
+  .pp-rb-pub { cursor:default; border-color:var(--accent); background:rgba(20,211,169,.10); } .pp-rb-pub b { color:var(--accent); font-size:15px; }
   .pp-resbar .rel { margin-left:auto; font-size:11.5px; color:var(--text2); }
   .pp-resbar .rel b { color:var(--text); }
   details.pp-adv { margin-top:14px; border-top:1px solid var(--border); padding-top:12px; }
