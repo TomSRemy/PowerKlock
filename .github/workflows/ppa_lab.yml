@@ -26,7 +26,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Install dependencies
-        run: pip install requests==2.33.1 numpy==2.5.4
+        run: pip install requests==2.33.1 numpy==2.5.4 scipy==1.18.1   # scipy: the analogues of the generator's full Monte Carlo (cKDTree)
       - name: Neighbours, recent years
         run: python scripts/fetch_region_hourly.py --recent
       - name: Detailed replay of the current methods
