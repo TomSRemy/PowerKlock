@@ -176,6 +176,7 @@
     if (target === 'negative' && typeof window.negRenderAll === 'function') {
       setTimeout(() => window.negRenderAll(), 30);
     }
+    if (target === 'negative' && window.PKFlexShare) setTimeout(() => window.PKFlexShare.render(), 60);
     // Negative prices (legacy) — keep the old renderer alive
     if (target === 'negative-legacy' && typeof window.renderHistNeg === 'function') {
       setTimeout(() => window.renderHistNeg(), 30);
