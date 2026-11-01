@@ -145,9 +145,14 @@ Chaque terme :
 - **Forward du mois.** Le mois coté si on l'a, sinon le trimestre, sinon le Cal, découpé par une forme saisonnière.
   On ne prend que des produits liquides (SEFE / EEX).
 - **Capture du mois.** Elle sort du générateur de scénarios (chapitre 9).
-- **Prime de risque.** Elle a deux parties :
-  - **risque de marché :** Monte Carlo de 10 000 futurs (capture, volume, forwards), lu au niveau prudent ;
-  - **risque de modèle :** le 75e centile des erreurs passées du générateur (chapitre 11).
+- **Prime de risque** (pricer v2, depuis le 31 octobre 2026) :
+  - la bande P10–P90 du générateur, avec le Monte Carlo complet, donne une **dérive de capture** : solaire 2,75,
+    éolien 2,12 points par √année ;
+  - le pricer tire **10 000 trajectoires** (forward, volume, capture, liquidité), couvre le volume attendu au Cal, et
+    retire **prime = valeur juste − 25e centile**. Le prix publié est donc le niveau qui tient 3 fois sur 4 ;
+  - plus de déduction séparée pour le risque de modèle : la bande complète le contient déjà (chapitre 11). Avant le
+    31 octobre, on retirait aussi le 75e centile des erreurs passées ;
+  - la corrélation volume–capture est mesurée (0,06 solaire, 0,26 éolien) au lieu d'être supposée.
 - **Coût des écarts.** Chapitre 12.
 - **Garanties d'origine.** Prix des enchères (EEX).
 - **Marge de gestion.** 1 €/MWh.
@@ -159,9 +164,14 @@ Les PPA récents prévoient souvent que l'acheteur ne paie pas les MWh produits 
 - c'est le cœur de la production solaire.
 
 ### 3.3 Prix publiés
-Au 31 octobre 2026 (débrief) : **solaire 47,07 €/MWh, éolien 77,78 €/MWh**. Méthode du jour :
-- solaire **sans ancrage** ;
-- éolien **ancré** par un facteur hiver et un facteur été (chapitre 9).
+Pricer v2, forwards des 30–31 octobre 2026 : **solaire 49,75 €/MWh, éolien 80,69 €/MWh** (le débrief de la nuit
+d'avant, en v1, donnait 47,07 et 77,78). Méthode :
+- **une seule méthode**, le générateur, au lieu de la moyenne de quatre (qui se trompait de 2,59 € en solaire et
+  2,84 € en éolien au rejeu, contre 0,76 et 0,56 pour le générateur seul) ;
+- solaire **sans ancrage**, éolien **ancré** par un facteur hiver et un facteur été, choisis chaque semaine par le
+  rejeu (chapitre 9) ;
+- règle éolienne **pondérée par la production** ;
+- source : `docs/discussion/pricing-v2/choix_v2.md` et `parametres.md`.
 
 ### 3.4 Questions ouvertes
 - La prime de risque doit-elle dépendre de la durée du contrat ? Aujourd'hui l'horizon élargit la bande.
@@ -619,8 +629,9 @@ heure venteuse est une vraie heure venteuse passée, avec tout ce qui l'accompag
 proches d'un midi de 2028 sont donc les **pires midis connus**, et l'analogue ne sait pas aller au-delà. Résultat :
 la capture solaire est mal prévue.
 
-**Statut.** Le chiffre ≈ 1,1 vient des tests de la session. Les options sont dans le code, désactivées. Le résultat
-chiffré par variante n'est pas encore écrit en commentaire.
+**Statut (note v2 du 1er novembre).** Analogues seuls : solaire 4,1 € d'erreur, écartés. Mélange 50/50 analogues +
+règle : meilleur sur les formats glissants (0,68 et 1,03) mais moins bon sur les années civiles (0,89 contre 0,63 pour
+la v2), et son pourcentage aurait fini par bouger : refusé. Les options restent dans le code, désactivées.
 
 ### 9.5 Ce que fait la littérature
 - **Qorbanian, Löhndorf et Wozabal** (arXiv 2024, *European Journal of Operational Research* 2025) : un modèle
@@ -634,8 +645,8 @@ chiffré par variante n'est pas encore écrit en commentaire.
   en 2045. Notre générateur est aligné par construction.
 
 ### 9.6 Questions ouvertes
-- Une règle par filière (cases pondérées pour l'éolien, cases simples pour le solaire) ou la même pour les deux ?
-- Un hybride : les analogues là où le passé couvre la situation, la règle ailleurs ?
+- Tranché en v2 : un seul générateur ; seule la pondération suit la filière pricée (l'éolien pondéré par sa
+  production). Le mélange avec les analogues a été refusé.
 - La valeur réelle de l'éolien baisse d'une année à l'autre plus vite que tous les modèles ne le prévoient. Ni la
   limite d'export ni le gaz ne l'expliquent. C'est la piste à creuser.
 
@@ -703,7 +714,7 @@ Un Monte Carlo tire des futurs et lit la distribution. Il **ne connaît que les 
 **Test du 31 oct. : la météo seule ne suffit pas.** Avec le générateur qui ne tire que la météo, la bande P10–P90 a
 contenu la réalité dans **environ 45 % des mois**. Il en faudrait 80 %.
 
-**Le Monte Carlo complet** (`PK_MC_FULL`, désactivé) tire pour chaque scénario :
+**Le Monte Carlo complet** (en ligne dans le pricer v2 depuis le 31 octobre) tire pour chaque scénario :
 - la **croissance du parc** au-delà de la dernière année : × U(0,6 ; 1,4) ;
 - le **niveau du nucléaire** : × lognormale(0 ; 4 %), car EDF annonce 350–370 TWh par an, environ ±3 %. Avec en plus
   **5 % de chances d'une année de type 2022** ;
@@ -712,14 +723,16 @@ contenu la réalité dans **environ 45 % des mois**. Il en faudrait 80 %.
 - le **niveau de consommation** : × lognormale(0 ; 2 %), selon le rythme de l'électrification ;
 - les **semaines analogues** tirées « chères ou bon marché » : un rang commun à toute la semaine (pannes,
   combustibles, comportement) ;
-- la **disponibilité nucléaire de la semaine tirée**.
+- la **disponibilité nucléaire de la semaine tirée** ;
+- une **année sèche ou humide**.
 
-**Résultat :** le **P75 a tenu dans 78 à 89 % des cas** (cible : 75 %).
+**Résultat :** le prix prudent a tenu dans **78 % des cas en solaire et 78 à 100 % en éolien** (cible : 75 %). Avec
+la bande météo seule, le prix prudent éolien n'avait tenu dans **aucun** cas (note v2). Un premier test du 31 octobre
+donnait 78 à 89 %.
 
-Les deux résultats viennent des tests de la session. Ils ne sont pas encore écrits en commentaire dans le code.
-
-### 11.3 Le percentile pondéré des erreurs passées (risque de modèle)
-`scripts/ppa_model_risk.py` :
+### 11.3 Le percentile pondéré des erreurs passées (risque de modèle, jusqu'au 31 octobre)
+Depuis la v2, la bande complète contient déjà l'erreur du modèle, et cette déduction n'est plus appliquée à part.
+L'idée reste utile pour vérifier la prudence. `scripts/ppa_model_risk.py` :
 1. Il rejoue le générateur sur chaque livraison depuis 2023, à 1, 2 et 3 ans.
 2. Il note l'erreur de capture (en points) de chaque cas.
 3. Il prend le **75e centile pondéré** de ces erreurs. Le poids d'un cas est **divisé par deux pour chaque année
@@ -745,7 +758,9 @@ bande se resserre artificiellement.
 **Règle :** peu de critères, ceux qui comptent le plus, et vérifier le nombre d'années différentes réellement tirées.
 
 ### 11.5 Questions ouvertes
-- Publier le Monte Carlo complet pour la prime de marché ?
+- Le générateur fait trop peu varier le **volume** (solaire 2,1 % contre environ 5 % en réalité) : l'écart de volume
+  est pris dans les vraies années (6,5 % solaire, 9 % éolien).
+- **Liquidité** : 5,1 % × √années au-delà du dernier Cal coté, sans source d'écart achat–vente.
 - Les paramètres (±40 % de parc, 5 % de crise) sont des jugements, pas des estimations. Il faut les tester sur plus
   d'années.
 
@@ -797,7 +812,7 @@ Rejeu 2023–2026, 9 cas, erreur moyenne en €/MWh.
 |---|---|---|---|---|
 | **Modèle publié** | **0,76** | 2,62 | 0,84 | référence |
 | Pondéré par la production | 1,41–1,43 | 2,10–2,20 | 0,48–0,71 | meilleur éolien, pire solaire |
-| Pondération + grille surplus × vent | 1,1 | 2,01 | 0,56 | meilleur éolien ancré |
+| Pondération + part du vent quand la France est coupée | 1,1 | 2,01 | 0,56 | **adoptée en v2 (éolien)** |
 | Pondération + pente du vent | — | 1,93 (biais +0,45) | 0,71 | presque sans biais, dispersé |
 | Résidu du jour réel | 1,88–3,98 | 2,09–4,35 | 0,83–1,60 | ✗ |
 | Grille surplus × part du vent | 0,93 | 2,31 | 0,86 | ✗ |
@@ -806,7 +821,9 @@ Rejeu 2023–2026, 9 cas, erreur moyenne en €/MWh.
 | Correction par situation | 2,57 | 1,73 | 0,72 | ✗ (−4 à −8 € sur 2026) |
 | Limite JAO réelle (oracle) | 0,93 | 2,59 | 0,76 | n'explique pas l'erreur |
 | Météo depuis 2023 seulement | 1,44 | 3,02 | 1,01 | ✗ |
-| Analogues (31 oct.) | mauvais | ≈ 1,1 | — | testé, pas branché |
+| Analogues seuls (31 oct.) | 4,1 | ≈ 1,1 | — | écartés |
+| Mélange 50/50 analogues + règle | — | — | 0,89 (années civiles), contre 0,63 en v2 | refusé |
+| Moyenne des 4 anciennes méthodes | 2,59 | — | 2,84 | remplacée par le générateur seul (v2) |
 | Modèle d'optimisation par semaine | — | paie trop le vent (+4,3) | — | ✗ |
 | Régression mensuelle | 3,2–6,3 | 1,73–3,42 | — | ✗ instable |
 
@@ -815,19 +832,24 @@ Risque et écarts :
 | Test | Résultat | Verdict |
 |---|---|---|
 | Monte Carlo météo seule | P10–P90 ≈ 45 % | trop étroit |
-| Monte Carlo complet | P75 tenu 78–89 % | en test |
+| Monte Carlo complet | prix prudent tenu : solaire 78 %, éolien 78–100 % | **adopté en v2** |
 | Prévision combinée des écarts | éolien 3,06 → 2,82 | gardée pour l'éolien |
 
-### 13.2 Les décisions qui restent à Tom
-1. **Pondération par la production pour l'éolien** (avec la grille surplus × vent) :
-   - **option A :** pour les deux filières, ce qui dégrade le solaire ;
-   - **option B :** seulement si le rejeu de la filière s'améliore.
-2. **Ancrage de l'éolien :**
-   - aucune méthode ne s'en passe encore ;
-   - les analogues sont la piste la plus proche, mais le solaire bloque.
-3. **Stabilité du choix de méthode :** choix annuel ? seuil de 0,2 € ?
-4. **Monte Carlo complet** pour la prime de marché : quels paramètres ?
-5. **Prix de PPA observés** comme repère (abonnement Pexapark, usage interne).
+### 13.2 Ce qui a été décidé, ce qui reste ouvert
+**Décidé (pricer v2, en ligne le 31 octobre 2026)** :
+1. une seule méthode, le générateur ; les anciennes restent des repères hors du prix ;
+2. l'ancrage choisi chaque semaine par le rejeu, même règle pour les deux filières ;
+3. la règle éolienne pondérée par la production ;
+4. un prix prudent (3 fois sur 4), avec P25, P50, P75 affichés ;
+5. la bande du Monte Carlo complet, sans déduction séparée du risque de modèle.
+
+**Ouvert** :
+1. l'éolien reste ancré : sans ancrage, tous les modèles le surévaluent de 2 à 2,7 €, et le biais est dans les heures
+   coupées (règle 6,9 € trop haute) ;
+2. convention des prix négatifs : passage de « ≤ 0 » à « strictement < 0 » en cours ;
+3. captures jusqu'en 2030 : à prolonger pour les PPA longs ;
+4. arrêts nucléaires 2027 : une option (éolien +2 points), impossible à tester sur le passé ;
+5. prix de PPA observés comme repère (abonnement Pexapark, usage interne).
 
 ### 13.3 Ce que font les professionnels
 - **Pexapark :**

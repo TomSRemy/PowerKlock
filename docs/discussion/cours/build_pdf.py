@@ -9,7 +9,7 @@ body { font-family: 'DejaVu Sans', Arial, sans-serif; font-size: 10.5pt; line-he
 h1 { font-size: 21pt; color: #2f6db5; margin: 0 0 4mm; }
 h2 { font-size: 15pt; color: #2f6db5; border-bottom: 2px solid #c9b48a; padding-bottom: 2mm; margin-top: 0; page-break-before: always; }
 h1 + p + p + hr + h2, h1 + p + p + p + hr + h2 { page-break-before: avoid; }
-h3 { font-size: 11.5pt; color: #7a5aa6; margin: 4mm 0 1.5mm; }
+h3 { font-size: 11.5pt; color: #3f5873; margin: 4mm 0 1.5mm; }
 img { max-width: 100%; max-height: 105mm; display: block; margin: 3mm auto; page-break-inside: avoid; }
 blockquote { background: #faf5ea; border-left: 4px solid #d08a1e; margin: 3mm 0; padding: 2mm 4mm; page-break-inside: avoid; }
 blockquote p { margin: 1mm 0; }

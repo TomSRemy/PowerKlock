@@ -8,7 +8,8 @@ from matplotlib.patches import FancyBboxPatch, FancyArrowPatch, Rectangle
 
 OUT = 'docs/discussion/cours/img'
 R = 'data/history'
-BLUE, VIOLET, AMBER, SAND, GREY, INK = '#2f6db5', '#7a5aa6', '#d08a1e', '#c9b48a', '#8a94a3', '#1f2933'
+BLUE, VIOLET, AMBER, SAND, GREY, INK = '#2f6db5', '#3f5873', '#d08a1e', '#c9b48a', '#8a94a3', '#1f2933'
+NUC = '#7a5aa6'   # violet : réservé au nucléaire (règle du site) ; VIOLET ci-dessous = ardoise
 RED, GREEN = '#c0392b', '#3d8b5a'
 plt.rcParams.update({'font.size': 12, 'axes.spines.top': False, 'axes.spines.right': False,
                      'axes.titleweight': 'bold', 'axes.titlesize': 14, 'figure.dpi': 110,
@@ -36,8 +37,8 @@ def arrow(ax, a, b, col=GREY):
 
 # 01 merit order (schéma)
 fig, ax = plt.subplots(figsize=(10, 5.2))
-blocs = [('Éolien\nsolaire', 20, 0, SAND), ('Nucléaire', 45, 15, BLUE), ('Hydraulique', 8, 40, '#6b9bd1'),
-         ('Gaz', 12, 90, AMBER), ('Fioul,\npointe', 5, 200, VIOLET)]
+blocs = [('Éolien\nsolaire', 20, 0, SAND), ('Nucléaire', 45, 15, NUC), ('Hydraulique', 8, 40, '#6b9bd1'),
+         ('Gaz', 12, 90, AMBER), ('Fioul,\npointe', 5, 200, GREY)]
 x = 0
 for n, w, p, c in blocs:
     ax.add_patch(Rectangle((x, 0), w, max(p, 1.5), fc=c, ec='white', lw=1.5))
@@ -126,7 +127,7 @@ dd = np.array([np.datetime64(x[0]) for x in c]); vv = np.array([x[1] for x in c]
 k = dd >= np.datetime64('2020-01-01')
 wk = np.convolve(vv[k], np.ones(7) / 7, mode='same')
 fig, ax = plt.subplots(figsize=(10, 4.6))
-ax.plot(dd[k][3:-3], wk[3:-3], color=BLUE, lw=1.6)
+ax.plot(dd[k][3:-3], wk[3:-3], color=NUC, lw=1.6)
 ax.set_ylabel('GW disponibles (moyenne 7 jours)'); ax.set_ylim(20, 65)
 ax.annotate('2022 : corrosion sous contrainte,\nla moitié du parc à l\'arrêt', xy=(np.datetime64('2022-08-15'), 28), xytext=(np.datetime64('2020-06-01'), 25), arrowprops=dict(arrowstyle='->', color=GREY), fontsize=10)
 ax.set_title('Nucléaire disponible en France : hiver haut, été bas (arrêts programmés)')
@@ -231,7 +232,7 @@ save(fig, '15_vent_saisons', 'RTE éCO2mix (fr_capture.json), calcul PowerKlock'
 fig, ax = plt.subplots(figsize=(11, 4.6)); ax.axis('off'); ax.set_xlim(0, 11); ax.set_ylim(0, 4.6)
 box(ax, 0.2, 2.6, 2.4, 1.5, '① Vraies semaines\nde météo passées\n(vent, soleil, conso)', '#e8f0fa', BLUE)
 box(ax, 0.2, 0.4, 2.4, 1.5, '② Le parc futur\n(plus de solaire,\nd\'éolien, batteries)', '#e8f0fa', BLUE)
-box(ax, 3.4, 1.5, 2.6, 1.6, '③ Production\nde chaque heure\ndu futur', '#f1ebf7', VIOLET)
+box(ax, 3.4, 1.5, 2.6, 1.6, '③ Production\nde chaque heure\ndu futur', '#eceff3', VIOLET)
 box(ax, 6.6, 1.5, 2.0, 1.6, '④ Règle de prix\napprise sur\nle passé', '#fbeee0', AMBER)
 box(ax, 9.0, 1.5, 1.8, 1.6, '⑤ Capture\nde chaque\nmois', '#eef0f3', GREY, bold=True)
 arrow(ax, (2.6, 3.3), (3.4, 2.6), BLUE); arrow(ax, (2.6, 1.2), (3.4, 2.0), BLUE)
@@ -264,13 +265,13 @@ save(fig, '18_p50_p75', 'schéma illustratif')
 
 # 19 couverture des bandes
 fig, ax = plt.subplots(figsize=(9, 4.4))
-ax.barh([1, 0], [45, 83.5], color=[GREY, VIOLET])
-ax.errorbar([83.5], [0], xerr=[[5.5], [5.5]], fmt='none', color=INK, capsize=6)
+ax.barh([1, 0], [45, 89], color=[GREY, BLUE])
+ax.errorbar([89], [0], xerr=[[11], [11]], fmt='none', color=INK, capsize=6)
 ax.text(46.5, 1, '≈ 45 % des mois dans la bande P10–P90\n(il en faudrait 80 %)', va='center', fontsize=11)
-ax.text(30, 0, 'P75 tenu dans 78 à 89 % des cas\n(il en faudrait 75 %)', va='center', ha='center', fontsize=11, color='white')
+ax.text(30, 0, 'Prix prudent (P75) tenu : solaire 78 %,\néolien 78 à 100 % des cas (cible 75 %)', va='center', ha='center', fontsize=11, color='white')
 ax.set_yticks([1, 0], ['Monte Carlo\nmétéo seule', 'Monte Carlo\ncomplet']); ax.set_xlim(0, 100); ax.set_xlabel('% des cas où la réalité est dans la cible')
 ax.set_title('Un Monte Carlo ne connaît que les risques qu\'on lui donne')
-save(fig, '19_couverture', 'tests PowerKlock du 31 oct. 2026 (générateur de scénarios, rejeu)')
+save(fig, '19_couverture', 'rejeu PowerKlock, 31 oct. 2026 ; note « Pricing PPA v2 : les choix et pourquoi » (docs/discussion/pricing-v2/choix_v2.md)')
 
 # 20 coût des écarts mensuel
 m = json.load(open(f'{R}/fr_imbalance_cost.json'))['months']
@@ -298,7 +299,7 @@ fig, ax = plt.subplots(figsize=(10.5, 6)); ax.axis('off'); ax.set_xlim(0, 10.5);
 P = {'FR': (2.0, 2.6), 'BE': (3.8, 5.0), 'DE': (7.6, 4.2), 'CH': (5.6, 1.6), 'IT': (8.6, 0.6)}
 for k, (x, y) in P.items():
     box(ax, x - 0.75, y - 0.4, 1.5, 0.8, {'FR': 'France', 'BE': 'Belgique', 'DE': 'Allemagne', 'CH': 'Suisse', 'IT': 'Italie'}[k],
-        '#e8f0fa' if k != 'FR' else '#f1ebf7', BLUE if k != 'FR' else VIOLET, 11, True)
+        '#e8f0fa' if k != 'FR' else '#eceff3', BLUE if k != 'FR' else VIOLET, 11, True)
 def line(a, b, txt, col, lw, off=(0, 0.18)):
     (x1, y1), (x2, y2) = P[a], P[b]
     ax.add_patch(FancyArrowPatch((x1, y1), (x2, y2), arrowstyle='-|>', mutation_scale=15, color=col, lw=lw, shrinkA=32, shrinkB=32))
