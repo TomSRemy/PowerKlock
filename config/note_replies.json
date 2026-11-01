@@ -646,5 +646,9 @@
  "62": {
   "status": "done",
   "reply": "Refait : en tête, le prix du Cal+1 en grand avec sa variation (rouge si hausse, vert si baisse) et la phrase de synthèse ; dessous, quatre cartes côte à côte (Combustibles et carbone, La France et ses fondamentaux, Niveau et courbe, Politique et actualité) au lieu d’un seul bloc de texte. Sur petit écran, les cartes passent l’une sous l’autre."
+ },
+ "95": {
+  "status": "done",
+  "reply": "Fait : la page Enchères France commence par 5 chiffres clés (dernière enchère et date des résultats, prix moyen pondéré et variation, volume attribué, prix de réserve, date des prochains résultats), puis un graphique par région de la dernière enchère et un calendrier : les dates de publication des résultats (lues dans les fichiers EEX), avec la prochaine date estimée. Les résultats sortent un mercredi, en général le 3e du mois ; la prochaine date est donc une estimation, signalée comme telle. Au passage, j’ai corrigé l’affichage des prix du tableau en français (1 746 au lieu de 1,746)."
  }
 }

@@ -565,13 +565,53 @@ function drawGoAuctionVolChart() {
     }
   });
   setTimeout(()=>{ addFullscreen('go-auct-vol-canvas'); addDownload('go-auct-vol-canvas','go-auctions-volume'); },100);
-  drawGoAuctionTable();
+  drawGoAuctionTable(); drawGoAuctionExtra();
 }
+// key figures, regions and calendar of the French state auctions (note 95). Results dates come from the name of the EEX
+// results file (YYYYMMDD_…); results come out on a Wednesday, usually the third of the month, so the next date is an estimate.
+function drawGoAuctionExtra() {
+  if (!GO_AUCTIONS || !GO_AUCTIONS.auctions.length) return;
+  const fr = !window.PKI18n || PKI18n.lang !== 'en', T = (f, e) => fr ? f : e;
+  const nf = (v, d) => v == null || !isFinite(v) ? '–' : v.toLocaleString('en-GB', { minimumFractionDigits: d, maximumFractionDigits: d });   // English digits: the French translation converts them
+  const A = GO_AUCTIONS.auctions, a = A[A.length - 1], p = A[A.length - 2];
+  const tot = (x, k) => (x.by_technology || []).reduce((s, t) => s + (t[k] || 0), 0);
+  const wavg = x => { const v = tot(x, 'allocated_mwh'); return v ? (x.by_technology || []).reduce((s, t) => s + (t.allocated_mwh || 0) * (t.price_eur_mwh || 0), 0) / v : null; };
+  const pubOf = x => { const m = /^(\d{4})(\d{2})(\d{2})_/.exec(x.source_file || ''); return m ? m[1] + '-' + m[2] + '-' + m[3] : null; };
+  const fmtD = d => d ? new Date(d + 'T12:00:00Z').toLocaleDateString(fr ? 'fr-FR' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }) : '–';
+  const fmtM = m => new Date(m + '-15T12:00:00Z').toLocaleDateString(fr ? 'fr-FR' : 'en-GB', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+  const pa = wavg(a), pp = p ? wavg(p) : null, va = tot(a, 'allocated_mwh'), oa = tot(a, 'offered_mwh');
+  // the next results date: the third Wednesday of the month after the latest results
+  const last = pubOf(a);
+  let next = null;
+  if (last) { const y = +last.slice(0, 4), mo = +last.slice(5, 7); const d1 = new Date(Date.UTC(mo === 12 ? y + 1 : y, mo % 12, 1)); const off = (3 - d1.getUTCDay() + 7) % 7; d1.setUTCDate(1 + off + 14); next = d1.toISOString().slice(0, 10); }
+  const kp = document.getElementById('go-auct-kpis'), en = (v, d) => v == null || !isFinite(v) ? '–' : v.toFixed(d);   // key figures: the site's translation formats the numbers
+  if (kp) kp.innerHTML =
+    _fuelKpi(T('Dernière enchère', 'Latest auction'), fmtM(a.auction_month), '', T('production · résultats le ', 'production · results on ') + fmtD(last)) +
+    _fuelKpi(T('Prix moyen pondéré', 'Weighted average price'), en(pa, 3), '€/MWh', pp != null ? (pa >= pp ? '▲ +' : '▼ ') + en(pa - pp, 3) + T(' € vs le mois précédent', ' € vs the month before') : '', pp != null ? (pa > pp ? 'down' : 'up') : null) +
+    _fuelKpi(T('Volume attribué', 'Volume allocated'), en(va / 1000, 0), 'GWh', oa ? en(va / oa * 100, 0) + T(' % du volume offert', ' % of the volume offered') : '') +
+    _fuelKpi(T('Prix de réserve', 'Reserve price'), en(GO_AUCTIONS.reserve_eur_mwh, 2), '€/MWh', T('fixé par l’État', 'set by the State')) +
+    _fuelKpi(T('Prochains résultats', 'Next results'), next ? fmtD(next) : '–', '', T('estimation : 3e mercredi du mois', 'estimate: third Wednesday of the month'));
+  // regions of the latest auction
+  const rg = (a.by_region || []).filter(r => r.allocated_mwh).sort((x, y) => y.allocated_mwh - x.allocated_mwh);
+  if (document.getElementById('go-auct-reg') && rg.length) {
+    _fuelChart('go-auct-reg', { type: 'bar', data: { labels: rg.map(r => r.region), datasets: [
+      { label: T('Volume attribué (GWh)', 'Volume allocated (GWh)'), data: rg.map(r => Math.round(r.allocated_mwh / 100) / 10), backgroundColor: 'rgba(127,200,248,.8)', borderRadius: 3 },
+    ] }, options: _fuelOpts({ indexAxis: 'y', plugins: { legend: { display: false }, tooltip: { callbacks: { afterLabel: c => nf(rg[c.dataIndex].price_eur_mwh, 3) + ' €/MWh' } } },
+      scales: { x: _fuelAxis('GWh', { beginAtZero: true }), y: { ticks: { color: C_TX3, font: { size: 10 }, autoSkip: false }, grid: { display: false } } } }) }, 'go-auction-regions');
+    const sub = document.getElementById('go-auct-reg-sub'); if (sub) sub.textContent = T('Production de ', 'Production of ') + fmtM(a.auction_month) + T(' · prix au survol', ' · price on hover');
+  }
+  // calendar: results dates, newest first, with the expected next one
+  const cal = document.getElementById('go-auct-cal');
+  if (cal) cal.innerHTML = '<table class="fuel-table"><thead><tr><th style="text-align:left">' + T('Résultats publiés', 'Results published') + '</th><th style="text-align:left">' + T('Mois de production', 'Production month') + '</th><th>€/MWh</th></tr></thead><tbody>' +
+    (next ? '<tr style="color:var(--text3)"><td class="l" style="text-align:left">' + fmtD(next) + ' (' + T('estimé', 'estimate') + ')</td><td class="l" style="text-align:left">' + fmtM(new Date(Date.UTC(+a.auction_month.slice(0, 4), +a.auction_month.slice(5, 7), 15)).toISOString().slice(0, 7)) + '</td><td>–</td></tr>' : '') +
+    A.slice().reverse().slice(0, 18).map(x => '<tr><td class="l" style="text-align:left">' + fmtD(pubOf(x)) + '</td><td class="l" style="text-align:left">' + fmtM(x.auction_month) + '</td><td>' + nf(wavg(x), 3) + '</td></tr>').join('') + '</tbody></table>';
+}
+
 // the auctions as a table, newest first (note 45): price and volume of each technology, the total and the share allocated
 function drawGoAuctionTable() {
   const el = document.getElementById('go-auct-table'); if (!el || !GO_AUCTIONS) return;
   const fr = !window.PKI18n || PKI18n.lang !== 'en', T = (f, e) => fr ? f : e;
-  const nf = (v, d) => v == null || !isFinite(v) ? '–' : v.toLocaleString(fr ? 'fr-FR' : 'en-GB', { minimumFractionDigits: d, maximumFractionDigits: d });
+  const nf = (v, d) => v == null || !isFinite(v) ? '–' : v.toLocaleString('en-GB', { minimumFractionDigits: d, maximumFractionDigits: d });   // English digits: the French translation converts them
   const techs = ['Wind', 'Solar', 'Hydro', 'Thermal'].filter(t => GO_AUCTIONS.auctions.some(a => (a.by_technology || []).some(x => x.technology === t)));
   const TN = { Wind: T('Éolien', 'Wind'), Solar: T('Solaire', 'Solar'), Hydro: T('Hydraulique', 'Hydro'), Thermal: T('Thermique', 'Thermal') };
   const head = '<thead><tr><th style="text-align:left">' + T('Enchère', 'Auction') + '</th>' + techs.map(t => '<th>' + TN[t] + ' €/MWh</th><th>' + TN[t] + ' GWh</th>').join('') + '<th>' + T('Total GWh', 'Total GWh') + '</th><th>' + T('Prix moyen €/MWh', 'Average €/MWh') + '</th><th>' + T('Part allouée', 'Share allocated') + '</th></tr></thead>';
