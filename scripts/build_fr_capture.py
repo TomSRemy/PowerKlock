@@ -8,8 +8,12 @@ writes data/history/fr_capture.json:
    "profile": {"YYYY": {"solar": 12×24 MW, "wind": 12×24 MW}}}
 Per day, for both conventions used by the pricer:
   all hours      — capture = Σ(output × price) / Σ output, baseload = mean price
-  price > 0 only — the PPA Dashboard convention: hours with a price ≤ 0 are
-                   left out of both the capture price and the baseload
+  price ≥ 0 only — the park stops strictly below 0 €/MWh (Tom 1 Nov. 2026; until then ≤ 0): the 'curt'
+                   convention keeps every hour in the baseload, the legacy 'pos' one leaves the stopped
+                   hours out of both
+Also 'stopT': for a stop threshold T other than 0 (stop when the price is below T), each month's capture and
+paid share at T ÷ at 0, national profile, the last two complete years' quarter-hours (the pricer scales the
+generator's months with it)
 Sums are kept (not ratios) so the page can aggregate any window: year,
 month, rolling 30 / 90 / 365 days.
 """
@@ -39,8 +43,47 @@ def prices(day):
     return [x for x in h for _ in range(4)] if len(h) == 24 else h
 
 
+GRID = [-100, -50, -30, -20, -10, -5, 0, 5, 10, 20, 30, 50]
+
+
+def threshold_table(rows_q):
+    """per technology and month: capture rate and paid share with a stop below T ÷ the same with a stop below 0,
+    on the last two complete years (quarter-hours, national output)"""
+    this = datetime.now(timezone.utc).year
+    ys = [y for y in sorted(rows_q) if int(y) < this and len(rows_q[y]) >= 360][-2:]
+    if not ys:
+        return None
+    out = {'years': [int(y) for y in ys], 'grid': GRID}
+    for k, ix in (('solar', 2), ('wind', 3)):
+        cap, paid = {}, {}
+        for T in GRID:
+            cr, pr = [], []
+            for m in range(12):
+                sP = n = e = ep = rp = 0.0
+                for y in ys:
+                    for (mm, p, *vv) in rows_q[y]:
+                        if mm != m:
+                            continue
+                        out_ = vv[ix - 2]
+                        for q in range(96):
+                            v = p[q]
+                            if v is None:
+                                continue
+                            g = max(0.0, out_[q] or 0.0)
+                            sP += v; n += 1; e += g
+                            if v >= T:
+                                ep += g; rp += g * v
+                base = sP / n if n else 0
+                cr.append(rp / ep / base if ep > 0 and base > 0 else None)
+                pr.append(ep / e if e > 0 else None)
+            cap[T], paid[T] = cr, pr
+        out[k] = {'capture': {str(T): [round(c / c0, 4) if c is not None and c0 else None for c, c0 in zip(cap[T], cap[0])] for T in GRID},
+                  'paid': {str(T): [round(c / c0, 4) if c is not None and c0 else None for c, c0 in zip(paid[T], paid[0])] for T in GRID}}
+    return out
+
+
 def main():
-    rows, prof = [], {}
+    rows, prof, rows_q = [], {}, {}
     for path in sorted(glob.glob(os.path.join(RTE, '[0-9][0-9][0-9][0-9]-[0-9][0-9].json'))):
         with open(path) as f:
             days = json.load(f).get('days') or {}
@@ -59,6 +102,7 @@ def main():
             p = prices(day)
             if not p:
                 continue
+            rows_q.setdefault(y, []).append((m, p, sol, win))
             acc = dict.fromkeys(FIELDS, 0.0)
             for q in range(96):
                 v = p[q]
@@ -67,18 +111,19 @@ def main():
                 s, w = max(0.0, sol[q] or 0.0), max(0.0, win[q] or 0.0)
                 acc['pSum'] += v; acc['pN'] += 1
                 acc['sE'] += s; acc['sR'] += s * v; acc['wE'] += w; acc['wR'] += w * v
-                if v > 0:
+                if v >= 0:
                     acc['pSumPos'] += v; acc['pNPos'] += 1
                     acc['sEPos'] += s; acc['sRPos'] += s * v; acc['wEPos'] += w; acc['wRPos'] += w * v
             if acc['pN']:
                 rows.append([day] + [round(acc[k], 1) for k in FIELDS])
+    stop_t = threshold_table(rows_q)
     profile = {}
     for y, pr in prof.items():
         profile[y] = {k: [[round(pr[k][m][h] / pr['n'][m][h]) if pr['n'][m][h] else None for h in range(24)] for m in range(12)] for k in ('solar', 'wind')}
     with open(OUT, 'w') as f:
         json.dump({'updated': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
                    'source': 'RTE éCO2mix output × ENTSO-E day-ahead France', 'unit': 'MW·quarter-hour, €/MWh',
-                   'fields': FIELDS, 'days': rows, 'profile': profile}, f, separators=(',', ':'))
+                   'fields': FIELDS, 'days': rows, 'profile': profile, 'stopT': stop_t}, f, separators=(',', ':'))
     print(f'{len(rows)} days, {rows[0][0] if rows else "-"} → {rows[-1][0] if rows else "-"}, {os.path.getsize(OUT) // 1024} KB')
     return 0
 
