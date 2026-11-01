@@ -1165,7 +1165,7 @@ document.addEventListener('click', e => {   // a tile opens its chart full size 
   @media (max-width:1100px){.mrn2-tiles-sm{grid-template-columns:repeat(3,minmax(0,1fr))}}
   @media (max-width:1100px){.mrn2-tiles{grid-template-columns:repeat(3,minmax(0,1fr))}}
   @media (max-width:560px){.mrn2-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
-  .mrn2-tile{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:1px;min-width:0;text-decoration:none;color:inherit}
+  .mrn2-tile{background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:1px;min-width:0;text-decoration:none;color:inherit}
   a.mrn2-tile:hover{border-color:var(--border3)}
   .mrn2-tn{font-size:11.5px;color:var(--text3);overflow-wrap:anywhere}   /* never cut: the line wraps */
   .mrn2-tv{font:600 21px 'Outfit',sans-serif;color:var(--text);font-variant-numeric:tabular-nums;display:flex;flex-wrap:wrap;align-items:baseline;column-gap:4px} .mrn2-tv small{font:500 11px Inter,sans-serif;color:var(--text3)}
