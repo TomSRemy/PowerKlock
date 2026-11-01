@@ -56,7 +56,7 @@
       W('fr-cal-history', 6, 5, { country: 'FR', win: '3M', kinds: 'year,quarter,month', front: 1 }), W('power-fwd-table', 6, 5, { country: 'FR', seasons: 'no' }),
       W('ttf-cal-history', 6, 5, { win: '3M', kinds: 'year,quarter,month', front: 1 }), W('ttf-fwd-table', 6, 5, { seasons: 'no' }),
       W('fr-cal-drivers', 12, 5, { win: '6M', country: 'FR' }),
-      S('Fundamentals'),
+      S('Weather, demand and nuclear'),
       W('today-fund', 12, 7),
       W('wx-outlook', 6, 5, { series: 'temp' }), W('fr-load-normal', 6, 5),
       W('nuc-monthly-years', 6, 5), W('remit-unavail', 6, 5, { period: '6M' }),
