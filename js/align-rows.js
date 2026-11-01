@@ -45,8 +45,9 @@
 (function () {
   'use strict';
   if (!window.Chart || !Chart.register) return;
-  const label = cv => { const card = cv.closest('.chart-container, .pkd-item, .fuel-card'); if (!card) return '';
-    const t = card.querySelector('.table-title, .pkd-title, .mu-day-t'), sub = card.querySelector('.fuel-card-sub, .pkd-sub');
+  // cards of the Yearly review (.bl-blk), Market analysis (.ma-panel-row) and Today's day cards (.mu-day) too: 22 charts had no description
+  const label = cv => { const card = cv.closest('.chart-container, .pkd-item, .fuel-card, .bl-blk, .ma-panel-row, .mu-day'); if (!card) return '';
+    const t = card.querySelector('.table-title, .pkd-title, .mu-day-t, .bl-t, .ma-lbl'), sub = card.querySelector('.fuel-card-sub, .pkd-sub, .ma-lbl-sub');
     return [t && t.textContent, sub && sub.textContent].filter(Boolean).map(x => x.replace(/\s+/g, ' ').trim()).join(' · ').slice(0, 300); };
   try { Chart.register({ id: 'pkA11y', afterRender(ch) { const cv = ch.canvas; if (!cv || cv.dataset.pkA11y === '1') return; const l = label(cv);
     if (l) { cv.setAttribute('role', 'img'); cv.setAttribute('aria-label', l); cv.dataset.pkA11y = '1'; } } }); } catch (_) {}
