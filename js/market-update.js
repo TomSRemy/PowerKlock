@@ -644,5 +644,33 @@ window.PKHydro = {
     const sel = document.getElementById('hydro-country'); if (!sel || !window.PKW) return;
     if (!sel.options.length) sel.innerHTML = MU_HYDRO.options.map(([c, n]) => `<option value="${c}">${n}</option>`).join('');
     PKW.draw('hydro-reservoirs', 'hydro-res', { country: sel.value || 'FR' }).then(r => { const e = document.getElementById('hydro-res-sub'); if (e) e.textContent = r && r.sub ? r.sub : ''; });
+    this.europe(sel.value || 'FR');
+  },
+  // every country's latest week against the mean of its earlier years and against last year, same week (note 105)
+  async europe(cc) {
+    const j = await _muGet('hydro', 'history/hydro_reservoirs.json'); if (!j || !j.countries) return;
+    const wk = d => Math.min(52, Math.floor((Date.parse(d) - Date.UTC(+d.slice(0, 4), 0, 1)) / (7 * 864e5)));
+    const rows = Object.entries(j.countries).map(([k, c]) => {
+      const last = c.weeks[c.weeks.length - 1], y = +last[0].slice(0, 4), w = wk(last[0]);
+      const same = yy => { const v = c.weeks.find(([d]) => +d.slice(0, 4) === yy && wk(d) === w); return v ? v[1] : null; };
+      const hist = []; for (let yy = y - 2; yy >= 2015; yy--) { const v = same(yy); if (v != null) hist.push(v); }
+      const mean = hist.length ? hist.reduce((a, b) => a + b, 0) / hist.length : null, prev = same(y - 1);
+      const name = _muT({ FR: 'France', CH: 'Suisse', ES: 'Espagne', PT: 'Portugal', AT: 'Autriche', IT: 'Italie', NO: 'Norvège', SE: 'Suède', FI: 'Finlande' }[k] || k, (MU_HYDRO.options.find(o => o[0] === k) || [k, k])[1]);
+      return { k, name, d: last[0], v: last[1], vsMean: mean ? (last[1] / mean - 1) * 100 : null, vsPrev: prev ? (last[1] / prev - 1) * 100 : null, n: hist.length };
+    }).filter(r => r.vsMean != null).sort((a, b) => b.vsMean - a.vsMean);
+    const r1 = v => v == null ? null : Math.round(v * 10) / 10;
+    _fuelChart('hydro-eu', { type: 'bar', data: { labels: rows.map(r => r.name), datasets: [
+      { label: 'vs mean of earlier years', data: rows.map(r => r1(r.vsMean)), backgroundColor: rows.map(r => r.k === cc ? 'rgba(63,166,180,.95)' : 'rgba(127,200,248,.75)'), borderRadius: 3 },
+      { label: 'vs last year', data: rows.map(r => r1(r.vsPrev)), backgroundColor: 'rgba(184,201,217,.45)', borderRadius: 3 },
+    ] }, options: _fuelOpts({ scales: { x: Object.assign(_fuelXAxis(), { ticks: { color: C_TX3, font: { size: 10 }, autoSkip: false, maxRotation: 0 } }), y: _fuelAxis('% gap, same week') } }) }, 'hydro-europe');
+    const me = rows.find(r => r.k === cc), kp = document.getElementById('hydro-kpis');
+    if (kp && me) {
+      const big = me.v > 2e7, lv = big ? (me.v / 1e6).toFixed(1) : (me.v / 1e3).toFixed(0), unit = big ? 'TWh' : 'GWh';
+      const sg = v => v == null ? '–' : (v >= 0 ? '+' : '') + v.toFixed(0);
+      kp.innerHTML = _fuelKpi(_muT('Stock', 'Stored'), lv, unit, _muT('semaine du ', 'week of ') + me.d) +
+        _fuelKpi(_muT('vs normale', 'vs normal'), sg(me.vsMean), '%', _muT(`moyenne de ${me.n} années, même semaine`, `mean of ${me.n} years, same week`)) +
+        _fuelKpi(_muT('vs l’an dernier', 'vs last year'), sg(me.vsPrev), '%', _muT('même semaine', 'same week')) +
+        _fuelKpi(_muT('Rang en Europe', 'Rank in Europe'), (rows.indexOf(me) + 1) + ' / ' + rows.length, '', _muT('écart à la normale', 'gap to normal'));
+    }
   },
 };

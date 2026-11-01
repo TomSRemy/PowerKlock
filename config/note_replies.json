@@ -590,5 +590,9 @@
  "106": {
   "status": "done",
   "reply": "Fait : l’onglet Hebdomadaire a maintenant un graphique, les degrés-jours de chauffage de chaque semaine contre la normale 2016–2025, sur les 10 dernières semaines et les 2 semaines de prévision (barres plus pâles), au-dessus du tableau."
+ },
+ "105": {
+  "status": "done",
+  "reply": "Fait : l’onglet Réservoirs hydrauliques a maintenant 4 chiffres clés (stock, écart à la normale, écart à l’an dernier, rang en Europe) et un second graphique à côté : l’écart de chaque pays européen à sa normale et à l’an dernier pour la même semaine. La France est à −36 % de sa normale mi-octobre."
  }
 }
