@@ -70,7 +70,7 @@
       const ds = zones.map((z, i) => {
         const info = yearInfo(s.zones[z]), full = Object.keys(info).filter(y => info[y].complete && !info[y].partial && +y > +cy() - winYears(p && p.win));
         const m = new Array(12).fill(0); s.zones[z].forEach(d => { if (full.includes(d.d.slice(0, 4))) m[+d.d.slice(5, 7) - 1] += d.negH || 0; });
-        return _fuelLineDs(z.replace('_LU', ''), full.length ? m.map(v => Math.round(v / full.length * 10) / 10) : m.map(() => null), PAL[i % PAL.length], { borderWidth: z === 'FR' ? 2.6 : 1.6, tension: .3, pointRadius: 2 });
+        return _fuelLineDs(z.replace('_LU', ''), full.length ? m.map(v => Math.round(v / full.length * 10) / 10) : m.map(() => null), PAL[i % PAL.length], { borderWidth: z === 'FR' ? 2.6 : 1.6, tension: 0, pointRadius: 2 });
       });
       _fuelChart(cid, { type: 'line', data: { labels: MN, datasets: ds }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('hours per month', { beginAtZero: true }) }, plugins: { legend: legend() } }) }, 'negative-hours-seasonality');
       return { title: 'Seasonality · average negative hours per month', sub: 'Average of the complete years since ' + (+cy() - winYears(p && p.win) + 1) + ' · window: the period buttons above' };
@@ -78,7 +78,7 @@
     async hour(cid, p) {
       const pr = await profile(); const zones = shown(z => pr && pr.zones && pr.zones[z]);
       if (!zones.length) { noDataMsg(cid, 'Hourly profile not available', ''); return null; }
-      const ds = zones.map((z, i) => { const r = last12(pr.zones[z], null, winMonths(p && p.win)); return _fuelLineDs(z.replace('_LU', ''), r.map(v => v == null ? null : Math.round(v * 10) / 10), PAL[i % PAL.length], { borderWidth: z === 'FR' ? 2.6 : 1.6, tension: .3 }); });
+      const ds = zones.map((z, i) => { const r = last12(pr.zones[z], null, winMonths(p && p.win)); return _fuelLineDs(z.replace('_LU', ''), r.map(v => v == null ? null : Math.round(v * 10) / 10), PAL[i % PAL.length], { borderWidth: z === 'FR' ? 2.6 : 1.6, tension: 0 }); });
       _fuelChart(cid, { type: 'line', data: { labels: HRS, datasets: ds }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('% of days negative', { beginAtZero: true }) }, plugins: { legend: legend() } }) }, 'negative-hours-by-hour');
       return { title: 'Hour of day · share of days with a negative price', sub: winLabel(p && p.win).replace(/^./, c => c.toUpperCase()) + ' (complete months) · the solar signature: negative prices cluster around midday' };
     },
@@ -154,7 +154,7 @@
       if (!zp) { noDataMsg(cid, 'Hourly profile not available for ' + p.zone, ''); return null; }
       const years = Object.keys(zp).sort().slice(-4);
       const ds = years.map((y, i) => { const r = zp[y], tot = r.days.reduce((a, b) => a + b, 0), v = HRS.map((_, h) => tot ? Math.round(r.mh.reduce((a, row) => a + row[h], 0) / tot * 1000) / 10 : null);
-        return _fuelLineDs(y + (y === cy() ? ' (YTD)' : ''), v, y === cy() ? RED : PAL[i % PAL.length], { borderWidth: y === cy() ? 2.6 : 1.6, tension: .3 }); });
+        return _fuelLineDs(y + (y === cy() ? ' (YTD)' : ''), v, y === cy() ? RED : PAL[i % PAL.length], { borderWidth: y === cy() ? 2.6 : 1.6, tension: 0 }); });
       _fuelChart(cid, { type: 'line', data: { labels: HRS, datasets: ds }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('% of days negative', { beginAtZero: true }) }, plugins: { legend: legend() } }) }, 'negative-hours-by-hour-' + p.zone);
       return { title: 'Hour of day · share of days with a negative price', sub: zname(p.zone) + ' · by year' };
     },

@@ -14684,8 +14684,11 @@
       const PAD = 9, ROW = 17, SW = 8, SW_GAP = 7, COL_GAP = 16, CURSOR_GAP = 18;
       const maxRows = Math.max(2, Math.floor((chartArea.height - PAD * 2) / ROW) - 1);
 
+      // drawn on the canvas, so out of reach of the page translation: names, values and the date go through it here
+      // (in French: "278,6 €/MWh", "Prévision day-ahead", "lun. 12 oct.")
+      const tr = s => (window.PKI18n && PKI18n.lang === 'fr' && typeof PKI18n.tr === 'function') ? PKI18n.tr(s) : s;
       const label = chart.data.labels ? chart.data.labels[idx] : null;
-      const head = label != null && label !== '' ? String(label) : null;
+      const head = label != null && label !== '' ? tr(String(label)) : null;
       const rows = [];
       const ys = [];
       for (let di = 0; di < chart.data.datasets.length; di++) {
@@ -14699,8 +14702,8 @@
         if (pt && typeof pt.y === 'number') ys.push(pt.y);
         // "Name: value" → two columns; anything else is a value alone.
         const k = txt.lastIndexOf(': ');
-        const name = k > 0 ? txt.slice(0, k) : (ds.label || '');
-        const value = k > 0 ? txt.slice(k + 2) : txt;
+        const name = tr(k > 0 ? txt.slice(0, k) : (ds.label || ''));
+        const value = tr(k > 0 ? txt.slice(k + 2) : txt);
         const c = (typeof ds.borderColor === 'string' && ds.borderColor !== 'transparent' && ds.borderWidth !== 0)
           ? ds.borderColor
           : (typeof ds.backgroundColor === 'string' ? ds.backgroundColor : (typeof ds.borderColor === 'string' ? ds.borderColor : TX2));
@@ -14721,7 +14724,7 @@
       ctx.font = FONT_B;
       const headW = head ? ctx.measureText(head).width : 0;
       ctx.font = FONT;
-      const moreTxt = hidden ? '+' + hidden + ' more' : null;
+      const moreTxt = hidden ? '+' + hidden + (window.PKI18n && PKI18n.lang === 'fr' ? ' autres' : ' more') : null;
       const moreW = moreTxt ? ctx.measureText(moreTxt).width : 0;
       const rowW = SW + SW_GAP + nameW + (nameW ? COL_GAP : 0) + valW;
       const boxW = Math.ceil(Math.max(rowW, headW, moreW) + PAD * 2);

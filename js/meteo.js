@@ -152,7 +152,7 @@ _wxReg({
         y: _fuelAxis(V.unit, p.v === 'temp' ? {} : { beginAtZero: true }) },
       plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 8 } }, zoom: ZOOM_CFG,
         annotation: { annotations: { now: { type: 'line', xMin: nowI, xMax: nowI, borderColor: 'rgba(255,253,130,.7)', borderWidth: 1.2, borderDash: [3, 3],
-          label: { display: true, content: 'NOW', position: 'start', color: '#0A1218', backgroundColor: '#FFFD82', font: { size: 9, weight: '700' }, padding: { top: 1, bottom: 1, left: 5, right: 5 } } } } } } }) }, 'weather-' + p.cc + '-' + p.v);
+          label: { display: true, content: window.PKI18n && PKI18n.lang === 'fr' ? 'MAINTENANT' : 'NOW', position: 'start', color: '#0A1218', backgroundColor: '#FFFD82', font: { size: 9, weight: '700' }, padding: { top: 1, bottom: 1, left: 5, right: 5 } } } } } } }) }, 'weather-' + p.cc + '-' + p.v);
   },
 });
 

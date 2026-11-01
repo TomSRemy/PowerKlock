@@ -36,7 +36,7 @@ async function _frsLatestDay() {
 }
 const FRS_DAY_PARAM = { key: 'day', label: 'Day', options: [['latest', 'Latest'], ['yesterday', 'Yesterday']] };
 async function _frsResolve(p) { return p.day && /^\d{4}-/.test(p.day) ? p.day : p.day === 'yesterday' ? _frsAdd(_frsToday(), -1) : await _frsLatestDay(); }
-const _frsArea = (label, data, col, stack, extra) => Object.assign({ type: 'line', label, data, backgroundColor: col + 'D9', borderColor: col, borderWidth: 0.6, fill: true, stack: stack || 'p', pointRadius: 0, tension: 0.2, yAxisID: 'y' }, extra || {});
+const _frsArea = (label, data, col, stack, extra) => Object.assign({ type: 'line', label, data, backgroundColor: col + 'D9', borderColor: col, borderWidth: 0.6, fill: true, stack: stack || 'p', pointRadius: 0, tension: 0, yAxisID: 'y' }, extra || {});
 
 function _frsReg(def) {
   if (!window.PKW) return;
@@ -66,8 +66,8 @@ _frsReg({
       Array.isArray(R.batteryDischarge) ? _frsArea('Battery discharge', _frsGW(R.batteryDischarge), FRS_COLORS.battery) : null,
       Array.isArray(R.pumping) ? _frsArea('Pumping', _frsGW(_frsNeg(R.pumping)), FRS_COLORS.pumping, 'n') : null,
       Array.isArray(R.batteryCharge) ? _frsArea('Battery charge', _frsGW(_frsNeg(R.batteryCharge)), FRS_COLORS.battery, 'n') : null,
-      { type: 'line', label: 'Consumption', data: _frsGW(R.load), borderColor: FRS_COLORS.load, borderWidth: 1.8, pointRadius: 0, fill: false, yAxisID: 'y', stack: 'l1', tension: 0.2 },
-      Array.isArray(R.loadForecastD1) ? { type: 'line', label: 'Consumption forecast D-1', data: _frsGW(R.loadForecastD1), borderColor: 'rgba(248,250,252,.55)', borderDash: [4, 3], borderWidth: 1.2, pointRadius: 0, fill: false, yAxisID: 'y', stack: 'l2', tension: 0.2 } : null,
+      { type: 'line', label: 'Consumption', data: _frsGW(R.load), borderColor: FRS_COLORS.load, borderWidth: 1.8, pointRadius: 0, fill: false, yAxisID: 'y', stack: 'l1', tension: 0 },
+      Array.isArray(R.loadForecastD1) ? { type: 'line', label: 'Consumption forecast D-1', data: _frsGW(R.loadForecastD1), borderColor: 'rgba(248,250,252,.55)', borderDash: [4, 3], borderWidth: 1.2, pointRadius: 0, fill: false, yAxisID: 'y', stack: 'l2', tension: 0 } : null,
     ].filter(d => d && Array.isArray(d.data) && d.data.some(v => v));
     _fuelChart(cid, { type: 'line', data: { labels: _frsLabels(), datasets: ds },
       options: _fuelOpts({ scales: { x: Object.assign(_fuelXAxis(), { ticks: { color: C_TX3, font: { size: 10 }, maxTicksLimit: 12, maxRotation: 0 } }), y: _fuelAxis('GW', { stacked: true }) },
@@ -104,7 +104,7 @@ _frsReg({
       ['ech_comm_suisse', 'Switzerland', '#ED6965'], ['ech_comm_italie', 'Italy', '#14D3A9'], ['ech_comm_espagne', 'Spain', '#C4A57B']];
     const ds = E ? borders.filter(([k]) => Array.isArray(E[k]) && E[k].some(v => v != null)).map(([k, l, c]) =>
       ({ type: 'bar', label: l, data: _frsGW(E[k]), backgroundColor: c + 'CC', borderWidth: 0, stack: 'e', barPercentage: 1, categoryPercentage: 1 })) : [];
-    if (R && Array.isArray(R.exchanges)) ds.push({ type: 'line', label: 'Physical net', data: _frsGW(R.exchanges), borderColor: '#F8FAFC', borderWidth: 1.5, pointRadius: 0, fill: false, tension: 0.2 });
+    if (R && Array.isArray(R.exchanges)) ds.push({ type: 'line', label: 'Physical net', data: _frsGW(R.exchanges), borderColor: '#F8FAFC', borderWidth: 1.5, pointRadius: 0, fill: false, tension: 0 });
     if (!ds.length) { noDataMsg(cid, 'No exchange data for ' + _frsFmtDay(day), ''); return { day }; }
     _fuelChart(cid, { type: 'bar', data: { labels: _frsLabels(), datasets: ds },
       options: _fuelOpts({ scales: { x: Object.assign(_fuelXAxis(), { stacked: true, ticks: { color: C_TX3, font: { size: 10 }, maxTicksLimit: 8, maxRotation: 0 } }), y: _fuelAxis('GW (+ import)', { stacked: true }) },
@@ -125,7 +125,7 @@ _frsReg({
       bar('Battery discharge', R.batteryDischarge, FRS_COLORS.battery), bar('Battery charge', R.batteryCharge, '#A21CAF')].filter(Boolean);
     const daily = await fetch(DATA_BASE + 'history/daily/' + day + '.json').then(r => r.ok ? r.json() : null).catch(() => null);
     const price = daily && daily.zones && daily.zones.FR && daily.zones.FR.hourly;
-    if (Array.isArray(price)) ds.push({ type: 'line', label: 'Day-ahead FR', data: price, borderColor: '#F8FAFC', borderWidth: 1.4, pointRadius: 0, fill: false, yAxisID: 'y2', tension: 0.15 });
+    if (Array.isArray(price)) ds.push({ type: 'line', label: 'Day-ahead FR', data: price, borderColor: '#F8FAFC', borderWidth: 1.4, pointRadius: 0, fill: false, yAxisID: 'y2', tension: 0 });
     if (!ds.length) { noDataMsg(cid, 'No storage data for ' + _frsFmtDay(day), ''); return { day }; }
     _fuelChart(cid, { type: 'bar', data: { labels: _frsLabels(), datasets: ds },
       options: _fuelOpts({ scales: { x: Object.assign(_fuelXAxis(), { stacked: true, ticks: { color: C_TX3, font: { size: 10 }, maxTicksLimit: 8, maxRotation: 0 } }), y: _fuelAxis('GW', { stacked: true }),

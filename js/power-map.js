@@ -497,9 +497,9 @@
     const labels = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0') + 'h');
     const sets = GROUPS.map(g => {
       const data = labels.map((_, i) => { let v = 0, any = false; g.codes.forEach(k => { const a = d.gen && d.gen[k]; if (a && a[i] != null) { v += a[i]; any = true; } }); return any ? Math.round(v) / 1000 : null; });
-      return data.some(v => v) ? { type: 'line', label: g.label, data, backgroundColor: g.color + 'CC', borderColor: g.color, borderWidth: 0.5, fill: true, stack: 'g', pointRadius: 0, tension: 0.25, yAxisID: 'y' } : null;
+      return data.some(v => v) ? { type: 'line', label: g.label, data, backgroundColor: g.color + 'CC', borderColor: g.color, borderWidth: 0.5, fill: true, stack: 'g', pointRadius: 0, tension: 0, yAxisID: 'y' } : null;
     }).filter(Boolean);
-    if (Array.isArray(d.price)) sets.push({ type: 'line', label: 'Day-ahead', data: d.price.map(v => v == null ? null : Math.round(v * 10) / 10), borderColor: '#F8FAFC', borderWidth: 1.6, pointRadius: 0, fill: false, yAxisID: 'y2', tension: 0.2 });
+    if (Array.isArray(d.price)) sets.push({ type: 'line', label: 'Day-ahead', data: d.price.map(v => v == null ? null : Math.round(v * 10) / 10), borderColor: '#F8FAFC', borderWidth: 1.6, pointRadius: 0, fill: false, yAxisID: 'y2', tension: 0 });
     const sel = S.avg ? null : S.hour;
     const marker = { id: 'pmHour', afterDatasetsDraw(ch) { if (sel == null) return; const x = ch.scales.x.getPixelForValue(sel), a = ch.chartArea, g = ch.ctx; g.save(); g.strokeStyle = 'rgba(255,255,255,.5)'; g.setLineDash([3, 3]); g.beginPath(); g.moveTo(x, a.top); g.lineTo(x, a.bottom); g.stroke(); g.restore(); } };
     const tx = { color: '#7A93AB', font: { size: 9 } }, grid = { color: 'rgba(255,255,255,.04)' };
@@ -511,8 +511,8 @@
           y2: { position: 'right', ticks: tx, grid: { display: false }, title: { display: true, text: '€/MWh', color: '#7A93AB', font: { size: 9 } } } } } });
     const pc = document.getElementById('pm-chart-price');
     if (pc && Array.isArray(d.price)) S.charts.price = new Chart(pc, { type: 'line', data: { labels, datasets: [
-        { label: 'Day-ahead', data: d.price.map(v => v == null ? null : Math.round(v * 10) / 10), borderColor: '#14D3A9', backgroundColor: 'rgba(20,211,169,.12)', fill: true, borderWidth: 1.8, pointRadius: 0, tension: 0.2 },
-        Array.isArray(d.pricePrev) ? { label: 'Previous day', data: d.pricePrev.map(v => v == null ? null : Math.round(v * 10) / 10), borderColor: 'rgba(148,163,184,.8)', borderDash: [4, 3], borderWidth: 1.2, pointRadius: 0, fill: false, tension: 0.2 } : null,
+        { label: 'Day-ahead', data: d.price.map(v => v == null ? null : Math.round(v * 10) / 10), borderColor: '#14D3A9', backgroundColor: 'rgba(20,211,169,.12)', fill: true, borderWidth: 1.8, pointRadius: 0, tension: 0 },
+        Array.isArray(d.pricePrev) ? { label: 'Previous day', data: d.pricePrev.map(v => v == null ? null : Math.round(v * 10) / 10), borderColor: 'rgba(148,163,184,.8)', borderDash: [4, 3], borderWidth: 1.2, pointRadius: 0, fill: false, tension: 0 } : null,
       ].filter(Boolean) }, plugins: [marker],
       options: { responsive: true, maintainAspectRatio: false, animation: false, interaction: { mode: 'index', intersect: false }, plugins: { legend: { display: false } },
         scales: { x: { ticks: Object.assign({ maxTicksLimit: 8 }, tx), grid }, y: { ticks: tx, grid, title: { display: true, text: '€/MWh', color: '#7A93AB', font: { size: 9 } } } } } });
