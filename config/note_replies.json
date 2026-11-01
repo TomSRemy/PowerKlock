@@ -642,5 +642,9 @@
  "92": {
   "status": "done",
   "reply": "Réorganisé : 5 chiffres clés en tête (charbon API2, Brent, JKM, écart JKM − TTF avec ce qu’il veut dire pour les cargaisons de GNL, prix de bascule charbon → gaz), puis charbon et pétrole chacun sur son propre graphique, côte à côte (avant ils partageaient un graphique à deux axes, difficile à lire), et l’arbitrage GNL en dessous sur toute la largeur."
+ },
+ "62": {
+  "status": "done",
+  "reply": "Refait : en tête, le prix du Cal+1 en grand avec sa variation (rouge si hausse, vert si baisse) et la phrase de synthèse ; dessous, quatre cartes côte à côte (Combustibles et carbone, La France et ses fondamentaux, Niveau et courbe, Politique et actualité) au lieu d’un seul bloc de texte. Sur petit écran, les cartes passent l’une sous l’autre."
  }
 }

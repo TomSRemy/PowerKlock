@@ -128,7 +128,16 @@
     // 5 · policy and news
     if (o.items.length) P.push(`<p>${B(T('Politique et actualité ', 'Policy and news ') + W + '.')}</p><ul class="fr-read-news">` + o.items.map(it => `<li><a href="${/^https?:\/\//.test(it.link) ? esc(it.link) : '#'}" target="_blank" rel="noopener">${esc(it.title)}</a> <span>${esc(it.source)} · ${day(it.date.slice(0, 10))}</span></li>`).join('') + '</ul>');
     else P.push(`<p class="fuel-note">${T('Aucune actualité politique ou de marché sur l’électricité, le nucléaire, le gaz ou le carbone français dans les sources ', 'No policy or market news on French power, nuclear, gas or carbon in the News sources ')}${W}.</p>`);
-    return P.join('');
+    // laid out as a headline and cards (note 62): the price and its move on top, then one card per theme, titled by its lead
+    const head = `<div class="fr-read-hero"><div class="fr-read-big">${f2(Z.p)}<span> €/MWh</span></div><div class="fr-read-chg ${up ? 'up' : 'down'}">${up ? '▲' : '▼'} ${sg(dP)} € · ${sg(dP / A.p * 100, 1)} %</div><div class="fr-read-lead">${P[0].replace(/^<p>|<\/p>$/g, '')}</div></div>`;
+    const cards = [], rest = P.slice(1);
+    for (let i = 0; i < rest.length; i++) {
+      let h = rest[i];
+      if (/^<p><b>/.test(h) && rest[i + 1] && /^<ul/.test(rest[i + 1])) h += rest[++i];   // the news title and its list
+      const m = /^<p><b>([^<]*)<\/b>\s*/.exec(h);
+      cards.push(`<section class="fr-read-card">${m ? `<h4>${m[1].replace(/\.$/, '')}</h4>` : ''}${m ? '<p>' + h.slice(m[0].length) : h}</section>`);
+    }
+    return head + `<div class="fr-read-grid">${cards.join('')}</div>`;
   }
 
   // one line for France Morning

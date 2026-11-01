@@ -3626,3 +3626,19 @@ html body .pm-o-l, html body .pkf-t-l, html body .mrn2-tc { white-space: normal;
 .mrn-reel-frame{position:relative;width:100%;max-width:300px;margin:0 auto;aspect-ratio:9/16;border-radius:10px;overflow:hidden;background:#000}
 .mrn-reel-frame iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
 .mrn-reel-note{text-align:center;margin:8px 0 0}
+
+/* Forward analyst read (note 62): headline, then one card per theme */
+.fr-read-hero { display: grid; grid-template-columns: auto auto 1fr; gap: 6px 18px; align-items: center; padding: 12px 14px; border: 1px solid var(--border, rgba(255,255,255,.08)); border-radius: 10px; background: rgba(127,200,248,.04); margin-bottom: 12px; }
+.fr-read-big { font-family: 'JetBrains Mono', monospace; font-size: 30px; font-weight: 600; color: var(--text); white-space: nowrap; }
+.fr-read-big span { font-size: 13px; color: var(--text3); font-weight: 400; }
+.fr-read-chg { font-family: 'JetBrains Mono', monospace; font-size: 13px; padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
+.fr-read-chg.up { color: var(--down); background: rgba(237,105,101,.12); }
+.fr-read-chg.down { color: var(--up); background: rgba(20,211,169,.12); }
+.fr-read-lead { font-size: 13px; line-height: 1.55; color: var(--text2); }
+.fr-read-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.fr-read-card { border: 1px solid var(--border, rgba(255,255,255,.08)); border-top: 2px solid #7FC8F8; border-radius: 10px; padding: 10px 14px; background: var(--card, rgba(255,255,255,.02)); }
+.fr-read-card:nth-child(2) { border-top-color: #B48CF2; } .fr-read-card:nth-child(3) { border-top-color: #F4B740; } .fr-read-card:nth-child(4) { border-top-color: #C4A57B; }
+.fr-read-card h4 { margin: 0 0 6px; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--text); }
+.fr-read-card p { margin: 0 0 6px; font-size: 12.5px; line-height: 1.55; color: var(--text2); }
+.fr-read-card .fr-read-news { margin: 0; padding-left: 16px; font-size: 12px; line-height: 1.5; }
+@media (max-width: 900px) { .fr-read-grid { grid-template-columns: 1fr; } .fr-read-hero { grid-template-columns: auto 1fr; } .fr-read-lead { grid-column: 1 / -1; } }
