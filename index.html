@@ -1501,7 +1501,7 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
               <span id="gm-gf-hist-range-label" style="font-size:10px;color:var(--tx3);font-family:'JetBrains Mono',monospace;margin-left:6px"></span>
               <div style="display:inline-flex;align-items:center;gap:5px;padding:0 8px;background:var(--bg3);border:1px solid var(--bd);border-radius:5px;height:26px;box-sizing:border-box;margin-left:6px" title="Jour du sous-onglet Stack">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="var(--tx3)" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                <input type="date" id="gm-hist-date-input" onchange="gmSetHistDate(this.value)" style="background:transparent;border:none;color:var(--tx);font-size:11px;font-family:'JetBrains Mono',monospace;padding:0 2px;cursor:pointer;color-scheme:dark;height:22px;line-height:1">
+                <input type="date" aria-label="Delivery day" id="gm-hist-date-input" onchange="gmSetHistDate(this.value)" style="background:transparent;border:none;color:var(--tx);font-size:11px;font-family:'JetBrains Mono',monospace;padding:0 2px;cursor:pointer;color-scheme:dark;height:22px;line-height:1">
                 <button onclick="gmSetHistDate('')" title="Latest data" style="border:none;background:transparent;color:var(--tx3);cursor:pointer;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-family:'JetBrains Mono',monospace;padding:2px 4px">Latest</button>
               </div>
             </div>
@@ -3548,8 +3548,8 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
         <span class="fuel-toolbar-lbl">Period</span>
         <div class="pk-gf-group" id="nuc-period"><button class="pk-gf-btn" data-w="3M" onclick="fuelSetPeriod('nuc','3M',this)">3M</button><button class="pk-gf-btn" data-w="6M" onclick="fuelSetPeriod('nuc','6M',this)">6M</button><button class="pk-gf-btn" data-w="YTD" onclick="fuelSetPeriod('nuc','YTD',this)">YTD</button><button class="pk-gf-btn active" data-w="1Y" onclick="fuelSetPeriod('nuc','1Y',this)">1Y</button><button class="pk-gf-btn" data-w="2Y" onclick="fuelSetPeriod('nuc','2Y',this)">2Y</button><button class="pk-gf-btn" data-w="5Y" onclick="fuelSetPeriod('nuc','5Y',this)">5Y</button><button class="pk-gf-btn" data-w="All" onclick="fuelSetPeriod('nuc','All',this)">All</button></div>
         <div class="hf-date-range fuel-range">
-          <span>From</span><input type="date" id="nuc-from" onchange="fuelSetRange('nuc')">
-          <span>To</span><input type="date" id="nuc-to" onchange="fuelSetRange('nuc')">
+          <span>From</span><input type="date" aria-label="From" id="nuc-from" onchange="fuelSetRange('nuc')">
+          <span>To</span><input type="date" aria-label="To" id="nuc-to" onchange="fuelSetRange('nuc')">
         </div>
       </div>
         </div>
@@ -3677,8 +3677,8 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
         <span class="fuel-toolbar-lbl">Period</span>
         <div class="pk-gf-group" id="fuel-period"><button class="pk-gf-btn" data-w="1M" onclick="fuelSetPeriod('fuel','1M',this)">1M</button><button class="pk-gf-btn" data-w="3M" onclick="fuelSetPeriod('fuel','3M',this)">3M</button><button class="pk-gf-btn" data-w="6M" onclick="fuelSetPeriod('fuel','6M',this)">6M</button><button class="pk-gf-btn" data-w="YTD" onclick="fuelSetPeriod('fuel','YTD',this)">YTD</button><button class="pk-gf-btn active" data-w="1Y" onclick="fuelSetPeriod('fuel','1Y',this)">1Y</button><button class="pk-gf-btn" data-w="2Y" onclick="fuelSetPeriod('fuel','2Y',this)">2Y</button><button class="pk-gf-btn" data-w="5Y" onclick="fuelSetPeriod('fuel','5Y',this)">5Y</button><button class="pk-gf-btn" data-w="All" onclick="fuelSetPeriod('fuel','All',this)">All</button></div>
         <div class="hf-date-range fuel-range">
-          <span>From</span><input type="date" id="fuel-from" onchange="fuelSetRange('fuel')">
-          <span>To</span><input type="date" id="fuel-to" onchange="fuelSetRange('fuel')">
+          <span>From</span><input type="date" aria-label="From" id="fuel-from" onchange="fuelSetRange('fuel')">
+          <span>To</span><input type="date" aria-label="To" id="fuel-to" onchange="fuelSetRange('fuel')">
         </div>
       </div>
         </div>
@@ -3846,8 +3846,8 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
         <span class="fuel-toolbar-lbl">Period</span>
         <div class="pk-gf-group" id="sprh-period"><button class="pk-gf-btn" data-w="1M" onclick="fuelSetPeriod('sprh','1M',this)">1M</button><button class="pk-gf-btn" data-w="3M" onclick="fuelSetPeriod('sprh','3M',this)">3M</button><button class="pk-gf-btn" data-w="6M" onclick="fuelSetPeriod('sprh','6M',this)">6M</button><button class="pk-gf-btn" data-w="YTD" onclick="fuelSetPeriod('sprh','YTD',this)">YTD</button><button class="pk-gf-btn active" data-w="1Y" onclick="fuelSetPeriod('sprh','1Y',this)">1Y</button><button class="pk-gf-btn" data-w="2Y" onclick="fuelSetPeriod('sprh','2Y',this)">2Y</button><button class="pk-gf-btn" data-w="5Y" onclick="fuelSetPeriod('sprh','5Y',this)">5Y</button><button class="pk-gf-btn" data-w="All" onclick="fuelSetPeriod('sprh','All',this)">All</button></div>
         <div class="hf-date-range fuel-range">
-          <span>From</span><input type="date" id="sprh-from" onchange="fuelSetRange('sprh')">
-          <span>To</span><input type="date" id="sprh-to" onchange="fuelSetRange('sprh')">
+          <span>From</span><input type="date" aria-label="From" id="sprh-from" onchange="fuelSetRange('sprh')">
+          <span>To</span><input type="date" aria-label="To" id="sprh-to" onchange="fuelSetRange('sprh')">
         </div>
         <span class="fuel-toolbar-lbl" style="margin-left:8px">Zone</span>
         <select id="sprh-zone" class="fuel-select" onchange="renderSparkHistory()"></select>
@@ -3889,9 +3889,9 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
           <!-- contrôles : période (miroir gmh) + zones (filtre global existant) -->
           <div style="display:flex;align-items:center;gap:8px">
             <span style="font-size:9px;color:var(--text4);text-transform:uppercase;letter-spacing:.06em">Period</span>
-            <input type="date" id="carb-date-from" class="pk-date-input" style="background:var(--bg3);border:1px solid var(--bd2);color:var(--tx2);font-family:'JetBrains Mono',monospace;font-size:11px;border-radius:6px;padding:4px 7px">
+            <input type="date" aria-label="From" id="carb-date-from" class="pk-date-input" style="background:var(--bg3);border:1px solid var(--bd2);color:var(--tx2);font-family:'JetBrains Mono',monospace;font-size:11px;border-radius:6px;padding:4px 7px">
             <span style="color:var(--tx4)">→</span>
-            <input type="date" id="carb-date-to" class="pk-date-input" style="background:var(--bg3);border:1px solid var(--bd2);color:var(--tx2);font-family:'JetBrains Mono',monospace;font-size:11px;border-radius:6px;padding:4px 7px">
+            <input type="date" aria-label="To" id="carb-date-to" class="pk-date-input" style="background:var(--bg3);border:1px solid var(--bd2);color:var(--tx2);font-family:'JetBrains Mono',monospace;font-size:11px;border-radius:6px;padding:4px 7px">
             <button id="carb-date-clear" class="pk-btn-ghost" title="Back to live snapshot">✕</button>
             <button id="carb-zone-btn" class="pk-btn-ghost" onclick="if(window.toggleZoneFilterPanel)toggleZoneFilterPanel()" title="Filter zones (shared global filter)">Zones</button>
           </div>
@@ -3962,9 +3962,9 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
         </div>
         <div class="hf-date-range" style="display:inline-flex;align-items:center;gap:4px;padding:0 8px;background:var(--bg3);border:1px solid var(--bd);border-radius:5px;height:26px;box-sizing:border-box">
           <span style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600">From</span>
-          <input type="date" id="go-date-from" onchange="setGoCustomRange()" style="background:transparent;border:none;color:var(--tx);font-size:11px;font-family:'JetBrains Mono',monospace;padding:0 2px;cursor:pointer;color-scheme:dark;height:22px;line-height:1">
+          <input type="date" aria-label="From" id="go-date-from" onchange="setGoCustomRange()" style="background:transparent;border:none;color:var(--tx);font-size:11px;font-family:'JetBrains Mono',monospace;padding:0 2px;cursor:pointer;color-scheme:dark;height:22px;line-height:1">
           <span style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;font-weight:600">To</span>
-          <input type="date" id="go-date-to" onchange="setGoCustomRange()" style="background:transparent;border:none;color:var(--tx);font-size:11px;font-family:'JetBrains Mono',monospace;padding:0 2px;cursor:pointer;color-scheme:dark;height:22px;line-height:1">
+          <input type="date" aria-label="To" id="go-date-to" onchange="setGoCustomRange()" style="background:transparent;border:none;color:var(--tx);font-size:11px;font-family:'JetBrains Mono',monospace;padding:0 2px;cursor:pointer;color-scheme:dark;height:22px;line-height:1">
         </div>
       </div>
 
@@ -4006,7 +4006,7 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
       <div class="pk-stack" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
         <div class="chart-container">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-            <span class="table-title">Spread Bid/Ask — trend (€/MWh)</span>
+            <span class="table-title">Spread Bid/Ask — trend (€/MWh)</span><span class="source-badge">Commerg weekly</span>
           </div>
           <div style="position:relative;height:320px;overflow:hidden"><canvas id="go-spread-canvas" style="width:100%;height:320px"></canvas></div>
         </div>
@@ -4054,20 +4054,20 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
       </div>
       <div class="pk-stack" style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
         <div class="chart-container">
-          <div class="table-title" style="margin-bottom:10px">Week-on-week delta (€/MWh)</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><span class="table-title">Week-on-week delta (€/MWh)</span><span class="source-badge">Commerg weekly</span></div>
           <div style="position:relative;height:320px;overflow:hidden"><canvas id="go-wow-canvas" style="width:100%;height:320px"></canvas></div>
         </div>
       </div>
       <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;margin-top:14px" class="go-pair">
         <div class="chart-container">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-            <span class="table-title" id="go-cal-title">Forward curve by production year</span>
+            <span class="table-title" id="go-cal-title">Forward curve by production year</span><span class="source-badge">Commerg weekly</span>
 
           </div>
           <div style="position:relative;height:280px;overflow:hidden"><canvas id="go-cal-canvas" style="width:100%;height:280px"></canvas></div>
         </div>
         <div class="chart-container">
-          <div class="table-title" style="margin-bottom:10px">Price distribution — box plot (€/MWh)</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><span class="table-title">Price distribution — box plot (€/MWh)</span><span class="source-badge">Commerg weekly</span></div>
           <div style="position:relative;height:280px;overflow:hidden"><canvas id="go-box-canvas" style="width:100%;height:280px"></canvas></div>
         </div>
       </div>
