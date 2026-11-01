@@ -4058,6 +4058,17 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
         <div class="page-header" style="margin-bottom:14px">
           <div><div class="page-title" style="font-size:16px">France Auctions — EEX</div><div class="page-subtitle">Public monthly results · by technology · since 2019</div></div>
         </div>
+        <div class="kpi-strip fuel-kpis" id="go-auct-kpis"></div>
+        <div class="fuel-grid-2" style="margin-bottom:14px">
+          <div class="chart-container fuel-card">
+            <div class="fuel-card-head"><div><div class="table-title">Latest auction by region</div><div class="fuel-card-sub" id="go-auct-reg-sub">Volume allocated and price per region</div></div><span class="source-badge">EEX monthly auctions</span></div>
+            <div style="position:relative;height:300px"><canvas id="go-auct-reg" style="width:100%;height:300px"></canvas></div>
+          </div>
+          <div class="chart-container fuel-card">
+            <div class="fuel-card-head"><div><div class="table-title">Auction calendar</div><div class="fuel-card-sub">Results publication dates and the next one expected</div></div><span class="source-badge">EEX monthly auctions</span></div>
+            <div id="go-auct-cal" style="max-height:300px;overflow:auto"></div>
+          </div>
+        </div>
         <div class="chart-container" style="margin-bottom:14px">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
             <span class="table-title">Volume sold &amp; weighted average price — Wind vs Solar</span>
