@@ -18,7 +18,9 @@
   function load() {
     if (D) return Promise.resolve(D);
     const base = /^https?:$/.test(location.protocol) ? './data/' : 'data/';
-    return fetch(base + 'history/flex_share.json').then(r => r.ok ? r.json() : null).then(j => (D = j)).catch(() => null);
+    return Promise.all([fetch(base + 'history/flex_share.json').then(r => r.ok ? r.json() : null).catch(() => null),
+      fetch(base + 'history/flex_watch.json').then(r => r.ok ? r.json() : null).catch(() => null)])
+      .then(([j, w]) => { D = j; if (D) D.watch = w; return D; });
   }
 
   function kpis() {
@@ -63,9 +65,7 @@
   function lostChart() {
     const b = D.behaviour, ys = Object.keys(b);
     const ds = (lab, k, c) => ({ label: lab, data: ys.map(y => b[y][k].lostTWh), backgroundColor: c, borderWidth: 0, stack: 's' });
-    const rte = (D.rte && D.rte.years) || {};
-    _fuelChart('flex-lost', { type: 'bar', data: { labels: ys, datasets: [ds(T('Wind', 'Éolien'), 'wind', C.wind), ds(T('Large solar', 'Grand solaire'), 'solarLarge', C.large), ds(T('Small solar', 'Petit solaire'), 'solarSmall', C.small),
-      { type: 'line', label: T('RTE estimate (Bilan électrique)', 'Estimation RTE (Bilan électrique)'), data: ys.map(y => rte[y] ? rte[y].total : null), showLine: false, pointStyle: 'rectRot', pointRadius: 6, borderColor: '#F4F1EA', backgroundColor: '#F4F1EA' }] },
+    _fuelChart('flex-lost', { type: 'bar', data: { labels: ys, datasets: [ds(T('Wind', 'Éolien'), 'wind', C.wind), ds(T('Large solar', 'Grand solaire'), 'solarLarge', C.large), ds(T('Small solar', 'Petit solaire'), 'solarSmall', C.small)] },
       options: _fuelOpts({ scales: { x: Object.assign(_fuelXAxis(), { stacked: true, grid: { display: false } }), y: Object.assign(_fuelAxis('TWh'), { stacked: true }) } }) }, 'flex-lost');
   }
 
@@ -73,6 +73,17 @@
     const today = new Date().toISOString().slice(0, 10);
     $('flex-rules').innerHTML = `<thead><tr><th style="width:96px">${T('From', 'Depuis')}</th><th>${T('Obligation', 'Obligation')}</th><th style="width:110px">${T('Status', 'Statut')}</th></tr></thead><tbody>` +
       D.rules.map(r => `<tr><td>${r.from}</td><td>${/^https?:/.test(r.source) ? `${fr() ? r.fr : r.en} · <a href="${r.source}" target="_blank" rel="noopener" style="color:#7FC8F8">${T('source', 'source')}</a>` : (fr() ? r.fr : r.en) + ' · ' + r.source}</td><td>${r.status === 'proposed' ? T('proposed', 'proposé') : r.from > today ? T('adopted, to come', 'adopté, à venir') : T('in force', 'en vigueur')}</td></tr>`).join('') + '</tbody>';
+  }
+
+  // the Journal officiel watch (scripts/watch_jorf_flex.py, weekly): new texts on the stop obligations, taken into the
+  // table or still to review
+  function watch() {
+    const W = D.watch, el = $('flex-watch'); if (!el) return;
+    const tx = W && W.texts ? Object.entries(W.texts) : [];
+    const upd = W && W.updated ? new Date(W.updated).toLocaleDateString(fr() ? 'fr-FR' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '–';
+    el.innerHTML = `<div class="fuel-note" style="margin:10px 0 4px">${T(`Journal officiel watch, read every week (last: ${upd}): new texts on stopping at negative prices.`, `Veille du Journal officiel, lue chaque semaine (dernière : ${upd}) : nouveaux textes sur l'arrêt aux prix négatifs.`)}</div>` +
+      (tx.length ? `<table class="flex-tbl"><tbody>` + tx.map(([cid, e]) => `<tr><td style="width:96px">${e.date}</td><td><a href="${e.url}" target="_blank" rel="noopener" style="color:#7FC8F8">${e.title}</a></td><td style="width:110px;color:${e.status === 'taken' ? 'var(--text3)' : '#FBBF24'}">${e.status === 'taken' ? T('in the table', 'dans le tableau') : T('to review', 'à examiner')}</td></tr>`).join('') + '</tbody></table>'
+        : `<div class="fuel-note">${T('No new text so far.', 'Aucun nouveau texte pour l’instant.')}</div>`);
   }
 
   function note() {
@@ -89,7 +100,7 @@
     load().then(d => {
       busy = false;
       if (!d || !d.fleet || !d.wind || !d.wind.years) { $('flex-kpis').innerHTML = `<div class="fuel-note">${T('Data not available.', 'Données indisponibles.')}</div>`; return; }
-      kpis(); fleetChart('wind', 'flex-fleet-wind'); fleetChart('solar', 'flex-fleet-solar'); keptChart(); lostChart(); rules(); note();
+      kpis(); fleetChart('wind', 'flex-fleet-wind'); fleetChart('solar', 'flex-fleet-solar'); keptChart(); lostChart(); rules(); watch(); note();
     });
   }
   window.PKFlexShare = { render };

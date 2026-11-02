@@ -43,43 +43,56 @@ def prices(day):
     return [x for x in h for _ in range(4)] if len(h) == 24 else h
 
 
-GRID = [-100, -50, -30, -20, -10, -5, 0, 5, 10, 20, 30, 50]
+GRID = [-100, -50, -30, -20, -10, -5, -2, -1, 0, 5, 10, 20, 30, 50]   # -2 and -1: the step is just below 0 (the −0.01 € hours)
 
 
 def threshold_table(rows_q):
     """per technology and month: capture rate and paid share with a stop below T ÷ the same with a stop below 0,
-    on the last two complete years (quarter-hours, national output)"""
+    on the last two complete years (quarter-hours, national output), pooled and year by year ('byYear': the pricer
+    carries the gap's trend to the delivery year for thresholds below 0, scripts/ppa_threshold_test.py)"""
     this = datetime.now(timezone.utc).year
     ys = [y for y in sorted(rows_q) if int(y) < this and len(rows_q[y]) >= 360][-2:]
     if not ys:
         return None
     out = {'years': [int(y) for y in ys], 'grid': GRID}
+    # year by year: the two complete years and the running one (its months so far: a month with too few days is left
+    # empty), so the pricer can take, month by month, the two latest years that have it
+    yb = ys + [y for y in sorted(rows_q) if int(y) == this]
     for k, ix in (('solar', 2), ('wind', 3)):
-        cap, paid = {}, {}
-        for T in GRID:
-            cr, pr = [], []
-            for m in range(12):
-                sP = n = e = ep = rp = 0.0
-                for y in ys:
-                    for (mm, p, *vv) in rows_q[y]:
-                        if mm != m:
-                            continue
-                        out_ = vv[ix - 2]
-                        for q in range(96):
-                            v = p[q]
-                            if v is None:
-                                continue
-                            g = max(0.0, out_[q] or 0.0)
-                            sP += v; n += 1; e += g
-                            if v >= T:
-                                ep += g; rp += g * v
-                base = sP / n if n else 0
-                cr.append(rp / ep / base if ep > 0 and base > 0 else None)
-                pr.append(ep / e if e > 0 else None)
-            cap[T], paid[T] = cr, pr
-        out[k] = {'capture': {str(T): [round(c / c0, 4) if c is not None and c0 else None for c, c0 in zip(cap[T], cap[0])] for T in GRID},
-                  'paid': {str(T): [round(c / c0, 4) if c is not None and c0 else None for c, c0 in zip(paid[T], paid[0])] for T in GRID}}
+        out[k] = _ratios(rows_q, ys, ix)
+        out[k]['byYear'] = {str(y): _ratios(rows_q, [y], ix, min_days=20) for y in yb}
     return out
+
+
+def _ratios(rows_q, ys, ix, min_days=0):
+    cap, paid = {}, {}
+    days = [sum(1 for y in ys for r in rows_q[y] if r[0] == m) for m in range(12)]
+    for T in GRID:
+        cr, pr = [], []
+        for m in range(12):
+            if days[m] < min_days:
+                cr.append(None); pr.append(None)
+                continue
+            sP = n = e = ep = rp = 0.0
+            for y in ys:
+                for (mm, p, *vv) in rows_q[y]:
+                    if mm != m:
+                        continue
+                    out_ = vv[ix - 2]
+                    for q in range(96):
+                        v = p[q]
+                        if v is None:
+                            continue
+                        g = max(0.0, out_[q] or 0.0)
+                        sP += v; n += 1; e += g
+                        if v >= T:
+                            ep += g; rp += g * v
+            base = sP / n if n else 0
+            cr.append(rp / ep / base if ep > 0 and base > 0 else None)
+            pr.append(ep / e if e > 0 else None)
+        cap[T], paid[T] = cr, pr
+    return {'capture': {str(T): [round(c / c0, 4) if c is not None and c0 else None for c, c0 in zip(cap[T], cap[0])] for T in GRID},
+            'paid': {str(T): [round(c / c0, 4) if c is not None and c0 else None for c, c0 in zip(paid[T], paid[0])] for T in GRID}}
 
 
 def main():
