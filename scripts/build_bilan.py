@@ -13,7 +13,7 @@ import collections
 import glob
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 H = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'data', 'history')
@@ -98,6 +98,45 @@ def main():
                 neg[d[:7]] += r.get('negH') or 0
         return {mm: dict({k: r1(v, 2) for k, v in m[mm].items()}, spot=r1(sum(sp[mm]) / len(sp[mm]), 2) if sp[mm] else None, neg_h=r1(neg[mm], 0)) for mm in sorted(m)}
 
+    def forecast(A, Bp, Bf, y0, last):
+        """the running year to its end (Tom 2 Nov. 2026: see where the year is going before RTE's Bilan): what is known so
+        far, plus the rest of last year at this year's pace (each volume × this year to date ÷ the same period last year);
+        the spot of the months left from their forward (the month in delivery: the next month's), their negative hours as last
+        year's; the peak and the highest day stay those seen so far"""
+        if not A or not Bp or not Bf:
+            return None
+        sc = lambda a, bp, bf: None if a is None or bp in (None, 0) or bf is None else r1(a + (bf - bp) * a / bp, 2)
+        bys = {k: sc(A['by_source'][k], Bp['by_source'][k], Bf['by_source'][k]) for k in SRC}
+        prod = sum(v for v in bys.values() if v is not None)
+        f = {'days': 366 if y0 % 4 == 0 else 365, 'estimated': True, 'from': last, 'load': sc(A['load'], Bp['load'], Bf['load']),
+             'peak_gw': A['peak_gw'], 'peak_day': A['peak_day'], 'production': r1(prod), 'by_source': bys,
+             'low_carbon_pct': r1(100 * (prod - sum(bys[k] or 0 for k in FOSSIL)) / prod) if prod else None,
+             'net_export': sc(A['net_export'], Bp['net_export'], Bf['net_export']), 'co2_mt': sc(A['co2_mt'], Bp['co2_mt'], Bf['co2_mt'])}
+        f['co2_g_kwh'] = r1(f['co2_mt'] * 1e6 / (prod * 1e6) * 1e3) if f['co2_mt'] and prod else None
+        # spot: the days left priced at their month's forward
+        try:
+            fw = json.load(open(os.path.join(H, 'fr_forward_monthly.json'))).get('months', {})
+        except (OSError, ValueError):
+            fw = {}
+        sa, sb, sf = A.get('spot') or {}, Bp.get('spot') or {}, Bf.get('spot') or {}
+        d0 = datetime.strptime(last, '%Y-%m-%d').date()
+        left = collections.Counter()
+        d = d0
+        while d.year == y0:
+            d = d + timedelta(days=1)
+            if d.year == y0:
+                left[f'{y0}-{d.month:02d}'] += 1
+        # the month in delivery has no forward any more: the next month's
+        fwm = lambda m: (fw.get(m) or {}).get('value') or next((fw[k]['value'] for k in sorted(fw) if k > m and fw[k].get('value')), None)
+        fwv = [(n, fwm(m)) for m, n in left.items()]
+        if sa.get('avg') is not None and all(v is not None for _, v in fwv):
+            nl = sum(n for n, _ in fwv)
+            f['spot'] = {'avg': r1((sa['avg'] * sa['days'] + sum(n * v for n, v in fwv)) / (sa['days'] + nl), 2),
+                         'neg_h': r1((sa.get('neg_h') or 0) + max(0, (sf.get('neg_h') or 0) - (sb.get('neg_h') or 0)), 0),
+                         'high_h': r1((sa.get('high_h') or 0) + max(0, (sf.get('high_h') or 0) - (sb.get('high_h') or 0)), 0), 'max_day': sa.get('max_day'), 'max_day_avg': sa.get('max_day_avg'), 'days': sa['days'] + nl,
+                         'forwards': {m: fwm(m) for m in left}}
+        return f
+
     cap = {}
     try:
         c = json.load(open(os.path.join(H, 'capacity.json')))['countries']['FR']
@@ -128,6 +167,7 @@ def main():
                 a['capacityEst'] = est
             years[str(y)] = a
     cur = {'year': y0, 'to': last, 'now': years.get(str(y0)), 'prev_same_period': agg(y0 - 1, cut), 'prev_borders_same_period': borders(y0 - 1, cut)}
+    cur['forecast'] = forecast(years.get(str(y0)), cur['prev_same_period'], years.get(str(y0 - 1)), y0, last)
     out = {'updated': datetime.now(ZoneInfo('Europe/Paris')).isoformat(timespec='minutes'), 'to': last,
            'source': 'RTE éCO2mix (production, consumption, exchanges, CO₂), ENTSO-E day-ahead, Energy-Charts (flows by border, capacity)',
            'current': cur, 'years': years, 'months': {str(y): months(y) for y in range(2015, y0 + 1)},   # every year: its monthly charts and the events they show
