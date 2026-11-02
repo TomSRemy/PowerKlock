@@ -1,5 +1,5 @@
 {
- "open": 17,
+ "open": 14,
  "notes": [
   {
    "id": 29,
@@ -97,26 +97,6 @@
    "done_at": null
   },
   {
-   "id": 81,
-   "status": "open",
-   "created_at": "2026-10-31T21:34+00:00",
-   "author": "Tom",
-   "route": "today",
-   "page": "Aujourd'hui",
-   "tab": "Expert · ⓘ Expliquer · Tout",
-   "target_id": "hs-morning-4",
-   "target_label": "Production France en ce moment (graphique)",
-   "settings": {
-    "_page": "morning",
-    "_path": "#hs-morning-4",
-    "pk-zone": "France",
-    "mrn-creg-per": "Année 2026 (à fin août)"
-   },
-   "body": "toutes les tuiles je veux un petit encart en haut a droite qui donne l'évolution. ET le titre qui s'aligne a la couleur de cette hausse. JE VEUX CA DANS TOUTE LES TUILES AVEC N GRAPH COMME CA.Un seul desgin",
-   "reply": "Maquette faite, à valider avant que je code (c’est un changement de style sur tout le site) : docs/discussion/maquettes/tuiles_stories.png sur la branche discussion-bridge. Partie 1 : une seule tuile partout, sur le modèle de celles du haut d’Aujourd’hui : encart de variation en haut à droite, titre coloré selon le sens, petite courbe.",
-   "done_at": null
-  },
-  {
    "id": 101,
    "status": "open",
    "created_at": "2026-10-31T21:50+00:00",
@@ -134,44 +114,6 @@
    },
    "body": "full scenn ne marche pas.Je suis sur Opera?",
    "reply": "Je ne reproduis pas : le plein écran de « Consommation France vs normale » s’ouvre bien sur Chromium, le moteur d’Opera (graphique à gauche, tableau des valeurs à droite). Au passage, les dates de l’axe étaient en anglais (« 2 Sep ») : corrigé. Si ça bloque encore chez toi : quel bouton (⛶ en haut à droite de la carte ?) et que se passe-t-il (rien, page noire, erreur) ?",
-   "done_at": null
-  },
-  {
-   "id": 103,
-   "status": "open",
-   "created_at": "2026-10-31T21:52+00:00",
-   "author": "Tom",
-   "route": "system/france",
-   "page": "Système électrique › France › Système France",
-   "tab": "Quotidien",
-   "target_id": "hs-frsystem-0",
-   "target_label": "Production par source (graphique)",
-   "settings": {
-    "_page": "frsystem",
-    "_path": "#hs-frsystem-0",
-    "pk-zone": "France",
-    "frs-env-series": "Production nucléaire"
-   },
-   "body": "les tuiles sont moche. Tu dois pouvoir trouver un template mieux que le site aecplus d'infos et de couleur",
-   "reply": "Maquette faite, à valider avant que je code (c’est un changement de style sur tout le site) : docs/discussion/maquettes/tuiles_stories.png sur la branche discussion-bridge. Les tuiles de Système France prendraient ce même modèle unique (partie 1).",
-   "done_at": null
-  },
-  {
-   "id": 107,
-   "status": "open",
-   "created_at": "2026-10-31T21:55+00:00",
-   "author": "Tom",
-   "route": "system/bilan",
-   "page": "Système électrique › Bilan électrique",
-   "tab": "2026 à date",
-   "target_id": null,
-   "target_label": null,
-   "settings": {
-    "_page": "bilan",
-    "pk-zone": "France"
-   },
-   "body": "les tuiles harmoniser le style. Si tu as pleins de style on en discute",
-   "reply": "Maquette faite, à valider avant que je code (c’est un changement de style sur tout le site) : docs/discussion/maquettes/tuiles_stories.png sur la branche discussion-bridge. Les tuiles du Bilan prendraient ce même modèle unique (partie 1) : un seul style, défini à un seul endroit.",
    "done_at": null
   },
   {
@@ -2319,26 +2261,6 @@
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
-   "id": 79,
-   "status": "done",
-   "created_at": "2026-10-31T21:33+00:00",
-   "author": "Tom",
-   "route": "today",
-   "page": "Aujourd'hui",
-   "tab": "Expert · ⓘ Expliquer · Tout",
-   "target_id": "mrn-cr",
-   "target_label": "Solaire · taux de capture glissant (graphique)",
-   "settings": {
-    "_page": "morning",
-    "_path": "#hs-body-morning-3 > div:nth-of-type(2) > div:nth-of-type(1)",
-    "pk-zone": "France",
-    "mrn-creg-per": "Année 2026 (à fin août)"
-   },
-   "body": "toujours illisibles ces graphs. Mettre sur 2y de base. ET ce violet ça va pas.",
-   "reply": "Fait : sur Aujourd’hui, les deux graphiques de capture glissante s’ouvrent sur 2 ans (les autres périodes restent dans les boutons, « Tout » compris) ; la ligne « Année civile » n’est plus violette (gris clair).",
-   "done_at": "2026-10-31T22:50+00:00"
-  },
-  {
    "id": 137,
    "status": "wontfix",
    "created_at": "2026-10-31T21:33+00:00",
@@ -2356,6 +2278,26 @@
    },
    "body": "toujours illisibles ces graphs. Mettre sur 2y de base. ET ce violet ça va pas.",
    "reply": "Doublon de la note 79 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 79.",
+   "done_at": "2026-10-31T22:50+00:00"
+  },
+  {
+   "id": 79,
+   "status": "done",
+   "created_at": "2026-10-31T21:33+00:00",
+   "author": "Tom",
+   "route": "today",
+   "page": "Aujourd'hui",
+   "tab": "Expert · ⓘ Expliquer · Tout",
+   "target_id": "mrn-cr",
+   "target_label": "Solaire · taux de capture glissant (graphique)",
+   "settings": {
+    "_page": "morning",
+    "_path": "#hs-body-morning-3 > div:nth-of-type(2) > div:nth-of-type(1)",
+    "pk-zone": "France",
+    "mrn-creg-per": "Année 2026 (à fin août)"
+   },
+   "body": "toujours illisibles ces graphs. Mettre sur 2y de base. ET ce violet ça va pas.",
+   "reply": "Fait : sur Aujourd’hui, les deux graphiques de capture glissante s’ouvrent sur 2 ans (les autres périodes restent dans les boutons, « Tout » compris) ; la ligne « Année civile » n’est plus violette (gris clair).",
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
@@ -2397,6 +2339,26 @@
    "body": "le titre sur 2 ligne not ok",
    "reply": "Fait : les en-têtes du tableau tiennent sur une ligne (« vs enchère préc. (2026-06) » raccourci en « vs préc. », la date au survol) ; sur téléphone ils reviennent à la ligne pour rester lisibles.",
    "done_at": "2026-10-31T22:50+00:00"
+  },
+  {
+   "id": 81,
+   "status": "done",
+   "created_at": "2026-10-31T21:34+00:00",
+   "author": "Tom",
+   "route": "today",
+   "page": "Aujourd'hui",
+   "tab": "Expert · ⓘ Expliquer · Tout",
+   "target_id": "hs-morning-4",
+   "target_label": "Production France en ce moment (graphique)",
+   "settings": {
+    "_page": "morning",
+    "_path": "#hs-morning-4",
+    "pk-zone": "France",
+    "mrn-creg-per": "Année 2026 (à fin août)"
+   },
+   "body": "toutes les tuiles je veux un petit encart en haut a droite qui donne l'évolution. ET le titre qui s'aligne a la couleur de cette hausse. JE VEUX CA DANS TOUTE LES TUILES AVEC N GRAPH COMME CA.Un seul desgin",
+   "reply": "Fait : une seule règle pour le titre de toutes les tuiles du site : rouge quand la variation pousse les prix à la hausse ou tend le système, vert quand elle les détend, gris quand c’est stable ; mêmes tailles de texte partout (titre, chiffre, ligne de contexte). Les tuiles peuvent garder ou non leur petite courbe (ta précision du 2 nov.).",
+   "done_at": "2026-11-02T21:24+00:00"
   },
   {
    "id": 139,
@@ -3223,6 +3185,26 @@
    "done_at": "2026-11-01T08:36+00:00"
   },
   {
+   "id": 103,
+   "status": "done",
+   "created_at": "2026-10-31T21:52+00:00",
+   "author": "Tom",
+   "route": "system/france",
+   "page": "Système électrique › France › Système France",
+   "tab": "Quotidien",
+   "target_id": "hs-frsystem-0",
+   "target_label": "Production par source (graphique)",
+   "settings": {
+    "_page": "frsystem",
+    "_path": "#hs-frsystem-0",
+    "pk-zone": "France",
+    "frs-env-series": "Production nucléaire"
+   },
+   "body": "les tuiles sont moche. Tu dois pouvoir trouver un template mieux que le site aecplus d'infos et de couleur",
+   "reply": "Fait : les tuiles de Système France suivent la règle commune (titre coloré selon l’effet sur les prix) et se comparent maintenant à la veille sur les mêmes quarts d’heure (▲/▼ coloré sous le chiffre).",
+   "done_at": "2026-11-02T21:24+00:00"
+  },
+  {
    "id": 161,
    "status": "wontfix",
    "created_at": "2026-10-31T21:52+00:00",
@@ -3240,26 +3222,6 @@
    },
    "body": "les tuiles sont moche. Tu dois pouvoir trouver un template mieux que le site aecplus d'infos et de couleur",
    "reply": "Doublon de la note 103 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 103.",
-   "done_at": "2026-10-31T22:50+00:00"
-  },
-  {
-   "id": 162,
-   "status": "wontfix",
-   "created_at": "2026-10-31T21:53+00:00",
-   "author": "Tom",
-   "route": "system/france/regions",
-   "page": "Système électrique › France › Régions",
-   "tab": "Quotidien · Tout",
-   "target_id": "reg-lf",
-   "target_label": "Facteurs de charge éolien et solaire · ven. 30 oct. 2026 (graphique)",
-   "settings": {
-    "_page": "regions",
-    "_path": "#hs-body-regions-0 > div:nth-of-type(2)",
-    "pk-zone": "France",
-    "reg-region": "Occitanie"
-   },
-   "body": "facteur de charge histoirque avec  jours roulant et  mois roulant et YTD et années passé? Come le capture rate (l schéma pas encore clair)",
-   "reply": "Doublon de la note 104 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 104.",
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
@@ -3283,23 +3245,23 @@
    "done_at": "2026-11-01T08:36+00:00"
   },
   {
-   "id": 163,
+   "id": 162,
    "status": "wontfix",
-   "created_at": "2026-10-31T21:54+00:00",
+   "created_at": "2026-10-31T21:53+00:00",
    "author": "Tom",
-   "route": "system/weather",
-   "page": "Système électrique › Météo › Villes & prévisions",
-   "tab": "Réservoirs hydrauliques",
-   "target_id": null,
-   "target_label": null,
+   "route": "system/france/regions",
+   "page": "Système électrique › France › Régions",
+   "tab": "Quotidien · Tout",
+   "target_id": "reg-lf",
+   "target_label": "Facteurs de charge éolien et solaire · ven. 30 oct. 2026 (graphique)",
    "settings": {
-    "_page": "wxcities",
+    "_page": "regions",
+    "_path": "#hs-body-regions-0 > div:nth-of-type(2)",
     "pk-zone": "France",
-    "wx-country": "France",
-    "hydro-country": "France"
+    "reg-region": "Occitanie"
    },
-   "body": "un eu vide ici",
-   "reply": "Doublon de la note 105 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 105.",
+   "body": "facteur de charge histoirque avec  jours roulant et  mois roulant et YTD et années passé? Come le capture rate (l schéma pas encore clair)",
+   "reply": "Doublon de la note 104 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 104.",
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
@@ -3321,6 +3283,26 @@
    "body": "un eu vide ici",
    "reply": "Fait : l’onglet Réservoirs hydrauliques a maintenant 4 chiffres clés (stock, écart à la normale, écart à l’an dernier, rang en Europe) et un second graphique à côté : l’écart de chaque pays européen à sa normale et à l’an dernier pour la même semaine. La France est à −36 % de sa normale mi-octobre.",
    "done_at": "2026-11-01T07:53+00:00"
+  },
+  {
+   "id": 163,
+   "status": "wontfix",
+   "created_at": "2026-10-31T21:54+00:00",
+   "author": "Tom",
+   "route": "system/weather",
+   "page": "Système électrique › Météo › Villes & prévisions",
+   "tab": "Réservoirs hydrauliques",
+   "target_id": null,
+   "target_label": null,
+   "settings": {
+    "_page": "wxcities",
+    "pk-zone": "France",
+    "wx-country": "France",
+    "hydro-country": "France"
+   },
+   "body": "un eu vide ici",
+   "reply": "Doublon de la note 105 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 105.",
+   "done_at": "2026-10-31T22:50+00:00"
   },
   {
    "id": 106,
@@ -3379,6 +3361,24 @@
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
+   "id": 107,
+   "status": "done",
+   "created_at": "2026-10-31T21:55+00:00",
+   "author": "Tom",
+   "route": "system/bilan",
+   "page": "Système électrique › Bilan électrique",
+   "tab": "2026 à date",
+   "target_id": null,
+   "target_label": null,
+   "settings": {
+    "_page": "bilan",
+    "pk-zone": "France"
+   },
+   "body": "les tuiles harmoniser le style. Si tu as pleins de style on en discute",
+   "reply": "Fait : les tuiles du Bilan prennent le style commun (titre coloré selon l’effet sur les prix, mêmes tailles de texte) ; une production en hausse n’apparaît plus en rouge. Plus une rangée « Selon RTE » et quatre graphiques tirés chaque année du Bilan électrique de RTE.",
+   "done_at": "2026-11-02T21:24+00:00"
+  },
+  {
    "id": 108,
    "status": "done",
    "created_at": "2026-10-31T21:55+00:00",
@@ -3417,6 +3417,24 @@
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
+   "id": 167,
+   "status": "wontfix",
+   "created_at": "2026-10-31T21:56+00:00",
+   "author": "Tom",
+   "route": "system/bilan",
+   "page": "Système électrique › Bilan électrique",
+   "tab": "2026 à date",
+   "target_id": null,
+   "target_label": null,
+   "settings": {
+    "_page": "bilan",
+    "pk-zone": "France"
+   },
+   "body": "il y a de la place pour faire mieux. ET en plus il manque des graphs. Essaye d'en faire plus du rapport",
+   "reply": "Doublon de la note 109 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 109.",
+   "done_at": "2026-10-31T22:50+00:00"
+  },
+  {
    "id": 109,
    "status": "done",
    "created_at": "2026-10-31T21:56+00:00",
@@ -3435,21 +3453,27 @@
    "done_at": "2026-11-01T08:36+00:00"
   },
   {
-   "id": 167,
+   "id": 168,
    "status": "wontfix",
    "created_at": "2026-10-31T21:56+00:00",
    "author": "Tom",
-   "route": "system/bilan",
-   "page": "Système électrique › Bilan électrique",
-   "tab": "2026 à date",
+   "route": "system/replay",
+   "page": "Système électrique › Rejouer une journée",
+   "tab": "Jour · Prix · Normal",
    "target_id": null,
    "target_label": null,
    "settings": {
-    "_page": "bilan",
-    "pk-zone": "France"
+    "_page": "replay",
+    "rp-to": "24:00",
+    "rp-cmp": "",
+    "pk-zone": "France",
+    "rp-date": "2026-10-30",
+    "rp-from": "00:00",
+    "rp-music": false,
+    "rp-scrub": "95"
    },
-   "body": "il y a de la place pour faire mieux. ET en plus il manque des graphs. Essaye d'en faire plus du rapport",
-   "reply": "Doublon de la note 109 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 109.",
+   "body": "c'et un tools ça",
+   "reply": "Doublon de la note 110 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 110.",
    "done_at": "2026-10-31T22:50+00:00"
   },
   {
@@ -3477,9 +3501,9 @@
    "done_at": "2026-11-01T07:28+00:00"
   },
   {
-   "id": 168,
-   "status": "wontfix",
-   "created_at": "2026-10-31T21:56+00:00",
+   "id": 111,
+   "status": "done",
+   "created_at": "2026-10-31T21:57+00:00",
    "author": "Tom",
    "route": "system/replay",
    "page": "Système électrique › Rejouer une journée",
@@ -3496,9 +3520,9 @@
     "rp-music": false,
     "rp-scrub": "95"
    },
-   "body": "c'et un tools ça",
-   "reply": "Doublon de la note 110 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 110.",
-   "done_at": "2026-10-31T22:50+00:00"
+   "body": "plus globalement je truove pas le prix des dernières enchères AO CRe sur le site",
+   "reply": "Correction de ma réponse précédente : la CRE publie ces résultats en open data (fichier Synthese_AO.csv), et le site les lit déjà trois fois par jour. Ils étaient cachés dans l’onglet M0 : le menu dit maintenant « Contrat M0 et appels d’offres CRE ». Le tableau des derniers résultats montre tous les appels d’offres ayant un résultat depuis 3 ans (dernier : éolien terrestre P11, 77,08 €/MWh, 808 MW, 24 juin 2026), avec une étiquette NOUVEAU pendant 45 jours. Pour ne rien rater : un contrôle chaque mercredi envoie un e-mail si le fichier n’est plus rafraîchi depuis 3 jours, perd des lignes, ou n’a aucun nouveau résultat depuis 9 mois.",
+   "done_at": "2026-11-01T09:31+00:00"
   },
   {
    "id": 169,
@@ -3523,30 +3547,6 @@
    "body": "plus globalement je truove pas le prix des dernières enchères AO CRe sur le site",
    "reply": "Doublon de la note 111 (envoyée deux fois à la connexion, défaut corrigé) : la réponse est sur la note 111.",
    "done_at": "2026-10-31T22:50+00:00"
-  },
-  {
-   "id": 111,
-   "status": "done",
-   "created_at": "2026-10-31T21:57+00:00",
-   "author": "Tom",
-   "route": "system/replay",
-   "page": "Système électrique › Rejouer une journée",
-   "tab": "Jour · Prix · Normal",
-   "target_id": null,
-   "target_label": null,
-   "settings": {
-    "_page": "replay",
-    "rp-to": "24:00",
-    "rp-cmp": "",
-    "pk-zone": "France",
-    "rp-date": "2026-10-30",
-    "rp-from": "00:00",
-    "rp-music": false,
-    "rp-scrub": "95"
-   },
-   "body": "plus globalement je truove pas le prix des dernières enchères AO CRe sur le site",
-   "reply": "Correction de ma réponse précédente : la CRE publie ces résultats en open data (fichier Synthese_AO.csv), et le site les lit déjà trois fois par jour. Ils étaient cachés dans l’onglet M0 : le menu dit maintenant « Contrat M0 et appels d’offres CRE ». Le tableau des derniers résultats montre tous les appels d’offres ayant un résultat depuis 3 ans (dernier : éolien terrestre P11, 77,08 €/MWh, 808 MW, 24 juin 2026), avec une étiquette NOUVEAU pendant 45 jours. Pour ne rien rater : un contrôle chaque mercredi envoie un e-mail si le fichier n’est plus rafraîchi depuis 3 jours, perd des lignes, ou n’a aucun nouveau résultat depuis 9 mois.",
-   "done_at": "2026-11-01T09:31+00:00"
   },
   {
    "id": 170,
