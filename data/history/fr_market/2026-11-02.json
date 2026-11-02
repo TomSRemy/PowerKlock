@@ -1,0 +1,22 @@
+{
+ "date": "2026-11-02",
+ "countries": {
+  "FR": {
+   "spot": 246.37
+  },
+  "UK": {
+   "spot": 208.17
+  },
+  "DE": {
+   "spot": 252.85
+  },
+  "NL": {
+   "spot": 250.58
+  }
+ },
+ "marketInsightsHtml": null,
+ "marketInsights": {
+  "gas": "<p>European gas prices have softened at open after the TTF front month contract reached four-year highs on Friday, breaching 100 &euro;/MWh for the first time since 2022, as escalating geopolitical tensions in the Middle East and weather continue to drive supply concerns. Tanker attacks remain ongoing, while the possibility of renewed US strikes following the midterm elections adds further uncertainty. Reports of a US attempt to reopen negotiations with Tehran have offered some bearish support to pricing.</p>\n<p>Additional bullish pressure is coming from tightening near term supply and weather fundamentals. Forecasts continue to point towards below average temperatures this week, supporting heating demand, while sustained withdrawals from European gas storage have added to concerns over inventory levels. Meanwhile, an unplanned outages at Norway's Oseberg field is restricting pipeline exports by 17mcm, further tightening the European supply outlook.</p>",
+  "power": "<p>European power markets are being driven higher by weather and ongoing geopolitical uncertainty in the Middle East. The UK Baseload front month contract is pricing at 194.50 &pound;/MWh, down 2.50 &pound;/MWh day on day. Forecasts for lower wind and solar generation this week are expected to increase reliance on gas-fired power generation, adding further demand pressure to an already tight gas market. Meanwhile, EDF has warned of a potential 24 hour strike by power workers on Wednesday, introducing additional uncertainty around the European electricity supply outlook. Further upward pressure is coming from carbon markets, with EUAs climbing above 90 &euro;/t on Friday. However, some geopolitical risk premium has eased, with oil prices falling around 3% after Trump indicated that diplomacy with Iran would be given more time, offering some relief to commodity markets.<br /></p>"
+ }
+}
