@@ -12,8 +12,10 @@ two known years (the pricer until 2 Nov. 2026), the last known year only, none (
 (the rule since 2 Nov. 2026: below 0, the last year's gap plus its change on the year before, damped; above 0, the last
 year's level).
 
-The model risk taken off the price (75th percentile of the errors, recent deliveries weighing more) is given per T, so
-the pricer can take the one of the threshold chosen instead of the one measured at 0.
+The truth and the ratios are taken on the output rebuilt without stops below 0 (a park that runs down to T produces in
+full there; the national output is already cut by the parks that stop). The model risk (75th percentile of the errors,
+recent deliveries weighing more) is given per T, and 'extraQPts': the 75th percentile of what the threshold adds to the
+error at 0, case by case, which the pricer takes off at that threshold.
 
 Writes data/history/ppa_threshold_test.json
     python scripts/ppa_threshold_test.py
@@ -32,6 +34,7 @@ _argv, sys.argv = sys.argv, ['x']
 import ppa_lab as L                  # noqa: E402
 import ppa_scenarios as G            # noqa: E402
 import ppa_model_risk as R           # noqa: E402
+import build_flex_share as B         # noqa: E402
 sys.argv = _argv
 warnings.simplefilter('ignore')
 
@@ -39,10 +42,24 @@ OUT = os.path.join(ROOT, 'data', 'history', 'ppa_threshold_test.json')
 GRID = [-20, -10, -5, -1, 0, 5]
 
 
+_POT = {}
+
+
+def output(t, y):
+    """the national output rebuilt without stops below 0 (scripts/build_flex_share.py): a park that runs down to T produces
+    its full output in those hours, while the national one there is already cut by the parks that stop. Used for the
+    truth and for the ratios alike"""
+    if (t, y) not in _POT:
+        a = L.DATA[y]
+        P, V = a['fr_p'], a['fr_' + t]
+        _POT[(t, y)] = B.solar_pot(V, P, a['month']) if t == 's' else B.wind_pot(V, P)
+    return _POT[(t, y)]
+
+
 def month_stats(t, Y, T):
     """each month of year Y: capture at T (stop below T) ÷ baseload, paid share, baseload, output"""
     a = L.DATA[Y]
-    P, V = a['fr_p'], a['fr_' + t]
+    P, V = a['fr_p'], output(t, Y)
     out = {}
     for m in range(1, 13):
         k = a['month'] == m
@@ -64,7 +81,7 @@ def ratios(t, years, T):
         for y in years:
             a = L.DATA[y]
             k = a['month'] == m
-            P, V = a['fr_p'][k], a['fr_' + t][k]
+            P, V = a['fr_p'][k], output(t, y)[k]
             for tt in (T, 0):
                 pos = P >= tt
                 n[tt][0] += float((V[pos] * P[pos]).sum()); n[tt][1] += float(V[pos].sum()); n[tt][2] += float(V.sum())
@@ -150,6 +167,12 @@ def main():
                 p = np.array([rs[i]['byT'][str(T)][name]['pts'] for i in ok]); e = np.array([rs[i]['byT'][str(T)][name]['eur'] for i in ok]); ww = w[ok]
                 out[tech][str(T)][name] = {'n': len(ok), 'meanEur': round(float((ww * e).sum() / ww.sum()), 3), 'maeEur': round(float(np.abs(e).mean()), 3),
                                            'meanPts': round(float((ww * p).sum() / ww.sum()), 3), 'qPts': round(R.wquantile(p, ww, R.LEVEL), 3)}
+            # what the threshold adds to the error at 0, case by case (the pricer's rule): its 75th percentile is the extra
+            # prudence the pricer takes off at this threshold
+            ok = [i for i, r in enumerate(rs) if 'pricer' in r['byT'][str(T)] and 'pricer' in r['byT']['0']]
+            if ok and T != 0:
+                dp = np.array([rs[i]['byT'][str(T)]['pricer']['pts'] - rs[i]['byT']['0']['pricer']['pts'] for i in ok])
+                out[tech][str(T)]['extraQPts'] = round(max(0.0, R.wquantile(dp, w[ok], R.LEVEL)), 3)
             print(tech, T, out[tech][str(T)])
     with open(OUT, 'w') as f:
         json.dump(out, f, separators=(',', ':'))

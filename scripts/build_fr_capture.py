@@ -58,9 +58,35 @@ def threshold_table(rows_q):
     # year by year: the two complete years and the running one (its months so far: a month with too few days is left
     # empty), so the pricer can take, month by month, the two latest years that have it
     yb = ys + [y for y in sorted(rows_q) if int(y) == this]
+    # a park that runs below 0 produces its full output in those hours, while the national output there is already cut
+    # by the parks that stop (large solar keeps about half): the ratios are taken on the output rebuilt without stops
+    # (scripts/build_flex_share.py; replay 2023–2026 against a truth on rebuilt output, solar at −1 € +2.1 €/MWh off on
+    # average against +2.9 on the national output, wind −0.2 against +0.6)
+    pot = _potential(rows_q, yb)
+    out['output'] = 'rebuilt without stops below 0'
     for k, ix in (('solar', 2), ('wind', 3)):
-        out[k] = _ratios(rows_q, ys, ix)
-        out[k]['byYear'] = {str(y): _ratios(rows_q, [y], ix, min_days=20) for y in yb}
+        out[k] = _ratios(pot, ys, ix)
+        out[k]['byYear'] = {str(y): _ratios(pot, [y], ix, min_days=20) for y in yb}
+    return out
+
+
+def _potential(rows_q, ys):
+    """the same rows with solar and wind output rebuilt where the price is below 0 (solar: the month's shape of days without
+    a negative price, scaled on the day's other quarter-hours; wind: a line across each negative run, from one hour before
+    to one hour after, as the parks stop ahead of it)"""
+    import numpy as np
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from build_flex_share import solar_pot, wind_pot
+    out = {}
+    for y in ys:
+        rows = rows_q[y]
+        P = np.array([[np.nan if v is None else v for v in r[1]] for r in rows], float)
+        Pz = np.where(np.isnan(P), 1.0, P)   # a missing price: not a stop
+        S = np.array([[max(0.0, v or 0.0) for v in r[2]] for r in rows], float)
+        W = np.array([[max(0.0, v or 0.0) for v in r[3]] for r in rows], float)
+        mon = np.array([r[0] + 1 for r in rows])
+        Sp, Wp = solar_pot(S, Pz, mon), wind_pot(W, Pz, pad=4)
+        out[y] = [(r[0], r[1], list(Sp[i]), list(Wp[i])) for i, r in enumerate(rows)]
     return out
 
 

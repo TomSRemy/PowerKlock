@@ -141,8 +141,8 @@ def solar_pot(S, P, month):
     return out
 
 
-def wind_pot(W, P):
-    """each run of negative hours bridged by a straight line between the hours around it"""
+def wind_pot(W, P, pad=1):
+    """each run of negative hours bridged by a straight line between the hours around it (pad: steps per hour)"""
     w, p = W.ravel(), P.ravel()
     out, bad, n, i = w.copy(), p < 0, len(w), 0
     while i < n:
@@ -154,7 +154,7 @@ def wind_pot(W, P):
             j += 1
         # the hour on each side is already ramping down (parks stop ahead of and after the block): bridge from one
         # hour further out (closes most of the gap with RTE's estimate: 2025 wind 1.10 TWh against 1.3)
-        lo, hi = max(0, i - 1), min(n, j + 1)
+        lo, hi = max(0, i - pad), min(n, j + pad)
         a = w[lo - 1] if lo > 0 else w[hi] if hi < n else w[i]
         b = w[hi] if hi < n else a
         out[lo:hi] = np.maximum(w[lo:hi], a + (b - a) * np.arange(1, hi - lo + 1) / (hi - lo + 1))
