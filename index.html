@@ -4383,6 +4383,7 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
           <div class="pr-tabs-bar-filters"><button type="button" class="mrn-xbtn" id="mrn-xbtn" aria-pressed="false" title="Show a line under each figure and chart on what it is and why it moves">ⓘ Explain</button><button class="pk-btn-ghost" type="button" onclick="MRN.cache = {}; renderMorning()">↻ Refresh</button></div>
         </div>
       </div>
+      <div class="pk-stories" id="mrn-stories" role="list" aria-label="Morning stories" hidden></div>
       <div class="mrn2-hdr mrn3-hdr"><div class="mrn-hdr-l"><h1 id="mrn-date">Today</h1><p class="mrn-promise">The morning brief on electricity markets: spot and forwards in France and Europe, fundamentals, PPA and M0 tools. Free, from public sources checked every day.</p></div><span class="mrn-xbtn-w"><span class="mrn2-upd" id="mrn-upd"></span></span></div>
       <div class="mrn-first" id="mrn-first" hidden></div>
       <!-- Quick look (default): one screen, no scrolling -->
@@ -4390,11 +4391,9 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
         <div id="mrn-q-negal" hidden></div>
         <section class="mrn2-tiles mrn3-tiles" id="mrn-q-tiles" style="margin:0 0 12px"></section>
         <div class="mrn-3d" data-3d></div>
-        <div class="mrn3-qrow mrn3-qrow-reel">
+        <div class="mrn3-qrow" style="grid-template-columns:minmax(0,1fr)">
           <section class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">What moved</div><div class="fuel-card-sub">One line per market; the tiles above carry the prices</div></div><span class="source-badge">PowerKlock</span></div><p class="fuel-note mrn-x">One line per market on why its price moved. Read it with the tiles above: the tile gives the figure, the line gives the reason.</p>
             <ul class="mrn3-lines" id="mrn-q-moved"><li class="fuel-note">Loading…</li></ul></section>
-          <section class="chart-container fuel-card mrn-reel-card"><div class="fuel-card-head"><div><div class="table-title">The morning reel</div><div class="fuel-card-sub">The day’s figures in a vertical video, as posted on Instagram every morning</div></div><span class="source-badge">PowerKlock</span></div>
-            <div id="mrn-q-reel"></div></section>
         </div>
       </div>
       <!-- Discovery: few figures, each explained -->
@@ -5488,6 +5487,7 @@ prix     = coût gaz × 1 / (1 + exp(−(a − b × (couverture − 100)))) × (
 <script src="js/power-map.js"></script>
 <script src="js/fr-system.js"></script>
 <script src="js/morning.js"></script>
+<script src="js/today-stories.js"></script>
 <script src="js/pk-tilewin.js"></script>
 <script src="js/pk-tiles-markets.js"></script>
 <script src="js/market-update.js"></script>

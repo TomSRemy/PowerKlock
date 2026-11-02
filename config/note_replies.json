@@ -676,12 +676,12 @@
   "reply": "Fait : les tuiles du Bilan prennent le style commun (titre coloré selon l’effet sur les prix, mêmes tailles de texte) ; une production en hausse n’apparaît plus en rouge. Plus une rangée « Selon RTE » et quatre graphiques tirés chaque année du Bilan électrique de RTE."
  },
  "113": {
-  "status": "open",
-  "reply": "Maquette faite, à valider avant que je code (c’est un changement de style sur tout le site) : docs/discussion/maquettes/tuiles_stories.png sur la branche discussion-bridge. Partie 2 : une rangée de ronds en haut d’Aujourd’hui, un par section, ouverts en plein écran avec barres de progression, tap pour passer, comme sur Instagram."
+  "status": "done",
+  "reply": "Fait : les réels sont devenus des stories comme sur Instagram, tout en haut d’Aujourd’hui dans les trois vues : une rangée de ronds avec une icône (Prix, Nucléaire, Vent & soleil, Gaz & CO₂, Échanges, Forwards), anneau coloré tant que la story n’est pas vue dans la journée, gris ensuite. Le bloc « réel du matin » de Coup d’œil est retiré."
  },
  "114": {
-  "status": "open",
-  "reply": "Maquette faite, à valider avant que je code (c’est un changement de style sur tout le site) : docs/discussion/maquettes/tuiles_stories.png sur la branche discussion-bridge. Partie 2 : une rangée de ronds en haut d’Aujourd’hui, un par section, ouverts en plein écran avec barres de progression, tap pour passer, comme sur Instagram."
+  "status": "done",
+  "reply": "Fait : un rond ouvre sa story en plein écran (au centre, au format téléphone, sur ordinateur). Une carte par chiffre clé, 5 s chacune avec ses barres en haut ; tap à droite = suivante, à gauche = précédente ; à la fin d’une section, la suivante arrive en tournant ; glisser à gauche ou à droite = section suivante ou précédente, vers le bas = fermer ; appui long = pause. Sur ordinateur : flèches ‹ ›, touches ← →, Espace, Échap, clic à côté pour fermer. La variation est en rouge quand elle pousse les prix à la hausse, en vert quand elle les détend ; en français et en anglais."
  },
  "108": {
   "status": "done",

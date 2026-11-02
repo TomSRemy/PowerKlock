@@ -1063,7 +1063,7 @@ async function renderMorning() {
   _mrnFacts().then(k => {
     MRN.k = k;
     _mrnSpot(k); _mrnTiles(k); _mrnWeeks(k); _mrnNegAlert(k); _mrnCfCard(); _mrnFund(k); _mrn3Days();
-    _mrnSpotChart(k, 'mrn-q-spot', false); _mrnQuick(k); _mrnReel(document.getElementById('mrn-q-reel')); _mrnLearn(k); _mrnStory(k); _mrnQuiz(k); _mrnExplain();
+    _mrnSpotChart(k, 'mrn-q-spot', false); _mrnQuick(k); if (window.PKStories) PKStories.render(k); _mrnLearn(k); _mrnStory(k); _mrnQuiz(k); _mrnExplain();
     const u = document.getElementById('mrn-upd'); if (u) u.textContent = _mT('mis à jour à ', 'updated ') + new Date().toLocaleTimeString(_mrnFr() ? 'fr-FR' : 'en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' });
   }).catch(e => console.warn('[morning]', e));
   if (window.PKBrief) { const b = document.getElementById('mrn-brief'); if (b) PKBrief.brief(b); }
