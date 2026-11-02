@@ -159,6 +159,9 @@ def main():
         except Exception as e:
             bad.append(f'{y}: report not read ({type(e).__name__})'); continue
         f = figures(text)
+        miss = [k for k in ('avoidedMt', 'exportBn', 'lcaMt', 'consMt') if k not in f]
+        if miss and int(y) >= 2025:   # a new report worded otherwise: say which figure, a wording is to add
+            bad.append(f'{y}: not found in the report: ' + ', '.join(miss))
         if f:
             figs.setdefault(y, {}).update(f, report=pdfs[0])
             print(f'{y}: ' + ', '.join(f'{k} {v}' for k, v in f.items()))
@@ -189,6 +192,9 @@ def main():
                    'years': dict(sorted(figs.items()))}, f, ensure_ascii=False, separators=(',', ':'))
     for b in bad:
         print('::warning::' + b)
+    if bad and os.environ.get('GITHUB_ENV'):
+        with open(os.environ['GITHUB_ENV'], 'a') as f:
+            f.write('RTE_BILAN_MISSING=' + ' | '.join(bad).replace('\n', ' ') + '\n')
     print(f'{len(years)} year(s): ' + ', '.join(f"{k} {v['total']}" for k, v in sorted(years.items())))
     return 1 if bad and not years else 0
 
