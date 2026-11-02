@@ -54,11 +54,24 @@
     host.innerHTML = `<div class="reg-chips">${chips}</div>
       <h3 class="reg-h">${T('À venir', 'Upcoming')} <span>${up.length}</span></h3><ol class="reg-list">${up.map(card).join('') || '<li class="fuel-note">' + T('Rien d’annoncé pour ce thème.', 'Nothing announced for this theme.') + '</li>'}</ol>
       <h3 class="reg-h">${T('Historique', 'History')} <span>${past.length}</span></h3><ol class="reg-list">${past.map(card).join('')}</ol>
+      <div class="reg-news" id="reg-jo"></div>
       <div class="reg-news" id="reg-news"></div>
       <p class="fuel-note">${T('Chaque date est vérifiée sur sa source. Les événements apparaissent aussi sur les graphiques qu’ils concernent : en encadré pour les plus importants quand la place le permet, en pointillés sinon. Liste mise à jour au ', 'Each date is checked against its source. Events also show on the charts they concern: as a framed block for the most important ones when there is room, as dashed lines otherwise. List updated on ')}${esc(j.updated)}.</p>`;
     host.querySelectorAll('.reg-chip').forEach(b => b.addEventListener('click', () => { theme = b.dataset.th; render(); }));
-    news();
+    news(); jo();
     const h = location.hash.match(/[?&]m=([\w-]+)/); if (h) { const el = document.getElementById('reg-' + h[1]); if (el) { el.classList.add('reg-hl'); el.scrollIntoView({ block: 'center' }); } }
+  }
+  // the Journal officiel watch (scripts/watch_jorf_flex.py, every week, DILA open data): new texts on stopping at negative
+  // prices and on the support schemes, each either taken into the obligations used by Prices › Negative prices or to review
+  async function jo() {
+    const el = document.getElementById('reg-jo'); if (!el) return;
+    const W = await fetch((typeof DATA_BASE !== 'undefined' ? DATA_BASE : 'data/') + 'history/flex_watch.json').then(r => r.ok ? r.json() : null).catch(() => null);
+    const tx = W && W.texts ? Object.entries(W.texts) : [];
+    const upd = W && W.updated ? new Date(W.updated).toLocaleDateString(T('fr-FR', 'en-GB'), { day: 'numeric', month: 'short', year: 'numeric' }) : '–';
+    el.innerHTML = `<h3 class="reg-h">${T('Au Journal officiel', 'In the Journal officiel')} <span>${T(`arrêt aux prix négatifs et soutien aux renouvelables · lu chaque semaine, dernier passage ${upd}`, `stopping at negative prices and renewable support · read every week, last run ${upd}`)}</span></h3>` +
+      (tx.length ? '<ul class="reg-nl">' + tx.map(([cid, e]) => `<li><a href="${esc(e.url)}" target="_blank" rel="noopener">${esc(e.title)}</a><span>${esc(new Date(e.date + 'T12:00:00Z').toLocaleDateString(T('fr-FR', 'en-GB'), { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }))} · ${e.status === 'taken'
+        ? `<a href="#markets/spot/negative" data-route="markets/spot/negative">${T('pris en compte dans les obligations d’arrêt', 'taken into the stop obligations')}</a>` : `<b style="color:#FBBF24">${T('à examiner', 'to review')}</b>`}</span></li>`).join('') + '</ul>'
+        : '<p class="fuel-note">' + T('Aucun nouveau texte pour l’instant.', 'No new text so far.') + '</p>');
   }
   // regulation news of the last 30 days, France and Europe: what may become a milestone
   async function news() {
