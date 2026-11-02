@@ -2,7 +2,7 @@
 """Stop threshold priced by the cells themselves against the pricer's ratio (Tom 2 Nov. 2026: price any stop threshold
 T "with cells like the rest"; since that day the pricer's method, replayed here every week).
 
-Same cases as scripts/ppa_threshold_test.py and ppa_model_risk.py: each delivery year from 2023, priced 1, 2 and 3 years
+Same cases as scripts/ppa_model_risk.py: each delivery year from 2023, priced 1, 2 and 3 years
 ahead with only the complete years known then, 30 draws, seed 7, each technology's anchoring (ppa_model_risk.json
 'anchorMode'). For each T, the capture of a park stopping below T:
   cells       the generator's cells at T (ppa_scenarios PK_STOP_GRID), anchored at T
@@ -10,7 +10,7 @@ ahead with only the complete years known then, 30 draws, seed 7, each technology
   cellsPot    the cells at T weighted by the output without stops (PK_STOP_POT), anchored on the realised at T on
               that output
   cellsPot0   the same, anchored with its T = 0 factor
-each scored against two realised captures at T: on the national output ('act', as ppa_threshold_test) and on the
+each scored against two realised captures at T: on the national output ('act') and on the
 output without stops ('pot', what a park that keeps producing below 0 would have produced). Also checks that the
 option leaves the T = 0 capture unchanged, and times the generator with and without it.
 

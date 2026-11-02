@@ -12,7 +12,8 @@ solar 0.84 €/MWh mean error (bias −0.20), wind 2.57 (+2.53), against 2.47 / 
 
 Guardrail alarm: 'belowFloor' = share of simulated days under the capture floor observed at the same penetration
 (about 10 % expected). Adds 'generator', 'generatorPaid', 'generatorP10', 'generatorP90' to every month of data/history/ppa_forecast.json
-(both conventions). Run after scripts/ppa_lab.py.
+(both conventions), each month's 'generatorT' / 'generatorPaidT' at the stop thresholds of the grid, and the yearly
+capture band of the full Monte Carlo at T = 0 ('band') and at each T ('bandT'). Run after scripts/ppa_lab.py.
     python scripts/ppa_generator.py
 """
 import json
@@ -116,7 +117,7 @@ def main():
     Fc = G.fuel_cost()
     c0 = float(np.mean([v for k, v in sorted(Fc.items())[-30:]]))
     this = date.today()
-    below, anchors, band, vols = {}, {}, {}, {}
+    below, anchors, band, vols, bandT = {}, {}, {}, {}, {}
     # the anchoring of each technology, chosen on the weekly replay (scripts/ppa_model_risk.py, run just before)
     try:
         modes = json.load(open(os.path.join(ROOT, 'data', 'history', 'ppa_model_risk.json'))).get('anchorMode') or {}
@@ -150,6 +151,17 @@ def main():
                 if sc:
                     q = {f'p{p_}': round(float(np.percentile(sc, p_)), 5) for p_ in (10, 25, 50, 75, 90)}
                     band.setdefault(tech, {})[str(Y)] = q
+                if G.STOP_GRID:
+                    # the same yearly band for a park stopping below each T (Tom 2 Nov. 2026: the risk premium should
+                    # follow the stop threshold too), from the same scenarios and weights; T = 0 is 'band' itself
+                    bt = {}
+                    for T_ in G.STOP_GRID:
+                        okT = [r_ for r_ in ok_ if all((r_[x].get('curtT') or {}).get(T_) is not None for x in range(1, 13))]
+                        if okT:
+                            sT = [sum(wm[x] * r_[x]['curtT'][T_] for x in range(1, 13)) / sum(wm.values()) for r_ in okT]
+                            bt[f'{T_:g}'] = {f'p{p_}': round(float(np.percentile(sT, p_)), 4) for p_ in (10, 25, 50, 75, 90)}
+                    if bt:
+                        bandT.setdefault(tech, {})[str(Y)] = bt
                     if Y > this.year and all('_cf' in r_ for r_ in ok_):
                         vols.setdefault(tech, []).append((np.array([r_['_cf'] for r_ in ok_]), np.array(sc),
                                                           np.array([r_['_base'] for r_ in ok_])))
@@ -191,6 +203,9 @@ def main():
         # yearly capture quantiles of the full Monte Carlo: the pricer sets its capture drift on P50 − P25
         fc['generator']['band'] = band
         fc['generator']['v2'] = True
+        if bandT:
+            # the same quantiles at each stop threshold T ('-1', '0.01'...), so the drift P50 − P25 can follow T
+            fc['generator']['bandT'] = bandT
     liq = liquidity_step()
     if liq:
         fc['generator']['liquidity'] = liq
