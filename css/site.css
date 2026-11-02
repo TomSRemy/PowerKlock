@@ -3668,3 +3668,22 @@ html body .pm-o-l, html body .pkf-t-l, html body .mrn2-tc { white-space: normal;
 }
 /* keyboard focus always visible (WCAG 2.4.7): zero specificity, a control's own focus style still wins */
 :where(button, a[href], select, input, textarea, [tabindex]):focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ══ One rule for every tile's title, one text scale (Tom, notes 81, 103, 107, 2 Nov. 2026) ══
+   Tiles can differ (with or without a curve), but the title always follows the change: red when it pushes prices up or
+   tightens the system, green when it eases them, grey when flat (.kpi-card: kpi-down / kpi-up / kpi-flat, set by the
+   page or js/kpi-tone.js; other families: pk-tt-bad / pk-tt-good, or mrn-up / mrn-down on Today's tiles).
+   Same scale everywhere: title Outfit 10px capitals, figure JetBrains Mono, context line 11px mono. */
+.pk-tt-bad { color: var(--down) !important; } .pk-tt-good { color: var(--up) !important; }
+.mrn2-tn.mrn-up { color: var(--down); } .mrn2-tn.mrn-down, .mrn2-tn.mrn-dn { color: var(--up); }
+.bl-kl, .pkf-t-l { font: 600 10px 'Outfit', sans-serif !important; letter-spacing: .1em !important; text-transform: uppercase; }
+.bl-kl:not(.pk-tt-bad):not(.pk-tt-good), .pkf-t-l:not(.pk-tt-bad):not(.pk-tt-good) { color: var(--kpi-flat, var(--text3)); }
+.bl-kv, .pkf-t-v, .mrn2-tv, .pkd-kpi-v { font-family: 'JetBrains Mono', monospace !important; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.bl-kv { font-size: 22px; } .bl-kv small, .pkf-t-v small, .mrn2-tv small { font: 400 12px 'JetBrains Mono', monospace; color: var(--text3); }
+.bl-kc, .pkf-t-s, .mrn2-tc { font-family: 'JetBrains Mono', monospace; font-size: 11px; line-height: 1.35; }
+/* Negative prices › who keeps producing below 0 €: the obligations and Journal officiel tables wrap their long texts */
+.flex-tbl { width: 100%; table-layout: fixed; font-size: 12px; border-collapse: collapse; }
+.flex-tbl th, .flex-tbl td { white-space: normal !important; text-align: left !important; vertical-align: top; padding: 6px 8px; font-family: 'Inter', sans-serif; line-height: 1.4; overflow-wrap: anywhere; }
+.flex-tbl td:first-child, .flex-tbl th:first-child { width: 92px; font-family: 'JetBrains Mono', monospace; color: var(--text3); }
+.flex-tbl td:last-child, .flex-tbl th:last-child { width: 120px; }
+

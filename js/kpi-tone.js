@@ -53,7 +53,16 @@
     // rules are written on the English label: a French label is read back in English (js/i18n.js)
     const en = window.pkEN ? window.pkEN(lab.textContent.trim()) : lab.textContent.trim();
     const rule = RULES.find(([re]) => re.test(en) || re.test(lab.textContent.trim()));
-    if (!rule) return;
+    if (!rule) {
+      // no rule for this label: a card left grey by its page but carrying a coloured change (js/eua.js _fuelChg and the
+      // like: red = price up, green = down) takes that colour, so its title follows the change like every tile (note 81)
+      if (card.classList.contains('kpi-flat') && !card.classList.contains('pk-toned')) {
+        const c = [...card.querySelectorAll('.kpi-meta [style*="color"], .kpi-chg [style*="color"]')].map(e => e.getAttribute('style')).join(' ');
+        const bad = /var\(--down\)/.test(c), good = /var\(--up\)/.test(c);
+        if (bad !== good) { card.classList.remove('kpi-flat'); card.classList.add(bad ? 'kpi-down' : 'kpi-up', 'pk-toned'); }
+      }
+      return;
+    }
     let r = null;
     try { r = rule[1](card); } catch (_) {}
     Object.values(CLS).forEach(c => card.classList.remove(c));

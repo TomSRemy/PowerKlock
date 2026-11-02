@@ -238,13 +238,25 @@ async function _frsKpis(day, R) {
   const ex = avg(R.exchanges), co2 = avg(R.co2), lf = avg(R.loadForecastD1), la = avg(R.load);
   const g = v => v == null ? '–' : (v / 1000).toFixed(1);
   const upto = n < 96 ? ` · up to ${String(Math.floor((last + 1) / 4)).padStart(2, '0')}:${String((last + 1) % 4 * 15).padStart(2, '0')}` : '';
+  // the day before over the same quarter-hours: each tile's title and change follow the site's rule (Tom, notes 81
+  // and 103): red when the change pushes prices up or tightens the system, green when it eases them
+  let Y = null;
+  if (window.pkRte && day) { const d0 = new Date(day + 'T12:00:00Z'); d0.setUTCDate(d0.getUTCDate() - 1); Y = await pkRte.day(d0.toISOString().slice(0, 10)).catch(() => null); }
+  const avgY = a => { if (!Y || !Array.isArray(Y[a])) return null; let s = 0, k = 0; Y[a].forEach((v, i) => { if (pub[i] && v != null) { s += v; k++; } }); return k ? s / k : null; };
+  const prodY = Y ? prodKeys.reduce((s, k) => s + (avgY(k) || 0), 0) : null, renY = Y ? ['hydro', 'wind', 'solar', 'bio'].reduce((s, k) => s + (avgY(k) || 0), 0) : null;
+  const tone = (d, upBad, eps) => d == null || !isFinite(d) || Math.abs(d) < eps ? null : (d > 0) === upBad ? 'down' : 'up';   // _fuelKpi: 'up' green, 'down' red
+  const FRL = window.PKI18n && PKI18n.lang !== 'en';
+  const chg = (d, upBad, eps, txt, shown) => { const t = tone(d, upBad, eps), a = shown == null ? d : shown; return d == null || !isFinite(d) ? '' : `<div style="color:${t === 'down' ? 'var(--down)' : t === 'up' ? 'var(--up)' : 'var(--text3)'}" translate="no">${a > 0 ? '▲' : a < 0 ? '▼' : '='} ${txt} ${FRL ? 'vs J-1' : 'vs D-1'}</div>`; };
+  const pc = (a, b) => a != null && b ? (a - b) / Math.abs(b) * 100 : null, sg = (v, dp) => (v > 0 ? '+' : '') + v.toFixed(dp);
+  const dL = pc(la, avgY('load')), dP = pc(prod, prodY), dN = pc(avg(R.nuclear), avgY('nuclear'));
+  const dR = prod && prodY ? (ren / prod - renY / prodY) * 100 : null, dC = pc(co2, avgY('co2')), exY = avgY('exchanges'), dX = ex != null && exY != null ? (ex - exY) / 1000 : null;
   host.innerHTML =
-    _fuelKpi('Consumption', g(la), 'GW', `peak ${g(peak)} GW${lf && la ? ' · D-1 forecast ' + ((la - lf) / lf * 100 >= 0 ? '+' : '') + ((la - lf) / lf * 100).toFixed(1) + '%' : ''}`) +
-    _fuelKpi('Production', g(prod), 'GW', 'average' + upto) +
-    _fuelKpi('Nuclear', g(avg(R.nuclear)), 'GW', prod ? Math.round(avg(R.nuclear) / prod * 100) + '% of production' : '') +
-    _fuelKpi('Renewables', prod ? Math.round(ren / prod * 100) : '–', '%', 'hydro + wind + solar + bio') +
-    _fuelKpi('CO₂ intensity', co2 == null ? '–' : Math.round(co2), 'g/kWh', 'RTE, direct emissions') +
-    _fuelKpi(ex != null && ex < 0 ? 'Net export' : 'Net import', g(ex == null ? null : Math.abs(ex)), 'GW', 'physical exchanges');
+    _fuelKpi('Consumption', g(la), 'GW', `${dL != null ? chg(dL, true, 0.5, sg(dL, 1) + '%') : ''}peak ${g(peak)} GW${lf && la ? ' · D-1 forecast ' + ((la - lf) / lf * 100 >= 0 ? '+' : '') + ((la - lf) / lf * 100).toFixed(1) + '%' : ''}`, tone(dL, true, 0.5)) +
+    _fuelKpi('Production', g(prod), 'GW', `${dP != null ? chg(dP, false, 0.5, sg(dP, 1) + '%') : ''}average${upto}`, tone(dP, false, 0.5)) +
+    _fuelKpi('Nuclear', g(avg(R.nuclear)), 'GW', `${dN != null ? chg(dN, false, 0.5, sg(dN, 1) + '%') : ''}${prod ? Math.round(avg(R.nuclear) / prod * 100) + '% of production' : ''}`, tone(dN, false, 0.5)) +
+    _fuelKpi('Renewables', prod ? Math.round(ren / prod * 100) : '–', '%', `${dR != null ? chg(dR, false, 0.5, sg(dR, 1) + (FRL ? ' pt' : ' pts')) : ''}hydro + wind + solar + bio`, tone(dR, false, 0.5)) +
+    _fuelKpi('CO₂ intensity', co2 == null ? '–' : Math.round(co2), 'g/kWh', `${dC != null ? chg(dC, true, 1, sg(dC, 0) + '%') : ''}RTE, direct emissions`, tone(dC, true, 1)) +
+    _fuelKpi(ex != null && ex < 0 ? 'Net export' : 'Net import', g(ex == null ? null : Math.abs(ex)), 'GW', `${dX != null ? chg(dX, true, 0.2, sg(ex < 0 ? -dX : dX, 1) + ' GW', ex < 0 ? -dX : dX) : ''}physical exchanges`, tone(dX, true, 0.2));
 }
 
 async function renderFrSystem() {

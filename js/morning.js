@@ -594,23 +594,27 @@ async function _mrnTiles2(el) {
   // the power system right now (RTE éCO2mix, latest quarter-hour)
   // same build as the market tiles: what it is above the name, the figure, the comparison, today's curve in the source's colour
   const SYS = { [_mT('Carbone', 'Carbon')]: ['sco2', 'system/carbon'], [_mT('Demande', 'Demand')]: ['sload', 'system/demand'], [_mT('Production', 'Generation')]: ['snuc', 'system/generation/nuclear'], [_mT('Renouvelables', 'Renewables')]: ['sren', 'system/generation'], [_mT('Échanges', 'Exchanges')]: ['sexch', 'system/demand/flows'] };
-  const T = [], t = (cat, n, v, u, sub, curve, col) => T.push(`<a class="mrn2-tile mrn-sys-t" data-tile="${SYS[cat][0]}" href="#${SYS[cat][1]}" data-route="${SYS[cat][1]}"><span class="mrn3-cat">${cat}</span><span class="mrn3-th"><span class="mrn2-tn">${n}</span></span><span class="mrn2-tv">${v}<small>${u}</small></span><span class="mrn2-tc">${sub}</span>${curve ? _mrnSpark(curve, col) : ''}<span class="mrn3-tx"><span></span><span>${_mT('aujourd’hui', 'today')}</span></span></a>`);
+  // the name follows the site's rule (Tom, note 81): red when the change since yesterday pushes prices up (more demand,
+  // less nuclear or renewables, more imports, more CO₂), green when it eases them, grey when flat
+  const T = [], t = (cat, n, v, u, sub, curve, col, tn) => T.push(`<a class="mrn2-tile mrn-sys-t" data-tile="${SYS[cat][0]}" href="#${SYS[cat][1]}" data-route="${SYS[cat][1]}"><span class="mrn3-cat">${cat}</span><span class="mrn3-th"><span class="mrn2-tn${tn ? ' mrn-' + tn : ''}">${n}</span></span><span class="mrn2-tv">${v}<small>${u}</small></span><span class="mrn2-tc">${sub}</span>${curve ? _mrnSpark(curve, col) : ''}<span class="mrn3-tx"><span></span><span>${_mT('aujourd’hui', 'today')}</span></span></a>`);
   if (window.pkRte) {
     const td = _mrnToday();
     const [R, Ry] = await Promise.all([pkRte.day(td).catch(() => null), pkRte.day(_mrnAdd(td, -1)).catch(() => null)]);
     const at = (a, i) => Array.isArray(a) ? a[i] : null, li = R && Array.isArray(R.nuclear) ? R.nuclear.reduce((m, v, j) => v != null ? j : m, -1) : -1;
+    const dY = (key, i) => { const y = Ry && at(Ry[key], i), v = at(R[key], i); return y != null && v != null ? v - y : null; };
+    const tnY = (d, upBad, eps) => d == null || Math.abs(d) < eps ? '' : (d > 0) === upBad ? 'up' : 'down';
     const vsY = (key, i, d, unit, scale) => { const y = Ry && at(Ry[key], i); const v = at(R[key], i); return y != null && v != null ? _mS((v - y) / (scale || 1), d) + ' ' + unit + _mT(' vs hier même heure', ' vs yesterday same time') : ''; };
     if (li >= 0) {
       const hh = String(Math.floor(li / 4)).padStart(2, '0') + ':' + String(li % 4 * 15).padStart(2, '0');
       const day = (key, f) => Array.isArray(R[key]) ? R[key].slice(0, li + 1).filter((_, j) => j % 4 === 0).map(v => v == null ? null : f ? f(v) : v) : null;
-      if (at(R.co2, li) != null) t(_mT('Carbone', 'Carbon'), _mT('CO₂ France à ', 'CO₂ France at ') + hh, Math.round(at(R.co2, li)), 'g/kWh', _mT('hier en moyenne ', 'yesterday on average ') + (Ry && Array.isArray(Ry.co2) ? Math.round(_mrnMean(Ry.co2)) : '–') + ' g/kWh', day('co2'), '#94A3B8');
-      if (at(R.load, li) != null) t(_mT('Demande', 'Demand'), _mT('Consommation à ', 'Consumption at ') + hh, _mN(at(R.load, li) / 1000, 1), 'GW', vsY('load', li, 1, 'GW', 1000), day('load'), '#E6EDF3');
-      if (at(R.nuclear, li) != null) t(_mT('Production', 'Generation'), _mT('Nucléaire à ', 'Nuclear at ') + hh, _mN(at(R.nuclear, li) / 1000, 1), 'GW', vsY('nuclear', li, 1, 'GW', 1000), day('nuclear'), '#A98BD4');
+      if (at(R.co2, li) != null) t(_mT('Carbone', 'Carbon'), _mT('CO₂ France à ', 'CO₂ France at ') + hh, Math.round(at(R.co2, li)), 'g/kWh', _mT('hier en moyenne ', 'yesterday on average ') + (Ry && Array.isArray(Ry.co2) ? Math.round(_mrnMean(Ry.co2)) : '–') + ' g/kWh', day('co2'), '#94A3B8', tnY(Ry && Array.isArray(Ry.co2) ? at(R.co2, li) - _mrnMean(Ry.co2) : null, true, 2));
+      if (at(R.load, li) != null) t(_mT('Demande', 'Demand'), _mT('Consommation à ', 'Consumption at ') + hh, _mN(at(R.load, li) / 1000, 1), 'GW', vsY('load', li, 1, 'GW', 1000), day('load'), '#E6EDF3', tnY(dY('load', li), true, 300));
+      if (at(R.nuclear, li) != null) t(_mT('Production', 'Generation'), _mT('Nucléaire à ', 'Nuclear at ') + hh, _mN(at(R.nuclear, li) / 1000, 1), 'GW', vsY('nuclear', li, 1, 'GW', 1000), day('nuclear'), '#A98BD4', tnY(dY('nuclear', li), false, 300));
       const ws = (at(R.wind, li) || 0) + (at(R.solar, li) || 0), ld = at(R.load, li);
       const wsD = Array.isArray(R.wind) ? R.wind.slice(0, li + 1).map((v, j) => (v || 0) + ((R.solar || [])[j] || 0)).filter((_, j) => j % 4 === 0) : null;
-      t(_mT('Renouvelables', 'Renewables'), _mT('Éolien + solaire à ', 'Wind + solar at ') + hh, _mN(ws / 1000, 1), 'GW', ld ? _mN(ws / ld * 100, 0) + _mT(' % de la consommation', ' % of consumption') : '', wsD, '#14D3A9');
+      t(_mT('Renouvelables', 'Renewables'), _mT('Éolien + solaire à ', 'Wind + solar at ') + hh, _mN(ws / 1000, 1), 'GW', ld ? _mN(ws / ld * 100, 0) + _mT(' % de la consommation', ' % of consumption') : '', wsD, '#14D3A9', tnY(Ry ? ws - ((at(Ry.wind, li) || 0) + (at(Ry.solar, li) || 0)) : null, false, 300));
       const ex = at(R.exchanges, li);
-      if (ex != null) t(_mT('Échanges', 'Exchanges'), _mT('Solde à ', 'Balance at ') + hh, _mN(Math.abs(ex) / 1000, 1), 'GW', ex < 0 ? _mT('la France exporte', 'France exports') : _mT('la France importe', 'France imports'), day('exchanges', v => -v), '#7FC8F8');
+      if (ex != null) t(_mT('Échanges', 'Exchanges'), _mT('Solde à ', 'Balance at ') + hh, _mN(Math.abs(ex) / 1000, 1), 'GW', ex < 0 ? _mT('la France exporte', 'France exports') : _mT('la France importe', 'France imports'), day('exchanges', v => -v), '#7FC8F8', tnY(dY('exchanges', li), true, 300));
     }
   }
   // just after midnight RTE has nothing for the new day yet: say so instead of leaving the block empty
