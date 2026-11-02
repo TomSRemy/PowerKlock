@@ -100,6 +100,17 @@ jobs:
           BODY: "La veille du Journal officiel a repéré ${{ env.JORF_NEW }} nouveau(x) texte(s) sur l'arrêt aux prix négatifs (obligation d'achat, complément de rémunération, article 175 de la loi de finances 2025). Ils sont listés « à examiner » sous Prix › Prix négatifs › France · qui produit encore sous 0 €, et dans data/history/flex_watch.json. À reporter dans config/flex_rules.json avec la date vérifiée."
         run: python3 scripts/notify_failure.py || true
 
+      - name: E-mail when RTE's Bilan électrique could not be read as before
+        if: env.RTE_BILAN_MISSING != ''
+        env:
+          GO_GMAIL_USER: ${{ secrets.GO_GMAIL_USER }}
+          GO_GMAIL_APP_PASSWORD: ${{ secrets.GO_GMAIL_APP_PASSWORD }}
+          WORKFLOW: ${{ github.workflow }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          SUBJECT: "PowerKlock · Bilan électrique de RTE : un chiffre n'a pas été lu"
+          BODY: "Le job annuel du Bilan électrique de RTE n'a pas retrouvé certains chiffres (RTE a sans doute changé une formulation) : ${{ env.RTE_BILAN_MISSING }}. Rien n'a été deviné : la case reste vide sur Système électrique › Bilan électrique. Une formulation est à ajouter dans scripts/fetch_rte_bilan.py."
+        run: python3 scripts/notify_failure.py || true
+
       - name: E-mail when the scenario generator failed
         if: env.GEN_FAILED == '1'
         env:
