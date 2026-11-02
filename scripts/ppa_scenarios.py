@@ -420,6 +420,8 @@ STOP_GRID = (tuple(sorted(set([-500.0, -200.0, -100.0, -50.0, -20.0, -10.0, -5.0
 # +1.72 / 4.37 → +1.68 / 2.75, −1 € +1.92 / 3.90 → +1.22 / 2.65, +5 € −2.70 / 2.78 → +0.98 / 1.76; wind, anchored with
 # the T = 0 factor (a factor per T does worse, +5 € 2.67), −10 € −0.79 / 1.96 → −0.27 / 1.24, −1 € −0.48 / 1.77 → −0.15 /
 # 1.23, +5 € +0.50 / 1.67 → +0.54 / 1.74; T = 0 unchanged; generator +17 % run time. Off by default (2 Nov. 2026)
+# The analogue rules (KNNRule, MCKNNRule: the full Monte Carlo behind the risk premium) keep the same stats per T from
+# their analogue hours, so the yearly capture band exists at every T too (ppa_generator 'bandT'); TrendRule has none
 STOP_POT = os.environ.get('PK_STOP_POT') == '1'   # with STOP_GRID: also 'curtTp' / 'paidTp', the same captures weighted by
 # France's output without its stops at negative prices (rebuilt as scripts/build_flex_share.py does: wind bridged over
 # each negative block, solar from the month's clean-day shape), since a park that keeps producing below 0 produces what
@@ -438,6 +440,21 @@ def _tcell(p, r, w):
         k = p >= T
         tp[i] = (w * k).sum() / s
         tv[i] = (w * (p * (k & (p < 0)) if T <= 0 else r * k)).sum() / s
+    return tv, tp
+
+
+def _tstats(p, r, negv=None):
+    """the stop-grid stats of analogue hours, as _tcell for a cell: price p €, price ÷ cost r, shaped (n,) for one drawn
+    analogue per hour or (n, K) for K analogues averaged. Per T, (value part, chance p ≥ T), shaped (n, len(grid)): the €
+    part between T and 0 for T ≤ 0 (negv: that part in other units, e.g. ÷ the month's mean), the ratio paid at p ≥ T
+    above 0"""
+    negv = p if negv is None else negv
+    tv, tp = np.empty((p.shape[0], len(STOP_GRID))), np.empty((p.shape[0], len(STOP_GRID)))
+    neg = p < 0
+    for i, T in enumerate(STOP_GRID):
+        k = p >= T
+        v = negv * (k & neg) if T <= 0 else r * k
+        tv[:, i], tp[:, i] = (v.mean(-1), k.mean(-1)) if p.ndim == 2 else (v, k)
     return tv, tp
 
 
@@ -968,7 +985,7 @@ class KNNRule:
             # the 2022 crisis left out of the analogues (as of the weather pool): the year before takes its place
             ys = [y for y in years if y != 2022]
             years = ys if len(set(ys)) > 1 or 2021 not in L.DATA else sorted(set([2021] + ys)) + ys[-1:]
-        F = fuel_cost(); X, R, RP, PP, NG, RH = [], [], [], [], [], []
+        F = fuel_cost(); X, R, RP, PP, NG, RH, PE = [], [], [], [], [], [], []
         self.rule = RegimeRule(years, True, True) if KNN_HYB else None
         for y in years:
             a = L.DATA[y]
@@ -980,6 +997,7 @@ class KNNRule:
             ok = np.isfinite(c) & (c > 5) & np.isfinite(a['fr_p']) & np.isfinite(f).all(-1)
             r = a['fr_p'] / c
             X.append(f[ok]); R.append(r[ok]); RP.append(np.maximum(r, 0)[ok]); PP.append((r >= 0)[ok].astype(float)); NG.append(np.minimum(a['fr_p'], 0)[ok])
+            PE.append(a['fr_p'][ok])   # the hour's € price: the stop grid compares it with each T
             if self.rule is not None:
                 g_ = PriceModelFuel.groups(a['month'], [L.day_kind(d) for d in a['days']])
                 cc_ = np.where(np.isfinite(c), c, np.nanmean(c))
@@ -992,7 +1010,7 @@ class KNNRule:
             # the typical distance to the K analogues for a learnt hour (a sample), the yardstick of "outside the known"
             smp = Z[np.random.default_rng(1).choice(len(Z), min(3000, len(Z)), replace=False)]
             self.dref = float(np.median(self.tree.query(smp, k=KNN, workers=-1)[0].mean(1)))
-        self.R, self.RP, self.PP, self.NG = (np.concatenate(v) for v in (R, RP, PP, NG))
+        self.R, self.RP, self.PP, self.NG, self.PE = (np.concatenate(v) for v in (R, RP, PP, NG, PE))
         self.RH = np.concatenate(RH) if RH else None
 
     @staticmethod
@@ -1036,6 +1054,7 @@ class KNNRule:
             r, rp, pp, ng = outs
             rp = np.maximum(rp, 0); pp = np.clip(pp, 0, 1); ng = np.minimum(ng, 0)
             rh = None
+            src = pick   # the stop grid from the drawn analogue, carried to the local line's level by _tfinal
         elif KNN_DRAW:
             # one analogue per hour instead of their mean: each week (or day) of the scenario draws a rank in the
             # analogues' price distribution, shared by its hours (a dear or cheap week: outages, fuel, behaviour last),
@@ -1049,6 +1068,7 @@ class KNNRule:
             pick = ii[np.arange(len(ii)), order[np.arange(len(ii)), np.minimum((u * KNN).astype(int), KNN - 1)]]
             r, rp, pp, ng = (v[pick].reshape(sh) for v in (self.R, self.RP, self.PP, self.NG))
             rh = self.RH[pick].reshape(sh) if self.RH is not None else None
+            src = pick
         elif KNN_LL:
             # local linear: in each hour's analogues, a straight line of the price on the features, read at the hour
             Zn = self.Z[ii]; zq = q[:, None, :]
@@ -1063,9 +1083,19 @@ class KNNRule:
             r, rp, pp, ng = outs
             rp = np.maximum(rp, 0); pp = np.clip(pp, 0, 1); ng = np.minimum(ng, 0)
             rh = None
+            src = ii
         else:
             r, rp, pp, ng = (v[ii].mean(1).reshape(sh) for v in (self.R, self.RP, self.PP, self.NG))
             rh = self.RH[ii].mean(1).reshape(sh) if self.RH is not None else None
+            src = ii
+        if STOP_GRID:
+            # each T from the same analogue hours as the T = 0 values (the drawn one, or all K averaged), as a cell keeps
+            # them for its hours; m0, p0: the T = 0 values they go with, before the local line or the hybrid move them
+            # (_tfinal carries that move to every T)
+            K_ = len(STOP_GRID)
+            tv, tp = _tstats(self.PE[src], self.R[src])
+            tv, tp = tv.reshape(sh + (K_,)), tp.reshape(sh + (K_,))
+            m0, p0 = ((v[src].mean(1) if src.ndim == 2 else v[src]).reshape(sh) for v in (self.RP, self.PP))
         if rh is not None:
             # hybrid: the analogues moved by the rule's difference between the simulated hour and the analogues' own hours
             # (none where the future looks like the past; the rule extrapolates where it does not, e.g. more solar)
@@ -1077,6 +1107,7 @@ class KNNRule:
                 dlt = dlt * wgt
             rp = np.maximum(rp + dlt * pp, 0)
         cb = np.maximum(cost, 1.0) * np.ones(sh)
+        self._lastT = _tfinal(tv, tp, m0, p0, (rp + ng / cb, rp, pp), cost) if STOP_GRID else None
         return rp + ng / cb, rp, pp
 
     def pdec(self, g, need):
@@ -1114,24 +1145,24 @@ class MCKNNRule:
         for d in days:
             mo.setdefault(d[:7], []).append(P[d])
         mm = {k: np.nanmean(np.concatenate(v)) for k, v in mo.items()}
-        X, R = [], []
+        X, R, PE = [], [], []
         for d in days:
             s_, w_, n_, l_ = (np.nan_to_num(np.asarray(x, float)) for x in G[d]); p = P[d]
             if mm[d[:7]] <= 5 or (l_ <= 0).any():
                 continue
             f = self.feats(s_[None], w_[None], n_[None], l_[None], [int(d[5:7])])[0]
             ok = np.isfinite(p) & np.isfinite(f).all(-1)
-            X.append(f[ok]); R.append((p / mm[d[:7]])[ok])
-        return (np.concatenate(X), np.concatenate(R)) if X else (np.zeros((0, 7)), np.zeros(0))
+            X.append(f[ok]); R.append((p / mm[d[:7]])[ok]); PE.append(p[ok])
+        return (np.concatenate(X), np.concatenate(R), np.concatenate(PE)) if X else (np.zeros((0, 7)), np.zeros(0), np.zeros(0))
 
     def __init__(self, years):
         from scipy.spatial import cKDTree
         ys = [y for y in years if y != 2022] or list(years)
-        X, R = [], []
+        X, R, PE = [], [], []
         for c in KNN_MC.split(','):
             for y in ys:
-                x_, r_ = self.zone(c, y); X.append(x_); R.append(r_)
-        X = np.concatenate(X); self.R = np.concatenate(R)
+                x_, r_, p_ = self.zone(c, y); X.append(x_); R.append(r_); PE.append(p_)
+        X = np.concatenate(X); self.R = np.concatenate(R); self.PE = np.concatenate(PE)
         self.mu, self.sd = X.mean(0), X.std(0) + 1e-9
         self.tree = cKDTree((X - self.mu) / self.sd * self.W_)
 
@@ -1140,6 +1171,12 @@ class MCKNNRule:
         _, ii = self.tree.query(((f.reshape(-1, f.shape[-1]) - self.mu) / self.sd * self.W_), k=KNN, workers=-1)
         R = self.R[ii]; sh = x.shape
         rp, pp, rm = np.maximum(R, 0).mean(1).reshape(sh), (R >= 0).mean(1).reshape(sh), R.mean(1).reshape(sh)
+        if STOP_GRID:
+            # each T compared with the analogue's € price in its own zone, every part kept in shapes (÷ the month's mean),
+            # as the T = 0 values: no cost to divide by
+            K_ = len(STOP_GRID)
+            tv, tp = _tstats(self.PE[ii], R, R)
+            self._lastT = _tfinal(tv.reshape(sh + (K_,)), tp.reshape(sh + (K_,)), rp, pp, (rm, rp, pp), None)
         return rm, rp, pp   # shapes (÷ the month's mean): the capture is a ratio, the level cancels
 
     def pdec(self, g, need):
