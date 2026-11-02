@@ -66,7 +66,7 @@
   function lostChart() {
     const b = D.behaviour, ys = Object.keys(b);
     const ds = (lab, k, c) => ({ label: lab, data: ys.map(y => b[y][k].lostTWh), backgroundColor: c, borderWidth: 0, stack: 's' });
-    // RTE's own estimate, read from its yearly Bilan électrique (scripts/fetch_rte_bilan_curtail.py)
+    // RTE's own estimate, read from its yearly Bilan électrique (scripts/fetch_rte_bilan.py)
     const rte = (D.rte && D.rte.years) || {};
     _fuelChart('flex-lost', { type: 'bar', data: { labels: ys, datasets: [ds(T('Wind', 'Éolien'), 'wind', C.wind), ds(T('Large solar', 'Grand solaire'), 'solarLarge', C.large), ds(T('Small solar', 'Petit solaire'), 'solarSmall', C.small),
       { type: 'line', label: T('RTE estimate (Bilan électrique)', 'Estimation RTE (Bilan électrique)'), data: ys.map(y => rte[y] ? rte[y].total : null), showLine: false, pointStyle: 'rectRot', pointRadius: 6, borderColor: '#F4F1EA', backgroundColor: '#F4F1EA' }] },

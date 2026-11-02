@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
-"""RTE's own estimate of the wind and solar output given up at negative prices, read from its yearly Bilan électrique
-(Tom 2 Nov. 2026: no figure entered by hand; the Bilan is republished every year in the same form, so a job reads it).
+"""Figures only RTE publishes, read from its yearly Bilan électrique (Tom 2 Nov. 2026: no figure entered by hand; the
+Bilan is republished every year in the same form, so a job reads it; "si d'autres infos utiles dans ce rapport hésite
+pas à prendre"): the wind and solar output given up at negative prices, and for the Yearly review the downward
+adjustments RTE ordered on wind and solar, the emissions avoided abroad by French exports, the net value of exports,
+the life-cycle emissions and intensity of French production and the emissions of French consumption. Plus, from ODRÉ
+open data (consommation-annuelle-brute), RTE's gross and weather-corrected consumption.
 
 The publications page of RTE's analysis site lists every yearly Bilan (/bilan-electrique-YYYY/synthese); each one links
 its full report ("Rapport Complet", PDF). The report gives the year's estimate in a sentence of the price or production
@@ -17,6 +21,10 @@ Compared on Prices › Negative prices with the energy PowerKlock computes (scri
 an estimate against its own forecast of output without negative prices.
 
 Out  data/history/rte_curtailment.json  {"updated", "source", "years": {YYYY: {total, wind, solar, report, quote}}}
+     data/history/rte_bilan_figures.json {"updated", "source", "years": {YYYY: {resAdjTWh, avoidedMt, exportBn, lcaMt,
+                                           lcaG, consMt, report, loadGrossTWh, loadCorrTWh, loadStatus}}}
+RTE's direct emissions of production (10.9 Mt in 2025 against 10.0 computed by the site from éCO2mix) are not taken
+until the cause of the gap is written down (CLAUDE.md).
 """
 import io
 import json
@@ -29,6 +37,8 @@ from datetime import datetime, timezone
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, 'data', 'history', 'rte_curtailment.json')
+OUT2 = os.path.join(ROOT, 'data', 'history', 'rte_bilan_figures.json')
+ODRE = 'https://odre.opendatasoft.com/api/explore/v2.1/catalog/datasets/consommation-annuelle-brute/exports/json'
 SITE = 'https://analysesetdonnees.rte-france.com'
 NUM = r'(\d+(?:,\d+)?)'
 
@@ -76,14 +86,62 @@ def parse(text):
     return total, w, sol, quote, prev
 
 
+# the other figures: one or more wordings each (tested on the 2023–2025 reports), on the space-free text
+FIG = {
+    'resAdj': [r"RTEaréalisé" + NUM + r"(GWh|TWh)\d{0,2}d'ajustementàlabaisse",
+               r"ajustementsàlabaissesollicitésparRTEontconduitàécrêter" + NUM + r"(GWh|TWh)deproduction(?:solaireetéolienne|éolienneetsolaire)"],
+    'avoidedMt': [r"exportationsdelaFranceontpermisd'éviterl'émission(?:de)?(?:près|environ)?(?:de)?" + NUM + r"MtCO2eqenEurope",
+                  r"émissionsévitéesàl'étranger[^.]{0,120}?sesontélevéesà" + NUM + r"MtCO2eq"],
+    'exportBn': [r"valorisationnettetotaledesexportationsd'électricitédelaFrances'estélevéeà" + NUM + r"Md€",
+                 r"contribuéàréduirelafactureénergétiquenettesurl'annéed'environ" + NUM + r"Md€"],
+    'lcaMt': [r"cycledevie,lesémissionsliéesàlaproductiond'électricitéenFranceontatteint" + NUM + r"MtCO2eq",
+              r"émissionsattribuablesàlaproductiond'électricitéfrançaiseenanalysedecycledevieontétéde" + NUM + r"MtCO2eq",
+              r"cycledevie[^.]{0,160}?(?:ontatteint|ontétéde|sesontélevéesà)" + NUM + r"MtCO2eq"],
+    'lcaG': [r"(?:L'intensité(?:delaproduction)?,?aupérimètreducycledevie,?aatteint|L'intensitédelaproductionaatteint)" + NUM + r"gCO2eq/kWh"],
+    'consMt': [r"émissionsdirectesaupérimètredelaconsommationsesontélevéesà" + NUM + r"MtCO2eq",
+               r"émissionsliéesstrictementàlaconsommationfrançaised'électricitésesontélevéesà" + NUM + r"MtCO2"],
+}
+
+
+def figures(text):
+    t = re.sub(r'\s+', '', text).replace('’', "'").replace('\xad', '')
+    t = re.sub(r'[-–‑]', '', t).replace('éq', 'eq').replace('₂', '2')
+    out = {}
+    for k, pats in FIG.items():
+        for p in pats:
+            m = re.search(p, t)
+            if m:
+                v = fl(m.group(1))
+                if k == 'resAdj':
+                    out['resAdjTWh'] = round(v / 1000 if m.group(2) == 'GWh' else v, 4)
+                else:
+                    out[k] = v
+                break
+    return out
+
+
+def consumption():
+    """RTE's gross and weather-corrected consumption per year (ODRÉ), TWh"""
+    try:
+        rows = json.loads(get(ODRE + '?select=annee,consommation_brute_electricite_rte,consommation_corrigee_electricite_rte,statut_rte', 60))
+    except Exception as e:
+        print(f'::warning::ODRÉ consumption not read ({type(e).__name__})')
+        return {}
+    return {str(r['annee']): {'loadGrossTWh': round(r['consommation_brute_electricite_rte'] / 1000, 1) if r.get('consommation_brute_electricite_rte') else None,
+                              'loadCorrTWh': round(r['consommation_corrigee_electricite_rte'] / 1000, 1) if r.get('consommation_corrigee_electricite_rte') else None,
+                              'loadStatus': r.get('statut_rte')} for r in rows if r.get('annee')}
+
+
 def main():
     old = json.load(open(OUT)) if os.path.exists(OUT) else {}
     years = old.get('years', {})
+    old2 = json.load(open(OUT2)) if os.path.exists(OUT2) else {}
+    figs = old2.get('years', {})
     pub = get(SITE + '/publications', 60).decode('utf-8', 'ignore')
     found = sorted(set(re.findall(r'/bilan-electrique-(\d{4})/synthese', pub)))
     bad = []
     for y in found:
-        if y in years:
+        if y in years and y in figs and figs[y].get('report'):
             continue
         page = get(f'{SITE}/bilan-electrique-{y}/synthese', 60).decode('utf-8', 'ignore')
         pdfs = [u for u in re.findall(r'href="(https://assets\.rte-france\.com/[^"]+\.pdf)"', page) if re.search(r'(?i)rapport', u) and re.search(r'(?i)complet|rapport', u)]
@@ -100,6 +158,12 @@ def main():
                     pass
         except Exception as e:
             bad.append(f'{y}: report not read ({type(e).__name__})'); continue
+        f = figures(text)
+        if f:
+            figs.setdefault(y, {}).update(f, report=pdfs[0])
+            print(f'{y}: ' + ', '.join(f'{k} {v}' for k, v in f.items()))
+        if y in years:
+            continue
         total, w, s, q, prev = parse(text)
         for py, pv in prev.items():   # a year whose own report words it otherwise: the figure recalled by the next one
             if py not in years and py != y:
@@ -116,6 +180,13 @@ def main():
         json.dump({'updated': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
                    'source': 'RTE, Bilan électrique (full report, yearly), ' + SITE + '/publications',
                    'years': dict(sorted(years.items()))}, f, ensure_ascii=False, separators=(',', ':'))
+    for y, c in consumption().items():
+        if int(y) >= 2015:
+            figs.setdefault(y, {}).update(c)
+    with open(OUT2, 'w') as f:
+        json.dump({'updated': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
+                   'source': 'RTE, Bilan électrique (full report, yearly), ' + SITE + '/publications; ODRÉ consommation-annuelle-brute',
+                   'years': dict(sorted(figs.items()))}, f, ensure_ascii=False, separators=(',', ':'))
     for b in bad:
         print('::warning::' + b)
     print(f'{len(years)} year(s): ' + ', '.join(f"{k} {v['total']}" for k, v in sorted(years.items())))
