@@ -79,11 +79,8 @@
   // table or still to review
   function watch() {
     const W = D.watch, el = $('flex-watch'); if (!el) return;
-    const tx = W && W.texts ? Object.entries(W.texts) : [];
-    const upd = W && W.updated ? new Date(W.updated).toLocaleDateString(fr() ? 'fr-FR' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '–';
-    el.innerHTML = `<div class="fuel-note" style="margin:10px 0 4px">${T(`Journal officiel watch, read every week (last: ${upd}): new texts on stopping at negative prices.`, `Veille du Journal officiel, lue chaque semaine (dernière : ${upd}) : nouveaux textes sur l'arrêt aux prix négatifs.`)}</div>` +
-      (tx.length ? `<table class="flex-tbl"><tbody>` + tx.map(([cid, e]) => `<tr><td style="width:96px">${e.date}</td><td><a href="${e.url}" target="_blank" rel="noopener" style="color:#7FC8F8">${e.title}</a></td><td style="width:110px;color:${e.status === 'taken' ? 'var(--text3)' : '#FBBF24'}">${e.status === 'taken' ? T('in the table', 'dans le tableau') : T('to review', 'à examiner')}</td></tr>`).join('') + '</tbody></table>'
-        : `<div class="fuel-note">${T('No new text so far.', 'Aucun nouveau texte pour l’instant.')}</div>`);
+    const tx = W && W.texts ? Object.values(W.texts) : [], rv = tx.filter(e => e.status !== 'taken').length;
+    el.innerHTML = `<div class="fuel-note" style="margin:10px 0 4px">${T('Each obligation cites its text in the Journal officiel; the new texts are read every week in ', 'Chaque obligation cite son texte au Journal officiel ; les nouveaux textes sont lus chaque semaine dans ')}<a href="#intel/regulation" data-route="intel/regulation" style="color:#7FC8F8">${T('Intelligence › Events and changes', 'Veille › Évolutions et événements')}</a>${rv ? T(` (${rv} to review)`, ` (${rv} à examiner)`) : ''}.</div>`;
   }
 
   function note() {
