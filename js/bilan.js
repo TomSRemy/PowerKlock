@@ -16,7 +16,7 @@
     ['bio', ['Bioénergies', 'Bioenergy'], '#9BC46A'], ['gas', ['Gaz', 'Gas'], '#F07B6B'], ['coal', ['Charbon', 'Coal'], '#8D7B6A'], ['oil', ['Fioul', 'Oil'], '#B07A5A']];
   const BORDER = { GB: ['Grande-Bretagne', 'Great Britain'], CH: ['Suisse', 'Switzerland'], IT: ['Italie', 'Italy'], DE: ['Allemagne', 'Germany'], BE: ['Belgique', 'Belgium'], ES: ['Espagne', 'Spain'] };
   const L = a => T(a[0], a[1]);
-  let D = null, RM = null, RF = null, RC = null, year = null;
+  let D = null, RM = null, RF = null, RC = null, year = null, fcMode = false;
   const MON = () => T(['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'], ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']);
 
   async function render() {
@@ -29,7 +29,10 @@
     if (!D) { host.innerHTML = '<div class="fuel-note">' + T('Bilan indisponible.', 'Review not available.') + '</div>'; return; }
     const cur = D.current, y0 = String(cur.year);
     if (!year) year = y0;
-    const live = year === y0, A = D.years[year], B = live ? cur.prev_same_period : D.years[String(+year - 1)];
+    // the running year to its end (scripts/build_bilan.py 'forecast'): what is known plus the rest at this year's pace,
+    // against the whole of last year
+    const FC = year === y0 && fcMode && cur.forecast ? cur.forecast : null;
+    const live = year === y0 && !FC, A = FC || D.years[year], B = live ? cur.prev_same_period : D.years[String(+year - 1)];
     const to = new Date(D.to + 'T12:00:00Z').toLocaleDateString(T('fr-FR', 'en-GB'), { day: 'numeric', month: 'long', timeZone: 'UTC' });
     const vs = live ? T(`même période de ${+year - 1}`, `same period of ${+year - 1}`) : String(+year - 1);
     const yrs = Object.keys(D.years).sort().reverse();
@@ -65,9 +68,9 @@
         `Consumption ${S(pct(A.load, B.load), 1, ' %')}, net ${A.net_export >= 0 ? 'exports' : 'imports'} ${N(Math.abs(A.net_export), 1)} TWh. Average spot ${N(sp.avg, 1)} €/MWh (${S(pct(sp.avg, bsp.avg), 0, ' %')}), ${N(sp.neg_h, 0)} negative-price hours (${N(bsp.neg_h, 0)} in the ${live ? 'same period of' : 'year'} ${+year - 1}).`) : '';
     host.setAttribute('translate', 'no');
     host.innerHTML = `
-      <div class="bl-head"><div><h1 class="bl-h1">${T('Bilan électrique', 'Power system review')} ${year}${live ? T(', à date', ', to date') : ''}</h1>
-        <p class="bl-sub">${live ? T(`Du 1er janvier au ${to} ${year}, comparé à la ${vs} · mis à jour chaque jour`, `1 January to ${to} ${year}, against the ${vs} · updated daily`) : T(`Année complète, comparée à ${vs}`, `Full year, against ${vs}`)}</p></div>
-        <div class="bl-yrs">${yrs.map(y => `<button type="button" class="bl-y${y === year ? ' on' : ''}" data-y="${y}">${y === y0 ? y + T(' à date', ' to date') : y}</button>`).join('')}</div></div>
+      <div class="bl-head"><div><h1 class="bl-h1">${T('Bilan électrique', 'Power system review')} ${year}${live ? T(', à date', ', to date') : FC ? T(' prévisionnel', ' forecast') : ''}</h1>
+        <p class="bl-sub">${FC ? T(`Réalisé jusqu’au ${to}, puis la fin de l’année au rythme de ${year} (chaque volume × ${year} à date ÷ la même période de ${+year - 1}) ; spot des mois restants à leur forward ; comparé à l’année ${+year - 1} entière. Le Bilan de RTE paraît début ${+year + 1}.`, `Known up to ${to}, then the rest of the year at ${year}’s pace (each volume × ${year} to date ÷ the same period of ${+year - 1}); spot of the months left at their forward; against the whole of ${+year - 1}. RTE’s Bilan comes out early ${+year + 1}.`) : live ? T(`Du 1er janvier au ${to} ${year}, comparé à la ${vs} · mis à jour chaque jour`, `1 January to ${to} ${year}, against the ${vs} · updated daily`) : T(`Année complète, comparée à ${vs}`, `Full year, against ${vs}`)}</p></div>
+        <div class="bl-yrs">${yrs.map(y => `<button type="button" class="bl-y${y === year && !(y === y0 && FC) ? ' on' : ''}" data-y="${y}">${y === y0 ? y + T(' à date', ' to date') : y}</button>`).join('')}${cur.forecast ? `<button type="button" class="bl-y bl-fc${FC ? ' on' : ''}" data-fc="1" title="${T('Le réalisé à date plus la fin de l’année au rythme de cette année ; le spot des mois restants à leur forward', 'What is known so far plus the rest of the year at this year’s pace; the spot of the months left at their forward')}">${y0} ${T('prévisionnel', 'forecast')}</button>` : ''}</div></div>
       <div class="bl-kpis">
         ${kpi(T('Consommation', 'Consumption'), N(A.load, 1), 'TWh', `${ch(A.load, B && B.load)} · ${T('pointe', 'peak')} ${N(A.peak_gw, 1)} GW`, tn(pct(A.load, B && B.load), true, 0.05))}
         ${kpi(T('Production', 'Production'), N(A.production, 1), 'TWh', `${ch(A.production, B && B.production, 1, ' %', false)} vs ${vs}`, tn(pct(A.production, B && B.production), false, 0.05))}
@@ -98,7 +101,7 @@
       <section class="bl-blk" id="bl-rm"></section>
       <section class="bl-blk"><div class="bl-t"><h2>${T('Jalons réglementaires de l’année', 'Regulatory milestones of the year')}</h2><a class="bl-src" href="#intel/regulation" data-route="intel/regulation">${T('Veille réglementaire ›', 'Regulatory watch ›')}</a></div><ul class="bl-reg" id="bl-reg"></ul></section>
       <p class="bl-foot">${T('Méthode : sommes des données quotidiennes de RTE (éCO2mix consolidé puis temps réel) et des prix day-ahead ENTSO-E. Vérifié sur 2025 contre le Bilan électrique de RTE : nucléaire ', 'Method: sums of RTE’s daily data (éCO2mix consolidated then real time) and ENTSO-E day-ahead prices. Checked on 2025 against RTE’s Bilan électrique: nuclear ')}${N(D.check_2025.nuclear[0], 1)} TWh (RTE ${N(D.check_2025.nuclear[1], 1)}), ${T('production', 'production')} ${N(D.check_2025.production[0], 1)} (${N(D.check_2025.production[1], 1)}), ${T('solde exportateur', 'net exports')} ${N(D.check_2025.net_export[0], 1)} (${N(D.check_2025.net_export[1], 1)}), spot ${N(D.check_2025.spot[0], 1)} € (${N(D.check_2025.spot[1], 0)}), ${T('heures négatives', 'negative hours')} ${N(D.check_2025.neg_h[0], 0)} (${N(D.check_2025.neg_h[1], 0)}). ${T('La consommation est brute (RTE publie aussi une consommation corrigée de la météo) ; toutes les bioénergies comptent comme bas carbone ; les heures au-dessus de 100 € sont comptées sur les pas publiés (heure, puis quart d’heure depuis octobre 2025), RTE en compte 1 807 en 2025 contre 1 580 ici. Les émissions sont le taux de CO₂ d’éCO2mix appliqué à la production : 10,0 Mt en 2025, RTE publie 10,9 Mt dans son bilan (périmètre plus large).', 'Consumption is raw (RTE also publishes a weather-corrected figure); all bioenergy counts as low-carbon; hours above 100 € are counted on the published steps (hour, then quarter-hour since October 2025), RTE counts 1,807 in 2025 against 1,580 here. Emissions are éCO2mix’s CO₂ rate applied to production: 10.0 Mt in 2025, RTE’s review gives 10.9 Mt (wider scope).')}</p>`;
-    host.querySelectorAll('.bl-y').forEach(b => b.addEventListener('click', () => { year = b.dataset.y; render(); }));
+    host.querySelectorAll('.bl-y').forEach(b => b.addEventListener('click', () => { if (b.dataset.fc) { year = y0; fcMode = true; } else { year = b.dataset.y; fcMode = false; } render(); }));
     charts(A, B, live, vs);
     rteCharts();
     residual();
