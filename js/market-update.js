@@ -276,12 +276,12 @@ _muReg({
   id: 'fr-cal-drivers', title: 'Cal+1 and its drivers', category: 'forwards', page: 'prices', pageCanvas: 'cal-drivers', source: 'Market data',
   desc: 'A market’s Cal+1 baseload against its drivers: TTF gas of the same calendar year, EUA carbon, API2 coal Cal+1 and Brent oil, indexed to 100 at the start of the window.',
   titleFn: p => 'Cal+1 ' + (MU_FWD.options.find(o => o[0] === p.country) || ['', 'France'])[1] + ' and its drivers',
-  params: [MU_FWD, { key: 'win', label: 'Window', options: [['3M', '3 months'], ['6M', '6 months'], ['1Y', '1 year'], ['3Y', '3 years']] }], defaults: { win: '6M', country: 'FR' },
+  params: [MU_FWD, { key: 'win', label: 'Window', options: [['1M', '1 month'], ['3M', '3 months'], ['6M', '6 months'], ['1Y', '1 year'], ['3Y', '3 years'], ['All', 'All']] }], defaults: { win: '6M', country: 'FR' },
   async draw(cid, p) {
     const [c, cs] = await Promise.all([_muGet('chain', 'history/fr_market_calchain.json'), _muGet('cs', 'history/commodities_series.json')]);
     const cc = p.country || 'FR', yrs = c && c[cc] && c[cc].years, ser = cs && cs.series;
     if (!yrs || !ser) { noDataMsg(cid, 'Data not available', ''); return null; }
-    const from = _muAdd(_muToday(), -({ '3M': 92, '6M': 183, '1Y': 366, '3Y': 1096 }[p.win] || 183));
+    const from = p.win === 'All' ? '0000-00-00' : _muAdd(_muToday(), -({ '1M': 31, '3M': 92, '6M': 183, '1Y': 366, '3Y': 1096 }[p.win] || 183));
     const k = Object.keys(yrs).sort()[0];
     const cal = new Map(yrs[k].dates.map((d, i) => [d, yrs[k].values[i]]));
     const pts = key => new Map(((ser[key] || {}).points || []).filter(([d]) => d >= from));
@@ -296,7 +296,7 @@ _muReg({
       _fuelLineDs('EUA', idx(eua), '#5FA8D3', { borderWidth: 1.5, spanGaps: true }),
       _fuelLineDs('Coal API2 Cal+1', idx(coal), '#94A3B8', { borderWidth: 1.4, spanGaps: true }),
       _fuelLineDs('Brent', idx(oil), '#E6EDF3', { borderWidth: 1.2, borderDash: [4, 3], spanGaps: true }),
-    ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('index, start = 100') }, plugins: { legend: _muLegend() } }) }, 'cal-drivers');
+    ] }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('index, start = 100') }, plugins: { legend: _muLegend(), zoom: ZOOM_CFG } }) }, 'cal-drivers');
     return { sub: 'Indexed to 100 on ' + dates[0] };
   },
 });
@@ -648,7 +648,7 @@ window.PKSpot = {
     });
     // period buttons in each card's header (the history goes back to 2022)
     PKW.periodButtons('cal-history', [['3M', '3M'], ['6M', '6M'], ['1Y', '1Y'], ['3Y', '3Y'], ['all', 'All']], W.h, v => { W.h = v; hist(); });
-    PKW.periodButtons('cal-drivers', [['3M', '3M'], ['6M', '6M'], ['1Y', '1Y'], ['3Y', '3Y']], W.d, v => { W.d = v; drv(); });
+    PKW.periodButtons('cal-drivers', [['1M', '1M'], ['3M', '3M'], ['6M', '6M'], ['1Y', '1Y'], ['3Y', '3Y'], ['All', _muT('Tout', 'All')]], W.d, v => { W.d = v; drv(); });
   },
   outlook() {
     const sel = document.getElementById('wx-country');
