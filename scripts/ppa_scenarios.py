@@ -409,7 +409,7 @@ def _wm(v, w):
 
 
 _SG = os.environ.get('PK_STOP_GRID', '')
-STOP_GRID = (tuple(sorted(set([-20.0, -10.0, -5.0, -2.0, -1.0, 0.0, 0.01, 5.0, 10.0]))) if _SG == '1' else
+STOP_GRID = (tuple(sorted(set([-500.0, -200.0, -100.0, -50.0, -20.0, -10.0, -5.0, -2.0, -1.0, -0.5, -0.2, -0.1, 0.0, 0.01, 0.1, 0.2, 0.5, 1.0, 2.0, 5.0, 10.0, 20.0, 50.0]))) if _SG == '1' else
              tuple(sorted(set(float(v) for v in _SG.split(',') if v.strip()) | {0.0})) if _SG else None)
 # test (Tom 2 Nov. 2026: price any stop threshold T "with cells like the rest"): each cell also keeps, for each T of the
 # grid, the chance the price is ≥ T and the part of the price paid at ≥ T, so simulate() gives the capture and paid share

@@ -79,7 +79,7 @@
     // less than the TSO's over the last 12 months (imbc.use, scripts/fetch_fr_imbalance_cost.py), else the TSO's
     if (imbc && imbc.months) ['solar', 'wind'].forEach(k => { const all = Object.keys(imbc.months).filter(m => imbc.months[m][k]).sort().slice(-12), withO = all.filter(m => imbc.months[m][k].ours), own = withO.length >= 3 && (!imbc.use || imbc.use[k] === 'ours'), ms = own ? withO : all; let c = 0, e = 0; ms.forEach(m => { const x = own ? imbc.months[m][k].ours : imbc.months[m][k]; c += x.costEur; e += x.mwh; }); if (ms.length >= 3 && e > 0) imbCost[k] = { v: c / e, n: ms.length, from: ms[0], to: ms[ms.length - 1], own }; });
     const fwdRows = ((mkt && mkt.forwardCurve) || []).filter(r => r.value != null).map(r => ({ contract: r.contract, value: r.value }));
-    D = { hc: hcan || null, cc: (ccap && ccap.countries) || null, fwdRows, imbCost, cap: (cap && cap.days) || [], ix, profile: (cap && cap.profile) || {}, stopT: (cap && cap.stopT) || null, capGW, fwd, fwdDate: mkt && mkt.forwardCurve && mkt.forwardCurve[0] && mkt.forwardCurve[0].date, go, fwdVol, fwdVolN, volTerm,
+    D = { hc: hcan || null, cc: (ccap && ccap.countries) || null, fwdRows, imbCost, cap: (cap && cap.days) || [], ix, profile: (cap && cap.profile) || {}, capGW, fwd, fwdDate: mkt && mkt.forwardCurve && mkt.forwardCurve[0] && mkt.forwardCurve[0].date, go, fwdVol, fwdVolN, volTerm,
       fcst: fcst || null, fwRatio: (fwm && fwm.ratios && fwm.ratios.year) || null, fwM: (fwm && fwm.months) || null, bias: pbias || null };
     D.weights = await pwts;
     // hours with a day-ahead price at or below zero, per year (YTD annualised): the hours the PPA Dashboard convention leaves unpaid
@@ -107,7 +107,7 @@
 <ol>
 <li><b>Prix horaires.</b> Le prix de chaque heure ÷ la moyenne du mois, en fonction de la charge résiduelle de la France, de l’Allemagne, de la Belgique et de l’Espagne ensemble (consommation − solaire − éolien − nucléaire, ÷ consommation), par saison × moment de la journée, appris sur les cinq dernières années complètes (banc d’essai, scripts/ppa_lab.py). Le parc de chaque année de livraison est posé sur chaque année météo passée : la cannibalisation sort des prix horaires, pas d’une tendance. La consommation et le nucléaire viennent de la dernière année complète, du jour de même type le plus proche (jour ouvré, samedi, dimanche ou férié), pour que les heures à prix < 0 tombent sur les bons jours (scripts/ppa_calendar_test.py).</li>
 <li><b>Capture des années du ténor</b>, mois par mois (data/history/ppa_forecast.json, mis à jour chaque dimanche), pondérée par la production de chaque mois (× sa part payée quand la production est arrêtée aux prix < 0) et par le forward de chaque mois ÷ Cal (mois coté, sinon trimestre, saison, puis Cal découpé par l’historique) : ${caps || 'pas de prévision pour ce ténor (le banc d’essai s’arrête en 2030)'}.</li>
-<li><b>Seuil d’arrêt autre que 0 €.</b> Le générateur prix à l’arrêt sous 0 € ; pour un seuil T, chaque mois prend le rapport capture (et part payée) à T ÷ à 0, mesuré au quart d’heure sur la dernière année qui a ce mois (l’année en cours comprise). Sous 0, l’écart grandit d’année en année (les heures à −0,01 € depuis le marché au quart d’heure : solaire, arrêt à −1 € contre 0 €, −2,2 % en 2023, −5,0 % en 2024, −11,2 % en 2025, −14,0 % en 2026, janvier–octobre) : il est porté à l’année livrée avec sa hausse sur l’année d’avant, amortie (×1, ×1,5, ×1,75 à 1, 2, 3 ans). Les rapports sont pris sur la production reconstruite sans arrêts : un parc qui tourne jusqu’au seuil produit à plein dans ces heures, alors que la production nationale y est déjà réduite par les parcs qui s’arrêtent. Rejeu 2023–2026 (scripts/ppa_threshold_test.py) : solaire à −1 / −5 € trop haut de 2,2 / 2,2 €/MWh en moyenne, contre 4,9 / 5,5 avant ; éolien −0,2 / −0,4 contre +1,5 / +1,6. Au-dessus de 0, le niveau de la dernière année.</li>
+<li><b>Seuil d’arrêt autre que 0 €</b> (au dixième d’euro, « sous » ou « à ou sous » la valeur) : le générateur calcule lui-même, dans chacune de ses cases, la chance que le prix soit au moins au seuil et ce qu’il paie alors ; chaque mois a ainsi sa capture et sa part payée à chaque seuil d’une grille fine autour de 0 (−500 à +50 €), lues entre deux points, avec le même ancrage qu’à 0. Rejeu 2023–2026 (scripts/ppa_stopgrid_test.py) : solaire à −1 € 2,7 €/MWh d’écart moyen contre 3,9 avec l’ancienne règle par rapport. Limite connue : il apprend sur les deux dernières années complètes, où les prix négatifs étaient plus profonds ; sous 0, le prix est probablement un peu haut jusqu’à ce que 2026 entre dans l’apprentissage en janvier 2027 (de l’ordre de 4 à 5 €/MWh en solaire, 2,5 en éolien, sur les livraisons 2026).</li>
 <li><b>Prix du PPA</b> = Σ poids × forward Cal × capture − la prime de risque de la tendance de capacité (même Monte Carlo, ${f2(o.premium)} €/MWh) − décote additionnelle − écarts + GO − marge${o.eu ? ` = <code>${f2(o.ppaEu)} €/MWh</code>` : ''}, pour comparer les méthodes à l’identique.</li>
 <li><b>Correction de biais.</b>${biasLine(o, 'regional')}</li>
 <li><b>Flexibilité et voisins.</b> Éolien : les batteries ajoutées depuis la dernière année complète chargent aux heures de charge résiduelle la plus basse de la région et rendent 85 % aux plus hautes, chaque jour. France au-delà des ~0,7 GW qui servent les réserves (Bilan prévisionnel 2025 de RTE : socle +0,3 GW par an, 2 h, puis +5 GW d’ici 2035, 4 h) ; Allemagne selon le parc d’Energy-Charts, compté à 50 % (surtout des batteries domestiques). Les classes de niveau de prix (sous 60 €, 60–110, au-dessus) se fondent progressivement à ±15 € des seuils. Solaire : ni l’un ni l’autre, ils dégradaient l’erreur rejouée (scripts/ppa_storage_test.py, scripts/ppa_level_soft_test.py). L’Espagne et l’Allemagne ne dépassent pas la trajectoire vers leurs objectifs 2030 (PNIEC : 76 GW solaire, 62 GW éolien ; EEG : 215 GW solaire, 145 GW éolien).</li>
@@ -116,7 +116,7 @@
 <ol>
 <li><b>Hourly prices.</b> The price of each hour ÷ the month’s average, as a function of the residual load of France, Germany, Belgium and Spain together (consumption − solar − wind − nuclear, ÷ consumption), by season × time of day, learnt on the last five complete years (test bench, scripts/ppa_lab.py). The fleet of each delivery year is put over every past weather year, so cannibalisation comes out of the hourly prices, not out of a trend. Consumption and nuclear come from the last complete year, on the nearest day of the same kind (weekday, Saturday, Sunday or public holiday), so the hours at prices < 0 fall on the right days (scripts/ppa_calendar_test.py).</li>
 <li><b>Capture of the tenor years</b>, month by month (data/history/ppa_forecast.json, updated every Sunday), weighted by each month’s output (× its paid share when output stops at prices < 0) and by each month’s forward ÷ Cal (the month quoted, else its quarter, season, then the Cal shaped by history): ${caps || 'no forecast for this tenor (the test bench stops in 2030)'}.</li>
-<li><b>Stop threshold other than 0 €.</b> The generator prices a stop below 0 €; for a threshold T, each month takes the ratio of capture (and paid share) at T to at 0, measured on quarter-hours over the latest year that has this month (the running year included). Below 0 the gap grows year after year (the −0.01 € hours since the quarter-hour market: solar, stop at −1 € against 0 €, −2.2 % in 2023, −5.0 % in 2024, −11.2 % in 2025, −14.0 % in 2026, January–October): it is carried to the delivery year with its rise on the year before, damped (×1, ×1.5, ×1.75 at 1, 2, 3 years). The ratios are taken on the output rebuilt without stops: a park running down to the threshold produces in full in those hours, while the national output there is already cut by the parks that stop. Replay 2023–2026 (scripts/ppa_threshold_test.py): solar at −1 / −5 € too high by 2.2 / 2.2 €/MWh on average, against 4.9 / 5.5 before; wind −0.2 / −0.4 against +1.5 / +1.6. Above 0, the latest year’s level.</li>
+<li><b>Stop threshold other than 0 €</b> (to 0.1 €, “below” or “at or below” the value): the generator works out itself, in each of its cells, the chance the price is at least the threshold and what it pays then; each month thus has its capture and paid share at each threshold of a grid fine around 0 (−500 to +50 €), read between two points, with the same anchoring as at 0. Replay 2023–2026 (scripts/ppa_stopgrid_test.py): solar at −1 € 2.7 €/MWh mean gap against 3.9 with the former ratio rule. Known limit: it learns on the last two complete years, when negative prices were deeper; below 0 the price is probably a little high until 2026 enters the learning in January 2027 (about 4 to 5 €/MWh for solar, 2.5 for wind, on the 2026 deliveries).</li>
 <li><b>PPA price</b> = Σ weight × Cal forward × capture − the capacity trend’s risk premium (same Monte Carlo, ${f2(o.premium)} €/MWh) − additional discount − imbalance + GO − margin${o.eu ? ` = <code>${f2(o.ppaEu)} €/MWh</code>` : ''}, so the methods compare like for like.</li>
 <li><b>Bias correction.</b>${biasLine(o, 'regional')}</li>
 <li><b>Flexibility and neighbours.</b> Wind: the batteries added since the last complete year charge in the region’s lowest residual-load hours and give back 85 % in the highest, every day. France beyond the ~0.7 GW serving reserves (RTE Bilan prévisionnel 2025: base +0.3 GW a year, 2 h, then +5 GW by 2035, 4 h); Germany from Energy-Charts’ fleet, counted at 50 % (mostly home batteries). The price-level classes (below 60 €, 60–110, above) blend gradually within ±15 € of the thresholds. Solar: neither, they made the replayed error worse (scripts/ppa_storage_test.py, scripts/ppa_level_soft_test.py). Spain and Germany do not go beyond the path to their 2030 targets (PNIEC: 76 GW solar, 62 GW wind; EEG: 215 GW solar, 145 GW wind).</li>
@@ -187,49 +187,27 @@
       return { g: wM > 0 && aA > 0 ? (aM / wM) / (aA / wA) : 1, sh };
     });
   }
-  // a stop threshold T other than 0 (the park stops when the price is below T, Tom 1 Nov. 2026): each month's capture and
-  // paid share × their ratio at T ÷ at 0 (scripts/build_fr_capture.py stopT, year by year), interpolated between the
-  // grid's thresholds; 1 at T = 0 or when not stopping
-  // the stop threshold the park applies: below T, or at T and below when 'stopEq' (an hour at exactly T stopped too: the
-  // rule until 1 Nov. 2026 at 0 €, still common in contracts); the grids carry 0.01 for that step at 0
+  // a stop threshold T other than 0 (the park stops when the price is below T, or at T and below with 'stopEq'): the
+  // scenario generator's own cells give each month's capture and paid share at every threshold of a grid fine around 0
+  // (scripts/ppa_generator.py 'generatorT' / 'generatorPaidT', Tom 2 Nov. 2026: "with cells like the rest", any threshold
+  // to 0.1 €), read between two grid points; stopping at T too moves it by 0.01 (at 0 €: the hours at exactly 0 stopped,
+  // the rule until 1 Nov. 2026)
   const stopTeff = st => { const T = +st.stopT || 0; return st.stopEq ? T + 0.01 : T; };
-  function stopRatio(st, m, y) {
-    const T = stopTeff(st), Z = D.stopT;
-    if (!T || !isFinite(T) || (st.conv !== 'curt' && st.conv !== 'part') || !Z || !Z[st.tech]) return { c: 1, p: 1 };
-    // between −1 and 0 the step is not linear: almost every hour there is at −0.01 €, so any threshold below 0 takes them in
-    const g = Z.grid, t = clamp(T < 0 && T > -1 && g.includes(-1) ? -1 : T, g[0], g[g.length - 1]); let i = 0; while (i < g.length - 2 && g[i + 1] < t) i++;
-    const w = (t - g[i]) / (g[i + 1] - g[i]), at = (X, k, j) => { const v = X[k][String(g[j])][m - 1]; return v == null ? 1 : v; };
-    const lin = (X, k) => at(X, k, i) * (1 - w) + at(X, k, i + 1) * w;
-    const Zt = Z[st.tech], BY = Zt.byYear;
-    // below 0, the hours just under 0 € grow year after year (the −0.01 € hours since the quarter-hour market): the
-    // capture's gap to a stop at 0 is taken from the latest year that has this month (the running year's months
-    // included), plus its change on the year before, damped (half as much each further year: 1, 1.5, 1.75 times the
-    // change at 1, 2, 3 years). The ratios are taken on the output rebuilt without stops (scripts/build_fr_capture.py).
-    // Replay 2023–2026 against a park running down to T (scripts/ppa_threshold_test.py): solar at −1 / −5 € +2.2 / +2.2
-    // €/MWh off on average, against +4.9 / +5.5 with the two years' level on the national output; wind −0.2 / −0.4
-    // against +1.5 / +1.6. Above 0 the trend does worse: the latest year's level
-    if (BY && y != null) {
-      const ys = Object.keys(BY).map(Number).sort((a, b) => b - a).filter(k => BY[k].capture[String(g[i])] && BY[k].capture[String(g[i])][m - 1] != null);
-      if (ys.length) {
-        const A = BY[ys[0]], h = Math.max(1, y - ys[0]);
-        if (T < 0 && ys.length >= 2) {
-          const B = BY[ys[1]], gA = 1 - lin(A, 'capture'), d = (gA - (1 - lin(B, 'capture'))) / Math.max(1, ys[0] - ys[1]);
-          return { c: clamp(1 - Math.max(0, gA + d * (2 - Math.pow(0.5, h - 1))), 0.5, 1), p: lin(A, 'paid') };
-        }
-        return { c: lin(A, 'capture'), p: lin(A, 'paid') };
-      }
-    }
-    return { c: lin(Zt, 'capture'), p: lin(Zt, 'paid') };
-  }
-  // the generator's capture and paid share of a month at the stop threshold, read on its grid (between −1 and 0 the
-  // step is not linear: −1); null at 0, without a threshold or without the grid
   function genAtT(st, e) {
     const T = stopTeff(st), G = e && e.generatorT, P = e && e.generatorPaidT;
     if (!T || !isFinite(T) || !G || !P) return null;
     const g = Object.keys(G).map(Number).filter(x => P[String(x)] != null).sort((a, b) => a - b); if (g.length < 2) return null;
-    const t = clamp(T < 0 && T > -1 && g.includes(-1) ? -1 : T, g[0], g[g.length - 1]); let i = 0; while (i < g.length - 2 && g[i + 1] < t) i++;
+    const t = clamp(T, g[0], g[g.length - 1]); let i = 0; while (i < g.length - 2 && g[i + 1] < t) i++;
     const w = (t - g[i]) / (g[i + 1] - g[i]), at = (X, j) => X[String(g[j])];
     return { c: at(G, i) * (1 - w) + at(G, i + 1) * w, p: at(P, i) * (1 - w) + at(P, i + 1) * w };
+  }
+  // the same as a ratio to the stop at 0, for the methods that are not the generator (their capture × it); 1 at 0, when
+  // not stopping, or for a month the generator does not cover
+  function stopRatio(st, m, y) {
+    if (!stopTeff(st) || (st.conv !== 'curt' && st.conv !== 'part')) return { c: 1, p: 1 };
+    const f = D.fcst && D.fcst.forecast && D.fcst.forecast[st.tech] && D.fcst.forecast[st.tech].curt, e = f && f[`${y}-${String(m).padStart(2, '0')}`];
+    const g = genAtT(st, e), g0 = e && e.generatorT && e.generatorT['0'], p0 = e && e.generatorPaidT && e.generatorPaidT['0'];
+    return g && g0 > 0 && p0 > 0 ? { c: g.c / g0, p: g.p / p0 } : { c: 1, p: 1 };
   }
   // the same over a year, weighted by the national output of each month
   function stopRatioYear(st, y) {
@@ -278,8 +256,8 @@
         if (Mo && !Mo.includes(m)) continue;   // a year delivered in part: its months only
         const e = f[`${y}-${String(m).padStart(2, '0')}`];
         if (!e || e[fld] == null || ratio[m] == null) return null;
-        // the generator's own capture and paid share at the stop threshold, from its cells (scripts/ppa_generator.py
-        // 'generatorT', since 2 Nov. 2026), else the month's ratio at that threshold ÷ at 0 (stopRatio)
+        // the generator's own capture and paid share at the stop threshold, from its cells; the other methods take its
+        // ratio to the stop at 0 (stopRatio)
         const gT = fld === 'generator' && conv === 'curt' ? genAtT(st, e) : null;
         const sr = gT ? { c: 1, p: 1 } : stopRatio(st, m, y), pd = gT ? gT.p : (e[fld + 'Paid'] != null ? e[fld + 'Paid'] : e.paid), cv = gT ? gT.c : e[fld];
         const w = sh(m) * (conv === 'curt' ? pd * sr.p : 1);
@@ -580,6 +558,13 @@
     o.gen = euYears(o, st, 'generator');
     o.genFair = o.gen ? years.reduce((a, r, i) => a + r.wt * r.fwd * o.gen[i].capture, 0) : null;
     o.genProf = o.gen && o.gen.every(x => x.prof != null) ? years.reduce((a, r, i) => a + r.wt * r.fwd * o.gen[i].prof, 0) : null;
+    // the same park stopping at 0 € (the published rule), to show what the threshold changes: one line of the
+    // summary waterfall, not a separate charge (the price at the threshold is computed directly)
+    o.genFair0 = null;
+    if (o.gen && stopTeff(st) && (st.conv === 'curt' || st.conv === 'part')) {
+      const g0 = euYears(o, Object.assign({}, st, { stopT: 0, stopEq: false }), 'generator');
+      if (g0) o.genFair0 = years.reduce((a, r, i) => a + r.wt * r.fwd * g0[i].capture, 0);
+    }
     // model risk (scripts/ppa_model_risk.py): the generator's past errors on the capture, replayed 1–3 years ahead from
     // 2023; the forwards × their 75th percentile come off, so the price would not have been above the realised value in
     // 3 cases out of 4. Taken off only when the model has erred on the high side
@@ -591,7 +576,14 @@
     const BAND = D.fcst && D.fcst.generator && D.fcst.generator.band && D.fcst.generator.band[st.tech];
     o.premiumGen = null; o.sigGen = null; o.premVolGen = null; o.liqRisk = null; o.premNoPrice = null;
     if (o.gen && BAND && o.mc) {
-      const sg = years.map(r => { const b = BAND[String(r.y)]; return b && b.p50 != null && b.p25 != null && b.p50 > b.p25 ? (b.p50 - b.p25) / 0.6745 / Math.sqrt(Math.max(1, r.y - o.lastYr)) : null; }).filter(v => v != null);
+      // at a stop threshold other than 0 the full Monte Carlo's band at that threshold ('bandT', read between two grid
+      // points), so the premium is the threshold's own
+      const BT = stopTeff(st) && D.fcst.generator.bandT && D.fcst.generator.bandT[st.tech];
+      const bandOf = y => { const B = BT && BT[String(y)]; if (!B) return BAND[String(y)]; const T = stopTeff(st), g = Object.keys(B).map(Number).sort((a, b) => a - b);
+        if (g.length < 2) return BAND[String(y)]; const t = clamp(T, g[0], g[g.length - 1]); let i = 0; while (i < g.length - 2 && g[i + 1] < t) i++;
+        const w = (t - g[i]) / (g[i + 1] - g[i]), a = B[String(g[i])], b = B[String(g[i + 1])];
+        return { p25: a.p25 * (1 - w) + b.p25 * w, p50: a.p50 * (1 - w) + b.p50 * w }; };
+      const sg = years.map(r => { const b = bandOf(r.y); return b && b.p50 != null && b.p25 != null && b.p50 > b.p25 ? (b.p50 - b.p25) / 0.6745 / Math.sqrt(Math.max(1, r.y - o.lastYr)) : null; }).filter(v => v != null);
       if (sg.length) {
         o.sigGen = mean(sg); const mg = simulate(Object.assign({}, o, { sig0: o.sigGen }), st); o.premiumGen = fair - qtl(mg.Us, alpha / 100);
         // the volume risk's share: the premium less the same Monte Carlo with the production held at its P50
@@ -743,7 +735,7 @@
     'pp-file': 'Hourly or 15-minute production of the asset (CSV or Excel). The price then reflects this asset; without it the national profile is used.',
     'pp-model': 'How the discount is carried into the future: with the installed capacity (PPE3 targets), flat at the last year, or a trend.',
     'pp-pct': 'Past-discount method only: which percentile of the past discounts is used. Projected mode: the trend is shifted by this percentile minus the median. Higher = more cautious.',
-    'pp-stopt': 'The park stops when the day-ahead price is below this value (or at it and below, with “at or below”): 0 by default, an hour at exactly 0 produced and paid 0, as the CRE does. At another value the generator gives each month’s capture and paid output at that threshold from its own cells.',
+    'pp-stopt': 'The park stops when the day-ahead price is below this value (or at it and below, with “at or below”): 0 by default, an hour at exactly 0 produced and paid 0, as the CRE does. At another value, to 0.1 €, the generator gives each month’s capture and paid output at that threshold from its own cells.',
     'pp-conv': 'Curtailed: the asset stops when the price is < 0 €; that output is neither produced nor paid, and the forward (Cal) still settles on every hour. No curtailment: every hour is produced and paid, negative prices included. Partial stop: only the share entered stops (for instance the parks under the stop obligation), the rest runs and is paid the negative price. PPA Dashboard convention: the team’s former rule, kept to compare.',
     'pp-alpha': 'The chance of losing money you accept. Lower = a more cautious price and a bigger risk premium.',
     'pp-hedge': 'Whether the expected volume is sold forward at the Cal price. Hedged: only the volume and profile risks remain.',
@@ -949,8 +941,11 @@
     // the published price alone (the generator): the profile split into its monthly and hourly parts, the risk into
     // volume, liquidity (when priced) and the rest (price level and capture drift), as Tom reads a PPA markup
     const gen = use.length === 1 && use[0].k === 'int' && o.genProf != null && o.premVolGen != null;
+    // a stop threshold other than 0: the change of value against the same park stopping at 0 €
+    const thrFx = gen && o.genFair0 != null ? fair - o.genFair0 : 0;
     const st = gen
-      ? [['Cal forward', ref, 1], ['Monthly profile', o.genProf - ref], ['Hourly cannibalisation', fair - o.genProf], ['Volume risk', -o.premVolGen],
+      ? [['Cal forward', ref, 1], ['Monthly profile', o.genProf - ref], ['Hourly cannibalisation', fair - o.genProf - thrFx],
+        ...(thrFx ? [['Stop threshold effect', thrFx]] : []), ['Volume risk', -o.premVolGen],
         ...(o.liqRisk != null ? [['Liquidity risk', -o.liqRisk]] : []), ['Price & capture risk', risk + o.premVolGen + (o.liqRisk || 0)],
         ['Imbalance cost', -o.imb], ['GO', o.goW], ['Margin', -o.margin], ['PPA price', price, 1]]
       : [['Cal forward', ref, 1], [S.tech === 'wind' ? 'Wind profile' : 'Solar profile', fair - ref], ['Risk', risk], ['Imbalance', -o.imb], ['GO', o.goW], ['Margin', -o.margin], ['PPA price', price, 1]];
