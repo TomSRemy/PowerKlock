@@ -135,6 +135,21 @@ def main():
                          'neg_h': r1((sa.get('neg_h') or 0) + max(0, (sf.get('neg_h') or 0) - (sb.get('neg_h') or 0)), 0),
                          'high_h': r1((sa.get('high_h') or 0) + max(0, (sf.get('high_h') or 0) - (sb.get('high_h') or 0)), 0), 'max_day': sa.get('max_day'), 'max_day_avg': sa.get('max_day_avg'), 'days': sa['days'] + nl,
                          'forwards': {m: fwm(m) for m in left}}
+        # month by month, from the month in course to December: last year's month at this year's pace, its spot at the
+        # forward, its negative hours as last year's (the monthly charts draw them after the known months)
+        pm = months(y0 - 1)
+        rk = {k: (A['by_source'][k] / Bp['by_source'][k]) if Bp['by_source'].get(k) else 1.0 for k in SRC}
+        rk['load'] = A['load'] / Bp['load'] if Bp.get('load') else 1.0
+        fm = {}
+        for mo in range(d0.month, 13):
+            src = pm.get(f'{y0 - 1}-{mo:02d}')
+            if not src:
+                continue
+            e = {k: r1(src[k] * rk[k], 2) for k in list(SRC) + ['load'] if src.get(k) is not None}
+            e['spot'] = fwm(f'{y0}-{mo:02d}')
+            e['neg_h'] = src.get('neg_h')
+            fm[f'{y0}-{mo:02d}'] = e
+        f['months'] = fm
         return f
 
     cap = {}

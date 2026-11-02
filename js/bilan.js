@@ -144,25 +144,33 @@
     // production by source, this year against the comparison
     mk('bl-src', { type: 'bar', data: { labels: SRC.map(s => L(s[1])), datasets: [
       { label: year, data: SRC.map(s => A.by_source[s[0]]), backgroundColor: SRC.map(s => s[2]), borderRadius: 3 },
-      { label: prevLbl, data: SRC.map(s => B ? B.by_source[s[0]] : null), backgroundColor: SRC.map(s => s[2] + '55'), borderRadius: 3 }] },
+      { label: prevLbl, data: SRC.map(s => B ? B.by_source[s[0]] : null), backgroundColor: SRC.map(s => s[2] + '55'), borderRadius: 3 },
+      ...(live && D.current.forecast && year === String(D.current.year) ? [{ label: T(`${year}, fin d’année prévue`, `${year}, year-end forecast`), data: SRC.map(s => D.current.forecast.by_source[s[0]]), backgroundColor: 'rgba(251,191,36,.12)', borderColor: '#FBBF24', borderWidth: 1, borderRadius: 3 }] : [])] },
       options: opts({ indexAxis: 'y', scales: { x: { ticks: { color: '#7A93AB' }, grid: { color: 'rgba(255,255,255,.05)' }, title: { display: true, text: 'TWh', color: '#7A93AB' } }, y: { ticks: { color: '#B8C9D9' }, grid: { display: false } } } }) });
     // monthly: only the current year and the one before carry months
-    const M = D.months[year], P = D.months[String(+year - 1)], mons = M ? Object.keys(M).sort() : [];
+    // the running year: the months left (the month in course included) drawn from the year-end forecast, faded with a
+    // yellow edge after the known months (Tom 2 Nov. 2026)
+    const FM = year === String(D.current.year) && D.current.forecast && D.current.forecast.months || null;
+    const M0 = D.months[year], P = D.months[String(+year - 1)];
+    const M = FM ? Object.assign({}, ...Object.keys(M0 || {}).filter(m => !FM[m]).map(m => ({ [m]: M0[m] })), FM) : M0;
+    const mons = M ? Object.keys(M).sort() : [], PJ = m => !!(FM && FM[m]);
+    const fade = (c, m) => PJ(m) ? c + '55' : c, edge = m => PJ(m) ? '#FBBF24' : 'transparent';
     const box = id => { const c = document.getElementById(id); if (c) c.closest('.bl-c').hidden = !mons.length; };
     ['bl-mon', 'bl-spot', 'bl-neg', 'bl-lf', 'bl-load'].forEach(box);
     if (mons.length) {
       const at = (src, m, k) => { const r = src && src[(+m.slice(0, 4) - (src === P ? 1 : 0)) + m.slice(4)]; return r ? r[k] : null; };
       const lab = mons.map(m => m);   // ISO months: the regulatory milestones find their place
       const tick = { color: '#7A93AB', font: { size: 11 }, callback: (v, i) => MON()[+lab[i].slice(5, 7) - 1] };
-      mk('bl-mon', { type: 'bar', data: { labels: lab, datasets: SRC.filter(s => s[0] !== 'oil' && s[0] !== 'coal').map(s => ({ label: L(s[1]), data: mons.map(m => M[m][s[0]]), backgroundColor: s[2], stack: 'p' })) },
+      mk('bl-mon', { type: 'bar', data: { labels: lab, datasets: SRC.filter(s => s[0] !== 'oil' && s[0] !== 'coal').map(s => ({ label: L(s[1]), data: mons.map(m => M[m][s[0]]), backgroundColor: mons.map(m => fade(s[2], m)), borderColor: mons.map(edge), borderWidth: mons.map(m => PJ(m) ? 1 : 0), stack: 'p' })) },
         options: opts({ scales: { x: { stacked: true, ticks: tick, grid: { display: false } }, y: { stacked: true, ticks: { color: '#7A93AB' }, grid: { color: 'rgba(255,255,255,.05)' }, title: { display: true, text: T('TWh par mois', 'TWh per month'), color: '#7A93AB' } } } }) }, 'bilan-prod');
       mk('bl-spot', { type: 'line', data: { labels: lab, datasets: [
-        { label: year, data: mons.map(m => M[m].spot), borderColor: '#14D3A9', borderWidth: 2.4, pointRadius: 2, tension: 0 },
+        { label: year, data: mons.map(m => M[m].spot), borderColor: '#14D3A9', borderWidth: 2.4, pointRadius: 2, tension: 0,
+          segment: { borderColor: c => PJ(mons[c.p1DataIndex]) ? '#FBBF24' : undefined, borderDash: c => PJ(mons[c.p1DataIndex]) ? [5, 4] : undefined } },
         { label: String(+year - 1), data: mons.map(m => at(P, m, 'spot')), borderColor: '#7A93AB', borderDash: [4, 3], borderWidth: 1.6, pointRadius: 0, tension: 0 }] },
         options: opts({ scales: { x: { ticks: tick, grid: { display: false } }, y: { ticks: { color: '#7A93AB' }, grid: { color: 'rgba(255,255,255,.05)' }, title: { display: true, text: T('spot moyen du mois, €/MWh', 'monthly average spot, €/MWh'), color: '#7A93AB' } } } }) }, 'bilan-spot');
       // negative-price hours month by month, against the year before
       mk('bl-neg', { type: 'bar', data: { labels: lab, datasets: [
-        { label: year, data: mons.map(m => M[m].neg_h), backgroundColor: '#7FC8F8', borderRadius: 2 },
+        { label: year, data: mons.map(m => M[m].neg_h), backgroundColor: mons.map(m => fade('#7FC8F8', m)), borderColor: mons.map(edge), borderWidth: mons.map(m => PJ(m) ? 1 : 0), borderRadius: 2 },
         { label: String(+year - 1), data: mons.map(m => at(P, m, 'neg_h')), backgroundColor: 'rgba(127,200,248,.3)', borderRadius: 2 }] },
         options: opts({ scales: { x: { ticks: tick, grid: { display: false } }, y: { beginAtZero: true, ticks: { color: '#7A93AB' }, grid: { color: 'rgba(255,255,255,.05)' }, title: { display: true, text: T('heures à prix négatif', 'negative-price hours'), color: '#7A93AB' } } } }) }, 'bilan-neg');
       // side by side charts start at the same height: the spot chart carries the milestone labels on top, the negative hours follow it
@@ -181,7 +189,7 @@
       const pm = m => (+m.slice(0, 4) - 1) + m.slice(4);
       const LFS = [['nuclear', T('Nucléaire', 'Nuclear'), '#B48CF2'], ['wind', T('Éolien', 'Wind'), '#7FC8F8'], ['solar', T('Solaire', 'Solar'), '#F4B740']];
       mk('bl-lf', { type: 'line', data: { labels: lab, datasets: LFS.flatMap(([k, n, c]) => [
-        { label: n + ' ' + year, data: mons.map(m => lf(M, m, year, k)), borderColor: c, borderWidth: 2.2, pointRadius: 2, tension: 0 },
+        { label: n + ' ' + year, data: mons.map(m => PJ(m) ? null : lf(M, m, year, k)), borderColor: c, borderWidth: 2.2, pointRadius: 2, tension: 0 },
         { label: n + ' ' + (+year - 1), data: mons.map(m => lf(P, pm(m), String(+year - 1), k)), borderColor: c, borderDash: [4, 3], borderWidth: 1.3, pointRadius: 0, tension: 0 }]) },
         options: opts({ scales: { x: { ticks: tick, grid: { display: false } }, y: { beginAtZero: true, ticks: { color: '#7A93AB', callback: v => v + ' %' }, grid: { color: 'rgba(255,255,255,.05)' }, title: { display: true, text: T('facteur de charge', 'load factor'), color: '#7A93AB' } } } }) }, 'bilan-load-factors');
       const ln = document.getElementById('bl-lf-note'), known = !!(D.years[year] && D.years[year].capacity), est = D.years[year] && D.years[year].capacityEst, p0 = capEnd(String(+year - 1));
@@ -190,7 +198,7 @@
         : T(`Capacité installée (Energy-Charts) interpolée mois par mois entre deux fins d’année ; fin ${year} pas encore publiée, estimée au rythme moyen des deux dernières années (éolien +${N(dW, 1)} GW, solaire +${N(dS, 1)} GW) ; le mois en cours compte jusqu’au dernier jour publié.`,
           `Installed capacity (Energy-Charts) interpolated month by month between two year-ends; end-${year} not published yet, estimated at the mean pace of the last two years (wind +${N(dW, 1)} GW, solar +${N(dS, 1)} GW); the current month counts up to the last day published.`);
       mk('bl-load', { type: 'bar', data: { labels: lab, datasets: [
-        { label: year, data: mons.map(m => M[m].load), backgroundColor: '#7FC8F8', borderRadius: 2 },
+        { label: year, data: mons.map(m => M[m].load), backgroundColor: mons.map(m => fade('#7FC8F8', m)), borderColor: mons.map(edge), borderWidth: mons.map(m => PJ(m) ? 1 : 0), borderRadius: 2 },
         { label: String(+year - 1), data: mons.map(m => at(P, m, 'load')), backgroundColor: 'rgba(127,200,248,.3)', borderRadius: 2 }] },
         options: opts({ scales: { x: { ticks: tick, grid: { display: false } }, y: { ticks: { color: '#7A93AB' }, grid: { color: 'rgba(255,255,255,.05)' } } } }) });
     }
