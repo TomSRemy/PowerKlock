@@ -70,14 +70,173 @@ CF_LEVEL = os.environ.get('PK_CF_LEVEL', 'trend') or None   # each drawn week's 
 # worse; adopted 31 Oct. 2026
 
 
+ROLL = {'on': os.environ.get('PK_ROLL') == '1', 'D': None}   # test (Tom 2 Nov. 2026: "why not rolling years?"): the
+# price rule learnt on the last 12 complete months before the pricing date D (weighing 2) and the 12 before (weighing 1)
+# instead of the last two complete calendar years, and the anchoring on those last 12 months; the weather weeks, the
+# demand year and the fleets stay as they are. D: ROLL['D'], else the first day after the last complete month of data.
+# Replay 2 Nov. 2026, 12-month deliveries starting each quarter 2024-01 … 2026-07 priced 3, 6, 9, 12 months ahead (44 per
+# technology, published set-up), calendar → rolling, mean / mean absolute error €/MWh: solar T = 0 +1.28 / 2.86 → +0.39 /
+# 3.21, T = −1 +2.27 / 2.43 → +1.41 / 2.25, T = 0.01 +0.81 / 0.93 → +0.66 / 1.33, prudent P25 held 41 → 52 %; wind T = 0
+# −0.03 / 2.27 → −0.06 / 2.23, held 64 → 64 %. Less biased in solar but not more accurate, and it moves the published
+# capture a lot (solar 2027 at T = 0 0.624 → 0.590, at −1 0.595 → 0.511; wind 0.893 → 0.947): off.
+# Where the code takes a calendar year, a Period serves the same per-day data from the years it covers (Period, by_days):
+# share of residual load, fuel cost (by date), Germany's prices, JAO limits, available nuclear, run-of-river, load
+# factors; its demand and nuclear means (_means) are those of its 12 months; its fleet runs from its first to its last
+# day (fleet_at: year-ends interpolated, the running year-end extrapolated from the last pace, no look-ahead); its load-
+# factor level is read on the calendar years' trend line at its centre (cf_scale); the analogues read 2022's months
+# from 2021 (as PK_KNN_EX22 does for calendar years)
+
+
+def _add_months(d, k):
+    m = d.month - 1 + k
+    return date(d.year + m // 12, m % 12 + 1, 1)
+
+
+class Period(int):
+    """12 months of data [start, end) that stand in for a calendar year wherever the code takes one: served by L.DATA,
+    _year and the per-year loaders below as the concatenation of the calendar years' days it covers. Its integer value
+    is the calendar year it mostly covers (so 'Y > demand_year' and the like still order it); it is equal only to
+    itself, so no cache or lookup confuses it with that calendar year. float() gives its centre in years minus one half,
+    the position a calendar year y has in the trends (cf_scale)"""
+
+    def __new__(cls, start, end, sub=None):
+        mid = _add_months(start, 6)
+        p = int.__new__(cls, mid.year)
+        p.start, p.end, p.sub = start, end, dict(sub or {})
+        p.pos = mid.year + (mid.month - 1) / 12 - 0.5
+        p.dates = [start + timedelta(days=i) for i in range((end - start).days)]
+        return p
+
+    def __eq__(self, o):
+        return self is o
+
+    def __ne__(self, o):
+        return self is not o
+
+    def __hash__(self):
+        return id(self)
+
+    def __float__(self):
+        return float(self.pos)
+
+    def __repr__(self):
+        return f'Period({self.start}→{self.end}{", " + str(self.sub) if self.sub else ""})'
+
+    def segments(self):
+        """[(calendar year, row indices in L.DATA[year])] in date order; a year in 'sub' is read from its substitute
+        (the same dates one or more years earlier: the analogues leave 2022 out)"""
+        out = []
+        for y in range(self.start.year, (self.end - timedelta(days=1)).year + 1):
+            src = self.sub.get(y, y)
+            if src not in L.DATA or isinstance(src, Period):
+                continue
+            lo, hi = self.start.replace(year=self.start.year - y + src) if y == self.start.year else date(src, 1, 1), \
+                (self.end.replace(year=self.end.year - y + src) if self.end.year == y else date(src + 1, 1, 1))
+            ds = L.DATA[src]['days']
+            idx = np.array([i for i, d in enumerate(ds) if lo.isoformat() <= str(d)[:10] < hi.isoformat()], int)
+            if len(idx):
+                out.append((src, idx))
+        return out
+
+
+def _cat(parts):
+    """concatenate per-day results of several calendar years: arrays on their first axis, lists, dicts key by key"""
+    p0 = parts[0]
+    if isinstance(p0, dict):
+        return {k: _cat([p[k] for p in parts]) for k in p0 if all(k in p for p in parts) and not isinstance(k, tuple)}
+    if isinstance(p0, list):
+        return [x for p in parts for x in p]
+    if isinstance(p0, np.ndarray) and p0.ndim >= 1:
+        return np.concatenate(parts)
+    return p0
+
+
+def _sliced(v, idx, n):
+    if isinstance(v, np.ndarray) and v.ndim >= 1 and v.shape[0] == n:
+        return v[idx]
+    if isinstance(v, list) and len(v) == n:
+        return [v[i] for i in idx]
+    if isinstance(v, dict):
+        return {k: _sliced(x, idx, n) for k, x in v.items() if not isinstance(k, tuple)}
+    return v
+
+
+def by_days(fn):
+    """a per-year loader (days of L.DATA[y] in, rows out) that also serves a Period, by its calendar years' rows"""
+    memo = {}
+
+    def wrap(y, *a, **k):
+        if isinstance(y, Period):
+            key = (y, a, tuple(sorted(k.items())))
+            if key not in memo:
+                parts = []
+                for src, idx in y.segments():
+                    r = fn(src, *a, **k)
+                    if r is None:
+                        parts = None
+                        break
+                    parts.append(_sliced(r, idx, len(L.DATA[src]['days'])))
+                memo[key] = _cat(parts) if parts else None
+            return memo[key]
+        return fn(y, *a, **k)
+    wrap.__doc__, wrap.__name__ = fn.__doc__, fn.__name__
+    return wrap
+
+
+def make_period(start, end, sub=None):
+    """a Period registered in L.DATA: France and its neighbours, day by day, from the calendar years it covers"""
+    p = Period(start, end, sub)
+    seg = p.segments()
+    a = _cat([_sliced(L.DATA[src], idx, len(L.DATA[src]['days'])) for src, idx in seg])
+    a['days'] = [d for src, idx in seg for d in (L.DATA[src]['days'][i] for i in idx)]
+    a['complete'] = True
+    L.DATA.extra[p] = a
+    return p
+
+
+_RP = {}
+
+
+def roll_periods(D, ex22=False):
+    """[the 12 months before those, the last 12 complete months] before pricing date D (a month's first day); ex22: the
+    2022 months read from 2021 (the analogues leave the gas crisis out, as with calendar years)"""
+    key = (D, ex22)
+    if key not in _RP:
+        sub = {2022: 2021} if ex22 else None
+        _RP[key] = [make_period(_add_months(D, -24), _add_months(D, -12), sub), make_period(_add_months(D, -12), D, sub)]
+    return _RP[key]
+
+
+def roll_date():
+    """the pricing date of the rolling periods: ROLL['D'], else the first day after the last complete month of data"""
+    if ROLL['D']:
+        return ROLL['D']
+    y = max(L.DATA)
+    last = date.fromisoformat(str(L.DATA[y]['days'][-1])[:10])
+    nxt = last + timedelta(days=1)
+    return _add_months(nxt, 0) if nxt.day == 1 else date(last.year, last.month, 1)
+
+
+def fleet_at(c, t, d):
+    """installed MW of country c, technology t on day d: straight between year-ends, the running year-end extrapolated
+    from the last known pace (no look-ahead when replaying)"""
+    y = d.year
+    c0 = L.cap(c, t, y - 1) or L.cap_guess(c, t, y - 1, y - 2)
+    c1 = L.cap_guess(c, t, y, y - 1)
+    fr = (d.timetuple().tm_yday - 0.5) / (366 if y % 4 == 0 else 365)
+    return (c0 + (c1 - c0) * fr) if c0 is not None and c1 is not None else (c1 or c0)
+
+
 def cf_scale(c, t, y, ref, pool):
     """multiplier for country c, technology t, weather year y, so its output per GW matches year ref's level"""
     lv = {yy: float(_year(yy)[f'{c}_{t}'].mean()) for yy in sorted(set(pool) | {ref}) if yy in L.DATA and L.DATA[yy]['complete'] and yy != 2022}
     if y not in lv or ref not in lv or lv[y] <= 0:
         return 1.0
     if CF_LEVEL == 'trend' and len(lv) >= 3:
-        ys = np.array(sorted(lv)); a, b = np.polyfit(ys, [lv[k] for k in ys], 1)
-        fy, fr = a * y + b, a * ref + b
+        # positions as floats (a Period sits at its centre), the levels looked up by key
+        # (a Period is read on the calendar years' line, not added to it as a point overlapping them)
+        ks = sorted(k for k in lv if not isinstance(k, Period)); a, b = np.polyfit(np.array([float(k) for k in ks]), [lv[k] for k in ks], 1)
+        fy, fr = a * float(y) + b, a * float(ref) + b
         return float(fr / fy) if fy > 0 else 1.0
     return lv[ref] / lv[y]
 
@@ -160,6 +319,9 @@ def _year(y):
     out['ratio'] = P / np.where(np.abs(mavg) > 1, mavg, 1)
     _YEAR[y] = out
     return out
+
+
+_year = by_days(_year)   # a Period too (ROLL)
 
 
 def _means(y):
@@ -254,6 +416,9 @@ def hydro_daily(y):
     return _HYD[y]
 
 
+hydro_daily = by_days(hydro_daily)   # a Period too (ROLL)
+
+
 def share(S, W, Lo, N, H=None, region=True):
     """(load − solar − wind − nuclear − hydro) ÷ load, the region summed or France alone; H daily MW per country"""
     cs = CS if region else ('FR',)
@@ -340,6 +505,9 @@ def fr_avail(y):
         if v:
             out[i, :] = v
     return out
+
+
+fr_avail = by_days(fr_avail)   # a Period too (ROLL)
 
 
 def fr_nuc(y):
@@ -827,6 +995,9 @@ def de_prices(y):
     return _DE[y]
 
 
+de_prices = by_days(de_prices)   # a Period too (ROLL)
+
+
 REGIME_JAO = os.environ.get('PK_REGIME_JAO', '1') == '1'   # the cut-off chance read on what France must export beyond
 # its Core export limit of the hour (JAO, data/history/jao_core; drawn days at the last known year's level), not on what
 # it must export alone. Deliveries 2023–2026 (2026: complete months), 1–3 years ahead, error on the value of one MWh:
@@ -847,6 +1018,9 @@ def fr_jmax(y):
         fill = np.nanmean(a) if np.isfinite(a).any() else 8000.0
         _JM[y] = np.where(np.isfinite(a), a, fill)
     return _JM[y]
+
+
+fr_jmax = by_days(fr_jmax)   # a Period too (ROLL)
 
 
 JAO_Y = os.environ.get('PK_JAO_Y') or None   # test: France's Core export limit for the delivery year: None = the last
@@ -922,6 +1096,9 @@ def res_anom(y):
     return _RA[y]
 
 
+res_anom = by_days(res_anom)   # a Period too (ROLL)
+
+
 MC_DRY_FREE = float(os.environ.get('PK_MC_DRY_FREE', '0.5'))   # share of the weeks drawn without the dryness preference
 MC_FULL = os.environ.get('PK_MC_FULL') == '1'   # test: each scenario draws its fleet growth, nuclear and export limit
 MC_FLEET = float(os.environ.get('PK_MC_FLEET', '0.4'))   # growth beyond the last known year × U(1 − x, 1 + x)
@@ -963,6 +1140,9 @@ def month_ratio(y):
             fm, dm = np.nanmean(a['fr_p'][k]), np.nanmean(de[k])
             out[k] = dm / fm if fm > 5 and np.isfinite(dm) else 1.0
     return out
+
+
+month_ratio = by_days(month_ratio)   # a Period too (ROLL)
 
 
 KNN_DRAW = os.environ.get('PK_KNN_DRAW') or None
@@ -1454,7 +1634,13 @@ def anchor_factors(t, A, known, st, cost, n=30, seed=7):
     """{mode: {'curt': {month: k}, 'all': {month: k}}}: the realised capture of year A ÷ the generator's capture of
     year A (its fleet, its data, the same rule and draws), production-weighted (× the paid share for 'curt'), over the
     12 months ('year') or within each half-year ('season'); 'none' = 1"""
-    capA = {c: {tt: (L.cap(c, tt, A) or L.cap_guess(c, tt, A, A)) for tt in 'sw'} for c in CS}
+    if ROLL['on']:
+        # rolling: the last 12 complete months before the pricing date stand for the last complete year, the generator
+        # run on that period (its fleets, from start to end, its demand, nuclear and export limits) against its realised
+        A = roll_periods(roll_date())[1]
+        capA = {c: {tt: fleet_at(c, tt, A.end) for tt in 'sw'} for c in CS}
+    else:
+        capA = {c: {tt: (L.cap(c, tt, A) or L.cap_guess(c, tt, A, A)) for tt in 'sw'} for c in CS}
     gA, _ = simulate(t, A, known, st, A, capA, None, n=n, rule='fuel', cost=cost, batteries='both', pool_from=2019,
                      fuel_dev=True, france=True, seed=seed)
     aA = L.actual(t, A)
@@ -1617,6 +1803,9 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
     WTECH['t'] = t if os.environ.get('PK_WTECH') == '1' else None
     if rule == 'fuel':
         fy = train or [y for y in known if L.DATA[y]['complete'] and y >= 2019][-fuel_window:]
+        if ROLL['on'] and not train:
+            # rolling: the 12 months before the last 12 complete ones, then those (weighing twice below with RECENT_W)
+            fy = roll_periods(roll_date(), ex22=bool(KNN) and os.environ.get('PK_KNN_EX22') == '1')
         if trend:
             pmf = TrendRule(fy, st['regional'], france)
         else:
@@ -1681,16 +1870,19 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
         # availability of the delivery year being unknown when pricing
         _av, _dm = fr_avail(demand_year), L.DATA[demand_year]['month']
         AVM = np.array([_av[_dm == m].mean() for m in range(1, 13)])
-    days = [date(Y, 1, 1) + timedelta(days=i) for i in range((date(Y + 1, 1, 1) - date(Y, 1, 1)).days)]
+    days = list(Y.dates) if isinstance(Y, Period) else [date(Y, 1, 1) + timedelta(days=i) for i in range((date(Y + 1, 1, 1) - date(Y, 1, 1)).days)]
     D = len(days)
     month = np.array([d.month for d in days])
     kind = np.array([L.day_kind(d) for d in days])
-    frac = np.array([(d.timetuple().tm_yday - 0.5) / D for d in days])
+    frac = np.array([((d - days[0]).days + 0.5) / D for d in days]) if isinstance(Y, Period) else \
+        np.array([(d.timetuple().tm_yday - 0.5) / D for d in days])
     fleet = {}
     for c in CS:
         for tt in 'sw':
             g1 = capY[c][tt]
             g0 = L._start_of(c, tt, Y, g1) if L.FLEET_DAILY['on'] else g1
+            if isinstance(Y, Period) and L.FLEET_DAILY['on']:
+                g0 = fleet_at(c, tt, Y.start)   # a 12-month period: its fleet from its first day to its last
             fleet[(c, tt)] = ((g0 + (g1 - g0) * frac) * 1000)[:, None]
     dmd = L.DATA[demand_year]
     own = {m: float(dmd['fr_p'][dmd['month'] == m].mean()) for m in range(1, 13) if (dmd['month'] == m).any()}

@@ -114,7 +114,22 @@ def doy(d):
     return (date(2001, dd.month, dd.day) - date(2001, 1, 1)).days
 
 
+class _Data(dict):
+    """the years' data, plus learning periods that are not calendar years (ppa_scenarios ROLL): those are served by key
+    but never listed, so every loop over the years still sees calendar years only"""
+    extra = {}
+
+    def __missing__(self, k):
+        if k in self.extra:
+            return self.extra[k]
+        raise KeyError(k)
+
+    def __contains__(self, k):
+        return dict.__contains__(self, k) or k in self.extra
+
+
 DATA, CAPS = load_years()
+DATA = _Data(DATA)
 
 
 def cap(c, t, y):
