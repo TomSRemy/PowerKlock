@@ -1,6 +1,6 @@
 {
  "name": "PowerKlock data API",
- "updated": "2026-11-02T16:13:25Z",
+ "updated": "2026-11-02T21:09:40Z",
  "usage": "Plain HTTPS GET, JSON, no key. Cite the source of each dataset. Times are Paris delivery days unless stated.",
  "datasets": [
   {
@@ -68,6 +68,22 @@
    "sizeKB": 0
   },
   {
+   "url": "https://tomsremy.github.io/PowerKlock/data/history/rte_curtailment.json",
+   "title": "France · RTE estimate of wind and solar given up at negative prices",
+   "content": "Per year, from RTE's Bilan électrique (full report, read once a year): total, onshore wind and solar, TWh.",
+   "refresh": "yearly",
+   "source": "RTE, Bilan électrique",
+   "sizeKB": 1
+  },
+  {
+   "url": "https://tomsremy.github.io/PowerKlock/data/history/rte_bilan_figures.json",
+   "title": "France · figures only RTE publishes (Bilan électrique)",
+   "content": "Per year: downward adjustments RTE ordered on wind and solar, emissions avoided abroad by exports, net value of exports, life-cycle emissions and intensity, emissions of consumption (read from the yearly report); gross and weather-corrected consumption (ODRÉ).",
+   "refresh": "yearly",
+   "source": "RTE, Bilan électrique; ODRÉ",
+   "sizeKB": 1
+  },
+  {
    "url": "https://tomsremy.github.io/PowerKlock/data/history/rte/{YYYY-MM}.json",
    "title": "France generation · quarter-hours of a month",
    "content": "Per day, 96 values (MW): nuclear, wind, solar, hydro (run-of-river, lakes, pumped storage), gas, coal, oil, bioenergy, consumption and its D-1 forecast, exchanges, CO₂ intensity.",
@@ -89,7 +105,7 @@
    "content": "Per day: price sums and counts, solar and wind output and revenue, for all hours and for hours with a price > 0 — aggregate any window into capture prices and rates.",
    "refresh": "daily",
    "source": "PowerKlock, from RTE and ENTSO-E",
-   "sizeKB": 500
+   "sizeKB": 482
   },
   {
    "url": "https://tomsremy.github.io/PowerKlock/data/cre_m0.json",
