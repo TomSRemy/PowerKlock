@@ -70,7 +70,18 @@ CF_LEVEL = os.environ.get('PK_CF_LEVEL', 'trend') or None   # each drawn week's 
 # worse; adopted 31 Oct. 2026
 
 
-ROLL = {'on': os.environ.get('PK_ROLL') == '1', 'D': None}   # test (Tom 2 Nov. 2026: "why not rolling years?"): the
+ROLL = {'on': os.environ.get('PK_ROLL') == '1', 'D': None,
+        'cells': os.environ.get('PK_ROLL_CELLS') or None, 'anchor': {'1': True, '0': False}.get(os.environ.get('PK_ROLL_ANCHOR', '')),
+        'H': float(os.environ.get('PK_ROLL_H', '12'))}
+# Learning and anchoring apart (tests, 2 Nov. 2026): PK_ROLL_CELLS = cal | roll | exp (exp: the last 36 months, each day
+# weighing 0.5^(age ÷ PK_ROLL_H months), cells and analogues alike), PK_ROLL_ANCHOR = 0 | 1 (calendar year or last 12
+# months). Same 44-delivery replay, T = 0 bias / mean absolute error €/MWh, P25 held: solar calendar +1.28 / 2.86 / 41 %,
+# exp H = 12 +0.44 / 2.67 / 57 %, H = 6 +0.17 / 3.15 / 59 %, rolling +0.39 / 3.21 / 52 % (at T = 0.01 exp 12 1.65 against
+# 0.93); wind calendar −0.03 / 2.27 / 64 %, calendar cells + rolling anchor +0.36 / 2.01, calendar and rolling averaged
+# −0.05 / 2.14 (T = −1 1.77, the lowest), exp cells worse (2.40–2.86). Wind's rise under the rolling anchor is the anchor
+# period, not the cells: January 2025 (realised 0.72 against 0.87 simulated, 5.4 TWh) leaves it and high-price autumn
+# 2026 months enter (realised ÷ simulated 1.14–1.24 in July–September). Not adopted: the cases overlap, the gaps are
+# within a few tenths of a euro   # test (Tom 2 Nov. 2026: "why not rolling years?"): the
 # price rule learnt on the last 12 complete months before the pricing date D (weighing 2) and the 12 before (weighing 1)
 # instead of the last two complete calendar years, and the anchoring on those last 12 months; the weather weeks, the
 # demand year and the fleets stay as they are. D: ROLL['D'], else the first day after the last complete month of data.
@@ -122,7 +133,7 @@ class Period(int):
     def __repr__(self):
         return f'Period({self.start}→{self.end}{", " + str(self.sub) if self.sub else ""})'
 
-    def segments(self):
+    def segments(self, with_year=False):
         """[(calendar year, row indices in L.DATA[year])] in date order; a year in 'sub' is read from its substitute
         (the same dates one or more years earlier: the analogues leave 2022 out)"""
         out = []
@@ -135,7 +146,7 @@ class Period(int):
             ds = L.DATA[src]['days']
             idx = np.array([i for i, d in enumerate(ds) if lo.isoformat() <= str(d)[:10] < hi.isoformat()], int)
             if len(idx):
-                out.append((src, idx))
+                out.append((y, src, idx) if with_year else (src, idx))
         return out
 
 
@@ -215,6 +226,36 @@ def roll_date():
     last = date.fromisoformat(str(L.DATA[y]['days'][-1])[:10])
     nxt = last + timedelta(days=1)
     return _add_months(nxt, 0) if nxt.day == 1 else date(last.year, last.month, 1)
+
+
+def cells_mode():
+    """what the price rule learns on: 'cal' (the last two complete calendar years, 2:1), 'roll' (the last two 12-month
+    periods, 2:1) or 'exp' (the last 36 months, each day weighing 0.5^(age ÷ H months)); PK_ROLL alone means 'roll'"""
+    return ROLL['cells'] or ('roll' if ROLL['on'] else 'cal')
+
+
+def anchor_rolling():
+    """the anchoring on the last 12 complete months (else the last complete calendar year); PK_ROLL alone means yes"""
+    return ROLL['on'] if ROLL['anchor'] is None else ROLL['anchor']
+
+
+_EP = {}
+
+
+def exp_period(D, H, ex22=False):
+    """the last 36 complete months before D as one learning Period, each day weighing 0.5^(age ÷ H months) ('_dw', read
+    by _wt): recent days count most without a step at a year's or a block's edge (Tom 2 Nov. 2026)"""
+    key = (D, H, ex22)
+    if key not in _EP:
+        p = make_period(_add_months(D, -36), D, {2022: 2021} if ex22 else None)
+        a = L.DATA[p]
+        # each row's age from the date it stands for in the window (a 2021 row standing in for 2022 is one year younger)
+        age = np.concatenate([[(D - date.fromisoformat(str(L.DATA[src]['days'][i])[:10]).replace(year=y)).days
+                               if str(L.DATA[src]['days'][i])[5:10] != '02-29' else (D - date(y, 2, 28)).days for i in idx]
+                              for y, src, idx in p.segments(with_year=True)]) / 30.4375
+        a['_dw'] = 0.5 ** (age / H)
+        _EP[key] = p
+    return _EP[key]
 
 
 def fleet_at(c, t, d):
@@ -567,9 +608,10 @@ WTECH_BASE = os.environ.get('PK_WTECH_BASE', '1') == '1'
 
 def _wt(a):
     t = WTECH['t']
+    dw = a['_dw'][:, None] if '_dw' in a else 1.0   # a learning day's recency weight (exp_period)
     if not t:
-        return np.ones_like(a['fr_p'])
-    v = np.nan_to_num(a['fr_' + t]); return v + 0.05 * max(float(v.mean()), 1e-9)
+        return np.ones_like(a['fr_p']) * dw
+    v = np.nan_to_num(a['fr_' + t]); return (v + 0.05 * max(float(v.mean()), 1e-9)) * dw
 
 
 def _wm(v, w):
@@ -1165,7 +1207,7 @@ class KNNRule:
             # the 2022 crisis left out of the analogues (as of the weather pool): the year before takes its place
             ys = [y for y in years if y != 2022]
             years = ys if len(set(ys)) > 1 or 2021 not in L.DATA else sorted(set([2021] + ys)) + ys[-1:]
-        F = fuel_cost(); X, R, RP, PP, NG, RH, PE = [], [], [], [], [], [], []
+        F = fuel_cost(); X, R, RP, PP, NG, RH, PE, DW = [], [], [], [], [], [], [], []
         self.rule = RegimeRule(years, True, True) if KNN_HYB else None
         for y in years:
             a = L.DATA[y]
@@ -1178,6 +1220,7 @@ class KNNRule:
             r = a['fr_p'] / c
             X.append(f[ok]); R.append(r[ok]); RP.append(np.maximum(r, 0)[ok]); PP.append((r >= 0)[ok].astype(float)); NG.append(np.minimum(a['fr_p'], 0)[ok])
             PE.append(a['fr_p'][ok])   # the hour's € price: the stop grid compares it with each T
+            DW.append((np.ones(ok.shape) * (a['_dw'][:, None] if '_dw' in a else 1.0))[ok])   # recency (exp_period)
             if self.rule is not None:
                 g_ = PriceModelFuel.groups(a['month'], [L.day_kind(d) for d in a['days']])
                 cc_ = np.where(np.isfinite(c), c, np.nanmean(c))
@@ -1191,6 +1234,9 @@ class KNNRule:
             smp = Z[np.random.default_rng(1).choice(len(Z), min(3000, len(Z)), replace=False)]
             self.dref = float(np.median(self.tree.query(smp, k=KNN, workers=-1)[0].mean(1)))
         self.R, self.RP, self.PP, self.NG, self.PE = (np.concatenate(v) for v in (R, RP, PP, NG, PE))
+        self.DW = np.concatenate(DW)
+        if self.DW.min() == self.DW.max():
+            self.DW = None   # every analogue alike: today's rule exactly
         self.RH = np.concatenate(RH) if RH else None
 
     @staticmethod
@@ -1245,7 +1291,14 @@ class KNNRule:
             u = np.repeat(self._rng.random((D + blk - 1) // blk), blk)[:D]
             u = np.repeat(u[:, None], sh[1], 1).ravel()
             order = np.argsort(self.R[ii], axis=1)
-            pick = ii[np.arange(len(ii)), order[np.arange(len(ii)), np.minimum((u * KNN).astype(int), KNN - 1)]]
+            if self.DW is not None:
+                # recency-weighted analogues: the drawn rank read on their cumulative weight, not their count
+                cw = np.cumsum(np.take_along_axis(self.DW[ii], order, 1), 1)
+                cw = cw / cw[:, -1:]
+                rk = np.minimum((cw < u[:, None]).sum(1), KNN - 1)
+            else:
+                rk = np.minimum((u * KNN).astype(int), KNN - 1)
+            pick = ii[np.arange(len(ii)), order[np.arange(len(ii)), rk]]
             r, rp, pp, ng = (v[pick].reshape(sh) for v in (self.R, self.RP, self.PP, self.NG))
             rh = self.RH[pick].reshape(sh) if self.RH is not None else None
             src = pick
@@ -1265,7 +1318,11 @@ class KNNRule:
             rh = None
             src = ii
         else:
-            r, rp, pp, ng = (v[ii].mean(1).reshape(sh) for v in (self.R, self.RP, self.PP, self.NG))
+            if self.DW is not None:
+                w_ = self.DW[ii]; w_ = w_ / w_.sum(1, keepdims=True)
+                r, rp, pp, ng = ((v[ii] * w_).sum(1).reshape(sh) for v in (self.R, self.RP, self.PP, self.NG))
+            else:
+                r, rp, pp, ng = (v[ii].mean(1).reshape(sh) for v in (self.R, self.RP, self.PP, self.NG))
             rh = self.RH[ii].mean(1).reshape(sh) if self.RH is not None else None
             src = ii
         if STOP_GRID:
@@ -1392,12 +1449,13 @@ class RegimeRule:
         g = np.concatenate([PriceModelFuel.groups(L.DATA[y]['month'], [L.day_kind(d) for d in L.DATA[y]['days']]).ravel() for y in years])
         nb = np.concatenate([np.round(need[y] / self.NB).astype(int).ravel() for y in years])
         dd = np.concatenate([dec[y].ravel() for y in years]).astype(float)
+        dwt = np.concatenate([(np.ones(dec[y].shape) * (L.DATA[y]['_dw'][:, None] if '_dw' in L.DATA[y] else 1.0)).ravel() for y in years])
         self.pd = {}
         for gi in np.unique(g):
             for b in np.unique(nb[g == gi]):
                 k = (g == gi) & (nb == b)
                 if k.sum() >= 30:
-                    self.pd[(int(gi), int(b))] = float(dd[k].mean())
+                    self.pd[(int(gi), int(b))] = float(dd[k].mean()) if dwt.min() == dwt.max() else float(np.average(dd[k], weights=dwt[k]))
 
     def pdec(self, g, need):
         nb = np.round(need / self.NB).astype(int); out = np.zeros(g.shape)
@@ -1634,7 +1692,7 @@ def anchor_factors(t, A, known, st, cost, n=30, seed=7):
     """{mode: {'curt': {month: k}, 'all': {month: k}}}: the realised capture of year A ÷ the generator's capture of
     year A (its fleet, its data, the same rule and draws), production-weighted (× the paid share for 'curt'), over the
     12 months ('year') or within each half-year ('season'); 'none' = 1"""
-    if ROLL['on']:
+    if anchor_rolling():
         # rolling: the last 12 complete months before the pricing date stand for the last complete year, the generator
         # run on that period (its fleets, from start to end, its demand, nuclear and export limits) against its realised
         A = roll_periods(roll_date())[1]
@@ -1803,14 +1861,17 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
     WTECH['t'] = t if os.environ.get('PK_WTECH') == '1' else None
     if rule == 'fuel':
         fy = train or [y for y in known if L.DATA[y]['complete'] and y >= 2019][-fuel_window:]
-        if ROLL['on'] and not train:
+        cm_ = cells_mode()
+        if cm_ == 'roll' and not train:
             # rolling: the 12 months before the last 12 complete ones, then those (weighing twice below with RECENT_W)
             fy = roll_periods(roll_date(), ex22=bool(KNN) and os.environ.get('PK_KNN_EX22') == '1')
+        elif cm_ == 'exp' and not train:
+            fy = [exp_period(roll_date(), ROLL['H'], ex22=bool(KNN) and os.environ.get('PK_KNN_EX22') == '1')]
         if trend:
             pmf = TrendRule(fy, st['regional'], france)
         else:
-            if RECENT_W:
-                fy = fy + fy[-1:]   # the last learning year counted twice (weighs 2 against 1)
+            if RECENT_W and not (cells_mode() == 'exp' and not train):
+                fy = fy + fy[-1:]   # the last learning year counted twice (weighs 2 against 1; 'exp' weighs by day instead)
             if KNN and KNN_MC:
                 pmf = MCKNNRule(fy)
             elif KNN:
