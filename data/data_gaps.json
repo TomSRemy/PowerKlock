@@ -1,9 +1,18 @@
 {
-"updated": "2026-11-02T09:56:28+00:00",
+"updated": "2026-11-02T20:38:03+00:00",
 "storage": {
-"data_mb": 209.8
+"data_mb": 210.1
 },
-"open": [],
+"open": [
+{
+"id": "prices:2026-11-03",
+"dataset": "prices",
+"what": "2026-11-03: no day-ahead price for NL",
+"repair": "auto: retried every 20-30 min, then the history repair",
+"since": "2026-11-02T20:38:03+00:00",
+"lastSeen": "2026-11-02T20:38:03+00:00"
+}
+],
 "resolved": [
 {
 "id": "pricecheck:2021-09-29:BG",
