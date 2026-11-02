@@ -42,9 +42,9 @@
 "carbon": "flat"
 },
 "2026-11-02": {
-"oil": "up",
+"oil": "down",
 "gas": "up",
 "power": "up",
-"carbon": "flat"
+"carbon": "up"
 }
 }
