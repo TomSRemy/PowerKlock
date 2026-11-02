@@ -10,7 +10,7 @@ Protocol (fixed before any result):
   · 2022 (gas crisis) is left out of the targets and of the price-model training;
   · the score is the error on the value of one MWh (€/MWh), weighted by production:
     capture-rate error × the month's baseload, months weighted by their output;
-  · two contract conventions: 'curt' (output at prices ≤ 0 curtailed, not paid; capture
+  · two contract conventions: 'curt' (output stopped strictly below 0 €/MWh, not paid; an hour at 0 is produced and paid 0; capture
     over the paid hours against the all-hours baseload) and 'all' (every hour paid).
 
 Approaches

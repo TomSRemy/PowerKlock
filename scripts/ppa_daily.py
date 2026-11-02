@@ -126,10 +126,11 @@ def past_days(n, years, have):
     return [[d, {y: by[y][d] for y in by}] for d in days if d not in have]
 
 
-NOTE = ('PowerKlock PPA benchmark: the average of 4 methods of the site\'s pricer (capacity trend, forward shape, weather '
-        'simulation, European price model), default settings (France, baseload pay-as-produced, curtailed at prices <= 0), '
-        'run once a day on that day\'s forwards, capture rates and GO prices. EUR/MWh. Days flagged rebuilt: same Cal '
-        'contracts, that day\'s Cal settlements, the current model.')
+NOTE = ('PowerKlock PPA benchmark: the price of the site\'s pricer, default settings (France, baseload pay-as-produced, '
+        'output stopped and not paid strictly below 0 EUR/MWh, an hour at 0 is produced and paid 0, as the CRE\'s '
+        'complément de rémunération), since 31 Oct. 2026 the scenario generator, run once a day on that day\'s forwards, '
+        'capture rates and GO prices. EUR/MWh. Days flagged rebuilt: same Cal contracts, that day\'s Cal settlements, '
+        'the current model.')
 
 
 def headline(x):
