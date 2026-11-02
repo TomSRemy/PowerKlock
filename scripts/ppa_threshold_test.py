@@ -15,7 +15,8 @@ year's level).
 The truth and the ratios are taken on the output rebuilt without stops below 0 (a park that runs down to T produces in
 full there; the national output is already cut by the parks that stop). The model risk (75th percentile of the errors,
 recent deliveries weighing more) is given per T, and 'extraQPts': the 75th percentile of what the threshold adds to the
-error at 0, case by case, which the pricer takes off at that threshold.
+error at 0, case by case (not taken off the price: Tom 2 Nov. 2026, the premium already holds the prudence and an
+extra one at the threshold made the price uncompetitive).
 
 Writes data/history/ppa_threshold_test.json
     python scripts/ppa_threshold_test.py
@@ -167,8 +168,7 @@ def main():
                 p = np.array([rs[i]['byT'][str(T)][name]['pts'] for i in ok]); e = np.array([rs[i]['byT'][str(T)][name]['eur'] for i in ok]); ww = w[ok]
                 out[tech][str(T)][name] = {'n': len(ok), 'meanEur': round(float((ww * e).sum() / ww.sum()), 3), 'maeEur': round(float(np.abs(e).mean()), 3),
                                            'meanPts': round(float((ww * p).sum() / ww.sum()), 3), 'qPts': round(R.wquantile(p, ww, R.LEVEL), 3)}
-            # what the threshold adds to the error at 0, case by case (the pricer's rule): its 75th percentile is the extra
-            # prudence the pricer takes off at this threshold
+            # what the threshold adds to the error at 0, case by case (the pricer's rule): its 75th percentile, for the record
             ok = [i for i, r in enumerate(rs) if 'pricer' in r['byT'][str(T)] and 'pricer' in r['byT']['0']]
             if ok and T != 0:
                 dp = np.array([rs[i]['byT'][str(T)]['pricer']['pts'] - rs[i]['byT']['0']['pricer']['pts'] for i in ok])
