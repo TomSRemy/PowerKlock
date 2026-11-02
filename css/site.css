@@ -3686,4 +3686,4 @@ html body .pm-o-l, html body .pkf-t-l, html body .mrn2-tc { white-space: normal;
 .flex-tbl th, .flex-tbl td { white-space: normal !important; text-align: left !important; vertical-align: top; padding: 6px 8px; font-family: 'Inter', sans-serif; line-height: 1.4; overflow-wrap: anywhere; }
 .flex-tbl td:first-child, .flex-tbl th:first-child { width: 92px; font-family: 'JetBrains Mono', monospace; color: var(--text3); }
 .flex-tbl td:last-child, .flex-tbl th:last-child { width: 120px; }
-
+.bl-k .bl-split { color: #FBBF24; font-size: 11px; }   /* Yearly review, forecast view: known · projected */
