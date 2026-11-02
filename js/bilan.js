@@ -16,13 +16,16 @@
     ['bio', ['Bioénergies', 'Bioenergy'], '#9BC46A'], ['gas', ['Gaz', 'Gas'], '#F07B6B'], ['coal', ['Charbon', 'Coal'], '#8D7B6A'], ['oil', ['Fioul', 'Oil'], '#B07A5A']];
   const BORDER = { GB: ['Grande-Bretagne', 'Great Britain'], CH: ['Suisse', 'Switzerland'], IT: ['Italie', 'Italy'], DE: ['Allemagne', 'Germany'], BE: ['Belgique', 'Belgium'], ES: ['Espagne', 'Spain'] };
   const L = a => T(a[0], a[1]);
-  let D = null, RM = null, year = null;
+  let D = null, RM = null, RF = null, RC = null, year = null;
   const MON = () => T(['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'], ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']);
 
   async function render() {
     const host = document.getElementById('bilan-host'); if (!host) return;
     if (!D) D = await fetch((typeof DATA_BASE !== 'undefined' ? DATA_BASE : 'data/') + 'history/bilan.json').then(r => r.ok ? r.json() : null).catch(() => null);
     if (!RM) RM = await fetch((typeof DATA_BASE !== 'undefined' ? DATA_BASE : 'data/') + 'residual_mix.json').then(r => r.ok ? r.json() : null).catch(() => null);
+    // what only RTE publishes, read every year from its Bilan électrique, and its weather-corrected consumption (ODRÉ):
+    // scripts/fetch_rte_bilan.py
+    if (!RF) [RF, RC] = await Promise.all(['history/rte_bilan_figures.json', 'history/rte_curtailment.json'].map(f => fetch((typeof DATA_BASE !== 'undefined' ? DATA_BASE : 'data/') + f).then(r => r.ok ? r.json() : null).catch(() => null)));
     if (!D) { host.innerHTML = '<div class="fuel-note">' + T('Bilan indisponible.', 'Review not available.') + '</div>'; return; }
     const cur = D.current, y0 = String(cur.year);
     if (!year) year = y0;
@@ -36,6 +39,23 @@
     const tn = (d, upBad, eps = 1e-9) => d == null || !isFinite(d) || Math.abs(d) < eps ? '' : (d > 0) === upBad ? 'bad' : 'good';
     const ch = (a, b, d = 1, u = ' %', upBad = true) => { const p = pct(a, b); return p == null ? '' : `<span class="${tn(p, upBad) === 'bad' ? 'bl-up' : tn(p, upBad) === 'good' ? 'bl-dn' : ''}">${S(p, d, u)}</span>`; };
     const sp = A.spot || {}, bsp = (B && B.spot) || {};
+    // the row of figures only RTE publishes, for a complete year whose Bilan is out (the running year: not yet)
+    const rteRow = () => {
+      const F = RF && RF.years && RF.years[year], F0 = RF && RF.years && RF.years[String(+year - 1)], C = RC && RC.years && RC.years[year];
+      if (!F || (!F.report && !F.loadCorrTWh)) return live ? `<p class="bl-src" style="margin:4px 0 0">${T(`Le Bilan électrique ${year} de RTE paraît début ${+year + 1} : ses chiffres propres (consommation corrigée du climat, émissions évitées à l'étranger, valeur des exportations…) s'ajouteront ici.`, `RTE's Bilan électrique ${year} comes out early ${+year + 1}: its own figures (weather-corrected consumption, emissions avoided abroad, export value…) will be added here.`)}</p>` : '';
+      const d = k => F[k] != null && F0 && F0[k] != null ? F[k] - F0[k] : null, v = (x, dd = 1) => x == null ? '–' : N(x, dd);
+      const vs0 = k => d(k) == null ? '' : `${S(d(k), 1)} vs ${+year - 1}`;
+      const cells = [
+        F.loadCorrTWh != null && kpi(T('Consommation corrigée du climat', 'Weather-corrected consumption'), v(F.loadCorrTWh), 'TWh', `${T('brute', 'gross')} ${v(F.loadGrossTWh)} TWh · ${vs0('loadCorrTWh')}${F.loadStatus && F.loadStatus !== 'Définitif' ? ' · ' + T(F.loadStatus.toLowerCase(), F.loadStatus === 'Consolidé' ? 'consolidated' : 'provisional') : ''}`, tn(d('loadCorrTWh'), true, 0.5)),
+        F.avoidedMt != null && kpi(T("Émissions évitées à l'étranger", 'Emissions avoided abroad'), v(F.avoidedMt), 'MtCO₂', `${T('par les exportations françaises', 'by French exports')} · ${vs0('avoidedMt')}`, tn(d('avoidedMt'), false, 0.5)),
+        F.exportBn != null && kpi(T('Valeur nette des exportations', 'Net value of exports'), v(F.exportBn), T('Md€', 'bn €'), vs0('exportBn')),
+        F.lcaMt != null && kpi(T('Émissions en cycle de vie', 'Life-cycle emissions'), v(F.lcaMt), 'MtCO₂', `${F.lcaG != null ? v(F.lcaG) + ' g/kWh · ' : ''}${T('production française', 'French production')}`, tn(d('lcaMt'), true, 0.3)),
+        F.consMt != null && kpi(T('Émissions de la consommation', 'Emissions of consumption'), v(F.consMt), 'MtCO₂', `${T('directes, consommation française', 'direct, French consumption')} · ${vs0('consMt')}`, tn(d('consMt'), true, 0.3)),
+        C && C.total != null && kpi(T('Renouvelables arrêtés aux prix négatifs', 'Renewables stopped at negative prices'), v(C.total), 'TWh', C.wind != null ? `${T('éolien', 'wind')} ${v(C.wind)} · ${T('solaire', 'solar')} ${v(C.solar)} TWh` : T('estimation RTE', 'RTE estimate')),
+        F.resAdjTWh != null && kpi(T('Baisses ordonnées par RTE', 'Cuts ordered by RTE'), v(F.resAdjTWh * 1000, 0), 'GWh', T('éolien et solaire, mécanisme d\'ajustement et ordres de sauvegarde', 'wind and solar, balancing mechanism and safeguard orders')),
+      ].filter(Boolean);
+      return cells.length ? `<div class="bl-t" style="margin-top:14px"><h2>${T('Selon RTE', 'According to RTE')}</h2><span class="bl-src">${F.report ? `<a href="${esc(F.report)}" target="_blank" rel="noopener" style="color:#7FC8F8">${T('Bilan électrique', 'Bilan électrique')} ${year}</a>` : 'RTE'} · ODRÉ · ${T('lu chaque année', 'read every year')}</span></div><div class="bl-kpis">${cells.join('')}</div>` : '';
+    };
     // the sentence: what moved most, in plain words
     const dS = k => A.by_source[k] - ((B && B.by_source[k]) || 0);
     const movers = SRC.map(([k, n]) => [k, n, dS(k)]).sort((a, b) => Math.abs(b[2]) - Math.abs(a[2])).slice(0, 3);
@@ -57,6 +77,7 @@
         ${kpi(T('Heures négatives', 'Negative hours'), N(sp.neg_h, 0), 'h', `<span class="${tn((sp.neg_h || 0) - (bsp.neg_h || 0), false) === 'good' ? 'bl-dn' : tn((sp.neg_h || 0) - (bsp.neg_h || 0), false) === 'bad' ? 'bl-up' : ''}">${S((sp.neg_h || 0) - (bsp.neg_h || 0), 0, ' h')}</span> · ${N(sp.high_h, 0)} h ${T('au-dessus de 100 €', 'above 100 €')}`, tn(B ? (sp.neg_h || 0) - (bsp.neg_h || 0) : null, false))}
       </div>
       ${sent ? `<p class="bl-lead">${esc(sent)}</p>` : ''}
+      ${rteRow()}
       <section class="bl-blk"><div class="bl-t"><h2>${T('Production par filière', 'Production by source')}</h2><span class="bl-src">RTE éCO2mix · TWh</span></div>
         <div class="bl-cols"><div class="bl-c" style="height:300px"><canvas id="bl-src"></canvas></div><div class="bl-c" style="height:300px"><canvas id="bl-mon"></canvas></div></div></section>
       <section class="bl-blk"><div class="bl-t"><h2>${T('Prix', 'Prices')}</h2><span class="bl-src">ENTSO-E day-ahead · €/MWh</span></div>
