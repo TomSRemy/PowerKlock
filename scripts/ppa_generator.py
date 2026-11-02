@@ -37,7 +37,8 @@ F_PATH = os.path.join(ROOT, 'data', 'history', 'ppa_forecast.json')
 # v2 (branch claude/ppa-v2, 1 Nov. 2026): the central capture of each technology from its most accurate set-up on the
 # replay, and the risk band from the full Monte Carlo (analogue weeks drawn "dear or cheap", each scenario's fleet growth,
 # nuclear with a rare 2022-like year, Core export limit, load, dry or wet year), whose P75 held in 78–89 % of the
-# replayed deliveries (target 75 %). Wind: the rule learnt output-weighted + the cut-off cells on French wind share,
+# replayed deliveries with the stop at 0 € included (target 75 %), 44 % solar / 67 % wind with the stop strictly below 0
+# (scripts/ppa_band_stop_test.py, 2 Nov. 2026). Wind: the rule learnt output-weighted + the cut-off cells on French wind share,
 # anchored winter/summer (replay 0.56 €/MWh vs 0.84); solar unchanged (0.76, no anchoring)
 BEST = {'wind': {'env': {'PK_WTECH': '1'}, 'glob': {'DEC2': 'wind'}, 'anchor': 'season'},
         'solar': {'env': {}, 'glob': {}, 'anchor': None}}
