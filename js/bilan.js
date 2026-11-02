@@ -78,6 +78,9 @@
       </div>
       ${sent ? `<p class="bl-lead">${esc(sent)}</p>` : ''}
       ${rteRow()}
+      ${RF && RF.years ? `<section class="bl-blk"><div class="bl-t"><h2>${T('Selon RTE, année après année', 'According to RTE, year after year')}</h2><span class="bl-src">RTE, Bilan électrique · ODRÉ · ${T('lu chaque année', 'read every year')}</span></div>
+        <div class="bl-cols"><div class="bl-c" style="height:240px"><canvas id="bl-rte-load"></canvas></div><div class="bl-c" style="height:240px"><canvas id="bl-rte-co2"></canvas></div></div>
+        <div class="bl-cols" style="margin-top:10px"><div class="bl-c" style="height:240px"><canvas id="bl-rte-curt"></canvas></div><div class="bl-c" style="height:240px"><canvas id="bl-rte-exp"></canvas></div></div></section>` : ''}
       <section class="bl-blk"><div class="bl-t"><h2>${T('Production par filière', 'Production by source')}</h2><span class="bl-src">RTE éCO2mix · TWh</span></div>
         <div class="bl-cols"><div class="bl-c" style="height:300px"><canvas id="bl-src"></canvas></div><div class="bl-c" style="height:300px"><canvas id="bl-mon"></canvas></div></div></section>
       <section class="bl-blk"><div class="bl-t"><h2>${T('Prix', 'Prices')}</h2><span class="bl-src">ENTSO-E day-ahead · €/MWh</span></div>
@@ -97,12 +100,37 @@
       <p class="bl-foot">${T('Méthode : sommes des données quotidiennes de RTE (éCO2mix consolidé puis temps réel) et des prix day-ahead ENTSO-E. Vérifié sur 2025 contre le Bilan électrique de RTE : nucléaire ', 'Method: sums of RTE’s daily data (éCO2mix consolidated then real time) and ENTSO-E day-ahead prices. Checked on 2025 against RTE’s Bilan électrique: nuclear ')}${N(D.check_2025.nuclear[0], 1)} TWh (RTE ${N(D.check_2025.nuclear[1], 1)}), ${T('production', 'production')} ${N(D.check_2025.production[0], 1)} (${N(D.check_2025.production[1], 1)}), ${T('solde exportateur', 'net exports')} ${N(D.check_2025.net_export[0], 1)} (${N(D.check_2025.net_export[1], 1)}), spot ${N(D.check_2025.spot[0], 1)} € (${N(D.check_2025.spot[1], 0)}), ${T('heures négatives', 'negative hours')} ${N(D.check_2025.neg_h[0], 0)} (${N(D.check_2025.neg_h[1], 0)}). ${T('La consommation est brute (RTE publie aussi une consommation corrigée de la météo) ; toutes les bioénergies comptent comme bas carbone ; les heures au-dessus de 100 € sont comptées sur les pas publiés (heure, puis quart d’heure depuis octobre 2025), RTE en compte 1 807 en 2025 contre 1 580 ici. Les émissions sont le taux de CO₂ d’éCO2mix appliqué à la production : 10,0 Mt en 2025, RTE publie 10,9 Mt dans son bilan (périmètre plus large).', 'Consumption is raw (RTE also publishes a weather-corrected figure); all bioenergy counts as low-carbon; hours above 100 € are counted on the published steps (hour, then quarter-hour since October 2025), RTE counts 1,807 in 2025 against 1,580 here. Emissions are éCO2mix’s CO₂ rate applied to production: 10.0 Mt in 2025, RTE’s review gives 10.9 Mt (wider scope).')}</p>`;
     host.querySelectorAll('.bl-y').forEach(b => b.addEventListener('click', () => { year = b.dataset.y; render(); }));
     charts(A, B, live, vs);
+    rteCharts();
     residual();
   }
 
   function opts(extra) { return Object.assign({ responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { display: true, position: 'bottom', labels: { color: '#B8C9D9', boxWidth: 10, font: { size: 11 } } } },
     scales: { x: { ticks: { color: '#7A93AB', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,.04)' } }, y: { ticks: { color: '#7A93AB', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,.05)' } } } }, extra || {}); }
   function mk(id, cfg, pkw) { const c = document.getElementById(id); if (!c || !window.Chart) return; const old = Chart.getChart(c); if (old) old.destroy(); if (pkw) c.dataset.pkw = pkw; new Chart(c, cfg); }
+
+  // what only RTE publishes, over the years it has published (scripts/fetch_rte_bilan.py): consumption gross and corrected
+  // for the weather (ODRÉ), emissions on three scopes, renewables stopped at negative prices, net value of exports
+  function rteCharts() {
+    const F = RF && RF.years; if (!F) return;
+    const ys = Object.keys(F).sort(), yr = ys.filter(y => F[y].report);
+    const ax = t => ({ ticks: { color: '#7A93AB' }, grid: { color: 'rgba(255,255,255,.05)' }, title: { display: true, text: t, color: '#7A93AB' } });
+    const bar = (lab, k, c, src) => ({ label: lab, data: yr.map(y => (src || F)[y] ? (src || F)[y][k] : null), backgroundColor: c, borderRadius: 3 });
+    const ly = ys.filter(y => F[y].loadCorrTWh != null);
+    mk('bl-rte-load', { type: 'line', data: { labels: ly, datasets: [
+      { label: T('Consommation brute', 'Gross consumption'), data: ly.map(y => F[y].loadGrossTWh), borderColor: '#9FB4C7', backgroundColor: '#9FB4C7', borderWidth: 2, pointRadius: 2, tension: 0 },
+      { label: T('Corrigée du climat', 'Weather-corrected'), data: ly.map(y => F[y].loadCorrTWh), borderColor: '#FBBF24', backgroundColor: '#FBBF24', borderWidth: 2, pointRadius: 2, tension: 0 }] },
+      options: opts({ plugins: { legend: { display: true, position: 'bottom', labels: { color: '#B8C9D9', boxWidth: 10 } }, title: { display: true, text: T('Consommation, TWh', 'Consumption, TWh'), color: '#B8C9D9' } }, scales: { x: { ticks: { color: '#7A93AB' }, grid: { display: false } }, y: ax('TWh') } }) });
+    mk('bl-rte-co2', { type: 'bar', data: { labels: yr, datasets: [bar(T('Production, cycle de vie', 'Production, life cycle'), 'lcaMt', '#D4BE96'), bar(T('Consommation française, directes', 'French consumption, direct'), 'consMt', '#E07B39'), bar(T("Évitées à l'étranger par les exportations", 'Avoided abroad by exports'), 'avoidedMt', '#14D3A9')] },
+      options: opts({ plugins: { legend: { display: true, position: 'bottom', labels: { color: '#B8C9D9', boxWidth: 10 } }, title: { display: true, text: T('Émissions, MtCO₂', 'Emissions, MtCO₂'), color: '#B8C9D9' } }, scales: { x: { ticks: { color: '#7A93AB' }, grid: { display: false } }, y: ax('MtCO₂') } }) });
+    const C = (RC && RC.years) || {}, cy = Object.keys(C).sort();
+    mk('bl-rte-curt', { type: 'bar', data: { labels: cy, datasets: [
+      { label: T('Éolien', 'Wind'), data: cy.map(y => C[y].wind), backgroundColor: '#7FC8F8', stack: 'c', borderRadius: 3 },
+      { label: T('Solaire', 'Solar'), data: cy.map(y => C[y].solar), backgroundColor: '#FBBF24', stack: 'c', borderRadius: 3 },
+      { label: T('Total (sans détail)', 'Total (no split)'), data: cy.map(y => C[y].wind == null ? C[y].total : null), backgroundColor: '#9FB4C7', stack: 'c', borderRadius: 3 }] },
+      options: opts({ plugins: { legend: { display: true, position: 'bottom', labels: { color: '#B8C9D9', boxWidth: 10 } }, title: { display: true, text: T('Renouvelables arrêtés aux prix négatifs, TWh', 'Renewables stopped at negative prices, TWh'), color: '#B8C9D9' } }, scales: { x: { stacked: true, ticks: { color: '#7A93AB' }, grid: { display: false } }, y: Object.assign(ax('TWh'), { stacked: true }) } }) });
+    mk('bl-rte-exp', { type: 'bar', data: { labels: yr, datasets: [bar(T('Valeur nette des exportations', 'Net value of exports'), 'exportBn', '#7FC8F8')] },
+      options: opts({ plugins: { legend: { display: false }, title: { display: true, text: T('Valeur nette des exportations, Md€', 'Net value of exports, bn €'), color: '#B8C9D9' } }, scales: { x: { ticks: { color: '#7A93AB' }, grid: { display: false } }, y: ax(T('Md€', 'bn €')) } }) });
+  }
 
   function charts(A, B, live, vs) {
     const prevLbl = live ? T('même période ', 'same period ') + (+year - 1) : String(+year - 1);

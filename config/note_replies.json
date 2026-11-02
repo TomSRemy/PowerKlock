@@ -664,16 +664,16 @@
   "reply": "Noté. La lenteur et la lisibilité du pricer sont le sujet du brainstorming lancé cette nuit avec les autres sessions (synthèse dans docs/discussion/pricer-ux/synthese.md, envoyée à la session principale qui s’occupe du pricer). La refonte se fera après ta validation de la maquette."
  },
  "81": {
-  "status": "open",
-  "reply": "Maquette faite, à valider avant que je code (c’est un changement de style sur tout le site) : docs/discussion/maquettes/tuiles_stories.png sur la branche discussion-bridge. Partie 1 : une seule tuile partout, sur le modèle de celles du haut d’Aujourd’hui : encart de variation en haut à droite, titre coloré selon le sens, petite courbe."
+  "status": "done",
+  "reply": "Fait : une seule règle pour le titre de toutes les tuiles du site : rouge quand la variation pousse les prix à la hausse ou tend le système, vert quand elle les détend, gris quand c’est stable ; mêmes tailles de texte partout (titre, chiffre, ligne de contexte). Les tuiles peuvent garder ou non leur petite courbe (ta précision du 2 nov.)."
  },
  "103": {
-  "status": "open",
-  "reply": "Maquette faite, à valider avant que je code (c’est un changement de style sur tout le site) : docs/discussion/maquettes/tuiles_stories.png sur la branche discussion-bridge. Les tuiles de Système France prendraient ce même modèle unique (partie 1)."
+  "status": "done",
+  "reply": "Fait : les tuiles de Système France suivent la règle commune (titre coloré selon l’effet sur les prix) et se comparent maintenant à la veille sur les mêmes quarts d’heure (▲/▼ coloré sous le chiffre)."
  },
  "107": {
-  "status": "open",
-  "reply": "Maquette faite, à valider avant que je code (c’est un changement de style sur tout le site) : docs/discussion/maquettes/tuiles_stories.png sur la branche discussion-bridge. Les tuiles du Bilan prendraient ce même modèle unique (partie 1) : un seul style, défini à un seul endroit."
+  "status": "done",
+  "reply": "Fait : les tuiles du Bilan prennent le style commun (titre coloré selon l’effet sur les prix, mêmes tailles de texte) ; une production en hausse n’apparaît plus en rouge. Plus une rangée « Selon RTE » et quatre graphiques tirés chaque année du Bilan électrique de RTE."
  },
  "113": {
   "status": "open",
