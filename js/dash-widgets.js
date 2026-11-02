@@ -6,7 +6,7 @@
 //   ppa-today       the same, today's figures in a tile
 //   fr-imb-price    France imbalance prices against the day-ahead
 //                   (scripts/fetch_fr_imbalance_cost.py → data/history/fr_imbalance_price/)
-//   neg-cost        hours at 0 € or below and what they cost a solar or wind park
+//   neg-cost        hours below 0 € and what they cost a solar or wind park
 //   month-review    the last full month in a few written lines
 // Texts in both languages (_mT, js/morning.js).
 // ════════════════════════════════════════════════════════════════════
@@ -27,7 +27,7 @@
 
   // ── PPA benchmark ──
   R({ id: 'ppa-benchmark', title: 'PPA benchmark · France', category: 'renewables', page: 'ppapricer', size: { w: 6, h: 5 },
-    desc: 'The PPA price of the PowerKlock pricer (default settings, Cal+1 to Cal+3, pay-as-produced, curtailed at 0 € or below), recalculated every day: how the price moves with the forwards, the capture rates and the GO.',
+    desc: 'The PPA price of the PowerKlock pricer (default settings, Cal+1 to Cal+3, pay-as-produced, stopped strictly below 0 €, an hour at 0 € paid 0 as the CRE does), recalculated every day: how the price moves with the forwards, the capture rates and the GO.',
     params: [TECH, { key: 'win', label: 'Period', options: [['3M', '3M'], ['6M', '6M'], ['1Y', '1Y'], ['all', 'All']] }], defaults: { tech: 'both', win: '6M' },
     async draw(cid, p) {
       const j = await bench(); if (!j || !j.days) { noDataMsg(cid, _mT('Benchmark pas encore calculé', 'Benchmark not computed yet'), ''); return null; }
@@ -144,7 +144,7 @@
       return { sub: _mDay(d) + (gap != null ? _mT(' · écart moyen au day-ahead ', ' · mean gap to the day-ahead ') + _mN(gap, 1) + ' €/MWh' : '') };
     } });
 
-  // ── hours at 0 € or below, and what they cost ──
+  // ── hours below 0 €, and what they cost ──
   // output of 1 MW: RTE national output ÷ installed capacity of the year (Energy-Charts), hour by hour
   async function monthStats(ym) {
     const [h, cap] = await Promise.all([hourly(ym.slice(0, 4)), get('cap', 'history/capacity.json')]);
@@ -156,7 +156,7 @@
       const v = h.days[d];
       (v.p || []).forEach((p, i) => {
         if (p == null) return;
-        o.n++; o.base += p; const neg = p <= 0;
+        o.n++; o.base += p; const neg = p < 0;   // the park stops strictly below 0, as the CRE's complément de rémunération: an hour at 0 is paid 0
         if (neg) o.hours++;
         [['s', v.s, cs], ['w', v.w, cw]].forEach(([k, a, c]) => { const x = a && a[i] != null && c ? a[i] / c : 0; o[k].all += x; o[k].val += x * p; if (neg) o[k].neg += x; });
         if (v.n && v.n[i] != null) { o.nuc += v.n[i]; o.nn++; }
@@ -167,8 +167,8 @@
     o.nuc = o.nn ? o.nuc / o.nn / 1000 : null;
     return o.n ? o : null;
   }
-  R({ id: 'neg-cost', kind: 'html', title: 'Hours at 0 € or below · what they cost', category: 'renewables', page: 'prices', source: 'ENTSO-E · RTE éCO2mix · Energy-Charts · PowerKlock', size: { w: 6, h: 6 },
-    desc: 'This month, last month and the same month a year ago: hours at 0 € or below in France, the output of 1 MW of solar or wind in those hours, and its value at today’s PPA benchmark (not paid when the park is curtailed).',
+  R({ id: 'neg-cost', kind: 'html', title: 'Hours below 0 € · what they cost', category: 'renewables', page: 'prices', source: 'ENTSO-E · RTE éCO2mix · Energy-Charts · PowerKlock', size: { w: 6, h: 6 },
+    desc: 'This month, last month and the same month a year ago: hours below 0 € in France, the output of 1 MW of solar or wind in those hours, and its value at today’s PPA benchmark (not paid when the park is curtailed).',
     async html(host) {
       const m = today().slice(0, 7), ms = [m, addMonths(m, -1), addMonths(m, -12)];
       const [st, j] = await Promise.all([Promise.all(ms.map(monthStats)), bench()]);
@@ -177,8 +177,8 @@
       // per technology: the cost first (€ per MW), then the output in those hours and its share of the month
       const row = (o, i) => !o ? '' : `<tr><td style="text-align:left">${monthName(ms[i])}${i === 0 ? _mT(' (en cours)', ' (to date)') : ''}</td><td><b>${o.hours} h</b></td>` +
         ['s', 'w'].map(k => `<td><b>${price[k] != null ? _mN(o[k].neg * price[k], 0) + ' €' : '–'}</b><span class="m0-rng">${_mN(o[k].neg, 1)} MWh · ${_mN(o[k].all ? o[k].neg / o[k].all * 100 : null, 0)} %</span></td>`).join('') + '</tr>';
-      host.innerHTML = `<div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">${_mT('Mois', 'Month')}</th><th>${_mT('Heures ≤ 0 €', 'Hours ≤ 0 €')}</th><th>${_mT('Solaire, par MW', 'Solar, per MW')}</th><th>${_mT('Éolien, par MW', 'Wind, per MW')}</th></tr></thead><tbody>` +
-        st.map(row).join('') + `</tbody></table></div><div class="fuel-note">${_mT('Production d’1 MW (production nationale RTE ÷ parc installé) pendant les heures à 0 € ou moins, et sa part de la production du mois. Coût = cette production non payée, au prix PPA benchmark du jour', 'Output of 1 MW (RTE national output ÷ installed fleet) in the hours at 0 € or below, and its share of the month’s output. Cost = that output unpaid, at today’s PPA benchmark')} (${_mT('solaire', 'solar')} ${_mN(price.s, 2)}, ${_mT('éolien', 'wind')} ${_mN(price.w, 2)} €/MWh).</div>`;
+      host.innerHTML = `<div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">${_mT('Mois', 'Month')}</th><th>${_mT('Heures < 0 €', 'Hours < 0 €')}</th><th>${_mT('Solaire, par MW', 'Solar, per MW')}</th><th>${_mT('Éolien, par MW', 'Wind, per MW')}</th></tr></thead><tbody>` +
+        st.map(row).join('') + `</tbody></table></div><div class="fuel-note">${_mT('Production d’1 MW (production nationale RTE ÷ parc installé) pendant les heures sous 0 €, et sa part de la production du mois. Coût = cette production non payée, au prix PPA benchmark du jour', 'Output of 1 MW (RTE national output ÷ installed fleet) in the hours below 0 €, and its share of the month’s output. Cost = that output unpaid, at today’s PPA benchmark')} (${_mT('solaire', 'solar')} ${_mN(price.s, 2)}, ${_mT('éolien', 'wind')} ${_mN(price.w, 2)} €/MWh).</div>`;
     } });
 
   // ── the month in a few lines ──
@@ -192,7 +192,7 @@
       const pct = (x, y) => x != null && y ? (x / y - 1) * 100 : null;
       const L = [];
       L.push([_mT('Spot', 'Spot'), _mT('base moyenne ', 'average baseload ') + B(_mN(a.base, 1) + ' €/MWh') + (b ? ' (' + _mS(a.base - b.base, 1) + _mT(' € sur un mois', ' € on a month') : '') + (c ? ', ' + _mS(a.base - c.base, 1) + _mT(' € sur un an)', ' € on a year)') : b ? ')' : '') +
-        '; ' + B(a.hours + ' h') + _mT(' à 0 € ou moins', ' at 0 € or below') + (c ? _mT(' contre ', ' against ') + c.hours + _mT(' h un an plus tôt', ' h a year earlier') : '') + '.']);
+        '; ' + B(a.hours + ' h') + _mT(' sous 0 €', ' below 0 €') + (c ? _mT(' contre ', ' against ') + c.hours + _mT(' h un an plus tôt', ' h a year earlier') : '') + '.']);
       const cap = k => a[k].capture != null ? B(_mN(a[k].capture * 100, 0) + ' %') + (c && c[k].capture != null ? ' (' + _mS((a[k].capture - c[k].capture) * 100, 0) + _mT(' pts sur un an)', ' pts on a year)') : '') : '–';
       L.push([_mT('Capture', 'Capture'), _mT('solaire ', 'solar ') + cap('s') + _mT(', éolien ', ', wind ') + cap('w') + _mT(' (prix capté ÷ base, toutes heures).', ' (captured price ÷ baseload, all hours).')]);
       L.push([_mT('Production', 'Output'), _mT('1 MW solaire a produit ', '1 MW of solar produced ') + B(_mN(a.s.all, 0) + ' MWh') + (c ? ' (' + _mS(pct(a.s.all, c.s.all), 0) + _mT(' % sur un an)', ' % on a year)') : '') + _mT(', 1 MW éolien ', ', 1 MW of wind ') + B(_mN(a.w.all, 0) + ' MWh') + (c ? ' (' + _mS(pct(a.w.all, c.w.all), 0) + ' %)' : '') + _mT('; nucléaire ', '; nuclear ') + B(_mN(a.nuc, 1) + ' GW') + _mT(' en moyenne', ' on average') + (c && c.nuc ? ' (' + _mS(a.nuc - c.nuc, 1) + _mT(' GW sur un an)', ' GW on a year)') : '') + '.']);
@@ -211,7 +211,7 @@
   // ── the monthly review as a PowerPoint in one click: the month written out, then its charts (drawn off screen and
   //    captured), in the user's own template when one is kept (js/pptx-export.js) ──
   const DECK = [['fr-spot-monthly', { zone: 'FR' }, 'Spot by month · 12 months'], ['fr-sys-monthly', { view: 'twh', win: '3Y' }, 'France monthly production by source'],
-    ['spark-monthly', { zone: 'FR', period: '1Y' }, 'Spreads · monthly averages'], ['ppa-benchmark', { tech: 'both', win: '1Y' }, 'PPA benchmark · France'], ['neg-cost', {}, 'Hours at 0 € or below · what they cost']];
+    ['spark-monthly', { zone: 'FR', period: '1Y' }, 'Spreads · monthly averages'], ['ppa-benchmark', { tech: 'both', win: '1Y' }, 'PPA benchmark · France'], ['neg-cost', {}, 'Hours below 0 € · what they cost']];
   async function monthDeck(btn, m) {
     const txt = btn.textContent; btn.disabled = true; btn.textContent = _mT('Préparation…', 'Preparing…');
     const box = document.createElement('div'); box.style.cssText = 'position:fixed;left:-12000px;top:0;width:1100px;background:var(--bg2);padding:16px';
