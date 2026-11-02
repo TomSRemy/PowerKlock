@@ -1,9 +1,9 @@
 {
- "lastUpdate": "2026-11-01T21:15:50.108109+00:00",
+ "lastUpdate": "2026-11-02T16:22:20.954483+00:00",
  "spot": {
-  "value": 256.13,
+  "value": 246.37,
   "unit": "EUR/MWh",
-  "date": "2026-11-01"
+  "date": "2026-11-02"
  },
  "forwardCurve": [
   {
@@ -119,33 +119,32 @@
  ],
  "forwardCurveDate": "2026-10-29",
  "nuclearCapacity": {
-  "actualMW": 45059.37,
   "forecastMW": 49560
  },
- "nuclearCapacityDate": "2026-10-29",
+ "nuclearCapacityDate": null,
  "generationMix": {
-  "gas": 4.28,
-  "wind": 4.19,
-  "solar": 3.38,
-  "nuclear": 42.5,
-  "hydro": 2.26,
-  "other": 2.27
+  "gas": null,
+  "wind": null,
+  "solar": null,
+  "nuclear": null,
+  "hydro": null,
+  "other": null
  },
- "generationMixDate": "2026-10-29",
- "marketInsightsHtml": "<p>German November 26 baseload dropped €3.55 to settle at €225.80/MWh, while French November shed €4.70 to €214.30/MWh and UK November fell £3.75 to £194.25/MWh. Prompt Day-Ahead delivery also corrected downwards from Wednesday’s peaks, with German Day-Ahead declining €41.50 to clear at €273.50/MWh, France falling €27.05 to €242.95/MWh, and UK Day-Ahead dropping £12.20 to £201.40/MWh.</p><p>French November nuclear unavailability was revised up by 1.4 GW over the past week to an average of 15.1 GW (well above last year’s 13.7 GW), while the 2 GW IFA interconnector to Great Britain remains capped at 500 MW in each direction until 13 November.</p>",
+ "generationMixDate": null,
+ "marketInsightsHtml": null,
  "marketInsights": {
-  "gas": "<p>European natural gas eased on Thursday, following Wednesday&rsquo;s test of &euro;100/MWh, though persistent Middle East risks and emerging winter cold forecasts kept contracts near multi-year highs. Dutch TTF November 26 settled down &euro;2.03 at &euro;98.28/MWh, while Day-Ahead fell &euro;2.40 to close at &euro;99.95/MWh. This Morning, TTF December 26 opened up at &euro;98.75/MWh. &nbsp;In the UK, NBP Day-Ahead shed 8.89p to settle at 241.10p/th, while November 26 retreated 6.10p to 241.44p/th, and December 26 opened at 246.31p/th.</p>\n<p>The modest pullback was triggered by reports of renewed US-Iran diplomatic outreach, including a letter from US Vice President JD Vance to Iranian security officials, which provided temporary relief against fears of post-midterm escalation. However, physical risk remains critical after Iran reported three commercial tankers struck sea mines in the Strait of Hormuz, while the UKMTO confirmed a separate vessel fire. Brent crude pushed back above $115/bbl this morning following reports that senior military commanders briefed Donald Trump on potential strike options against Tehran should diplomacy stall.</p>\n<p>Weather forecasters raised the probability of a Sudden Stratospheric Warming (SSW) event in mid to late Week 45 to 70%, which would represent the earliest recorded SSW on record, greatly increasing the likelihood of an early winter cold snap across Northern and Central Europe in late November and early December.</p>\n<p>Total EU storage fell back into net withdrawal mode at 74.89% capacity (848.4 TWh, down 0.06% day-on-day), with Germany at 61.61%, the Netherlands at 65.63%, and the UK dropping to 40.57%. Upstream pipeline supply remains tight as unplanned Norwegian outages at Karst&oslash;, Oseberg, Kollsnes, and &Aring;sgard continue.</p>",
-  "power": "<p>European power curves retreated on Thursday, tracking wholesale gas lower and unwinding part of Wednesday&rsquo;s surge.</p>\n<p>German November 26 baseload dropped &euro;3.55 to settle at &euro;225.80/MWh, while French November shed &euro;4.70 to &euro;214.30/MWh and UK November fell &pound;3.75 to &pound;194.25/MWh. Prompt Day-Ahead delivery also corrected downwards from Wednesday&rsquo;s peaks, with German Day-Ahead declining &euro;41.50 to clear at &euro;273.50/MWh, France falling &euro;27.05 to &euro;242.95/MWh, and UK Day-Ahead dropping &pound;12.20 to &pound;201.40/MWh.</p>\n<p>Renewables remain in a severe lull as an expansive, blocked high-pressure ridge dominates Northwest Europe. German wind generation is forecast to bottom out at 2.1&ndash;3.2 GW through Sunday (load factors of just 3&ndash;5%) before edging up towards 5.5&ndash;9.7 GW early next week. UK wind output is forecast to average just 2.5&ndash;5.6 GW over the weekend and remain below seasonal averages through Week 45. The combination of weak winds, low solar irradiance, and dense fog continues to create localized Dunkelflaute grid-balancing pressures.</p>\n<p>Supply margins remain constrained by nuclear and hydro deficits. French November nuclear unavailability was revised up by 1.4 GW over the past week to an average of 15.1 GW (well above last year&rsquo;s 13.7 GW), while the 2 GW IFA interconnector to Great Britain remains capped at 500 MW in each direction until 13 November.</p>\n<p>Thermal generation margins saw German November clean spark spreads (55% CCGT) rise to &euro;12.09/MWh as gas fell faster than power; however, clean dark spreads (40% coal) held firm at &euro;102.76/MWh, maintaining a massive &euro;90+/MWh advantage that keeps coal running baseload ahead of CCGTs.</p>"
+  "gas": "<p>European gas prices have softened at open after the TTF front month contract reached four-year highs on Friday, breaching 100 &euro;/MWh for the first time since 2022, as escalating geopolitical tensions in the Middle East and weather continue to drive supply concerns. Tanker attacks remain ongoing, while the possibility of renewed US strikes following the midterm elections adds further uncertainty. Reports of a US attempt to reopen negotiations with Tehran have offered some bearish support to pricing.</p>\n<p>Additional bullish pressure is coming from tightening near term supply and weather fundamentals. Forecasts continue to point towards below average temperatures this week, supporting heating demand, while sustained withdrawals from European gas storage have added to concerns over inventory levels. Meanwhile, an unplanned outages at Norway's Oseberg field is restricting pipeline exports by 17mcm, further tightening the European supply outlook.</p>",
+  "power": "<p>European power markets are being driven higher by weather and ongoing geopolitical uncertainty in the Middle East. The UK Baseload front month contract is pricing at 194.50 &pound;/MWh, down 2.50 &pound;/MWh day on day. Forecasts for lower wind and solar generation this week are expected to increase reliance on gas-fired power generation, adding further demand pressure to an already tight gas market. Meanwhile, EDF has warned of a potential 24 hour strike by power workers on Wednesday, introducing additional uncertainty around the European electricity supply outlook. Further upward pressure is coming from carbon markets, with EUAs climbing above 90 &euro;/t on Friday. However, some geopolitical risk premium has eased, with oil prices falling around 3% after Trump indicated that diplomacy with Iran would be given more time, offering some relief to commodity markets.<br /></p>"
  },
- "marketInsightsDate": "2026-11-01",
+ "marketInsightsDate": "2026-11-02",
  "countries": {
   "FR": {
    "label": "France",
    "currency": "EUR",
    "spot": {
-    "value": 256.13,
+    "value": 246.37,
     "unit": "EUR/MWh",
-    "date": "2026-11-01"
+    "date": "2026-11-02"
    },
    "forwardCurve": [
     {
@@ -261,27 +260,26 @@
    ],
    "forwardCurveDate": "2026-10-29",
    "nuclearCapacity": {
-    "actualMW": 45059.37,
     "forecastMW": 49560
    },
-   "nuclearCapacityDate": "2026-10-29",
+   "nuclearCapacityDate": null,
    "generationMix": {
-    "gas": 4.28,
-    "wind": 4.19,
-    "solar": 3.38,
-    "nuclear": 42.5,
-    "hydro": 2.26,
-    "other": 2.27
+    "gas": null,
+    "wind": null,
+    "solar": null,
+    "nuclear": null,
+    "hydro": null,
+    "other": null
    },
-   "generationMixDate": "2026-10-29"
+   "generationMixDate": null
   },
   "UK": {
    "label": "United Kingdom",
    "currency": "GBP",
    "spot": {
-    "value": 210.05,
+    "value": 208.17,
     "unit": "GBP/MWh",
-    "date": "2026-11-01"
+    "date": "2026-11-02"
    },
    "forwardCurve": [
     {
@@ -399,23 +397,23 @@
    "nuclearCapacity": null,
    "nuclearCapacityDate": null,
    "generationMix": {
-    "gas": 17.79,
-    "wind": 3.61,
-    "solar": 2.42,
-    "nuclear": 5.11,
-    "hydro": 0.83,
-    "biomass": 3.29,
-    "other": 1.38
+    "gas": 12.25,
+    "wind": 3.89,
+    "solar": 1.57,
+    "nuclear": 5.13,
+    "hydro": 0.8,
+    "biomass": 3.33,
+    "other": 0.93
    },
-   "generationMixDate": "2026-10-29"
+   "generationMixDate": "2026-11-01"
   },
   "DE": {
    "label": "Germany",
    "currency": "EUR",
    "spot": {
-    "value": 259.31,
+    "value": 252.85,
     "unit": "EUR/MWh",
-    "date": "2026-11-01"
+    "date": "2026-11-02"
    },
    "forwardCurve": [
     {
@@ -533,23 +531,23 @@
    "nuclearCapacity": null,
    "nuclearCapacityDate": null,
    "generationMix": {
-    "gas": 9.42,
-    "wind": 4.54,
-    "solar": 6.04,
-    "nuclear": 0,
-    "coal": 17.09,
-    "hydro": 0.17,
-    "other": 0.46
+    "gas": null,
+    "wind": null,
+    "solar": null,
+    "nuclear": null,
+    "coal": null,
+    "hydro": null,
+    "other": null
    },
-   "generationMixDate": "2026-10-29"
+   "generationMixDate": null
   },
   "NL": {
    "label": "Netherlands",
    "currency": "EUR",
    "spot": {
-    "value": 251.26,
+    "value": 250.58,
     "unit": "EUR/MWh",
-    "date": "2026-11-01"
+    "date": "2026-11-02"
    },
    "forwardCurve": [
     {
@@ -667,14 +665,14 @@
    "nuclearCapacity": null,
    "nuclearCapacityDate": null,
    "generationMix": {
-    "gas": 5.85,
-    "wind": 0.11,
-    "solar": 0.76,
-    "nuclear": 0.48,
-    "coal": 3.2,
-    "other": 0.3
+    "gas": null,
+    "wind": null,
+    "solar": null,
+    "nuclear": null,
+    "coal": null,
+    "other": null
    },
-   "generationMixDate": "2026-10-29"
+   "generationMixDate": null
   }
  }
 }
