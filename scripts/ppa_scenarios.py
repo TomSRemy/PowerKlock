@@ -93,6 +93,39 @@ def stop_share(t, Y):
     return c / (c + a['fr_' + t][n].sum())
 
 
+_POT = {}
+
+
+def potential(y, t):
+    """France's output of technology t in year y without its stops at negative prices, MW, days × 24: the hours at a
+    negative price rebuilt as scripts/build_flex_share.py does for its kept shares (wind: a straight line from the hour
+    before to the hour after each block, one hour further out; solar: the month's clean-day shape scaled on the day's
+    other hours), never below the output seen"""
+    if (y, t) not in _POT:
+        import build_flex_share as FS
+        a = L.DATA[y]
+        v = a['fr_' + t].astype(float)
+        _POT[(y, t)] = FS.solar_pot(v, a['fr_p'], a['month']) if t == 's' else FS.wind_pot(v, a['fr_p'])
+    return _POT[(y, t)]
+
+
+def actual_T(t, Y, T, pot=False):
+    """L.actual at stop threshold T (output stopped strictly below T €/MWh), weighted by the national output or (pot) by
+    the output without stops at negative prices"""
+    a = L.DATA[Y]
+    P, V = a['fr_p'], (potential(Y, t) if pot else a['fr_' + t])
+    out = {}
+    for m in range(1, 13):
+        k = a['month'] == m
+        if k.sum() < 20:
+            continue
+        Pm, Vm = P[k], V[k]
+        base, pos = Pm.mean(), Pm >= T
+        out[m] = {'curt': float((Vm[pos] * Pm[pos]).sum() / Vm[pos].sum() / base) if Vm[pos].sum() > 0 else None,
+                  'paid': float(Vm[pos].sum() / Vm.sum()), 'base': float(base), 'mwh': float(Vm.sum()), 'days': int(k.sum())}
+    return out
+
+
 def _year(y):
     """per-day arrays of a past year: load factors, demand / nuclear deviations, price ratio, its rule residual"""
     if y in _YEAR:
@@ -110,6 +143,8 @@ def _year(y):
             c0 = L.cap(c, t, y - 1) or c1
             gw = (c0 + (c1 - c0) * frac)[:, None] * 1000
             out[f'{c}_{t}'] = np.clip((_addback(y, t) if c == 'FR' else a[p + t]) / gw, 0, 1.2)
+            if c == 'FR':
+                out[f'FR_{t}gw'] = gw
         for v in 'ln':
             arr = a[p + v]
             ref = np.ones(len(days))
@@ -373,6 +408,70 @@ def _wm(v, w):
     v = np.asarray(v, float); return float((v * w).sum() / w.sum())
 
 
+_SG = os.environ.get('PK_STOP_GRID', '')
+STOP_GRID = (tuple(sorted(set([-20.0, -10.0, -5.0, -2.0, -1.0, 0.0, 5.0, 10.0]))) if _SG == '1' else
+             tuple(sorted(set(float(v) for v in _SG.split(',') if v.strip()) | {0.0})) if _SG else None)
+# test (Tom 2 Nov. 2026: price any stop threshold T "with cells like the rest"): each cell also keeps, for each T of the
+# grid, the chance the price is ≥ T and the part of the price paid at ≥ T, so simulate() gives the capture and paid share
+# of a park that stops below T ('curtT', 'paidT'), not the T = 0 capture × a ratio measured on past years. Below 0 the
+# cell keeps the € part between T and 0 (negative prices are learnt in €, NEG_EUR); above 0 the ratio-to-cost part paid
+# at ≥ T, the hours sorted on their € price of the learning years. T = 0 is the published 'curt' itself. Replay
+# 2023–2026, 9 cases each (scripts/ppa_stopgrid_test.py), mean / mean absolute error €/MWh, ratio → cells: solar −10 €
+# +1.72 / 4.37 → +1.68 / 2.75, −1 € +1.92 / 3.90 → +1.22 / 2.65, +5 € −2.70 / 2.78 → +0.98 / 1.76; wind, anchored with
+# the T = 0 factor (a factor per T does worse, +5 € 2.67), −10 € −0.79 / 1.96 → −0.27 / 1.24, −1 € −0.48 / 1.77 → −0.15 /
+# 1.23, +5 € +0.50 / 1.67 → +0.54 / 1.74; T = 0 unchanged; generator +17 % run time. Off by default (2 Nov. 2026)
+STOP_POT = os.environ.get('PK_STOP_POT') == '1'   # with STOP_GRID: also 'curtTp' / 'paidTp', the same captures weighted by
+# France's output without its stops at negative prices (rebuilt as scripts/build_flex_share.py does: wind bridged over
+# each negative block, solar from the month's clean-day shape), since a park that keeps producing below 0 produces what
+# the weather gives, while the national output in those hours is already cut (large solar kept ~49 %, wind ~59 %).
+# Replay: solar −0.06 €/MWh at every T (the weather weeks come from 2019 on, when parks hardly stopped), wind −0.6 to
+# −0.8 € below 0 with a factor per T, −0.15 € with the T = 0 factor; on the realised capture rebuilt the same way, wind
+# −1 € 1.46 → 1.42 €/MWh mean absolute error, solar 3.05 → 3.01: little gain, not taken
+
+
+def _tcell(p, r, w):
+    """one cell's stop-grid stats over its hours: price p €, price ÷ cost r, weights w. Per T: (value part, chance
+    p ≥ T); the value part is the € price between T and 0 for T ≤ 0 (0 at T = 0), the ratio paid at p ≥ T above 0"""
+    w = np.asarray(w, float); s = w.sum()
+    tv, tp = np.empty(len(STOP_GRID)), np.empty(len(STOP_GRID))
+    for i, T in enumerate(STOP_GRID):
+        k = p >= T
+        tp[i] = (w * k).sum() / s
+        tv[i] = (w * (p * (k & (p < 0)) if T <= 0 else r * k)).sum() / s
+    return tv, tp
+
+
+def _tshift(tv, tp, m0, p0, m1, p1):
+    """the stop-grid stats of a cell whose positive part m0 and paid chance p0 were moved to m1 and p1 (extrapolation,
+    interpolation, gas-or-€ choice...): above 0 scaled as the T = 0 values, below 0 the hours between T and 0 kept as
+    learnt (their € part and their share of hours) on top of the new T = 0 chance"""
+    tv, tp = tv.copy(), tp.copy()
+    m0, p0, m1, p1 = (np.asarray(v, float)[..., None] for v in (m0, p0, m1, p1))
+    G_ = np.array(STOP_GRID)
+    neg, pos = G_ < 0, G_ > 0
+    sm = np.divide(m1, m0, out=np.ones_like(m1 + m0), where=m0 > 0)
+    sp = np.divide(p1, p0, out=np.ones_like(p1 + p0), where=p0 > 0)
+    tp = np.where(neg, np.clip(p1 + (tp - p0), 0, 1), np.where(pos, np.minimum(np.clip(tp * sp, 0, 1), p1), p1))
+    tv = np.where(neg, tv, np.where(pos, np.minimum(tv * sm, m1), 0.0))
+    return tv, tp
+
+
+def _tfinal(tv, tp, m0, p0, out, cost):
+    """(capture value ÷ cost, paid chance) per T of the grid, lists of arrays shaped as out[1]: the rule's final positive
+    part and paid chance (out[1], out[2]) carried to every T; T = 0 is out[1], out[2] themselves"""
+    tv, tp = _tshift(tv, tp, m0, p0, out[1], out[2])
+    cb = np.maximum(cost, 1.0) * np.ones_like(out[1]) if cost is not None else np.ones_like(out[1])
+    fpT, fqT = [], []
+    for i, T in enumerate(STOP_GRID):
+        if T == 0:
+            fpT.append(out[1]); fqT.append(out[2])
+        elif T < 0:
+            fpT.append(out[1] + tv[..., i] / cb); fqT.append(tp[..., i])
+        else:
+            fpT.append(tv[..., i]); fqT.append(tp[..., i])
+    return fpT, fqT
+
+
 class PriceModelFuel:
     """price of the hour in €/MWh = the day's gas-plant cost × φ(residual share of the region), by season × time of
     day; φ is learnt as price ÷ that day's cost on the years given. When much is left to produce, the gas plant sets
@@ -461,6 +560,8 @@ class PriceModelFuel:
         b = np.clip(np.round(x / L.BIN).astype(int) - self.lo, 0, self.nb - 1)
         mean = np.full((self.G, self.nb), np.nan); mpos = mean.copy(); ppos = mean.copy(); neg = mean.copy()
         eur = np.zeros((self.G, self.nb), bool); me = mean.copy(); mpe = mean.copy()
+        K_ = len(STOP_GRID) if STOP_GRID else 0
+        tv = np.full((self.G, self.nb, K_), np.nan); tp = tv.copy()
         # AFFINE: in each cell, price = a + b × fuel cost (a fixed part in €, b the gas-following part), fitted on the
         # cell's hours; φ = a ÷ cost + b. French hours are often set by nuclear or hydro at a level that does not
         # follow gas, which a pure ratio to the gas cost mixes up between dear-gas and cheap-gas years
@@ -475,6 +576,8 @@ class PriceModelFuel:
                     v = r[k]; ww = wv[k]
                     mean[gi, bi], mpos[gi, bi], ppos[gi, bi] = _wm(v, ww), _wm(v * (v > 0), ww), _wm(v >= 0, ww)
                     neg[gi, bi] = _wm(e[k], ww)
+                    if K_:
+                        tv[gi, bi], tp[gi, bi] = _tcell(pe_[k], v, ww)
                     if self.MO_EUR:
                         eur[gi, bi], me[gi, bi], mpe[gi, bi] = self._pick(pe_[k], ce_[k], ye_[k])
                     if bi <= self._lowbin.get(gi, 10 ** 6) + 2:
@@ -495,6 +598,7 @@ class PriceModelFuel:
             m0 = mean[gi].copy()
             mean[gi], mpos[gi], ppos[gi], neg[gi] = mean[gi, near], mpos[gi, near], ppos[gi, near], neg[gi, near]
             eur[gi], me[gi], mpe[gi] = eur[gi, near], me[gi, near], mpe[gi, near]
+            tv[gi], tp[gi] = tv[gi, near], tp[gi, near]
             winter = (gi % (2 * self.BLOCKS)) < self.BLOCKS
             if self.EXTRAP and len(filled) >= 3 and (self.EXTRAP is True or (self.EXTRAP == 'winter') == winter):  # off: in the
                 # generator replay 2021–2025, winter only: 2.50 → 2.81 €/MWh (both), all year neutral on the true weather
@@ -508,12 +612,16 @@ class PriceModelFuel:
                     mean[gi, bi] = max(min(v, m0[low]), floor)
                     ppos[gi, bi] = ppos[gi, low] if mean[gi, bi] > 0 else min(ppos[gi, low], 0.5)
                     mpos[gi, bi] = max(mean[gi, bi], 0) if mean[gi, bi] > 0 else mpos[gi, low] * 0.5
+                    if K_:
+                        tv[gi, bi], tp[gi, bi] = (u[0] for u in _tshift(tv[gi, low][None], tp[gi, low][None], [mpos[gi, low]],
+                                                                         [ppos[gi, low]], [mpos[gi, bi]], [ppos[gi, bi]]))
         empty = [gi for gi in range(self.G) if np.isnan(mean[gi]).all()]
         full_ = [gi for gi in range(self.G) if gi not in empty]
         for gi in empty:
-            for arr in (mean, mpos, ppos, neg, me, mpe):
+            for arr in (mean, mpos, ppos, neg, me, mpe, tv, tp):
                 arr[gi] = np.nanmean(arr[full_], axis=0)
             eur[gi] = False
+        self.tv, self.tp = tv, tp
         self.mean, self.mpos, self.ppos, self.neg = mean, mpos, ppos, neg
         self.eur, self.me, self.mpe = eur, me, mpe
         self.A, self.B = A_, B_
@@ -522,6 +630,17 @@ class PriceModelFuel:
         b = np.clip(np.round(x / L.BIN).astype(int) - self.lo, 0, self.nb - 1)
         out = [self.mean[g, b].copy(), self.mpos[g, b].copy(), self.ppos[g, b].copy()]
         ng = self.neg[g, b].copy()
+        if STOP_GRID:
+            # the cell's own stop-grid stats and the T = 0 values they go with (whatever moves out[1], out[2] later is
+            # carried to every T by _tfinal)
+            cm, cp, tv, tp = out[1].copy(), out[2].copy(), self.tv[g, b], self.tp[g, b]
+            if xf is not None and getattr(self, 'tab2T', None):
+                k = (g * 1000 + (np.round(x / 0.05).astype(int) + 100)) * 1000 + (np.round(xf / self.fbin()).astype(int) + 100)
+                for kk in np.unique(k):
+                    v = self.tab2.get(int(kk))
+                    if v is not None:
+                        sel = k == kk
+                        cm[sel], cp[sel] = v[1], v[2]; tv[sel], tp[sel] = self.tab2T[int(kk)]
         if self.MO_EUR and cost is not None:
             cb = np.maximum(cost, 1.0) * np.ones_like(out[0])
             fe = self.eur[g, b]
@@ -574,6 +693,8 @@ class PriceModelFuel:
                     for i in range(3):
                         out[i][sel] = v[i]
                     ng[sel] = v[3]
+                    if STOP_GRID:
+                        cm[sel], cp[sel] = v[1], v[2]; tv[sel], tp[sel] = self.tab3T[int(kk)]
         if self.FR_LIN and z is not None and getattr(self, 'lin', None) is not None and xf is not None:
             kc = (g * 1000 + (np.round(x / 0.05).astype(int) + 100)) * 1000 + (np.round(xf / self.fbin()).astype(int) + 100)
             beta, zbar = np.zeros(x.shape), np.zeros(x.shape)
@@ -587,6 +708,7 @@ class PriceModelFuel:
                 out[0] = out[0] + d
         if self.NEG_EUR and cost is not None:
             out[0] = out[1] + ng / np.maximum(cost, 1.0)
+        self._lastT = _tfinal(tv, tp, cm, cp, out, cost) if STOP_GRID else None
         return tuple(out)
 
     @staticmethod
@@ -621,24 +743,28 @@ class PriceModelFuel:
         pe_, ce_, ye_ = np.concatenate(ps), np.concatenate(cs), np.concatenate(yrs)
         mk = np.concatenate(mm); wv = np.concatenate(wws)
         k, r, e, z_, g_, pe_, ce_, ye_, wv = (v[mk] for v in (k, r, e, z_, g_, pe_, ce_, ye_, wv))
-        self.tab2 = {}
+        self.tab2, self.tab2T = {}, {}
         for kk in np.unique(k):
             sel = k == kk
             if sel.sum() >= 20:
                 v = r[sel]; ww = wv[sel]
                 self.tab2[int(kk)] = (_wm(v, ww), _wm(v * (v > 0), ww), _wm(v >= 0, ww), _wm(e[sel], ww)) + \
                     (self._pick(pe_[sel], ce_[sel], ye_[sel]) if self.MO_EUR else (False, 0.0, 0.0))
+                if STOP_GRID:
+                    self.tab2T[int(kk)] = _tcell(pe_[sel], v, ww)
         if CELL_W and not getattr(self, 'DAY2', False):
             # test: the French wind share as a third input of the cells (bins of CELL_W), where a cell has CELL_MIN hours
             wsh_ = np.concatenate([(L.DATA[y]['fr_w'] / L.DATA[y]['fr_l'])[np.isfinite(np.array([F.get(str(d)[:10], np.nan) for d in L.DATA[y]['days']])) & (np.array([F.get(str(d)[:10], np.nan) for d in L.DATA[y]['days']]) > 5)].ravel() for y in years])
             wsh_ = wsh_[mk]
             k3 = k * 100 + np.clip(np.round(wsh_ / CELL_W).astype(int), 0, 99)
-            self.tab3 = {}
+            self.tab3, self.tab3T = {}, {}
             for kk in np.unique(k3):
                 sel = k3 == kk
                 if sel.sum() >= CELL_MIN:
                     v = r[sel]
                     self.tab3[int(kk)] = (v.mean(), (v * (v > 0)).mean(), (v >= 0).mean(), e[sel].mean())
+                    if STOP_GRID:
+                        self.tab3T[int(kk)] = _tcell(pe_[sel], v, np.ones(sel.sum()))
         if self.FR_LIN:
             # the slope of price ÷ cost per GW of French residual load, by season × time of day (one line per group, so
             # each slope rests on thousands of hours), applied around each cell's own mean residual load
@@ -1073,8 +1199,13 @@ class RegimeRule:
             a = self.dec.phi(x, g, xf, cost)
         else:
             a = self.dec.phi(xfr, g, (day_mean(xfr) if DEC2 == '1' else getattr(self, '_wsh', None)) if DEC2 else None, cost)
+        ta = self.dec._lastT if STOP_GRID else None
         b = self.cpl.phi(x, g, xf, cost)
         w = self.pdec(g, need)
+        if STOP_GRID:
+            # the cut-off and coupled regimes mix at every T as at 0: both the value and the paid chance are expectations
+            tb = self.cpl._lastT
+            self._lastT = tuple([w * u + (1 - w) * v for u, v in zip(ta[i], tb[i])] for i in (0, 1))
         return tuple(w * u + (1 - w) * v for u, v in zip(a, b))
 
 
@@ -1301,6 +1432,26 @@ def anchor_factors(t, A, known, st, cost, n=30, seed=7):
         ky, kw, ks = k(range(1, 13)), k(WINTER), k([m for m in range(1, 13) if m not in WINTER])
         out['year'][conv] = {m: ky for m in range(1, 13)}
         out['season'][conv] = {m: kw if m in WINTER else ks for m in range(1, 13)}
+    if STOP_GRID:
+        # the same anchoring at each stop threshold: the realised capture at T ÷ the generator's at T, weighted by the
+        # output paid at T ('curtTp': both on the output without stops at negative prices)
+        for cv, pot in (('curtT', False), ('curtTp', True)):
+            if not any(cv in gA[m] for m in gA):
+                continue
+            for md in ANCHOR_MODES:
+                out[md][cv] = {}
+            for T in STOP_GRID:
+                aT = actual_T(t, A, T, pot)
+                w = {m: aT[m]['mwh'] * aT[m]['paid'] for m in aT
+                     if m in gA and gA[m].get(cv, {}).get(T) is not None and aT[m]['curt'] is not None}
+
+                def kT(ms):
+                    den = sum(w[m] * gA[m][cv][T] for m in w if m in ms)
+                    return float(sum(w[m] * aT[m]['curt'] for m in w if m in ms) / den) if den > 0 else 1.0
+                ky, kw, ks = kT(range(1, 13)), kT(WINTER), kT([m for m in range(1, 13) if m not in WINTER])
+                out['none'][cv][T] = {m: 1.0 for m in range(1, 13)}
+                out['year'][cv][T] = {m: ky for m in range(1, 13)}
+                out['season'][cv][T] = {m: kw if m in WINTER else ks for m in range(1, 13)}
     return out
 
 
@@ -1601,6 +1752,20 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
             else:
                 S[c] = sv * fleet[(c, 's')]
                 W[c] = wv * fleet[(c, 'w')]
+            if c == 'FR' and STOP_GRID and STOP_POT:
+                # the priced technology's output without stops, on the same days, fleet and level (weights only: the
+                # price still reads the output as it was, stops included, which is what the rule learnt on)
+                for y in {y for y, _, _ in src}:
+                    if f'FR_{t}p' not in starts[y]:
+                        starts[y][f'FR_{t}p'] = np.clip(potential(y, t) / starts[y][f'FR_{t}gw'], 0, 1.2)
+                pv = np.stack([starts[y][f'FR_{t}p'][r] for y, r, _ in src])
+                if CF_LEVEL:
+                    pv = pv * np.array([CFS[(c, t, y)] for y, _, _ in src])[:, None]
+                ff = fleet[(c, t)]
+                if MC_FULL and g_fleet != 1.0:
+                    cA = (L.cap(c, t, demand_year) or capY[c][t]) * 1000
+                    ff = cA + g_fleet * (ff - cA)
+                VPOT = pv * ff
             Lo[c] = ld * np.array([M.get((c, 'l', int(m), int(k)), 0.0) for m, k in zip(month, kind)])[:, None]
             N[c] = nd * np.array([M.get((c, 'n', int(m), int(k)), 0.0) for m, k in zip(month, kind)])[:, None]
         if NUC_AV:
@@ -1675,6 +1840,18 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
                 f1, fp, fq = pmf.phi(x, gg, xfr, cday, None, need, share(S, W, Lo, N, H, False))
             else:
                 f1, fp, fq = pmf.phi(x, gg, xfr, cday, fr_gw(S, W, Lo, N, H) if PriceModelFuel.FR_LIN else None)
+            TQ = getattr(pmf, '_lastT', None) if STOP_GRID else None
+            if TQ is not None:
+                TQ = (list(TQ[0]), list(TQ[1]))
+
+            def tshift(adj):
+                """an additive move of every hour's price (÷ cost) carried to the stop grid as the code below moves fp:
+                the hours paid at ≥ T move with it, never under 0 for T ≥ 0 (as fp)"""
+                if TQ is None:
+                    return
+                for i_, T_ in enumerate(STOP_GRID):
+                    v_ = TQ[0][i_] + adj * TQ[1][i_]
+                    TQ[0][i_] = np.maximum(v_, 0) if T_ >= 0 else v_
             if FLEET_STOP and (RS['s'] > 0 or RS['w'] > 0):
                 # the French parks that stop at prices ≤ 0 (the measured share, × the chance the hour is ≤ 0): their
                 # output leaves the surplus the price is read on, as it left the realised output the rule learnt on
@@ -1683,6 +1860,7 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
                 x2 = x + dR / Ltot
                 xfr2 = None if xfr is None else (xfr + dR / 1000 if FR_GW['on'] else xfr + dR / Lo['FR'])
                 f1, fp, fq = pmf.phi(x2, gg, xfr2, cday, None)
+                TQ = (list(pmf._lastT[0]), list(pmf._lastT[1])) if TQ is not None else None
             if WIND_LIN:
                 if WL_TAB is None:
                     WL_TAB = wind_slopes(pmf, fy)
@@ -1695,7 +1873,7 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
                         continue
                     mw = np.vectorize(lambda z: means.get(int(z), np.nan))(cellk[sel])
                     adj[sel] = np.where(np.isfinite(mw), b * (wsh[sel] - mw), 0.0)
-                f1 = f1 + adj; fp = np.maximum(fp + adj * fq, 0)
+                f1 = f1 + adj; fp = np.maximum(fp + adj * fq, 0); tshift(adj)
             if WIND_DEC and REGIME:
                 if WD_TAB is None:
                     WD_TAB = wind_slopes_dec(pmf, sorted(set(fy)))
@@ -1708,7 +1886,7 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
                     if sel.any():
                         mw = np.vectorize(lambda z: means.get(int(z), np.nan))(cellk[sel])
                         adj[sel] = np.where(np.isfinite(mw), b * (wsh[sel] - mw), 0.0) * pi_[sel]
-                f1 = f1 + adj; fp = np.maximum(fp + adj * fq, 0)
+                f1 = f1 + adj; fp = np.maximum(fp + adj * fq, 0); tshift(adj)
             if PEN_CURVE:
                 if PC_TAB is None:
                     PC_TAB = pen_curve(pmf, demand_year)
@@ -1726,7 +1904,7 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
                 pm_ = np.array([np.mean((f1 * cday)[month == m]) for m in range(1, 13)])[month - 1][:, None]
                 adj = dr * pm_
                 adj = adj - np.array([adj[month == m].mean() for m in range(1, 13)])[month - 1][:, None]   # month mean unchanged
-                f1 = f1 + adj / cday; fp = np.maximum(fp + adj * fq / cday, 0)
+                f1 = f1 + adj / cday; fp = np.maximum(fp + adj * fq / cday, 0); tshift(adj / cday)
             if STATE_CORR and REGIME:
                 # the rule's error in this situation on the last complete year, in € (the positive part moves with the
                 # chance the hour is paid)
@@ -1735,14 +1913,27 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
                 pi_ = pmf.pdec(gg, need)
                 kk_ = state_key(gg, W['FR'] / Lo['FR'], pi_)
                 dlt = np.vectorize(lambda z: ST_TAB.get(int(z), 0.0))(kk_)
-                f1 = f1 + dlt / cday; fp = np.maximum(fp + dlt * fq / cday, 0)
+                f1 = f1 + dlt / cday; fp = np.maximum(fp + dlt * fq / cday, 0); tshift(dlt / cday)
             if RESID:
                 ry = set(fy) if RESID_RECENT else None
                 rr = np.stack([rule_resid(pmf, y, RESID)[r] if ry is None or y in ry else np.zeros(24) for y, r, _ in src]) * RESID_K
                 P = f1 * cday + (rr if RESID == 'eur' else rr * cday)
                 f1, fp, fq = P / cday, np.maximum(P, 0) / cday, (P >= 0).astype(float)
+                if TQ is not None:
+                    # each hour's price is now drawn, not a cell's distribution: paid at T exactly when it is ≥ T
+                    TQ = ([fp if T_ == 0 else P * (P >= T_) / cday for T_ in STOP_GRID],
+                          [fq if T_ == 0 else (P >= T_).astype(float) for T_ in STOP_GRID])
             v = S['FR'] if t == 's' else W['FR']
             mr = L.month_rates(month, v, f1 * cday, fp * cday, fq)
+            if TQ is not None:
+                # the capture and paid share of a park stopping below each T, on the same month base price as 'curt'
+                for key_, vT in (('', v),) + ((('p', VPOT),) if STOP_POT else ()):
+                    for i_, T_ in enumerate(STOP_GRID):
+                        mT = L.month_rates(month, vT, f1 * cday, TQ[0][i_] * cday, TQ[1][i_])
+                        for m_ in mr:
+                            if isinstance(m_, int) and m_ in mT:
+                                mr[m_].setdefault('curtT' + key_, {})[T_] = mT[m_]['curt']
+                                mr[m_].setdefault('paidT' + key_, {})[T_] = mT[m_]['paid']
             if pmf_b is not None:
                 fb, _, _ = pmf_b.phi(x, gg, xfr, cday, None, need, share(S, W, Lo, N, H, False))
                 for m_, e_ in mr.items():
@@ -1752,6 +1943,10 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
                         for cv in ('all', 'curt'):
                             if e_.get(cv) is not None:
                                 e_[cv] *= bw / bb
+                        for cv in ('curtT', 'curtTp'):
+                            for T_, c_ in (e_.get(cv) or {}).items():
+                                if c_ is not None:
+                                    e_[cv][T_] = c_ * bw / bb
             if guard == 'measure':
                 kb, nb = below_floor(v, f1 * cday, GF[0], GF[1], Lo['FR'], month)
                 BELOW[0] += kb; BELOW[1] += nb
@@ -1762,6 +1957,11 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
                 for m_, c_ in gc.items():
                     if m_ in mr and c_ and g0.get(m_) and mr[m_].get('curt') is not None:
                         mr[m_]['curt'] *= c_ / g0[m_]
+                        # the floor is read on the T = 0 capture: every T is lifted by the same factor
+                        for cv in ('curtT', 'curtTp'):
+                            for T_, cc_ in (mr[m_].get(cv) or {}).items():
+                                if cc_ is not None:
+                                    mr[m_][cv][T_] = cc_ * c_ / g0[m_]
             # the scenario's yearly volume and price level, for the volume risk (Tom 1 Nov. 2026): output per GW of a fixed
             # park against the scenario's mean price, so the pricer draws volume with the weather's own link to price
             mr['_cf'] = CFY[t]
@@ -1779,6 +1979,14 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
         res.append(L.month_rates(month, v, ratio, ratio * (ratio > 0), (ratio >= 0).astype(float)))
     out = {m: {k: float(np.nanmean([r[m][k] for r in res if m in r and r[m].get(k) is not None])) for k in ('all', 'curt', 'paid')} for m in range(1, 13)}
     dist = {m: {k: [float(np.nanpercentile([r[m][k] for r in res if m in r and r[m].get(k) is not None], q)) for q in (10, 90)] for k in ('all', 'curt')} for m in range(1, 13)}
+    for cv in ('curtT', 'paidT', 'curtTp', 'paidTp'):
+        for m in range(1, 13):
+            rs_ = [r[m][cv] for r in res if m in r and cv in r[m]]
+            if rs_:
+                vals = {T_: [x[T_] for x in rs_ if x.get(T_) is not None] for T_ in STOP_GRID}
+                out[m][cv] = {T_: float(np.nanmean(v_)) if v_ else None for T_, v_ in vals.items()}
+                if cv.startswith('curt'):
+                    dist[m][cv] = {T_: [float(np.percentile(v_, q)) for q in (10, 90)] if v_ else None for T_, v_ in vals.items()}
     if guard == 'measure':
         dist['belowFloor'] = BELOW[0] / BELOW[1] if BELOW[1] else None
     dist['scenarios'] = res   # each scenario's monthly rates (for annual percentiles)
