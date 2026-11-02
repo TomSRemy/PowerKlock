@@ -43,7 +43,7 @@ def prices(day):
     return [x for x in h for _ in range(4)] if len(h) == 24 else h
 
 
-GRID = [-100, -50, -30, -20, -10, -5, -2, -1, 0, 5, 10, 20, 30, 50]   # -2 and -1: the step is just below 0 (the −0.01 € hours)
+GRID = [-100, -50, -30, -20, -10, -5, -2, -1, 0, 0.01, 5, 10, 20, 30, 50]   # -2 and -1: the step is just below 0 (the −0.01 € hours); 0.01: stopping at exactly 0 too
 
 
 def threshold_table(rows_q):
