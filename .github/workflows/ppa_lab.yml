@@ -45,6 +45,8 @@ jobs:
         run: python scripts/ppa_threshold_test.py || echo "::warning::threshold replay not updated"
       - name: Journal officiel watch (new texts on the stop obligations at negative prices)
         run: python scripts/watch_jorf_flex.py || echo "::warning::Journal officiel not read"
+      - name: RTE's yearly estimate of wind and solar given up at negative prices (Bilan électrique, read once a year)
+        run: pip install -q pypdf==6.21.2 && python scripts/fetch_rte_bilan_curtail.py || echo "::warning::RTE Bilan not read"
       - name: Who keeps producing at negative prices (register, stop obligations, measured behaviour)
         run: python scripts/build_flex_share.py || echo "::warning::flex share not updated"
       - name: Scenario generator (sets the published price, solar and wind)
@@ -81,7 +83,7 @@ jobs:
         run: |
           git config user.name "PowerDesk Bot"
           git config user.email "bot@powerdesk.local"
-          git add data/history/region_hourly data/history/ppa_backtest_detail.json data/history/ppa_lab.json data/history/ppa_forecast.json data/history/ppa_walkforward.json data/history/fr_regional_capture.json data/history/ppa_fan.json data/history/fcst_backtest.json data/history/fcst_calib.json data/history/fcst_national.json data/history/fcst_national_hourly.json data/history/fr_prod_model.json data/history/ppa_factors.json data/history/fcst_neighbours.json data/history/ppa_bias.json data/history/ppa_bias_test.json data/history/ppa_weights.json data/history/ppa_model_risk.json data/history/flex_share.json data/history/ppa_threshold_test.json data/history/flex_watch.json
+          git add data/history/region_hourly data/history/ppa_backtest_detail.json data/history/ppa_lab.json data/history/ppa_forecast.json data/history/ppa_walkforward.json data/history/fr_regional_capture.json data/history/ppa_fan.json data/history/fcst_backtest.json data/history/fcst_calib.json data/history/fcst_national.json data/history/fcst_national_hourly.json data/history/fr_prod_model.json data/history/ppa_factors.json data/history/fcst_neighbours.json data/history/ppa_bias.json data/history/ppa_bias_test.json data/history/ppa_weights.json data/history/ppa_model_risk.json data/history/flex_share.json data/history/ppa_threshold_test.json data/history/flex_watch.json data/history/rte_curtailment.json
           if git diff --staged --quiet; then echo "No change"; exit 0; fi
           git commit -m "data: PPA test bench $(date -u '+%Y-%m-%d')"
           for i in 1 2 3 4 5; do git pull -q --rebase -X theirs origin main && git push && exit 0; git rebase --abort 2>/dev/null || true; sleep 5; done
