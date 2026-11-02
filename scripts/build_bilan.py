@@ -116,6 +116,16 @@ def main():
             a['complete'] = y < y0
             a['borders'] = borders(y) if y >= 2020 else None
             a['capacity'] = cap.get(str(y))
+            if a['capacity'] is None and str(y - 1) in cap and str(y - 2) in cap and str(y - 3) in cap:
+                # the running year's end is not published yet: wind and solar at the end of the year before plus the mean
+                # growth of the last two years (Tom 2 Nov. 2026: the load factor otherwise divides this year's output by
+                # last year's fleet and comes out too high); the other sources kept at the year before
+                c1, c2, c3 = cap[str(y - 1)], cap[str(y - 2)], cap[str(y - 3)]
+                est = dict(c1)
+                for g in ('solar', 'wind_on', 'wind_off'):
+                    if c1.get(g) is not None and c2.get(g) is not None and c3.get(g) is not None:
+                        est[g] = r1(c1[g] + max(0.0, (c1[g] - c3[g]) / 2), 2)
+                a['capacityEst'] = est
             years[str(y)] = a
     cur = {'year': y0, 'to': last, 'now': years.get(str(y0)), 'prev_same_period': agg(y0 - 1, cut), 'prev_borders_same_period': borders(y0 - 1, cut)}
     out = {'updated': datetime.now(ZoneInfo('Europe/Paris')).isoformat(timespec='minutes'), 'to': last,
