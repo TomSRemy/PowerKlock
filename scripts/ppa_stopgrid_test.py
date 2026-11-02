@@ -39,7 +39,7 @@ import ppa_generator as PG           # noqa: E402
 sys.argv = _argv
 warnings.simplefilter('ignore')
 
-GRID = [-10.0, -5.0, -1.0, 0.0, 5.0]
+GRID = [-10.0, -5.0, -1.0, 0.0, 0.01, 5.0]   # 0.01: the park also stops at exactly 0 € (the rule until 1 Nov. 2026, common in contracts)
 OUT = next((a for a in sys.argv[1:] if not a.startswith('--')), '/tmp/ppa_stopgrid_test.json')
 BEST = '--best' in sys.argv
 

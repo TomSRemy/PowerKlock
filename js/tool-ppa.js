@@ -26,7 +26,7 @@
   const thisYear = () => +(typeof pkTodayISO === 'function' ? pkTodayISO() : new Date().toISOString()).slice(0, 4);
   const nowFrac = () => { const d = new Date(); const y = d.getUTCFullYear(); return y + (d - Date.UTC(y, 0, 1)) / (365.25 * 864e5); };
   // null = automatic value
-  const S = { curtPct: 50, tech: 'solar', years: null, pct: 74, pdMode: 'projected', pdYears: 3, tenorStart: null, tenorEnd: null, m0: 1, m1: 12, fwd: {}, method: 'build', model: 'capacity', conv: 'curt', hedge: 'hedged',
+  const S = { stopEq: false, curtPct: 50, tech: 'solar', years: null, pct: 74, pdMode: 'projected', pdYears: 3, tenorStart: null, tenorEnd: null, m0: 1, m1: 12, fwd: {}, method: 'build', model: 'capacity', conv: 'curt', hedge: 'hedged',
     mw: null, volume: null, degr: null, alpha: null, imb: null, go: null, margin: null, disc: null, add: null, volRisk: null, priceRisk: null,
     mcVol: null, mcFwd: null, mcSd: null, rho: null, volStress: null, spotStress: null, asset: null, assetName: '', basis: 'asset' };
   let D = null;   // reference data
@@ -190,8 +190,11 @@
   // a stop threshold T other than 0 (the park stops when the price is below T, Tom 1 Nov. 2026): each month's capture and
   // paid share × their ratio at T ÷ at 0 (scripts/build_fr_capture.py stopT, year by year), interpolated between the
   // grid's thresholds; 1 at T = 0 or when not stopping
+  // the stop threshold the park applies: below T, or at T and below when 'stopEq' (an hour at exactly T stopped too: the
+  // rule until 1 Nov. 2026 at 0 €, still common in contracts); the grids carry 0.01 for that step at 0
+  const stopTeff = st => { const T = +st.stopT || 0; return st.stopEq ? T + 0.01 : T; };
   function stopRatio(st, m, y) {
-    const T = +st.stopT, Z = D.stopT;
+    const T = stopTeff(st), Z = D.stopT;
     if (!T || !isFinite(T) || (st.conv !== 'curt' && st.conv !== 'part') || !Z || !Z[st.tech]) return { c: 1, p: 1 };
     // between −1 and 0 the step is not linear: almost every hour there is at −0.01 €, so any threshold below 0 takes them in
     const g = Z.grid, t = clamp(T < 0 && T > -1 && g.includes(-1) ? -1 : T, g[0], g[g.length - 1]); let i = 0; while (i < g.length - 2 && g[i + 1] < t) i++;
@@ -217,6 +220,16 @@
       }
     }
     return { c: lin(Zt, 'capture'), p: lin(Zt, 'paid') };
+  }
+  // the generator's capture and paid share of a month at the stop threshold, read on its grid (between −1 and 0 the
+  // step is not linear: −1); null at 0, without a threshold or without the grid
+  function genAtT(st, e) {
+    const T = stopTeff(st), G = e && e.generatorT, P = e && e.generatorPaidT;
+    if (!T || !isFinite(T) || !G || !P) return null;
+    const g = Object.keys(G).map(Number).filter(x => P[String(x)] != null).sort((a, b) => a - b); if (g.length < 2) return null;
+    const t = clamp(T < 0 && T > -1 && g.includes(-1) ? -1 : T, g[0], g[g.length - 1]); let i = 0; while (i < g.length - 2 && g[i + 1] < t) i++;
+    const w = (t - g[i]) / (g[i + 1] - g[i]), at = (X, j) => X[String(g[j])];
+    return { c: at(G, i) * (1 - w) + at(G, i + 1) * w, p: at(P, i) * (1 - w) + at(P, i + 1) * w };
   }
   // the same over a year, weighted by the national output of each month
   function stopRatioYear(st, y) {
@@ -265,9 +278,13 @@
         if (Mo && !Mo.includes(m)) continue;   // a year delivered in part: its months only
         const e = f[`${y}-${String(m).padStart(2, '0')}`];
         if (!e || e[fld] == null || ratio[m] == null) return null;
-        const sr = stopRatio(st, m, y), w = sh(m) * (conv === 'curt' ? (e[fld + 'Paid'] != null ? e[fld + 'Paid'] : e.paid) * sr.p : 1);
+        // the generator's own capture and paid share at the stop threshold, from its cells (scripts/ppa_generator.py
+        // 'generatorT', since 2 Nov. 2026), else the month's ratio at that threshold ÷ at 0 (stopRatio)
+        const gT = fld === 'generator' && conv === 'curt' ? genAtT(st, e) : null;
+        const sr = gT ? { c: 1, p: 1 } : stopRatio(st, m, y), pd = gT ? gT.p : (e[fld + 'Paid'] != null ? e[fld + 'Paid'] : e.paid), cv = gT ? gT.c : e[fld];
+        const w = sh(m) * (conv === 'curt' ? pd * sr.p : 1);
         const qm = q ? q[m - 1] : ratio[m] / rn;
-        num += w * qm * (e[fld] * sr.c + gap); pn += w * qm; den += w;
+        num += w * qm * (cv * sr.c + gap); pn += w * qm; den += w;
       }
       if (!(den > 0)) return null;
       const b = o.biasOf && fld !== 'anchored' && fld !== 'generator' ? o.biasOf('regional', y) : 0;
@@ -726,7 +743,7 @@
     'pp-file': 'Hourly or 15-minute production of the asset (CSV or Excel). The price then reflects this asset; without it the national profile is used.',
     'pp-model': 'How the discount is carried into the future: with the installed capacity (PPE3 targets), flat at the last year, or a trend.',
     'pp-pct': 'Past-discount method only: which percentile of the past discounts is used. Projected mode: the trend is shifted by this percentile minus the median. Higher = more cautious.',
-    'pp-stopt': 'The park stops when the day-ahead price is below this value: 0 by default (an hour at exactly 0 is produced and paid 0). Another value, positive or negative, scales each month’s capture and paid output by their ratio measured on the last two complete years.',
+    'pp-stopt': 'The park stops when the day-ahead price is below this value (or at it and below, with “at or below”): 0 by default, an hour at exactly 0 produced and paid 0, as the CRE does. At another value the generator gives each month’s capture and paid output at that threshold from its own cells.',
     'pp-conv': 'Curtailed: the asset stops when the price is < 0 €; that output is neither produced nor paid, and the forward (Cal) still settles on every hour. No curtailment: every hour is produced and paid, negative prices included. Partial stop: only the share entered stops (for instance the parks under the stop obligation), the rest runs and is paid the negative price. PPA Dashboard convention: the team’s former rule, kept to compare.',
     'pp-alpha': 'The chance of losing money you accept. Lower = a more cautious price and a bigger risk premium.',
     'pp-hedge': 'Whether the expected volume is sold forward at the Cal price. Hedged: only the volume and profile risks remain.',
@@ -2131,6 +2148,7 @@ ${FRDOC() ? `<p>RTE éCO2mix (production nationale, 15 min) · prix day-ahead EN
     Object.entries(FIELDS).forEach(([id, k]) => { const e = $(id); if (e) e.addEventListener('change', ev => { const v = ev.target.value === '' ? null : parseFloat(ev.target.value); S[k] = v != null && isFinite(v) ? v : null; run(); }); });
     page.addEventListener('click', e => { const t = e.target.closest('.pp-auto.man[data-k]'); if (!t) return; e.preventDefault(); S[t.dataset.k] = null; const id = Object.keys(FIELDS).find(i => FIELDS[i] === t.dataset.k); if (id) $(id).value = ''; run(); });
     [['pp-tech', 'tech'], ['pp-basis', 'basis'], ['pp-model', 'model'], ['pp-conv', 'conv'], ['pp-method', 'method'], ['pp-hedge', 'hedge']].forEach(([id, k]) => { const e = $(id); if (e) { e.value = S[k]; e.addEventListener('change', ev => { S[k] = ev.target.value; if (k === 'tech') S.years = null; run(); }); } });
+    { const e = $('pp-stopeq'); if (e) { e.value = S.stopEq ? 'le' : 'lt'; e.addEventListener('change', ev => { S.stopEq = ev.target.value === 'le'; run(); }); } }
     $('pp-pct').addEventListener('change', e => { S.pct = +e.target.value; run(); });
     const pdm = $('pp-pdmode'); if (pdm) pdm.addEventListener('change', e => { S.pdMode = e.target.value; run(); });
     const pdy = $('pp-pdyears'); if (pdy) pdy.addEventListener('change', e => { S.pdYears = +e.target.value; run(); });

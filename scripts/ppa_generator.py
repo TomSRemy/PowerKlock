@@ -103,6 +103,9 @@ def liquidity_step():
 
 
 def main():
+    # every month also at other stop thresholds, from the cells (Tom 2 Nov. 2026): the pricer reads 'generatorT'
+    if G.STOP_GRID is None:
+        G.STOP_GRID = (-20.0, -10.0, -5.0, -2.0, -1.0, 0.0, 0.01, 5.0, 10.0)   # 0.01: stopping at exactly 0 € too
     fc = json.load(open(F_PATH))
     settings = fc['settings']
     past = [y for y in L.DATA if L.DATA[y]['complete']]
@@ -157,11 +160,19 @@ def main():
                     e['generator'] = round(m[mm][conv] * k[conv][mm], 5)
                     e['generatorPaid'] = round(m[mm]['paid'], 5)
                     e['generatorP10'], e['generatorP90'] = (round(v * k[conv][mm], 5) for v in dist[mm][conv])
+                    gT = m[mm].get('curtT') if conv == 'curt' else None
                     if V2 and tech == 'wind' and BLEND_W and mb.get(mm, {}).get(conv) is not None:
                         # wind's centre: half the rule-based set-up, half the analogues of the full Monte Carlo (their errors do
                         # not overlap: replayed 2023–2026 on calendar years, rest-of-year + next year and rolling 12 months,
                         # the blend erred least on average, 0.87 €/MWh, and never most)
                         e['generator'] = round((1 - BLEND_W) * e['generator'] + BLEND_W * mb[mm][conv], 5)
+                    if gT:
+                        # the park stopping below another threshold T, from the cells themselves (Tom 2 Nov. 2026, "with cells
+                        # like the rest"; scripts/ppa_stopgrid_test.py), anchored with the T = 0 factor and moved with the
+                        # central capture when it is blended
+                        sh_ = e['generator'] - m[mm]['curt'] * k['curt'][mm]
+                        e['generatorT'] = {f'{T_:g}': round(v_ * k['curt'][mm] + sh_, 5) for T_, v_ in gT.items() if v_ is not None}
+                        e['generatorPaidT'] = {f'{T_:g}': round(v_, 5) for T_, v_ in (m[mm].get('paidT') or {}).items() if v_ is not None}
                     if V2 and conv == 'curt' and mm in bandm and mb.get(mm, {}).get('curt') is not None:
                         # the monthly band of the full Monte Carlo, placed around the central capture
                         c_ = e['generator'] - mb[mm]['curt']
@@ -170,7 +181,7 @@ def main():
     # guardrail alarm (Tom 30 Oct. 2026): share of the simulated days whose capture falls under the floor observed at the
     # same penetration on the last two complete years (the 10th percentile, so about 10 % is expected); a clear rise
     # says the model is drifting away from what the market has shown. A measure only: nothing is corrected
-    fc['generator'] = {'asOf': this.isoformat(), 'lastYear': A, 'fuelCost': round(c0, 2), 'sims': 60, 'belowFloor': below,
+    fc['generator'] = {'stopGrid': [float(x) for x in (G.STOP_GRID or ())], 'asOf': this.isoformat(), 'lastYear': A, 'fuelCost': round(c0, 2), 'sims': 60, 'belowFloor': below,
                        'belowFloorExpected': 0.10, 'anchor': anchors}
     if V2 and band:
         # yearly capture quantiles of the full Monte Carlo: the pricer sets its capture drift on P50 − P25
