@@ -694,5 +694,17 @@
  "68": {
   "status": "done",
   "reply": "Fait : nouvel onglet « Europe » sur la page Capture : taux de capture du solaire et de l’éolien de la France, l’Allemagne, l’Espagne, les Pays-Bas, la Belgique et la Grande-Bretagne, chaque année depuis 2016 (deux graphiques), avec le choix de la convention (toutes les heures ou heures à prix > 0) et un tableau de l’année en cours (prix base, taux et prix capté par pays). Source Energy-Charts. Le Quotidien par pays demanderait la production quart d’heure de chaque pays, que nous n’avons pas encore pour tous : à voir avec la note 72."
+ },
+ "175": {
+  "status": "done",
+  "reply": "Fait : chaque tuile du haut (Cal, TTF, EUA, Brent, GO, indice) montre en petit, à droite de sa catégorie, la date du prix affiché (dernière cotation ; pour l’indice, celle du gaz et du CO₂ utilisés). Au survol, ce que la date veut dire."
+ },
+ "176": {
+  "status": "done",
+  "reply": "Fait : « Le Cal+1 et ses moteurs » a ses filtres de période 1M, 3M, 6M, 1A, 3A et Tout (6M par défaut), et le zoom : glisser sur le graphique pour zoomer, « Annuler le zoom » ou un double-clic pour revenir. Même chose sur Marchés › Forwards."
+ },
+ "177": {
+  "status": "done",
+  "reply": "Fait : « Production France en ce moment » s’ouvre sur aujourd’hui (J) avec les filtres J, J-1, J-3 et J-7. Après la dernière donnée RTE, les prévisions en pointillés sur fond hachuré : éolien et solaire (prévision PowerKlock), consommation (prévision RTE J-1). La case « + demain (prévision) » prolonge jusqu’à la fin de demain. Zoom à la souris comme ailleurs."
  }
 }
