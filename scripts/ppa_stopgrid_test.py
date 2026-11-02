@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
 """Stop threshold priced by the cells themselves against the pricer's ratio (Tom 2 Nov. 2026: price any stop threshold
-T "with cells like the rest").
+T "with cells like the rest"; since that day the pricer's method, replayed here every week).
 
 Same cases as scripts/ppa_threshold_test.py and ppa_model_risk.py: each delivery year from 2023, priced 1, 2 and 3 years
 ahead with only the complete years known then, 30 draws, seed 7, each technology's anchoring (ppa_model_risk.json
 'anchorMode'). For each T, the capture of a park stopping below T:
-  pricer      the T = 0 capture × the pricer's ratio (js/tool-ppa.js stopRatio; ppa_threshold_test 'pricer')
-  pricerPot   the same ratio measured on France's output without its stops at negative prices
   cells       the generator's cells at T (ppa_scenarios PK_STOP_GRID), anchored at T
   cells0      the same, anchored with the T = 0 factor
   cellsPot    the cells at T weighted by the output without stops (PK_STOP_POT), anchored on the realised at T on
@@ -34,42 +32,24 @@ _argv, sys.argv = sys.argv, ['x']
 import ppa_lab as L                  # noqa: E402
 import ppa_scenarios as G            # noqa: E402
 import ppa_model_risk as R           # noqa: E402
-import ppa_threshold_test as TT      # noqa: E402
 import ppa_generator as PG           # noqa: E402
 sys.argv = _argv
 warnings.simplefilter('ignore')
 
-GRID = [-10.0, -5.0, -1.0, 0.0, 0.01, 5.0]   # 0.01: the park also stops at exactly 0 € (the rule until 1 Nov. 2026, common in contracts)
+GRID = [-100.0, -20.0, -5.0, -1.0, -0.5, -0.1, 0.0, 0.01, 0.1, 1.0, 5.0]   # 0.01: the park also stops at exactly 0 € (the rule until 1 Nov. 2026, common in contracts)
 OUT = next((a for a in sys.argv[1:] if not a.startswith('--')), '/tmp/ppa_stopgrid_test.json')
 BEST = '--best' in sys.argv
 
 
-def ratios_pot(t, years, T):
-    """ppa_threshold_test.ratios on the output without stops"""
-    c = {}
-    for m in range(1, 13):
-        n = {T: [0.0, 0.0], 0: [0.0, 0.0]}
-        for y in years:
-            a = L.DATA[y]; k = a['month'] == m
-            P, V = a['fr_p'][k], G.potential(y, t)[k]
-            for tt in (T, 0):
-                pos = P >= tt
-                n[tt][0] += float((V[pos] * P[pos]).sum()); n[tt][1] += float(V[pos].sum())
-        if n[0][1] > 0 and n[T][1] > 0 and n[0][0] != 0:
-            c[m] = (n[T][0] / n[T][1]) / (n[0][0] / n[0][1])
-    return c
-
-
-def pricer(base0, rat, t, A, T, h):
-    """js/tool-ppa.js stopRatio as replayed in ppa_threshold_test: below 0 the last year's gap + its change, damped;
-    above 0 the last year's level"""
-    if T < 0 and A - 1 in L.DATA:
-        ra, rb = rat(t, [A], T), rat(t, [A - 1], T)
-        k = sum(0.5 ** j for j in range(h))
-        return {m: b * min(1.0, max(0.5, 1 - max(0.0, (1 - ra.get(m, 1)) + k * ((1 - ra.get(m, 1)) - (1 - rb.get(m, 1))))))
-                for m, b in base0.items()}
-    rc = rat(t, [A], T)
-    return {m: b * rc.get(m, 1.0) for m, b in base0.items()}
+def score(pred, act):
+    """production-weighted error on the paid output, in capture points and in € on the realised baseload"""
+    ms = [m for m in act if pred.get(m) is not None and act[m]['curt'] is not None]
+    if not ms:
+        return None
+    w = np.array([act[m]['mwh'] * act[m]['paid'] for m in ms])
+    ep = np.array([pred[m] - act[m]['curt'] for m in ms])
+    e = ep * np.array([act[m]['base'] for m in ms])
+    return {'pts': float((w * ep).sum() / w.sum() * 100), 'eur': float((w * e).sum() / w.sum())}
 
 
 def main():
@@ -79,7 +59,6 @@ def main():
     modes = json.load(open(R.OUT))['anchorMode']
     F = G.fuel_cost()
     rows, times, d0 = [], {'on': 0.0, 'off': 0.0, 'anchorOn': 0.0, 'anchorOff': 0.0}, 0.0
-    rat_act = lambda t, ys, T: TT.ratios(t, ys, T)[0]
     for t, tech in (('s', 'solar'), ('w', 'wind')):
         st = {k: v for k, v in settings[t].items() if k != 'calError'}
         mode = (PG.BEST[tech]['anchor'] or 'none') if BEST else modes.get(tech, 'none')
@@ -113,11 +92,9 @@ def main():
                         if x_ == x_ and y_ == y_:
                             d0 = max(d0, abs(x_ - y_))
                     d0 = max(d0, abs(K[mode]['curt'][m] - Koff[mode]['curt'][m]))
-                base0 = {m: v['curt'] * K[mode]['curt'][m] for m, v in gm.items()}
                 row = {'tech': tech, 'year': Y, 'h': h, 'known': A, 'byT': {}}
                 for T in GRID:
-                    pred = {'pricer': pricer(base0, rat_act, t, A, T, h), 'pricerPot': pricer(base0, ratios_pot, t, A, T, h),
-                            'cells': {m: v['curtT'][T] * K[mode]['curtT'][T][m] for m, v in gm.items() if v['curtT'][T] is not None},
+                    pred = {'cells': {m: v['curtT'][T] * K[mode]['curtT'][T][m] for m, v in gm.items() if v['curtT'][T] is not None},
                             'cells0': {m: v['curtT'][T] * K[mode]['curt'][m] for m, v in gm.items() if v['curtT'][T] is not None},
                             'cellsPot': {m: v['curtTp'][T] * K[mode]['curtTp'][T][m] for m, v in gm.items() if v['curtTp'][T] is not None},
                             'cellsPot0': {m: v['curtTp'][T] * K[mode]['curtTp'][0.0][m] for m, v in gm.items() if v['curtTp'][T] is not None}}
@@ -125,7 +102,7 @@ def main():
                     e = {}
                     for tg in ('act', 'pot'):
                         for name, p_ in pred.items():
-                            sc = TT.score(p_, acts[(tg, T)])
+                            sc = score(p_, acts[(tg, T)])
                             if sc:
                                 e[f'{name}|{tg}'] = {'pts': round(sc['pts'], 3), 'eur': round(sc['eur'], 3)}
                         for name, p_ in paid.items():
