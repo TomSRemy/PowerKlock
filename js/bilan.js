@@ -167,7 +167,7 @@
       // load factors: monthly output over installed capacity × hours; capacity at the end of the year, or of the year before when not yet known
       // capacity of a month: interpolated between the end of the year before and the end of the year (a fleet grows during the year);
       // the end of the year before alone while the year's figure is not published
-      const capEnd = y => D.years[y] && D.years[y].capacity, gwOf = (c, k) => !c ? null : k === 'wind' ? (c.wind_on || 0) + (c.wind_off || 0) : c[k];
+      const capEnd = y => D.years[y] && (D.years[y].capacity || D.years[y].capacityEst), gwOf = (c, k) => !c ? null : k === 'wind' ? (c.wind_on || 0) + (c.wind_off || 0) : c[k];
       const capAt = (y, m, k) => { const c0 = gwOf(capEnd(String(+y - 1)), k), c1 = gwOf(capEnd(y), k), f = (+m.slice(5, 7) - 0.5) / 12; return c0 && c1 ? c0 + (c1 - c0) * f : c1 || c0 || null; };
       const hrs = m => { const y = +m.slice(0, 4), mo = +m.slice(5, 7), full = new Date(Date.UTC(y, mo, 0)).getUTCDate(); const to = D.to || ''; return 24 * (to.slice(0, 7) === m ? +to.slice(8, 10) : full); };
       const lf = (src, m, yy, k) => { const r = src && src[m], gw = capAt(yy, m, k); if (!r) return null; return gw && r[k] != null ? Math.round(r[k] * 1e6 / (gw * hrs(m))) / 10 : null; };   // TWh·10⁶ ÷ (GW·10³ × h) × 100, one decimal
@@ -177,9 +177,11 @@
         { label: n + ' ' + year, data: mons.map(m => lf(M, m, year, k)), borderColor: c, borderWidth: 2.2, pointRadius: 2, tension: 0 },
         { label: n + ' ' + (+year - 1), data: mons.map(m => lf(P, pm(m), String(+year - 1), k)), borderColor: c, borderDash: [4, 3], borderWidth: 1.3, pointRadius: 0, tension: 0 }]) },
         options: opts({ scales: { x: { ticks: tick, grid: { display: false } }, y: { beginAtZero: true, ticks: { color: '#7A93AB', callback: v => v + ' %' }, grid: { color: 'rgba(255,255,255,.05)' }, title: { display: true, text: T('facteur de charge', 'load factor'), color: '#7A93AB' } } } }) }, 'bilan-load-factors');
-      const ln = document.getElementById('bl-lf-note'), known = !!capEnd(year);
-      if (ln) ln.textContent = T(`Capacité installée (Energy-Charts) interpolée mois par mois entre deux fins d’année${known ? '' : ' ; pour ' + year + ', celle de fin ' + (+year - 1) + ', la fin ' + year + ' n’étant pas publiée : le facteur de charge de l’éolien et du solaire est donc un peu surestimé'} ; le mois en cours est compté jusqu’au dernier jour publié.`,
-        `Installed capacity (Energy-Charts) interpolated month by month between two year-ends${known ? '' : '; for ' + year + ', the end-' + (+year - 1) + ' figure, end-' + year + ' not being published: wind and solar load factors are therefore slightly overstated'}; the current month counts up to the last published day.`);
+      const ln = document.getElementById('bl-lf-note'), known = !!(D.years[year] && D.years[year].capacity), est = D.years[year] && D.years[year].capacityEst, p0 = capEnd(String(+year - 1));
+      const dW = est && p0 ? (est.wind_on || 0) + (est.wind_off || 0) - (p0.wind_on || 0) - (p0.wind_off || 0) : null, dS = est && p0 ? est.solar - p0.solar : null;
+      if (ln) ln.textContent = known || !est ? T(`Capacité installée (Energy-Charts) interpolée mois par mois entre deux fins d’année ; le mois en cours compte jusqu’au dernier jour publié.`, `Installed capacity (Energy-Charts) interpolated month by month between two year-ends; the current month counts up to the last day published.`)
+        : T(`Capacité installée (Energy-Charts) interpolée mois par mois entre deux fins d’année ; fin ${year} pas encore publiée, estimée au rythme moyen des deux dernières années (éolien +${N(dW, 1)} GW, solaire +${N(dS, 1)} GW) ; le mois en cours compte jusqu’au dernier jour publié.`,
+          `Installed capacity (Energy-Charts) interpolated month by month between two year-ends; end-${year} not published yet, estimated at the mean pace of the last two years (wind +${N(dW, 1)} GW, solar +${N(dS, 1)} GW); the current month counts up to the last day published.`);
       mk('bl-load', { type: 'bar', data: { labels: lab, datasets: [
         { label: year, data: mons.map(m => M[m].load), backgroundColor: '#7FC8F8', borderRadius: 2 },
         { label: String(+year - 1), data: mons.map(m => at(P, m, 'load')), backgroundColor: 'rgba(127,200,248,.3)', borderRadius: 2 }] },
