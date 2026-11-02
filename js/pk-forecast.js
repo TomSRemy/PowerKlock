@@ -282,16 +282,18 @@
     const mean = v => { const x = (v || []).filter(y => y != null); return x.length ? x.reduce((s, y) => s + y, 0) / x.length / 1000 : null; };
     const resid = d => d && d.load ? d.load.map((l, i) => l == null ? null : l - ((d.wind || [])[i] || 0) - ((d.solar || [])[i] || 0)) : null;
     const rows = [
-      ['Wind', sum(cur.wind), ref && sum(ref.wind), 'GWh', 'wind'],
-      ['Solar', sum(cur.solar), ref && sum(ref.solar), 'GWh', 'solar'],
-      ['Load (avg)', mean(cur.load), ref && mean(ref.load), 'GW', 'load'],
-      ['Residual load (avg)', mean(resid(cur)), ref && mean(resid(ref)), 'GW', null],
+      ['Wind', sum(cur.wind), ref && sum(ref.wind), 'GWh', 'wind', false],
+      ['Solar', sum(cur.solar), ref && sum(ref.solar), 'GWh', 'solar', false],
+      ['Load (avg)', mean(cur.load), ref && mean(ref.load), 'GW', 'load', true],
+      ['Residual load (avg)', mean(resid(cur)), ref && mean(resid(ref)), 'GW', null, true],
     ];
     const when = (b ? 'Tomorrow ' : 'Today ') + new Date((b ? d2 : t) + 'T12:00:00Z').toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', timeZone: 'UTC' });
     host.innerHTML = '<div class="pkf-tiles">' + rows.map(r => {
       const dlt = r[1] != null && r[2] ? ((r[1] / r[2] - 1) * 100) : null;
       const e = r[4] && acc[r[4]] && acc[r[4]].wape != null ? '± ' + pct(acc[r[4]].wape) + ' usual' : '';
-      return `<div class="pkf-t"><div class="pkf-t-l">${r[0]} · ${when}</div><div class="pkf-t-v">${r[1] == null ? '–' : r[1].toFixed(r[3] === 'GW' ? 1 : 0)} <small>${r[3]}</small></div><div class="pkf-t-s">${[dlt == null ? '' : (dlt >= 0 ? '+' : '') + dlt.toFixed(0) + ' % vs today', e].filter(Boolean).join(' · ') || '&nbsp;'}</div></div>`;
+      // the title follows the site's rule (note 81): red when the change pushes prices up, green when it eases them
+      const tt = dlt == null || Math.abs(dlt) < 2 ? '' : (dlt > 0) === r[5] ? ' pk-tt-bad' : ' pk-tt-good';
+      return `<div class="pkf-t"><div class="pkf-t-l${tt}">${r[0]} · ${when}</div><div class="pkf-t-v">${r[1] == null ? '–' : r[1].toFixed(r[3] === 'GW' ? 1 : 0)} <small>${r[3]}</small></div><div class="pkf-t-s">${[dlt == null ? '' : (dlt >= 0 ? '+' : '') + dlt.toFixed(0) + ' % vs today', e].filter(Boolean).join(' · ') || '&nbsp;'}</div></div>`;
     }).join('') + '</div><div class="pkf-note">' + chip() + ' TSO day-ahead forecast · <b>' + (ZONES[zone] || zone) + '</b> · fetched ' + (await published()) + (b ? '' : ' · tomorrow\u2019s forecast is not published yet (usually by midday): today shown') + '</div>';
   }
 

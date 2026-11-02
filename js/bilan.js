@@ -30,8 +30,11 @@
     const to = new Date(D.to + 'T12:00:00Z').toLocaleDateString(T('fr-FR', 'en-GB'), { day: 'numeric', month: 'long', timeZone: 'UTC' });
     const vs = live ? T(`même période de ${+year - 1}`, `same period of ${+year - 1}`) : String(+year - 1);
     const yrs = Object.keys(D.years).sort().reverse();
-    const kpi = (l, v, u, c) => `<div class="bl-k"><span class="bl-kl">${l}</span><span class="bl-kv">${v}<small>${u}</small></span><span class="bl-kc">${c}</span></div>`;
-    const ch = (a, b, d = 1, u = ' %') => { const p = pct(a, b); return p == null ? '' : `<span class="${p > 0 ? 'bl-up' : 'bl-dn'}">${S(p, d, u)}</span>`; };
+    const kpi = (l, v, u, c, t) => `<div class="bl-k"><span class="bl-kl${t ? ' pk-tt-' + t : ''}">${l}</span><span class="bl-kv">${v}<small>${u}</small></span><span class="bl-kc">${c}</span></div>`;
+    // the site's rule (Tom, notes 81 and 107): red when the change pushes prices up (or tightens the system), green when it
+    // eases them, for the title and the change alike; upBad says which way is 'up' for this figure
+    const tn = (d, upBad, eps = 1e-9) => d == null || !isFinite(d) || Math.abs(d) < eps ? '' : (d > 0) === upBad ? 'bad' : 'good';
+    const ch = (a, b, d = 1, u = ' %', upBad = true) => { const p = pct(a, b); return p == null ? '' : `<span class="${tn(p, upBad) === 'bad' ? 'bl-up' : tn(p, upBad) === 'good' ? 'bl-dn' : ''}">${S(p, d, u)}</span>`; };
     const sp = A.spot || {}, bsp = (B && B.spot) || {};
     // the sentence: what moved most, in plain words
     const dS = k => A.by_source[k] - ((B && B.by_source[k]) || 0);
@@ -46,12 +49,12 @@
         <p class="bl-sub">${live ? T(`Du 1er janvier au ${to} ${year}, comparé à la ${vs} · mis à jour chaque jour`, `1 January to ${to} ${year}, against the ${vs} · updated daily`) : T(`Année complète, comparée à ${vs}`, `Full year, against ${vs}`)}</p></div>
         <div class="bl-yrs">${yrs.map(y => `<button type="button" class="bl-y${y === year ? ' on' : ''}" data-y="${y}">${y === y0 ? y + T(' à date', ' to date') : y}</button>`).join('')}</div></div>
       <div class="bl-kpis">
-        ${kpi(T('Consommation', 'Consumption'), N(A.load, 1), 'TWh', `${ch(A.load, B && B.load)} · ${T('pointe', 'peak')} ${N(A.peak_gw, 1)} GW`)}
-        ${kpi(T('Production', 'Production'), N(A.production, 1), 'TWh', `${ch(A.production, B && B.production)} vs ${vs}`)}
-        ${kpi(T('Bas carbone', 'Low-carbon'), N(A.low_carbon_pct, 1), '%', `${T('de la production', 'of production')} · ${N(B && B.low_carbon_pct, 1)} % ${T('avant', 'before')}`)}
-        ${kpi(A.net_export >= 0 ? T('Solde exportateur', 'Net exports') : T('Solde importateur', 'Net imports'), N(Math.abs(A.net_export), 1), 'TWh', `<span class="${A.net_export >= ((B && B.net_export) || 0) ? 'bl-up' : 'bl-dn'}">${S(A.net_export - ((B && B.net_export) || 0), 1, ' TWh')}</span> · ${N(100 * A.net_export / A.production, 0)} % ${T('de la production', 'of production')}`)}
-        ${kpi(T('Spot moyen', 'Average spot'), N(sp.avg, 1), '€/MWh', `${ch(sp.avg, bsp.avg, 0)} · ${N(bsp.avg, 1)} € ${T('avant', 'before')}`)}
-        ${kpi(T('Heures négatives', 'Negative hours'), N(sp.neg_h, 0), 'h', `${S((sp.neg_h || 0) - (bsp.neg_h || 0), 0, ' h')} · ${N(sp.high_h, 0)} h ${T('au-dessus de 100 €', 'above 100 €')}`)}
+        ${kpi(T('Consommation', 'Consumption'), N(A.load, 1), 'TWh', `${ch(A.load, B && B.load)} · ${T('pointe', 'peak')} ${N(A.peak_gw, 1)} GW`, tn(pct(A.load, B && B.load), true, 0.05))}
+        ${kpi(T('Production', 'Production'), N(A.production, 1), 'TWh', `${ch(A.production, B && B.production, 1, ' %', false)} vs ${vs}`, tn(pct(A.production, B && B.production), false, 0.05))}
+        ${kpi(T('Bas carbone', 'Low-carbon'), N(A.low_carbon_pct, 1), '%', `${T('de la production', 'of production')} · ${N(B && B.low_carbon_pct, 1)} % ${T('avant', 'before')}`, tn(B ? A.low_carbon_pct - B.low_carbon_pct : null, false, 0.05))}
+        ${kpi(A.net_export >= 0 ? T('Solde exportateur', 'Net exports') : T('Solde importateur', 'Net imports'), N(Math.abs(A.net_export), 1), 'TWh', `<span class="${tn(A.net_export - ((B && B.net_export) || 0), false, 0.05) === 'bad' ? 'bl-up' : 'bl-dn'}">${S(A.net_export - ((B && B.net_export) || 0), 1, ' TWh')}</span> · ${N(100 * A.net_export / A.production, 0)} % ${T('de la production', 'of production')}`, tn(B ? A.net_export - B.net_export : null, false, 0.05))}
+        ${kpi(T('Spot moyen', 'Average spot'), N(sp.avg, 1), '€/MWh', `${ch(sp.avg, bsp.avg, 0)} · ${N(bsp.avg, 1)} € ${T('avant', 'before')}`, tn(pct(sp.avg, bsp.avg), true, 0.5))}
+        ${kpi(T('Heures négatives', 'Negative hours'), N(sp.neg_h, 0), 'h', `<span class="${tn((sp.neg_h || 0) - (bsp.neg_h || 0), false) === 'good' ? 'bl-dn' : tn((sp.neg_h || 0) - (bsp.neg_h || 0), false) === 'bad' ? 'bl-up' : ''}">${S((sp.neg_h || 0) - (bsp.neg_h || 0), 0, ' h')}</span> · ${N(sp.high_h, 0)} h ${T('au-dessus de 100 €', 'above 100 €')}`, tn(B ? (sp.neg_h || 0) - (bsp.neg_h || 0) : null, false))}
       </div>
       ${sent ? `<p class="bl-lead">${esc(sent)}</p>` : ''}
       <section class="bl-blk"><div class="bl-t"><h2>${T('Production par filière', 'Production by source')}</h2><span class="bl-src">RTE éCO2mix · TWh</span></div>
