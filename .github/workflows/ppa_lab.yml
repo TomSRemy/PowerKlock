@@ -41,6 +41,10 @@ jobs:
         run: python scripts/ppa_integrated.py || echo "::warning::integrated method not updated"
       - name: Model risk of the scenario generator (its past errors, deliveries since 2023, complete months)
         run: python scripts/ppa_model_risk.py || echo "::warning::model risk not updated"
+      - name: PPA price at other stop thresholds, replayed (the pricer's threshold rule against the realised)
+        run: python scripts/ppa_threshold_test.py || echo "::warning::threshold replay not updated"
+      - name: Journal officiel watch (new texts on the stop obligations at negative prices)
+        run: python scripts/watch_jorf_flex.py || echo "::warning::Journal officiel not read"
       - name: Who keeps producing at negative prices (register, stop obligations, measured behaviour)
         run: python scripts/build_flex_share.py || echo "::warning::flex share not updated"
       - name: Scenario generator (sets the published price, solar and wind)
@@ -77,11 +81,22 @@ jobs:
         run: |
           git config user.name "PowerDesk Bot"
           git config user.email "bot@powerdesk.local"
-          git add data/history/region_hourly data/history/ppa_backtest_detail.json data/history/ppa_lab.json data/history/ppa_forecast.json data/history/ppa_walkforward.json data/history/fr_regional_capture.json data/history/ppa_fan.json data/history/fcst_backtest.json data/history/fcst_calib.json data/history/fcst_national.json data/history/fcst_national_hourly.json data/history/fr_prod_model.json data/history/ppa_factors.json data/history/fcst_neighbours.json data/history/ppa_bias.json data/history/ppa_bias_test.json data/history/ppa_weights.json data/history/ppa_model_risk.json data/history/flex_share.json
+          git add data/history/region_hourly data/history/ppa_backtest_detail.json data/history/ppa_lab.json data/history/ppa_forecast.json data/history/ppa_walkforward.json data/history/fr_regional_capture.json data/history/ppa_fan.json data/history/fcst_backtest.json data/history/fcst_calib.json data/history/fcst_national.json data/history/fcst_national_hourly.json data/history/fr_prod_model.json data/history/ppa_factors.json data/history/fcst_neighbours.json data/history/ppa_bias.json data/history/ppa_bias_test.json data/history/ppa_weights.json data/history/ppa_model_risk.json data/history/flex_share.json data/history/ppa_threshold_test.json data/history/flex_watch.json
           if git diff --staged --quiet; then echo "No change"; exit 0; fi
           git commit -m "data: PPA test bench $(date -u '+%Y-%m-%d')"
           for i in 1 2 3 4 5; do git pull -q --rebase -X theirs origin main && git push && exit 0; git rebase --abort 2>/dev/null || true; sleep 5; done
           exit 1
+
+      - name: E-mail when the Journal officiel has a new text on the stop obligations
+        if: env.JORF_NEW != ''
+        env:
+          GO_GMAIL_USER: ${{ secrets.GO_GMAIL_USER }}
+          GO_GMAIL_APP_PASSWORD: ${{ secrets.GO_GMAIL_APP_PASSWORD }}
+          WORKFLOW: ${{ github.workflow }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          SUBJECT: "PowerKlock · nouveau texte au Journal officiel sur l'arrêt aux prix négatifs"
+          BODY: "La veille du Journal officiel a repéré ${{ env.JORF_NEW }} nouveau(x) texte(s) sur l'arrêt aux prix négatifs (obligation d'achat, complément de rémunération, article 175 de la loi de finances 2025). Ils sont listés « à examiner » sous Prix › Prix négatifs › France · qui produit encore sous 0 €, et dans data/history/flex_watch.json. À reporter dans config/flex_rules.json avec la date vérifiée."
+        run: python3 scripts/notify_failure.py || true
 
       - name: E-mail when the scenario generator failed
         if: env.GEN_FAILED == '1'

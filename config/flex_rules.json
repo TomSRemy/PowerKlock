@@ -1,5 +1,5 @@
 {
- "_doc": "Obligations to stop at negative prices for supported French plants, read by scripts/build_flex_share.py. Each rule: kind (stop = stop orders at negative prices, balancing = other flexibility duty), from (date it applies), minMW (plants at or above this size), techs, support (OA / CR), status (law = in force, proposed = bill not adopted), source. Add a rule when a text is published; move a proposal to law when adopted, with its date checked against the Journal officiel.",
+ "_doc": "Obligations to stop at negative prices for supported French plants, read by scripts/build_flex_share.py. Each rule: kind (stop = stop orders at negative prices, balancing = other flexibility duty), from (date it applies), minMW (plants at or above this size), techs, support (OA / CR), status (law = in force, proposed = bill not adopted), source. Each rule cites its Journal officiel text ('jorf', JORFTEXT id); scripts/watch_jorf_flex.py finds the new ones every week (data/history/flex_watch.json, 'review' until a rule cites it). Add a rule when a text is published; move a proposal to law when adopted, with its date checked against the Journal officiel.",
  "rules": [
   {
    "from": "2025-12-22",
@@ -15,7 +15,8 @@
    "kind": "stop",
    "en": "Stop orders at negative prices for purchase-obligation plants from 10 MW (12 MWc solar), paid by the obligated buyer (order of 22 Dec. 2025; Finance law 2025 art. 175 II)",
    "fr": "Ordres d'arrêt aux prix négatifs pour les installations en obligation d'achat dès 10 MW (12 MWc en solaire), indemnisés par l'acheteur obligé (arrêté du 22 déc. 2025 ; loi de finances 2025 art. 175 II)",
-   "source": "https://www.cre.fr/fileadmin/Documents/Deliberations/2025/250716_2025-186_Avis_arrete_prix_negatifs.pdf"
+   "source": "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000053158242",
+   "jorf": "JORFTEXT000053158242"
   },
   {
    "from": "2026-01-01",
@@ -32,7 +33,7 @@
    "kind": "balancing",
    "en": "Participation in the balancing mechanism mandatory from 10 MW (DDADUE law)",
    "fr": "Participation au mécanisme d'ajustement obligatoire dès 10 MW (loi DDADUE)",
-   "source": "Selfee gisement study, 2026 (loi DDADUE)"
+   "source": "Selfee 2026 (loi DDADUE)"
   },
   {
    "from": "2026-12-01",
@@ -49,7 +50,8 @@
    "kind": "stop",
    "en": "Stop orders extended to plants above 5 MW (order of 20 July 2026, Finance law 2025 art. 175)",
    "fr": "Ordres d'arrêt étendus aux installations de plus de 5 MW (arrêté du 20 juillet 2026, loi de finances 2025 art. 175)",
-   "source": "https://www.pv-magazine.fr/2026/07/28/prix-negatifs-le-seuil-des-arrets-de-production-des-centrales-photovoltaiques-abaisse-a-1-mw/"
+   "source": "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000054471154",
+   "jorf": "JORFTEXT000054471154"
   },
   {
    "from": "2027-03-01",
@@ -66,7 +68,8 @@
    "kind": "stop",
    "en": "Stop orders extended to plants of 1 to 5 MW (same order)",
    "fr": "Ordres d'arrêt étendus aux installations de 1 à 5 MW (même arrêté)",
-   "source": "https://www.pv-magazine.fr/2026/07/28/prix-negatifs-le-seuil-des-arrets-de-production-des-centrales-photovoltaiques-abaisse-a-1-mw/"
+   "source": "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000054471154",
+   "jorf": "JORFTEXT000054471154"
   },
   {
    "from": "2027-12-31",
@@ -85,31 +88,5 @@
    "fr": "Proposé : arrêt aux prix négatifs dès 100 kW, au plus tard le 31 déc. 2027 (projet de loi de finances 2027, art. 82, 1er oct. 2026)",
    "source": "https://www.lechodusolaire.fr/budget-2027-le-gouvernement-veut-resilier-les-contrats-solaires-de-2006-a-2010-et-etendre-larret-en-prix-negatifs-des-100-kw/"
   }
- ],
- "rteReference": {
-  "_doc": "RTE's own estimate of wind and solar output not produced at negative prices (gap between output and an RTE forecast without negative prices), printed in the yearly Bilan électrique (no open dataset): entered once a year, when the report is out, to check the computed volumes.",
-  "years": {
-   "2023": {
-    "total": 0.6,
-    "source": "https://assets.rte-france.com/prod/public/2025-09/04092025-Bilan-electrique-2024-rapport-complet.pdf"
-   },
-   "2024": {
-    "total": 1.7,
-    "wind": 0.9,
-    "solar": 0.8,
-    "source": "https://assets.rte-france.com/prod/public/2025-09/04092025-Bilan-electrique-2024-rapport-complet.pdf"
-   },
-   "2025": {
-    "total": 3.0,
-    "wind": 1.3,
-    "solar": 1.6,
-    "source": "https://assets.rte-france.com/analyse-et-donnees/2026-03/BE2025%20-%20Rapport%20Complet.pdf"
-   }
-  },
-  "ordered": {
-   "_doc": "downward adjustments ordered by RTE on wind and solar (balancing mechanism + safeguard orders), TWh",
-   "2024": 0.018,
-   "2025": 0.1
-  }
- }
+ ]
 }

@@ -107,6 +107,7 @@
 <ol>
 <li><b>Prix horaires.</b> Le prix de chaque heure ÷ la moyenne du mois, en fonction de la charge résiduelle de la France, de l’Allemagne, de la Belgique et de l’Espagne ensemble (consommation − solaire − éolien − nucléaire, ÷ consommation), par saison × moment de la journée, appris sur les cinq dernières années complètes (banc d’essai, scripts/ppa_lab.py). Le parc de chaque année de livraison est posé sur chaque année météo passée : la cannibalisation sort des prix horaires, pas d’une tendance. La consommation et le nucléaire viennent de la dernière année complète, du jour de même type le plus proche (jour ouvré, samedi, dimanche ou férié), pour que les heures à prix < 0 tombent sur les bons jours (scripts/ppa_calendar_test.py).</li>
 <li><b>Capture des années du ténor</b>, mois par mois (data/history/ppa_forecast.json, mis à jour chaque dimanche), pondérée par la production de chaque mois (× sa part payée quand la production est arrêtée aux prix < 0) et par le forward de chaque mois ÷ Cal (mois coté, sinon trimestre, saison, puis Cal découpé par l’historique) : ${caps || 'pas de prévision pour ce ténor (le banc d’essai s’arrête en 2030)'}.</li>
+<li><b>Seuil d’arrêt autre que 0 €.</b> Le générateur prix à l’arrêt sous 0 € ; pour un seuil T, chaque mois prend le rapport capture (et part payée) à T ÷ à 0, mesuré au quart d’heure sur la dernière année qui a ce mois (l’année en cours comprise). Sous 0, l’écart grandit d’année en année (les heures à −0,01 € depuis le marché au quart d’heure : solaire, arrêt à −1 € contre 0 €, −2,2 % en 2023, −5,0 % en 2024, −11,2 % en 2025, −14,0 % en 2026, janvier–octobre) : il est porté à l’année livrée avec sa hausse sur l’année d’avant, amortie (×1, ×1,5, ×1,75 à 1, 2, 3 ans). Rejeu 2023–2026 (scripts/ppa_threshold_test.py) : solaire à −1 / −5 € trop haut de 1,9 / 1,8 €/MWh en moyenne, contre 4,2 / 4,7 avec le niveau des deux dernières années ; éolien −0,5 / −0,7 contre +0,7. Au-dessus de 0, le niveau de la dernière année.</li>
 <li><b>Prix du PPA</b> = Σ poids × forward Cal × capture − la prime de risque de la tendance de capacité (même Monte Carlo, ${f2(o.premium)} €/MWh) − décote additionnelle − écarts + GO − marge${o.eu ? ` = <code>${f2(o.ppaEu)} €/MWh</code>` : ''}, pour comparer les méthodes à l’identique.</li>
 <li><b>Correction de biais.</b>${biasLine(o, 'regional')}</li>
 <li><b>Flexibilité et voisins.</b> Éolien : les batteries ajoutées depuis la dernière année complète chargent aux heures de charge résiduelle la plus basse de la région et rendent 85 % aux plus hautes, chaque jour. France au-delà des ~0,7 GW qui servent les réserves (Bilan prévisionnel 2025 de RTE : socle +0,3 GW par an, 2 h, puis +5 GW d’ici 2035, 4 h) ; Allemagne selon le parc d’Energy-Charts, compté à 50 % (surtout des batteries domestiques). Les classes de niveau de prix (sous 60 €, 60–110, au-dessus) se fondent progressivement à ±15 € des seuils. Solaire : ni l’un ni l’autre, ils dégradaient l’erreur rejouée (scripts/ppa_storage_test.py, scripts/ppa_level_soft_test.py). L’Espagne et l’Allemagne ne dépassent pas la trajectoire vers leurs objectifs 2030 (PNIEC : 76 GW solaire, 62 GW éolien ; EEG : 215 GW solaire, 145 GW éolien).</li>
@@ -115,6 +116,7 @@
 <ol>
 <li><b>Hourly prices.</b> The price of each hour ÷ the month’s average, as a function of the residual load of France, Germany, Belgium and Spain together (consumption − solar − wind − nuclear, ÷ consumption), by season × time of day, learnt on the last five complete years (test bench, scripts/ppa_lab.py). The fleet of each delivery year is put over every past weather year, so cannibalisation comes out of the hourly prices, not out of a trend. Consumption and nuclear come from the last complete year, on the nearest day of the same kind (weekday, Saturday, Sunday or public holiday), so the hours at prices < 0 fall on the right days (scripts/ppa_calendar_test.py).</li>
 <li><b>Capture of the tenor years</b>, month by month (data/history/ppa_forecast.json, updated every Sunday), weighted by each month’s output (× its paid share when output stops at prices < 0) and by each month’s forward ÷ Cal (the month quoted, else its quarter, season, then the Cal shaped by history): ${caps || 'no forecast for this tenor (the test bench stops in 2030)'}.</li>
+<li><b>Stop threshold other than 0 €.</b> The generator prices a stop below 0 €; for a threshold T, each month takes the ratio of capture (and paid share) at T to at 0, measured on quarter-hours over the latest year that has this month (the running year included). Below 0 the gap grows year after year (the −0.01 € hours since the quarter-hour market: solar, stop at −1 € against 0 €, −2.2 % in 2023, −5.0 % in 2024, −11.2 % in 2025, −14.0 % in 2026, January–October): it is carried to the delivery year with its rise on the year before, damped (×1, ×1.5, ×1.75 at 1, 2, 3 years). Replay 2023–2026 (scripts/ppa_threshold_test.py): solar at −1 / −5 € too high by 1.9 / 1.8 €/MWh on average, against 4.2 / 4.7 with the last two years’ level; wind −0.5 / −0.7 against +0.7. Above 0, the latest year’s level.</li>
 <li><b>PPA price</b> = Σ weight × Cal forward × capture − the capacity trend’s risk premium (same Monte Carlo, ${f2(o.premium)} €/MWh) − additional discount − imbalance + GO − margin${o.eu ? ` = <code>${f2(o.ppaEu)} €/MWh</code>` : ''}, so the methods compare like for like.</li>
 <li><b>Bias correction.</b>${biasLine(o, 'regional')}</li>
 <li><b>Flexibility and neighbours.</b> Wind: the batteries added since the last complete year charge in the region’s lowest residual-load hours and give back 85 % in the highest, every day. France beyond the ~0.7 GW serving reserves (RTE Bilan prévisionnel 2025: base +0.3 GW a year, 2 h, then +5 GW by 2035, 4 h); Germany from Energy-Charts’ fleet, counted at 50 % (mostly home batteries). The price-level classes (below 60 €, 60–110, above) blend gradually within ±15 € of the thresholds. Solar: neither, they made the replayed error worse (scripts/ppa_storage_test.py, scripts/ppa_level_soft_test.py). Spain and Germany do not go beyond the path to their 2030 targets (PNIEC: 76 GW solar, 62 GW wind; EEG: 215 GW solar, 145 GW wind).</li>
@@ -186,19 +188,39 @@
     });
   }
   // a stop threshold T other than 0 (the park stops when the price is below T, Tom 1 Nov. 2026): each month's capture and
-  // paid share × their ratio at T ÷ at 0, measured on the last two complete years (scripts/build_fr_capture.py stopT),
-  // interpolated between the grid's thresholds; 1 at T = 0 or when not stopping
-  function stopRatio(st, m) {
+  // paid share × their ratio at T ÷ at 0 (scripts/build_fr_capture.py stopT, year by year), interpolated between the
+  // grid's thresholds; 1 at T = 0 or when not stopping
+  function stopRatio(st, m, y) {
     const T = +st.stopT, Z = D.stopT;
     if (!T || !isFinite(T) || (st.conv !== 'curt' && st.conv !== 'part') || !Z || !Z[st.tech]) return { c: 1, p: 1 };
-    const g = Z.grid, t = clamp(T, g[0], g[g.length - 1]); let i = 0; while (i < g.length - 2 && g[i + 1] < t) i++;
-    const w = (t - g[i]) / (g[i + 1] - g[i]), at = (k, j) => { const v = Z[st.tech][k][String(g[j])][m - 1]; return v == null ? 1 : v; };
-    return { c: at('capture', i) * (1 - w) + at('capture', i + 1) * w, p: at('paid', i) * (1 - w) + at('paid', i + 1) * w };
+    // between −1 and 0 the step is not linear: almost every hour there is at −0.01 €, so any threshold below 0 takes them in
+    const g = Z.grid, t = clamp(T < 0 && T > -1 && g.includes(-1) ? -1 : T, g[0], g[g.length - 1]); let i = 0; while (i < g.length - 2 && g[i + 1] < t) i++;
+    const w = (t - g[i]) / (g[i + 1] - g[i]), at = (X, k, j) => { const v = X[k][String(g[j])][m - 1]; return v == null ? 1 : v; };
+    const lin = (X, k) => at(X, k, i) * (1 - w) + at(X, k, i + 1) * w;
+    const Zt = Z[st.tech], BY = Zt.byYear;
+    // below 0, the hours just under 0 € grow year after year (the −0.01 € hours since the quarter-hour market): the
+    // capture's gap to a stop at 0 is taken from the latest year that has this month (the running year's months
+    // included), plus its change on the year before, damped (half as much each further year: 1, 1.5, 1.75 times the
+    // change at 1, 2, 3 years). Replay 2023–2026 (scripts/ppa_threshold_test.py): solar at −1 / −5 € +1.9 / +1.8 €/MWh
+    // off on average, against +4.2 / +4.7 with the two years' level; wind −0.5 / −0.7 against +0.7. Above 0 the trend
+    // does worse: the latest year's level
+    if (BY && y != null) {
+      const ys = Object.keys(BY).map(Number).sort((a, b) => b - a).filter(k => BY[k].capture[String(g[i])] && BY[k].capture[String(g[i])][m - 1] != null);
+      if (ys.length) {
+        const A = BY[ys[0]], h = Math.max(1, y - ys[0]);
+        if (T < 0 && ys.length >= 2) {
+          const B = BY[ys[1]], gA = 1 - lin(A, 'capture'), d = (gA - (1 - lin(B, 'capture'))) / Math.max(1, ys[0] - ys[1]);
+          return { c: clamp(1 - Math.max(0, gA + d * (2 - Math.pow(0.5, h - 1))), 0.5, 1), p: lin(A, 'paid') };
+        }
+        return { c: lin(A, 'capture'), p: lin(A, 'paid') };
+      }
+    }
+    return { c: lin(Zt, 'capture'), p: lin(Zt, 'paid') };
   }
   // the same over a year, weighted by the national output of each month
-  function stopRatioYear(st) {
+  function stopRatioYear(st, y) {
     const nat = D.fcst && D.fcst.share && D.fcst.share[st.tech]; let c = 0, p = 0, w = 0;
-    for (let m = 1; m <= 12; m++) { const sh = nat ? nat[m] : 1 / 12, r = stopRatio(st, m); c += sh * r.c * r.p; p += sh * r.p; w += sh; }
+    for (let m = 1; m <= 12; m++) { const sh = nat ? nat[m] : 1 / 12, r = stopRatio(st, m, y); c += sh * r.c * r.p; p += sh * r.p; w += sh; }
     return { c: p ? c / p : 1, p: w ? p / w : 1 };
   }
   // how much the technology's captured price moves when the baseload moves by 1 € (Tom 1 Nov. 2026): the same calendar
@@ -242,7 +264,7 @@
         if (Mo && !Mo.includes(m)) continue;   // a year delivered in part: its months only
         const e = f[`${y}-${String(m).padStart(2, '0')}`];
         if (!e || e[fld] == null || ratio[m] == null) return null;
-        const sr = stopRatio(st, m), w = sh(m) * (conv === 'curt' ? (e[fld + 'Paid'] != null ? e[fld + 'Paid'] : e.paid) * sr.p : 1);
+        const sr = stopRatio(st, m, y), w = sh(m) * (conv === 'curt' ? (e[fld + 'Paid'] != null ? e[fld + 'Paid'] : e.paid) * sr.p : 1);
         const qm = q ? q[m - 1] : ratio[m] / rn;
         num += w * qm * (e[fld] * sr.c + gap); pn += w * qm; den += w;
       }
@@ -471,8 +493,8 @@
       const e = ((B.bias[st.tech] || {})[k] || {})[conv], v = e && e[String(Math.min(3, Math.max(1, y - B.lastYear)))]; return v ? v.value : 0; };
     // a year delivered only in part: its share of the year's output, and its months' value against the whole year's
     const part = partFactors(tenor, monthsOf, st);
-    const SRY = stopRatioYear(st), BETA = st.conv === 'pos' ? null : captureBeta(st);
-    const years = tenor.map((y, i) => { const ns = negShare(y), M = monthsOf(y), ev = volume * Math.pow(1 - degr, i) * part[i].sh * (st.conv !== 'all' && ns != null ? 1 - ns : 1) * SRY.p,
+    const SRYof = y => stopRatioYear(st, y), BETA = st.conv === 'pos' ? null : captureBeta(st);
+    const years = tenor.map((y, i) => { const SRY = SRYof(y), ns = negShare(y), M = monthsOf(y), ev = volume * Math.pow(1 - degr, i) * part[i].sh * (st.conv !== 'all' && ns != null ? 1 - ns : 1) * SRY.p,
       df = Math.pow(1 + disc, -Math.max(0, y + (M[0] - 1 + M[M.length - 1]) / 24 - now)), bs = biasOf('step', y), fsd = proj(y) + bs / Math.max(0.05, kq[i] * part[i].g), cpY = fwds[i] * kq[i] * part[i].g * (1 - fsd) * SRY.c;
       // sigY: the year's forward volatility to delivery, each stretch at the volatility of the maturity it then is (Cal+3,
       // then Cal+2, then Cal+1 and the delivery year itself); flat at the Cal+1 one when entered by hand or not measured

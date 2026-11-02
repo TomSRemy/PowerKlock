@@ -215,10 +215,9 @@ def main():
     rules = json.load(open(RULES))['rules']
     fl = fleet(register(), rules)
     beh = behaviour(cr_hourly())
-    cfg = json.load(open(RULES))
     out = {'updated': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
            'source': f'ODRÉ — {REG}; ODRÉ — {CRP}; RTE éCO2mix and EPEX day-ahead (data/history/fr_hourly)',
-           'rules': rules, 'rte': cfg.get('rteReference'), 'fleet': fl, 'behaviour': beh, 'wind': project(fl, beh)}
+           'rules': rules, 'fleet': fl, 'behaviour': beh, 'wind': project(fl, beh)}
     with open(OUT, 'w') as f:
         json.dump(out, f, separators=(',', ':'))
     for Y in sorted(beh):
