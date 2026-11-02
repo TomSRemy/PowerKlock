@@ -19,8 +19,9 @@
     if (D) return Promise.resolve(D);
     const base = /^https?:$/.test(location.protocol) ? './data/' : 'data/';
     return Promise.all([fetch(base + 'history/flex_share.json').then(r => r.ok ? r.json() : null).catch(() => null),
-      fetch(base + 'history/flex_watch.json').then(r => r.ok ? r.json() : null).catch(() => null)])
-      .then(([j, w]) => { D = j; if (D) D.watch = w; return D; });
+      fetch(base + 'history/flex_watch.json').then(r => r.ok ? r.json() : null).catch(() => null),
+      fetch(base + 'history/rte_curtailment.json').then(r => r.ok ? r.json() : null).catch(() => null)])
+      .then(([j, w, rte]) => { D = j; if (D) { D.watch = w; D.rte = rte; } return D; });
   }
 
   function kpis() {
@@ -65,7 +66,10 @@
   function lostChart() {
     const b = D.behaviour, ys = Object.keys(b);
     const ds = (lab, k, c) => ({ label: lab, data: ys.map(y => b[y][k].lostTWh), backgroundColor: c, borderWidth: 0, stack: 's' });
-    _fuelChart('flex-lost', { type: 'bar', data: { labels: ys, datasets: [ds(T('Wind', 'Éolien'), 'wind', C.wind), ds(T('Large solar', 'Grand solaire'), 'solarLarge', C.large), ds(T('Small solar', 'Petit solaire'), 'solarSmall', C.small)] },
+    // RTE's own estimate, read from its yearly Bilan électrique (scripts/fetch_rte_bilan_curtail.py)
+    const rte = (D.rte && D.rte.years) || {};
+    _fuelChart('flex-lost', { type: 'bar', data: { labels: ys, datasets: [ds(T('Wind', 'Éolien'), 'wind', C.wind), ds(T('Large solar', 'Grand solaire'), 'solarLarge', C.large), ds(T('Small solar', 'Petit solaire'), 'solarSmall', C.small),
+      { type: 'line', label: T('RTE estimate (Bilan électrique)', 'Estimation RTE (Bilan électrique)'), data: ys.map(y => rte[y] ? rte[y].total : null), showLine: false, pointStyle: 'rectRot', pointRadius: 6, borderColor: '#F4F1EA', backgroundColor: '#F4F1EA' }] },
       options: _fuelOpts({ scales: { x: Object.assign(_fuelXAxis(), { stacked: true, grid: { display: false } }), y: Object.assign(_fuelAxis('TWh'), { stacked: true }) } }) }, 'flex-lost');
   }
 
