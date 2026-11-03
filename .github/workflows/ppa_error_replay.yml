@@ -1,0 +1,49 @@
+name: PPA model-error replay (weekly)
+
+# The scenario generator's past errors, replayed on 12-month deliveries starting every month since January 2023,
+# priced 3, 6, 9 and 12 months ahead with only what was known then, at ten stop thresholds: the 75th percentile the
+# pricer takes as its model-risk premium (scripts/ppa_error_replay.py → data/history/ppa_error_replay.json).
+# After the weekly PPA test bench (Sunday 04:20 UTC), so the neighbours' data and the published set-up are fresh.
+
+on:
+  schedule:
+    - cron: '37 11 * * 0'     # Sunday 11:37 UTC
+  workflow_dispatch:
+
+concurrency:
+  group: ppa-error-replay
+  cancel-in-progress: false
+
+jobs:
+  replay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: pip install requests==2.33.1 numpy==2.5.4 scipy==1.18.1
+      - name: Replay the generator's errors (both cores)
+        run: python scripts/ppa_error_replay.py --jobs 2
+      - name: Commit and push
+        run: |
+          git config user.name "PowerDesk Bot"
+          git config user.email "bot@powerdesk.local"
+          git add data/history/ppa_error_replay.json
+          if git diff --staged --quiet; then echo "No change"; exit 0; fi
+          git commit -m "data: PPA model-error replay $(date -u '+%Y-%m-%d')"
+          for i in 1 2 3 4 5; do git pull -q --rebase -X theirs origin main && git push && exit 0; git rebase --abort 2>/dev/null || true; sleep 5; done
+          exit 1
+
+      - name: E-mail on failure
+        if: failure()
+        env:
+          GO_GMAIL_USER: ${{ secrets.GO_GMAIL_USER }}
+          GO_GMAIL_APP_PASSWORD: ${{ secrets.GO_GMAIL_APP_PASSWORD }}
+          WORKFLOW: ${{ github.workflow }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: python3 scripts/notify_failure.py || true
