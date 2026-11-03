@@ -26,7 +26,7 @@
   const thisYear = () => +(typeof pkTodayISO === 'function' ? pkTodayISO() : new Date().toISOString()).slice(0, 4);
   const nowFrac = () => { const d = new Date(); const y = d.getUTCFullYear(); return y + (d - Date.UTC(y, 0, 1)) / (365.25 * 864e5); };
   // null = automatic value
-  const S = { stopEq: false, curtPct: 50, tech: 'solar', years: null, pct: 74, pdMode: 'projected', pdYears: 3, tenorStart: null, tenorEnd: null, m0: 1, m1: 12, fwd: {}, method: 'build', model: 'capacity', conv: 'curt', hedge: 'hedged',
+  const S = { stopEq: false, curtPct: 50, tech: 'solar', years: null, pct: 74, pdMode: 'projected', pdYears: 3, tenorStart: null, tenorEnd: null, m0: 1, m1: 12, fwd: {}, method: 'build', model: 'capacity', conv: 'curt', hedge: 'hedged', hedgePct: 100, inclHedge: true, inclVol: true,
     mw: null, volume: null, degr: null, alpha: null, imb: null, go: null, margin: null, disc: null, add: null, volRisk: null, priceRisk: null,
     mcVol: null, mcFwd: null, mcSd: null, rho: null, volStress: null, spotStress: null, asset: null, assetName: '', basis: 'asset' };
   let D = null;   // reference data
@@ -617,16 +617,21 @@
       if (parts.every(v => v != null)) {
         const wsum = years.reduce((a, r) => a + r.wt, 0) || 1;
         o.modelRiskDyn = parts.reduce((a, b) => a + b, 0) / wsum;
-        // the price only carries what cannot be hedged (Tom 3 Nov. 2026: the hedge is a risk the aggregator takes and
-        // manages, pricing it would take away its point): the model's error, the volume, and the liquidity of the years
-        // past the last quoted Cal. The forward price level, the hedge ratio and the shape before reprofiling stay with
-        // the hedge (js/ppa-hedge.js), not in the price
-        const base = { sig0: 0, noPriceRisk: true };
-        const mM = simulate(Object.assign({}, o, base), st), prem = Math.max(0, fair - qtl(mM.Us, alpha / 100));
-        o.sigGen = 0; o.premiumGen = prem + o.modelRiskDyn;
-        const m0 = simulate(Object.assign({}, o, base, { sigV: 0 }), st); o.premVolGen = Math.max(0, prem - Math.max(0, fair - qtl(m0.Us, alpha / 100)));
-        if (years.some(r => r.liqK > 0) && o.sigL > 0) { const mL = simulate(Object.assign({}, o, base, { sigL: 0 }), st); o.liqRisk = Math.max(0, prem - Math.max(0, fair - qtl(mL.Us, alpha / 100))); }
-        else o.liqRisk = 0;
+        // the risks the aggregator carries, each measured and each one it can leave out of the price (Tom 3 Nov. 2026):
+        // the model's error (above), the hedge (prices move after signing: the share left unhedged rides the spot and the
+        // captured price does not follow the hedge one for one), the volume against the hedge (output away from the
+        // volume sold, bought back or sold at a spot that moved, which no forward covers) and the liquidity of the
+        // years past the last quoted Cal. Same draws, the capture drift off (the model's error stands for it); each line
+        // is the step the premium makes when that risk is added, hedge first then volume
+        const P = x => Math.max(0, fair - qtl(simulate(Object.assign({}, o, { sig0: 0 }, x), st).Us, alpha / 100));
+        const pL = P({ noPriceRisk: true, sigV: 0 });
+        o.liqRisk = years.some(r => r.liqK > 0) && o.sigL > 0 ? Math.max(0, pL - P({ noPriceRisk: true, sigV: 0, sigL: 0 })) : 0;
+        const pH = P({ sigV: 0 });
+        o.hedgeRisk = Math.max(0, pH - pL);
+        o.premVolGen = Math.max(0, P({}) - pH);
+        o.sigGen = 0;
+        o.inclHedge = st.inclHedge !== false; o.inclVol = st.inclVol !== false;
+        o.premiumGen = o.modelRiskDyn + o.liqRisk + (o.inclHedge ? o.hedgeRisk : 0) + (o.inclVol ? o.premVolGen : 0);
         o.premNoPrice = o.premiumGen;
       }
     }
@@ -709,7 +714,7 @@
   function simulate(o, st) {
     const N = 10000, Y = o.years, T = Y.length, R = rng(42);
     let spare = null; const gauss = () => { if (spare != null) { const v = spare; spare = null; return v; } let u = 0, v = 0; while (!u) u = R(); v = R(); const m = Math.sqrt(-2 * Math.log(u)); spare = m * Math.sin(2 * Math.PI * v); return m * Math.cos(2 * Math.PI * v); };
-    const now = nowFrac(), tau = Y.map(r => Math.max(0.05, r.y + 0.5 - now)), hedged = st.hedge !== 'open', rc = Math.sqrt(1 - o.rho * o.rho);
+    const now = nowFrac(), tau = Y.map(r => Math.max(0.05, r.y + 0.5 - now)), hedged = st.hedge !== 'open', hr = hedged ? (st.hedgePct != null ? st.hedgePct : 100) / 100 : 0, rc = Math.sqrt(1 - o.rho * o.rho);
     const U = new Float64Array(N), prod = Y.map(() => new Float32Array(N)), val = Y.map(() => new Float32Array(N)), sdM = Y.map(() => new Float32Array(N)), cpM = Y.map(() => new Float32Array(N)), spM = Y.map(() => new Float32Array(N));
     for (let i = 0; i < N; i++) {
       let w = 0, tp = 0, rw = 0, num = 0, den = 0;
@@ -727,7 +732,7 @@
         // the captured price: its expected level (forward × capture rate) moved by the measured sensitivity to the spot
         // (captureBeta); without it, as before, a share of the spot
         const cap = (o.capBeta ? Math.max(0, r.fwd * (1 - sd) + o.capBeta.beta * (sL - r.fwd)) : sL * (1 - sd)) * (r.kq || 1) * (r.g || 1) * (r.sr || 1);
-        const v = pr * cap + (hedged ? r.ev * (r.fwd - spot) : 0);
+        const v = pr * cap + hr * r.ev * (r.fwd - spot);   // the share hedged of the expected volume, sold at the Cal
         prod[t][i] = pr; val[t][i] = v; sdM[t][i] = sd; cpM[t][i] = cap; spM[t][i] = sL;
         num += r.df * v; den += r.df * pr;
       }
@@ -914,7 +919,7 @@
       if (GEN_ONLY()) {
         // the model risk taken off the price (scripts/ppa_model_risk.py, in o.modelRisk) and the replay behind it
         const I = o.modelRiskInfo, bh = I && I.byH ? [1, 2, 3].map(h => I.byH[String(h)] ? n2(I.byH[String(h)].maeEur) : '–').join(' / ') : null;
-        const mrTxt = o.premiumGen != null ? (fr
+        const mrTxt = o.modelRiskDyn != null ? (fr ? ` Prime de risque : <b>${n2(o.premiumGen)} €/MWh</b>.` : ` Risk premium: <b>${f2(o.premiumGen)} €/MWh</b>.`) : o.premiumGen != null ? (fr
           ? ` Prime de risque : <b>${n2(o.premiumGen)} €/MWh</b>, tirée du Monte-Carlo complet du générateur (semaines analogues « chères » ou « bon marché », parc, nucléaire avec une crise rare, limite d’export, consommation, année sèche ou humide ; dérive de capture ${n2(o.sigGen * 100)} pts par √an) jointe aux risques de prix et de volume. `
           : ` Risk premium: <b>${f2(o.premiumGen)} €/MWh</b>, from the generator's full Monte Carlo (analogue weeks drawn "dear" or "cheap", fleet, nuclear with a rare crisis, export limit, load, dry or wet year; capture drift ${f2(o.sigGen * 100)} pts per √year) joined with the price and volume risks. `) : !I ? '' : fr
           ? ` Risque de modèle retiré du prix : <b>${n2(o.modelRisk)} €/MWh</b> (${I.level}e centile des erreurs passées du générateur sur la capture, ${I.n} cas : livraisons depuis 2023, pricées 1 à 3 ans avant ; il se trompe en moyenne de ${I.meanEur >= 0 ? '+' : ''}${n2(I.meanEur)} €, écart moyen ${bh} € à 1 / 2 / 3 ans). Ainsi le prix n’aurait pas dépassé la valeur réalisée dans 3 cas sur 4.`
@@ -926,9 +931,12 @@
         const anTxt = fr
           ? (anMode === 'none' ? 'sans ancrage' : `ancré sur la capture réalisée de ${anY || 'la dernière année complète'}${anMode === 'season' ? ', un facteur pour l’hiver (octobre–mars) et un pour l’été (avril–septembre)' : ' (un facteur sur l’année)'}`) + (anErr ? ` : le choix qui se trompait le moins en rejeu, écart moyen ${anErr} €/MWh` : '')
           : (anMode === 'none' ? 'not anchored' : `anchored on the realised capture of ${anY || 'the last complete year'}${anMode === 'season' ? ', one factor for winter (October–March) and one for summer (April–September)' : ' (one factor on the year)'}`) + (anErr ? `: the choice that erred least in the replay, mean gap ${anErr} €/MWh` : '');
-        el.innerHTML = spread + bfTxt + ' ' + (fr ? `Prix publié = le générateur de scénarios (deux régimes : la France couplée à ses voisins ou coupée par sa limite d’export du couplage Core, JAO), ${anTxt}, sans correction de biais.` : `Published price = the scenario generator (two regimes: France coupled to its neighbours or cut off by its Core export limit, JAO), ${anTxt}, no bias correction.`) + mrTxt + (o.modelRiskDyn != null ? (fr
-          ? ` Dont erreur du modèle : <b>${n2(o.modelRiskDyn)} €/MWh</b>, le 75e centile des erreurs passées du générateur pour ce seuil d’arrêt et l’horizon de chaque année (rejeu chaque semaine des livraisons commençant chaque mois depuis 2023, pricées 3 à 12 mois avant ; scripts/ppa_error_replay.py) ; le reste couvre le volume et la liquidité des années non cotées. Le risque de prix forward et de couverture reste à l’agrégateur, il n’est pas dans le prix. Couverture retenue : back to back, 100 % du volume attendu vendu au Cal de chaque année<span id="pp-best-hedge"></span>.`
-          : ` Of which model error: <b>${f2(o.modelRiskDyn)} €/MWh</b>, the 75th percentile of the generator's past errors for this stop threshold and each year's horizon (replay every week of the deliveries starting every month since 2023, priced 3 to 12 months ahead; scripts/ppa_error_replay.py); the rest covers the volume and the liquidity of unquoted years. The forward price and hedge risk stays with the aggregator, it is not in the price. Hedge assumed: back to back, 100 % of the expected volume sold at each year's Cal<span id="pp-best-hedge"></span>.`) : '');
+        el.innerHTML = spread + bfTxt + ' ' + (fr ? `Prix publié = le générateur de scénarios (deux régimes : la France couplée à ses voisins ou coupée par sa limite d’export du couplage Core, JAO), ${anTxt}, sans correction de biais.` : `Published price = the scenario generator (two regimes: France coupled to its neighbours or cut off by its Core export limit, JAO), ${anTxt}, no bias correction.`) + mrTxt + (o.modelRiskDyn != null ? (() => {
+          const hp = S.hedgePct != null ? S.hedgePct : 100, F = fr ? n2 : f2, inT = fr ? 'dans le prix' : 'in the price', outT = fr ? 'retiré du prix' : 'left out of the price';
+          return fr
+            ? ` Dont erreur du modèle : <b>${F(o.modelRiskDyn)} €/MWh</b>, le 75e centile des erreurs passées du générateur pour ce seuil d’arrêt et l’horizon de chaque année (rejeu chaque semaine des livraisons commençant chaque mois depuis 2023, pricées 3 à 12 mois avant ; scripts/ppa_error_replay.py). Risque de couverture : <b>${F(o.hedgeRisk)} €/MWh</b> (${o.inclHedge ? inT : outT}), pour ${hp} % du volume attendu vendu au Cal de chaque année : la part non couverte suit le spot et le prix capturé ne suit pas la couverture un pour un. Risque volume : <b>${F(o.premVolGen)} €/MWh</b> (${o.inclVol ? inT : outT}), la production qui s’écarte du volume vendu, rachetée ou revendue à un spot qui a bougé : aucun forward ne le couvre.${o.liqRisk ? ` Liquidité des années non cotées : ${F(o.liqRisk)} €/MWh.` : ''}<span id="pp-best-hedge"></span>`
+            : ` Of which model error: <b>${F(o.modelRiskDyn)} €/MWh</b>, the 75th percentile of the generator's past errors for this stop threshold and each year's horizon (replay every week of the deliveries starting every month since 2023, priced 3 to 12 months ahead; scripts/ppa_error_replay.py). Hedge risk: <b>${F(o.hedgeRisk)} €/MWh</b> (${o.inclHedge ? inT : outT}), for ${hp} % of the expected volume sold at each year's Cal: the unhedged share follows the spot and the captured price does not follow the hedge one for one. Volume risk: <b>${F(o.premVolGen)} €/MWh</b> (${o.inclVol ? inT : outT}), the output away from the volume sold, bought back or sold at a spot that moved: no forward covers it.${o.liqRisk ? ` Liquidity of unquoted years: ${F(o.liqRisk)} €/MWh.` : ''}<span id="pp-best-hedge"></span>`;
+        })() : '');
         { const bh = document.getElementById('pp-best-hedge'); if (bh && window.PKPpaHedge && PKPpaHedge.best) bh.innerHTML = PKPpaHedge.best; }
         return;
       }
@@ -982,8 +990,13 @@
     const thrFx = gen && o.genFair0 != null ? fair - o.genFair0 : 0;
     const st = gen
       ? [['Cal forward', ref, 1], ['Monthly profile', o.genProf - ref], ['Hourly cannibalisation', fair - o.genProf - thrFx],
-        ...(thrFx ? [['Stop threshold effect', thrFx]] : []), ['Volume risk', -o.premVolGen],
-        ...(o.liqRisk != null ? [['Liquidity risk', -o.liqRisk]] : []), [o.modelRiskDyn != null ? 'Model error' : 'Price & capture risk', risk + o.premVolGen + (o.liqRisk || 0)],
+        ...(thrFx ? [['Stop threshold effect', thrFx]] : []),
+        ...(o.modelRiskDyn != null
+          // each risk the aggregator can leave out of the price: shown only when it is in
+          ? [...(o.inclVol ? [['Volume risk', -o.premVolGen]] : []), ...(o.inclHedge ? [['Hedge risk', -o.hedgeRisk]] : []),
+            ...(o.liqRisk ? [['Liquidity risk', -o.liqRisk]] : []),
+            ['Model error', risk + (o.inclVol ? o.premVolGen : 0) + (o.inclHedge ? o.hedgeRisk : 0) + (o.liqRisk || 0)]]
+          : [['Volume risk', -o.premVolGen], ...(o.liqRisk != null ? [['Liquidity risk', -o.liqRisk]] : []), ['Price & capture risk', risk + o.premVolGen + (o.liqRisk || 0)]]),
         ['Imbalance cost', -o.imb], ['GO', o.goW], ['Margin', -o.margin], ['PPA price', price, 1]]
       : [['Cal forward', ref, 1], [S.tech === 'wind' ? 'Wind profile' : 'Solar profile', fair - ref], ['Risk', risk], ['Imbalance', -o.imb], ['GO', o.goW], ['Margin', -o.margin], ['PPA price', price, 1]];
     const sub = $('pp-sum-wf-sub'), subT = gen ? '€/MWh · the published price, line by line' : '€/MWh · average of the methods ticked';
@@ -2180,6 +2193,9 @@ ${FRDOC() ? `<p>RTE éCO2mix (production nationale, 15 min) · prix day-ahead EN
     Object.entries(FIELDS).forEach(([id, k]) => { const e = $(id); if (e) e.addEventListener('change', ev => { const v = ev.target.value === '' ? null : parseFloat(ev.target.value); S[k] = v != null && isFinite(v) ? v : null; run(); }); });
     page.addEventListener('click', e => { const t = e.target.closest('.pp-auto.man[data-k]'); if (!t) return; e.preventDefault(); S[t.dataset.k] = null; const id = Object.keys(FIELDS).find(i => FIELDS[i] === t.dataset.k); if (id) $(id).value = ''; run(); });
     [['pp-tech', 'tech'], ['pp-basis', 'basis'], ['pp-model', 'model'], ['pp-conv', 'conv'], ['pp-method', 'method'], ['pp-hedge', 'hedge']].forEach(([id, k]) => { const e = $(id); if (e) { e.value = S[k]; e.addEventListener('change', ev => { S[k] = ev.target.value; if (k === 'tech') S.years = null; run(); }); } });
+    // the hedge ratio priced and the two risks the aggregator can leave out of the price
+    { const e = $('pp-hedgepct'); if (e) { e.value = S.hedgePct; e.addEventListener('change', ev => { const v = parseFloat(ev.target.value); S.hedgePct = isFinite(v) ? Math.min(100, Math.max(0, v)) : 100; e.value = S.hedgePct; run(); }); } }
+    [['pp-incl-hedge', 'inclHedge'], ['pp-incl-vol', 'inclVol']].forEach(([id, k]) => { const e = $(id); if (e) { e.checked = S[k]; e.addEventListener('change', ev => { S[k] = ev.target.checked; run(); }); } });
     { const e = $('pp-stopeq'); if (e) { e.value = S.stopEq ? 'le' : 'lt'; e.addEventListener('change', ev => { S.stopEq = ev.target.value === 'le'; run(); }); } }
     $('pp-pct').addEventListener('change', e => { S.pct = +e.target.value; run(); });
     const pdm = $('pp-pdmode'); if (pdm) pdm.addEventListener('change', e => { S.pdMode = e.target.value; run(); });
