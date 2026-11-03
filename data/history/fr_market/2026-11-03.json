@@ -1,0 +1,22 @@
+{
+ "date": "2026-11-03",
+ "countries": {
+  "FR": {
+   "spot": 247.7
+  },
+  "UK": {
+   "spot": 205
+  },
+  "DE": {
+   "spot": 248.99
+  },
+  "NL": {
+   "spot": 236.52
+  }
+ },
+ "marketInsightsHtml": "<p>Les marchés britanniques sont également confrontés à une disponibilité plus restreinte des importations, les importations françaises étant limitées jusqu'à la première quinzaine de novembre, l'interconnexion IFA étant soumise à des restrictions de capacité.</p>",
+ "marketInsights": {
+  "gas": "<p>European gas markets have opened higher this morning as renewed Middle East tensions offset yesterday&rsquo;s sell-off. Overnight US strikes on Iran&rsquo;s Qeshm Island have reignited geopolitical concerns, with attention now turning to today&rsquo;s US midterm elections and the potential implications for Washington&rsquo;s stance on the conflict. Yesterday&rsquo;s losses were driven by signs of progress towards diplomacy, following comments from Iran&rsquo;s President that negotiators had received authority to engage in peace talks, alongside reports that Iran could guarantee security around the Strait of Hormuz as part of any agreement. The fundamentals also continue to add support, with temperatures forecast to fall further throughout the week, boosting heating demand. Norwegian supply disruptions have also been extended, with Oseberg&rsquo;s 20 mcm outage extended until November 5th and Asgard&rsquo;s 7 mcm outage extended until November 6th.<br /></p>",
+  "power": "<p>European power markets have rebounded higher this morning, tracking gas as the US strikes overnight counteract easing concerns over the current cold spell and renewed hopes of a diplomatic resolution between the US and Iran that weighed heavily on prices yesterday. EU carbon prices have strengthened to new highs high, providing support to power prices. Below seasonal normal wind generation across much of Northern Europe through week 46 is expected to increase reliance on gas-fired generation, providing further support to power prices. UK markets also face tighter import availability, with French imports restricted through the first half of November as the IFA interconnector operates under capacity restrictions.</p>"
+ }
+}
