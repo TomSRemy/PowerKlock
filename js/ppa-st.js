@@ -123,9 +123,9 @@
       _fuelKpi('PPA price', f2(H.ppa), '€/MWh', `${c.tech === 'solar' ? 'Solar' : 'Wind'} · ${lab(ks[0])} → ${lab(ks[ks.length - 1])} · ensemble`, ''),
       _fuelKpi('80 % range', f1(lo) + '–' + f1(hi), '€/MWh', `± ${f1(band.hi)} capture pts: the replay's errors, ${band.n} years`),
       _fuelKpi('Forward', f2(H.fwd), '€/MWh', 'weighted by the output paid, month by month'),
-      _fuelKpi('Capture rate', pc(H.capture), '', `value ÷ forward · ${c.conv === 'curt' ? 'curtailed at ≤ 0 €' : 'every hour paid'}`),
+      _fuelKpi('Capture rate', pc(H.capture), '', `value ÷ forward · ${c.conv === 'curt' ? 'curtailed at < 0 €' : 'every hour paid'}`),
       _fuelKpi('P&L, 80 % range', pnl ? (pnl[0] >= 0 ? '+' : '−') + Math.abs(pnl[0]).toFixed(0) + ' / +' + pnl[1].toFixed(0) : '–', 'k€', pnl ? `${Math.round(mwhPaid).toLocaleString('en-GB')} MWh paid over the period · model error and weather combined` : 'needs the asset\'s yearly output'),
-      _fuelKpi(c.conv === 'curt' ? 'Output paid' : 'Costs and GO', c.conv === 'curt' ? pc(H.paid) : f2(H.cost), c.conv === 'curt' ? '' : '€/MWh', c.conv === 'curt' ? 'the rest is curtailed at prices ≤ 0' : 'imbalance, GO, margin (inputs above)'),
+      _fuelKpi(c.conv === 'curt' ? 'Output paid' : 'Costs and GO', c.conv === 'curt' ? pc(H.paid) : f2(H.cost), c.conv === 'curt' ? '' : '€/MWh', c.conv === 'curt' ? 'the rest is curtailed at prices < 0' : 'imbalance, GO, margin (inputs above)'),
     ].join('') : '';
     $('pp-st-note').innerHTML = (h.used === 'ensemble' ? `<b>Ensemble</b> = ${rule}, equal weights.`
       : `<b>Hybrid</b> = ${rule}: the combination that erred least on 2019–2023, set before looking at 2024–2026.`) +
