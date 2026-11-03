@@ -1051,27 +1051,48 @@
     out.forEach(it => { if (it.hid) { if (m[it.hid]) it.hid = m[it.hid]; else { delete it.hid; delete it.cy; } } });
     return out;
   }
-  async function encodeBoard(b) {
+  function boardData(b) {
     const used = new Set(b.items.map(it => it.hid).filter(Boolean));   // ids kept only where a collapsed section needs them
     const items = b.items.map(it => { const o = Object.assign({}, it); if (!used.has(o.i)) delete o.i; return o; });
-    const raw = new TextEncoder().encode(JSON.stringify({ n: b.name, d: b.desc || suggestDesc(b) || undefined, g: b.grid, m: b.mirror || undefined, items }));
+    return { n: b.name, d: b.desc || suggestDesc(b) || undefined, g: b.grid, m: b.mirror || undefined, items };
+  }
+  async function encodeBoard(b) {
+    const raw = new TextEncoder().encode(JSON.stringify(boardData(b)));
     if (window.CompressionStream) { try { return 'z' + b64u(await pipe(raw, new CompressionStream('deflate-raw'))); } catch (_) {} }
     return 'j' + b64u(raw);
   }
-  async function decodeBoard(code) {
-    const bytes = unb64u(code.slice(1));
-    const raw = code[0] === 'z' ? await pipe(bytes, new DecompressionStream('deflate-raw')) : bytes;
-    const j = JSON.parse(new TextDecoder().decode(raw));
+  function boardFromData(j, code) {
     if (!j || !Array.isArray(j.items)) throw new Error('not a dashboard');
     return { id: 'shared', name: String(j.n || 'Shared dashboard').slice(0, 40), desc: String(j.d || '').slice(0, 400), code, grid: j.g === FINE ? FINE : undefined, mirror: MIRRORS[j.m] ? j.m : undefined,
       items: reid(j.items.filter(it => it && ['w', 's', 'n'].includes(it.t))) };
   }
+  async function decodeBoard(code) {
+    const bytes = unb64u(code.slice(1));
+    const raw = code[0] === 'z' ? await pipe(bytes, new DecompressionStream('deflate-raw')) : bytes;
+    return boardFromData(JSON.parse(new TextDecoder().decode(raw)), code);
+  }
   const baseUrl = () => location.origin + location.pathname;
+
+  // The "dashboard only" link can instead point at a row kept in Supabase (id prefixed "r"), so it can be
+  // republished later without changing the link. b.share = { id, token } is created once per board and kept
+  // with it; the token never leaves this browser (except to Supabase, which needs it to check a republish).
+  async function ensureShare(b) {
+    if (b.share && b.share.id && b.share.token) return b.share;
+    if (!(window.PKAccount && PKAccount.configured)) return null;
+    try {
+      const { id, token } = await PKAccount.sharedCreate(boardData(b));
+      b.share = { id, token };
+      save();
+      return b.share;
+    } catch (e) { console.warn('[PKDash] shared board create', e); return null; }
+  }
 
   async function openShare() {
     const b = board();
     const code = shared ? shared.code : await encodeBoard(b);
-    const link = baseUrl() + '#board=' + code, solo = baseUrl() + '#solo=' + code;
+    const link = baseUrl() + '#board=' + code;
+    const share = shared ? null : await ensureShare(b);
+    const solo = share ? baseUrl() + '#solo=r' + share.id : baseUrl() + '#solo=' + code;
     modal(`
       <div class="pkd-modal-head"><div><div class="pkd-modal-title">Share “${esc(b.name)}”</div>
         <div class="pkd-modal-sub">The link carries the layout: whoever opens it sees the same charts with the latest data. No account needed. Later changes to your dashboard are not in a link already sent: share again.</div></div>
@@ -1081,7 +1102,8 @@
           <div class="pkd-share-l"><input type="text" readonly value="${esc(link)}" aria-label="Link to the dashboard"><button type="button" class="pk-btn-primary" data-copy="${esc(link)}">Copy</button></div></div>
         <div class="pkd-share-row"><div class="pkd-share-t"><b>Dashboard only</b><em>The dashboard alone, without the menus: for a meeting-room screen or a quick read on a phone.</em></div>
           <div class="pkd-share-l"><input type="text" readonly value="${esc(solo)}" aria-label="Link to the dashboard only"><button type="button" class="pk-btn-primary" data-copy="${esc(solo)}">Copy</button>
-          <a class="pk-btn-ghost" href="${esc(solo)}" target="_blank" rel="noopener">Open ↗</a></div></div>
+          <a class="pk-btn-ghost" href="${esc(solo)}" target="_blank" rel="noopener">Open ↗</a></div>
+          ${share ? `<div class="pkd-share-repub"><em>The link stays the same: this sends it today's layout.</em><button type="button" class="pk-btn-ghost" id="pkd-share-republish">Republish</button></div>` : ''}</div>
         <div class="pkd-form-foot"><button type="button" class="pk-btn-ghost" data-close>Close</button></div>
       </div>`, root => {
       root.querySelectorAll('[data-copy]').forEach(btn => btn.addEventListener('click', () => {
@@ -1090,6 +1112,14 @@
         (navigator.clipboard ? navigator.clipboard.writeText(btn.dataset.copy) : Promise.reject()).then(done).catch(() => { inp.select(); try { document.execCommand('copy'); done(); } catch (_) {} });
       }));
       root.querySelectorAll('.pkd-share-l input').forEach(i => i.addEventListener('focus', () => i.select()));
+      root.querySelector('#pkd-share-republish')?.addEventListener('click', async ev => {
+        const btn = ev.currentTarget; btn.disabled = true; btn.textContent = 'Republishing…';
+        try {
+          const ok = await PKAccount.sharedUpdate(share.id, share.token, boardData(b));
+          btn.textContent = ok ? 'Republished ✓' : 'Could not republish';
+        } catch (e) { console.warn(e); btn.textContent = 'Could not republish'; }
+        setTimeout(() => { btn.textContent = 'Republish'; btn.disabled = false; }, 1800);
+      });
     });
   }
 
@@ -1151,9 +1181,16 @@
   }
 
   async function openFromLink() {
-    const m = location.hash.match(/^#(board|solo)=([zj][A-Za-z0-9_-]+)$/);
+    const m = location.hash.match(/^#(board|solo)=(r[0-9a-f]+|[zj][A-Za-z0-9_-]+)$/);
     if (!m) return;
-    try { shared = await decodeBoard(m[2]); } catch (e) { console.warn('[PKDash] shared link', e); toast('This dashboard link is damaged or incomplete'); return; }
+    try {
+      if (m[2][0] === 'r') {
+        if (!(window.PKAccount && PKAccount.configured)) throw new Error('sharing not configured');
+        const j = await PKAccount.sharedGet(m[2].slice(1));
+        if (!j) throw new Error('not found');
+        shared = boardFromData(j, m[2]);
+      } else shared = await decodeBoard(m[2]);
+    } catch (e) { console.warn('[PKDash] shared link', e); toast('This dashboard link is damaged or incomplete'); return; }
     if (m[1] === 'solo') { document.body.classList.add('pk-solo'); sealLinks(); }
     const tab = document.querySelector('.nav-tab[data-dash="mydash"]');
     if (typeof switchDashboard === 'function') switchDashboard('mydash', tab);
