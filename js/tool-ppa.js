@@ -573,7 +573,7 @@
     // the pricer's Monte Carlo takes its capture drift from P50 − P25 (÷ 0.6745 = one standard deviation, ÷ √years ahead),
     // so the premium joins that risk with the forwards' and the volume's; it already holds the model's own error (P75 held
     // in 78–89 % of the replayed deliveries with the stop at 0 € included; with the stop strictly below 0, since 1 Nov.
-    // 2026, only 44 % for solar and 67 % for wind: scripts/ppa_band_stop_test.py, being fixed), so no separate model-risk deduction
+    // 2026, only 44 % for solar and 67 % for wind: scripts/ppa_band_stop_test.py); since 3 Nov. 2026 the dynamic premium below replaces it where the error replay exists
     const BAND = D.fcst && D.fcst.generator && D.fcst.generator.band && D.fcst.generator.band[st.tech];
     o.premiumGen = null; o.sigGen = null; o.premVolGen = null; o.liqRisk = null; o.premNoPrice = null;
     if (o.gen && BAND && o.mc) {
