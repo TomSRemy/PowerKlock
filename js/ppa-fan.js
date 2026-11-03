@@ -57,8 +57,8 @@
     const sub = $('pp-fan-sub');
     const FR = !window.PKI18n || PKI18n.lang !== 'en';
     if (sub) sub.textContent = FR
-      ? `${tech === 'wind' ? 'Éolien' : 'Solaire'} · ${conv === 'curt' ? 'arrêt aux prix ≤ 0 €' : 'toutes heures payées'} · profil national · P${pick} = ${pick} % de chances que la valeur réalisée soit au-dessus de la ligne · 2022 (crise du gaz) écartée`
-      : `${tech === 'wind' ? 'Wind' : 'Solar'} · ${conv === 'curt' ? 'curtailed at ≤ 0 €' : 'all hours paid'} · national profile · P${pick} = ${pick} % chance the realised value is above the line · 2022 (gas crisis) left out`;
+      ? `${tech === 'wind' ? 'Éolien' : 'Solaire'} · ${conv === 'curt' ? 'arrêt aux prix < 0 €' : 'toutes heures payées'} · profil national · P${pick} = ${pick} % de chances que la valeur réalisée soit au-dessus de la ligne · 2022 (crise du gaz) écartée`
+      : `${tech === 'wind' ? 'Wind' : 'Solar'} · ${conv === 'curt' ? 'curtailed at < 0 €' : 'all hours paid'} · national profile · P${pick} = ${pick} % chance the realised value is above the line · 2022 (gas crisis) left out`;
   }
 
   function wire() {

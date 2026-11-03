@@ -24,6 +24,7 @@
   const S = { bidask: 0.10, step: 1, N: 4000 };
   let KEY = null;
   const HEDGE = { best: '' };   // the best hedge's sentence, shown next to the published price (js/tool-ppa.js)
+  Object.defineProperty(HEDGE, 'bidask', { get: () => S.bidask });   // the trading cost the published price counts
 
   function rng(seed) { let a = seed >>> 0; return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
   const qtl = (s, q) => { const r = q * (s.length - 1), lo = Math.floor(r); return s[lo] + (s[Math.min(s.length - 1, lo + 1)] - s[lo]) * (r - lo); };
@@ -119,7 +120,7 @@
       options: _fuelOpts({ indexAxis: 'y', plugins: { legend: { display: true, position: 'bottom', labels: { color: '#B8C9D9', font: { size: 10 }, boxWidth: 10, filter: it => !/^_/.test(it.text) } }, pkHoverReadout: false }, scales: { y: Object.assign(_fuelXAxis(), { grid: { display: false }, ticks: { autoSkip: false, font: { size: 10 } } }), x: _fuelAxis(fr() ? 'ce que rapporte un MWh, €/MWh' : 'what one MWh earns, €/MWh') } }) }, 'ppa-hedge-strategies');
   }
   function bind() {
-    const b = $('pp-hedge-bidask'); if (b) { b.value = S.bidask; b.addEventListener('change', () => { const v = parseFloat(b.value); S.bidask = isFinite(v) && v >= 0 ? v : 0.10; run(); }); }
+    const b = $('pp-hedge-bidask'); if (b) { b.value = S.bidask; b.addEventListener('change', () => { const v = parseFloat(b.value); S.bidask = isFinite(v) && v >= 0 ? v : 0.10; run(); if (window.PKPpa && PKPpa.run) PKPpa.run(); }); }
     const s = $('pp-hedge-step'); if (s) { s.value = String(S.step); s.addEventListener('change', () => { S.step = +s.value || 1; run(); }); }
   }
   document.addEventListener('DOMContentLoaded', bind);

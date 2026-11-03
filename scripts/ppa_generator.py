@@ -227,10 +227,18 @@ def main():
         fc['generator']['volume'] = {}
         for tech, rows in vols.items():
             zv = np.concatenate([z(c) for c, _, _ in rows])
+            # the year's mean price against its output, as an elasticity (relative change of the price per relative change of
+            # the output, each delivery year around its own mean, pooled) and its standard error: the pricer applies it to the
+            # real years' output spread (the chained weeks understate that spread, not how prices answer it), shrunk by its
+            # noise (Tom 3 Nov. 2026)
+            dv_ = np.concatenate([c / c.mean() - 1 for c, _, _ in rows]); db_ = np.concatenate([b_ / b_.mean() - 1 for _, _, b_ in rows])
+            el_ = float((dv_ * db_).sum() / (dv_ ** 2).sum())
+            se_ = float(np.sqrt(((db_ - el_ * dv_) ** 2).sum() / max(1, dv_.size - 2) / (dv_ ** 2).sum()))
             fc['generator']['volume'][tech] = {
                 'sigV': round(float(np.mean([c.std() / c.mean() for c, _, _ in rows])), 4),
                 'corrCapture': round(float(np.mean(zv * np.concatenate([z(k) for _, k, _ in rows]))), 3),
                 'corrPrice': round(float(np.mean(zv * np.concatenate([z(b_) for _, _, b_ in rows]))), 3),
+                'elastPrice': round(el_, 3), 'elastPriceSe': round(se_, 3),
                 'n': int(zv.size), 'years': [int(Y_) for Y_ in range(this.year + 1, this.year + 1 + len(rows))]}
             print('volume', tech, fc['generator']['volume'][tech], flush=True)
     # model risk (Tom 31 Oct. 2026): the generator's past errors against the realised (scripts/ppa_model_risk.py), so
