@@ -20,6 +20,7 @@ import sys
 import re
 import html
 import json
+import calendar
 from datetime import datetime, timezone, date
 from pathlib import Path
 
@@ -768,6 +769,43 @@ def rolling_series(h, cc):
     return out
 
 
+def shifted_days(roll, pref):
+    """Days the cockpit has already moved its rolling series on by one contract (last trading day of a quarter or month:
+    Q+1 shows the next quarter, Q+2 the one after…), so a rebuilt day would file each price under the wrong contract.
+    Read by comparing each day with the previous one, contract by contract: on a moved day S_k(d) sits on the previous
+    day's S_(k+1) rather than its S_k (found 3 Nov. 2026: Q1 2025 got Q2 2025's 53.12 on 31 Dec. 2024)."""
+    ks = sorted(int(t[2:]) for t in roll if t.startswith(pref + "+"))
+    if len(ks) < 3:
+        return set()
+    days = sorted(set().union(*(roll[f"{pref}+{k}"].keys() for k in ks)))
+    base = (lambda d: int(d[:4]) * 12 + int(d[5:7]) - 1) if pref == "M" else (lambda d: int(d[:4]) * 4 + (int(d[5:7]) - 1) // 3)
+    out = set()
+    p_ = days[0] if days else None
+    for d in days[1:]:
+        # compared with the last day that was not moved (moved days come in runs: 30 and 31 March 2026)
+        e = base(d) - base(p_)          # a new month or quarter moves every rank on by one, legitimately
+        # a contract stops trading at its expiry only: the last ten days of a month (M) or of a quarter (Q)
+        y_, m_ = int(d[:4]), int(d[5:7])
+        end_m = m_ if pref == "M" else 3 * ((m_ - 1) // 3 + 1)
+        left = (date(y_, end_m, calendar.monthrange(y_, end_m)[1]) - date.fromisoformat(d)).days
+        if left > 10:
+            p_ = d
+            continue
+        votes = n = 0
+        for k in ks:
+            v, same, nxt = roll[f"{pref}+{k}"].get(d), roll.get(f"{pref}+{k + e}", {}).get(p_), roll.get(f"{pref}+{k + e + 1}", {}).get(p_)
+            if v is None or same is None or nxt is None:
+                continue
+            n += 1
+            # near-equal to the next contract of the day before, and clearly off its own
+            votes += abs(v - same) > 2 and abs(v - nxt) < 0.3 * abs(v - same)
+        if n >= 2 and votes > n / 2:
+            out.add(d)
+        else:
+            p_ = d
+    return out
+
+
 def rebuild_from_rolling(roll):
     """Dated month and quarter closes rebuilt from the rolling series: on day d, M+k is month(d)+k and
     Q+k is quarter(d)+k. When a contract no longer trades (expiry, or a quarter cascaded into its months)
@@ -776,6 +814,7 @@ def rebuild_from_rolling(roll):
     import calendar
     out = {}
     for pref, per_year in (("M", 12), ("Q", 4)):
+        moved = shifted_days(roll, pref)
         for k in range(1, 30):
             s = roll.get(f"{pref}+{k}")
             if not s:
@@ -784,7 +823,7 @@ def rebuild_from_rolling(roll):
             for d, v in s.items():
                 y, m = int(d[:4]), int(d[5:7])
                 idx = (y * 12 + m - 1 if pref == "M" else y * 4 + (m - 1) // 3) + k
-                if d in nxt and nxt[d] == v:
+                if d in moved or (d in nxt and nxt[d] == v):
                     continue
                 if pref == "M":
                     yy, mm = divmod(idx, 12); mm += 1
@@ -891,6 +930,14 @@ def write_contracts():
         for tenor, pts in roll.items():
             rolling_out[cc][tenor] = dict(sorted(pts.items()))
         n_new = 0
+        # earlier runs filed the moved days' prices under the wrong contract: drop those rebuilt points (own closes kept)
+        moved_all = shifted_days(roll, "M") | shifted_days(roll, "Q")
+        for label, c in out.get(cc, {}).items():
+            bad = [d for d in c.get("rebuiltDates", []) if d in moved_all and d not in set(c.get("ownDates") or [])]
+            for d in bad:
+                c["points"].pop(d, None)
+            if bad:
+                c["rebuiltDates"] = [d for d in c["rebuiltDates"] if d not in bad]
         for label, rb in rebuild_from_rolling(roll).items():
             c = out.setdefault(cc, {}).get(label)
             if c is None:
