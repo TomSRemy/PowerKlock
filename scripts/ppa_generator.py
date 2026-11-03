@@ -41,7 +41,13 @@ F_PATH = os.path.join(ROOT, 'data', 'history', 'ppa_forecast.json')
 # (scripts/ppa_band_stop_test.py, 2 Nov. 2026). Wind: the rule learnt output-weighted + the cut-off cells on French wind share,
 # anchored winter/summer (replay 0.56 €/MWh vs 0.84); solar unchanged (0.76, no anchoring)
 BEST = {'wind': {'env': {'PK_WTECH': '1'}, 'glob': {'DEC2': 'wind'}, 'anchor': 'season'},
-        'solar': {'env': {}, 'glob': {}, 'anchor': None}}
+        'solar': {'env': {}, 'glob': {'MERIT': True, 'MERIT_MODE': 'split'}, 'anchor': None}}
+# solar, since 3 Nov. 2026: the physical merit-order layer splits the cells' low hours between 0 / −0.01 € and clearly
+# negative (France's surplus beyond its export room, its neighbours' residual load, the output of parks that stop at
+# negative prices). Replay on 184 deliveries starting every month 2023–2026, priced 3 to 12 months ahead: mean error at
+# the stop below 0 3.23 → 2.38 €/MWh (non-January starts; 95 % CI of the gain −1.21 to −0.45, closer in 88 % of cases),
+# every horizon and start year; bias and P25 hit rate unchanged. Wind: no clear gain, left off
+SOLAR_MERIT = {'glob': {'MERIT': True, 'MERIT_MODE': 'split'}}
 BAND = {'env': {'PK_KNN_EX22': '1'}, 'glob': {'KNN': 500, 'KNN_DRAW': 'week', 'MC_FULL': True, 'MC_DRY': 0.1, 'MC_DRY_FREE': 0.5},
         'w_': [1, 1, 1, 2, 1, 0.7, 0.7]}
 
@@ -141,7 +147,7 @@ def main():
                 m, dist = G.simulate(t, Y, past, st, A, capY, None, n=60, rule='fuel', cost=lambda d: c0,
                                      batteries='both', pool_from=2019, fuel_dev=True, france=True, guard='measure')
             if V2:
-                with _cfg(BAND):
+                with _cfg(BAND), _cfg(SOLAR_MERIT if tech == 'solar' else {}):
                     mb, db = G.simulate(t, Y, past, st, A, capY, None, n=60, rule='fuel', cost=lambda d: c0,
                                         batteries='both', pool_from=2019, fuel_dev=True, france=True, seed=7)
                 # the year's capture in each scenario, weighted by the last complete year's monthly output
