@@ -85,9 +85,38 @@
     return true;
   }
 
+  // Shared dashboard links (#solo=<id>): no sign-in needed, read by anyone with the
+  // id, republished only by whoever holds the edit_token (schema: supabase/schema.sql).
+  async function sharedCreate(data) {
+    await ready();
+    if (!client) throw new Error('Sharing is not configured yet.');
+    const { data: rows, error } = await client.rpc('create_shared_board', { p_data: data });
+    if (error) throw error;
+    const row = Array.isArray(rows) ? rows[0] : rows;
+    if (!row) throw new Error('No id returned.');
+    return { id: row.id, token: row.edit_token };
+  }
+
+  async function sharedUpdate(id, token, data) {
+    await ready();
+    if (!client) throw new Error('Sharing is not configured yet.');
+    const { data: ok, error } = await client.rpc('update_shared_board', { p_id: id, p_token: token, p_data: data });
+    if (error) throw error;
+    return !!ok;
+  }
+
+  async function sharedGet(id) {
+    await ready();
+    if (!client) throw new Error('Sharing is not configured yet.');
+    const { data, error } = await client.from('shared_boards').select('data').eq('id', id).maybeSingle();
+    if (error) throw error;
+    return data ? data.data : null;
+  }
+
   window.PKAccount = {
     configured,
     ready, signIn, signOut, load, save,
+    sharedCreate, sharedUpdate, sharedGet,
     get user() { return user; },
     client: () => client,   // supabase-js client (RLS applies), null until ready()
     onChange(fn) { subs.add(fn); return () => subs.delete(fn); },
