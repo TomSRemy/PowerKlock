@@ -54,7 +54,7 @@
     if (D) return D;
     // the methods' weights in the published average (scripts/ppa_weights.py): inverse of their past error, solar
     const pwts = get('history/ppa_weights.json').catch(() => null);
-    const [cap, mkt, goCsv, capa, chain, imbc, ccap, hcan, fcst, fwm, pbias] = await Promise.all([get('history/fr_capture.json'), get('fr_market.json'), fetch(DATA_BASE + 'go_prices.csv').then(r => r.ok ? r.text() : '').catch(() => ''), get('history/capacity.json'), get('history/fr_market_calchain.json'), get('history/fr_imbalance_cost.json'), get('history/country_capture.json'), get('history/hourly_cannib.json'), get('history/ppa_forecast.json'), get('history/fr_forward_monthly.json'), get('history/ppa_bias.json')]);
+    const [cap, mkt, goCsv, capa, chain, imbc, ccap, hcan, fcst, fwm, pbias, errR] = await Promise.all([get('history/fr_capture.json'), get('fr_market.json'), fetch(DATA_BASE + 'go_prices.csv').then(r => r.ok ? r.text() : '').catch(() => ''), get('history/capacity.json'), get('history/fr_market_calchain.json'), get('history/fr_imbalance_cost.json'), get('history/country_capture.json'), get('history/hourly_cannib.json'), get('history/ppa_forecast.json'), get('history/fr_forward_monthly.json'), get('history/ppa_bias.json'), get('history/ppa_error_replay.json')]);
     const fwd = {};
     ((mkt && mkt.forwardCurve) || []).forEach(r => { const m = /Cal\s?(\d{4})/.exec(r.contract || ''); if (m && r.value != null) fwd[+m[1]] = r.value; });
     // GO: latest Commerg mid per production year (AIB renewable)
@@ -80,7 +80,7 @@
     if (imbc && imbc.months) ['solar', 'wind'].forEach(k => { const all = Object.keys(imbc.months).filter(m => imbc.months[m][k]).sort().slice(-12), withO = all.filter(m => imbc.months[m][k].ours), own = withO.length >= 3 && (!imbc.use || imbc.use[k] === 'ours'), ms = own ? withO : all; let c = 0, e = 0; ms.forEach(m => { const x = own ? imbc.months[m][k].ours : imbc.months[m][k]; c += x.costEur; e += x.mwh; }); if (ms.length >= 3 && e > 0) imbCost[k] = { v: c / e, n: ms.length, from: ms[0], to: ms[ms.length - 1], own }; });
     const fwdRows = ((mkt && mkt.forwardCurve) || []).filter(r => r.value != null).map(r => ({ contract: r.contract, value: r.value }));
     D = { hc: hcan || null, cc: (ccap && ccap.countries) || null, fwdRows, imbCost, cap: (cap && cap.days) || [], ix, profile: (cap && cap.profile) || {}, capGW, fwd, fwdDate: mkt && mkt.forwardCurve && mkt.forwardCurve[0] && mkt.forwardCurve[0].date, go, fwdVol, fwdVolN, volTerm,
-      fcst: fcst || null, fwRatio: (fwm && fwm.ratios && fwm.ratios.year) || null, fwM: (fwm && fwm.months) || null, bias: pbias || null };
+      fcst: fcst || null, fwRatio: (fwm && fwm.ratios && fwm.ratios.year) || null, fwM: (fwm && fwm.months) || null, bias: pbias || null, errR: errR || null };
     D.weights = await pwts;
     // hours with a day-ahead price at or below zero, per year (YTD annualised): the hours the PPA Dashboard convention leaves unpaid
     const negH = {}, ix2 = D.ix;
@@ -597,6 +597,33 @@
         const mN = simulate(Object.assign({}, o, { sig0: o.sigGen, noPriceRisk: true }), st); o.premNoPrice = Math.max(0, fair - qtl(mN.Us, alpha / 100));
       }
     }
+    // dynamic premium (Tom 3 Nov. 2026): the model's own error is no longer the band's width but the 75th percentile of
+    // its replayed errors for this contract's stop threshold and each year's horizon (scripts/ppa_error_replay.py, every
+    // week: deliveries starting every month since 2023, priced 3 to 12 months ahead, published set-up); the Monte Carlo
+    // keeps the market risks (forward price, volume, liquidity) without the capture drift. A real P75 on the model error,
+    // contract by contract: the error grows as the threshold goes down (solar: 0.8 €/MWh stopping at 0 included, 2.3 below
+    // 0, 3.4 below −1 €), so the premium does too
+    const ER = D.errR && D.errR[st.tech];
+    o.modelRiskDyn = null;
+    if (ER && o.gen && o.mc) {
+      const Tq = stopTeff(st), Ts = Object.keys(ER).map(Number).sort((a, b) => a - b), now = new Date().getUTCFullYear() + new Date().getUTCMonth() / 12;
+      const at = (T, h) => { const e = ER[String(T)]; const x = e && (e[String(h)] || e.all); return x && x.q75_pts != null ? x.q75_pts : null; };
+      const q = h => { const t = clamp(Tq, Ts[0], Ts[Ts.length - 1]); let i = 0; while (i < Ts.length - 2 && Ts[i + 1] < t) i++;
+        const w = (t - Ts[i]) / (Ts[i + 1] - Ts[i]), a = at(Ts[i], h), b = at(Ts[i + 1], h); return a == null || b == null ? null : a * (1 - w) + b * w; };
+      // each delivery year at the horizon of its middle, in the replay's buckets (beyond 12 months: the 12-month one)
+      const hz = r => { const M = monthsOf(r.y), mid = r.y + ((M[0] - 1) + M[M.length - 1]) / 24, mo = (mid - now) * 12; return mo <= 4.5 ? 3 : mo <= 7.5 ? 6 : mo <= 10.5 ? 9 : 12; };
+      const parts = years.map(r => { const v = q(hz(r)); return v == null ? null : r.wt * r.fwd * Math.max(0, v) / 100; });
+      if (parts.every(v => v != null)) {
+        const wsum = years.reduce((a, r) => a + r.wt, 0) || 1;
+        o.modelRiskDyn = parts.reduce((a, b) => a + b, 0) / wsum;
+        const mM = simulate(Object.assign({}, o, { sig0: 0 }), st), prem = fair - qtl(mM.Us, alpha / 100);
+        o.sigGen = 0; o.premiumGen = prem + o.modelRiskDyn;
+        const m0 = simulate(Object.assign({}, o, { sig0: 0, sigV: 0 }), st); o.premVolGen = Math.max(0, prem - (fair - qtl(m0.Us, alpha / 100)));
+        if (years.some(r => r.liqK > 0) && o.sigL > 0) { const mL = simulate(Object.assign({}, o, { sig0: 0, sigL: 0 }), st); o.liqRisk = Math.max(0, prem - (fair - qtl(mL.Us, alpha / 100))); }
+        else o.liqRisk = 0;
+        const mN = simulate(Object.assign({}, o, { sig0: 0, noPriceRisk: true }), st); o.premNoPrice = Math.max(0, fair - qtl(mN.Us, alpha / 100)) + o.modelRiskDyn;
+      }
+    }
     o.modelRisk = o.premiumGen != null ? 0 : mrT && mrT.qPts > 0 ? refW * mrT.qPts / 100 : 0;
     o.modelRiskInfo = mrT ? { level: MR.level, n: mrT.n, qPts: mrT.qPts, meanEur: mrT.meanEur, maeEur: mrT.maeEur, byH: mrT.byH, anchorMae: mrT.anchorMae } : null;
     o.ppaGen = o.gen ? o.genFair - (o.premiumGen != null ? o.premiumGen : o.premium) - o.modelRisk - refW * add / 100 - imb + goW - margin : null;
@@ -893,7 +920,9 @@
         const anTxt = fr
           ? (anMode === 'none' ? 'sans ancrage' : `ancré sur la capture réalisée de ${anY || 'la dernière année complète'}${anMode === 'season' ? ', un facteur pour l’hiver (octobre–mars) et un pour l’été (avril–septembre)' : ' (un facteur sur l’année)'}`) + (anErr ? ` : le choix qui se trompait le moins en rejeu, écart moyen ${anErr} €/MWh` : '')
           : (anMode === 'none' ? 'not anchored' : `anchored on the realised capture of ${anY || 'the last complete year'}${anMode === 'season' ? ', one factor for winter (October–March) and one for summer (April–September)' : ' (one factor on the year)'}`) + (anErr ? `: the choice that erred least in the replay, mean gap ${anErr} €/MWh` : '');
-        el.innerHTML = spread + bfTxt + ' ' + (fr ? `Prix publié = le générateur de scénarios (deux régimes : la France couplée à ses voisins ou coupée par sa limite d’export du couplage Core, JAO), ${anTxt}, sans correction de biais.` : `Published price = the scenario generator (two regimes: France coupled to its neighbours or cut off by its Core export limit, JAO), ${anTxt}, no bias correction.`) + mrTxt;
+        el.innerHTML = spread + bfTxt + ' ' + (fr ? `Prix publié = le générateur de scénarios (deux régimes : la France couplée à ses voisins ou coupée par sa limite d’export du couplage Core, JAO), ${anTxt}, sans correction de biais.` : `Published price = the scenario generator (two regimes: France coupled to its neighbours or cut off by its Core export limit, JAO), ${anTxt}, no bias correction.`) + mrTxt + (o.modelRiskDyn != null ? (fr
+          ? ` Dont erreur du modèle : <b>${n2(o.modelRiskDyn)} €/MWh</b>, le 75e centile des erreurs passées du générateur pour ce seuil d’arrêt et l’horizon de chaque année (rejeu chaque semaine des livraisons commençant chaque mois depuis 2023, pricées 3 à 12 mois avant ; scripts/ppa_error_replay.py) ; le reste couvre les risques de marché (prix forward, volume, liquidité).`
+          : ` Of which model error: <b>${f2(o.modelRiskDyn)} €/MWh</b>, the 75th percentile of the generator's past errors for this stop threshold and each year's horizon (replay every week of the deliveries starting every month since 2023, priced 3 to 12 months ahead; scripts/ppa_error_replay.py); the rest covers the market risks (forward price, volume, liquidity).`) : '');
         return;
       }
       el.innerHTML = spread + wtxt + ' ' + (fr ? `Précision mesurée de la moyenne publiée${use.length < 4 ? ' (' + use.length + ' méthodes)' : ''} sur les années complètes depuis 2024 : ${n2(e(1))} € d’erreur moyenne à 1 an, ${n2(e(2))} € à 2 ans, ${n2(e(3))} € à 3 ans ; au-delà du parc déjà observé, l’écart entre méthodes dit mieux l’incertitude.`
