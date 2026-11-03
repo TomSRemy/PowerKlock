@@ -97,11 +97,12 @@
     const base = st[0], best = st.slice().sort((a, b) => a.prem - b.prem)[0];
     const red = r => base.sd > 0 ? (1 - (r.sd / base.sd) ** 2) * 100 : 0;
     const ratio = k => k === 'dyn' ? '' : n0(sm.H[k].reduce((a, h) => a + h, 0) / sm.volume * 100) + ' %';
-    // the published price assumes back to back at 100 % (Tom 3 Nov. 2026); the best hedge measured here is shown next to it
+    // the published price prices the hedge ratio entered (back to back at 100 % by default, Tom 3 Nov. 2026); the best
+    // hedge measured here is named next to it (its figures, with the capture drift, are in this section)
     const bh = document.getElementById('pp-best-hedge');
-    HEDGE.best = best.k === 'b2b' ? (fr() ? ' ; c’est aussi la meilleure couverture mesurée pour ce contrat' : '; it is also the best hedge measured for this contract')
-      : (fr() ? ` ; meilleure couverture mesurée pour ce contrat : <b>${LBL[best.k]}</b>${ratio(best.k) ? ' (' + ratio(best.k) + ')' : ''}, qui ramène le risque de ${n2(st[1].prem)} à ${n2(best.prem)} €/MWh (section Couverture)`
-        : `; best hedge measured for this contract: <b>${LBL[best.k]}</b>${ratio(best.k) ? ' (' + ratio(best.k) + ')' : ''}, bringing the risk from ${n2(st[1].prem)} to ${n2(best.prem)} €/MWh (Hedging section)`);
+    HEDGE.best = best.k === 'b2b' ? (fr() ? ' Le back to back à 100 % est aussi la meilleure couverture mesurée pour ce contrat (section Couverture).' : ' Back to back at 100 % is also the best hedge measured for this contract (Hedging section).')
+      : (fr() ? ` Meilleure couverture mesurée pour ce contrat : <b>${LBL[best.k]}</b>${ratio(best.k) ? ' (' + ratio(best.k) + ')' : ''}, détail dans la section Couverture.`
+        : ` Best hedge measured for this contract: <b>${LBL[best.k]}</b>${ratio(best.k) ? ' (' + ratio(best.k) + ')' : ''}, details in the Hedging section.`);
     if (bh) bh.innerHTML = HEDGE.best;
     host.innerHTML = `<div class="table-scroll"><table class="data-table"><thead><tr><th style="text-align:left">${fr() ? 'Stratégie' : 'Strategy'}</th><th>${fr() ? 'Couvert' : 'Hedged'}</th><th>${fr() ? 'Moyenne €/MWh' : 'Mean €/MWh'}</th><th>${fr() ? 'Dispersion' : 'Spread'}</th><th>P10</th><th>${fr() ? 'Variance retirée' : 'Variance removed'}</th><th>${fr() ? 'Prime au risque accepté' : 'Premium at the risk accepted'}</th><th>${fr() ? 'MWh échangés' : 'MWh traded'}</th></tr></thead><tbody>${st.map(r => `<tr${r.k === best.k ? ' style="font-weight:600"' : ''}><td style="text-align:left">${LBL[r.k]}</td><td>${ratio(r.k) || (fr() ? 'variable' : 'varies')}</td><td>${n2(r.m)}</td><td>${n2(r.sd)}</td><td>${n2(r.p10)}</td><td>${r.k === 'none' ? '–' : n0(red(r)) + ' %'}</td><td>${n2(r.prem)}</td><td>${n0(r.tr)}</td></tr>`).join('')}</tbody></table></div>
       <div class="fuel-note">${fr()
