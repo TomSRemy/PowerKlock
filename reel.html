@@ -23,6 +23,11 @@ html,body{margin:0;height:100%;background:#000;color:var(--fg);font-family:var(-
 body{display:flex;align-items:center;justify-content:center;overflow:hidden}
 /* 9:16 stage, sized to the screen; everything inside is in --u (1/100 of the stage width) */
 #stage{position:relative;width:min(100vw,56.25vh);height:min(177.78vw,100vh);background:radial-gradient(120% 70% at 50% 0%,#16202D 0%,var(--bg) 60%);overflow:hidden;--u:calc(min(100vw,56.25vh)/100)}
+/* a slow-drifting glow behind every scene, so nothing ever sits as a fully still frame */
+#stage::before{content:"";position:absolute;inset:-20%;z-index:0;pointer-events:none;
+  background:radial-gradient(38% 30% at 28% 18%,rgba(127,200,248,.16),transparent 62%),radial-gradient(42% 32% at 78% 86%,rgba(251,191,36,.10),transparent 62%);
+  animation:drift 22s ease-in-out infinite}
+@keyframes drift{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(3%,-2%) scale(1.06)}66%{transform:translate(-2%,3%) scale(1.04)}}
 .scene{position:absolute;inset:0;padding:calc(14*var(--u)) calc(8*var(--u)) calc(22*var(--u));display:flex;flex-direction:column;justify-content:center;gap:calc(3*var(--u));opacity:0;transform:translateY(calc(4*var(--u)));transition:opacity .5s ease,transform .6s ease}
 .scene.on{opacity:1;transform:none}
 .scene > *{opacity:0;transform:translateY(calc(5*var(--u)))}
@@ -45,6 +50,10 @@ body{display:flex;align-items:center;justify-content:center;overflow:hidden}
 .delta .unit{white-space:nowrap}
 .figline{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 calc(2*var(--u))}
 .figline .unit{white-space:nowrap}
+.scene.on .figline .big{display:inline-block;animation:breathe 2.6s ease-in-out 1.3s infinite}
+@keyframes breathe{50%{transform:scale(1.02)}}
+.dot{animation:dotpulse 1.8s ease-in-out infinite}
+@keyframes dotpulse{0%,100%{r:16}50%{r:19}}
 .big.long{font-size:calc(17*var(--u))}
 .delta.up{color:var(--up)}.delta.down{color:var(--down)}.delta.flat{color:var(--muted)}
 .sub{font:400 calc(4.2*var(--u))/1.4 var(--sans);color:var(--muted)}
@@ -88,7 +97,8 @@ svg{width:100%;height:auto;overflow:visible}
 .race.go .t span{opacity:1}
 .lg{display:flex;flex-wrap:wrap;gap:calc(1.5*var(--u)) calc(3.5*var(--u));font:600 calc(3.2*var(--u)) var(--mono);color:var(--muted)}
 .lg i{display:inline-block;width:calc(2.6*var(--u));height:calc(2.6*var(--u));border-radius:2px;margin-right:calc(1.2*var(--u));vertical-align:-2px}
-@media (prefers-reduced-motion: reduce){.scene{transition:none}.draw{animation:none;stroke-dashoffset:0}.scene > *,.tile,.brief div{opacity:1;transform:none;animation:none!important}}
+@media (prefers-reduced-motion: reduce){.scene{transition:none}.draw{animation:none;stroke-dashoffset:0}.scene > *,.tile,.brief div{opacity:1;transform:none;animation:none!important}
+  #stage::before,.figline .big,.dot{animation:none!important}}
 </style>
 </head>
 <body>
@@ -123,24 +133,49 @@ svg{width:100%;height:auto;overflow:visible}
       <div class="sub">${T('Moyenne du jour de livraison, enchère day-ahead d’hier midi.', 'Delivery-day average, yesterday’s noon day-ahead auction.')}</div>`;
   }
   function profileScene(D0) {
-    const h = D0.hourly, H = Array.from({ length: 24 }, (_, i) => h.slice(i * 4, i * 4 + 4).reduce((s, v) => s + v, 0) / 4);
+    // the full 96 quarter-hours, not a 24-point hourly mean: battery/solar swings are quarter-hour events,
+    // averaging them into hours would understate the real peak-low spread
+    const H = D0.hourly, N = H.length;
     const mn = Math.min(...H), mx = Math.max(...H), lo = Math.min(0, mn), W = 1000, Ht = 520;
-    const x = i => i / 23 * W, y = v => Ht - (v - lo) / (mx - lo || 1) * Ht;
+    const x = i => i / (N - 1) * W, y = v => Ht - (v - lo) / (mx - lo || 1) * Ht;
     const pts = H.map((v, i) => x(i).toFixed(1) + ',' + y(v).toFixed(1)).join(' ');
     const iMin = H.indexOf(mn), iMax = H.indexOf(mx), neg = D0.negH || 0;
-    return `<div class="kick">${T('La journée heure par heure', 'The day hour by hour')}</div>
-      <div class="h">${T('Creux à', 'Low at')}&nbsp;${iMin}&nbsp;h, ${T('pic à', 'peak at')}&nbsp;${iMax}&nbsp;h</div>
+    const hhmm = i => String(Math.floor(i / 4)).padStart(2, '0') + ':' + String(i % 4 * 15).padStart(2, '0');
+    const SWEEP = 3400;
+    return { ms: SWEEP + 2600, html: `<div class="kick">${T('La journée quart d’heure par quart d’heure', 'The day, quarter-hour by quarter-hour')}</div>
+      <div class="row" style="align-items:baseline;justify-content:space-between"><div class="clock" id="p-clock">00:00</div><div class="act" id="p-act" style="color:var(--muted)">–</div></div>
       <svg viewBox="-20 -60 1040 660" aria-hidden="true">
         ${lo < 0 ? `<line x1="0" x2="${W}" y1="${y(0)}" y2="${y(0)}" stroke="#ED6965" stroke-dasharray="8 8"/>` : ''}
-        <polygon points="0,${Ht} ${pts} ${W},${Ht}" fill="rgba(127,200,248,.16)"/>
-        <polyline class="draw" points="${pts}" fill="none" stroke="#7FC8F8" stroke-width="9" stroke-linejoin="round"/>
-        <circle cx="${x(iMin)}" cy="${y(mn)}" r="16" fill="#4ADE80"/><circle cx="${x(iMax)}" cy="${y(mx)}" r="16" fill="#ED6965"/>
+        <defs><clipPath id="p-clip"><rect id="p-cr" x="-20" y="-60" width="0" height="660"/></clipPath></defs>
+        <g clip-path="url(#p-clip)"><polygon points="0,${Ht} ${pts} ${W},${Ht}" fill="rgba(127,200,248,.16)"/>
+          <polyline points="${pts}" fill="none" stroke="#7FC8F8" stroke-width="7" stroke-linejoin="round"/></g>
+        <line id="p-cur" x1="0" x2="0" y1="-60" y2="${Ht + 100}" stroke="#8DA2B8" stroke-width="3" stroke-dasharray="6 6"/>
+        <circle class="dot" cx="${x(iMin)}" cy="${y(mn)}" r="16" fill="#4ADE80"/><circle class="dot" cx="${x(iMax)}" cy="${y(mx)}" r="16" fill="#ED6965"/>
         <text x="${x(iMin)}" y="${y(mn) + 62}" text-anchor="middle" fill="#4ADE80" font-family="JetBrains Mono" font-size="44" font-weight="800">${fmt(mn, 0)} €</text>
         <text x="${x(iMax)}" y="${y(mx) - 30}" text-anchor="middle" fill="#ED6965" font-family="JetBrains Mono" font-size="44" font-weight="800">${fmt(mx, 0)} €</text>
-        ${[0, 6, 12, 18, 23].map(i => `<text x="${x(i)}" y="${Ht + 60}" text-anchor="middle" fill="#8DA2B8" font-family="JetBrains Mono" font-size="34">${i} h</text>`).join('')}
+        ${[0, 24, 48, 72, 95].map(i => `<text x="${x(i)}" y="${Ht + 60}" text-anchor="middle" fill="#8DA2B8" font-family="JetBrains Mono" font-size="34">${Math.floor(i / 4)}&#160;h</text>`).join('')}
       </svg>
       <div class="row"><div class="tile"><div class="l">${T('Pic − creux', 'Peak − low')}</div><div class="v nw">${fmt(mx - mn, 0)}&nbsp;€</div><div class="s">${T('ce que voit une batterie', 'what a battery sees')}</div></div>
-        <div class="tile"><div class="l">${T('Heures ≤ 0 €', 'Hours ≤ 0 €')}</div><div class="v">${fmt(neg, neg % 1 ? 1 : 0)}</div><div class="s">${T('prix nuls ou négatifs', 'zero or negative')}</div></div></div>`;
+        <div class="tile"><div class="l">${T('Heures ≤ 0 €', 'Hours ≤ 0 €')}</div><div class="v">${fmt(neg, neg % 1 ? 1 : 0)}</div><div class="s">${T('prix nuls ou négatifs', 'zero or negative')}</div></div></div>`,
+      play(root) {
+        const clock = root.querySelector('#p-clock'), act = root.querySelector('#p-act'),
+          cr = root.querySelector('#p-cr'), cur = root.querySelector('#p-cur');
+        const paint = i => {
+          i = Math.max(0, Math.min(N - 1, i));   // a stray rAF tick with a now before t0 must never emit a negative width
+          clock.textContent = hhmm(i);
+          act.textContent = fmt(H[i], 0) + ' €/MWh';
+          act.style.color = i === iMin ? 'var(--down)' : i === iMax ? 'var(--up)' : 'var(--muted)';
+          cr.setAttribute('width', 20 + i / (N - 1) * (W + 40)); cur.setAttribute('x1', x(i)); cur.setAttribute('x2', x(i));
+        };
+        if (matchMedia('(prefers-reduced-motion: reduce)').matches) { paint(N - 1); return; }
+        const t0 = performance.now();
+        const step = now => {
+          const f = Math.min(1, (now - t0) / SWEEP);
+          paint(Math.min(N - 1, Math.floor(f * N)));
+          if (f < 1) requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
+      } };
   }
   function calScene(cal) {
     return `<div class="kick">${T('Marché à terme', 'Forward market')}</div>

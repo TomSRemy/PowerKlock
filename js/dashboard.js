@@ -1212,6 +1212,19 @@
       document.getElementById('pkd-add-note')?.addEventListener('click', addNote);
       document.getElementById('pkd-menu')?.addEventListener('click', openBoardMenu);
       document.getElementById('pkd-share')?.addEventListener('click', openShare);
+      // same switch as Today's "Explain" (body.mrn-explain, css/site.css): widgets built from Today's own
+      // code (e.g. the today-tiles widget) already carry the same hidden .mrn-x lines and light up with it
+      const xbtn = document.getElementById('pkd-explain');
+      if (xbtn) {
+        const setX = on => {
+          document.body.classList.toggle('mrn-explain', on);
+          xbtn.classList.toggle('on', on); xbtn.setAttribute('aria-pressed', on ? 'true' : 'false');
+          try { localStorage.setItem('pk-explain', on ? '1' : '0'); } catch (_) {}
+        };
+        let on; try { on = localStorage.getItem('pk-explain') === '1'; } catch (_) { on = false; }
+        setX(on);
+        xbtn.addEventListener('click', () => setX(!document.body.classList.contains('mrn-explain')));
+      }
       document.getElementById('pkd-pptx')?.addEventListener('click', async ev => {
         const btn = ev.currentTarget, label = btn.textContent;
         if (!window.PKExport) return;
