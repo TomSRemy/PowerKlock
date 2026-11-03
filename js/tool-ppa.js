@@ -607,7 +607,8 @@
     o.modelRiskDyn = null;
     if (ER && o.gen && o.mc) {
       const Tq = stopTeff(st), Ts = Object.keys(ER).map(Number).sort((a, b) => a - b), now = new Date().getUTCFullYear() + new Date().getUTCMonth() / 12;
-      const at = (T, h) => { const e = ER[String(T)]; const x = e && (e[String(h)] || e.all); return x && x.q75_pts != null ? x.q75_pts : null; };
+      // the quantile over all horizons: by horizon it rests on 46 overlapping cases and is not smooth (h kept for later)
+      const at = (T, h) => { const e = ER[String(T)]; const x = e && e.all; return x && x.q75_pts != null ? x.q75_pts : null; };
       const q = h => { const t = clamp(Tq, Ts[0], Ts[Ts.length - 1]); let i = 0; while (i < Ts.length - 2 && Ts[i + 1] < t) i++;
         const w = (t - Ts[i]) / (Ts[i + 1] - Ts[i]), a = at(Ts[i], h), b = at(Ts[i + 1], h); return a == null || b == null ? null : a * (1 - w) + b * w; };
       // each delivery year at the horizon of its middle, in the replay's buckets (beyond 12 months: the 12-month one)
@@ -616,12 +617,17 @@
       if (parts.every(v => v != null)) {
         const wsum = years.reduce((a, r) => a + r.wt, 0) || 1;
         o.modelRiskDyn = parts.reduce((a, b) => a + b, 0) / wsum;
-        const mM = simulate(Object.assign({}, o, { sig0: 0 }), st), prem = fair - qtl(mM.Us, alpha / 100);
+        // the price only carries what cannot be hedged (Tom 3 Nov. 2026: the hedge is a risk the aggregator takes and
+        // manages, pricing it would take away its point): the model's error, the volume, and the liquidity of the years
+        // past the last quoted Cal. The forward price level, the hedge ratio and the shape before reprofiling stay with
+        // the hedge (js/ppa-hedge.js), not in the price
+        const base = { sig0: 0, noPriceRisk: true };
+        const mM = simulate(Object.assign({}, o, base), st), prem = Math.max(0, fair - qtl(mM.Us, alpha / 100));
         o.sigGen = 0; o.premiumGen = prem + o.modelRiskDyn;
-        const m0 = simulate(Object.assign({}, o, { sig0: 0, sigV: 0 }), st); o.premVolGen = Math.max(0, prem - (fair - qtl(m0.Us, alpha / 100)));
-        if (years.some(r => r.liqK > 0) && o.sigL > 0) { const mL = simulate(Object.assign({}, o, { sig0: 0, sigL: 0 }), st); o.liqRisk = Math.max(0, prem - (fair - qtl(mL.Us, alpha / 100))); }
+        const m0 = simulate(Object.assign({}, o, base, { sigV: 0 }), st); o.premVolGen = Math.max(0, prem - Math.max(0, fair - qtl(m0.Us, alpha / 100)));
+        if (years.some(r => r.liqK > 0) && o.sigL > 0) { const mL = simulate(Object.assign({}, o, base, { sigL: 0 }), st); o.liqRisk = Math.max(0, prem - Math.max(0, fair - qtl(mL.Us, alpha / 100))); }
         else o.liqRisk = 0;
-        const mN = simulate(Object.assign({}, o, { sig0: 0, noPriceRisk: true }), st); o.premNoPrice = Math.max(0, fair - qtl(mN.Us, alpha / 100)) + o.modelRiskDyn;
+        o.premNoPrice = o.premiumGen;
       }
     }
     o.modelRisk = o.premiumGen != null ? 0 : mrT && mrT.qPts > 0 ? refW * mrT.qPts / 100 : 0;
@@ -909,8 +915,8 @@
         // the model risk taken off the price (scripts/ppa_model_risk.py, in o.modelRisk) and the replay behind it
         const I = o.modelRiskInfo, bh = I && I.byH ? [1, 2, 3].map(h => I.byH[String(h)] ? n2(I.byH[String(h)].maeEur) : '–').join(' / ') : null;
         const mrTxt = o.premiumGen != null ? (fr
-          ? ` Prime de risque : <b>${n2(o.premiumGen)} €/MWh</b>, tirée du Monte-Carlo complet du générateur (semaines analogues « chères » ou « bon marché », parc, nucléaire avec une crise rare, limite d’export, consommation, année sèche ou humide ; dérive de capture ${n2(o.sigGen * 100)} pts par √an) jointe aux risques de prix et de volume. Au rejeu, le prix prudent qu’elle donne a tenu dans 78 % des livraisons quand l’heure à 0 € est arrêtée aussi, mais seulement dans 44 % (solaire) et 67 % (éolien) avec l’arrêt strictement sous 0 € (cible 75 %) : il est trop haut tant que le générateur n’apprend pas les prix au quart d’heure (en cours).`
-          : ` Risk premium: <b>${f2(o.premiumGen)} €/MWh</b>, from the generator's full Monte Carlo (analogue weeks drawn "dear" or "cheap", fleet, nuclear with a rare crisis, export limit, load, dry or wet year; capture drift ${f2(o.sigGen * 100)} pts per √year) joined with the price and volume risks. In the replay the prudent price it gives held in 78 % of deliveries when the hour at 0 € is stopped too, but only 44 % (solar) and 67 % (wind) with the stop strictly below 0 € (target 75 %): it is too high until the generator learns quarter-hour prices (in progress).`) : !I ? '' : fr
+          ? ` Prime de risque : <b>${n2(o.premiumGen)} €/MWh</b>, tirée du Monte-Carlo complet du générateur (semaines analogues « chères » ou « bon marché », parc, nucléaire avec une crise rare, limite d’export, consommation, année sèche ou humide ; dérive de capture ${n2(o.sigGen * 100)} pts par √an) jointe aux risques de prix et de volume. `
+          : ` Risk premium: <b>${f2(o.premiumGen)} €/MWh</b>, from the generator's full Monte Carlo (analogue weeks drawn "dear" or "cheap", fleet, nuclear with a rare crisis, export limit, load, dry or wet year; capture drift ${f2(o.sigGen * 100)} pts per √year) joined with the price and volume risks. `) : !I ? '' : fr
           ? ` Risque de modèle retiré du prix : <b>${n2(o.modelRisk)} €/MWh</b> (${I.level}e centile des erreurs passées du générateur sur la capture, ${I.n} cas : livraisons depuis 2023, pricées 1 à 3 ans avant ; il se trompe en moyenne de ${I.meanEur >= 0 ? '+' : ''}${n2(I.meanEur)} €, écart moyen ${bh} € à 1 / 2 / 3 ans). Ainsi le prix n’aurait pas dépassé la valeur réalisée dans 3 cas sur 4.`
           : ` Model risk taken off the price: <b>${f2(o.modelRisk)} €/MWh</b> (${I.level}th percentile of the generator's past errors on the capture, ${I.n} cases: deliveries since 2023, priced 1 to 3 years ahead; on average it errs by ${I.meanEur >= 0 ? '+' : ''}${f2(I.meanEur)} €, mean gap ${bh} € one / two / three years ahead). So the price would not have exceeded the realised value in 3 cases out of 4.`;
         // the anchoring this technology uses, chosen on the weekly replay (scripts/ppa_model_risk.py anchorMode)
@@ -921,8 +927,9 @@
           ? (anMode === 'none' ? 'sans ancrage' : `ancré sur la capture réalisée de ${anY || 'la dernière année complète'}${anMode === 'season' ? ', un facteur pour l’hiver (octobre–mars) et un pour l’été (avril–septembre)' : ' (un facteur sur l’année)'}`) + (anErr ? ` : le choix qui se trompait le moins en rejeu, écart moyen ${anErr} €/MWh` : '')
           : (anMode === 'none' ? 'not anchored' : `anchored on the realised capture of ${anY || 'the last complete year'}${anMode === 'season' ? ', one factor for winter (October–March) and one for summer (April–September)' : ' (one factor on the year)'}`) + (anErr ? `: the choice that erred least in the replay, mean gap ${anErr} €/MWh` : '');
         el.innerHTML = spread + bfTxt + ' ' + (fr ? `Prix publié = le générateur de scénarios (deux régimes : la France couplée à ses voisins ou coupée par sa limite d’export du couplage Core, JAO), ${anTxt}, sans correction de biais.` : `Published price = the scenario generator (two regimes: France coupled to its neighbours or cut off by its Core export limit, JAO), ${anTxt}, no bias correction.`) + mrTxt + (o.modelRiskDyn != null ? (fr
-          ? ` Dont erreur du modèle : <b>${n2(o.modelRiskDyn)} €/MWh</b>, le 75e centile des erreurs passées du générateur pour ce seuil d’arrêt et l’horizon de chaque année (rejeu chaque semaine des livraisons commençant chaque mois depuis 2023, pricées 3 à 12 mois avant ; scripts/ppa_error_replay.py) ; le reste couvre les risques de marché (prix forward, volume, liquidité).`
-          : ` Of which model error: <b>${f2(o.modelRiskDyn)} €/MWh</b>, the 75th percentile of the generator's past errors for this stop threshold and each year's horizon (replay every week of the deliveries starting every month since 2023, priced 3 to 12 months ahead; scripts/ppa_error_replay.py); the rest covers the market risks (forward price, volume, liquidity).`) : '');
+          ? ` Dont erreur du modèle : <b>${n2(o.modelRiskDyn)} €/MWh</b>, le 75e centile des erreurs passées du générateur pour ce seuil d’arrêt et l’horizon de chaque année (rejeu chaque semaine des livraisons commençant chaque mois depuis 2023, pricées 3 à 12 mois avant ; scripts/ppa_error_replay.py) ; le reste couvre le volume et la liquidité des années non cotées. Le risque de prix forward et de couverture reste à l’agrégateur, il n’est pas dans le prix. Couverture retenue : back to back, 100 % du volume attendu vendu au Cal de chaque année<span id="pp-best-hedge"></span>.`
+          : ` Of which model error: <b>${f2(o.modelRiskDyn)} €/MWh</b>, the 75th percentile of the generator's past errors for this stop threshold and each year's horizon (replay every week of the deliveries starting every month since 2023, priced 3 to 12 months ahead; scripts/ppa_error_replay.py); the rest covers the volume and the liquidity of unquoted years. The forward price and hedge risk stays with the aggregator, it is not in the price. Hedge assumed: back to back, 100 % of the expected volume sold at each year's Cal<span id="pp-best-hedge"></span>.`) : '');
+        { const bh = document.getElementById('pp-best-hedge'); if (bh && window.PKPpaHedge && PKPpaHedge.best) bh.innerHTML = PKPpaHedge.best; }
         return;
       }
       el.innerHTML = spread + wtxt + ' ' + (fr ? `Précision mesurée de la moyenne publiée${use.length < 4 ? ' (' + use.length + ' méthodes)' : ''} sur les années complètes depuis 2024 : ${n2(e(1))} € d’erreur moyenne à 1 an, ${n2(e(2))} € à 2 ans, ${n2(e(3))} € à 3 ans ; au-delà du parc déjà observé, l’écart entre méthodes dit mieux l’incertitude.`
@@ -976,7 +983,7 @@
     const st = gen
       ? [['Cal forward', ref, 1], ['Monthly profile', o.genProf - ref], ['Hourly cannibalisation', fair - o.genProf - thrFx],
         ...(thrFx ? [['Stop threshold effect', thrFx]] : []), ['Volume risk', -o.premVolGen],
-        ...(o.liqRisk != null ? [['Liquidity risk', -o.liqRisk]] : []), ['Price & capture risk', risk + o.premVolGen + (o.liqRisk || 0)],
+        ...(o.liqRisk != null ? [['Liquidity risk', -o.liqRisk]] : []), [o.modelRiskDyn != null ? 'Model error' : 'Price & capture risk', risk + o.premVolGen + (o.liqRisk || 0)],
         ['Imbalance cost', -o.imb], ['GO', o.goW], ['Margin', -o.margin], ['PPA price', price, 1]]
       : [['Cal forward', ref, 1], [S.tech === 'wind' ? 'Wind profile' : 'Solar profile', fair - ref], ['Risk', risk], ['Imbalance', -o.imb], ['GO', o.goW], ['Margin', -o.margin], ['PPA price', price, 1]];
     const sub = $('pp-sum-wf-sub'), subT = gen ? '€/MWh · the published price, line by line' : '€/MWh · average of the methods ticked';

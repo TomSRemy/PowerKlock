@@ -23,6 +23,7 @@
   const n0 = v => v == null || !isFinite(v) ? '–' : Math.round(v).toLocaleString(fr() ? 'fr-FR' : 'en-GB');
   const S = { bidask: 0.10, step: 1, N: 4000 };
   let KEY = null;
+  const HEDGE = { best: '' };   // the best hedge's sentence, shown next to the published price (js/tool-ppa.js)
 
   function rng(seed) { let a = seed >>> 0; return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
   const qtl = (s, q) => { const r = q * (s.length - 1), lo = Math.floor(r); return s[lo] + (s[Math.min(s.length - 1, lo + 1)] - s[lo]) * (r - lo); };
@@ -87,7 +88,7 @@
   async function run() {
     const host = $('pp-hedge-body'); if (!host || !window.PKPpa || !PKPpa.last) return;
     const o = PKPpa.last(); if (!o || !o.years || !o.years.length) return;
-    const key = [o.tenor.join(','), o.st && o.st.tech, o.refW, o.sigV, o.rho, S.bidask, S.step].join('|'); if (KEY === key) return; KEY = key;
+    const key = [o.tenor.join(','), o.st && o.st.tech, o.st && o.st.stopT, o.st && o.st.stopEq, o.refW, o.sigV, o.rho, S.bidask, S.step].join('|'); if (KEY === key) return; KEY = key;
     const sm = simulate(o), alpha = (o.alpha || 25) / 100;
     const LBL = fr() ? { none: 'Pas de couverture', b2b: 'Back to back (volume attendu)', b2b70: 'Back to back 70 %', delta0: 'Delta à la signature (volume × sensibilité)', minvar: 'Ratio optimal (variance minimale)', dyn: S.step === 1 ? 'Delta dynamique (chaque mois)' : 'Delta dynamique (chaque trimestre)' }
       : { none: 'No hedge', b2b: 'Back to back (expected volume)', b2b70: 'Back to back 70 %', delta0: 'Delta at signing (volume × sensitivity)', minvar: 'Minimum-variance ratio', dyn: S.step === 1 ? 'Dynamic delta (monthly)' : 'Dynamic delta (quarterly)' };
@@ -96,6 +97,12 @@
     const base = st[0], best = st.slice().sort((a, b) => a.prem - b.prem)[0];
     const red = r => base.sd > 0 ? (1 - (r.sd / base.sd) ** 2) * 100 : 0;
     const ratio = k => k === 'dyn' ? '' : n0(sm.H[k].reduce((a, h) => a + h, 0) / sm.volume * 100) + ' %';
+    // the published price assumes back to back at 100 % (Tom 3 Nov. 2026); the best hedge measured here is shown next to it
+    const bh = document.getElementById('pp-best-hedge');
+    HEDGE.best = best.k === 'b2b' ? (fr() ? ' ; c’est aussi la meilleure couverture mesurée pour ce contrat' : '; it is also the best hedge measured for this contract')
+      : (fr() ? ` ; meilleure couverture mesurée pour ce contrat : <b>${LBL[best.k]}</b>${ratio(best.k) ? ' (' + ratio(best.k) + ')' : ''}, qui ramène le risque de ${n2(st[1].prem)} à ${n2(best.prem)} €/MWh (section Couverture)`
+        : `; best hedge measured for this contract: <b>${LBL[best.k]}</b>${ratio(best.k) ? ' (' + ratio(best.k) + ')' : ''}, bringing the risk from ${n2(st[1].prem)} to ${n2(best.prem)} €/MWh (Hedging section)`);
+    if (bh) bh.innerHTML = HEDGE.best;
     host.innerHTML = `<div class="table-scroll"><table class="data-table"><thead><tr><th style="text-align:left">${fr() ? 'Stratégie' : 'Strategy'}</th><th>${fr() ? 'Couvert' : 'Hedged'}</th><th>${fr() ? 'Moyenne €/MWh' : 'Mean €/MWh'}</th><th>${fr() ? 'Dispersion' : 'Spread'}</th><th>P10</th><th>${fr() ? 'Variance retirée' : 'Variance removed'}</th><th>${fr() ? 'Prime au risque accepté' : 'Premium at the risk accepted'}</th><th>${fr() ? 'MWh échangés' : 'MWh traded'}</th></tr></thead><tbody>${st.map(r => `<tr${r.k === best.k ? ' style="font-weight:600"' : ''}><td style="text-align:left">${LBL[r.k]}</td><td>${ratio(r.k) || (fr() ? 'variable' : 'varies')}</td><td>${n2(r.m)}</td><td>${n2(r.sd)}</td><td>${n2(r.p10)}</td><td>${r.k === 'none' ? '–' : n0(red(r)) + ' %'}</td><td>${n2(r.prem)}</td><td>${n0(r.tr)}</td></tr>`).join('')}</tbody></table></div>
       <div class="fuel-note">${fr()
         ? `<b>Conseil : ${LBL[best.k]}</b>, la prime la plus faible (${n2(best.prem)} €/MWh contre ${n2(base.prem)} sans couverture et ${n2(st[1].prem)} en back to back), coût d’échange de ${n2(S.bidask)} €/MWh compris. Le back to back vend tout le volume attendu ; la valeur du PPA, elle, suit le marché à hauteur de la sensibilité mesurée du prix capté (${o.capBeta ? n2(o.capBeta.beta) : '–'} € par € de prix base, même mois d’une année à l’autre depuis ${o.capBeta ? o.capBeta.from : '–'}) : couvert ${n0(sm.H.b2b.reduce((a, h) => a + h, 0) / sm.volume * 100)} % contre un delta de ${n0(sm.H.delta0.reduce((a, h) => a + h, 0) / sm.volume * 100)} %. Le delta dynamique n’apporte rien de plus ici : cette simulation annuelle ne connaît pas la météo de l’année avant la livraison. Ici, le risque compté va jusqu’à la livraison : le niveau du prix y pèse le plus, et un Cal le retire presque entièrement. La recherche mesure plutôt le risque qui reste à l’intérieur de l’année livrée, forme horaire et météo (Allemagne 2025 : un Cal statique en retire 35 à 45 %, un delta dynamique 60 à 68 %), que cette simulation annuelle ne voit pas, pas plus que la liquidité des années non cotées.`
@@ -116,5 +123,5 @@
   }
   document.addEventListener('DOMContentLoaded', bind);
   document.addEventListener('pk-ppa-run', () => { if ($('hs-pp-hedge') && $('hs-pp-hedge').offsetParent) setTimeout(run, 30); });
-  window.PKPpaHedge = { run, state: S };
+  window.PKPpaHedge = HEDGE; Object.assign(HEDGE, { run, state: S });
 })();
