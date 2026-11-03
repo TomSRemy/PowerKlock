@@ -1846,6 +1846,254 @@ def _residuals(y, pm, region):
     return d[key]
 
 
+MERIT = os.environ.get('PK_MERIT') == '1'   # test (2 Nov. 2026, piste 2): a physical merit-order layer sets the chance an
+# hour's price falls in the band [−0.5, 0.01) € (flexible renewables at the margin: parks that stop at negative prices
+# curtail) and below −0.5 € (the rigid output exceeds load and export room), from physical quantities the generator projects
+# for the delivery year; the cells keep the rest of the distribution, rescaled so each month's mean price is unchanged.
+# See MeritLayer. Replay 3 Nov. 2026 (44 twelve-month deliveries 2024-01…2026-07 priced 3–12 months ahead, published
+# set-up, BAND 12 draws), T = 0 bias / mean absolute error €/MWh, P25 held: solar calendar +1.28 / 2.86 / 41 % → 'full'
+# +4.45 / 4.45 / 27 %, 'split' +1.31 / 1.78 / 41 % (T = −1 2.43 → 2.59, T = 0.01 0.93 → 0.70); exp12 +0.44 / 2.67 / 57 % →
+# 'full' +3.49 / 3.56, 'split' +0.55 / 1.91 / 57 % (T = −1 2.05 → 1.92); wind calendar T = 0 2.27 → 'full' 2.48, 'split'
+# 2.10 (T = −1 1.91 → 1.77). 'full' fails: on the true weather the logistic learnt on a year over-predicts the next
+# year's hours below 0.01 € by 1.4–1.7× (the system absorbs more surplus each year than fleets, nuclear, export limits and
+# batteries explain), and with each month's mean kept the hours left paid rise, so the T = 0 capture rises. Off by default
+MERIT_MODE = os.environ.get('PK_MERIT_MODE', 'full')   # 'full': the layer sets the chance of a price < 0.01 € and its
+# split; 'split': the cells keep their chance of a price < 0.01 €, the layer only splits it between the band and below −0.5
+MERIT_BAND, MERIT_DEEP = 0.01, -0.5
+_FLEX = None
+
+
+def _flex_file():
+    global _FLEX
+    if _FLEX is None:
+        import json
+        _FLEX = json.load(open(os.path.join(ROOT, 'data', 'history', 'flex_share.json')))
+    return _FLEX
+
+
+def flex_measured(y):
+    """the measured share of France's solar and wind output that stops at negative prices in year y (flex_share.json
+    'behaviour': output not produced ÷ output the weather gave in those hours); a year with too few negative hours to
+    measure it takes the nearest earlier year that has them, none before: 0"""
+    b = _flex_file()['behaviour']
+    ys = [int(k) for k, v in b.items() if v.get('negHours', 0) >= 50 and int(k) <= y]
+    if not ys:
+        return 0.0, 0.0
+    e = b[str(max(ys))]
+    pn = e['solarLarge']['potNegTWh'] + e['solarSmall']['potNegTWh']
+    fs = (e['solarLarge']['lostTWh'] + e['solarSmall']['lostTWh']) / pn if pn > 0 else 0.0
+    return float(fs), float(1 - e['wind']['kept'])
+
+
+def flex_projected(Y, D):
+    """(solar, wind) share of output that stops at negative prices in delivery year Y, known at pricing date D: the last
+    year measured before D carried by the register's support mix (solar: the CR share of the fleet, + the OA fleet reached
+    by stop orders once the order of 22 Dec. 2025 is known; wind: flex_share.json's kept share s + α (1 − s), with α the
+    mean of the three last years measured before D and s the OA share, reached by stop orders or not as D knows them)"""
+    f = _flex_file()
+    yl = D.year - 1
+    fs0, fw0 = flex_measured(yl)
+    law = D >= date(2025, 12, 22)
+    fy = f['fleet']['solar']['years']
+    k = lambda y: str(min(max(int(y), 2018), max(int(x) for x in fy)))
+    sr = lambda y: fy[k(y)]['cr'] / fy[k(y)]['tot'] if fy[k(y)]['tot'] > 0 else 0.0
+    ylm = max([int(x) for x, v in f['behaviour'].items() if v.get('negHours', 0) >= 50 and int(x) <= yl] or [yl])
+    fs = fs0 * sr(Y) / max(sr(ylm), 1e-6) + (fy[k(Y)]['oaStop'] / fy[k(Y)]['tot'] if law and fy[k(Y)]['tot'] > 0 else 0.0)
+    wy = f['wind']['years']; kw = lambda y: str(min(max(int(y), 2018), max(int(x) for x in wy)))
+    al = [v for x, v in f['wind']['alpha'].items() if int(x) <= yl][-3:]
+    a = float(np.mean(al)) if al else f['wind']['alphaUsed']
+    e = wy[kw(Y)]
+    au = f['wind']['alphaUsed']
+    s = (e['keptRules'] - au) / (1 - au) if law else e['rigid']
+    fw = 1 - (s + a * (1 - s))
+    return float(np.clip(fs, 0, 1)), float(np.clip(fw, 0, 1))
+
+
+def _pot_sw(y):
+    return {'s': potential(y, 's'), 'w': potential(y, 'w')}
+
+
+_pot_sw = by_days(_pot_sw)   # a Period too
+
+
+def merit_batt(y, D=None):
+    """(Germany's battery power at the end of year y, France's), GW: Energy-Charts and RTE's socle as ppa_lab reads them;
+    with a pricing date D, years from D's on carried at the pace of the three years before (no look-ahead)"""
+    last = D.year - 1 if D is not None else None
+    if last is not None and y > last and last in L.DE_BATT:
+        de = L.DE_BATT[last] + (L.DE_BATT[last] - L.DE_BATT.get(last - 3, L.DE_BATT[last])) / 3 * (y - last)
+    else:
+        de = L.de_batteries(y)
+    return float(de), float(sum(v for v, _ in L.fr_batteries(y)))
+
+
+def merit_drivers(S, W, Lo, Nav, jmax_mw, nS, nW, nL, fs, fw, bde=0.0, bfr=0.0):
+    """the layer's drivers, days × 24: U = what France must export beyond its Core export limit at full available nuclear,
+    less what its batteries can take (GW); nb = the neighbours' residual share of their load (Germany, Belgium, Spain:
+    load + Germany's battery charging − solar − wind, ÷ load); F = France's flexible renewables (the output of parks that
+    stop at negative prices, GW). Batteries enter at their full power, not fitted"""
+    U = (Nav + S + W - Lo - jmax_mw) / 1000 - bfr
+    nb = (nL + bde * 1000 - nS - nW) / np.maximum(nL, 1.0)
+    F = (fs * S + fw * W) / 1000
+    return U, nb, F
+
+
+def _batt_days(days, D=None):
+    """Germany's battery GW on each day (straight between year-ends) and France's, for drivers"""
+    yrs = sorted({int(str(d)[:4]) for d in days})
+    B = {y: (merit_batt(y - 1, D)[0], merit_batt(y, D)[0], merit_batt(y, D)[1]) for y in yrs}
+    de, fr = [], []
+    for d in days:
+        d = d if isinstance(d, date) else date.fromisoformat(str(d)[:10])
+        b0, b1, f = B[d.year]
+        x = (d.timetuple().tm_yday - 0.5) / (366 if d.year % 4 == 0 else 365)
+        de.append(b0 + (b1 - b0) * x); fr.append(f)
+    return np.array(de)[:, None], np.array(fr)[:, None]
+
+
+def _logit(X, y, w, ridge=1e-2, it=50):
+    """weighted logistic regression by Newton steps on standardised drivers: (coefficients on the raw scale, intercept)"""
+    mu, sd = X.mean(0), X.std(0) + 1e-9
+    Z = np.column_stack([np.ones(len(X)), (X - mu) / sd])
+    b = np.zeros(Z.shape[1]); R = ridge * np.eye(Z.shape[1]); R[0, 0] = 0
+    p0 = np.clip(np.average(y, weights=w), 1e-4, 1 - 1e-4); b[0] = np.log(p0 / (1 - p0))
+    for _ in range(it):
+        p = 1 / (1 + np.exp(-np.clip(Z @ b, -30, 30)))
+        g = Z.T @ (w * (y - p)) - R @ b
+        H = (Z * (w * p * (1 - p))[:, None]).T @ Z + R
+        step = np.linalg.solve(H, g)
+        b += step
+        if np.abs(step).max() < 1e-7:
+            break
+    return b[1:] / sd, b[0] - float((b[1:] / sd) @ mu)
+
+
+class MeritLayer:
+    """P(price < 0.01 €) = logistic(a0 + a1 U + a2 nb + a3 F) and P(price < −0.5 € | < 0.01 €) = logistic(b0 + b1 (U − F) +
+    b2 nb), fitted on the learning hours (the cells' periods and weights) with France's solar and wind as the weather
+    gave them (stops at negative prices added back, potential()) and each learning year's measured flexible share; the
+    price within the band [−0.5, 0.01) and below −0.5 from the learning hours' own distributions there"""
+
+    def __init__(self, years, D):
+        X1, X2, Y1, Y2, WT, PB, PD, WB, WD = [], [], [], [], [], [], [], [], []
+        for y in years:
+            a = L.DATA[y]
+            S, W = _pot_sw(y)['s'], _pot_sw(y)['w']
+            yr = np.array([int(str(d)[:4]) for d in a['days']])
+            fl = {yy: flex_measured(yy) for yy in set(yr.tolist())}
+            fs = np.array([fl[v][0] for v in yr])[:, None]; fw = np.array([fl[v][1] for v in yr])[:, None]
+            nS = sum(a[c + '_s'] for c in L.NEIGH); nW = sum(a[c + '_w'] for c in L.NEIGH); nL = sum(a[c + '_l'] for c in L.NEIGH)
+            bde, bfr = _batt_days(a['days'])
+            U, nb, F = merit_drivers(S, W, a['fr_l'], fr_avail(y), fr_jmax(y), nS, nW, nL, fs, fw, bde, bfr)
+            p = a['fr_p']
+            dw = np.ones(p.shape) * (a['_dw'][:, None] if '_dw' in a else 1.0)
+            ok = np.isfinite(p) & np.isfinite(U) & np.isfinite(nb) & np.isfinite(F)
+            lo = p < MERIT_BAND
+            X1.append(np.column_stack([U[ok], nb[ok], F[ok]])); Y1.append(lo[ok].astype(float)); WT.append(dw[ok])
+            k = ok & lo
+            X2.append(np.column_stack([(U - F)[k], nb[k]])); Y2.append((p[k] < MERIT_DEEP).astype(float))
+            PB.append(p[k & (p >= MERIT_DEEP)]); WB.append(dw[k & (p >= MERIT_DEEP)])
+            PD.append(p[k & (p < MERIT_DEEP)]); WD.append(dw[k & (p < MERIT_DEEP)])
+        X1, Y1, WT = np.concatenate(X1), np.concatenate(Y1), np.concatenate(WT)
+        X2, Y2 = np.concatenate(X2), np.concatenate(Y2)
+        self.a, self.a0 = _logit(X1, Y1, WT)
+        WL = WT[Y1 > 0]
+        self.b, self.b0 = _logit(X2, Y2, WL) if len(Y2) >= 50 and 0 < Y2.mean() < 1 else (np.zeros(2), np.log(max(Y2.mean(), 1e-3) / max(1 - Y2.mean(), 1e-3)) if len(Y2) else -3.0)
+        pb, wb = np.concatenate(PB), np.concatenate(WB)
+        pd_, wd = np.concatenate(PD), np.concatenate(WD)
+        G_ = np.array(STOP_GRID) if STOP_GRID else np.zeros(0)
+        # within the band: chance ≥ T and the € part between T and 0, per T ≤ 0 of the grid (and T = 0)
+        sw = wb.sum() if len(wb) else 1.0
+        self.b_ge0 = float((wb * (pb >= 0)).sum() / sw) if len(wb) else 1.0
+        self.b_neg = float((wb * np.minimum(pb, 0)).sum() / sw) if len(wb) else 0.0
+        self.b_ge = {float(T): float((wb * (pb >= T)).sum() / sw) if len(wb) else 1.0 for T in G_ if T <= 0}
+        self.b_part = {float(T): float((wb * pb * ((pb >= T) & (pb < 0))).sum() / sw) if len(wb) else 0.0 for T in G_ if T <= 0}
+        sd_ = wd.sum() if len(wd) else 1.0
+        self.d_mean = float((wd * pd_).sum() / sd_) if len(wd) else -5.0
+        self.d_ge = {float(T): float((wd * (pd_ >= T)).sum() / sd_) if len(wd) else 0.0 for T in G_ if T < MERIT_DEEP}
+        self.d_part = {float(T): float((wd * pd_ * (pd_ >= T)).sum() / sd_) if len(wd) else 0.0 for T in G_ if T < MERIT_DEEP}
+        self.n, self.share = len(Y1), float(np.average(Y1, weights=WT))
+        self.deep = float(np.average(Y2, weights=WL)) if len(Y2) else 0.0
+
+    def probs(self, U, nb, F):
+        z1 = self.a0 + self.a[0] * U + self.a[1] * nb + self.a[2] * F
+        z2 = self.b0 + self.b[0] * (U - F) + self.b[1] * nb
+        q = 1 / (1 + np.exp(-np.clip(z1, -30, 30)))
+        return q, q / (1 + np.exp(-np.clip(z2, -30, 30)))
+
+    def describe(self):
+        return {'low': {'const': self.a0, 'U_GW': self.a[0], 'nb': self.a[1], 'F_GW': self.a[2]},
+                'deep|low': {'const': self.b0, 'U-F_GW': self.b[0], 'nb': self.b[1]},
+                'band': {'P>=0': self.b_ge0, 'mean_neg_part': self.b_neg}, 'deep_mean': self.d_mean,
+                'hours': self.n, 'share_low': self.share, 'share_deep_of_low': self.deep}
+
+
+_ML = {}
+
+
+def merit_layer(years, D):
+    key = (tuple(id(y) if isinstance(y, Period) else y for y in years), D, STOP_GRID)
+    if key not in _ML:
+        _ML[key] = MeritLayer(years, D)
+    return _ML[key]
+
+
+def _fill_cond(v, ok, month):
+    """a conditional value where it is defined, elsewhere the mean of the same month and hour where it is (else the
+    month's, else all hours')"""
+    v = np.where(ok, v, np.nan)
+    out = v.copy()
+    for m in np.unique(month):
+        km = month == m
+        sub = v[km]
+        hm = np.nanmean(np.where(np.isfinite(sub), sub, np.nan), 0) if np.isfinite(sub).any() else np.full(sub.shape[1], np.nan)
+        mm = np.nanmean(sub) if np.isfinite(sub).any() else np.nan
+        hm = np.where(np.isfinite(hm), hm, mm)
+        out[km] = np.where(np.isfinite(sub), sub, hm[None, :])
+    allm = np.nanmean(v) if np.isfinite(v).any() else 0.0
+    return np.where(np.isfinite(out), out, allm)
+
+
+def merit_apply(ml, q, qn, f1, fp, fq, TQ, cday, month):
+    """the cells' hour moved onto the layer's low-price chances: below 0.01 € the layer (q of the hours, qn of them
+    below −0.5 €, the rest in the band), above it the cells' own distribution conditional on ≥ 0.01 € scaled to 1 − q;
+    each month's mean price kept by one factor on the part above 0.01 €. Returns f1, fp, fq, TQ"""
+    q0 = q - qn
+    G_ = list(STOP_GRID) if TQ is not None else []
+    i1 = G_.index(MERIT_BAND) if MERIT_BAND in G_ else None
+    pa, va = (TQ[1][i1], TQ[0][i1]) if i1 is not None else (fq, fp)
+    ok = pa > 1e-6
+    ca = _fill_cond(np.divide(va, pa, out=np.zeros_like(va), where=ok), ok, month)
+    vraw = (1 - q) * ca
+    eneg = q0 * ml.b_neg + qn * ml.d_mean    # € per hour, expected
+    k = np.ones(f1.shape)
+    for m in np.unique(month):
+        km = month == m
+        den = float((vraw[km] * cday[km]).sum())
+        if den > 0:
+            k[km] = np.clip((float((f1[km] * cday[km]).sum()) - float(eneg[km].sum())) / den, 0.3, 3.0)
+    fpn = k * vraw
+    fqn = (1 - q) + q0 * ml.b_ge0
+    f1n = fpn + eneg / cday
+    if TQ is None:
+        return f1n, fpn, fqn, None
+    tv, tp = [], []
+    for i, T in enumerate(G_):
+        if T > MERIT_BAND:
+            r_ = _fill_cond(np.divide(TQ[1][i], pa, out=np.zeros_like(pa), where=ok), ok, month)
+            c_ = _fill_cond(np.divide(TQ[0][i], pa, out=np.zeros_like(pa), where=ok), ok, month)
+            tp.append(np.clip((1 - q) * r_, 0, 1 - q)); tv.append(k * (1 - q) * c_)
+        elif T == MERIT_BAND:
+            tp.append(1 - q); tv.append(fpn)
+        elif T == 0:
+            tp.append(fqn); tv.append(fpn)
+        elif T >= MERIT_DEEP:
+            tp.append((1 - q) + q0 * ml.b_ge[T]); tv.append(fpn + q0 * ml.b_part[T] / cday)
+        else:
+            tp.append((1 - q) + q0 + qn * ml.d_ge[T]); tv.append(fpn + (q0 * ml.b_neg + qn * ml.d_part[T]) / cday)
+    return f1n, fpn, fqn, (tv, tp)
+
+
 def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=None, weeks=7, surprise='none', rule='fuel', cost=None, fuel_window=2,
              batteries='both', pool_from=2019, fuel_dev=True, france=True, window=7, same_month=False, train=None, trend=False, guard=False):
     """monthly capture rates ('all', 'curt', 'paid') averaged over n chained-week scenarios, and their P10/P90"""
@@ -1904,6 +2152,8 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
         SUR = {y: np.zeros_like(v) for y, v in SUR.items()}
     M = _means(demand_year)
     RS = {tt: stop_share(tt, Y) for tt in 'sw'}
+    MLAY = None
+    FLX = flex_projected(int(Y), roll_date()) if MERIT else None
     ST_TAB = None
     WL_TAB = None
     WD_TAB = None
@@ -1932,6 +2182,7 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
         _av, _dm = fr_avail(demand_year), L.DATA[demand_year]['month']
         AVM = np.array([_av[_dm == m].mean() for m in range(1, 13)])
     days = list(Y.dates) if isinstance(Y, Period) else [date(Y, 1, 1) + timedelta(days=i) for i in range((date(Y + 1, 1, 1) - date(Y, 1, 1)).days)]
+    BTD = _batt_days(days, roll_date()) if MERIT else None
     D = len(days)
     month = np.array([d.month for d in days])
     kind = np.array([L.day_kind(d) for d in days])
@@ -2133,6 +2384,20 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
             TQ = getattr(pmf, '_lastT', None) if STOP_GRID else None
             if TQ is not None:
                 TQ = (list(TQ[0]), list(TQ[1]))
+            if MERIT and REGIME:
+                # the physical merit-order layer: the chances of the band [−0.5, 0.01) € and below −0.5 € from France's
+                # surplus beyond its export room, its neighbours' residual share and its flexible renewables
+                if MLAY is None:
+                    MLAY = merit_layer(fy, roll_date())
+                nS_ = sum(S[c] for c in L.NEIGH); nW_ = sum(W[c] for c in L.NEIGH); nL_ = sum(Lo[c] for c in L.NEIGH)
+                F_ = (FLX[0] * S['FR'] + FLX[1] * W['FR']) / 1000
+                q_, qn_ = MLAY.probs(need - BTD[1], (nL_ + BTD[0] * 1000 - nS_ - nW_) / np.maximum(nL_, 1.0), F_)
+                if MERIT_MODE == 'split':
+                    qc_ = 1 - (TQ[1][list(STOP_GRID).index(MERIT_BAND)] if TQ is not None else fq)
+                    qn_ = qc_ * np.divide(qn_, q_, out=np.zeros_like(q_), where=q_ > 1e-12); q_ = qc_
+                f1, fp, fq, TQ = merit_apply(MLAY, q_, qn_, f1, fp, fq, TQ, cday, month)
+                if TQ is not None:
+                    TQ = (list(TQ[0]), list(TQ[1]))
 
             def tshift(adj):
                 """an additive move of every hour's price (÷ cost) carried to the stop grid as the code below moves fp:
