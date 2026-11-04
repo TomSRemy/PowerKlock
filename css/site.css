@@ -3309,6 +3309,8 @@ details.cf-contracts[open] > summary { margin-bottom: 8px; }
 .mrn-cfcard { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 14px 0; padding: 12px 16px; border: 1px solid var(--border, rgba(255,255,255,.08)); border-radius: 12px; font-size: 13px; }
 .mrn-cfcard > span:nth-of-type(2) { flex: 1 1 360px; color: var(--text2); }
 .mrn-cfcard .mrn3-cat { margin: 0; }
+.mrn2-tile .mrn3-cat { color: var(--text3); }   /* the accent green clashes when the tile's own colour is red */
+.mrn2-tile .mrn3-cat.mrn-up { color: var(--down); } .mrn2-tile .mrn3-cat.mrn-down { color: var(--up); }   /* flat stays the neutral grey above */
 /* Today: Explain switch, Discovery story and quiz */
 .mrn-xbtn-w { display: inline-flex; align-items: center; gap: 12px; }
 .mrn-xbtn { border: 1px solid var(--border2, rgba(255,255,255,.15)); background: transparent; color: var(--text2); border-radius: 999px; padding: 0 12px; height: 26px; font-size: 11px; cursor: pointer; white-space: nowrap; }
