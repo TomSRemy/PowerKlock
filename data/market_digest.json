@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-04T14:44:38+00:00",
+ "updated": "2026-11-04T22:00:51+00:00",
  "asof": "2026-11-04",
  "notes": 2,
  "engine": "proxy",
@@ -7,45 +7,38 @@
   {
    "topic": "France",
    "topic_en": "France",
-   "text": "La disponibilité des centrales nucléaires françaises s'améliore grâce à la montée des niveaux des rivières, mais les précipitations restent insuffisantes dans les régions clés pour la production nucléaire. La France a attribué des contrats pour plus de 1 GW de capacité en énergie éolienne terrestre dans sa dernière enchère.",
-   "text_en": "The availability of French nuclear power plants is improving thanks to rising river levels, but rainfall remains insufficient in key regions for nuclear generation. France has awarded power deals for just over 1GW of capacity in its latest onshore wind auction.",
-   "tone": "flat"
+   "text": "La tempête Austen a mis à mal le réseau électrique français et les prix de l'électricité restent élevés. La disponibilité des centrales nucléaires françaises s'améliore légèrement, mais la consommation d'électricité reste soutenue.",
+   "text_en": "Storm Austen damaged the French power grid and electricity prices remain high. The availability of French nuclear power plants is improving slightly, but electricity consumption remains strong.",
+   "tone": "up"
   },
   {
    "topic": "Golfe",
    "topic_en": "Gulf",
-   "text": "Les tensions au Moyen-Orient et les préoccupations concernant les investissements dans l'IA poussent la demande de produits sans risque. Les prix du pétrole brut Brent continuent de monter et atteignent environ 115 $/baril.",
-   "text_en": "Tensions in the Middle East and concerns about investment in AI are driving up demand for safe-haven assets. Brent crude prices continue to rise and stand at around $115/bbl.",
-   "tone": "up"
-  },
-  {
-   "topic": "Norvège",
-   "topic_en": "Norway",
-   "text": "Les exportations de gaz norvégiennes ont temporairement baissé en raison de travaux de maintenance. Les prix du gaz en Europe sont influencés par les risques géopolitiques et les tensions au Moyen-Orient.",
-   "text_en": "Norwegian gas exports have temporarily fallen due to maintenance work. European gas prices continue to be determined by geopolitical risks and tensions in the Middle East.",
+   "text": "Les tensions dans le Golfe et les risques géopolitiques poussent les prix du gaz et de l'électricité à la hausse. Les exportations de gaz norvégien sont temporairement réduites en raison de travaux de maintenance.",
+   "text_en": "Tensions in the Gulf and geopolitical risks are driving up gas and electricity prices. Norwegian gas exports are temporarily reduced due to maintenance work.",
    "tone": "up"
   }
  ],
  "outlook": {
   "oil": {
    "tone": "up",
-   "text": "Les prix du pétrole devraient continuer à monter en raison des tensions au Moyen-Orient",
-   "text_en": "Oil prices are expected to continue rising due to Middle East tensions"
+   "text": "Les prix du pétrole devraient rester élevés en raison des tensions géopolitiques",
+   "text_en": "Oil prices are expected to remain high due to geopolitical tensions"
   },
   "gas": {
    "tone": "up",
-   "text": "Les prix du gaz devraient rester élevés en raison des risques géopolitiques et des tensions au Moyen-Orient",
-   "text_en": "Gas prices are expected to remain high due to geopolitical risks and Middle East tensions"
+   "text": "Les prix du gaz devraient continuer à augmenter en raison des risques géopolitiques et de la faible disponibilité",
+   "text_en": "Gas prices are expected to continue rising due to geopolitical risks and low availability"
   },
   "power": {
    "tone": "flat",
-   "text": "Les prix de l'électricité devraient rester stables en raison de la disponibilité des centrales nucléaires françaises",
-   "text_en": "Power prices are expected to remain stable due to the availability of French nuclear power plants"
+   "text": "Les prix de l'électricité devraient rester stables en raison de la balance entre l'offre et la demande",
+   "text_en": "Electricity prices are expected to remain stable due to the balance between supply and demand"
   },
   "carbon": {
-   "tone": "up",
-   "text": "Les prix des émissions de CO2 devraient continuer à monter en raison de la baisse de la production d'énergie éolienne",
-   "text_en": "Carbon prices are expected to continue rising due to the decline in wind energy generation"
+   "tone": "flat",
+   "text": "Les prix du carbone devraient rester stables en raison de la réglementation et de la demande",
+   "text_en": "Carbon prices are expected to remain stable due to regulation and demand"
   }
  }
 }
