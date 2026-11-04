@@ -112,6 +112,7 @@
   .why4-n{font:700 13.5px 'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.06em;color:var(--accent, #14D3A9)}   /* the market's name: what the eye looks for first */
   .why4-t .why4-h .wk-chip{margin-left:auto}
   .why4-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:10px;align-items:stretch}
+  .why4-g .why4-lone{grid-column:1/-1;max-width:320px;margin-inline:auto}
   .why4-t{border:1px solid var(--border2, rgba(255,255,255,.12));border-top:3px solid var(--text3);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:7px;min-width:0;background:var(--bg2, rgba(255,255,255,.035));box-shadow:0 1px 0 rgba(255,255,255,.03) inset,0 4px 14px rgba(0,0,0,.25)}
   .why4-t.up{border-top-color:#ED6965} .why4-t.down{border-top-color:#14D3A9} .why4-t.flat{border-top-color:#6F8499}
   .why4-t.up .why4-n{color:#ED6965} .why4-t.down .why4-n{color:#14D3A9} .why4-t.flat .why4-n{color:var(--text2)}   /* the title takes the direction's colour too (note 42) */   /* the direction at a glance: rising prices red, as on the rest of the site */
@@ -244,9 +245,25 @@
     host.innerHTML = `<div class="why3 why4">${ctx}<div class="why4-g">${mk.map(([k, [tone, src, o], text, fig]) => `<div class="why4-t ${tone === 'up' ? 'up' : tone === 'down' ? 'down' : 'flat'}"><div class="why4-h"><span class="why4-n">${k}</span>${chip(tone)}</div>` +
       (fig ? `<div class="why4-v">${fig}</div>` : '') + `<div class="why4-x">${text}</div>` +
       `<div class="why4-next${o ? '' : ' none'}">${o ? `<b>${T('Semaine à venir', 'Week ahead')}</b> : ${txt(o)}` : `<b>${T('Semaine à venir', 'Week ahead')}</b> : ${T('pas de note cette semaine', 'no call this week')}`}</div><span class="why3-src">${src}</span></div>`).join('')}</div>${an ? `<div class="why3-an">${an}</div>` : ''}</div>`;
-    // every « week ahead » box the height of the tallest, so they line up at the bottom of all the tiles
-    const eq = () => { const bx = [...host.querySelectorAll('.why4-next')]; bx.forEach(b => { b.style.minHeight = ''; }); const h = Math.max(...bx.map(b => b.offsetHeight)); if (h > 0) bx.forEach(b => { b.style.minHeight = h + 'px'; }); };
-    requestAnimationFrame(eq); if (!host.dataset.eq) { host.dataset.eq = '1'; window.addEventListener('resize', () => requestAnimationFrame(eq)); }
+    // every « week ahead » box the height of the tallest, so they line up at the bottom of all the tiles;
+    // and a tile left alone on the grid's last row (auto-fit's column count depends on the width) is
+    // centred instead of sitting flush left on its own
+    const eq = () => {
+      const bx = [...host.querySelectorAll('.why4-next')]; bx.forEach(b => { b.style.minHeight = ''; });
+      const h = Math.max(...bx.map(b => b.offsetHeight)); if (h > 0) bx.forEach(b => { b.style.minHeight = h + 'px'; });
+      const tiles = [...host.querySelectorAll('.why4-t')];
+      tiles.forEach(t => t.classList.remove('why4-lone'));
+      if (tiles.length > 2) { const last = tiles[tiles.length - 1], prev = tiles[tiles.length - 2], prev2 = tiles[tiles.length - 3];
+        // "alone" only counts when the row before it actually held more than one tile — at a single
+        // column (mobile) every tile sits on its own row, which is normal, not an orphan
+        if (last.offsetTop !== prev.offsetTop && prev.offsetTop === prev2.offsetTop) last.classList.add('why4-lone'); }
+    };
+    // re-run whenever the grid's own box actually changes size (width change, web fonts swapping in,
+    // a later re-render with different data) — more reliable than guessing how long layout takes to settle
+    requestAnimationFrame(eq);
+    const g = host.querySelector('.why4-g');
+    if (g && window.ResizeObserver) { if (host._whyRO) host._whyRO.disconnect(); host._whyRO = new ResizeObserver(() => requestAnimationFrame(eq)); host._whyRO.observe(g); }
+    else if (!host.dataset.eq) { host.dataset.eq = '1'; window.addEventListener('resize', () => requestAnimationFrame(eq)); }
   }
 
   async function next30(host) {
