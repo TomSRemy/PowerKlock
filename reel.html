@@ -28,19 +28,62 @@ body{display:flex;align-items:center;justify-content:center;overflow:hidden}
   background:radial-gradient(38% 30% at 28% 18%,rgba(127,200,248,.16),transparent 62%),radial-gradient(42% 32% at 78% 86%,rgba(251,191,36,.10),transparent 62%);
   animation:drift 22s ease-in-out infinite}
 @keyframes drift{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(3%,-2%) scale(1.06)}66%{transform:translate(-2%,3%) scale(1.04)}}
-.scene{position:absolute;inset:0;padding:calc(14*var(--u)) calc(8*var(--u)) calc(22*var(--u));display:flex;flex-direction:column;justify-content:center;gap:calc(3*var(--u));opacity:0;transform:translateY(calc(4*var(--u)));transition:opacity .5s ease,transform .6s ease}
+/* scenes slide in from the right and out to the left, like stories */
+.scene{position:absolute;inset:0;padding:calc(14*var(--u)) calc(8*var(--u)) calc(22*var(--u));display:flex;flex-direction:column;justify-content:center;gap:calc(3*var(--u));opacity:0;transform:translateX(calc(12*var(--u)));transition:opacity .45s ease,transform .6s cubic-bezier(.2,.8,.2,1)}
 .scene.on{opacity:1;transform:none}
+.scene.out{opacity:0;transform:translateX(calc(-12*var(--u)))}
 .scene > *{opacity:0;transform:translateY(calc(5*var(--u)))}
 .scene.on > *{animation:rise .7s cubic-bezier(.2,.8,.2,1) forwards}
 .scene.on > *:nth-child(2){animation-delay:.15s}.scene.on > *:nth-child(3){animation-delay:.3s}.scene.on > *:nth-child(4){animation-delay:.6s}.scene.on > *:nth-child(5){animation-delay:.8s}.scene.on > *:nth-child(6){animation-delay:1s}
 @keyframes rise{to{opacity:1;transform:none}}
+/* headlines build word by word (each word carries its own --d delay) */
+.scene.on > .h{animation:none;opacity:1;transform:none}
+.w{display:inline-block;opacity:0;transform:translateY(.5em);filter:blur(6px)}
+.scene.on .w{animation:wordin .55s cubic-bezier(.2,.8,.2,1) var(--d,0ms) forwards}
+@keyframes wordin{to{opacity:1;transform:none;filter:none}}
 .scene.on .delta{animation:rise .6s ease .6s forwards,pop .5s ease 1.2s}
-@keyframes pop{50%{transform:scale(1.08)}}
-.brief div{opacity:0;transform:translateX(calc(-6*var(--u)))}
-.scene.on .brief div{animation:slide .6s ease forwards}.scene.on .brief div:nth-child(2){animation-delay:.5s}.scene.on .brief div:nth-child(3){animation-delay:1s}
-@keyframes slide{to{opacity:1;transform:none}}
-.tile{opacity:0;transform:scale(.92)}.scene.on .tile{animation:tile .5s ease forwards}.scene.on .row .tile:nth-child(2){animation-delay:.25s}.scene.on .tile{animation-delay:1.6s}.scene.on .row .tile:nth-child(2){animation-delay:1.85s}
+.scene.on .delta.late{animation:rise .45s cubic-bezier(.3,1.5,.5,1) var(--late) forwards,pop .5s ease calc(var(--late) + .45s)}
+@keyframes pop{50%{transform:scale(1.1)}}
+/* a figure that has just finished counting lands with a small punch */
+.big{display:inline-block}
+.big.punch{animation:punch .5s cubic-bezier(.3,1.6,.5,1)}
+@keyframes punch{40%{transform:scale(1.12)}100%{transform:none}}
+/* brief: items come in one at a time (JS adds .in), the earlier ones step back (.dim) so the eye follows the new one */
+.brief div{opacity:0;transform:translateX(calc(-8*var(--u)));transition:opacity .5s ease,transform .6s cubic-bezier(.2,.8,.2,1)}
+.brief div.in{opacity:1;transform:none}
+.brief div.in.dim{opacity:.42}
+.wb{opacity:0}
+.brief div.in .wb{animation:wordin .4s ease var(--d) forwards}
+.tile{opacity:0;transform:scale(.92)}.scene.on .tile{animation:tile .5s cubic-bezier(.3,1.4,.5,1) forwards}.scene.on .row .tile:nth-child(2){animation-delay:.25s}.scene.on .tile{animation-delay:1.6s}.scene.on .row .tile:nth-child(2){animation-delay:1.85s}
 @keyframes tile{to{opacity:1;transform:none}}
+/* price gauge: a marker slides from yesterday's price to today's, the stretch between them fills red (up) or green (down) */
+.gauge2{position:relative;padding-top:calc(1*var(--u))}
+.g-track{position:relative;height:calc(2.4*var(--u));background:var(--line);border-radius:99px}
+.g-fill{position:absolute;top:0;bottom:0;border-radius:99px;transform:scaleX(0)}
+.gauge2.up .g-fill{background:var(--up);transform-origin:left}.gauge2.down .g-fill{background:var(--down);transform-origin:right}.gauge2.flat .g-fill{background:var(--muted)}
+.scene.on .g-fill{animation:gfill var(--ms) cubic-bezier(.3,.7,.2,1) var(--dl) forwards}
+@keyframes gfill{to{transform:scaleX(1)}}
+.g-y{position:absolute;top:calc(-1.4*var(--u));width:calc(.7*var(--u));height:calc(5.2*var(--u));margin-left:calc(-.35*var(--u));background:var(--muted);border-radius:2px}
+.g-t{position:absolute;top:50%;width:calc(5*var(--u));height:calc(5*var(--u));margin:calc(-2.5*var(--u)) 0 0 calc(-2.5*var(--u));border-radius:50%;background:var(--fg);box-shadow:0 0 0 calc(1*var(--u)) rgba(230,237,243,.18),0 0 calc(4*var(--u)) rgba(230,237,243,.45);left:var(--p0)}
+.scene.on .g-t{animation:gt var(--ms) cubic-bezier(.3,.7,.2,1) var(--dl) forwards}
+@keyframes gt{from{left:var(--p0)}to{left:var(--p1)}}
+.g-lab{position:relative;height:calc(6*var(--u));font:600 calc(3.2*var(--u)) var(--mono);color:var(--muted)}
+.g-lab span{position:absolute;top:calc(1.6*var(--u));transform:translateX(-50%);white-space:nowrap}
+/* day profile: the lowest and highest quarter-hours pop when the sweep reaches them */
+.mk{opacity:0;transform:scale(.3);transform-box:fill-box;transform-origin:center;transition:opacity .25s ease,transform .45s cubic-bezier(.3,1.7,.5,1)}
+.mk.hit{opacity:1;transform:none}
+.mk .ring{fill:none;stroke-width:5;opacity:0}
+.mk.hit .ring{animation:ring 1s ease-out}
+@keyframes ring{0%{r:16;opacity:.9}100%{r:70;opacity:0}}
+.spread line,.spread path{stroke-dasharray:1;stroke-dashoffset:1}
+.spread.go line,.spread.go path{transition:stroke-dashoffset .7s cubic-bezier(.3,.7,.2,1);stroke-dashoffset:0}
+.spread text{opacity:0;transition:opacity .4s ease .5s}.spread.go text{opacity:1}
+/* forward chart: the line draws itself, the end dot appears when it arrives */
+.draw2{stroke-dasharray:1;stroke-dashoffset:1}
+.scene.on .draw2{animation:draw2 var(--ms,1.8s) cubic-bezier(.4,.1,.2,1) var(--dl,.4s) forwards}
+@keyframes draw2{to{stroke-dashoffset:0}}
+.endpt{opacity:0}.scene.on .endpt{animation:rise .3s ease var(--dl2) forwards,endpulse 1.6s ease-in-out calc(var(--dl2) + .3s) infinite}
+@keyframes endpulse{50%{r:18}}
 .kick{font:700 calc(3.6*var(--u)) var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
 .h{font:800 calc(8.4*var(--u))/1.08 var(--sans);letter-spacing:-.01em;text-wrap:balance;hyphens:none}
 .nw{white-space:nowrap}
@@ -50,11 +93,8 @@ body{display:flex;align-items:center;justify-content:center;overflow:hidden}
 .delta .unit{white-space:nowrap}
 .figline{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 calc(2*var(--u))}
 .figline .unit{white-space:nowrap}
-.scene.on .figline .big{display:inline-block;animation:breathe 2.6s ease-in-out 1.3s infinite}
-@keyframes breathe{50%{transform:scale(1.02)}}
-.dot{animation:dotpulse 1.8s ease-in-out infinite}
-@keyframes dotpulse{0%,100%{r:16}50%{r:19}}
 #p-head{filter:drop-shadow(0 0 10px rgba(127,200,248,.85))}
+#p-head,#p-cur{transition:opacity .4s ease}
 .big.long{font-size:calc(17*var(--u))}
 .delta.up{color:var(--up)}.delta.down{color:var(--down)}.delta.flat{color:var(--muted)}
 .sub{font:400 calc(4.2*var(--u))/1.4 var(--sans);color:var(--muted)}
@@ -98,8 +138,8 @@ svg{width:100%;height:auto;overflow:visible}
 .race.go .t span{opacity:1}
 .lg{display:flex;flex-wrap:wrap;gap:calc(1.5*var(--u)) calc(3.5*var(--u));font:600 calc(3.2*var(--u)) var(--mono);color:var(--muted)}
 .lg i{display:inline-block;width:calc(2.6*var(--u));height:calc(2.6*var(--u));border-radius:2px;margin-right:calc(1.2*var(--u));vertical-align:-2px}
-@media (prefers-reduced-motion: reduce){.scene{transition:none}.draw{animation:none;stroke-dashoffset:0}.scene > *,.tile,.brief div{opacity:1;transform:none;animation:none!important}
-  #stage::before,.figline .big,.dot{animation:none!important}}
+@media (prefers-reduced-motion: reduce){.scene{transition:none}.draw,.draw2{animation:none;stroke-dashoffset:0}.scene > *,.tile,.brief div,.w,.wb,.endpt,.mk{opacity:1;transform:none;filter:none;animation:none!important}
+  #stage::before{animation:none!important}.g-fill{transform:none;animation:none!important}.g-t{left:var(--p1);animation:none!important}}
 </style>
 </head>
 <body>
@@ -124,14 +164,25 @@ svg{width:100%;height:auto;overflow:visible}
   const get = p => fetch(p, { cache: 'no-store' }).then(r => r.ok ? (p.endsWith('.csv') ? r.text() : r.json()) : null).catch(() => null);
   const dir = v => v > 0.05 ? 'up' : v < -0.05 ? 'down' : 'flat';
   const arrow = v => v > 0.05 ? '▲' : v < -0.05 ? '▼' : '■';
+  const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // a phrase split into words that come in one after the other; a figure stays glued to its unit
+  const words = (s, base = 0, step = 90, cls = 'w') => String(s).replace(/(\d)\s+(?=[€%$°]|GW|MW|TWh|pts)/g, '$1 ')
+    .split(/ +/).map((w, i) => `<span class="${cls}" style="--d:${base + i * step}ms">${w}</span>`).join(' ');
 
+  // scene 1: the price counts from yesterday's to today's while a marker slides between the two on a gauge
   function priceScene(D0, D1) {
-    const a = D0.avg, b = D1 && D1.avg, dv = b == null ? null : a - b;
-    return `<div class="kick">${T('Spot France · aujourd’hui', 'France spot · today')}</div>
-      <div class="h">${T('Le prix de l’électricité', 'The power price')}</div>
-      <div class="figline"><span class="big${fmt(a, 1).length > 5 ? ' long' : ''}" data-count="${a}" data-dec="1">${fmt(a, 1)}</span> <span class="unit">€/MWh</span></div>
-      ${dv == null ? '' : `<div class="delta ${dir(dv)}"><span class="nw">${arrow(dv)} ${sgn(dv, 1)}&nbsp;€</span> <span class="unit">${T('vs hier', 'vs yesterday')} (${sgn(dv / b * 100, 0)}&nbsp;%)</span></div>`}
-      <div class="sub">${T('Moyenne du jour de livraison, enchère day-ahead d’hier midi.', 'Delivery-day average, yesterday’s noon day-ahead auction.')}</div>`;
+    const a = D0.avg, b = D1 && D1.avg, dv = b == null ? null : a - b, d = dir(dv || 0);
+    const DL = 1000, MS = 1600;
+    // the gauge is zoomed on yesterday's price (in the middle), so even a 1 % move travels a visible distance
+    const R = b == null ? 1 : Math.max(Math.abs(dv) * 1.6, Math.abs(b) * 0.02, 1.5), pos = v => Math.max(4, Math.min(96, 50 + (v - b) / R * 50));
+    const pa = b == null ? null : pos(a), pb = b == null ? null : 50;
+    return { ms: 5600, html: `<div class="kick">${T('Spot France · aujourd’hui', 'France spot · today')}</div>
+      <div class="h">${words(T('Le prix de l’électricité', 'The power price'), 150, 110)}</div>
+      <div class="figline"><span class="big${fmt(a, 1).length > 5 ? ' long' : ''}" data-count="${a}" data-from="${b == null ? 0 : b}" data-dec="1" data-delay="${b == null ? 300 : DL}" data-ms="${b == null ? 1100 : MS}" data-punch="1">${fmt(b == null ? a : b, 1)}</span> <span class="unit">€/MWh</span></div>
+      ${pb == null ? '' : `<div class="gauge2 ${d}" style="--dl:${DL}ms;--ms:${MS}ms"><div class="g-track"><i class="g-fill" style="left:${Math.min(pa, pb)}%;width:${Math.abs(pa - pb)}%"></i><span class="g-y" style="left:${pb}%"></span><span class="g-t" style="--p0:${pb}%;--p1:${pa}%"></span></div>
+        <div class="g-lab"><span style="left:${Math.max(12, Math.min(88, pb))}%">${T('hier', 'yesterday')} ${fmt(b, 0)}&nbsp;€</span></div></div>`}
+      ${dv == null ? '' : `<div class="delta late ${d}" style="--late:${DL + MS - 100}ms"><span class="nw">${arrow(dv)} ${sgn(dv, 1)}&nbsp;€</span> <span class="unit">${T('vs hier', 'vs yesterday')} (${sgn(dv / b * 100, 0)}&nbsp;%)</span></div>`}
+      <div class="sub" style="animation-delay:${DL + MS + 500}ms">${T('Moyenne du jour de livraison, enchère day-ahead d’hier midi.', 'Delivery-day average, yesterday’s noon day-ahead auction.')}</div>` };
   }
   function profileScene(D0) {
     // the full 96 quarter-hours, not a 24-point hourly mean: battery/solar swings are quarter-hour events,
@@ -142,8 +193,14 @@ svg{width:100%;height:auto;overflow:visible}
     const pts = H.map((v, i) => x(i).toFixed(1) + ',' + y(v).toFixed(1)).join(' ');
     const iMin = H.indexOf(mn), iMax = H.indexOf(mx), neg = D0.negH || 0;
     const hhmm = i => String(Math.floor(i / 4)).padStart(2, '0') + ':' + String(i % 4 * 15).padStart(2, '0');
-    const SWEEP = 3400;
-    return { ms: SWEEP + 2600, html: `<div class="kick">${T('La journée quart d’heure par quart d’heure', 'The day, quarter-hour by quarter-hour')}</div>
+    const SWEEP = 4000, TILES = SWEEP + 1100;
+    // the label of a marker sits above or below its dot, kept inside the chart's width
+    const lx = i => Math.max(70, Math.min(W - 70, x(i)));
+    const mark = (cls, i, v, col, above) => `<g class="mk ${cls}"><circle class="ring" cx="${x(i)}" cy="${y(v)}" r="16" stroke="${col}"/>
+      <circle cx="${x(i)}" cy="${y(v)}" r="16" fill="${col}"/><text x="${lx(i)}" y="${above ? y(v) - 34 : y(v) + 64}" text-anchor="middle" fill="${col}" font-family="JetBrains Mono" font-size="44" font-weight="800">${fmt(v, 0)} €</text></g>`;
+    // after the sweep: the gap between the lowest and highest quarter-hour drawn as a bracket on the right
+    const bx = W + 6, yMn = y(mn), yMx = y(mx);
+    return { ms: SWEEP + 3000, html: `<div class="kick">${T('La journée quart d’heure par quart d’heure', 'The day, quarter-hour by quarter-hour')}</div>
       <div class="row" style="align-items:baseline;justify-content:space-between"><div class="clock" id="p-clock">00:00</div><div class="act" id="p-act" style="color:var(--muted)">–</div></div>
       <svg viewBox="-20 -60 1040 660" aria-hidden="true">
         ${lo < 0 ? `<line x1="0" x2="${W}" y1="${y(0)}" y2="${y(0)}" stroke="#ED6965" stroke-dasharray="8 8"/>` : ''}
@@ -151,17 +208,22 @@ svg{width:100%;height:auto;overflow:visible}
         <g clip-path="url(#p-clip)"><polygon points="0,${Ht} ${pts} ${W},${Ht}" fill="rgba(127,200,248,.16)"/>
           <polyline points="${pts}" fill="none" stroke="#7FC8F8" stroke-width="7" stroke-linejoin="round"/></g>
         <line id="p-cur" x1="0" x2="0" y1="-60" y2="${Ht + 100}" stroke="#8DA2B8" stroke-width="3" stroke-dasharray="6 6"/>
+        <g class="spread" id="p-spread">
+          <line pathLength="1" x1="${x(iMin)}" x2="${bx}" y1="${yMn}" y2="${yMn}" stroke="#FBBF24" stroke-width="3" stroke-dasharray="1"/>
+          <line pathLength="1" x1="${x(iMax)}" x2="${bx}" y1="${yMx}" y2="${yMx}" stroke="#FBBF24" stroke-width="3" stroke-dasharray="1"/>
+          <path pathLength="1" d="M${bx},${yMn} L${bx},${yMx} M${bx - 14},${yMx + 20} L${bx},${yMx} L${bx + 14},${yMx + 20} M${bx - 14},${yMn - 20} L${bx},${yMn} L${bx + 14},${yMn - 20}" fill="none" stroke="#FBBF24" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+        </g>
+        ${mark('mk-min', iMin, mn, '#4ADE80', false)}${mark('mk-max', iMax, mx, '#ED6965', true)}
         <circle id="p-head" cx="0" cy="${y(H[0])}" r="10" fill="#fff"/>
-        <circle class="dot" cx="${x(iMin)}" cy="${y(mn)}" r="16" fill="#4ADE80"/><circle class="dot" cx="${x(iMax)}" cy="${y(mx)}" r="16" fill="#ED6965"/>
-        <text x="${x(iMin)}" y="${y(mn) + 62}" text-anchor="middle" fill="#4ADE80" font-family="JetBrains Mono" font-size="44" font-weight="800">${fmt(mn, 0)} €</text>
-        <text x="${x(iMax)}" y="${y(mx) - 30}" text-anchor="middle" fill="#ED6965" font-family="JetBrains Mono" font-size="44" font-weight="800">${fmt(mx, 0)} €</text>
         ${[0, 24, 48, 72, 95].map(i => `<text x="${x(i)}" y="${Ht + 60}" text-anchor="middle" fill="#8DA2B8" font-family="JetBrains Mono" font-size="34">${Math.floor(i / 4)}&#160;h</text>`).join('')}
       </svg>
-      <div class="row"><div class="tile"><div class="l">${T('Pic − creux', 'Peak − low')}</div><div class="v nw">${fmt(mx - mn, 0)}&nbsp;€</div><div class="s">${T('ce que voit une batterie', 'what a battery sees')}</div></div>
-        <div class="tile"><div class="l">${T('Heures ≤ 0 €', 'Hours ≤ 0 €')}</div><div class="v">${fmt(neg, neg % 1 ? 1 : 0)}</div><div class="s">${T('prix nuls ou négatifs', 'zero or negative')}</div></div></div>`,
+      <div class="row"><div class="tile" style="animation-delay:${TILES}ms;border-color:rgba(251,191,36,.55)"><div class="l">${T('Pic − creux', 'Peak − low')}</div><div class="v nw" style="color:var(--amber)">${fmt(mx - mn, 0)}&nbsp;€</div><div class="s">${T('ce que voit une batterie', 'what a battery sees')}</div></div>
+        <div class="tile" style="animation-delay:${TILES + 250}ms"><div class="l">${T('Heures ≤ 0 €', 'Hours ≤ 0 €')}</div><div class="v">${fmt(neg, neg % 1 ? 1 : 0)}</div><div class="s">${T('prix nuls ou négatifs', 'zero or negative')}</div></div></div>`,
       play(root) {
         const clock = root.querySelector('#p-clock'), act = root.querySelector('#p-act'),
-          cr = root.querySelector('#p-cr'), cur = root.querySelector('#p-cur'), head = root.querySelector('#p-head');
+          cr = root.querySelector('#p-cr'), cur = root.querySelector('#p-cur'), head = root.querySelector('#p-head'),
+          mkMin = root.querySelector('.mk-min'), mkMax = root.querySelector('.mk-max'), spread = root.querySelector('#p-spread');
+        [mkMin, mkMax, spread].forEach(e => e.classList.remove('hit', 'go'));
         let lastI = -1;
         // t is a continuous position (0…N-1): the line and the head dot glide on every frame, the clock and
         // price only tick once per quarter-hour — the sweep stays fluid even though the data is stepped
@@ -170,42 +232,70 @@ svg{width:100%;height:auto;overflow:visible}
           const i = Math.floor(t), i1 = Math.min(N - 1, i + 1), fr = t - i, xx = x(t), yy = y(H[i] + (H[i1] - H[i]) * fr);
           cr.setAttribute('width', 20 + t / (N - 1) * (W + 40)); cur.setAttribute('x1', xx); cur.setAttribute('x2', xx);
           head.setAttribute('cx', xx); head.setAttribute('cy', yy);
+          // the low and the high only show up when the sweep gets to them
+          if (t >= iMin) mkMin.classList.add('hit');
+          if (t >= iMax) mkMax.classList.add('hit');
           if (i !== lastI) { lastI = i;
             clock.textContent = hhmm(i); act.textContent = fmt(H[i], 0) + ' €/MWh';
             act.style.color = i === iMin ? 'var(--down)' : i === iMax ? 'var(--up)' : 'var(--muted)'; }
         };
-        if (matchMedia('(prefers-reduced-motion: reduce)').matches) { paint(N - 1); return; }
+        if (reduced()) { paint(N - 1); spread.classList.add('go'); return; }
         const t0 = performance.now();
         const step = now => {
           const f = Math.min(1, (now - t0) / SWEEP);
           paint(f * (N - 1));
           if (f < 1) requestAnimationFrame(step);
+          else setTimeout(() => { head.style.opacity = 0; cur.style.opacity = 0; spread.classList.add('go'); }, 250);
         };
+        head.style.opacity = 1; cur.style.opacity = 1;
         requestAnimationFrame(step);
       } };
   }
+  // scene 3: two months of the next calendar year draw themselves, then the last session's move lands
   function calScene(cal) {
-    return `<div class="kick">${T('Marché à terme', 'Forward market')}</div>
-      <div class="h">${T('Électricité livrée en', 'Power delivered in')}&nbsp;${cal.y}</div>
-      <div class="figline"><span class="big${fmt(cal.v, 2).length > 5 ? ' long' : ''}" data-count="${cal.v}" data-dec="2">${fmt(cal.v, 2)}</span> <span class="unit">€/MWh</span></div>
-      <div class="delta ${dir(cal.dv)}"><span class="nw">${arrow(cal.dv)} ${sgn(cal.dv, 2)}&nbsp;€</span> <span class="unit">${T('en une séance', 'in one session')}</span></div>
-      <div class="sub">${T('Contrat Cal', 'Cal')} ${cal.y} ${T('base France, cotation du', 'France baseload, settlement of')} ${new Date(cal.d + 'T12:00:00Z').toLocaleDateString(EN ? 'en-GB' : 'fr-FR', { day: 'numeric', month: 'long', timeZone: 'UTC' })}.</div>`;
+    const DRAW = 1900, DL = 500, s = cal.series, W = 1000, Ht = 230;
+    const lo = Math.min(...s), hi = Math.max(...s), x = i => i / (s.length - 1) * W, y = v => Ht - 12 - (v - lo) / ((hi - lo) || 1) * (Ht - 24);
+    const pts = s.map((v, i) => x(i).toFixed(1) + ',' + y(v).toFixed(1)).join(' ');
+    const d = dir(cal.dv), col = d === 'up' ? '#ED6965' : d === 'down' ? '#4ADE80' : '#8DA2B8';
+    const land = DL + DRAW;
+    return { ms: 5800, html: `<div class="kick">${T('Marché à terme', 'Forward market')}</div>
+      <div class="h">${words(T('Électricité livrée en ' + cal.y, 'Power delivered in ' + cal.y), 150, 110)}</div>
+      <svg viewBox="-10 -30 1030 ${Ht + 80}" aria-hidden="true" style="--ms:${DRAW}ms;--dl:${DL}ms;--dl2:${land}ms">
+        <polyline class="draw2" pathLength="1" points="${pts}" fill="none" stroke="#7FC8F8" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/>
+        <circle class="endpt" cx="${x(s.length - 1)}" cy="${y(s[s.length - 1])}" r="13" fill="${col}"/>
+        <text x="0" y="${Ht + 46}" fill="#8DA2B8" font-family="JetBrains Mono" font-size="32">${new Date(cal.d0 + 'T12:00:00Z').toLocaleDateString(EN ? 'en-GB' : 'fr-FR', { day: 'numeric', month: 'short', timeZone: 'UTC' })}</text>
+        <text x="${W}" y="${Ht + 46}" text-anchor="end" fill="#8DA2B8" font-family="JetBrains Mono" font-size="32">${new Date(cal.d + 'T12:00:00Z').toLocaleDateString(EN ? 'en-GB' : 'fr-FR', { day: 'numeric', month: 'short', timeZone: 'UTC' })}</text>
+      </svg>
+      <div class="figline"><span class="big${fmt(cal.v, 2).length > 5 ? ' long' : ''}" data-count="${cal.v}" data-from="${cal.v - cal.dv}" data-dec="2" data-delay="${land - 700}" data-ms="900" data-punch="1">${fmt(cal.v - cal.dv, 2)}</span> <span class="unit">€/MWh</span></div>
+      <div class="delta late ${d}" style="--late:${land + 150}ms"><span class="nw">${arrow(cal.dv)} ${sgn(cal.dv, 2)}&nbsp;€</span> <span class="unit">${T('en une séance', 'in one session')}</span></div>
+      <div class="sub" style="animation-delay:${land + 600}ms">${T('Contrat Cal', 'Cal')} ${cal.y} ${T('base France, cotation du', 'France baseload, settlement of')} ${new Date(cal.d + 'T12:00:00Z').toLocaleDateString(EN ? 'en-GB' : 'fr-FR', { day: 'numeric', month: 'long', timeZone: 'UTC' })}.</div>` };
   }
   function mondayScene(week, go) {
     return `<div class="kick">${T('La semaine', 'The week')}</div>
-      <div class="h">${T('Ce qui a bougé', 'What moved')}</div>
+      <div class="h">${words(T('Ce qui a bougé', 'What moved'), 150, 110)}</div>
       <div class="row"><div class="tile"><div class="l">${T('Spot, semaine passée', 'Spot, last week')}</div><div class="v">${fmt(week.v, 1)}</div><div class="s">€/MWh · <span style="color:var(--${dir(week.dv) === 'up' ? 'up' : dir(week.dv) === 'down' ? 'down' : 'muted'})">${sgn(week.dv, 1)}</span></div></div></div>
       ${go ? `<div class="row"><div class="tile"><div class="l">${T('Garanties d’origine', 'Guarantees of origin')} ${go.y}</div><div class="v">${fmt(go.v, 2)}</div><div class="s">€/MWh · <span style="color:var(--${dir(go.dv) === 'up' ? 'up' : dir(go.dv) === 'down' ? 'down' : 'muted'})">${sgn(go.dv, 2)} ${T('sur la semaine', 'on the week')}</span></div></div></div>` : ''}`;
   }
   function eventScene(e) {
     const i = EN ? 1 : 0;
     return `<div class="kick">${T('À retenir', 'Key event')}</div>
-      <div class="event"><div class="h">${e.title[i]}</div><p class="sub">${e.text[i]}</p><div class="sub">${T('Source', 'Source')} : ${e.source[0]}</div></div>`;
+      <div class="event"><div class="h">${words(e.title[i], 350, 80)}</div><p class="sub">${e.text[i]}</p><div class="sub">${T('Source', 'Source')} : ${e.source[0]}</div></div>`;
   }
+  // last scene: the brief's points come one at a time, read word by word; the earlier ones step back
+  // the first sentence of a point is its gist; three full paragraphs would not fit a 9:16 frame
+  const first = s => { const t = String(s || ''), m = t.match(/^.+?[.!?](?=\s+[A-ZÀ-Ý«]|$)/); return m ? m[0] : t; };
   function briefScene(dg) {
-    const items = (dg.context || []).slice(0, 3);
-    return `<div class="kick">${T('Le brief du marché', 'Market brief')}</div>
-      <div class="brief">${items.map(c => `<div class="${c.tone === 'up' ? 'up' : c.tone === 'down' ? 'down' : ''}"><b>${EN ? c.topic_en : c.topic} ${c.tone === 'up' ? '▲' : c.tone === 'down' ? '▼' : ''}</b>${EN ? c.text_en : c.text}</div>`).join('')}</div>`;
+    const items = (dg.context || []).slice(0, 3), GAP = 1900, FIRST = 600;
+    return { ms: FIRST + items.length * GAP + 900, html: `<div class="kick">${T('Le brief du marché', 'Market brief')}</div>
+      <div class="brief">${items.map(c => `<div class="${c.tone === 'up' ? 'up' : c.tone === 'down' ? 'down' : ''}"><b>${EN ? c.topic_en : c.topic} ${c.tone === 'up' ? '▲' : c.tone === 'down' ? '▼' : ''}</b>${words(first(EN ? c.text_en : c.text), 150, 55, 'wb')}</div>`).join('')}</div>`,
+      play(root) {
+        const it = [...root.querySelectorAll('.brief > div')];
+        it.forEach(e => e.classList.remove('in', 'dim'));
+        if (reduced()) { it.forEach(e => e.classList.add('in')); return; }
+        it.forEach((e, k) => setTimeout(() => { it.slice(0, k).forEach(p => p.classList.add('dim')); e.classList.add('in'); }, FIRST + k * GAP));
+        // at the end, all of them back at full strength for a last look
+        setTimeout(() => it.forEach(e => e.classList.remove('dim')), FIRST + items.length * GAP);
+      } };
   }
 
   async function main() {
@@ -218,8 +308,8 @@ svg{width:100%;height:auto;overflow:visible}
     // Cal+1: the last two settlements of next year's baseload contract
     const y1 = +today.slice(0, 4) + 1, c = chain && chain.FR && chain.FR.years && chain.FR.years[String(y1)];
     if (c && c.values && c.values.length > 1) {
-      const n = c.values.length;
-      S.push(calScene({ y: y1, v: c.values[n - 1], dv: c.values[n - 1] - c.values[n - 2], d: c.dates[n - 1] }));
+      const n = c.values.length, k0 = Math.max(0, n - 42);   // about two months of sessions for the curve
+      S.push(calScene({ y: y1, v: c.values[n - 1], dv: c.values[n - 1] - c.values[n - 2], d: c.dates[n - 1], d0: c.dates[k0], series: c.values.slice(k0) }));
     }
     // Monday: last week's spot against the week before, and the GO of next year (weekly broker prices)
     if (new Date(today + 'T12:00:00Z').getUTCDay() === 1) {
@@ -379,22 +469,28 @@ svg{width:100%;height:auto;overflow:visible}
     document.getElementById('scenes').innerHTML = S.map(x => '<section class="scene">' + x.html + '</section>').join('');
     document.getElementById('bar').innerHTML = S.map(() => '<i><b></b></i>').join('');
     const sc = [...document.querySelectorAll('.scene')], bars = [...document.querySelectorAll('#bar i')];
-    let k = 0;
+    let k = 0, prev = -1;
     const show = () => {
-      sc.forEach((s, i) => s.classList.toggle('on', i === k));
+      sc.forEach((s, i) => { s.classList.toggle('on', i === k); s.classList.toggle('out', i === prev && i !== k); });
       bars.forEach((b, i) => { b.className = i < k ? 'done' : i === k ? 'run' : ''; if (i === k) b.firstChild.style.animationDuration = S[k].ms + 'ms'; });
       // replay the curve drawing each time its scene comes back
       sc[k].querySelectorAll('.draw').forEach(p => { p.classList.remove('draw'); void p.getBoundingClientRect(); p.classList.add('draw'); });
-      // the big figures count up from 0 (1.1 s, eased)
+      // the big figures count from where they were (yesterday, the previous session; 0 by default) to their value,
+      // after their own delay, then land with a small punch
       sc[k].querySelectorAll('[data-count]').forEach(el => {
-        const to = +el.dataset.count, dec = +el.dataset.dec, t0 = performance.now(), dur = 1100;
-        const step = now => { const x = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - x, 3); el.textContent = fmt(to * e, dec); if (x < 1) requestAnimationFrame(step); };
-        if (matchMedia('(prefers-reduced-motion: reduce)').matches) el.textContent = fmt(to, dec); else requestAnimationFrame(step);
+        const to = +el.dataset.count, from = +(el.dataset.from || 0), dec = +el.dataset.dec, dur = +(el.dataset.ms || 1100), start = performance.now() + +(el.dataset.delay || 0);
+        el.classList.remove('punch');
+        if (reduced()) { el.textContent = fmt(to, dec); return; }
+        el.textContent = fmt(from, dec);
+        const step = now => { const x = Math.max(0, Math.min(1, (now - start) / dur)), e = 1 - Math.pow(1 - x, 3); el.textContent = fmt(from + (to - from) * e, dec);
+          if (x < 1) requestAnimationFrame(step); else if (el.dataset.punch) { void el.offsetWidth; el.classList.add('punch'); } };
+        requestAnimationFrame(step);
       });
       if (S[k].play) S[k].play(sc[k]);
       setTimeout(next, S[k].ms);
     };
     const next = () => {
+      prev = k;
       k += 1;
       if (k >= S.length) { window.REEL_DONE = true; if (q.has('once')) return; k = 0; }
       show();
