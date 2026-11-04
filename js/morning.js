@@ -545,8 +545,8 @@ function _mrnTileList(k) {
   // the market above the name, so a tile reads at a glance (power, gas, CO₂…)
   // the date of the price shown (note 175): the last settlement, discreetly on the category line
   const asof = (d, tip) => d ? `<span class="mrn-asof" title="${tip || _mT('Date de la cotation affichée', 'Date of the price shown')}">${new Date(d.slice(0, 10) + 'T12:00:00Z').toLocaleDateString(_mrnFr() ? 'fr-FR' : 'en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' })}</span>` : '';
-  const cat = (t, d, tip) => `<span class="mrn3-cat">${t}${asof(d, tip)}</span>`;
-  const head = (name, key, c, m, tip, d) => (m ? cat(m, d) : '') + `<span class="mrn3-th"><span class="mrn2-tn${tone(c) ? ' mrn-' + tone(c) : ''}">${name}</span>${pill(key, c, tip)}</span>`;
+  const cat = (t, d, tip, tn) => `<span class="mrn3-cat${tn ? ' mrn-' + tn : ''}">${t}${asof(d, tip)}</span>`;
+  const head = (name, key, c, m, tip, d) => (m ? cat(m, d, null, tone(c)) : '') + `<span class="mrn3-th"><span class="mrn2-tn${tone(c) ? ' mrn-' + tone(c) : ''}">${name}</span>${pill(key, c, tip)}</span>`;
   const ago = _mT('il y a 60 j', '60 d ago'), now = _mT('auj.', 'today');
   const T = [];
   if (k.cals.length) {   // the next calendar year; the two after it in the footer
@@ -574,10 +574,12 @@ function _mrnTileList(k) {
     const main = A ? `<span class="mrn2-tv">${_mN(A.fair4, 0)}<small>€/MWh</small></span><span class="mrn2-tc">${M ? `${mon} : ${_mT('indice', 'index')} <b>${_mN(M.fair, 0)}</b> vs fwd <b>${_mN(M.fwd, 0)}</b> <b class="${M.fair > M.fwd ? 'mrn-up' : 'mrn-down'}">${_mS(M.fair - M.fwd, 0)}</b>` : _mT('spot attendu sur 4 semaines', 'expected spot over 4 weeks')}</span>`
       : `<span class="mrn2-tv">${_mN(L.cov, 0)}<small>%</small></span><span class="mrn2-tc">${_mT('prix implicite', 'implied price')} <b>${_mN(L.fair, 1)} €</b></span>`;
     T.push(`<a class="mrn2-tile" data-tile="idx" href="#tools/compare" data-route="tools/compare" title="${_mT('Spot attendu sur 4 semaines d’après les fondamentaux : couverture de la consommation par le nucléaire, l’hydraulique, les renouvelables et les bioénergies (prévisions météo, nucléaire disponible), au coût du gaz du jour, avec une courbe ajustée sur 3 ans', 'Expected spot over 4 weeks from the fundamentals: demand covered by nuclear, hydro, renewables and bioenergy (weather outlook, nuclear available), at today’s gas cost, through a curve fitted on 3 years')}">` +
-      cat(_mT('Indice PowerKlock', 'PowerKlock index'), A ? (_mrnLast(k.P('ttf')) || [])[0] : L.d, A ? _mT('Calculé avec les dernières cotations du gaz (TTF) et du CO₂, à cette date', 'Computed with the latest gas (TTF) and CO₂ settlements, of this date') : _mT('Dernier jour de production publié par RTE', 'Latest production day published by RTE')) + (A && sp7
+      cat(_mT('Indice PowerKlock', 'PowerKlock index'), A ? (_mrnLast(k.P('ttf')) || [])[0] : L.d, A ? _mT('Calculé avec les dernières cotations du gaz (TTF) et du CO₂, à cette date', 'Computed with the latest gas (TTF) and CO₂ settlements, of this date') : _mT('Dernier jour de production publié par RTE', 'Latest production day published by RTE'), A && sp7 ? tone(ci) : tone(-c)) + (A && sp7
         ? `<span class="mrn3-th"><span class="mrn2-tn${tone(ci) ? ' mrn-' + tone(ci) : ''}">${_mT('Spot à 4 sem. vs 7 derniers jours', 'Spot in 4 wks vs last 7 days')}</span>${pill(null, ci, _mT('Spot attendu sur 4 semaines vs spot des 7 derniers jours', 'Expected spot over 4 weeks vs the last 7 days’ spot'))}</span>`
         : `<span class="mrn3-th"><span class="mrn2-tn${tone(-c) ? ' mrn-' + tone(-c) : ''}">${_mT('Couv. bas carbone', 'Low-carbon cover')}</span>${pill(null, c == null ? null : -c, _mT('Plus de couverture bas carbone : prix plus bas', 'More low-carbon cover: lower prices'))}</span>`) + main +
-      `${_mrnSpark(A ? A.days.slice(0, 28).map(x => x.fair) : since(pts, 60).map(p => p[1]), '')}${foot(kv(_mT('couverture auj.', 'coverage today'), _mN(L.cov, 0) + ' %'), A ? _mT('4 sem.', '4 wks') : _mT('60 j', '60 d'))}</a>`); }
+      // the sparkline's colour must agree with the name just above it (same rule as everywhere else: a
+      // green name beside a neutral-coloured chart reads as a contradiction)
+      `${_mrnSpark(A ? A.days.slice(0, 28).map(x => x.fair) : since(pts, 60).map(p => p[1]), A && sp7 ? tone(ci) : tone(-c))}${foot(kv(_mT('couverture auj.', 'coverage today'), _mN(L.cov, 0) + ' %'), A ? _mT('4 sem.', '4 wks') : _mT('60 j', '60 d'))}</a>`); }
   // Explain: one line under each tile (shown when the switch is on)
   return T.map(h => { const id = (h.match(/data-tile="(\w+)"/) || [])[1], x = id && MRN_EX[id]; return x ? h.replace(/<\/a>$/, `<span class="mrn-x">${_mT(x[0], x[1])}</span></a>`) : h; });
 }
