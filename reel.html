@@ -54,6 +54,7 @@ body{display:flex;align-items:center;justify-content:center;overflow:hidden}
 @keyframes breathe{50%{transform:scale(1.02)}}
 .dot{animation:dotpulse 1.8s ease-in-out infinite}
 @keyframes dotpulse{0%,100%{r:16}50%{r:19}}
+#p-head{filter:drop-shadow(0 0 10px rgba(127,200,248,.85))}
 .big.long{font-size:calc(17*var(--u))}
 .delta.up{color:var(--up)}.delta.down{color:var(--down)}.delta.flat{color:var(--muted)}
 .sub{font:400 calc(4.2*var(--u))/1.4 var(--sans);color:var(--muted)}
@@ -150,6 +151,7 @@ svg{width:100%;height:auto;overflow:visible}
         <g clip-path="url(#p-clip)"><polygon points="0,${Ht} ${pts} ${W},${Ht}" fill="rgba(127,200,248,.16)"/>
           <polyline points="${pts}" fill="none" stroke="#7FC8F8" stroke-width="7" stroke-linejoin="round"/></g>
         <line id="p-cur" x1="0" x2="0" y1="-60" y2="${Ht + 100}" stroke="#8DA2B8" stroke-width="3" stroke-dasharray="6 6"/>
+        <circle id="p-head" cx="0" cy="${y(H[0])}" r="10" fill="#fff"/>
         <circle class="dot" cx="${x(iMin)}" cy="${y(mn)}" r="16" fill="#4ADE80"/><circle class="dot" cx="${x(iMax)}" cy="${y(mx)}" r="16" fill="#ED6965"/>
         <text x="${x(iMin)}" y="${y(mn) + 62}" text-anchor="middle" fill="#4ADE80" font-family="JetBrains Mono" font-size="44" font-weight="800">${fmt(mn, 0)} €</text>
         <text x="${x(iMax)}" y="${y(mx) - 30}" text-anchor="middle" fill="#ED6965" font-family="JetBrains Mono" font-size="44" font-weight="800">${fmt(mx, 0)} €</text>
@@ -159,19 +161,24 @@ svg{width:100%;height:auto;overflow:visible}
         <div class="tile"><div class="l">${T('Heures ≤ 0 €', 'Hours ≤ 0 €')}</div><div class="v">${fmt(neg, neg % 1 ? 1 : 0)}</div><div class="s">${T('prix nuls ou négatifs', 'zero or negative')}</div></div></div>`,
       play(root) {
         const clock = root.querySelector('#p-clock'), act = root.querySelector('#p-act'),
-          cr = root.querySelector('#p-cr'), cur = root.querySelector('#p-cur');
-        const paint = i => {
-          i = Math.max(0, Math.min(N - 1, i));   // a stray rAF tick with a now before t0 must never emit a negative width
-          clock.textContent = hhmm(i);
-          act.textContent = fmt(H[i], 0) + ' €/MWh';
-          act.style.color = i === iMin ? 'var(--down)' : i === iMax ? 'var(--up)' : 'var(--muted)';
-          cr.setAttribute('width', 20 + i / (N - 1) * (W + 40)); cur.setAttribute('x1', x(i)); cur.setAttribute('x2', x(i));
+          cr = root.querySelector('#p-cr'), cur = root.querySelector('#p-cur'), head = root.querySelector('#p-head');
+        let lastI = -1;
+        // t is a continuous position (0…N-1): the line and the head dot glide on every frame, the clock and
+        // price only tick once per quarter-hour — the sweep stays fluid even though the data is stepped
+        const paint = t => {
+          t = Math.max(0, Math.min(N - 1, t));   // a stray rAF tick with a now before t0 must never go negative
+          const i = Math.floor(t), i1 = Math.min(N - 1, i + 1), fr = t - i, xx = x(t), yy = y(H[i] + (H[i1] - H[i]) * fr);
+          cr.setAttribute('width', 20 + t / (N - 1) * (W + 40)); cur.setAttribute('x1', xx); cur.setAttribute('x2', xx);
+          head.setAttribute('cx', xx); head.setAttribute('cy', yy);
+          if (i !== lastI) { lastI = i;
+            clock.textContent = hhmm(i); act.textContent = fmt(H[i], 0) + ' €/MWh';
+            act.style.color = i === iMin ? 'var(--down)' : i === iMax ? 'var(--up)' : 'var(--muted)'; }
         };
         if (matchMedia('(prefers-reduced-motion: reduce)').matches) { paint(N - 1); return; }
         const t0 = performance.now();
         const step = now => {
           const f = Math.min(1, (now - t0) / SWEEP);
-          paint(Math.min(N - 1, Math.floor(f * N)));
+          paint(f * (N - 1));
           if (f < 1) requestAnimationFrame(step);
         };
         requestAnimationFrame(step);
