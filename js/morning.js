@@ -711,7 +711,7 @@ async function _mrnNews(el) {
   const esc = PK.esc;   // js/pk-core.js
   const cat = i => { const t = (i.tags || []).find(x => _MRN_CAT[x] && x !== 'power') || ((i.tags || []).includes('power') ? 'power' : ''); return t ? `<span class="mrn-cat" title="${t}">${window._newsIc ? _newsIc(t) : ''}</span>` : ''; };
   const vote = i => typeof _newsVoteBtns === 'function' ? `<span class="news-vote mrn-vote" data-link="${esc(i.link)}">${_newsVoteBtns(i.link)}</span>` : '';
-  const li = i => `<li>${cat(i)}<a href="${/^https?:\/\//.test(i.link) ? esc(i.link) : '#'}" target="_blank" rel="noopener">${esc(i.title)}</a> <span class="mrn-src">${esc(i.source)} · ${new Date(i.date).toLocaleDateString(_mrnFr() ? 'fr-FR' : 'en-GB', { day: 'numeric', month: 'short' })}</span>${vote(i)}</li>`;
+  const li = i => `<li>${cat(i)}<a href="${/^https?:\/\//.test(i.link) ? esc(i.link) : '#'}" target="_blank" rel="noopener" title="${esc(i.title)}">${esc(i.title)}</a> <span class="mrn-src">${esc(i.source)} · ${new Date(i.date).toLocaleDateString(_mrnFr() ? 'fr-FR' : 'en-GB', { day: 'numeric', month: 'short' })}</span>${vote(i)}</li>`;
   const sec = t => `<div class="mrn-sec" style="margin:10px 0 4px">${t}</div>`;
   host.innerHTML = `<div class="fuel-note" style="margin-bottom:6px">${_mT('Ce qui fait bouger le marché depuis ' + (span / 24) + ' jours, la France d’abord : géopolitique, régulation, nucléaire, transactions, nouvelles capacités, gaz', 'What moved the market over the last ' + (span / 24) + ' days, France first: geopolitics, regulation, nuclear, deals, new capacity, gas') +
     (kw.length ? _mT(', vos mots-clés ★ en tête', ', your ★ keywords first') : '') + _mT('. Vos votes (utile / pas utile) affinent la sélection.', '. Your votes (useful / not useful) teach the selection.')}</div>` +
@@ -1228,7 +1228,7 @@ document.addEventListener('click', e => {   // a tile opens its chart full size 
   .mrn-news{border-left-color:#FBBF24} .mrn-news a{color:var(--tx);text-decoration:none} .mrn-news a:hover{color:var(--acc);text-decoration:underline} .mrn-src{font-size:10.5px;color:var(--tx3)} .mrn-news-more{float:right;font-size:10px;letter-spacing:0;text-transform:none;color:var(--acc);text-decoration:none}
   .mrn-moves ul{margin:0;padding-left:18px} .mrn-moves li{font-size:12.5px;color:var(--tx2);line-height:1.6} .mrn-moves b{color:var(--tx)}
   .mrn-neg{color:#7FC8F8}
-  .mrn-movers{list-style:none;margin:0;padding:0} .mrn-movers li{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px;padding:5px 0;border-bottom:1px solid var(--bd);font-size:12.5px} .mrn-movers a{color:var(--tx);text-decoration:none;flex:1 1 60%} .mrn-movers a:hover{color:var(--acc)} .mrn-cat{width:18px;text-align:center;color:var(--tx3)} .mrn-vote{margin:0 0 0 auto}
+  .mrn-movers{list-style:none;margin:0;padding:0} .mrn-movers li{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px;padding:5px 0;border-bottom:1px solid var(--bd);font-size:12.5px} .mrn-movers a{color:var(--tx);text-decoration:none;flex:1 1 60%;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .mrn-movers a:hover{color:var(--acc)} .mrn-cat{width:18px;text-align:center;color:var(--tx3)} .mrn-vote{margin:0 0 0 auto}
   .mrn-fwd{width:100%;border-collapse:collapse;font-size:12px}
   .mrn-fwd th{font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3);font-weight:600;text-align:right;padding:6px 8px;border-bottom:1px solid var(--bd);white-space:nowrap}   /* headers on one line (note 80) */
   .mrn-fwd th:first-child,.mrn-fwd td:first-child{text-align:left}

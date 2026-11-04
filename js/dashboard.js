@@ -1123,6 +1123,21 @@
     });
   }
 
+  // same switch as Today's "Explain" (body.mrn-explain, css/site.css): widgets built from Today's own
+  // code (e.g. the today-tiles widget) already carry the same hidden .mrn-x lines and light up with it.
+  // Bound on both the normal toolbar button and the solo-view bar's own button (solo hides .pkd-top).
+  function bindExplain(btn) {
+    if (!btn || btn.dataset.xw) return; btn.dataset.xw = '1';
+    const setX = on => {
+      document.body.classList.toggle('mrn-explain', on);
+      document.querySelectorAll('#pkd-explain, #pkd-solo-explain').forEach(b => { b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); });
+      try { localStorage.setItem('pk-explain', on ? '1' : '0'); } catch (_) {}
+    };
+    let on; try { on = localStorage.getItem('pk-explain') === '1'; } catch (_) { on = false; }
+    setX(on);
+    btn.addEventListener('click', () => setX(!document.body.classList.contains('mrn-explain')));
+  }
+
   function renderShared() {
     const page = document.getElementById('page-mydash');
     if (!page) return;
@@ -1137,9 +1152,11 @@
     const date = new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Paris' });
     bar.innerHTML = solo
       ? `<div class="pkd-solo-t"><span class="pkd-solo-name">${esc(shared.name)}</span><span class="pkd-solo-date">${esc(date)}</span></div>
+         <button type="button" class="pk-btn-ghost" id="pkd-solo-explain" aria-pressed="false" title="Show a line under each figure on what it is and why it moves">ⓘ Explain</button>
          <button type="button" class="pk-btn-ghost" id="pkd-solo-pptx" title="This dashboard as a PowerPoint">⤓ PowerPoint</button>`
       : `<div class="pkd-shared-t"><b>Shared dashboard · ${esc(shared.name)}</b><span>A copy of a colleague's layout with today's data. Add it to your dashboards to keep or change it.</span></div>
          <div class="pkd-shared-a"><button type="button" class="pk-btn-ghost" id="pkd-shared-close">Close</button><button type="button" class="pk-btn-primary" id="pkd-shared-add">+ Add to my dashboards</button></div>`;
+    bindExplain(bar.querySelector('#pkd-solo-explain'));
     bar.querySelector('#pkd-solo-pptx')?.addEventListener('click', async ev => {
       const btn = ev.currentTarget, label = btn.textContent; if (!window.PKExport) return;
       btn.disabled = true;
@@ -1212,19 +1229,7 @@
       document.getElementById('pkd-add-note')?.addEventListener('click', addNote);
       document.getElementById('pkd-menu')?.addEventListener('click', openBoardMenu);
       document.getElementById('pkd-share')?.addEventListener('click', openShare);
-      // same switch as Today's "Explain" (body.mrn-explain, css/site.css): widgets built from Today's own
-      // code (e.g. the today-tiles widget) already carry the same hidden .mrn-x lines and light up with it
-      const xbtn = document.getElementById('pkd-explain');
-      if (xbtn) {
-        const setX = on => {
-          document.body.classList.toggle('mrn-explain', on);
-          xbtn.classList.toggle('on', on); xbtn.setAttribute('aria-pressed', on ? 'true' : 'false');
-          try { localStorage.setItem('pk-explain', on ? '1' : '0'); } catch (_) {}
-        };
-        let on; try { on = localStorage.getItem('pk-explain') === '1'; } catch (_) { on = false; }
-        setX(on);
-        xbtn.addEventListener('click', () => setX(!document.body.classList.contains('mrn-explain')));
-      }
+      bindExplain(document.getElementById('pkd-explain'));
       document.getElementById('pkd-pptx')?.addEventListener('click', async ev => {
         const btn = ev.currentTarget, label = btn.textContent;
         if (!window.PKExport) return;

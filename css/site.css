@@ -1569,6 +1569,7 @@
   body.pk-solo .main { width: 100%; }
   body.pk-solo .pkd-shared-bar { border: 0; background: transparent; padding: 4px 2px 6px; border-bottom: 1px solid var(--border); border-radius: 0; }
   .pkd-solo-t { display: flex; flex-direction: column; gap: 2px; }
+  #pkd-explain.on, #pkd-solo-explain.on { border-color: var(--accent, #14D3A9); color: var(--accent, #14D3A9); background: rgba(20,211,169,.1); }
   .pkd-solo-name { font-size: 20px; font-weight: 700; color: var(--text); }
   .pkd-solo-date { font-size: 12px; color: var(--accent); }
   @media (max-width: 760px) { .pkd-hint { display: none; } }
