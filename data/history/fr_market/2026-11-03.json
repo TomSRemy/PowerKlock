@@ -2,16 +2,77 @@
  "date": "2026-11-03",
  "countries": {
   "FR": {
-   "spot": 247.7
+   "spot": 247.7,
+   "forwardCurve": {
+    "M+1": 194.27,
+    "M+2": 210.58,
+    "M+3": 199.74,
+    "Q+1": 184.54,
+    "Q+2": 71.92,
+    "Q+3": 91.75,
+    "S+1": 81.84,
+    "S+2": 113.58,
+    "Y+1": 115.98,
+    "Y+2": 66.99,
+    "Y+3": 60.71
+   }
   },
   "UK": {
-   "spot": 205
+   "spot": 205,
+   "forwardCurve": {
+    "M+1": 176.75,
+    "M+2": 192.57,
+    "M+3": 188.06,
+    "Q+1": 181.93,
+    "Q+2": 128.99,
+    "Q+3": 121.35,
+    "S+1": 125.15,
+    "S+2": 124.78,
+    "Y+1": 138.75,
+    "Y+2": 93.23,
+    "Y+3": 77.32
+   },
+   "generationMix": {
+    "gas": 16.13,
+    "wind": 7.87,
+    "solar": 2.32,
+    "nuclear": 5.13,
+    "hydro": 0.56,
+    "biomass": 3.06,
+    "other": 1.29
+   }
   },
   "DE": {
-   "spot": 248.99
+   "spot": 248.99,
+   "forwardCurve": {
+    "M+1": 203.73,
+    "M+2": 220,
+    "M+3": 211.82,
+    "Q+1": 197.21,
+    "Q+2": 122.3,
+    "Q+3": 131.73,
+    "S+1": 127.01,
+    "S+2": 143.48,
+    "Y+1": 148.95,
+    "Y+2": 107.65,
+    "Y+3": 94.39
+   }
   },
   "NL": {
-   "spot": 236.52
+   "spot": 236.52,
+   "forwardCurve": {
+    "M+1": 206.58,
+    "M+2": 226.19,
+    "M+3": 212.79,
+    "Q+1": 198.66,
+    "Q+2": 121.66,
+    "Q+3": 128.57,
+    "S+1": 125.13,
+    "S+2": 143,
+    "Y+1": 147.85,
+    "Y+2": 107.1,
+    "Y+3": 93.88
+   }
   }
  },
  "marketInsightsHtml": "<p>Les marchés britanniques sont également confrontés à une disponibilité plus restreinte des importations, les importations françaises étant limitées jusqu'à la première quinzaine de novembre, l'interconnexion IFA étant soumise à des restrictions de capacité.</p>",
