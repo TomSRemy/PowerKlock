@@ -1,5 +1,5 @@
 {
-"updated": "2026-11-04T16:40:16+00:00",
+"updated": "2026-11-04T22:10:57+00:00",
 "storage": {
 "data_mb": 210.5
 },
@@ -10,7 +10,7 @@
 "what": "2026-11-05: no day-ahead price for CH",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-11-04T16:40:14+00:00",
-"lastSeen": "2026-11-04T16:40:16+00:00"
+"lastSeen": "2026-11-04T22:10:57+00:00"
 }
 ],
 "resolved": [
