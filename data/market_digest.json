@@ -1,51 +1,51 @@
 {
- "updated": "2026-11-03T21:53:13+00:00",
- "asof": "2026-11-03",
+ "updated": "2026-11-04T14:44:38+00:00",
+ "asof": "2026-11-04",
  "notes": 2,
  "engine": "proxy",
  "context": [
   {
    "topic": "France",
    "topic_en": "France",
-   "text": "La disponibilité des centrales nucléaires françaises s'améliore, avec une puissance disponible de 45059,37 MW, soit une augmentation de 10,1% en 7 jours. Cela pousse les prix à la baisse.",
-   "text_en": "French nuclear power plant availability is improving, with a available power of 45059.37 MW, a 10.1% increase in 7 days. This pushes prices down.",
-   "tone": "down"
+   "text": "La disponibilité des centrales nucléaires françaises s'améliore grâce à la montée des niveaux des rivières, mais les précipitations restent insuffisantes dans les régions clés pour la production nucléaire. La France a attribué des contrats pour plus de 1 GW de capacité en énergie éolienne terrestre dans sa dernière enchère.",
+   "text_en": "The availability of French nuclear power plants is improving thanks to rising river levels, but rainfall remains insufficient in key regions for nuclear generation. France has awarded power deals for just over 1GW of capacity in its latest onshore wind auction.",
+   "tone": "flat"
   },
   {
    "topic": "Golfe",
    "topic_en": "Gulf",
-   "text": "Les tensions dans le Golfe persistent, avec des attaques contre les infrastructures énergétiques saoudiennes et des risques de perturbation de l'approvisionnement en gaz. Cela pousse les prix à la hausse.",
-   "text_en": "Tensions in the Gulf persist, with attacks on Saudi energy infrastructure and risks of gas supply disruption. This pushes prices up.",
+   "text": "Les tensions au Moyen-Orient et les préoccupations concernant les investissements dans l'IA poussent la demande de produits sans risque. Les prix du pétrole brut Brent continuent de monter et atteignent environ 115 $/baril.",
+   "text_en": "Tensions in the Middle East and concerns about investment in AI are driving up demand for safe-haven assets. Brent crude prices continue to rise and stand at around $115/bbl.",
    "tone": "up"
   },
   {
    "topic": "Norvège",
    "topic_en": "Norway",
-   "text": "Les exportations de gaz norvégiennes sont temporairement réduites en raison de travaux de maintenance, ce qui soutient les prix du gaz en Europe.",
-   "text_en": "Norwegian gas exports are temporarily reduced due to maintenance work, supporting European gas prices.",
+   "text": "Les exportations de gaz norvégiennes ont temporairement baissé en raison de travaux de maintenance. Les prix du gaz en Europe sont influencés par les risques géopolitiques et les tensions au Moyen-Orient.",
+   "text_en": "Norwegian gas exports have temporarily fallen due to maintenance work. European gas prices continue to be determined by geopolitical risks and tensions in the Middle East.",
    "tone": "up"
   }
  ],
  "outlook": {
   "oil": {
    "tone": "up",
-   "text": "Les prix du pétrole devraient continuer à augmenter en raison des tensions géopolitiques",
-   "text_en": "Oil prices are expected to continue rising due to geopolitical tensions"
+   "text": "Les prix du pétrole devraient continuer à monter en raison des tensions au Moyen-Orient",
+   "text_en": "Oil prices are expected to continue rising due to Middle East tensions"
   },
   "gas": {
    "tone": "up",
-   "text": "Les prix du gaz devraient rester élevés en raison des tensions dans le Golfe et des perturbations d'approvisionnement",
-   "text_en": "Gas prices are expected to remain high due to Gulf tensions and supply disruptions"
+   "text": "Les prix du gaz devraient rester élevés en raison des risques géopolitiques et des tensions au Moyen-Orient",
+   "text_en": "Gas prices are expected to remain high due to geopolitical risks and Middle East tensions"
   },
   "power": {
    "tone": "flat",
-   "text": "Les prix de l'électricité devraient rester stables en raison de la disponibilité améliorée des centrales nucléaires françaises",
-   "text_en": "Power prices are expected to remain stable due to improved French nuclear power plant availability"
+   "text": "Les prix de l'électricité devraient rester stables en raison de la disponibilité des centrales nucléaires françaises",
+   "text_en": "Power prices are expected to remain stable due to the availability of French nuclear power plants"
   },
   "carbon": {
    "tone": "up",
-   "text": "Les prix du carbone devraient continuer à augmenter en raison de la baisse de la production d'énergie éolienne",
-   "text_en": "Carbon prices are expected to continue rising due to decreased wind energy production"
+   "text": "Les prix des émissions de CO2 devraient continuer à monter en raison de la baisse de la production d'énergie éolienne",
+   "text_en": "Carbon prices are expected to continue rising due to the decline in wind energy generation"
   }
  }
 }
