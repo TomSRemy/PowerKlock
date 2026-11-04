@@ -246,17 +246,22 @@
       (fig ? `<div class="why4-v">${fig}</div>` : '') + `<div class="why4-x">${text}</div>` +
       `<div class="why4-next${o ? '' : ' none'}">${o ? `<b>${T('Semaine à venir', 'Week ahead')}</b> : ${txt(o)}` : `<b>${T('Semaine à venir', 'Week ahead')}</b> : ${T('pas de note cette semaine', 'no call this week')}`}</div><span class="why3-src">${src}</span></div>`).join('')}</div>${an ? `<div class="why3-an">${an}</div>` : ''}</div>`;
     // every « week ahead » box the height of the tallest, so they line up at the bottom of all the tiles;
-    // and a tile left alone on the grid's last row (auto-fit's column count depends on the width) is
-    // centred instead of sitting flush left on its own
+    // and the grid itself picks a fixed column count instead of an organic auto-fit — all the tiles on
+    // one row when there's room, else exactly 3 per row, else 1 per row (mobile) — so a row is never
+    // left with a single, oddly narrow tile on its own
+    const MINW = 230, GAP = 10;
     const eq = () => {
       const bx = [...host.querySelectorAll('.why4-next')]; bx.forEach(b => { b.style.minHeight = ''; });
       const h = Math.max(...bx.map(b => b.offsetHeight)); if (h > 0) bx.forEach(b => { b.style.minHeight = h + 'px'; });
-      const tiles = [...host.querySelectorAll('.why4-t')];
+      const g = host.querySelector('.why4-g'); if (!g) return;
+      const tiles = [...g.querySelectorAll('.why4-t')], n = tiles.length, w = g.clientWidth;
+      const cols = n && w >= n * MINW + (n - 1) * GAP ? n : w >= 3 * MINW + 2 * GAP ? 3 : 1;
+      g.style.gridTemplateColumns = `repeat(${cols},1fr)`;
+      // a lone tile can still happen at the 3-per-row tier (e.g. 4 tiles → 3 + 1): centre it rather
+      // than leaving it flush left
       tiles.forEach(t => t.classList.remove('why4-lone'));
-      if (tiles.length > 2) { const last = tiles[tiles.length - 1], prev = tiles[tiles.length - 2], prev2 = tiles[tiles.length - 3];
-        // "alone" only counts when the row before it actually held more than one tile — at a single
-        // column (mobile) every tile sits on its own row, which is normal, not an orphan
-        if (last.offsetTop !== prev.offsetTop && prev.offsetTop === prev2.offsetTop) last.classList.add('why4-lone'); }
+      if (cols > 1 && n > cols) { const last = tiles[n - 1], onLast = Math.floor((n - 1) / cols) === Math.floor((n - 2) / cols);
+        if (!onLast) last.classList.add('why4-lone'); }
     };
     // re-run whenever the grid's own box actually changes size (width change, web fonts swapping in,
     // a later re-render with different data) — more reliable than guessing how long layout takes to settle
