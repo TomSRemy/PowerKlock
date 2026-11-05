@@ -1296,7 +1296,7 @@ document.addEventListener('click', e => {   // a tile opens its chart full size 
   .mrn3-th{display:flex;justify-content:space-between;align-items:flex-start;gap:6px;min-width:0} .mrn3-th .wk-chip{font-size:10px;flex:none} .mrn3-th .mrn2-tn{flex:1 1 auto;min-width:0}
   .mrn3-pair{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;align-items:stretch}   /* what moved, full width (its tiles in one row), then the news, full width */
   .mrn-news-cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0 24px}
-  @media (max-width:1100px){.mrn-news-cols{grid-template-columns:1fr}}
+  @media (max-width:1100px){.mrn-news-cols{grid-template-columns:minmax(0,1fr)}}   /* minmax(0,…): one-line titles must not widen the column past the screen */
   .mrn3-tbl{height:320px;overflow:auto}
   .mrn3-sel{display:flex;gap:6px;margin-left:auto;margin-right:8px} .mrn3-sel select{background:var(--bg3);color:var(--text);border:1px solid var(--border2);border-radius:6px;padding:3px 6px;font-size:12px}
   .mrn3-pair>section{margin:0;min-width:0}

@@ -1666,6 +1666,10 @@
     #page-france .fr-tabbar, .day-tabs, #load-day-btns { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
     #page-france .fr-tab { white-space: nowrap; flex: none; }
     .meth-p code, .meth-wrap code { word-break: break-word; white-space: normal; }
+    .overview-grid { grid-template-columns: minmax(0, 1fr); }   /* one column; its wide table scrolls in .table-wrap */
+    .overview-grid > * { min-width: 0; }
+    .meth-wrap { flex-direction: column; gap: 16px; padding: 14px 12px 40px; }   /* the contents list above the text, not beside it */
+    .meth-nav { position: static; width: auto; max-height: 240px; }
     .chart-container:has(> .pk-tool-float) > :first-child:not(canvas):not(.pk-tool) { padding-right: 0 !important; padding-top: 30px; }
     .page-header, .page-header > div, .hist-section-header, .hist-section-header > div { flex-wrap: wrap; min-width: 0; }
     .converter-wrap div:has(> .day-tab) { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
@@ -3376,10 +3380,11 @@ tr.mrn-wrow[data-tile="idx"] th, tr.mrn-wrow[data-tile="idx"] td { border-top: 1
 .fd-op { align-self: center; font: 600 16px 'JetBrains Mono', monospace; color: var(--text3); }
 .mrn-fund-grp { font: 600 11px 'JetBrains Mono', monospace; text-transform: uppercase; letter-spacing: .08em; color: var(--accent, #14D3A9); margin: 16px 0 6px; padding-bottom: 4px; border-bottom: 1px solid var(--border, rgba(255,255,255,.08)); }
 .mrn-w4 { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 18px 28px; align-items: center; }
+.mrn-w4-t { overflow-x: auto; }   /* the 4-week table scrolls in its own box on a phone */
 .mrn-w4-t table.mrn-wtab { margin-bottom: 0; }
 .mrn2-gauges.mrn-gcol { grid-template-columns: 1fr !important; display: grid; gap: 18px; }
 table.mrn-wtab td, table.mrn-wtab thead th:not(:first-child) { text-align: center; }
-@media (max-width: 1000px) { .mrn-w4 { grid-template-columns: 1fr; } }
+@media (max-width: 1000px) { .mrn-w4 { grid-template-columns: minmax(0, 1fr); } }   /* minmax(0,…): the table must not widen the column past the screen */
 /* Today: spot, three days side by side */
 .mrn-3d { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
 .mrn-3d-c { margin: 0 !important; padding: 12px 14px; min-width: 0; }
