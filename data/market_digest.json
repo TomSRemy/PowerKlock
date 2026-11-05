@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-05T14:50:11+00:00",
+ "updated": "2026-11-05T22:08:59+00:00",
  "asof": "2026-11-05",
  "notes": 2,
  "engine": "proxy",
@@ -7,38 +7,45 @@
   {
    "topic": "France",
    "topic_en": "France",
-   "text": "La tempête Austen a mis à mal le réseau électrique français, avec des coupures de courant pour près de 300 000 foyers. Les prix de l'électricité restent élevés, ce qui complique l'acquisition de nouveaux clients pour les fournisseurs alternatifs.",
-   "text_en": "The Austen storm damaged the French power grid, with power outages for nearly 300,000 households. Electricity prices remain high, making it difficult for alternative suppliers to acquire new customers.",
-   "tone": "up"
+   "text": "La disponibilité nucléaire en France est en hausse de 3,6% sur 7 jours, à 46692,5 MW, et la consommation d'énergie a reculé de 3,8% en septembre. La tempête Austen a également mis à mal le réseau électrique français, entraînant des coupures de courant pour près de 300 000 foyers.",
+   "text_en": "French nuclear availability is up 3.6% over 7 days, at 46692.5 MW, and energy consumption fell by 3.8% in September. The Austen storm also damaged the French power grid, causing power outages for nearly 300,000 households.",
+   "tone": "flat"
   },
   {
    "topic": "Golfe",
    "topic_en": "Gulf",
-   "text": "Les tensions dans le Golfe et les attaques contre les infrastructures énergétiques saoudiennes ont renforcé les craintes d'une nouvelle perturbation. Les prix du pétrole et du gaz restent sous pression.",
-   "text_en": "Tensions in the Gulf and attacks on Saudi energy infrastructure have heightened fears of further disruption. Oil and gas prices remain under pressure.",
+   "text": "Les perspectives de négociations entre les États-Unis et l'Iran ont réduit le risque géopolitique, contribuant à la baisse des prix du Brent cette semaine.",
+   "text_en": "The prospects for negotiations between the United States and Iran have reduced the geopolitical risk premium, contributing to the fall in Brent prices this week.",
+   "tone": "down"
+  },
+  {
+   "topic": "Norvège",
+   "topic_en": "Norway",
+   "text": "Les flux norvégiens sont légèrement réduits en raison d'arrêts non planifiés, ce qui soutient le marché européen du gaz.",
+   "text_en": "Norwegian flows are slightly reduced due to unplanned outages, supporting the European gas market.",
    "tone": "up"
   }
  ],
  "outlook": {
   "oil": {
-   "tone": "up",
-   "text": "Les prix du pétrole devraient rester élevés en raison des tensions géopolitiques",
-   "text_en": "Oil prices are expected to remain high due to geopolitical tensions"
+   "tone": "down",
+   "text": "Les prix du pétrole devraient continuer à baisser en raison de la réduction du risque géopolitique.",
+   "text_en": "Oil prices are expected to continue to fall due to reduced geopolitical risk."
   },
   "gas": {
-   "tone": "up",
-   "text": "Les prix du gaz devraient rester élevés en raison des tensions dans le Golfe et de la faible offre",
-   "text_en": "Gas prices are expected to remain high due to tensions in the Gulf and low supply"
+   "tone": "down",
+   "text": "Les prix du gaz devraient baisser en raison de la réduction du risque géopolitique et de l'amélioration de la disponibilité physique.",
+   "text_en": "Gas prices are expected to fall due to reduced geopolitical risk and improved physical availability."
   },
   "power": {
    "tone": "flat",
-   "text": "Les prix de l'électricité devraient rester stables en raison de la baisse de la demande",
-   "text_en": "Electricity prices are expected to remain stable due to decreased demand"
+   "text": "Les prix de l'électricité devraient rester stables en raison de la concurrence entre la baisse des prix du gaz et de l'huile et la hausse de la demande due au froid.",
+   "text_en": "Power prices are expected to remain stable due to the competition between the fall in gas and oil prices and the increase in demand due to cold weather."
   },
   "carbon": {
    "tone": "flat",
-   "text": "Les prix du carbone devraient rester stables en raison de la faible demande",
-   "text_en": "Carbon prices are expected to remain stable due to low demand"
+   "text": "Les prix du carbone devraient rester stables en raison de la stabilité du marché.",
+   "text_en": "Carbon prices are expected to remain stable due to market stability."
   }
  }
 }
