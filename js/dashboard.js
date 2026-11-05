@@ -35,10 +35,9 @@
   const W = (wid, w, h, p) => ({ t: 'w', wid, w, h, p });
   const TEMPLATES = [
     // The three Today views (js/today-widgets.js), same blocks and order as the Today page
-    { id: 'today-quick', name: 'Today · Quick look', desc: 'One screen: France spot today and tomorrow, what moved, the six key prices, the morning reel.', items: [
+    { id: 'today-quick', name: 'Today · Quick look', desc: 'One screen: France spot today and tomorrow, what moved, the six key prices.', items: [
       W('today-spot', 7, 5), W('today-moved', 5, 5),
       W('today-tiles', 12, 3),
-      W('today-reel', 4, 8),
     ] },
     { id: 'today-learn', name: 'Today · Discovery', desc: 'Few figures, each explained: the day in one sentence, three prices and what they are, today hour by hour, what it means, a glossary.', items: [
       W('today-sentence', 12, 2),
@@ -176,6 +175,7 @@
   let shared = null;           // { id: 'shared', name, items, code }
   function board() {
     const b = fine(shared || state.boards.find(b => b.id === state.active) || state.boards[0]);
+    if (b && b.items && b.items.some(it => it.wid === 'today-reel')) b.items = b.items.filter(it => it.wid !== 'today-reel');   // the morning reel widget was withdrawn
     // boards made from the Expert template before it became a mirror (and links shared then) become one
     // (exactly the template's charts, nothing added or removed: a board the user composed stays a grid)
     if (b && b.mirror === undefined) { const sig = a => a.filter(it => it.t === 'w').map(it => it.wid).sort().join(',');
@@ -188,7 +188,7 @@
   // dashboard while it is open and put back as soon as it is left (another board, another page). The cards of the
   // template stay in the board for the PowerPoint export.
   const MIRRORS = {
-    'today-expert': { page: 'page-morning', ids: ['mrn2', 'hs-morning-2', 'hs-morning-fund', 'hs-morning-3', 'hs-morning-4', 'hs-morning-fc', 'hs-morning-idx'],
+    'today-expert': { page: 'page-morning', ids: ['mrn-stories', 'mrn2', 'hs-morning-2', 'hs-morning-fund', 'hs-morning-3', 'hs-morning-4', 'hs-morning-fc', 'hs-morning-idx'],
       hide: ['mrn-quick', 'mrn-learn'], draw: () => { if (typeof renderMorning === 'function' && !(typeof MRN !== 'undefined' && MRN.k)) renderMorning(); } },
   };
   const mirrorOf = tid => { const t = TEMPLATES.find(x => x.id === tid); return t && t.mirror || undefined; };
