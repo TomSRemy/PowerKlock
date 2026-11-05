@@ -2,16 +2,77 @@
  "date": "2026-11-04",
  "countries": {
   "FR": {
-   "spot": 261.4
+   "spot": 261.4,
+   "forwardCurve": {
+    "M+1": 195.1,
+    "M+2": 206.87,
+    "M+3": 191.37,
+    "Q+1": 177.59,
+    "Q+2": 70.81,
+    "Q+3": 90.99,
+    "S+1": 80.9,
+    "S+2": 110.07,
+    "Y+1": 112.99,
+    "Y+2": 64.53,
+    "Y+3": 59.15
+   }
   },
   "UK": {
-   "spot": 203.57
+   "spot": 203.57,
+   "forwardCurve": {
+    "M+1": 175.82,
+    "M+2": 187.55,
+    "M+3": 183.05,
+    "Q+1": 176.36,
+    "Q+2": 125.47,
+    "Q+3": 116.9,
+    "S+1": 121.16,
+    "S+2": 120,
+    "Y+1": 134.16,
+    "Y+2": 90.17,
+    "Y+3": 75.05
+   },
+   "generationMix": {
+    "gas": 16.71,
+    "wind": 9,
+    "solar": 1.26,
+    "nuclear": 5.12,
+    "hydro": 0.47,
+    "biomass": 3.27,
+    "other": 1.19
+   }
   },
   "DE": {
-   "spot": 257.38
+   "spot": 257.38,
+   "forwardCurve": {
+    "M+1": 202.51,
+    "M+2": 215.38,
+    "M+3": 204.14,
+    "Q+1": 190.05,
+    "Q+2": 119.77,
+    "Q+3": 129.19,
+    "S+1": 124.48,
+    "S+2": 140.59,
+    "Y+1": 145.25,
+    "Y+2": 105,
+    "Y+3": 91.78
+   }
   },
   "NL": {
-   "spot": 255.12
+   "spot": 255.12,
+   "forwardCurve": {
+    "M+1": 205.57,
+    "M+2": 220.1,
+    "M+3": 203.61,
+    "Q+1": 190.27,
+    "Q+2": 118.41,
+    "Q+3": 126.13,
+    "S+1": 122.29,
+    "S+2": 139.67,
+    "Y+1": 143.65,
+    "Y+2": 102.21,
+    "Y+3": 90.58
+   }
   }
  },
  "marketInsightsHtml": "<p>Une pression haussière supplémentaire émerge du marché français, où les travailleurs d'EDF doivent entamer une grève de 24 heures ce soir à 21 heures. Le potentiel de réduction de la production nucléaire s’ajoute aux inquiétudes existantes concernant la disponibilité de la production française, avec une proportion importante du parc déjà hors service pour maintenance.</p>",
