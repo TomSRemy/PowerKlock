@@ -224,7 +224,18 @@ def main():
         try:
             out["curves"][name] = fetch_curve(h, template, use_contract_label=(name == "eua"))
         except Exception as e:
-            print(f"  {name} curve skipped: {e}")
+            # a curve the feed did not return this time keeps its last published version (each row carries its
+            # own settlement date, so the page shows how old it is) rather than vanishing from the site
+            prev = None
+            try:
+                prev = (json.loads(OUT_HIST.read_text()).get("curves") or {}).get(name)
+            except Exception:
+                pass
+            if prev:
+                out["curves"][name] = prev
+                print(f"  {name} curve not returned ({e}): previous one kept, settlement {prev[0].get('date', '?')}")
+            else:
+                print(f"  {name} curve skipped: {e}")
 
     # Fixed delivery-year TTF calendar contracts, each over its own life
     print("Fetching TTF calendar-year contracts...")
