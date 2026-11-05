@@ -477,6 +477,7 @@ svg{width:100%;height:auto;overflow:visible}
   // plays the scenes: strings or {html, ms, play(root)}; window.REEL_DONE once the last one has run its time
   function run(S, keepDate) {
     S = S.map(x => typeof x === 'string' ? { html: x, ms: SCENE_MS } : Object.assign({ ms: SCENE_MS }, x));
+    S.forEach(x => { x.ms = Math.round(x.ms * 1.35); });   // each scene holds a third longer once its animation ends: time to read
     if (!keepDate) document.getElementById('brand-d').textContent = longDate(today);
     document.getElementById('scenes').innerHTML = S.map(x => '<section class="scene">' + x.html + '</section>').join('');
     document.getElementById('bar').innerHTML = S.map(() => '<i><b></b></i>').join('');
