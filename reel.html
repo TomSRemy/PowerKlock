@@ -29,7 +29,7 @@ body{display:flex;align-items:center;justify-content:center;overflow:hidden}
   animation:drift 22s ease-in-out infinite}
 @keyframes drift{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(3%,-2%) scale(1.06)}66%{transform:translate(-2%,3%) scale(1.04)}}
 /* scenes slide in from the right and out to the left, like stories */
-.scene{position:absolute;inset:0;padding:calc(14*var(--u)) calc(8*var(--u)) calc(22*var(--u));display:flex;flex-direction:column;justify-content:center;gap:calc(3*var(--u));opacity:0;transform:translateX(calc(12*var(--u)));transition:opacity .45s ease,transform .6s cubic-bezier(.2,.8,.2,1)}
+.scene{position:absolute;inset:0;padding:calc(15*var(--u)) calc(8*var(--u)) calc(21*var(--u));display:flex;flex-direction:column;justify-content:space-evenly;gap:calc(3*var(--u));opacity:0;transform:translateX(calc(12*var(--u)));transition:opacity .45s ease,transform .6s cubic-bezier(.2,.8,.2,1)}
 .scene.on{opacity:1;transform:none}
 .scene.out{opacity:0;transform:translateX(calc(-12*var(--u)))}
 .scene > *{opacity:0;transform:translateY(calc(5*var(--u)))}
@@ -84,20 +84,20 @@ body{display:flex;align-items:center;justify-content:center;overflow:hidden}
 @keyframes draw2{to{stroke-dashoffset:0}}
 .endpt{opacity:0}.scene.on .endpt{animation:rise .3s ease var(--dl2) forwards,endpulse 1.6s ease-in-out calc(var(--dl2) + .3s) infinite}
 @keyframes endpulse{50%{r:18}}
-.kick{font:700 calc(3.6*var(--u)) var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
-.h{font:800 calc(8.4*var(--u))/1.08 var(--sans);letter-spacing:-.01em;text-wrap:balance;hyphens:none}
+.kick{font:700 calc(4.2*var(--u)) var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+.h{font:800 calc(9.6*var(--u))/1.08 var(--sans);letter-spacing:-.01em;text-wrap:balance;hyphens:none}
 .nw{white-space:nowrap}
-.big{font:800 calc(22*var(--u))/1 var(--mono);letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.big{font:800 calc(25*var(--u))/1 var(--mono);letter-spacing:-.03em;font-variant-numeric:tabular-nums}
 .unit{font:500 calc(4.4*var(--u)) var(--mono);color:var(--muted)}
-.delta{font:800 calc(7.5*var(--u)) var(--mono);display:flex;flex-wrap:wrap;align-items:baseline;gap:calc(1*var(--u)) calc(2*var(--u))}
+.delta{font:800 calc(8.4*var(--u)) var(--mono);display:flex;flex-wrap:wrap;align-items:baseline;gap:calc(1*var(--u)) calc(2*var(--u))}
 .delta .unit{white-space:nowrap}
 .figline{display:flex;flex-wrap:wrap;align-items:baseline;gap:0 calc(2*var(--u))}
 .figline .unit{white-space:nowrap}
 #p-head{filter:drop-shadow(0 0 10px rgba(127,200,248,.85))}
 #p-head,#p-cur{transition:opacity .4s ease}
-.big.long{font-size:calc(17*var(--u))}
+.big.long{font-size:calc(19*var(--u))}
 .delta.up{color:var(--up)}.delta.down{color:var(--down)}.delta.flat{color:var(--muted)}
-.sub{font:400 calc(4.2*var(--u))/1.4 var(--sans);color:var(--muted)}
+.sub{font:400 calc(4.8*var(--u))/1.4 var(--sans);color:var(--muted)}
 .row{display:flex;gap:calc(3*var(--u))}
 .tile{flex:1;min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:calc(2.5*var(--u));padding:calc(3.5*var(--u))}
 .tile .l{white-space:nowrap;font:700 calc(3*var(--u)) var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
@@ -105,7 +105,7 @@ body{display:flex;align-items:center;justify-content:center;overflow:hidden}
 .tile .s{font:500 calc(3.3*var(--u)) var(--mono);color:var(--muted)}
 svg{width:100%;height:auto;overflow:visible}
 .brief{display:flex;flex-direction:column;gap:calc(3*var(--u))}
-.brief div{background:var(--panel);border-left:calc(1*var(--u)) solid var(--amber);border-radius:calc(1.5*var(--u));padding:calc(3*var(--u)) calc(3.5*var(--u));font:400 calc(4*var(--u))/1.4 var(--sans)}
+.brief div{background:var(--panel);border-left:calc(1*var(--u)) solid var(--amber);border-radius:calc(1.5*var(--u));padding:calc(4*var(--u)) calc(4*var(--u));font:400 calc(4.6*var(--u))/1.45 var(--sans)}
 .brief b{display:block;font:700 calc(3.2*var(--u)) var(--mono);letter-spacing:.08em;text-transform:uppercase;margin-bottom:calc(1*var(--u))}
 .brief .up b{color:var(--up)}.brief .down b{color:var(--down)}
 .brief .up{border-left-color:var(--up)}.brief .down{border-left-color:var(--down)}
