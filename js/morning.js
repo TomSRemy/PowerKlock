@@ -335,12 +335,15 @@ function _mrnFactsP() {
 }
 async function _mrnFacts() {
   const t = _mrnToday(), tm = _mrnAdd(t, 1), y = _mrnAdd(t, -1);
+  const bessP = _mrnGet('bess', DATA_BASE + 'history/bess_da.json').catch(() => null);   // the battery's day, for the stories
   const [a, b, c, fwd, cs, chain, sum, neg, gos, dg, rted, wxo, fmo] = await Promise.all([_mrnDaily(t), _mrnDaily(tm), _mrnDaily(y), _mrnFwd(), _mrnSeries(), _mrnChain(), (window.pkSummaryFR || _mrnSummary)().catch(() => null), _mrnNeg(), _mrnGoCsv(), _mrnGet('dg', DATA_BASE + 'market_digest.json'), _mrnGet('rted', DATA_BASE + 'history/rte/fr_daily.json').catch(() => null), _mrnGet('wx', DATA_BASE + 'weather_outlook.json').catch(() => null), _mrnGet('fm', DATA_BASE + 'history/fr_forward_monthly.json').catch(() => null)]);
   const S = (cs && cs.series) || {}, P = k => (S[k] || {}).points || [];
   const dgFresh = dg && Date.now() - Date.parse(dg.updated) < 5 * 864e5;
   const k = { t, tm, y, cs, P, gos, neg, look: dgFresh ? (dg.outlook || {}) : {}, ctx: dgFresh ? (dg.context || []) : [] };   // ctx: the market notes' « what moved », for the stories
   const fr = j => j && j.zones && j.zones.FR;
   k.today = _mrnHourly(fr(a)); k.tomorrow = _mrnHourly(fr(b)); k.yday = _mrnHourly(fr(c));
+  k.zones = a && a.zones;   // every bidding zone of today, for the stories' Europe ranking
+  k.bess = await bessP; k.dgAsof = dgFresh ? dg.asof : null;
   k.fc = neg && neg.days && neg.days[tm] ? neg.days[tm] : null;
   k.skill = neg && neg.price_skill;
   k.spotDays = ((sum && sum.zones && sum.zones.FR) || []).filter(r => r.avg != null && r.d <= t);

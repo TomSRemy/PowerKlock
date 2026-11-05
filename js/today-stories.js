@@ -39,6 +39,8 @@
     exch: '<path d="M4 8h15l-4-4"/><path d="M20 16H5l4 4"/>',
     fwd: '<path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/>',
     why: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6"/><path d="M12 17h.01"/>',
+    batt: '<rect x="2" y="7" width="17" height="10" rx="2"/><path d="M22 11v2"/><path d="M10 9l-2 3h4l-2 3"/>',
+    europe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
     ahead: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
   };
   const icon = (k, s) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[k]}</svg>`;
@@ -48,27 +50,28 @@
     // js/morning.js's helpers (global declarations of the page's scripts)
     const out = [], P = k.P, st = typeof _mrnDayStats === 'function' ? _mrnDayStats : () => null,
       mean = typeof _mrnMean === 'function' ? _mrnMean : a => { const v = (a || []).filter(x => x != null); return v.length ? v.reduce((s, x) => s + x, 0) / v.length : null; };
-    const card = (label, big, unit, chg, ctone, sent, curve, cTone) => ({ label, big, unit, chg, tone: ctone, sent, curve: (curve || []).filter(v => v != null), cTone: cTone || ctone });
+    const card = (label, big, unit, chg, ctone, sent, curve, cTone, ax, marks) => ({ label, big, unit, chg, tone: ctone, sent, curve: (curve || []).filter(v => v != null), cTone: cTone || ctone, ax, marks });
+    const AXD = [T('0 h', '00:00'), T('24 h', '24:00')], AX60 = [T('il y a 2 mois', '2 months ago'), T('aujourd’hui', 'today')], AX30 = [T('il y a 30 jours', '30 days ago'), T('dernier jour publié', 'last published day')];
     // prices
     const sT = st(k.today), sY = st(k.yday), sM = st(k.tomorrow), H = h => T(h + ' h', String(h).padStart(2, '0') + ':00');
     const pc = [];
     if (sT) { const d = sY ? sT.base - sY.base : null;
       pc.push(card(T('Spot France · aujourd’hui', 'France spot · today'), N(sT.base, 1), '€/MWh', d == null ? '' : S(d, 1) + ' € ' + T('vs hier', 'vs yesterday'), tone(d, 0.5),
         T(`Heure la moins chère ${B(H(sT.minH))} (${N(sT.min, 1)} €), la plus chère ${B(H(sT.maxH))} (${N(sT.max, 1)} €).`, `Cheapest hour ${B(H(sT.minH))} (${N(sT.min, 1)} €), dearest ${B(H(sT.maxH))} (${N(sT.max, 1)} €).`) +
-        (sT.zero ? ' ' + T(`${sT.zero} h à 0 € ou moins, quand le vent et le soleil produisent plus que la France ne consomme.`, `${sT.zero} h at 0 € or below, when wind and sun produce more than France consumes.`) : ''), k.today)); }
+        (sT.zero ? ' ' + T(`${sT.zero} h à 0 € ou moins, quand le vent et le soleil produisent plus que la France ne consomme.`, `${sT.zero} h at 0 € or below, when wind and sun produce more than France consumes.`) : ''), k.today, null, AXD)); }
     if (sM) { const d = sT ? sM.base - sT.base : null;
       pc.push(card(T('Spot France · demain', 'France spot · tomorrow'), N(sM.base, 1), '€/MWh', d == null ? '' : S(d, 1) + ' € ' + T('vs aujourd’hui', 'vs today'), tone(d, 0.5),
-        T(`L’heure la plus chère : ${B(H(sM.maxH))} (${N(sM.max, 0)} €).`, `The dearest hour: ${B(H(sM.maxH))} (${N(sM.max, 0)} €).`) + (sM.zero ? ' ' + T(`${sM.zero} h à 0 € ou moins.`, `${sM.zero} h at 0 € or below.`) : ''), k.tomorrow)); }
+        T(`L’heure la plus chère : ${B(H(sM.maxH))} (${N(sM.max, 0)} €).`, `The dearest hour: ${B(H(sM.maxH))} (${N(sM.max, 0)} €).`) + (sM.zero ? ' ' + T(`${sM.zero} h à 0 € ou moins.`, `${sM.zero} h at 0 € or below.`) : ''), k.tomorrow, null, AXD)); }
     else if (k.fc && k.fc.price) { const m = mean(k.fc.price), d = sT && m != null ? m - sT.base : null;
       pc.push(card(T('Demain · prévision', 'Tomorrow · forecast'), '≈ ' + N(m, 0), '€/MWh', d == null ? '' : S(d, 0) + ' € ' + T('vs aujourd’hui', 'vs today'), tone(d, 0.5),
-        T('Le prix de demain sort vers 13 h ; d’ici là, la prévision PowerKlock.', 'Tomorrow’s price comes out around 13:00; until then, the PowerKlock forecast.'), k.fc.price)); }
+        T('Le prix de demain sort vers 13 h ; d’ici là, la prévision PowerKlock.', 'Tomorrow’s price comes out around 13:00; until then, the PowerKlock forecast.'), k.fc.price, null, AXD)); }
     if (pc.length) out.push({ id: 'price', name: T('Prix', 'Prices'), icon: 'price', cards: pc });
     // nuclear: more available lowers prices
     const nu = P('fr_nuc_avail'), nl = last(nu), nf = last(P('fr_nuc_avail_fc'));
     if (nl) { const b7 = back(nu, 7), d = b7 != null ? (nl[1] - b7) / 1000 : null;
       out.push({ id: 'nuclear', name: T('Nucléaire', 'Nuclear'), icon: 'nuclear', cards: [card(T('Nucléaire disponible', 'Nuclear available'), N(nl[1] / 1000, 1), 'GW', d == null ? '' : S(d, 1) + ' GW ' + T('sur 7 jours', 'over 7 days'), tone(d, 0.3, true),
         (nf ? (nf[1] - nl[1] > 1500 ? T(`${N((nf[1] - nl[1]) / 1000, 1)} GW de moins que ce qu’annonçait l’exploitant : il faut plus de gaz, ce qui pousse les prix vers le haut. `, `${N((nf[1] - nl[1]) / 1000, 1)} GW less than the operator announced: more gas is needed, which pushes prices up. `) : T('En ligne avec ce qu’annonçait l’exploitant. ', 'In line with what the operator announced. ')) : '') +
-        T('Le nucléaire fait l’essentiel de la production française : chaque réacteur compte.', 'Nuclear makes most of France’s power: every reactor counts.'), since(nu, 60))] }); }
+        T('Le nucléaire fait l’essentiel de la production française : chaque réacteur compte.', 'Nuclear makes most of France’s power: every reactor counts.'), since(nu, 60).map(x => x / 1000), null, AX60)] }); }
     // wind and sun, the last published day of RTE éCO2mix: more output lowers prices
     const rows = ((k.rted && k.rted.rows) || []).filter(r => r.windAvg != null), R = last(rows), R0 = rows[rows.length - 2];
     if (R) { const ws = [], m30 = f => mean(rows.slice(-31, -1).map(r => r[f]));
@@ -76,28 +79,28 @@
         ['solarAvg', T('Solaire', 'Solar'), T('Le soleil pèse surtout à midi, où il fait baisser le prix des heures pleines.', 'Sun weighs mostly at midday, where it lowers the price of those hours.'), '#FBBF24']].forEach(([f, n, why, col]) => {
         if (R[f] == null) return; const d = R0 && R0[f] != null ? (R[f] - R0[f]) / 1000 : null, a = m30(f);
         ws.push(card(n + ' · ' + T('moyenne du ', 'average of ') + day(R.d), N(R[f] / 1000, 1), 'GW', d == null ? '' : S(d, 1) + ' GW ' + T('vs la veille', 'vs the day before'), tone(d, 0.2, true),
-          (a ? T(`Moyenne des 30 jours précédents : ${B(N(a / 1000, 1) + ' GW')}. `, `Average of the 30 days before: ${B(N(a / 1000, 1) + ' GW')}. `) : '') + why, rows.slice(-30).map(r => r[f] / 1000), col)); });
+          (a ? T(`Moyenne des 30 jours précédents : ${B(N(a / 1000, 1) + ' GW')}. `, `Average of the 30 days before: ${B(N(a / 1000, 1) + ' GW')}. `) : '') + why, rows.slice(-30).map(r => r[f] / 1000), col, AX30)); });
       if (ws.length) out.push({ id: 'windsun', name: T('Vent & soleil', 'Wind & sun'), icon: 'windsun', cards: ws }); }
     // gas and CO₂
     const gc = [], ttf = P('ttf'), tl = last(ttf), eua = P('eua'), el = last(eua), ag = P('agsi'), al = last(ag);
     if (tl) { const b = back(ttf, 7), c = b ? (tl[1] / b - 1) * 100 : null;
       gc.push(card(T('Gaz TTF', 'TTF gas'), N(tl[1], 1), '€/MWh', c == null ? '' : S(c, 1) + ' % ' + T('sur 7 jours', 'over 7 days'), tone(c, 0.5),
-        T(`Quand le vent et le soleil manquent, les centrales au gaz fixent le prix de l’électricité : à ce niveau, une centrale coûte environ ${B(N(tl[1] / 0.55, 0) + ' €')} par MWh produit, avant le CO₂.`, `When wind and sun are short, gas plants set the power price: at this level a plant costs about ${B(N(tl[1] / 0.55, 0) + ' €')} per MWh produced, before CO₂.`), since(ttf, 60))); }
+        T(`Quand le vent et le soleil manquent, les centrales au gaz fixent le prix de l’électricité : à ce niveau, une centrale coûte environ ${B(N(tl[1] / 0.55, 0) + ' €')} par MWh produit, avant le CO₂.`, `When wind and sun are short, gas plants set the power price: at this level a plant costs about ${B(N(tl[1] / 0.55, 0) + ' €')} per MWh produced, before CO₂.`), since(ttf, 60), null, AX60)); }
     if (el) { const b = back(eua, 7), c = b ? (el[1] / b - 1) * 100 : null;
       gc.push(card(T('CO₂ · EUA', 'CO₂ · EUA'), N(el[1], 1), '€/t', c == null ? '' : S(c, 1) + ' % ' + T('sur 7 jours', 'over 7 days'), tone(c, 0.5),
-        T(`Le droit d’émettre une tonne de CO₂. Il ajoute environ ${B(N(0.37 * el[1], 0) + ' €')} au coût d’un MWh produit au gaz.`, `The right to emit one tonne of CO₂. It adds about ${B(N(0.37 * el[1], 0) + ' €')} to the cost of a MWh made from gas.`), since(eua, 60))); }
+        T(`Le droit d’émettre une tonne de CO₂. Il ajoute environ ${B(N(0.37 * el[1], 0) + ' €')} au coût d’un MWh produit au gaz.`, `The right to emit one tonne of CO₂. It adds about ${B(N(0.37 * el[1], 0) + ' €')} to the cost of a MWh made from gas.`), since(eua, 60), null, AX60)); }
     if (al) { const ly = back(ag, 365), d = ly != null ? al[1] - ly : null;
       gc.push(card(T('Stocks de gaz UE', 'EU gas storage'), N(al[1], 1), '%', d == null ? '' : S(d, 1) + ' pts ' + T('sur un an', 'on a year'), tone(d, 0.5, true),
-        d != null && d < 0 ? T('Moins de gaz en stock qu’il y a un an : moins de marge avant l’hiver.', 'Less gas in storage than a year ago: less margin before winter.') : T('Les stocks font la marge de l’Europe pour l’hiver.', 'Storage is Europe’s margin for the winter.'), since(ag, 60))); }
+        d != null && d < 0 ? T('Moins de gaz en stock qu’il y a un an : moins de marge avant l’hiver.', 'Less gas in storage than a year ago: less margin before winter.') : T('Les stocks font la marge de l’Europe pour l’hiver.', 'Storage is Europe’s margin for the winter.'), since(ag, 60), null, AX60)); }
     if (gc.length) out.push({ id: 'gas', name: T('Gaz & CO₂', 'Gas & CO₂'), icon: 'gas', cards: gc });
     // exchanges and consumption, the last published day: more imports or more demand push prices up
     const xr = ((k.rted && k.rted.rows) || []).filter(r => r.exchAvg != null), X = last(xr), X0 = xr[xr.length - 2];
     if (X) { const xc = [], d = X0 ? (X.exchAvg - X0.exchAvg) / 1000 : null;
       xc.push(card(T('Solde des échanges · ', 'Net exchanges · ') + day(X.d), N(X.exchAvg / 1000, 1), 'GW', d == null ? '' : S(d, 1) + ' GW ' + T('vs la veille', 'vs the day before'), tone(d, 0.3),
-        X.exchAvg < 0 ? T('Négatif : la France exporte plus qu’elle n’importe.', 'Negative: France exports more than it imports.') : T('Positif : la France importe plus qu’elle n’exporte.', 'Positive: France imports more than it exports.'), xr.slice(-30).map(r => r.exchAvg / 1000)));
+        X.exchAvg < 0 ? T('Négatif : la France exporte plus qu’elle n’importe.', 'Negative: France exports more than it imports.') : T('Positif : la France importe plus qu’elle n’exporte.', 'Positive: France imports more than it exports.'), xr.slice(-30).map(r => r.exchAvg / 1000), null, AX30));
       if (X.loadAvg != null) { const dl = X0 && X0.loadAvg != null ? (X.loadAvg - X0.loadAvg) / 1000 : null;
         xc.push(card(T('Consommation · ', 'Consumption · ') + day(X.d), N(X.loadAvg / 1000, 1), 'GW', dl == null ? '' : S(dl, 1) + ' GW ' + T('vs la veille', 'vs the day before'), tone(dl, 0.3),
-          T(`Pointe à ${B(N(X.loadMax / 1000, 1) + ' GW')}. Plus de consommation, plus de centrales appelées : les prix montent.`, `Peak at ${B(N(X.loadMax / 1000, 1) + ' GW')}. More demand, more plants called: prices rise.`), xr.slice(-30).map(r => r.loadAvg / 1000))); }
+          T(`Pointe à ${B(N(X.loadMax / 1000, 1) + ' GW')}. Plus de consommation, plus de centrales appelées : les prix montent.`, `Peak at ${B(N(X.loadMax / 1000, 1) + ' GW')}. More demand, more plants called: prices rise.`), xr.slice(-30).map(r => r.loadAvg / 1000), null, AX30)); }
       out.push({ id: 'exch', name: T('Échanges', 'Exchanges'), icon: 'exch', cards: xc }); }
     // forwards
     const fc = [];
@@ -105,22 +108,67 @@
       let sent = T(`Un MWh livré toute l’année ${c.y}, acheté aujourd’hui. C’est le prix auquel entreprises et fournisseurs se couvrent ; il suit surtout le gaz de l’an prochain.`, `A MWh delivered all through ${c.y}, bought today. It is the price companies and suppliers hedge at; it follows next year’s gas above all.`);
       const ty = i === 0 && k.cs && k.cs.calYears && k.cs.calYears.ttf && k.cs.calYears.ttf[c.y];
       if (ty) { const tP = ty.dates.map((x, j) => [x, ty.values[j]]), tb = back(tP, 7), tl2 = last(tP); if (tb != null && tl2) sent += ' ' + T(`Le gaz seul pèserait ${B('≈ ' + S(2 * (tl2[1] - tb), 1) + ' €')} sur la semaine.`, `Gas alone would weigh ${B('≈ ' + S(2 * (tl2[1] - tb), 1) + ' €')} on the week.`); }
-      fc.push(card('Cal ' + c.y + ' · France', N(l[1], 1), '€/MWh', d == null ? '' : S(d, 1) + ' € ' + T('sur 7 jours', 'over 7 days'), tone(d, 0.3), sent, since(c.pts, 60))); });
+      fc.push(card('Cal ' + c.y + ' · France', N(l[1], 1), '€/MWh', d == null ? '' : S(d, 1) + ' € ' + T('sur 7 jours', 'over 7 days'), tone(d, 0.3), sent, since(c.pts, 60), null, AX60)); });
     if (fc.length) out.push({ id: 'fwd', name: T('Forwards', 'Forwards'), icon: 'fwd', cards: fc });
     // why it moves: the market notes' points (France first), one card each, right after the prices
     const esc = window.PK && PK.esc ? PK.esc : x => String(x == null ? '' : x).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
     const isEn = !((!window.PKI18n || PKI18n.lang !== 'en'));
     const ctx = (k.ctx || []).filter(c => c && c.text).slice(0, 4);
     if (ctx.length) {
-      const why = { id: 'why', name: T('Pourquoi', 'Why'), icon: 'why', cards: ctx.map(c => ({ kind: 'text', label: esc(isEn ? (c.topic_en || c.topic) : c.topic) + ' · ' + T('ce qui a bougé', 'what moved'),
-        tone: c.tone === 'up' ? 'up' : c.tone === 'down' ? 'down' : '', sent: esc(isEn ? (c.text_en || c.text) : c.text) })) };
+      // the figures a note talks about, so the card says what it explains: France's spot and Cal always, then gas, oil, CO₂, nuclear when named
+      const fx = (n, v, u, d, du, inv, sr) => v == null ? null : { n, v: N(v, v >= 100 ? 0 : 1) + ' ' + u, d: d == null ? '' : S(d, 1) + du, t: tone(d, 0.05, inv), sr: (sr || []).filter(x => x != null) };
+      const cal = (k.cals || [])[0], cl = cal && last(cal.pts), cb = cal && back(cal.pts, 7), br = P('brent'), bl = last(br), bb = back(br, 7);
+      const F = {
+        spot: sT && fx(T('Spot aujourd’hui', 'Spot today'), sT.base, '€', sY ? sT.base - sY.base : null, ' € ' + T('vs hier', 'vs yesterday'), false, k.today),
+        cal: cl && fx('Cal ' + cal.y, cl[1], '€', cb != null ? cl[1] - cb : null, ' € ' + T('/ 7 j', '/ 7 d'), false, since(cal.pts, 60)),
+        gas: tl && fx(T('Gaz TTF', 'TTF gas'), tl[1], '€', back(ttf, 7) ? (tl[1] / back(ttf, 7) - 1) * 100 : null, ' % ' + T('/ 7 j', '/ 7 d'), false, since(ttf, 60)),
+        oil: bl && fx('Brent', bl[1], '$', bb ? (bl[1] / bb - 1) * 100 : null, ' % ' + T('/ 7 j', '/ 7 d'), false, since(br, 60)),
+        co2: el && fx('CO₂', el[1], '€/t', back(eua, 7) ? (el[1] / back(eua, 7) - 1) * 100 : null, ' % ' + T('/ 7 j', '/ 7 d'), false, since(eua, 60)),
+        nuc: nl && fx(T('Nucléaire', 'Nuclear'), nl[1] / 1000, 'GW', back(nu, 7) != null ? (nl[1] - back(nu, 7)) / 1000 : null, ' GW ' + T('/ 7 j', '/ 7 d'), true, since(nu, 60).map(x => x / 1000)) };
+      const pick = txt => { const t = String(txt).toLowerCase(), o = ['spot', 'cal'];
+        if (/gaz|gas|gnl|lng|norv|norw/.test(t)) o.push('gas'); if (/pétrole|petrole|oil|brent|golfe|gulf|opep|opec/.test(t)) o.push('oil');
+        if (/co₂|co2|carbone|carbon|eua|quota/.test(t)) o.push('co2'); if (/nucl/.test(t)) o.push('nuc');
+        return o.map(x => F[x]).filter(Boolean).slice(0, 4); };
+      const why = { id: 'why', name: T('Pourquoi', 'Why'), icon: 'why', cards: ctx.map(c => { const tn = c.tone === 'up' ? 'up' : c.tone === 'down' ? 'down' : '', top = esc(isEn ? (c.topic_en || c.topic) : c.topic);
+        return { kind: 'text', label: T('Pourquoi ça bouge · ', 'Why it moves · ') + top,
+          q: tn === 'up' ? T('Ce qui pousse les prix à la hausse', 'What is pushing prices up') : tn === 'down' ? T('Ce qui fait baisser les prix', 'What is pulling prices down') : T('Ce qui fait bouger les prix', 'What is moving prices'),
+          figs: pick(c.text + ' ' + (c.text_en || '')), tone: tn, sent: esc(isEn ? (c.text_en || c.text) : c.text),
+          src: T('Source : notes de marché PowerKlock', 'Source: PowerKlock market notes') + (k.dgAsof ? ' · ' + day(k.dgAsof) : '') }; }) };
       const ip = out.findIndex(x => x.id === 'price'); out.splice(ip + 1, 0, why);
     }
+    // Europe: today's average price, zone by zone, France highlighted (the Europe reel)
+    const ZN = { FR: ['France', 'France'], DE_LU: ['Allemagne', 'Germany'], BE: ['Belgique', 'Belgium'], NL: ['Pays-Bas', 'Netherlands'], ES: ['Espagne', 'Spain'],
+      PT: ['Portugal', 'Portugal'], IT_NORD: ['Italie Nord', 'Italy North'], AT: ['Autriche', 'Austria'], CH: ['Suisse', 'Switzerland'], PL: ['Pologne', 'Poland'],
+      CZ: ['Tchéquie', 'Czechia'], DK_W: ['Danemark O.', 'Denmark W.'], NO_1: ['Norvège Sud', 'Norway South'], SE: ['Suède', 'Sweden'], FI: ['Finlande', 'Finland'] };
+    const Z = k.zones || {}, ZL = Object.keys(ZN).filter(z => Z[z] && Z[z].avg != null).map(z => ({ z, n: ZN[z][isEn ? 1 : 0], v: Z[z].avg })).sort((a, b) => a.v - b.v);
+    if (ZL.length > 3 && Z.FR) { const rk = ZL.findIndex(r => r.z === 'FR') + 1, lo = ZL[0], hi = ZL[ZL.length - 1];
+      const ord = isEn ? (rk === 1 ? '1st' : rk === 2 ? '2nd' : rk === 3 ? '3rd' : rk + 'th') : (rk === 1 ? '1ʳᵉ' : rk + 'ᵉ');
+      const ip = out.findIndex(x => x.id === 'why'), at = ip >= 0 ? ip + 1 : out.findIndex(x => x.id === 'price') + 1;
+      out.splice(at, 0, { id: 'europe', name: 'Europe', icon: 'europe', cards: [{ kind: 'bars', label: T('Europe · prix moyen du jour, €/MWh', 'Europe · average price today, €/MWh'),
+        q: T(`La France ${ord} moins chère sur ${ZL.length}`, `France ${ord} cheapest of ${ZL.length}`), rows: ZL,
+        sent: T(`Le moins cher : ${B(lo.n + ', ' + N(lo.v, 0) + ' €')}. Le plus cher : ${B(hi.n + ', ' + N(hi.v, 0) + ' €')}. Plus un pays a de vent, de soleil, de nucléaire ou d’eau, moins il paie.`,
+          `Cheapest: ${B(lo.n + ', ' + N(lo.v, 0) + ' €')}. Dearest: ${B(hi.n + ', ' + N(hi.v, 0) + ' €')}. The more wind, sun, nuclear or hydro a country has, the less it pays.`) }] }); }
+    // battery: the best day-ahead schedule of a 1 MW, 2 h battery today (data/history/bess_da.json, the battery reel)
+    const BX = k.bess && k.bess.example, BB = BX && BX['2h'];
+    if (BB && BX.d === k.t && BX.price) { const p = BX.price, net = BB.rev - BB.wear, L = (k.bess.summary_ltm || {})['2h'] || {};
+      const qh = t => T(String(Math.floor(t / 4)) + ' h' + (t % 4 ? String(t % 4 * 15).padStart(2, '0') : ''), String(Math.floor(t / 4)).padStart(2, '0') + ':' + String(t % 4 * 15).padStart(2, '0'));
+      let ci = -1, di = -1; p.forEach((v, t) => { if (BB.charge[t] > 0.01 && (ci < 0 || v < p[ci])) ci = t; if (BB.discharge[t] > 0.01 && (di < 0 || v > p[di])) di = t; });
+      const bc = [card(T('Batterie 1 MW, 2 h · aujourd’hui', '1 MW, 2 h battery · today'), N(net, 0), T('€ gagnés', '€ earned'), '', net > 0 ? 'down' : '',
+        (ci >= 0 && di >= 0 ? T(`Elle achète au creux, vers ${B(qh(ci))} à ${N(p[ci], 0)} €, et revend au pic, vers ${B(qh(di))} à ${N(p[di], 0)} €. `, `It buys in the trough, around ${B(qh(ci))} at ${N(p[ci], 0)} €, and sells at the peak, around ${B(qh(di))} at ${N(p[di], 0)} €. `) : '') +
+        T(`Sur la courbe du prix : en ${B('bleu')} elle achète, en ${B('jaune')} elle revend. Gain net après ${N(BB.wear, 0)} € d’usure, sur le seul marché day-ahead.`, `On the price curve: in ${B('blue')} it buys, in ${B('yellow')} it sells. Net gain after ${N(BB.wear, 0)} € of wear, on the day-ahead market alone.`), p, '#E6EDF3', AXD, p.map((_, t) => BB.charge[t] > 0.01 ? '#7FC8F8' : BB.discharge[t] > 0.01 ? '#FBBF24' : null))];
+      if (L.pw != null) bc.push(card(T('Batterie · sur 12 mois', 'Battery · over 12 months'), N(L.pw, 0), T('k€ par MW et par an', 'k€ per MW per year'), '', '',
+        T(`En moyenne ${B(N(L.cycles_day, 1) + ' ' + T('cycles', 'cycles'))} par jour. Plus l’écart entre heures creuses et heures pleines est grand, plus une batterie gagne.`, `On average ${B(N(L.cycles_day, 1) + ' cycles')} a day. The wider the gap between cheap and dear hours, the more a battery earns.`), [], '#FBBF24'));
+      const ie = out.findIndex(x => x.id === 'europe'), at = ie >= 0 ? ie + 1 : out.findIndex(x => x.id === 'price') + 1;
+      out.splice(at, 0, { id: 'batt', name: T('Batterie', 'Battery'), icon: 'batt', cards: bc }); }
     // the week ahead: the market notes' call for each market
     const LK = k.look || {}, MK = [['power', T('Électricité', 'Power')], ['gas', T('Gaz', 'Gas')], ['oil', T('Pétrole', 'Oil')], ['carbon', 'CO₂']].filter(([m]) => LK[m] && LK[m].tone);
     if (MK.length) out.push({ id: 'ahead', name: T('À venir', 'Ahead'), icon: 'ahead', cards: [{ kind: 'list', label: T('La semaine à venir · notes de marché', 'The week ahead · market notes'),
       items: MK.map(([m, n]) => ({ n, tone: LK[m].tone, text: esc(isEn ? (LK[m].text_en || LK[m].text) : LK[m].text) })) }] });
-    return out;
+    // each section plays its part of the morning reel (reel.html?r=jour&s=…): the same design as the Instagram video
+    const RS = { price: 'price,profile', why: 'brief', europe: 'map', nuclear: 'nuclear', fwd: 'cal,ppa', gas: 'co2,spark', batt: 'batt' };
+    const ORDER = ['price', 'why', 'europe', 'nuclear', 'fwd', 'gas', 'batt'];
+    return out.filter(x => RS[x.id]).sort((a, b) => ORDER.indexOf(a.id) - ORDER.indexOf(b.id))
+      .map(x => Object.assign(x, { cards: [{ reel: RS[x.id], label: x.name }] }));
   }
 
   // ── seen today ──
@@ -143,12 +191,24 @@
   }
 
   // ── the viewer ──
-  function spark(vals, t) {
+  const colOf = t => t === 'up' ? 'var(--down,#ED6965)' : t === 'down' ? 'var(--up,#14D3A9)' : t && t[0] === '#' ? t : '#B8C9D9';
+  // the card's chart: the curve, its high and low marked with their value, the period under it; marks colour the points
+  // where something happens (the battery: blue when it buys, amber when it sells)
+  function spark(vals, t, ax, marks) {
     if (vals.length < 2) return '';
-    const W = 100, H = 40, lo = Math.min(...vals), hi = Math.max(...vals), sx = W / (vals.length - 1), sy = v => H - 3 - (v - lo) / ((hi - lo) || 1) * (H - 6);
-    const col = t === 'up' ? 'var(--down,#ED6965)' : t === 'down' ? 'var(--up,#14D3A9)' : t && t[0] === '#' ? t : '#B8C9D9';
-    const pts = vals.map((v, i) => (i * sx).toFixed(2) + ',' + sy(v).toFixed(2)).join(' ');
-    return `<svg class="pk-stv-sp" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true"><polygon points="0,${H} ${pts} ${W},${H}" fill="${col}" fill-opacity=".1"/><polyline points="${pts}" fill="none" stroke="${col}" stroke-width="1.6" vector-effect="non-scaling-stroke" stroke-linejoin="round"/></svg>`;
+    const W = 300, H = 120, lo = Math.min(...vals), hi = Math.max(...vals), sx = W / (vals.length - 1), sy = v => H - 8 - (v - lo) / ((hi - lo) || 1) * (H - 22);
+    const col = colOf(t), pts = vals.map((v, i) => (i * sx).toFixed(2) + ',' + sy(v).toFixed(2)).join(' ');
+    const iH = vals.indexOf(hi), iL = vals.indexOf(lo), dec = Math.abs(hi) >= 100 ? 0 : 1, fmtv = v => N(v, dec);
+    const lab = (i, v, up) => { const x = Math.min(W - 4, Math.max(4, i * sx)), anc = i * sx < 30 ? 'start' : i * sx > W - 30 ? 'end' : 'middle';
+      return `<circle cx="${(i * sx).toFixed(1)}" cy="${sy(v).toFixed(1)}" r="3" fill="${col}"/><text x="${x.toFixed(1)}" y="${(sy(v) + (up ? -7 : 15)).toFixed(1)}" text-anchor="${anc}">${fmtv(v)}</text>`; };
+    const bars = marks ? marks.map((m, i) => m ? `<rect x="${(i * sx - sx / 2).toFixed(1)}" y="${sy(vals[i]).toFixed(1)}" width="${Math.max(1, sx).toFixed(1)}" height="${(H - sy(vals[i])).toFixed(1)}" fill="${m}" opacity=".55"/>` : '').join('') : '';
+    return `<div class="pk-stv-chart"><svg class="pk-stv-sp" viewBox="-2 -6 ${W + 4} ${H + 22}" aria-hidden="true">${bars}<polygon points="0,${H} ${pts} ${W},${H}" fill="${col}" fill-opacity="${marks ? 0 : .1}"/><polyline points="${pts}" fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round"/>` +
+      lab(iH, hi, true) + (iL !== iH ? lab(iL, lo, false) : '') + `</svg>` + (ax ? `<div class="pk-stv-ax"><span>${ax[0]}</span><span>${ax[1]}</span></div>` : '') + `</div>`;
+  }
+  function mini(vals, t) {
+    if (!vals || vals.length < 2) return '';
+    const W = 100, H = 26, lo = Math.min(...vals), hi = Math.max(...vals), sx = W / (vals.length - 1), sy = v => H - 2 - (v - lo) / ((hi - lo) || 1) * (H - 4);
+    return `<svg class="pk-stv-mini" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true"><polyline points="${vals.map((v, i) => (i * sx).toFixed(1) + ',' + sy(v).toFixed(1)).join(' ')}" fill="none" stroke="${colOf(t)}" stroke-width="1.5" vector-effect="non-scaling-stroke"/></svg>`;
   }
   function open(si, opener) {
     if (!SEC[si]) return;
@@ -164,6 +224,7 @@
   }
   function show(dir) {
     const s = SEC[V.si], c = s.cards[V.ci], st = V.el.querySelector('.pk-stv-stage');
+    V.el.classList.remove('reel'); V.reelFrame = null;
     seenAdd(s.id);
     V.el.querySelector('.pk-stv-bars').innerHTML = s.cards.map((_, i) => `<span class="pk-stv-seg"><i class="${i < V.ci ? 'done' : i === V.ci ? 'run' : ''}"></i></span>`).join('');
     V.el.querySelector('.pk-stv-av').innerHTML = icon(s.icon, 16);
@@ -173,9 +234,25 @@
     body.classList.remove('go');
     const chip = t => `<span class="pk-stv-chip ${t === 'up' ? 'up' : t === 'down' ? 'dn' : ''}">${t === 'up' ? '↑ ' + T('haussier', 'bullish') : t === 'down' ? '↓ ' + T('baissier', 'bearish') : '→ ' + T('neutre', 'neutral')}</span>`;
     let words0 = 1500;
-    if (c.kind === 'text') {          // a market note's point: what moved, and its direction
-      body.innerHTML = `<div class="pk-stv-lab a" style="--d:0ms">${c.label}</div><div class="a" style="--d:250ms;margin:12px 0 4px">${chip(c.tone)}</div><p class="pk-stv-sent pk-stv-big-sent">${c.sent}</p>`;
-      words0 = 600;
+    if (c.reel) {
+      V.el.classList.add('reel');
+      const src = 'reel.html?r=jour&embed&once&s=' + c.reel + ((!window.PKI18n || PKI18n.lang !== 'en') ? '' : '#en');
+      body.innerHTML = `<iframe class="pk-stv-reel" src="${src}" title="${c.label}" tabindex="-1"></iframe>`;
+      V.reelFrame = body.querySelector('iframe');
+      V.dur = 60000;   // until the reel says how long it lasts
+    } else if (c.kind === 'text') {          // a market note's point: what moved, and its direction
+      // the question first, then the figures it is about (they come in one by one), then the note, then its source
+      const figs = (c.figs || []).map((f, i) => `<div class="pk-stv-fig a" style="--d:${700 + i * 250}ms"><span>${f.n}</span><b translate="no">${f.v}</b>${f.d ? `<i class="${f.t === 'up' ? 'up' : f.t === 'down' ? 'dn' : ''}">${f.d}</i>` : ''}${mini(f.sr, f.t)}</div>`).join('');
+      body.innerHTML = `<div class="pk-stv-lab a" style="--d:0ms">${c.label}</div>` + (c.q ? `<h3 class="pk-stv-q a" style="--d:150ms">${c.q}</h3>` : '') +
+        `<div class="a" style="--d:450ms;margin:10px 0 4px">${chip(c.tone)}</div>` + (figs ? `<div class="pk-stv-figs">${figs}</div>` : '') +
+        `<p class="pk-stv-sent pk-stv-big-sent">${c.sent}</p>` + (c.src ? `<div class="pk-stv-src">${c.src}</div>` : '');
+      words0 = 900 + (c.figs || []).length * 250;
+    } else if (c.kind === 'bars') {   // Europe: the bars grow one after the other, France lights up once they are all in
+      const mx = Math.max(...c.rows.map(r => r.v), 1), n = c.rows.length;
+      body.innerHTML = `<div class="pk-stv-lab a" style="--d:0ms">${c.label}</div><h3 class="pk-stv-q a" style="--d:150ms">${c.q}</h3><div class="pk-stv-race">` +
+        c.rows.map((r, i) => `<div class="pk-stv-rr${r.z === 'FR' ? ' fr' : ''}" style="--d:${500 + i * 140}ms;--w:${Math.max(3, r.v / mx * 100).toFixed(1)}%"><span>${r.n}</span><i><b></b></i><em translate="no">${N(r.v, 0)}</em></div>`).join('') +
+        `</div><p class="pk-stv-sent">${c.sent}</p>`;
+      words0 = 700 + n * 140;
     } else if (c.kind === 'list') {   // the week ahead, market by market, one after the other
       body.innerHTML = `<div class="pk-stv-lab a" style="--d:0ms">${c.label}</div>` + c.items.map((it, i) => `<div class="pk-stv-row a" style="--d:${400 + i * 900}ms"><div class="pk-stv-rh"><b>${it.n}</b>${chip(it.tone)}</div><div class="pk-stv-rt">${it.text}</div></div>`).join('');
       words0 = -1;
@@ -186,7 +263,7 @@
       const from = num == null ? null : cv == null || !isFinite(cv) ? 0 : /%/.test(c.chg.split(' ')[1] || '') ? num / (1 + cv / 100) : num - cv;
       body.innerHTML = `<div class="pk-stv-lab a" style="--d:0ms">${c.label}</div><div class="pk-stv-big a" style="--d:150ms">${m ? m[1] : ''}<span class="pk-stv-num" translate="no">${m ? m[2] : c.big}</span><small>${c.unit}</small></div>` +
         // the arrow says the direction of the figure, the colour its effect on prices (red pushes them up, green eases them)
-        (c.chg ? `<div class="pk-stv-chg ${cl} a pop" style="--d:1250ms">${c.chg[0] === '+' ? '▲ ' : c.chg[0] === '−' ? '▼ ' : ''}${c.chg}</div>` : '') + spark(c.curve, c.cTone) + `<p class="pk-stv-sent">${c.sent}</p>`;
+        (c.chg ? `<div class="pk-stv-chg ${cl} a pop" style="--d:1250ms">${c.chg[0] === '+' ? '▲ ' : c.chg[0] === '−' ? '▼ ' : ''}${c.chg}</div>` : '') + spark(c.curve, c.cTone, c.ax, c.marks) + `<p class="pk-stv-sent">${c.sent}</p>`;
       const el = body.querySelector('.pk-stv-num');
       if (num != null && !reduced()) {
         const fmt = v => (!window.PKI18n || PKI18n.lang !== 'en') ? v.toLocaleString('fr-FR', { minimumFractionDigits: dec, maximumFractionDigits: dec }) : v.toFixed(dec);
@@ -209,7 +286,7 @@
     // the card stays as long as it takes to read it
     const listWords = c.kind === 'list' ? c.items.reduce((a, it) => a + String(it.text).split(/\s+/).length, 0) : 0;
     // time to read: the text comes in, then stays about a quarter-second a word (≈ 240 words a minute) plus a pause
-    V.dur = Math.min(25000, Math.max(6000, c.kind === 'list' ? 2500 + c.items.length * 900 + listWords * 250 : words0 + nw * 150 + 2500 + nw * 250));
+    if (!c.reel) V.dur = Math.min(25000, Math.max(6000, c.kind === 'list' ? 2500 + c.items.length * 900 + listWords * 250 : words0 + nw * 150 + 2500 + nw * 250));
     void body.offsetWidth; body.classList.add('go');
     V.el.querySelector('.pk-stv-count').textContent = (V.ci + 1) + ' / ' + s.cards.length;
     V.el.querySelector('.pk-stv-prev').disabled = V.si === 0 && V.ci === 0;
@@ -221,13 +298,20 @@
     if (reduced()) run.classList.add('done');
     else run.addEventListener('animationend', () => { if (!V.el.hidden) next(); }, { once: true });
   }
+  window.addEventListener('message', e => {
+    const m = e.data; if (!V || V.el.hidden || !V.reelFrame || e.source !== V.reelFrame.contentWindow || !m || !m.pkReel) return;
+    const run = V.el.querySelector('.pk-stv-seg i.run'); if (!run) return;
+    if (m.pkReel === 'start' && m.ms) { V.dur = m.ms; run.style.animation = 'none'; void run.offsetWidth; run.style.animation = ''; run.style.animationDuration = (m.ms + 300) + 'ms'; }
+    if (m.pkReel === 'done') next();
+  });
   function next() { const s = SEC[V.si]; if (V.ci < s.cards.length - 1) { V.ci++; show('card'); } else nextSec(); }
   function prev() { if (V.ci > 0) { V.ci--; show('card'); } else if (V.si > 0) { V.si--; V.ci = SEC[V.si].cards.length - 1; show('prev'); } else show('card'); }
   function nextSec() { if (V.si < SEC.length - 1) { V.si++; V.ci = 0; show('next'); } else close(); }
   function prevSec() { if (V.si > 0) { V.si--; V.ci = 0; show('prev'); } else { V.ci = 0; show('card'); } }
   const PAUSE = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>',
     PLAY = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4.5v15l12-7.5z"/></svg>';
-  function pause(on) { const b = V.el.querySelector('.pk-stv-pause'); V.el.classList.toggle('paused', on); b.setAttribute('aria-pressed', on); b.innerHTML = on ? PLAY : PAUSE; b.setAttribute('aria-label', on ? T('Reprendre', 'Resume') : T('Pause', 'Pause')); }
+  function pause(on) { if (V.reelFrame && V.reelFrame.contentWindow) V.reelFrame.contentWindow.postMessage({ pkReel: 'pause', on: !!on }, location.origin);
+    const b = V.el.querySelector('.pk-stv-pause'); V.el.classList.toggle('paused', on); b.setAttribute('aria-pressed', on); b.innerHTML = on ? PLAY : PAUSE; b.setAttribute('aria-label', on ? T('Reprendre', 'Resume') : T('Pause', 'Pause')); }
 
   function mount() {
     const el = document.createElement('div');
@@ -316,8 +400,23 @@
   .pk-stv-big{font:600 clamp(34px,9vh,56px)/1.1 'JetBrains Mono',monospace;margin:10px 0 6px;letter-spacing:-.02em;white-space:nowrap}
   .pk-stv-big small{font-size:.32em;color:#8A9BAD;font-weight:500;margin-left:6px;letter-spacing:0}
   .pk-stv-chg{font:600 14px 'JetBrains Mono',monospace;color:#B8C9D9}.pk-stv-chg.up{color:var(--down,#ED6965)}.pk-stv-chg.dn{color:var(--up,#14D3A9)}
-  .pk-stv-sp{width:100%;height:clamp(80px,18vh,150px);margin:18px 0 6px}
+  .pk-stv-chart{margin:16px 0 6px}.pk-stv-sp{display:block;width:100%;height:auto;max-height:24vh;overflow:visible}.pk-stv-sp text{font:600 11px 'JetBrains Mono',monospace;fill:#C9D6E2}
+  .pk-stv-ax{display:flex;justify-content:space-between;font-size:11px;color:#8DA2B8;margin-top:3px}.pk-stv-mini{display:block;width:100%;height:22px;margin-top:4px}
   .pk-stv-sent{font-size:15px;line-height:1.55;color:#C9D6E2;margin:10px 0 0}.pk-stv-sent b{color:#fff}
+  .pk-stv-q{font-size:22px;font-weight:700;line-height:1.25;color:#E6EDF3;margin:8px 0 0;text-wrap:balance}
+  .pk-stv-figs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0 6px}
+  .pk-stv-fig{background:#141C27;border:1px solid #243140;border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:2px;min-width:0}
+  .pk-stv-fig span{font-size:11.5px;color:#8DA2B8}.pk-stv-fig b{font:600 16px 'JetBrains Mono',monospace;color:#E6EDF3}
+  .pk-stv-fig i{font:600 11.5px 'JetBrains Mono',monospace;font-style:normal;color:#B8C9D9}.pk-stv-fig i.up{color:var(--down,#ED6965)}.pk-stv-fig i.dn{color:var(--up,#14D3A9)}
+  .pk-stv-src{margin-top:14px;font-size:11.5px;color:#8DA2B8}
+  .pk-stv-race{display:flex;flex-direction:column;gap:5px;margin:14px 0 10px}
+  .pk-stv-rr{display:grid;grid-template-columns:92px minmax(0,1fr) 34px;align-items:center;gap:8px;font-size:12.5px;color:#C9D6E2}
+  .pk-stv-rr i{height:12px;background:#1A2330;border-radius:6px;overflow:hidden}.pk-stv-rr b{display:block;height:100%;width:0;background:#5FA8D3;border-radius:6px}
+  .pk-stv-rr em{font:600 12px 'JetBrains Mono',monospace;font-style:normal;text-align:right}
+  .pk-stv-body.go .pk-stv-rr b{animation:pkStBar .7s cubic-bezier(.2,.8,.2,1) var(--d) forwards}
+  .pk-stv-rr.fr{color:#F4A24A;font-weight:700}.pk-stv-rr.fr b{background:#F4A24A}
+  .pk-stv-body.go .pk-stv-rr.fr{animation:pkStFr .5s ease calc(var(--d) + 1600ms) 3}
+  @keyframes pkStBar{to{width:var(--w)}}@keyframes pkStFr{50%{transform:scale(1.04)}}
   .pk-stv-big-sent{font-size:19px;line-height:1.5;color:#E6EDF3}
   .pk-stv-chip{display:inline-block;font:600 12px 'JetBrains Mono',monospace;padding:3px 9px;border-radius:99px;background:rgba(184,201,217,.12);color:#B8C9D9}
   .pk-stv-chip.up{background:rgba(237,105,101,.16);color:#ED6965}.pk-stv-chip.dn{background:rgba(20,211,169,.14);color:#14D3A9}
@@ -338,6 +437,12 @@
   @keyframes pkStPunch{40%{transform:scale(1.12)}100%{transform:none}}
   @keyframes pkStClip{to{clip-path:inset(0 0 0 0)}}
   .pk-stv.paused .pk-stv-body *{animation-play-state:paused}
+  /* a reel part: the video page fills the stage, the story's bar and header sit over its empty top */
+  .pk-stv.reel .pk-stv-stage{padding:0}
+  .pk-stv.reel .pk-stv-bars,.pk-stv.reel .pk-stv-hd{position:relative;z-index:2;margin:12px 14px 0}
+  .pk-stv.reel .pk-stv-body{position:absolute;inset:0;padding:0;z-index:1}
+  .pk-stv-reel{position:absolute;inset:0;width:100%;height:100%;border:0;pointer-events:none;background:#0B0F14}
+  .pk-stv.reel .pk-stv-hint{z-index:2}
   .pk-stv-hint{position:absolute;left:16px;right:16px;bottom:10px;display:flex;justify-content:space-between;font-size:10px;color:#5d7083;pointer-events:none}
   .pk-stv.held .pk-stv-hd,.pk-stv.held .pk-stv-bars,.pk-stv.held .pk-stv-hint,.pk-stv.held .pk-stv-arr{opacity:0;transition:opacity .15s}
   .pk-stv-arr{width:44px;height:44px;border-radius:50%;border:0;background:rgba(230,237,243,.14);color:#E6EDF3;font-size:26px;line-height:1;cursor:pointer;flex:0 0 auto}
@@ -345,7 +450,7 @@
   @media (max-width:640px),(max-aspect-ratio:3/4){.pk-stv{background:#0b1016}.pk-stv-arr{display:none}
     .pk-stv-stage{width:100vw;height:100vh;height:100dvh;aspect-ratio:auto;border:0;border-radius:0;padding-top:max(10px,env(safe-area-inset-top))}}
   @media (prefers-reduced-motion:reduce){.pk-stv-stage.in-next,.pk-stv-stage.in-prev,.pk-stv-seg i.run{animation:none}.pk-stv-seg i.run{width:100%}
-    .pk-stv-body .a,.pk-stv-body .w{opacity:1;transform:none;filter:none;animation:none!important}.pk-stv-sp{clip-path:none;animation:none!important}}
+    .pk-stv-body .a,.pk-stv-body .w{opacity:1;transform:none;filter:none;animation:none!important}.pk-stv-sp{clip-path:none;animation:none!important}.pk-stv-rr b{width:var(--w)!important;animation:none!important}}
   `;
   document.head.appendChild(css);
 
