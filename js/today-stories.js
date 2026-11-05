@@ -38,6 +38,8 @@
     gas: '<path d="M12 22c4 0 7-3 7-7 0-3-2-5.5-4-7.5.2 2.5-1 4-2.5 4.5C13 9 12 5 9 2c.5 4-4 6.5-4 12 0 4.5 3 8 7 8z"/>',
     exch: '<path d="M4 8h15l-4-4"/><path d="M20 16H5l4 4"/>',
     fwd: '<path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/>',
+    why: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6"/><path d="M12 17h.01"/>',
+    ahead: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
   };
   const icon = (k, s) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[k]}</svg>`;
 
@@ -105,6 +107,19 @@
       if (ty) { const tP = ty.dates.map((x, j) => [x, ty.values[j]]), tb = back(tP, 7), tl2 = last(tP); if (tb != null && tl2) sent += ' ' + T(`Le gaz seul pèserait ${B('≈ ' + S(2 * (tl2[1] - tb), 1) + ' €')} sur la semaine.`, `Gas alone would weigh ${B('≈ ' + S(2 * (tl2[1] - tb), 1) + ' €')} on the week.`); }
       fc.push(card('Cal ' + c.y + ' · France', N(l[1], 1), '€/MWh', d == null ? '' : S(d, 1) + ' € ' + T('sur 7 jours', 'over 7 days'), tone(d, 0.3), sent, since(c.pts, 60))); });
     if (fc.length) out.push({ id: 'fwd', name: T('Forwards', 'Forwards'), icon: 'fwd', cards: fc });
+    // why it moves: the market notes' points (France first), one card each, right after the prices
+    const esc = window.PK && PK.esc ? PK.esc : x => String(x == null ? '' : x).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    const isEn = !((!window.PKI18n || PKI18n.lang !== 'en'));
+    const ctx = (k.ctx || []).filter(c => c && c.text).slice(0, 4);
+    if (ctx.length) {
+      const why = { id: 'why', name: T('Pourquoi', 'Why'), icon: 'why', cards: ctx.map(c => ({ kind: 'text', label: esc(isEn ? (c.topic_en || c.topic) : c.topic) + ' · ' + T('ce qui a bougé', 'what moved'),
+        tone: c.tone === 'up' ? 'up' : c.tone === 'down' ? 'down' : '', sent: esc(isEn ? (c.text_en || c.text) : c.text) })) };
+      const ip = out.findIndex(x => x.id === 'price'); out.splice(ip + 1, 0, why);
+    }
+    // the week ahead: the market notes' call for each market
+    const LK = k.look || {}, MK = [['power', T('Électricité', 'Power')], ['gas', T('Gaz', 'Gas')], ['oil', T('Pétrole', 'Oil')], ['carbon', 'CO₂']].filter(([m]) => LK[m] && LK[m].tone);
+    if (MK.length) out.push({ id: 'ahead', name: T('À venir', 'Ahead'), icon: 'ahead', cards: [{ kind: 'list', label: T('La semaine à venir · notes de marché', 'The week ahead · market notes'),
+      items: MK.map(([m, n]) => ({ n, tone: LK[m].tone, text: esc(isEn ? (LK[m].text_en || LK[m].text) : LK[m].text) })) }] });
     return out;
   }
 
@@ -154,15 +169,54 @@
     V.el.querySelector('.pk-stv-av').innerHTML = icon(s.icon, 16);
     V.el.querySelector('.pk-stv-name').textContent = s.name;
     const cl = c.tone === 'up' ? 'up' : c.tone === 'down' ? 'dn' : '';
-    V.el.querySelector('.pk-stv-body').innerHTML = `<div class="pk-stv-lab">${c.label}</div><div class="pk-stv-big">${c.big}<small>${c.unit}</small></div>` +
-      // the arrow says the direction of the figure, the colour its effect on prices (red pushes them up, green eases them)
-      (c.chg ? `<div class="pk-stv-chg ${cl}">${c.chg[0] === '+' ? '▲ ' : c.chg[0] === '−' ? '▼ ' : ''}${c.chg}</div>` : '') + spark(c.curve, c.cTone) + `<p class="pk-stv-sent">${c.sent}</p>`;
+    const body = V.el.querySelector('.pk-stv-body'), tok = V.tok = (V.tok || 0) + 1;
+    body.classList.remove('go');
+    const chip = t => `<span class="pk-stv-chip ${t === 'up' ? 'up' : t === 'down' ? 'dn' : ''}">${t === 'up' ? '↑ ' + T('haussier', 'bullish') : t === 'down' ? '↓ ' + T('baissier', 'bearish') : '→ ' + T('neutre', 'neutral')}</span>`;
+    let words0 = 1500;
+    if (c.kind === 'text') {          // a market note's point: what moved, and its direction
+      body.innerHTML = `<div class="pk-stv-lab a" style="--d:0ms">${c.label}</div><div class="a" style="--d:250ms;margin:12px 0 4px">${chip(c.tone)}</div><p class="pk-stv-sent pk-stv-big-sent">${c.sent}</p>`;
+      words0 = 600;
+    } else if (c.kind === 'list') {   // the week ahead, market by market, one after the other
+      body.innerHTML = `<div class="pk-stv-lab a" style="--d:0ms">${c.label}</div>` + c.items.map((it, i) => `<div class="pk-stv-row a" style="--d:${400 + i * 900}ms"><div class="pk-stv-rh"><b>${it.n}</b>${chip(it.tone)}</div><div class="pk-stv-rt">${it.text}</div></div>`).join('');
+      words0 = -1;
+    } else {
+      // the figure counts from where it was (the change tells by how much) to where it is
+      const m = String(c.big).match(/^(\D*?)(-?\d+(?:\.(\d+))?)/), cv = c.chg ? parseFloat(String(c.chg).replace('−', '-').replace(/^\+/, '')) : null;
+      const num = m ? parseFloat(m[2]) : null, dec = m && m[3] ? m[3].length : 0;
+      const from = num == null ? null : cv == null || !isFinite(cv) ? 0 : /%/.test(c.chg.split(' ')[1] || '') ? num / (1 + cv / 100) : num - cv;
+      body.innerHTML = `<div class="pk-stv-lab a" style="--d:0ms">${c.label}</div><div class="pk-stv-big a" style="--d:150ms">${m ? m[1] : ''}<span class="pk-stv-num" translate="no">${m ? m[2] : c.big}</span><small>${c.unit}</small></div>` +
+        // the arrow says the direction of the figure, the colour its effect on prices (red pushes them up, green eases them)
+        (c.chg ? `<div class="pk-stv-chg ${cl} a pop" style="--d:1250ms">${c.chg[0] === '+' ? '▲ ' : c.chg[0] === '−' ? '▼ ' : ''}${c.chg}</div>` : '') + spark(c.curve, c.cTone) + `<p class="pk-stv-sent">${c.sent}</p>`;
+      const el = body.querySelector('.pk-stv-num');
+      if (num != null && !reduced()) {
+        const fmt = v => (!window.PKI18n || PKI18n.lang !== 'en') ? v.toLocaleString('fr-FR', { minimumFractionDigits: dec, maximumFractionDigits: dec }) : v.toFixed(dec);
+        const t0 = performance.now() + 250, dur = 900; el.textContent = fmt(from);
+        const step = now => { if (V.tok !== tok) return; const x = Math.max(0, Math.min(1, (now - t0) / dur)), e = 1 - Math.pow(1 - x, 3);
+          el.textContent = fmt(from + (num - from) * e); if (x < 1) requestAnimationFrame(step); else { el.classList.add('punch'); } };
+        requestAnimationFrame(step);
+      }
+    }
+    // the sentence comes in word by word (the words inside its bold parts too)
+    let nw = 0;
+    if (words0 >= 0) body.querySelectorAll('.pk-stv-sent').forEach(p => {
+      const walk = n => [...n.childNodes].forEach(ch => {
+        if (ch.nodeType === 3) { const frag = document.createDocumentFragment();
+          ch.textContent.split(/(\s+)/).forEach(w => { if (!w) return; if (/^\s+$/.test(w)) { frag.appendChild(document.createTextNode(w)); return; }
+            const sp = document.createElement('span'); sp.className = 'w'; sp.style.setProperty('--d', (words0 + nw++ * 75) + 'ms'); sp.textContent = w; frag.appendChild(sp); });
+          ch.replaceWith(frag); }
+        else if (ch.nodeType === 1) walk(ch); });
+      walk(p); });
+    // the card stays as long as it takes to read it
+    const listWords = c.kind === 'list' ? c.items.reduce((a, it) => a + String(it.text).split(/\s+/).length, 0) : 0;
+    V.dur = Math.min(14000, Math.max(4500, c.kind === 'list' ? 1500 + c.items.length * 900 + listWords * 55 : words0 + nw * 75 + 2200));
+    void body.offsetWidth; body.classList.add('go');
     V.el.querySelector('.pk-stv-count').textContent = (V.ci + 1) + ' / ' + s.cards.length;
     V.el.querySelector('.pk-stv-prev').disabled = V.si === 0 && V.ci === 0;
     st.setAttribute('aria-label', s.name + ' · ' + c.label);
     st.classList.remove('in-next', 'in-prev'); void st.offsetWidth;
     if (dir !== 'none' && !reduced()) st.classList.add(dir === 'prev' ? 'in-prev' : 'in-next');
     const run = V.el.querySelector('.pk-stv-seg i.run');
+    run.style.animationDuration = V.dur + 'ms';
     if (reduced()) run.classList.add('done');
     else run.addEventListener('animationend', () => { if (!V.el.hidden) next(); }, { once: true });
   }
@@ -263,13 +317,34 @@
   .pk-stv-chg{font:600 14px 'JetBrains Mono',monospace;color:#B8C9D9}.pk-stv-chg.up{color:var(--down,#ED6965)}.pk-stv-chg.dn{color:var(--up,#14D3A9)}
   .pk-stv-sp{width:100%;height:clamp(80px,18vh,150px);margin:18px 0 6px}
   .pk-stv-sent{font-size:15px;line-height:1.55;color:#C9D6E2;margin:10px 0 0}.pk-stv-sent b{color:#fff}
+  .pk-stv-big-sent{font-size:19px;line-height:1.5;color:#E6EDF3}
+  .pk-stv-chip{display:inline-block;font:600 12px 'JetBrains Mono',monospace;padding:3px 9px;border-radius:99px;background:rgba(184,201,217,.12);color:#B8C9D9}
+  .pk-stv-chip.up{background:rgba(237,105,101,.16);color:#ED6965}.pk-stv-chip.dn{background:rgba(20,211,169,.14);color:#14D3A9}
+  .pk-stv-row{margin-top:16px;padding-left:10px;border-left:3px solid #243140}.pk-stv-rh{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:15px}
+  .pk-stv-rt{font-size:13.5px;line-height:1.5;color:#C9D6E2;margin-top:5px}
+  /* the card plays: each part comes in on its own beat (--d), the figure lands with a punch, the curve draws itself */
+  .pk-stv-body .a{opacity:0;transform:translateY(10px)}
+  .pk-stv-body.go .a{animation:pkStA .5s cubic-bezier(.2,.8,.2,1) var(--d,0ms) forwards}
+  .pk-stv-body.go .a.pop{animation:pkStPop .5s cubic-bezier(.3,1.6,.5,1) var(--d,0ms) forwards}
+  .pk-stv-body .w{opacity:0;filter:blur(4px)}
+  .pk-stv-body.go .w{animation:pkStW .4s ease var(--d,0ms) forwards}
+  .pk-stv-num{display:inline-block}.pk-stv-num.punch{animation:pkStPunch .45s cubic-bezier(.3,1.6,.5,1)}
+  .pk-stv-sp{clip-path:inset(0 100% 0 0)}
+  .pk-stv-body.go .pk-stv-sp{animation:pkStClip 1.3s cubic-bezier(.4,.1,.2,1) .6s forwards}
+  @keyframes pkStA{to{opacity:1;transform:none}}
+  @keyframes pkStPop{0%{opacity:0;transform:scale(.6)}100%{opacity:1;transform:none}}
+  @keyframes pkStW{to{opacity:1;filter:none}}
+  @keyframes pkStPunch{40%{transform:scale(1.12)}100%{transform:none}}
+  @keyframes pkStClip{to{clip-path:inset(0 0 0 0)}}
+  .pk-stv.paused .pk-stv-body *{animation-play-state:paused}
   .pk-stv-hint{position:absolute;left:16px;right:16px;bottom:10px;display:flex;justify-content:space-between;font-size:10px;color:#5d7083;pointer-events:none}
   .pk-stv.held .pk-stv-hd,.pk-stv.held .pk-stv-bars,.pk-stv.held .pk-stv-hint,.pk-stv.held .pk-stv-arr{opacity:0;transition:opacity .15s}
   .pk-stv-arr{width:44px;height:44px;border-radius:50%;border:0;background:rgba(230,237,243,.14);color:#E6EDF3;font-size:26px;line-height:1;cursor:pointer;flex:0 0 auto}
   .pk-stv-arr:hover,.pk-stv-arr:focus-visible{background:rgba(230,237,243,.26);outline:none}.pk-stv-arr:disabled{opacity:.3;cursor:default}
   @media (max-width:640px),(max-aspect-ratio:3/4){.pk-stv{background:#0b1016}.pk-stv-arr{display:none}
     .pk-stv-stage{width:100vw;height:100vh;height:100dvh;aspect-ratio:auto;border:0;border-radius:0;padding-top:max(10px,env(safe-area-inset-top))}}
-  @media (prefers-reduced-motion:reduce){.pk-stv-stage.in-next,.pk-stv-stage.in-prev,.pk-stv-seg i.run{animation:none}.pk-stv-seg i.run{width:100%}}
+  @media (prefers-reduced-motion:reduce){.pk-stv-stage.in-next,.pk-stv-stage.in-prev,.pk-stv-seg i.run{animation:none}.pk-stv-seg i.run{width:100%}
+    .pk-stv-body .a,.pk-stv-body .w{opacity:1;transform:none;filter:none;animation:none!important}.pk-stv-sp{clip-path:none;animation:none!important}}
   `;
   document.head.appendChild(css);
 

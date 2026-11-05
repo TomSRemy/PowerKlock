@@ -124,10 +124,13 @@ svg{width:100%;height:auto;overflow:visible}
 .gauge{display:flex;align-items:center;gap:calc(3*var(--u))}
 .batt{position:relative;flex:1;height:calc(9*var(--u));border:calc(.6*var(--u)) solid var(--fg);border-radius:calc(1.6*var(--u));padding:calc(.8*var(--u))}
 .batt:after{content:"";position:absolute;right:calc(-2.2*var(--u));top:28%;width:calc(1.4*var(--u));height:44%;background:var(--fg);border-radius:0 4px 4px 0}
+.batt.demo b{width:8%}.scene.on .batt.demo b{animation:demo 2.6s cubic-bezier(.4,0,.2,1) .5s forwards}
+@keyframes demo{0%{width:8%;background:#7FC8F8}55%{width:96%;background:#7FC8F8}60%{width:96%;background:#FBBF24}100%{width:12%;background:#FBBF24}}
 .batt b{display:block;height:100%;width:50%;background:var(--accent);border-radius:calc(.8*var(--u));transition:width .08s linear,background .2s}
 .clock{font:800 calc(7*var(--u)) var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
 .act{font:700 calc(3.6*var(--u)) var(--mono);letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
-.money{font:800 calc(12*var(--u)) var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.money.punch{animation:punch .5s cubic-bezier(.3,1.6,.5,1)}
+.money{display:inline-block;font:800 calc(12*var(--u)) var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
 .race{display:flex;flex-direction:column;gap:calc(1.6*var(--u))}
 .race .r{display:grid;grid-template-columns:calc(24*var(--u)) 1fr;align-items:center;gap:calc(2*var(--u))}
 .race .n{font:600 calc(3.6*var(--u)) var(--sans);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -136,6 +139,8 @@ svg{width:100%;height:auto;overflow:visible}
 .race .t span{font:700 calc(3.4*var(--u)) var(--mono);margin-left:calc(1.6*var(--u));white-space:nowrap;opacity:0;transition:opacity .4s ease .9s}
 .race .r.fr .n{color:var(--accent);font-weight:800}.race .r.fr .t i{background:var(--accent)}
 .race.go .t span{opacity:1}
+.race .r.fr.win .t i{animation:frwin .5s ease 3}.race .r.fr.win .n{animation:frwin .5s ease 3}
+@keyframes frwin{50%{filter:brightness(1.6);transform:scale(1.06)}}
 .lg{display:flex;flex-wrap:wrap;gap:calc(1.5*var(--u)) calc(3.5*var(--u));font:600 calc(3.2*var(--u)) var(--mono);color:var(--muted)}
 .lg i{display:inline-block;width:calc(2.6*var(--u));height:calc(2.6*var(--u));border-radius:2px;margin-right:calc(1.2*var(--u));vertical-align:-2px}
 @media (prefers-reduced-motion: reduce){.scene{transition:none}.draw,.draw2{animation:none;stroke-dashoffset:0}.scene > *,.tile,.brief div,.w,.wb,.endpt,.mk{opacity:1;transform:none;filter:none;animation:none!important}
@@ -345,9 +350,10 @@ svg{width:100%;height:auto;overflow:visible}
     const line = p.map((v, t) => x(t).toFixed(1) + ',' + y(v).toFixed(1)).join(' ');
     const bars = p.map((v, t) => X.charge[t] > 0.01 ? `<rect class="q" data-t="${t}" x="${x(t) - 4}" y="${y(v)}" width="9" height="${H - y(v)}" fill="#7FC8F8" opacity="0"/>`
       : X.discharge[t] > 0.01 ? `<rect class="q" data-t="${t}" x="${x(t) - 4}" y="${y(v)}" width="9" height="${H - y(v)}" fill="#FBBF24" opacity="0"/>` : '').join('');
-    const intro = { ms: 3200, html: `<div class="kick">${T('Une batterie de 1 MW, 2 h', 'A 1 MW, 2 h battery')}</div>
-      <div class="h">${T('Acheter au creux, revendre au pic', 'Buy low, sell at the peak')}</div>
-      <div class="sub">${T('Aujourd’hui en France, sur les prix day-ahead : le meilleur programme possible, quart d’heure par quart d’heure.', 'Today in France, on day-ahead prices: the best possible schedule, quarter-hour by quarter-hour.')}</div>` };
+    const intro = { ms: 3800, html: `<div class="kick">${T('Une batterie de 1 MW, 2 h', 'A 1 MW, 2 h battery')}</div>
+      <div class="h">${words(T('Acheter au creux, revendre au pic', 'Buy low, sell at the peak'), 150, 110)}</div>
+      <div class="gauge"><div class="batt demo"><b></b></div></div>
+      <div class="sub" style="animation-delay:1.9s">${T('Aujourd’hui en France, sur les prix day-ahead : le meilleur programme possible, quart d’heure par quart d’heure.', 'Today in France, on day-ahead prices: the best possible schedule, quarter-hour by quarter-hour.')}</div>` };
     const SWEEP = 9000;
     const sweep = { ms: SWEEP + 1800, html: `<div class="kick">${T('La journée en accéléré', 'The day, fast-forward')}</div>
       <div class="row" style="align-items:baseline;justify-content:space-between"><div class="clock" id="b-clock">00:00</div><div class="act" id="b-act" style="color:var(--muted)">${T('attend', 'waits')}</div></div>
@@ -371,14 +377,14 @@ svg{width:100%;height:auto;overflow:visible}
           const v = cum[t]; eur.textContent = (v < 0 ? '−' : '+') + fmt(Math.abs(v), 0) + ' €'; eur.style.color = v < 0 ? 'var(--up)' : 'var(--down)';
           cr.setAttribute('width', x(t) + 10); cur.setAttribute('x1', x(t)); cur.setAttribute('x2', x(t));
           qs.forEach(r => { if (+r.dataset.t <= t) r.setAttribute('opacity', '.9'); });
-          if (f < 1) requestAnimationFrame(step);
+          if (f < 1) requestAnimationFrame(step); else { eur.classList.remove('punch'); void eur.offsetWidth; eur.classList.add('punch'); }
         };
         requestAnimationFrame(step);
       } };
     const net = X.rev - wear;
     const result = { ms: 4200, html: `<div class="kick">${T('Résultat de la journée', 'The day’s result')}</div>
-      <div class="figline"><span class="big" data-count="${net}" data-dec="0">${fmt(net, 0)}</span> <span class="unit">${T('€ gagnés par MW', '€ earned per MW')}</span></div>
-      <div class="sub">${T('Après ', 'After ')}${fmt(wear, 0)}&nbsp;€ ${T('d’usure de la batterie, sur le seul marché day-ahead.', 'of battery wear, on the day-ahead market alone.')}</div>
+      <div class="figline"><span class="big" data-count="${net}" data-dec="0" data-delay="300" data-ms="1300" data-punch="1">${fmt(net, 0)}</span> <span class="unit">${T('€ gagnés par MW', '€ earned per MW')}</span></div>
+      <div class="sub" style="animation-delay:1.7s">${T('Après ', 'After ')}${fmt(wear, 0)}&nbsp;€ ${T('d’usure de la batterie, sur le seul marché day-ahead.', 'of battery wear, on the day-ahead market alone.')}</div>
       <div class="row"><div class="tile"><div class="l">${T('Sur 12 mois', 'Over 12 months')}</div><div class="v nw">${fmt(L.pw, 0)}&nbsp;k€</div><div class="s">${T('par MW et par an', 'per MW per year')}</div></div>
         <div class="tile"><div class="l">${T('Cycles', 'Cycles')}</div><div class="v">${fmt(L.cycles_day, 1)}</div><div class="s">${T('par jour en moyenne', 'per day on average')}</div></div></div>` };
     run([intro, sweep, result]);
@@ -396,20 +402,26 @@ svg{width:100%;height:auto;overflow:visible}
     const asc = L.slice().sort((a, b) => a.v - b.v), rank = asc.findIndex(r => r.k === 'FR') + 1, max = L[0].v, min = asc[0];
     const ord = r => EN ? (r === 1 ? '1st' : r === 2 ? '2nd' : r === 3 ? '3rd' : r + 'th') : (r === 1 ? '1ʳᵉ' : r + 'ᵉ');
     const intro = { ms: 3000, html: `<div class="kick">${T('Europe · aujourd’hui', 'Europe · today')}</div>
-      <div class="h">${T('Où l’électricité <span class="nw">est-elle</span> la moins chère&nbsp;?', 'Where is power cheapest?')}</div>
-      <div class="sub">${T('Prix moyen du jour, enchère day-ahead, ', 'Average price of the day, day-ahead auction, ')}${L.length} ${T('pays.', 'countries.')}</div>` };
+      <div class="h">${words(T('Où l’électricité est-elle la moins chère\u00a0?', 'Where is power cheapest?'), 150, 100)}</div>
+      <div class="sub" style="animation-delay:1.1s">${T('Prix moyen du jour, enchère day-ahead, ', 'Average price of the day, day-ahead auction, ')}${L.length} ${T('pays.', 'countries.')}</div>` };
     const race = { ms: 8000, html: `<div class="kick">${T('Prix moyen du jour · €/MWh', 'Average price · €/MWh')}</div>
-      <div class="h">${T('La France ', 'France ')}${ord(rank)} ${T('moins chère sur ', 'cheapest of ')}${L.length}</div>
+      <div class="h">${words(T('La France ' + ord(rank) + ' moins chère sur ' + L.length, 'France ' + ord(rank) + ' cheapest of ' + L.length), 150, 90)}</div>
       <div class="race" id="race">${L.map(r => `<div class="r${r.k === 'FR' ? ' fr' : ''}"><div class="n">${r.n}</div><div class="t"><i data-w="${Math.max(2, r.v / max * 100).toFixed(1)}"></i><span>${fmt(r.v, 0)}</span></div></div>`).join('')}</div>`,
       play(root) {
         const rows = [...root.querySelectorAll('.race .t i')];
         rows.forEach((el, i) => setTimeout(() => { el.style.width = 'calc(' + el.dataset.w + '% - 14*var(--u))'; }, 400 + (rows.length - 1 - i) * 180));
-        setTimeout(() => root.querySelector('#race').classList.add('go'), 400 + rows.length * 180);
+        const race = root.querySelector('#race'), fr = root.querySelector('.race .r.fr');
+        race.classList.remove('go'); if (fr) fr.classList.remove('win');
+        setTimeout(() => race.classList.add('go'), 400 + rows.length * 180);
+        // once every bar is in, France flashes: the eye lands on its rank
+        if (fr) setTimeout(() => fr.classList.add('win'), 1600 + rows.length * 180);
       } };
     const gap = z.FR.avg - min.v;
-    const outro = { ms: 3800, html: `<div class="kick">${T('À retenir', 'Takeaway')}</div>
-      <div class="figline"><span class="big" data-count="${z.FR.avg}" data-dec="0">${fmt(z.FR.avg, 0)}</span> <span class="unit">€/MWh ${T('en France', 'in France')}</span></div>
-      <div class="sub">${T('Le moins cher : ', 'Cheapest: ')}${min.n}, ${fmt(min.v, 0)}&nbsp;€. ${T('Le plus cher : ', 'Dearest: ')}${L[0].n}, ${fmt(L[0].v, 0)}&nbsp;€. ${T('Écart avec la France : ', 'Gap with France: ')}${fmt(gap, 0)}&nbsp;€.</div>` };
+    const outro = { ms: 4600, html: `<div class="kick">${T('À retenir', 'Takeaway')}</div>
+      <div class="figline"><span class="big" data-count="${z.FR.avg}" data-dec="0" data-delay="250" data-ms="1100" data-punch="1">${fmt(z.FR.avg, 0)}</span> <span class="unit">€/MWh ${T('en France', 'in France')}</span></div>
+      <div class="sub" style="animation-delay:1.3s">${T('Le moins cher : ', 'Cheapest: ')}${min.n}, ${fmt(min.v, 0)}&nbsp;€.</div>
+      <div class="sub" style="animation-delay:1.9s">${T('Le plus cher : ', 'Dearest: ')}${L[0].n}, ${fmt(L[0].v, 0)}&nbsp;€.</div>
+      <div class="sub" style="animation-delay:2.5s;color:var(--fg)">${T('Écart avec la France : ', 'Gap with France: ')}${fmt(gap, 0)}&nbsp;€.</div>` };
     run([intro, race, outro]);
   }
 
@@ -453,11 +465,11 @@ svg{width:100%;height:auto;overflow:visible}
       } };
     const solarDay = Math.abs(hSol - hMin) <= 2 && sol.v[hSol] > 3;
     const head = solarDay ? T('Le solaire creuse le prix à midi', 'Solar digs the midday price') : T('Le prix suit la demande du soir', 'The price follows the evening demand');
-    const take = { ms: 4200, html: `<div class="kick">${T('Ce qu’on a vu', 'What we saw')}</div>
-      <div class="h">${head}</div>
-      <div class="row"><div class="tile"><div class="l">${T('Prix le plus bas', 'Lowest price')}</div><div class="v nw">${fmt(price[hMin], 0)}&nbsp;€</div><div class="s"><span class="nw">${T('à ', 'at ')}${hMin}&nbsp;h</span><br><span class="nw">${T('solaire', 'solar')} ${fmt(sol.v[hMin], 1)}&nbsp;GW</span></div></div>
-        <div class="tile"><div class="l">${T('Prix le plus haut', 'Highest price')}</div><div class="v nw">${fmt(price[hMax], 0)}&nbsp;€</div><div class="s"><span class="nw">${T('à ', 'at ')}${hMax}&nbsp;h</span><br><span class="nw">${T('solaire', 'solar')} ${fmt(sol.v[hMax], 1)}&nbsp;GW</span></div></div></div>
-      <div class="sub">${T('Production réelle par filière (ENTSO-E) et prix day-ahead, moyennes horaires.', 'Actual output by source (ENTSO-E) and day-ahead price, hourly means.')}</div>` };
+    const take = { ms: 5000, html: `<div class="kick">${T('Ce qu’on a vu', 'What we saw')}</div>
+      <div class="h">${words(head, 150, 100)}</div>
+      <div class="row"><div class="tile"><div class="l">${T('Prix le plus bas', 'Lowest price')}</div><div class="v nw"><span class="big-sm" data-count="${price[hMin]}" data-dec="0" data-delay="1700" data-ms="900">${fmt(price[hMin], 0)}</span>&nbsp;€</div><div class="s"><span class="nw">${T('à ', 'at ')}${hMin}&nbsp;h</span><br><span class="nw">${T('solaire', 'solar')} ${fmt(sol.v[hMin], 1)}&nbsp;GW</span></div></div>
+        <div class="tile"><div class="l">${T('Prix le plus haut', 'Highest price')}</div><div class="v nw"><span class="big-sm" data-count="${price[hMax]}" data-dec="0" data-delay="1950" data-ms="900">${fmt(price[hMax], 0)}</span>&nbsp;€</div><div class="s"><span class="nw">${T('à ', 'at ')}${hMax}&nbsp;h</span><br><span class="nw">${T('solaire', 'solar')} ${fmt(sol.v[hMax], 1)}&nbsp;GW</span></div></div></div>
+      <div class="sub" style="animation-delay:2.7s">${T('Production réelle par filière (ENTSO-E) et prix day-ahead, moyennes horaires.', 'Actual output by source (ENTSO-E) and day-ahead price, hourly means.')}</div>` };
     document.getElementById('brand-d').textContent = longDate(dy);
     run([sweep, take], true);
   }
