@@ -208,7 +208,8 @@
       walk(p); });
     // the card stays as long as it takes to read it
     const listWords = c.kind === 'list' ? c.items.reduce((a, it) => a + String(it.text).split(/\s+/).length, 0) : 0;
-    V.dur = Math.min(14000, Math.max(4500, c.kind === 'list' ? 1500 + c.items.length * 900 + listWords * 55 : words0 + nw * 75 + 2200));
+    // time to read: the text comes in, then stays about a quarter-second a word (≈ 240 words a minute) plus a pause
+    V.dur = Math.min(25000, Math.max(6000, c.kind === 'list' ? 2500 + c.items.length * 900 + listWords * 250 : words0 + nw * 75 + 2500 + nw * 250));
     void body.offsetWidth; body.classList.add('go');
     V.el.querySelector('.pk-stv-count').textContent = (V.ci + 1) + ' / ' + s.cards.length;
     V.el.querySelector('.pk-stv-prev').disabled = V.si === 0 && V.ci === 0;
