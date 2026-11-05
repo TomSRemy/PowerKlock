@@ -2,7 +2,7 @@
 
 *Pour Tom · PowerKlock · 31 octobre 2026*
 
-**Comment s'en servir.** 13 chapitres courts. Chacun se lit seul. Pour chaque chapitre :
+**Comment s'en servir.** 14 chapitres courts. Chacun se lit seul. Pour chaque chapitre :
 l'idée en deux ou trois phrases, un schéma, un vrai chiffre du site, un encadré « à retenir », et un texte à dire à voix haute
 (2 à 3 minutes). Pour aller plus loin, la version détaillée (`cours_detail.md`) suit les mêmes chapitres.
 
@@ -128,7 +128,8 @@ La **méthode en 3 étapes** de Tom :
    certains mois ;
 3. **la cannibalisation** : ces heures sont moins chères *justement parce que* le parc et ses semblables produisent.
 
-Convention du site : **la production n'est pas payée quand le prix est ≤ 0** (le parc s'arrête, ou le contrat ne la
+Convention du site : **la production n'est pas payée quand le prix est négatif** (strictement sous 0 € depuis le
+1er novembre ; avant, ≤ 0) (le parc s'arrête, ou le contrat ne la
 paie pas).
 
 ### Le vrai chiffre
@@ -244,7 +245,9 @@ avec le modèle **flow-based** depuis le 8 juin 2022 : il regarde le vrai chemin
 ### Le vrai chiffre
 La limite d'export de la France vers Core baisse : **9,2 GW en 2023, 7,7 en 2024, 5,4 en 2025, 5,9 en 2026**
 (moyenne horaire). Une raison : les exports vers l'Italie chargent les lignes 400 kV **Creys–Saint-Vulbas**, et
-ce qui passe vers l'Italie ne peut plus passer vers Core. La seconde de ces lignes limite les échanges **49 % du
+ce qui passe vers l'Italie ne peut plus passer vers Core. C'est le mécanisme documenté ; d'autres causes jouent
+aussi (plus de nucléaire disponible, capacités données sous les 70 % européens, vent allemand), et aucune source
+publique ne chiffre la part de chacune. La seconde de ces lignes limite les échanges **49 % du
 temps en 2026**, contre 21 % en 2025 (Boerman, 2026).
 
 ![Limite d'export Core](img/09_limite_core.png)
@@ -252,6 +255,24 @@ temps en 2026**, contre 21 % en 2025 (Boerman, 2026).
 > **À retenir**
 > - Ligne libre = un seul prix. Ligne pleine = deux prix + une rente.
 > - La France peut exporter de moins en moins vers Core.
+
+### Les quatre cas, sur un seul merit order
+On prend une France seule à 50 € (55 GW de consommation) et une ligne de ±10 GW, puis on change seulement le prix
+des voisins :
+1. **voisins à 58 €** : la France exporte un peu et **rejoint** leur prix (34–44 % du temps de 2016 à 2021, 10 % en
+   2025) ;
+2. **voisins à 95 €** : la France voudrait exporter plus que la ligne ; la ligne est pleine, la France reste à 65 €.
+   C'est **le cas de 2025 : 66 % du temps**, environ 58 € contre 102 € en Allemagne ;
+3. **voisins à 45 €** : la France importe un peu et rejoint leur prix (19 % du temps en 2022) ;
+4. **voisins à 20 €** : la France importe à pleine ligne et reste à 40 € (40 % du temps en 2022, environ 1 % en
+   2024–2025). En 2022, les imports ont évité 89 heures de manque.
+
+![Les quatre cas](../couplage/m_all.png)
+
+![Fréquence des cas](../formation/f_hist.png)
+
+*Source : dossier couplage, diaporama « cas par cas » et formation couplage ; fréquences : `couplage/cases_hist.json`.
+Version complète, avec les heures typiques et les rentes : `oral/chapitre_05.md`.*
 
 ### Pour aller plus loin
 - Boerman (2026), « Flowbased: export restrictions of France » — https://boerman.dev/posts/flowbased/highfuaf2026/
@@ -288,8 +309,10 @@ par ses autres frontières (Italie, Suisse, Grande-Bretagne, Espagne).
 
 ### Le vrai chiffre
 - Heures où France et Allemagne sont à moins de 1 € l'une de l'autre : **57 % en 2020, 17 % en 2025**.
-- France moins chère : **67 % des heures en 2025**, prix moyen 58 € contre 103 € pendant ces heures.
-- **67 % de la production éolienne française de 2025** est tombée pendant des heures coupées.
+- France moins chère : **environ deux heures sur trois en 2025**, prix moyen 58 € contre 103 € pendant ces heures
+  (67 % selon le débrief ; 68 % en comptant tout écart d'un centime ; 63 % si on exige au moins 5 € d'écart).
+- **Environ deux tiers de la production éolienne française de 2025** est tombée pendant des heures coupées (67,5 %
+  selon le débrief ; 68 % en prenant « France au moins 5 € sous l'Allemagne », contre 8 % en 2021).
 - Le couplage a-t-il fait monter le prix spot français ? **Oui, les années où la France exporte** : environ
   **+38 €/MWh en 2025** par rapport à une France isolée (estimation de modèle, jamais observée).
 
@@ -509,7 +532,8 @@ regarde deux choses : le **biais** (se tromper toujours dans le même sens) et l
 en haut, un coup en bas).
 
 ### Le vrai chiffre
-- Modèle publié : erreur **0,76 €/MWh** en solaire (sans ancrage), **0,84** en éolien (ancré hiver/été).
+- Modèle publié : erreur **0,76 €/MWh** en solaire (sans ancrage) ; en éolien **0,84** en v1 (ancré hiver/été),
+  **0,56** en v2 depuis le 31 octobre (règle pondérée par la production).
 - Le hasard des tirages fait bouger le résultat de **jusqu'à 0,2 €** : un gain plus petit ne prouve rien.
 
 (Schéma : celui du chapitre 9.)
@@ -702,6 +726,97 @@ est produite et payée zéro : seules les heures strictement négatives sont per
 Et les pros ? Pexapark fait en gros de l'ancrage, mais sur des prix de contrats réels qu'on n'a pas. Aurora et AFRY
 font tourner des modèles géants, centrale par centrale. Nous, on est entre les deux : simple, transparent, testé
 honnêtement. »
+
+---
+
+## Chapitre 14 — Le fournisseur et ses produits
+
+### L'idée
+Le **fournisseur** est le miroir du PPA : il **achète** sur le marché pour **revendre** à des clients. Il a trois
+casquettes (diapo 2 du diaporama `formation/partie2/Formation_partie2_fournisseur.pdf`) : fournisseur face au client,
+**responsable d'équilibre** face à RTE (il paie les écarts au quart d'heure), et accès au marché (EEX, EPEX SPOT, gré
+à gré). Sa marge brute vaut environ **5 à 10 % de la facture** : 10 % de plus sur l'énergie, et elle disparaît. Donc
+il **couvre chaque vente aussitôt** (*back-to-back*) et facture des primes de risque.
+
+**Les produits** (diapo 3) se rangent selon qui porte le risque de prix :
+- **prix fixe** : le fournisseur porte tout ;
+- **indexé spot** (moyenne mensuelle du day-ahead) ou **indexé forward** (code A·B·C : **101**, **103**, **12012**) :
+  partagé ;
+- **dynamique** (le day-ahead de chaque quart d'heure) : le client porte presque tout ;
+- **click volume** (des blocs en MW) et **click %** (une part de la consommation) : le client fixe quand il veut.
+
+![Le code A·B·C](../formation/partie2/c_abc.png)
+
+Pour un indexé 101 livré en octobre, le fournisseur achète **1/21 du volume chaque jour de bourse** de septembre
+(s'il y en a 21) : son coût suit la moyenne que paie le client (diapo 5).
+
+**La couverture, pas à pas** (diapo 7) : Cal base à la signature → trimestres → mois → day-ahead la veille → intraday
+→ RTE facture le reste. Position ouverte = achats + production − consommation : négative, il est **court** ;
+positive, **long** ; nulle, **plat**. Le pricer PPA fait la même chose à l'envers : il revend au Cal le volume
+attendu du parc (chapitre 3).
+
+### Le vrai chiffre
+**Fixe ou spot en 2025** (diapo 4). Le Cal 2025, acheté pendant 2024, valait **63,8 €/MWh** (diapo : EEX ; cours :
+SEFE via la base PowerKlock). Le spot mensuel est allé de **19 € en mai à 123 € en février**, **61,1 €** sur
+l'année. Le fixe a coûté un peu plus, en échange d'aucune surprise.
+
+![Prix fixe contre spot mensuel 2025](../formation/partie2/c_fixed.png)
+
+*Prix day-ahead France (ENTSO-E), Cal 2025 (moyenne des clôtures de 2024), calcul PowerKlock.*
+
+**Le coût de forme** (diapo 9) : la consommation française paie plus que la base, parce qu'elle consomme l'hiver et
+le soir. En 2025 : base **61,08 €**, prix pondéré par la consommation **66,73 €**, soit **+5,65 €/MWh** (saisonnier
+**+3,88**, infra-mensuel **+1,77**). C'est le **miroir du taux de capture** : un parc solaire capte moins que la base
+(capture < 1), la consommation paie plus (66,73 ÷ 61,08 = **1,092**).
+
+![Coût de forme 2025](../formation/partie2/c_shape.png)
+
+*Consommation RTE × prix day-ahead au quart d'heure, France, 2025, calcul PowerKlock.*
+
+Le diaporama **ajoute** la forme au Cal : 63,77 + 5,65 = **69,42 €** (diapo 8). Le cours, pour le PPA, **multiplie** :
+63,77 × 1,092 = **69,67 €**. Écart d'environ **0,25 €**, qui grandit quand le Cal s'éloigne du spot de référence.
+
+**Ce que paie un client en 2026** (diapo 12, montants vérifiés dans les textes officiels) :
+- l'énergie (marché, forme, primes, marge) ;
+- la **capacité** : nouveau mécanisme centralisé par RTE, première livraison **novembre 2026 – mars 2027** (CRE) ;
+- les **CEE**, 6e période **2026–2030** ; les **garanties d'origine** pour les offres vertes ;
+- le **TURPE 7**, en vigueur depuis le **1er août 2025** ;
+- l'**accise** : **30,85 €/MWh** pour les ménages du 1er février au 31 juillet 2026 (BOFiP), baissée ensuite par la loi de finances 2026 ; la **TVA** à 20 %.
+
+Fin de l'**ARENH** (42 €/MWh, 43,8 % de la consommation d'un client au tarif réglementé en 2025) le 31 décembre
+2025. Le **VNU** prend le relais au-dessus de 78 €/MWh ; rien à reverser en 2026 (revenu estimé 66,08 €, CRE).
+
+> **À retenir**
+> - Le fournisseur vend fixe ce qu'il achète variable : il couvre aussitôt, puis affine jusqu'à la livraison.
+> - Le produit dit qui porte le risque : fixe → fournisseur, dynamique → client.
+> - Coût de forme France 2025 : +5,65 €/MWh, le miroir du taux de capture.
+> - Prix, volume et forme se recoupent : on les évalue ensemble, comme le P75 (chapitre 11).
+> - Écarts réglés au quart d'heure depuis le 1er janvier 2025 (le day-ahead, lui, depuis le 1er octobre 2025).
+
+### Pour aller plus loin
+- CRE, délibération 2025-153 (écarts à 15 minutes) —
+  https://www.cre.fr/fileadmin/Documents/Deliberations/2025/250611_2025-153_ISP15.pdf
+- CRE, délibération 2026-42 (nouveau mécanisme de capacité) —
+  https://www.cre.fr/fileadmin/Documents/Deliberations/2026/260210_2026-42_Methodologie_mecanisme_capacite.pdf
+- CRE, TURPE 7 HTA-BT (2025-40) —
+  https://www.cre.fr/fileadmin/Documents/Deliberations/2025/250204_2025-40_TURPE_7_HTA-BT.pdf
+- Décret 2025-1048 (CEE, 6e période) — https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000052486193
+- BOFiP, accise sur l'électricité 2026 — https://bofip.impots.gouv.fr/bofip/14903-PGP.html
+- Version orale complète : `oral/chapitre_14.md`.
+
+### À dire à voix haute
+« Jusqu'ici on a regardé le marché depuis le parc. Maintenant, on passe de l'autre côté du comptoir : le fournisseur.
+Il vend à ses clients un prix fixe pour l'an prochain, et lui achète sur un marché qui bouge tous les jours. Sa marge,
+c'est 5 à 10 % de la facture. Un hiver qui dérape, et elle disparaît. Alors il fait comme une agence de voyages : le
+jour où il vend le séjour, il réserve l'avion. C'est le back-to-back.
+
+Ensuite, il affine. D'abord l'année en ruban, puis les trimestres, les mois, la veille au quart d'heure, le jour même
+en intraday. Ce qui reste, RTE le lui facture au prix d'écart.
+
+Le point clé, c'est la forme. Un client ne consomme pas pareil à toute heure : il consomme l'hiver, le matin, le
+soir. Ce sont les heures chères. En 2025, la consommation française a payé 5,65 euros de plus par MWh que le prix
+moyen. C'est exactement l'inverse du solaire : le parc vend quand c'est bon marché, le consommateur achète quand c'est
+cher. Le même chiffre, vu des deux côtés du marché. »
 
 ---
 

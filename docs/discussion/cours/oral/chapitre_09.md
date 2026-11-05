@@ -6,7 +6,7 @@
 Tu veux savoir ce que vaudra un MWh solaire ou éolien en 2028. Pour ça, il te faut sa **capture** : le prix obtenu
 par le parc divisé par le prix moyen. Mais personne ne connaît la météo de 2028, ni le prix de chaque heure de 2028.
 
-L'idée du générateur : **fabriquer des années possibles**, des milliers, et regarder ce que la capture y vaut. C'est
+L'idée du générateur : **fabriquer des années possibles**, beaucoup, et regarder ce que la capture y vaut. C'est
 le cœur du pricer v2, en ligne depuis le 31 octobre 2026. Depuis cette date, c'est **la seule méthode** qui fait le
 prix ; les anciennes méthodes restent affichées comme repères.
 
@@ -29,14 +29,38 @@ casserait ces liens.
 **L'image.** C'est comme faire un album avec de vraies pages d'anciens albums, plutôt que de découper chaque photo
 et de les recoller au hasard. Chaque page reste cohérente.
 
+**Les semaines s'enchaînent** : une tempête ne s'arrête pas au raccord entre deux semaines (`v2_detail.html`,
+diapo 8).
+
+**Une année tirée mélange vraiment les années.** On a vérifié qu'aucun scénario ne dépend trop d'une seule année
+passée (`v2_detail.html`, diapo 8) :
+- chaque scénario utilise les **6 années** de la réserve (2019, 2020, 2021, 2023, 2024, 2025) ;
+- l'année la plus présente fait en moyenne **30 %** des jours d'un scénario, et **48 %** au plus.
+
+Si une seule année faisait 90 % des jours, le scénario ne serait qu'une copie de cette année : l'éventail serait faux
+(chapitre 11, « garder de la variété »).
+
 ## 3. Étape 2 : le parc futur
 On pose cette météo sur le **parc de l'année livrée** :
 - pour la France, le rythme de croissance récent, **jamais sous la trajectoire de la PPE3** ;
 - pour les voisins, leur rythme récent ;
 - les batteries.
 
-La production par GW installé est ramenée au niveau récent (arrêts, autoconsommation). On obtient la production
-de chaque heure du futur : le vent de janvier 2021, mais avec les éoliennes de 2028.
+**La production par GW est ramenée à la tendance** (réglage `CF_LEVEL`, `v2_detail.html`, diapo 9). Chaque semaine
+tirée garde sa météo, mais son niveau de production **par GW installé** suit la tendance récente. Pourquoi ? Parce
+que la production par GW a baissé depuis 2019, à cause de l'écrêtement, de l'autoconsommation et des arrêts aux prix
+négatifs :
+- solaire espagnol : **21,8 % → 17,1 %** de facteur de charge ;
+- éolien allemand : **23,5 % → 19,7 %**.
+
+Poser la vieille météo sur le parc d'aujourd'hui sans cette correction fabriquait plus de surplus que ce que voit le
+marché. Au rejeu, la correction a fait passer l'erreur de **0,90 à 0,59 €/MWh** en solaire et de **2,22 à 2,07** en
+éolien (même diapo).
+
+L'image : un vieux carnet de recettes écrit pour un four plus puissant. On garde les recettes, mais on ajuste la
+température au four d'aujourd'hui.
+
+On obtient la production de chaque heure du futur : le vent de janvier 2021, mais avec les éoliennes de 2028.
 
 ## 4. Étape 3 : la règle de prix
 Il faut maintenant un prix pour chaque heure. On utilise une **règle apprise sur le passé**.
@@ -52,9 +76,10 @@ tient quand l'addition change.
 **Deux exceptions :**
 - les **prix négatifs** sont appris à part, **en euros**. Ils viennent des renouvelables et du nucléaire qui ne
   s'arrêtent pas, pas du gaz (adopté le 30 octobre) ;
-- la **dernière année apprise pèse deux fois plus** que la précédente. Ton idée du 31 octobre : « les données
-  récentes pèsent plus ». Au rejeu, ça a fait passer l'erreur de **1,32 à 1,18 €/MWh** en solaire et de **1,13 à
-  0,96** en éolien (commentaire de `scripts/ppa_scenarios.py`).
+- la règle est apprise sur les **deux dernières années complètes**, et la **dernière pèse deux fois plus** que la
+  précédente. Ton idée du 31 octobre : « les données récentes pèsent plus ». Au rejeu ancré (9 cas), ça a fait passer
+  l'erreur de **1,32 à 1,18 €/MWh** en solaire et de **1,13 à 0,96** en éolien (`v2_detail.html`, diapo 10 ;
+  commentaire de `scripts/ppa_scenarios.py`, `RECENT_W`).
 
 **Les cases.** La règle range les heures dans des **cases**, comme des tiroirs : « France coupée, beaucoup de
 surplus, midi, printemps »… Dans chaque tiroir, elle a appris un coefficient moyen.
@@ -69,8 +94,17 @@ C'est le lien direct avec les chapitres 5 et 6. Chaque heure du futur est dans l
 jours tirés sont ramenés au niveau de la dernière année connue). Plus le surplus dépasse la limite, plus la chance
 que la France soit coupée est grande.
 
+La chance d'être coupée est apprise sur les années passées, la dernière pesant double. **Même coupée**, la France
+suit encore un peu l'Allemagne par ses autres frontières.
+
 Lire la limite JAO de l'heure, plutôt que le surplus seul, a fait baisser l'erreur de rejeu de **1,19 à 1,07 €** en
-solaire et de **3,08 à 2,42 €** en éolien (adopté le 31 octobre, commentaire du script).
+solaire et de **3,08 à 2,42 €** en éolien (`v2_detail.html`, diapo 11 ; adopté le 31 octobre). Ces chiffres sont
+plus hauts que les 0,76 / 0,56 de la v2 : c'est une étape intermédiaire, avant l'ancrage choisi par le rejeu et la
+règle éolienne pondérée.
+
+Pourquoi cette limite compte : elle est **tombée de 9,2 GW en 2023 à 5,4 GW en 2025** (7,6 en 2024 ; JAO, calcul
+PowerKlock, `v2_detail.html`, diapo 11), avec 5,9 GW en 2026 (`SESSION_DISCUSSION.md`). Et les heures coupées sont
+passées de 629 (2021) à **5 460** (2025).
 
 **Ce repère se prévoit bien.** Part du vent produite pendant les heures coupées (débrief du 31 octobre) :
 
@@ -79,15 +113,35 @@ solaire et de **3,08 à 2,42 €** en éolien (adopté le 31 octobre, commentair
 | Indicateur calculé à l'avance | 17 % | 39 % | 66 % |
 | Réalité | 18,5 % | 49 % | 67,5 % |
 
-**Au-delà de ce qu'on a vu.** Si le surplus dépasse le plus fort jamais observé, le prix continue de baisser,
-jusqu'au plancher observé. Sinon, plus de panneaux ne ferait plus baisser la capture, ce qui serait faux. C'est un
-choix de principe que tu as validé le 31 octobre : la méthode doit pouvoir montrer une cannibalisation qui monte.
+**Au-delà de ce qu'on a vu.** Si le surplus dépasse le plus fort jamais observé, le prix continue de baisser (avec
+la pente des cases les plus basses), jusqu'au plancher observé. Sinon, plus de panneaux ne ferait plus baisser la
+capture, ce qui serait faux. C'est un choix de principe que tu as validé le 31 octobre : la méthode doit pouvoir
+montrer une cannibalisation qui monte.
+
+L'effet sur la capture solaire ancrée (`v2_detail.html`, diapo 12) :
+
+| | 2027 | 2028 | 2029 |
+|---|---|---|---|
+| Sans prolongement | 0,713 | 0,700 | 0,692 |
+| Avec prolongement | 0,695 | 0,668 | **0,648** |
+
+En 2029, la capture passe de **0,692 à 0,648** : plus de 4 points. Le rejeu ne pouvait pas vraiment juger ce choix,
+parce que le passé n'est jamais sorti de la zone déjà vue (solaire 1,33 → 1,32 €/MWh, éolien 0,99 → 1,13). C'est un
+choix de principe, pas un gain mesuré. L'image : une carte qui s'arrête au bord de la feuille ; on prolonge la route
+dans la même direction, plutôt que de supposer qu'elle s'arrête.
 
 ## 6. Étapes 4 et 5 : la capture, puis la moyenne
-- **Étape 4.** Pour chaque mois, capture = prix moyen obtenu par le parc ÷ prix moyen du mois. Le parc s'arrête quand
-  le prix est nul ou négatif.
-- **Étape 5.** On répète sur des milliers d'années tirées, et on regarde la moyenne et la dispersion. La dispersion
+- **Étape 4.** Pour chaque mois, capture = prix moyen obtenu par le parc ÷ prix moyen du mois. Depuis le
+  1er novembre, le parc s'arrête seulement quand le prix est **strictement négatif** ; une heure à 0 € est produite et
+  payée 0 (`pricing-v2/parametres.md`, appliqué au générateur comme au rejeu). Avant, il s'arrêtait dès 0 € (≤ 0).
+- **Étape 5.** On répète sur de nombreuses années tirées, et on regarde la moyenne et la dispersion. La dispersion
   sert au risque (chapitre 11).
+
+**Combien d'années tirées, exactement ?** Le générateur publié en tire **60** par année livrée et par filière
+(`data/history/ppa_forecast.json`, champ `sims`, version du 30 octobre ; `scripts/ppa_generator.py`). Le rejeu en
+tire **30** par cas ; 60 au lieu de 30 ne change le résultat que de 0,03 € au plus (débrief du 31 octobre). Les
+diaporamas v2 disent « des milliers » : c'est approximatif. Les **10 000** tirages, ce sont les trajectoires du Monte
+Carlo du pricer (chapitre 11), pas les années du générateur.
 
 ![Le pricer v2](../../pricing-v2/schema_v2.png)
 
@@ -104,6 +158,25 @@ tiroir, les heures les plus venteuses sont aussi :
 
 Le prix de ces heures-là est donc plus bas que la moyenne du tiroir. La règle leur donne la moyenne : **trop haut**.
 Plusieurs choses arrivent ensemble, et un tiroir ne les voit pas toutes.
+
+**Où se cache le biais** (`v2_detail.html`, diapo 14) :
+- les heures où la France est coupée portent **67 %** des MWh éoliens (2025) ;
+- dans ces heures coupées, la règle est **6,9 € trop haute** ;
+- dans les heures couplées, elle est au contraire **6,4 € trop basse**.
+
+Les deux erreurs se compensent en partie, mais comme les heures coupées pèsent les deux tiers de la production, il
+reste un biais vers le haut. Les pistes testées pour l'enlever, sans ancrage (même diapo, erreur moyenne au rejeu,
+9 cas, €/MWh) :
+
+| Piste | Éolien sans ancrage |
+|---|---|
+| Règle de départ | 2,62 |
+| Vraie limite Core de l'année livrée (« oracle ») | 2,59 |
+| Règle coupée qui lit aussi la région | 2,56 |
+| Surprise du jour ajoutée | 2,28 |
+| Règle pondérée par la production | 2,20 |
+
+Aucune n'approche l'ancrage (0,56 à 0,84). L'ancrage reste.
 
 **L'image.** Un restaurant calcule le pourboire moyen de la soirée. Mais les clients qui viennent les soirs de pluie
 laissent moins. Si on applique la moyenne à tout le monde, on surestime ce que rapportent les soirs de pluie.
@@ -144,10 +217,15 @@ donne plus que le **changement** : le parc qui grandit, les batteries, les régi
 - **hiver/été** : un facteur pour octobre–mars, un autre pour avril–septembre.
 
 **Le choix se fait chaque semaine, par le rejeu.** Chaque dimanche, le pricer rejoue le passé avec les trois modes,
-et garde celui qui s'est le moins trompé. La même règle pour le solaire et l'éolien. Aujourd'hui :
+et garde celui qui s'est le moins trompé. La même règle pour le solaire et l'éolien. Au 31 octobre
+(`v2_detail.html`, diapo 15) :
 - **solaire : sans ancrage** (0,76 €, contre 1,18 avec un facteur annuel et 1,22 en hiver/été). Son niveau était
   déjà juste ; l'ancrage l'abîmerait ;
 - **éolien : hiver/été** (0,84 contre 0,96 avec un facteur annuel et 2,62 sans ancrage, avec la règle de la v1).
+  Les deux facteurs : **0,97 l'hiver** (octobre–mars) et **1,06 l'été** (avril–septembre). L'hiver, le générateur
+  paie le vent un peu trop cher, donc on baisse de 3 % ; l'été, un peu trop bas, donc on monte de 6 %. Les deux
+  facteurs vont donc dans des sens opposés : un seul facteur annuel moyennerait ces deux erreurs et se tromperait
+  davantage (0,96 contre 0,84).
 
 **Testés et écartés :** ancrer par mois (éolien 1,69), par trimestre (1,52), sur la météo réelle de l'année (1,42),
 ou n'appliquer que la moitié du facteur (1,51). Trop de facteurs, c'est recopier le bruit de l'année passée.

@@ -78,13 +78,64 @@ mais l'effet foule reprend plus.
 La formule complète, en mots : pour chaque mois, forward du mois × capture du mois × production payée du mois ; on
 additionne, on divise par la production payée totale, puis on applique le reste de la cascade.
 
+**Comment on découpe un Cal en mois** (« Revue des méthodes PPA » du 28 octobre, diapo 12).
+- Chaque mois prend le contrat le plus fin qui est coté : le mois, sinon le trimestre, la saison, puis le Cal.
+- Ce qui reste est découpé par des **ratios historiques** du prix spot (années complètes, sans 2022). Exemple :
+  **janvier = 1,22 × le Cal**, **mai = 0,62 × le Cal**.
+- L'image : partager une facture d'électricité annuelle entre les mois. On sait que janvier coûte plus que mai ; on
+  répartit selon les années passées, sauf pour les mois dont on connaît déjà la facture exacte.
+
+**Pourquoi c'est important : le forward vu par un parc n'est pas le Cal** (diapo 13, forwards du 27 octobre).
+Forward pondéré par la production, €/MWh :
+
+| | Cal | Mois cotés | Cal × forme historique |
+|---|---|---|---|
+| Solaire 2027 | 120,30 | **112,96** (0,94) | 114,74 (0,95) |
+| Éolien 2027 | 120,30 | **134,93** (1,12) | 128,83 (1,07) |
+| Solaire 2028 | 70,72 | 71,22 (1,01) | 69,97 (0,99) |
+| Éolien 2028 | 70,72 | 82,23 (1,16) | 75,76 (1,07) |
+
+Comment le lire :
+- le marché cotait une très forte prime d'hiver pour 2027 (janvier vers 210 €, mai vers 64 €) ;
+- l'éolien, qui produit l'hiver, voit un forward **12 % au-dessus** du Cal ; le solaire, **6 % en dessous** ;
+- ces chiffres datent du 27 octobre ; le Cal 2027 était depuis monté à 128,16 € (forwards des 30–31 octobre).
+
+**Mois cotés ou forme historique ?** (diapo 14). On a testé les deux comme **prévision** de la forme de l'année, sur
+2023–2025 (trimestres cotés au 4e trimestre de l'année d'avant). Erreur moyenne du facteur saisonnier, en points :
+- solaire : **4,3** avec l'historique, **6,1** avec les trimestres cotés ;
+- éolien : **1,8** avec l'historique, **3,5** avec les trimestres cotés.
+
+L'historique prévoit donc **mieux**. Mais on a quand même choisi les mois cotés. Pourquoi ? Parce qu'un PPA est un
+prix de marché : les mois cotés, c'est ce qu'un acheteur peut **verrouiller aujourd'hui** en se couvrant mois par
+mois. L'image : la météo de l'an dernier prévoit peut-être mieux le prix des parapluies, mais si le magasin te les
+vend à un prix ferme aujourd'hui, c'est ce prix-là qui compte pour ton budget.
+
+**Le facteur k** (diapo 14) : pour chaque année, k = valeur sur les mois cotés ÷ valeur sur le Cal avec la forme
+historique. Il corrige le niveau du forward vu par le parc. Dans le pricer v2, c'est lui qui fait la ligne « profil
+mensuel » de la cascade (`v2_detail.html`, diapos 3 et 4).
+
 ## 4. La convention : pas payé quand le prix est négatif
 **La règle du site** : la production n'est pas payée quand le prix est négatif. Pourquoi ?
 - Les PPA récents prévoient souvent que l'acheteur **ne paie pas** les MWh produits à prix négatif. C'est une clause
   d'arrêt (*curtailment*). Le parc s'arrête, ou il produit sans être payé.
 - Compter ces MWh au prix fixe surestimerait la valeur du parc.
-- En 2025, il y a eu **735 heures à prix nul ou négatif**, presque toutes à midi, au printemps et en été : le cœur de
-  la production solaire (`calc.py`, `cours_detail.md`).
+- En 2025, il y a eu **735 heures à prix nul ou négatif** dans la série horaire (742 en comptant au quart d'heure,
+  722 dans les données du banc d'essai du 28 octobre ; les définitions sont au chapitre 2), presque toutes à midi,
+  au printemps et en été : le cœur de la production solaire (`calc.py`, `cours_detail.md`).
+
+**Pourquoi il faut compter l'arrêt heure par heure, et pas sur un prix moyen.** L'exemple le plus clair est la
+diapo 31 de la « Revue des méthodes PPA » (28 octobre) : les prix de 11 h à 16 h, été 2025 (915 heures).
+- **52 %** de ces heures sont à prix ≤ 0 €.
+- Le **prix moyen** de ces heures : **8,1 €**.
+- Ce que touche un parc qui s'arrête quand le prix est négatif ou nul : à chaque heure, le prix s'il est positif,
+  sinon 0. En moyenne : **11,4 €**.
+
+Le parc touche plus que le prix moyen, parce que l'arrêt lui évite de payer les heures négatives. C'est
+l'**inégalité de Jensen** : la moyenne du « meilleur de prix et 0 » n'est pas le « meilleur de la moyenne et 0 ».
+L'image : un parapluie qu'on ouvre seulement quand il pleut. Ton trajet moyen n'est pas « un peu mouillé » : certains
+jours tu es sec, d'autres tu es protégé. Une méthode qui raisonne sur un prix moyen, comme l'ancienne simulation
+météo, rate cet effet. C'est la raison la plus nette de compter l'arrêt heure par heure, dans le générateur comme
+dans l'historique.
 
 L'image : un **contrat de livraison de lait** qui dit : « les jours où la laiterie est pleine, on ne vous prend pas
 votre lait ». Le producteur doit en tenir compte dans son prix.
@@ -94,6 +145,8 @@ votre lait ». Le producteur doit en tenir compte dans son prix.
 - Depuis le 1er novembre au matin, le pricer applique : pas payé seulement quand le prix est **strictement négatif**
   (< 0). Une heure à 0 € est produite et payée 0 €.
 - Ça compte : il y a eu **225 heures à exactement 0 €** en 2025 (`parametres.md`).
+- La règle stricte s'applique **partout** : à l'historique, à la règle de prix, au générateur et au rejeu
+  (`parametres.md`). Les chiffres de rejeu datés du 31 octobre ou d'avant ont été calculés avec « ≤ 0 ».
 - Le seuil est réglable dans le pricer : il faut le choisir **à chaque contrat**, selon sa clause de prix négatifs.
 
 ## 5. Le pricer v2 : comment PowerKlock calcule le prix
@@ -103,7 +156,7 @@ Le pricer v2 est **en ligne depuis le 31 octobre 2026**. Il remplace une moyenne
 
 On lit le schéma de gauche à droite, en quatre blocs.
 
-**Bloc 1 : le générateur de scénarios.** Il fabrique des milliers d'années possibles :
+**Bloc 1 : le générateur de scénarios.** Il fabrique des années possibles (combien : voir l'encadré plus bas) :
 - faites de **vraies semaines de 2019 à 2025** (2022 exclue), où vent, soleil, consommation, nucléaire et hydraulique
   sont pris les mêmes jours, en France et chez les voisins ;
 - posées sur les **parcs de l'année livrée** (France : rythme récent, jamais sous la trajectoire PPE3 ; batteries) ;
@@ -112,8 +165,16 @@ On lit le schéma de gauche à droite, en quatre blocs.
 - et **deux régimes** : France couplée à ses voisins, ou coupée quand son export dépasse sa limite Core de l'heure
   (chapitres 5 et 6).
 
-L'image : un **simulateur de vol**. On rejoue des milliers de vols avec de vraies conditions météo du passé, mais sur
+L'image : un **simulateur de vol**. On rejoue de nombreux vols avec de vraies conditions météo du passé, mais sur
 l'avion d'aujourd'hui.
+
+**Combien d'années tirées ? Deux nombres à ne pas mélanger.**
+- Le **générateur publié** tire **60 années** par année livrée et par filière (`data/history/ppa_forecast.json`,
+  champ `sims` ; `scripts/ppa_generator.py`). Le **rejeu** en tire **30 par cas** ; un test avec 60 au lieu de 30
+  donne le même résultat à 0,03 € près (débrief du 31 octobre).
+- Le **Monte Carlo du pricer** (bloc 3) tire **10 000 trajectoires**.
+- Les diaporamas v2 et la fiche des paramètres parlent de « milliers d'années » : c'est une approximation. Le
+  « milliers » vaut pour les 10 000 trajectoires du pricer, pas pour les années tirées du générateur.
 
 **Pour l'éolien, une règle pondérée par la production.** La règle de prix est apprise en donnant plus de poids aux
 heures où le vent produit (idée de Qorbanian, Löhndorf et Wozabal). Erreur éolienne au rejeu : **0,84 → 0,56 €/MWh**.
@@ -166,11 +227,42 @@ Contrat 2027–2029, forwards des 30–31 octobre 2026.
 | Dispersion du volume | solaire ± 6,5 %, éolien ± 9 % |
 | Dégradation des panneaux | 0,4 % par an (hypothèse) |
 
+**La vraie cascade, telle qu'au 31 octobre au soir** (`pricing-v2/v2_simple.html`, diapo 3 ; détail dans
+`v2_detail.html`, diapo 5). PPA 2027–2029, forwards des 30–31 octobre, €/MWh, ancienne règle d'arrêt (≤ 0) :
+
+| Étage | Solaire | Éolien |
+|---|---|---|
+| Forward Cal (pondéré par la production) | 88,98 | 87,72 |
+| Profil mensuel (facteur k) | −5,97 | +7,87 |
+| Cannibalisation horaire | −26,82 | −10,68 |
+| Risque de volume | −0,09 | −0,42 |
+| Risque de liquidité | 0,00 | 0,00 |
+| Risque prix et capture | −4,68 | −1,79 |
+| Coût des écarts | −2,49 | −2,82 |
+| Garanties d'origine | +1,81 | +1,81 |
+| Marge | −1,00 | −1,00 |
+| **Prix PPA (31 oct.)** | **49,75** | **80,69** |
+
+Comment la lire :
+- le forward pondéré est vers 88–89 €, tiré par un Cal 2027 très haut (128,16 €) ;
+- en solaire, tout se joue sur la cannibalisation : près de 27 € ;
+- en éolien, le profil mensuel **rapporte** près de 8 € (il produit l'hiver), et la cannibalisation est plus faible ;
+- la liquidité vaut 0, car 2027, 2028 et 2029 sont toutes cotées.
+
+**Ce tableau n'est plus le prix d'aujourd'hui.** Le 1er novembre, deux changements de méthode l'ont modifié
+(ci-dessous) : **46,64 / 77,39** (`parametres.md`). La prime solaire, en particulier, n'est plus 4,68 € : le
+détail exact de la nouvelle cascade n'est pas publié ligne par ligne dans les fichiers ; seuls la prime solaire
+(5,98 → 2,2 €) et le prix final le sont.
+
 **Le prix publié au 1er novembre : solaire 46,64 €/MWh, éolien 77,39 €/MWh** (`parametres.md`).
 
 Il a bougé trois fois en un jour, pour des raisons de **méthode**, pas de marché (mêmes forwards) :
-- **31 octobre, 20 h 57** : le pricer v2 est mis en ligne, **49,75 / 80,69** (la v1, la nuit d'avant, donnait 47,07 /
-  77,78) ;
+- **31 octobre, 20 h 57** : le pricer v2 est mis en ligne, **49,75 / 80,69**. Et la v1 ? Deux chiffres circulent,
+  tous deux justes à leur date :
+  - **47,07 / 77,78** : la v1 dans le débrief de la nuit du 30 au 31 octobre (`pricing/debrief-2026-10-31.md`) ;
+  - **48,43 / 80,29** : la v1 au moment de la bascule, le 31 octobre, avec les mêmes forwards que la v2
+    (`v2_simple.html`, diapo 9). C'est la bonne comparaison avec la v2 : environ +1,3 € en solaire et +0,4 € en
+    éolien ;
 - **1er novembre, 8 h 12** : une heure à 0 € est désormais produite et payée 0. Le même revenu se répartit sur plus
   de MWh payés, donc le prix par MWh baisse : **42,88 / 77,20** ;
 - **1er novembre, 12 h 25** : la prime de risque suit maintenant la sensibilité mesurée du prix capté au prix de base

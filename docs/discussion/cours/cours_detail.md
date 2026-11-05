@@ -2,7 +2,7 @@
 
 *Pour Tom · PowerKlock · 31 octobre 2026*
 
-Mêmes 13 chapitres que la version simple, avec en plus :
+Mêmes 14 chapitres que la version simple, avec en plus :
 - les mécanismes et les formules, chacune expliquée en mots simples ;
 - ce qu'on a testé, avec les chiffres ;
 - les limites et les questions ouvertes.
@@ -99,7 +99,8 @@ Pour un parc qui produit g_h à l'heure h, payé p_h :
 moyen, plus un terme qui mesure si le parc produit plutôt aux heures chères (covariance positive) ou aux heures
 bon marché (covariance négative).
 
-**Convention du site.** La production aux prix ≤ 0 n'est pas payée : p_h est remplacé par max(p_h, 0) et ces MWh
+**Convention du site** (jusqu'au 31 octobre ; depuis le 1er novembre, seulement strictement sous 0 €). La production
+aux prix ≤ 0 n'est pas payée : p_h est remplacé par max(p_h, 0) et ces MWh
 sont perdus. Le site publie la capture « payée » : valeur des MWh produits aux heures positives ÷ base.
 
 ### 2.2 Profil contre cannibalisation (méthode en 3 étapes)
@@ -146,7 +147,8 @@ Chaque terme :
   On ne prend que des produits liquides (SEFE / EEX).
 - **Capture du mois.** Elle sort du générateur de scénarios (chapitre 9).
 - **Prime de risque** (pricer v2, depuis le 31 octobre 2026) :
-  - la bande P10–P90 du générateur, avec le Monte Carlo complet, donne une **dérive de capture** : solaire 2,38,
+  - la bande du générateur, avec le Monte Carlo complet, donne une **dérive de capture**, σ = (P50 − P25) ÷ 0,6745 ÷
+    √années : solaire 2,38,
     éolien 1,90 point par √année (fiche des paramètres du 1er novembre ; 2,75 / 2,12 le 31 octobre) ;
   - le pricer tire **10 000 trajectoires** (forward, volume, capture, liquidité), couvre le volume attendu au Cal, et
     retire **prime = valeur juste − 25e centile**. Le prix publié est donc le niveau qui tient 3 fois sur 4 ;
@@ -163,7 +165,8 @@ Chaque terme :
 ### 3.2 Pourquoi « non payé aux prix négatifs »
 Les PPA récents prévoient souvent que l'acheteur ne paie pas les MWh produits à prix négatif (clause de
 *curtailment*). Le parc s'arrête, ou il produit sans être payé. Ne pas compter ces MWh évite de surestimer la valeur :
-- en 2025, 735 heures ≤ 0 tombaient presque toutes à midi, au printemps et en été ;
+- en 2025, 735 heures ≤ 0 (moyenne horaire ; 742 en comptant au quart d'heure, 722 dans les données horaires du
+  pricer) tombaient presque toutes à midi, au printemps et en été ;
 - c'est le cœur de la production solaire.
 
 ### 3.3 Prix publiés
@@ -174,7 +177,8 @@ Pricer v2, forwards des 30–31 octobre 2026, PPA 2027–2029 : **solaire 46,64 
     le même revenu se répartit sur plus de MWh payés, **42,88 / 77,20** ;
   - 1er nov., 12 h 25 : la prime de risque suit la sensibilité mesurée du prix capté au prix de base (0,96 € par €
     en solaire, 0,95 en éolien) ; la prime solaire passe de 5,98 à 2,2 € : **46,64 / 77,39** (prix publié actuel).
-- (la v1, la nuit d'avant, donnait 47,07 / 77,78).
+- (la v1 donnait 47,07 / 77,78 dans le débrief de la nuit du 30 au 31 octobre, et 48,43 / 80,29 au moment de la
+  bascule vers la v2, avec les mêmes forwards : diaporama v2 simple, diapo 9).
 
 Méthode :
 - **une seule méthode**, le générateur, au lieu de la moyenne de quatre (qui se trompait de 2,59 € en solaire et
@@ -312,10 +316,35 @@ Limite Core moyenne (JAO, calcul PowerKlock) : **9,2 GW en 2023, 7,7 en 2024, 5,
 **Cause (Boerman, 2026, « Flowbased: export restrictions of France », boerman.dev) :**
 - les exports vers l'Italie passent par les lignes 400 kV **Creys–Saint-Vulbas** ;
 - la seconde de ces lignes contraint **49 % du temps en 2026**, contre 21 % en 2025 (la première : 17 % contre 5 %) ;
-- la valeur de ces lignes est passée de 183 à 318 €/MWh entre 2025 et 2026 ;
+- la valeur de ces lignes (ce que gagnerait l'Europe avec 1 MW de plus) est passée de 183–201 €/MWh en 2025 à
+  311–318 €/MWh en 2026 ;
 - RTE réserve une marge élevée pour les flux qui ne passent pas par le marché Core (*FUAF*).
 
 La limite ne remontera qu'avec des renforcements du réseau.
+
+**Une explication parmi d'autres.** Boerman décrit le mécanisme technique de la limite. Mais le dossier couplage
+(diaporama `couplage_europeen.pdf`, page « Les causes ») liste plusieurs causes du découplage avec l'Allemagne : plus
+de nucléaire disponible (33,8 → 46,9 GW), la limite JAO, des gestionnaires qui donnent 54 % des capacités au lieu de
+70 % (ACER), le vent allemand. **Aucune source publique ne chiffre la part de chaque cause.**
+
+### 5.4 bis Les quatre cas, sur un seul merit order
+Même merit order français dans tous les dessins (consommation 55 GW, France seule à 50 €, ligne ±10 GW) ; seul le
+prix des voisins change. Le prix français se lit sur la courbe française, à la production française : consommation
++ export, ou − import.
+
+| Cas | Voisins | France | Fréquence (`cases_hist.json`) | 2025 / 2022 (diaporama « cas par cas ») |
+|---|---|---|---|---|
+| 1. Exportatrice, ligne libre | 58 € | 58 € (même prix) | 34–44 % en 2016–2021, 10 % en 2025 | 2025 : 75 / 75 €, rente 171 M€ |
+| 2. Exportatrice, ligne pleine | 95 € | 65 € (lu à 55 + 10 GW) | 1–16 % jusqu'en 2022, 22 / 54 / 66 / 54 % en 2023–2026 | 2025 : ≈ 58 contre 102 €, 12,0 GW, rente 3,6 Md€ |
+| 3. Importatrice, ligne libre | 45 € | 45 € | 19 % en 2022, 0 % en 2025 | 2022 : 331 €, rente 908 M€ |
+| 4. Importatrice, ligne pleine | 20 € | 40 € (lu à 55 − 10 GW) | 40 % en 2022, ≈ 1 % en 2024–2025 | 2022 : 311 contre 230 €, 89 h de manque évitées, rente 3,1 Md€ (3,5 dans le récapitulatif du diaporama, écart non expliqué) |
+
+Les 1 % du cas 4 en 2024–2025 sont des heures où l'Allemagne est à prix négatif, pas des heures de manque. Le reste
+du temps (23 % en 2025), la France n'est dans aucun de ces quatre cas (prix différent selon les frontières).
+
+![Les quatre cas](../couplage/m_all.png)
+
+![Fréquence des cas](../formation/f_hist.png)
 
 ### 5.5 Limites
 - Notre limite JAO est une moyenne horaire. L'heure qui compte pour un parc solaire, c'est midi.
@@ -337,7 +366,8 @@ Avec une tolérance de 1 € (`calc.py`), les heures où France et Allemagne son
 | 57 % | 54 % | 39 % | 46 % | 25 % | 17 % | 19 % |
 
 ### 6.2 Prix des heures coupées
-- **France moins chère que l'Allemagne en 2025 :** 67 % des heures, 58 € contre 103 € en moyenne (débrief).
+- **France moins chère que l'Allemagne en 2025 :** 67 % des heures, 58 € contre 103 € en moyenne (débrief). Selon
+  la règle : 68 % pour tout écart d'un centime (diaporama couplage, page 10), 63 % pour un écart d'au moins 5 € (page 7).
 - **Heures coupées de 2025, selon le vent allemand :**
   - vent allemand faible : 67,5 € en France contre 123 € en Allemagne ;
   - vent allemand fort : 42,4 € contre 82 €.
@@ -349,7 +379,8 @@ Avec une tolérance de 1 € (`calc.py`), les heures où France et Allemagne son
 
 | | 2023 | 2024 | 2025 |
 |---|---|---|---|
-| Réalité | 18,5 % | 49 % | 67,5 % |
+| Réalité (heures coupées) | 18,5 % | 49 % | 67,5 % |
+| Autre définition : France au moins 5 € sous l'Allemagne (diaporama couplage, page 29) | — | 49 % | 68 % (8 % en 2021) |
 | Indicateur prévisible | 17 % | 39 % | 66 % |
 
 L'indicateur prévisible, c'est le surplus français au-delà de la limite Core, calculé à l'avance.
@@ -549,14 +580,20 @@ Elles ont été écartées pour cette raison.
 
    Les prix négatifs sont traités à part, en €, car ils ne dépendent pas du gaz. La dernière année d'apprentissage
    pèse deux fois plus que la précédente (adopté le 31 oct.).
-4. **Capture de chaque mois.** Prix moyen obtenu par le parc ÷ prix moyen du mois. Le parc s'arrête aux prix ≤ 0.
-5. **Répétition.** On répète sur 30 à 60 années tirées, et on fait la moyenne.
+4. **Capture de chaque mois.** Prix moyen obtenu par le parc ÷ prix moyen du mois. Le parc s'arrête strictement sous
+   0 € depuis le 1er novembre (avant : aux prix ≤ 0).
+5. **Répétition.** Pour le prix publié, **60 années tirées** par année livrée et par filière
+   (`scripts/ppa_generator.py`, `n=60`) ; dans les tests de rejeu, 30 (60 ne change le résultat que de 0,03 €). Les
+   « milliers » des diaporamas v2 désignent en fait les 10 000 trajectoires du Monte Carlo du pricer. L'année la plus présente fait en moyenne 30 % des jours tirés (48 % au maximum) : la variété reste
+   bonne (diaporama v2 détaillé, diapo 8).
 
 ### 9.2 Le biais de l'éolien
 
 **Le constat.** Sans ancrage, la règle par cases surévalue l'éolien d'environ **+2,6 €/MWh**, et cette erreur est
 **presque constante** d'un cas à l'autre. Même sur l'année qu'elle a apprise, elle paie les heures de vent environ
-**3 % trop cher** (facteur d'ancrage 0,97).
+**3 % trop cher** l'hiver (facteur d'ancrage 0,97). L'été, c'est l'inverse : facteur 1,06, la règle sous-paie
+(diaporama v2 détaillé, diapo 15). Dans le détail, la règle est 6,9 € trop haute dans les heures où la France est
+coupée et 6,4 € trop basse dans les heures couplées (diapo 14).
 
 **Pourquoi.** Une case fait la moyenne de toutes ses heures. Or, à l'intérieur d'une case, les heures les plus
 venteuses sont aussi :
@@ -729,8 +766,8 @@ contenu la réalité dans **environ 45 % des mois**. Il en faudrait 80 %.
 - la **croissance du parc** au-delà de la dernière année : × U(0,6 ; 1,4) ;
 - le **niveau du nucléaire** : × lognormale(0 ; 4 %), car EDF annonce 350–370 TWh par an, environ ±3 %. Avec en plus
   **5 % de chances d'une année de type 2022** ;
-- la **limite d'export Core** : × lognormale(0 ; 20 % × √années). Repère : elle est allée de 5,4 à 9,2 GW entre 2023
-  et 2026 ;
+- la **limite d'export Core** : × lognormale(0 ; 20 % × √années). Repère : elle est passée de 9,2 GW (2023) à 5,4 GW
+  (2025), puis 5,9 en 2026 ;
 - le **niveau de consommation** : × lognormale(0 ; 2 %), selon le rythme de l'électrification ;
 - les **semaines analogues** tirées « chères ou bon marché » : un rang commun à toute la semaine (pannes,
   combustibles, comportement) ;
@@ -822,7 +859,7 @@ Rejeu 2023–2026, 9 cas, erreur moyenne en €/MWh.
 
 | Test | Solaire sans ancrage | Éolien sans ancrage | Éolien ancré hiver/été | Verdict |
 |---|---|---|---|---|
-| **Modèle publié** | **0,76** | 2,62 | 0,84 | référence |
+| **Modèle publié v1 (avant le 31 oct.)** | **0,76** | 2,62 | 0,84 | référence (v2 : éolien 0,56) |
 | Pondéré par la production | 1,41–1,43 | 2,10–2,20 | 0,48–0,71 | meilleur éolien, pire solaire |
 | Pondération + part du vent quand la France est coupée | 1,1 | 2,01 | 0,56 | **adoptée en v2 (éolien)** |
 | Pondération + pente du vent | — | 1,93 (biais +0,45) | 0,71 | presque sans biais, dispersé |
@@ -880,6 +917,178 @@ Risque et écarts :
   prudence sur ses erreurs passées (le percentile pondéré).
 - Le plus dur reste l'éolien : sa valeur baisse plus vite que ce que les modèles prévoient. Le prochain chantier,
   c'est de comprendre pourquoi.
+
+---
+
+## Chapitre 14 — Le fournisseur et ses produits
+
+Source principale : diaporama `formation/partie2/Formation_partie2_fournisseur.pdf` (13 diapositives, citées
+« diapo n »), tiré de la formation Energy Management de Tom (2024), mis à jour pour 2026. Les montants hors diaporama
+viennent de textes officiels, avec le lien.
+
+### 14.1 Le métier et sa marge
+Trois rôles (diapo 2) : fournisseur face au client ; **responsable d'équilibre** face à RTE (équilibre son périmètre
+au quart d'heure, paie les écarts) ; accès au marché (EEX, EPEX SPOT, gré à gré).
+
+Marge brute ≈ **5 à 10 % de la facture** (diapo 2 ; ordre de grandeur de la formation, pas de source publique
+trouvée). Conséquence : une erreur de 10 % sur le coût de l'énergie efface la marge. D'où le **back-to-back** (chaque
+vente fixe est couverte à terme le jour même) et les **primes de risque**.
+
+### 14.2 Les produits et le partage du risque
+| Produit | Prix payé | Risque client | Risque fournisseur |
+|---|---|---|---|
+| Prix fixe | connu à la signature | aucun | élevé |
+| Indexé spot | moyenne mensuelle ou trimestrielle du day-ahead | moyen | moyen |
+| Indexé forward | moyenne des cotations à terme (101, 103…) | moyen | moyen |
+| Dynamique | day-ahead de chaque quart d'heure | élevé | faible |
+| Click volume | blocs MW fixés à la demande, reste au spot | moyen à élevé | faible |
+| Click % | part de la consommation fixée par étapes, reste au spot | faible à moyen | élevé |
+
+Source : diapo 3. Le click % laisse un risque élevé au fournisseur parce que chaque click fixe une part **avec sa
+forme** : le fournisseur garde la forme et le volume.
+
+**Code A·B·C** (diapo 5, schéma `c_abc.png`) : A = mois de cotation, B = mois d'écart, C = mois livrés. 101 : cotation
+sur M−1, livraison M. 103 : cotation sur M−1, livraison du trimestre suivant. 12012 : cotation sur 12 mois, livraison
+des 12 suivants.
+
+**Couverture d'un indexé forward.** Le prix client = moyenne arithmétique des clôtures sur la période de cotation. Le
+fournisseur achète **1/X** du volume chaque jour de bourse (X = nombre de séances ; 1/21 pour un 101 d'octobre si
+septembre compte 21 séances). Son coût moyen égale alors la moyenne des clôtures, au spread d'achat près. Il garde le
+**volume** et la **forme**.
+
+### 14.3 Fixe contre spot, 2025
+| | €/MWh |
+|---|---|
+| Cal 2025 base, moyenne des clôtures de 2024 | 63,77 |
+| Spot France 2025, moyenne annuelle | 61,08 |
+| Spot mensuel le plus bas (mai) / le plus haut (février) | 19,4 / 122,7 |
+
+Sources : diapo 4 ; valeurs exactes dans `formation/partie2/charts.py`. **Attribution du Cal** : le diaporama écrit
+« EEX » ; le cours (chapitre 1) écrit « SEFE via la base PowerKlock » ; `charts.py` dit « PowerKlock warehouse ».
+Les trois désignent la même série : des cotations EEX relayées par SEFE dans la base. À citer ainsi : *Cal EEX, via
+SEFE et la base PowerKlock*.
+
+Attention à la comparaison de la diapo 4 : 63,8 contre 61,1 compare deux prix **base**. Un client réel paie sa
+forme dans les deux cas (voir 14.5).
+
+### 14.4 Couverture et position ouverte
+Séquence (diapo 7) : signature → Cal base ; Y−1 → trimestres ; Q−1 → mois ; J−1 à 12 h → day-ahead au quart
+d'heure ; J → intraday ; après → écarts au prix RTE.
+
+**Position ouverte** = achats + production − consommation (diapo 7). Négative : court ; positive : long ; nulle :
+plat.
+
+**Miroir du pricer PPA.** Le pricer v2 couvre le volume attendu du parc au Cal (chapitre 3.1, « couvre le volume
+attendu au Cal »). Le parc est long aux heures solaires et court ailleurs ; le portefeuille de consommation est court
+l'hiver et aux pointes. Les deux supportent un **risque de forme résiduel** une fois le ruban couvert.
+
+### 14.5 Coût de forme
+**Définition** (diapo 9) : coût de forme = P_profil − P_base, avec
+- P_profil = Σ_q c_q · p_q ÷ Σ_q c_q (consommation c et prix day-ahead p de chaque quart d'heure q) ;
+- P_base = moyenne simple des p_q.
+
+**Décomposition.** Le diaporama ne donne pas la formule. La lecture habituelle :
+- **saisonnier** = Σ_m (C_m ÷ C) · B_m − P_base, où B_m est le prix base du mois m et C_m ÷ C sa part de la
+  consommation annuelle ;
+- **infra-mensuel** = P_profil − Σ_m (C_m ÷ C) · B_m.
+
+**France 2025** (35 036 quarts d'heure, consommation RTE, prix day-ahead ; calcul PowerKlock) :
+
+| Étape | €/MWh |
+|---|---|
+| Prix base (spot moyen) | 61,08 |
+| + forme saisonnière | +3,88 |
+| + forme infra-mensuelle | +1,77 |
+| = prix payé par le profil | 66,73 |
+| Coût de forme | **+5,65** |
+| Ratio profil ÷ base | **1,092** |
+
+**Le miroir de la capture.** Capture d'un parc = P_parc ÷ P_base < 1 (le solaire produit quand c'est bon marché).
+Ratio d'un profil de consommation = P_profil ÷ P_base > 1. La cannibalisation solaire creuse le prix de midi : elle
+baisse la capture du parc et augmente la forme infra-mensuelle du consommateur, qui consomme peu à midi.
+
+**Additif contre multiplicatif.**
+- Additif (diapo 8, `c_stack.png`) : Cal + coût de forme = 63,77 + 5,65 = **69,42 €**.
+- Multiplicatif (convention du cours pour le PPA : forward × capture) : 63,77 × 66,73 ÷ 61,08 = **69,67 €**.
+- Écart = (Cal − P_base) × (ratio − 1) = (63,77 − 61,08) × 0,0925 ≈ **0,25 €**.
+
+L'écart est petit en 2025 parce que le Cal était proche du spot. Si le Cal valait le double du spot de référence,
+l'écart vaudrait environ 9 % de ce spot. Le multiplicatif suppose que la forme suit le niveau des prix (vrai si la
+hausse vient du gaz, qui renchérit surtout les heures chères) ; l'additif suppose un écart en euros stable. **Question
+ouverte** : aucune des deux n'a été testée sur plusieurs années pour un profil de consommation. Pour rester
+cohérent avec le pricer PPA (une méthode partout), le ratio est le choix naturel.
+
+**Limites.**
+- Le +5,65 € est mesuré **après coup** sur le spot 2025. À la signature, le fournisseur l'estime avec les cotations
+  mois, trimestres et pointe, plus l'historique du profil.
+- Il vaut pour la **consommation française entière** ; un client donné a sa forme (bureau, usine en 3×8, logement
+  chauffé à l'électricité).
+- 35 036 quarts d'heure : 4 de moins que 365 × 96. Le fichier ne dit pas lesquels manquent.
+
+### 14.6 Construire un prix fixe
+**Prix = A × prix de référence + B** (diapo 8). A porte ce qui suit le prix (forme, équilibrage) ; B ce qui n'en
+dépend pas (certificats, frais, marge). Étages : commodité base, forme, primes (volume, prix, écarts), GO et CEE,
+capacité, frais, marge.
+
+### 14.7 Risques
+Formules de la diapo 10 (signe : gain du fournisseur) :
+- **Prix** : (spot − forward) × forme réalisée ;
+- **Volume** : (forward − spot moyen) × (volume réel − volume prévu) ;
+- **Forme** : forward × (forme réelle − forme prévue).
+
+Horizon : un fixe porte le volume sur toute la durée, un 101 sur un mois ; un dynamique n'a presque pas de risque
+long terme.
+
+**Ils ne s'additionnent pas.** Les trois dépendent des mêmes causes (température, nucléaire, gaz). Un hiver froid
+pousse ensemble la consommation, le spot et le poids des heures chères. La bonne méthode est celle du chapitre 11 :
+tirer des futurs joints, calculer la marge dans chacun, et prendre prime = marge moyenne − marge au quantile prudent
+(le P75 du pricer). Le pricer PPA mesure la corrélation volume–capture (0,24 solaire, 0,32 éolien) ; un modèle
+fournisseur devrait mesurer la corrélation température–consommation–prix au lieu de la supposer.
+
+### 14.8 Écarts
+- **ISP 15 minutes depuis le 1er janvier 2025** (avant : 30 minutes) — CRE, délibération 2025-153. À distinguer du
+  **MTU 15 minutes du day-ahead**, au 1er octobre 2025 (chapitre 5).
+- Volume d'écart = prévision − volume alloué : mesuré au quart d'heure (compteurs communicants), profilé sinon.
+- Coût = écart × (prix d'écart − day-ahead) (diapo 11). Même formule que le chapitre 12, côté soutirage.
+- Leviers : prévision et intraday ; **foisonnement** du portefeuille (chapitre 12 : 3,06 → 2,82 €/MWh pour l'éolien
+  national selon la prévision ; aucun chiffre côté consommation dans nos fichiers) ; prime d'écart ou
+  **pass-through**.
+
+### 14.9 La facture 2026
+| Étage | Ce qui est vérifié | Source |
+|---|---|---|
+| Capacité | Nouveau mécanisme : RTE certifie, organise l'enchère, perçoit une « taxe de répartition des coûts » dont la CRE fixe le montant unitaire, répartie selon la consommation de la période ; 1re livraison nov. 2026 – mars 2027 | CRE 2026-42 |
+| CEE | 6e période du 1er janv. 2026 au 31 déc. 2030 ; 1 050 TWhc/an, dont 280 « précarité » | décret 2025-1048 ; DGEC |
+| GO | 1 GO = 1 MWh renouvelable | diapo 12 |
+| TURPE 7 | En vigueur au 1er août 2025, pour environ quatre ans | CRE 2025-39, 2025-40 |
+| Accise | 30,85 €/MWh ménages et assimilés au 1er févr. 2026, jusqu'au 31 juillet (26,58 PME et haute puissance), majoration outre-mer comprise | BOFiP |
+| TVA | 20 % sur tout depuis le 1er août 2025 (fin du 5,5 % sur l'abonnement) | Médiateur de l'énergie |
+
+**ARENH et VNU** (dossier couplage, diapos 19 et 25) : ARENH à 42 €/MWh jusqu'au 31 décembre 2025, 43,8 % de la
+consommation d'un client TRVE en 2025 ; TRVE 2026 énergie 63,9 contre 103,0 €/MWh en 2025 ; VNU au-dessus de 78 et
+110 €/MWh, revenu nucléaire estimé 2026 : 66,08 €/MWh, donc rien à reverser.
+
+### 14.10 Questions ouvertes
+- **Montant de la capacité 2026-27** : la CRE l'a constaté le 10 septembre 2026. Un cabinet d'avocats (Seban)
+  rapporte 1,667 Md€ à financer et 18 646,63 €/MW de « puissance soutirée corrigée » ; non lu dans le texte de la
+  CRE, donc **non retenu**.
+- **Accise après le 1er août 2026** : baissée par la loi de finances 2026 ; niveau non trouvé dans un texte officiel.
+- **Coût des CEE par MWh** d'électricité : pas de chiffre officiel.
+- **Marge 5–10 %** : ordre de grandeur de la formation, sans source publique.
+- Additif ou multiplicatif pour la forme : à tester sur plusieurs années (14.5).
+
+### Sources
+- CRE 2025-153 — https://www.cre.fr/fileadmin/Documents/Deliberations/2025/250611_2025-153_ISP15.pdf
+- CRE 2026-42 — https://www.cre.fr/fileadmin/Documents/Deliberations/2026/260210_2026-42_Methodologie_mecanisme_capacite.pdf
+- CRE 2025-39 (TURPE 7 HTB) — https://www.cre.fr/fileadmin/Documents/Deliberations/2025/250204_2025-39_TURPE_7_HTB.pdf
+- CRE 2025-40 (TURPE 7 HTA-BT) — https://www.cre.fr/fileadmin/Documents/Deliberations/2025/250204_2025-40_TURPE_7_HTA-BT.pdf
+- Décret 2025-1048 — https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000052486193
+- DGEC, webinaire P6 — https://www.ecologie.gouv.fr/sites/default/files/documents/2025-12-02%20Webinaire%20DGEC%20P6%20CEE%20vweb.pdf
+- BOFiP, accise 2026 — https://bofip.impots.gouv.fr/bofip/14903-PGP.html
+- Médiateur de l'énergie, TVA — https://www.energie-info.fr/hausse-de-la-tva-les-changements-le-1er-aout-2025-sur-vos-factures-denergie/
+- CRE, TRVE 2026 — https://www.cre.fr/fileadmin/Documents/Deliberations/2026/260114_2026-06_TRVE_2026.pdf
+- CRE, VNU 2026 — https://www.cre.fr/fileadmin/Documents/Deliberations/2026/260226_2026-52_Tarif_unitaire_minoration_du_vnu_2026.pdf
+- Seban Avocats (non officiel, capacité) — https://www.seban-associes.avocat.fr/?p=130316
 
 ---
 

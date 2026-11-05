@@ -47,7 +47,8 @@ Le solaire produit aux heures où le prix baisse : le lien est négatif, sa capt
 
 **La convention du site.** La production aux heures où le prix est négatif ou nul n'est pas payée : ces MWh sont
 perdus. Le site publie la capture « payée » : la valeur des MWh produits aux heures à prix positif, divisée par la
-base. (Le pricer passe à « non payé seulement si le prix est strictement négatif » : chapitre 3.)
+base. (Le pricer, lui, est passé le 1er novembre à « non payé seulement si le prix est strictement négatif » :
+chapitre 3.)
 
 ## 3. Les vrais chiffres en France
 
@@ -68,9 +69,52 @@ Comment le lire :
   d'apprentissage (chapitre 9).
 - **L'éolien tient** autour de 0,89 : il perd peu.
 
+**2022 en détail : un choc de saison, pas d'heure.** Le diaporama du 28 octobre (« Revue des méthodes PPA »,
+diapo 9) découpe la capture solaire en deux effets qui se multiplient :
+- l'**effet saison** : le solaire produit surtout l'été ; vaut-il plus ou moins parce que les mois d'été sont chers ou
+  bon marché ? En 2022 : **1,080**. Le pic de prix de l'année est tombé en été (août : 492 € de base) ;
+- l'**effet heure** : à l'intérieur de chaque mois, vaut-il plus ou moins parce qu'il produit à midi ? En 2022 :
+  **0,969**, déjà sous 1 ;
+- 1,080 × 0,969 ≈ 1,046 : la capture de **104,6 %** en 2022 (56,1 % en 2025, même source, toutes heures comptées).
+
+Autrement dit, même en 2022, midi valait un peu moins que le reste de la journée. C'est la saison qui a tout porté.
+
+La **corrélation** entre la production solaire et le prix (de −1 à +1 ; 0 = aucun lien) le confirme : **+0,06 en
+2022**, **−0,41 en 2025** (diapo 9). En 2022, produire beaucoup ne faisait presque pas baisser le prix. En 2025, oui.
+
+![2022 contre 2025 : effet saison et effet heure, et les deux merit orders (diapo 9, 28 octobre 2026)](../../deck-ppa/apercus/09_crise2022.png)
+
+*Diapo 9 du 28 octobre 2026 : RTE éCO2mix × ENTSO-E, calcul PowerKlock, années complètes 2016–2025. Le violet est
+le nucléaire.*
+
+Les deux barres de droite sont **deux merit orders d'un midi d'été** :
+- **été 2025** : beaucoup de solaire, nucléaire disponible. La demande est servie avant d'arriver au gaz : prix vers
+  0, voire négatif ;
+- **été 2022** : nucléaire au plus bas (corrosion), sécheresse, gaz très cher. Même à midi, il faut du gaz : c'est le
+  gaz qui fixe le prix.
+
+L'image : le marchand de glaces de 2022 vendait sur une plage où il manquait de glace. Peu importe qu'il y ait
+d'autres marchands : tout se vendait cher.
+
+**Ce qu'on en tire pour pricer** (diapo 9) : 2022 est un **choc de niveau saisonnier**, pas de la cannibalisation. On
+ne l'apprend pas comme une année normale ; on la garde comme **scénario de stress**.
+
 **Le lien avec les prix négatifs.** La chute du solaire depuis 2023 suit la montée des heures à prix nul ou négatif
 (chapitre 1) : 184 heures en 2023, 735 en 2025. En 2025, ces heures tombaient presque toutes à midi, au printemps et
 en été (`cours_detail.md`), c'est-à-dire au cœur de la production solaire.
+
+**Pourquoi on lit parfois 722, 735 ou 742 heures pour 2025.** Ce n'est pas une erreur, ce sont trois façons de
+compter :
+- **735** : les heures ≤ 0 € dans la série **horaire** que le cours utilise (`data/history/fr_hourly/2025.json`,
+  recalcul `calc.py`, champ `h_le0` de `calc.json`) ;
+- **742** : les **quarts d'heure** ≤ 0 €, divisés par 4 (`calc.json`, `le0_quarter_hours`). Depuis le 1er octobre
+  2025, le prix est fixé au quart d'heure : une heure dont la moyenne est positive peut cacher un quart d'heure
+  négatif. C'est le bon comptage depuis cette date ;
+- **722** : le chiffre du diaporama du 28 octobre (diapo 8), tiré des données horaires du banc d'essai (`ppa_lab`,
+  ENTSO-E). On n'a pas isolé précisément pourquoi il est 13 heures sous le 735 ; probablement une autre façon de
+  ramener les quarts d'heure de fin 2025 à l'heure.
+
+On cite toujours le comptage avec sa définition.
 
 ## 4. La cannibalisation : les parcs se mangent entre eux
 Quand la capture baisse **parce qu'il y a de plus en plus de parcs**, on parle de **cannibalisation**. Chaque nouveau
@@ -90,6 +134,34 @@ sous-sol : les prix négatifs.
   « cannibalisation transfrontalière ».
 
 L'image : la plage n'est pas fermée. Les marchands de glaces de la plage d'à côté vendent aussi à vos clients.
+
+**Ce qui peut freiner la cannibalisation : le stockage.** Une batterie se charge à midi, quand le prix est bas, et se
+décharge le soir. Elle ajoute de la demande aux heures solaires : le prix de midi baisse moins.
+
+Le 28 octobre, on a mesuré l'effet avec le modèle européen (diapo 29 de la « Revue des méthodes PPA ») : on ajoute
+des batteries de 2 heures en France, Allemagne, Belgique et Espagne, et on regarde la capture solaire.
+
+| Capture solaire, % | 0 GW | 10 GW | 20 GW | 40 GW |
+|---|---|---|---|---|
+| 2026 | 65,5 | 67,4 | 70,0 | 77,4 |
+| 2028 | 50,7 | 52,5 | 54,7 | 60,6 |
+| 2030 | 46,8 | 48,5 | 50,4 | 55,2 |
+
+- En **2030**, avec **40 GW** de batteries dans les quatre pays, la capture solaire passe de **46,8 % à 55,2 %** :
+  plus 8 points.
+- Selon l'année et la quantité : **+3 à +10 points** en solaire ; **moins de 2 points** en éolien (diapo 29).
+
+![Le stockage dans le modèle européen (diapo 29, 28 octobre 2026)](../../deck-ppa/apercus/29_m4c.png)
+
+*Diapo 29 du 28 octobre 2026 : `scripts/ppa_storage_sensitivity.py`. Chiffres du modèle européen, une des anciennes
+méthodes, dans la convention de capture du banc d'essai ; ce sont des ordres de grandeur, pas des prévisions.*
+
+Deux précautions :
+- ces niveaux de capture (65,5 % en 2026) ne sont pas ceux du tableau ci-dessus : autre modèle, autre convention ;
+  seul l'**écart** dû aux batteries est à retenir ;
+- les 40 GW sont une hypothèse de test. La proposition du 28 octobre était d'ajouter une trajectoire de stockage
+  sourcée (RTE Bilan prévisionnel, plan de réseau allemand) en **option**, pas par défaut. Le générateur v2 pose déjà
+  des batteries sur les parcs de l'année livrée (chapitre 9).
 
 ## 5. Pourquoi l'éolien résiste mieux, et pourquoi il faut rester prudent
 L'éolien perd moins de valeur que le solaire, pour deux raisons :
@@ -161,6 +233,25 @@ générateur PowerKlock tire production et prix dans les mêmes semaines réelle
 
 Aucun de ces chiffres ne vient de RTE : RTE ne publie pas de taux de capture. **On ne compare que des chiffres de même
 définition** (`SESSION_DISCUSSION.md`).
+
+**Le même piège en solaire, pour 2025 : 77,0 %, 58 % ou 56 % ?** Trois chiffres, trois recettes :
+- **0,58** : la capture « payée » du site (`fr_capture.json`). On prend la valeur de toute la production, en comptant
+  à 0 € les MWh des heures ≤ 0, et on divise par le prix moyen de l'année. Les MWh non payés **restent** dans la
+  production : ils font baisser la moyenne ;
+- **56 %** (56,1 %) : « toutes heures » (diapos 7 et 9 du 28 octobre). Toute la production est comptée **à son vrai
+  prix**, même négatif. C'est la plus basse, puisque les prix négatifs pèsent dedans ;
+- **77,0 %** : la convention « arrêt » du banc d'essai des anciennes méthodes (diapos 17 et 20). On calcule **mois
+  par mois** la valeur des seuls MWh payés, rapportée au prix moyen du mois, puis on fait la moyenne pondérée par la
+  production. Deux choses la font monter : les MWh non payés sortent du calcul au lieu de compter pour 0, et le
+  calcul au mois retire l'effet saison (les mois d'été moins chers).
+
+L'image : la moyenne d'une classe. Selon qu'on compte les absents à zéro, qu'on les retire, ou qu'on fait la moyenne
+trimestre par trimestre, on n'obtient pas la même note, alors que les copies sont les mêmes.
+
+Une réserve : la recette exacte du 77,0 % est déduite des notes du diaporama et du code du banc d'essai
+(`scripts/ppa_backtest_detail.py`) ; elle est cohérente avec l'écart observé, mais je ne l'ai pas recalculée. La
+diapo 8 rappelle d'ailleurs qu'une ancienne convention, qui retirait les heures ≤ 0 des deux côtés, rendait le
+solaire 2025 « plus beau d'environ 7 €/MWh ».
 
 **Deuxième piège : le year to date n'est pas l'année entière.** Dans la convention du pricer, l'année entière finit
 toujours un peu sous le cumul à fin octobre : 0,906 en 2024 et 0,923 en 2025. Les deux derniers mois changent donc le

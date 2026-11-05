@@ -38,10 +38,13 @@ Pour fabriquer l'éventail, on utilise un **Monte Carlo**. Le nom vient du casin
 milliers de fois, et on regarde ce qui sort.
 
 Concrètement, chez nous :
-- le générateur de scénarios (chapitre 9) fabrique des **milliers d'années possibles**, avec de vraies semaines du
-  passé ;
+- le générateur de scénarios (chapitre 9) fabrique des **années possibles**, avec de vraies semaines du passé :
+  **60** par année livrée et par filière dans la version publiée (`data/history/ppa_forecast.json`, champ `sims`),
+  30 par cas au rejeu ;
 - pour chaque année, on calcule la capture et la valeur du MWh ;
-- on range les résultats du plus bas au plus haut, et on lit le P25, le P50, le P75.
+- on range les résultats du plus bas au plus haut, et on lit le P25, le P50, le P75 ;
+- puis le Monte Carlo du pricer, lui, tire **10 000 trajectoires** (section 6). C'est là que sont les « milliers »
+  dont parlent les diaporamas v2.
 
 **Le piège.** Un Monte Carlo **ne connaît que les risques qu'on lui donne**. S'il ne tire que la météo, il ne sait
 pas que le nucléaire peut s'effondrer, que la ligne vers l'Allemagne peut rétrécir, que le parc solaire peut grandir
@@ -72,8 +75,9 @@ tire au hasard :
 - **Le niveau du nucléaire** : un multiplicateur de type **lognormale à 4 %**. Repère : EDF annonce 350 à 370 TWh par
   an, soit environ ±3 %. Plus **5 % de chances d'une année de type 2022**, l'année de la corrosion sous contrainte
   (environ −20 % de nucléaire, d'après la fiche des paramètres).
-- **La limite d'export vers Core** : un multiplicateur lognormal de **20 % × √années**. Repère : elle est allée de
-  5,4 à 9,2 GW entre 2023 et 2026 (JAO).
+- **La limite d'export vers Core** : un multiplicateur lognormal de **20 % × √années**. Repère : elle est **tombée de
+  9,2 GW en 2023 à 5,4 GW en 2025**, puis 5,9 GW en 2026 (JAO, calcul PowerKlock). Une baisse de plus de 40 % en deux
+  ans : un ±20 % par √année n'a rien d'exagéré.
 - **Le niveau de consommation** : lognormale à **2 %**, selon le rythme de l'électrification.
 - **Des semaines « chères » ou « bon marché »** : chaque semaine tirée reçoit un rang commun, pour représenter ce qui
   fait monter ou baisser toute une semaine à la fois (pannes, combustibles, comportements).
@@ -89,14 +93,39 @@ tire au hasard :
   route. Plus on regarde loin, moins on voit, mais la visibilité ne s'effondre pas d'un coup.
 
 **Le résultat.** Avec tout ça, le prix prudent a tenu dans **78 à 89 % des cas** (fiche des paramètres du 1er
-novembre). La cible est 75 %. La note du 31 octobre au soir donnait 78 % en solaire, 78 à 100 % en éolien. C'est le schéma ci-dessus : la barre bleue.
+novembre). La cible est 75 %. C'est le schéma ci-dessus : la barre bleue. Le détail de la note du 31 octobre au soir
+(`v2_detail.html`, diapo 27) :
+
+| Bande de risque | Solaire | Éolien |
+|---|---|---|
+| Monte Carlo météo seule | — | 0 % |
+| Monte Carlo complet, années civiles (9 cas, 3 tirages) | 78 % | 78–100 % |
+| Monte Carlo complet, 33 points trimestriels | 79 % et 70 % selon la filière | |
+
+Deux précautions de lecture :
+- avec 9 cas, **un cas pèse 11 points** : 78 %, c'est 7 cas sur 9 ;
+- sur les **33 points trimestriels**, on a plus de cas, mais ils se recouvrent (plusieurs trimestres de la même année
+  livrée). 79 % et 70 % encadrent la cible de 75 % : ni trop prudent, ni pas assez, avec la marge d'incertitude
+  qu'on peut attendre. La diapo ne dit pas quelle filière fait 79 % et laquelle 70 %.
 
 **Une remarque honnête.** Ces paramètres (±40 % de parc, 5 % de crise) sont des **jugements**, pas des estimations
 tirées des données. Ils ont été validés par le rejeu, mais sur peu d'années. Il faudra les tester sur plus
 d'années (cours détaillé, 11.5).
 
 ## 6. Du générateur au prix : la prime de risque
-Le Monte Carlo du générateur ne donne pas directement le prix. Il donne une **dérive de capture** :
+Le Monte Carlo du générateur ne donne pas directement le prix. Il donne une **dérive de capture**, calculée ainsi
+(`v2_detail.html`, diapo 18 ; `scripts/ppa_generator.py`) :
+
+**σ dérive = (P50 − P25) ÷ 0,6745 ÷ √(années d'avance)**
+
+En mots, trois étapes :
+1. on prend la **moitié basse** de la bande : l'écart entre le milieu (P50) et le 25e centile (P25). C'est le côté
+   qui coûte au vendeur du prix fixe. Ce n'est **pas** l'écart P10–P90 ;
+2. on divise par **0,6745** : dans une loi normale (la courbe en cloche), le P25 est à 0,6745 écart-type sous le
+   milieu. On retrouve ainsi l'écart-type qui aurait le même P25 ;
+3. on divise par **√(années d'avance)**, pour ramener à une année : la dérive grandit comme la racine du temps.
+
+Le résultat :
 - **solaire 2,38 points par √an, éolien 1,90 point par √an** (fiche des paramètres du 1er novembre ; la note du
   31 octobre donnait 2,75 et 2,12).
 - En mots : si on price un an avant, la capture solaire peut s'écarter d'environ 2,4 points de pourcentage de ce
@@ -166,7 +195,9 @@ tire toujours les mêmes cartes.
 on croit à tort que tout le pays pense pareil.
 
 **La règle.** Peu de critères, ceux qui comptent le plus. Et vérifier combien d'années différentes sont réellement
-tirées. La fiche des paramètres le contrôle : chaque scénario mélange les 6 années de la réserve de semaines.
+tirées. C'est contrôlé : chaque scénario mélange les 6 années de la réserve de semaines, et l'année la plus présente
+fait en moyenne **30 %** des jours d'un scénario, **48 %** au plus (`v2_detail.html`, diapo 8). Personne n'interroge
+une seule rue.
 
 ## 9. Ce qui reste ouvert
 - **Le volume varie trop peu dans le générateur** : 2,1 % en solaire, contre environ 5 % en réalité. Le pricer prend

@@ -116,7 +116,9 @@ Regarde la courbe. Chaque année, elle dessine une vague : haute en hiver, basse
 - **Pourquoi.** EDF place ses arrêts programmés (rechargement du combustible, maintenance) au printemps
   et en été, quand on consomme moins.
 - **2022, le creux.** Des problèmes de corrosion sous contrainte : la moitié du parc à l'arrêt. La France a importé,
-  et le prix a explosé.
+  et le prix a explosé. Face à la Belgique et l'Allemagne, elle a été importatrice **59 %** du temps, dont **40 %**
+  à pleine ligne en restant plus chère qu'elles (le « cas 4 » du chapitre 5, `couplage/cases_hist.json`). Seule,
+  elle aurait manqué d'énergie environ 89 heures (estimation de modèle, `couplage/couplage_europeen.pdf`, page 22).
 - **Depuis,** la disponibilité remonte chaque année. RTE prévoyait environ **45 GW** en moyenne jusqu'à fin août 2026,
   contre 43 GW en 2025, près des records.
 
@@ -170,8 +172,9 @@ le pays a. On en reparle au chapitre 7 : une année sèche est souvent aussi une
   **61,2 €** au prix français, **111,6 €** au prix des pays acheteurs.
 
 RTE écrit que la France n'a pas « bradé » son électricité. Mais l'écart entre les deux prix montre une chose : les
-lignes sont souvent pleines, et le prix français reste en dessous de celui de ses clients. C'est le sujet des
-chapitres 5 et 6.
+lignes sont souvent pleines, et le prix français reste en dessous de celui de ses clients. En 2025, la France exporte
+à pleine ligne vers la Belgique et l'Allemagne **66 %** du temps, à environ 58 € contre 102 € en Allemagne dans ces
+heures (le « cas 2 » du chapitre 5, `couplage/cases5.json`). C'est le sujet des chapitres 5 et 6.
 
 ## 8. Le solaire et l'éolien poussent, les batteries arrivent
 - **Solaire :** +5,9 GW en 2025, 30,4 GW en fin d'année (RTE). Il a dépassé l'hydraulique en puissance.

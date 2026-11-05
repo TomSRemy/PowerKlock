@@ -90,6 +90,14 @@ Avril–septembre 2025, heure moyenne (RTE éCO2mix, ENTSO-E, calcul PowerKlock)
 C'est la **courbe de canard** : vue de profil, la courbe du prix a la forme d'un canard, avec le ventre creux à midi
 et le cou dressé le soir.
 
+**Le soleil allemand rapproche aussi les prix.** À midi, le solaire allemand fait baisser le prix allemand jusqu'au
+niveau français. En 2025, c'est surtout vers 9 h–13 h que la France retrouve le prix de la Belgique et de l'Allemagne
+(le « cas 1 » du chapitre 5). Le soir et la nuit, quand le soleil allemand s'arrête et que le gaz fixe le prix
+allemand, la ligne est pleine et la France reste bien moins chère (le « cas 2 » : surtout 17 h, 18 h, 6 h, 4 h).
+Source : `couplage/couplage_cas.pdf`, pages 3 et 5. Pour un parc solaire français, ça veut dire qu'à midi le prix
+français suit plus souvent le prix allemand, lui-même creusé par le soleil allemand : c'est la cannibalisation par
+les voisins de la section 3, vue heure par heure.
+
 **Et ça grossit.** RTE prévoyait, pour l'été 2026, un pic de production solaire « de l'ordre de 20 GW » en milieu de
 journée (bilan du premier semestre 2026). Chaque année, il y a plus de panneaux, et le creux de midi se creuse.
 
