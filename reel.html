@@ -110,8 +110,9 @@ svg{width:100%;height:auto;overflow:visible}
 .brief .up b{color:var(--up)}.brief .down b{color:var(--down)}
 .brief .up{border-left-color:var(--up)}.brief .down{border-left-color:var(--down)}
 .event{background:var(--panel);border:1px solid var(--line);border-radius:calc(2.5*var(--u));padding:calc(5*var(--u))}
-.brand{position:absolute;bottom:calc(7*var(--u));left:calc(8*var(--u));display:flex;align-items:center;gap:calc(2*var(--u));z-index:2}   /* small, bottom left, as on Instagram */
-.brand .logo{width:calc(7*var(--u));height:auto;display:block}
+.brand{position:absolute;bottom:calc(7*var(--u));left:calc(8*var(--u));display:flex;align-items:center;gap:calc(2.4*var(--u));z-index:2}   /* small, bottom left, as on Instagram */
+.brand .logo{width:calc(9*var(--u));height:auto;display:block}   /* the round logo and the name beside it, like an Instagram account */
+.brand .who{display:flex;flex-direction:column;gap:calc(.4*var(--u))}.brand .who b{font:700 calc(3.6*var(--u)) var(--sans,system-ui);color:var(--fg)}
 .brand .d{font:500 calc(2.8*var(--u)) var(--mono);color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
 .bar{position:absolute;top:calc(5*var(--u));left:calc(8*var(--u));right:calc(8*var(--u));display:flex;gap:calc(1.2*var(--u));z-index:2}
 .bar i{flex:1;height:calc(.7*var(--u));background:var(--line);border-radius:9px;overflow:hidden}
@@ -151,7 +152,7 @@ svg{width:100%;height:auto;overflow:visible}
 <div id="stage">
   <div class="bar" id="bar"></div>
   <div id="scenes"></div>
-  <div class="brand"><img class="logo" src="assets/logo-icon-yellow.png" alt="PowerKlock" translate="no"><div class="d" id="brand-d"></div></div>
+  <div class="brand"><img class="logo" src="assets/logo-icon-yellow.png" alt="" aria-hidden="true"><div class="who"><b translate="no">PowerKlock</b><div class="d" id="brand-d"></div></div></div>
 </div>
 <script>
 (function () {
