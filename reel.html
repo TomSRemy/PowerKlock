@@ -217,6 +217,8 @@ svg{width:100%;height:auto;overflow:visible}
   if (new URLSearchParams(location.search).has('embed')) document.documentElement.classList.add('embed');
   const T = (f, e) => EN ? e : f;
   const SCENE_MS = 3600;
+  // the reel's pace: every duration and delay of the scenes is stretched by TS (CSS animations, word reveals, sweeps, counters, hold times)
+  const TS = 1.4;
   const fmt = (v, d) => v == null || !isFinite(v) ? '–' : v.toLocaleString(EN ? 'en-GB' : 'fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d });
   const sgn = (v, d) => (v > 0 ? '+' : v < 0 ? '−' : '±') + fmt(Math.abs(v), d);
   const paris = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris' });
@@ -304,10 +306,10 @@ svg{width:100%;height:auto;overflow:visible}
         if (reduced()) { paint(N - 1); spread.classList.add('go'); return; }
         const t0 = performance.now();
         const step = now => {
-          const f = Math.min(1, (now - t0) / SWEEP);
+          const f = Math.min(1, (now - t0) / (SWEEP * TS));
           paint(f * (N - 1));
           if (f < 1) requestAnimationFrame(step);
-          else setTimeout(() => { head.style.opacity = 0; cur.style.opacity = 0; spread.classList.add('go'); }, 250);
+          else setTimeout(() => { head.style.opacity = 0; cur.style.opacity = 0; spread.classList.add('go'); }, 250 * TS);
         };
         head.style.opacity = 1; cur.style.opacity = 1;
         requestAnimationFrame(step);
@@ -354,9 +356,9 @@ svg{width:100%;height:auto;overflow:visible}
         const it = [...root.querySelectorAll('.brief > div')];
         it.forEach(e => e.classList.remove('in', 'dim'));
         if (reduced()) { it.forEach(e => e.classList.add('in')); return; }
-        it.forEach((e, k) => setTimeout(() => { it.slice(0, k).forEach(p => p.classList.add('dim')); e.classList.add('in'); }, FIRST + k * GAP));
+        it.forEach((e, k) => setTimeout(() => { it.slice(0, k).forEach(p => p.classList.add('dim')); e.classList.add('in'); }, (FIRST + k * GAP) * TS));
         // at the end, all of them back at full strength for a last look
-        setTimeout(() => it.forEach(e => e.classList.remove('dim')), FIRST + items.length * GAP);
+        setTimeout(() => it.forEach(e => e.classList.remove('dim')), (FIRST + items.length * GAP) * TS);
       } };
   }
 
@@ -570,7 +572,7 @@ svg{width:100%;height:auto;overflow:visible}
         const t0 = performance.now(), clock = root.querySelector('#b-clock'), act = root.querySelector('#b-act'), soc = root.querySelector('#b-soc'),
           eur = root.querySelector('#b-eur'), cr = root.querySelector('#b-cr'), cur = root.querySelector('#b-cur'), qs = [...root.querySelectorAll('.q')];
         const step = now => {
-          const f = Math.min(1, (now - t0) / SWEEP), t = Math.min(95, Math.floor(f * 96));
+          const f = Math.min(1, (now - t0) / (SWEEP * TS)), t = Math.min(95, Math.floor(f * 96));
           clock.textContent = String(Math.floor(t / 4)).padStart(2, '0') + ':' + String(t % 4 * 15).padStart(2, '0');
           const c = X.charge[t] > 0.01, d = X.discharge[t] > 0.01;
           act.textContent = c ? T('achète à ', 'buys at ') + fmt(p[t], 0) + ' €' : d ? T('revend à ', 'sells at ') + fmt(p[t], 0) + ' €' : T('attend', 'waits');
@@ -611,12 +613,12 @@ svg{width:100%;height:auto;overflow:visible}
       <div class="race" id="race">${L.map(r => `<div class="r${r.k === 'FR' ? ' fr' : ''}"><div class="n">${r.n}</div><div class="t"><i data-w="${Math.max(2, r.v / max * 100).toFixed(1)}"></i><span>${fmt(r.v, 0)}</span></div></div>`).join('')}</div>`,
       play(root) {
         const rows = [...root.querySelectorAll('.race .t i')];
-        rows.forEach((el, i) => setTimeout(() => { el.style.width = 'calc(' + el.dataset.w + '% - 14*var(--u))'; }, 400 + (rows.length - 1 - i) * 180));
+        rows.forEach((el, i) => setTimeout(() => { el.style.width = 'calc(' + el.dataset.w + '% - 14*var(--u))'; }, (400 + (rows.length - 1 - i) * 180) * TS));
         const race = root.querySelector('#race'), fr = root.querySelector('.race .r.fr');
         race.classList.remove('go'); if (fr) fr.classList.remove('win');
-        setTimeout(() => race.classList.add('go'), 400 + rows.length * 180);
+        setTimeout(() => race.classList.add('go'), (400 + rows.length * 180) * TS);
         // once every bar is in, France flashes: the eye lands on its rank
-        if (fr) setTimeout(() => fr.classList.add('win'), 1600 + rows.length * 180);
+        if (fr) setTimeout(() => fr.classList.add('win'), (1600 + rows.length * 180) * TS);
       } };
     const gap = z.FR.avg - min.v;
     const outro = { ms: 4600, sayAt: 2400, say: T(`Écart France / zone la moins chère : ${fmt(gap, 0)} €/MWh.`, `Gap France / cheapest zone: ${fmt(gap, 0)} €/MWh.`), html: `<div class="kick">${T('À retenir', 'Takeaway')}</div>
@@ -660,7 +662,7 @@ svg{width:100%;height:auto;overflow:visible}
       play(root) {
         const t0 = performance.now(), cr = root.querySelector('#m-cr'), ck = root.querySelector('#m-clock'), pe = root.querySelector('#m-p');
         const step = now => {
-          const f = Math.min(1, (now - t0) / SWEEP), i = Math.min(23, Math.floor(f * 24));
+          const f = Math.min(1, (now - t0) / (SWEEP * TS)), i = Math.min(23, Math.floor(f * 24));
           cr.setAttribute('width', 10 + f * (W + 10)); ck.textContent = i + ' h';
           pe.textContent = fmt(price[i], 0) + ' €/MWh · ' + T('solaire ', 'solar ') + fmt(sol.v[i], 1) + ' GW';
           pe.style.color = price[i] <= price[hMin] + 5 ? 'var(--down)' : price[i] >= price[hMax] - 5 ? 'var(--up)' : 'var(--muted)';
@@ -683,10 +685,10 @@ svg{width:100%;height:auto;overflow:visible}
   function run(S, keepDate) {
     S = S.map(x => typeof x === 'string' ? { html: x, ms: SCENE_MS } : Object.assign({ ms: SCENE_MS }, x));
     // the subtitle: one plain sentence per scene, read word by word (≈ 230 words a minute), the scene stays until it is read
-    S.forEach(x => { if (!x.say) return; const n = String(x.say).split(/ +/).length, at = x.sayAt == null ? 900 : x.sayAt;
+    S.forEach(x => { if (!x.say) return; const n = String(x.say).split(/ +/).length, at = x.sayAt == null ? 900 : x.sayAt;   // base times: run() stretches them by TS
       x.html += `<div class="say" style="animation-delay:${Math.max(0, at - 300)}ms">${String(x.say).replace(/(\d)\s+(?=[€%$°]|GW|MW|TWh|pts)/g, '$1\u00a0').replace(/ ([:;?!])/g, '\u00a0$1').split(/ +/).map((w, i) => `<span class="k" style="--d:${at + i * 260}ms">${w}</span>`).join(' ')}</div>`;
       x.ms = Math.max(x.ms, at + n * 260 + 1600); });
-    S.forEach(x => { x.ms = Math.round(x.ms * 1.35); });   // each scene holds a third longer once its animation ends: time to read
+    S.forEach(x => { x.ms = Math.round(x.ms * 1.35 * TS); });   // each scene holds a third longer once its animation ends: time to read
     if (!keepDate) document.getElementById('brand-d').textContent = longDate(today);
     document.getElementById('scenes').innerHTML = S.map(x => '<section class="scene' + (x.cls ? ' ' + x.cls : '') + '">' + x.html + '</section>').join('');
     document.getElementById('bar').innerHTML = S.map(() => '<i><b></b></i>').join('');
@@ -709,7 +711,7 @@ svg{width:100%;height:auto;overflow:visible}
       // the big figures count from where they were (yesterday, the previous session; 0 by default) to their value,
       // after their own delay, then land with a small punch
       sc[k].querySelectorAll('[data-count]').forEach(el => {
-        const to = +el.dataset.count, from = +(el.dataset.from || 0), dec = +el.dataset.dec, dur = +(el.dataset.ms || 1100), start = performance.now() + +(el.dataset.delay || 0);
+        const to = +el.dataset.count, from = +(el.dataset.from || 0), dec = +el.dataset.dec, dur = +(el.dataset.ms || 1100) * TS, start = performance.now() + +(el.dataset.delay || 0) * TS;
         el.classList.remove('punch');
         if (reduced()) { el.textContent = fmt(to, dec); return; }
         el.textContent = fmt(from, dec);
@@ -718,6 +720,8 @@ svg{width:100%;height:auto;overflow:visible}
         requestAnimationFrame(step);
       });
       if (S[k].play) S[k].play(sc[k]);
+      // the scene's CSS animations and transitions (they start with its .on class) play at the reel's pace, delays included
+      requestAnimationFrame(() => [sc[k], ...(prev >= 0 ? [sc[prev]] : [])].forEach(el => el.getAnimations({ subtree: true }).forEach(a => { a.playbackRate = 1 / TS; })));
       left = S[k].ms; t0 = performance.now(); timer = setTimeout(next, left);
     };
     let timer = null, t0 = 0, left = 0;
