@@ -202,14 +202,14 @@
       const walk = n => [...n.childNodes].forEach(ch => {
         if (ch.nodeType === 3) { const frag = document.createDocumentFragment();
           ch.textContent.split(/(\s+)/).forEach(w => { if (!w) return; if (/^\s+$/.test(w)) { frag.appendChild(document.createTextNode(w)); return; }
-            const sp = document.createElement('span'); sp.className = 'w'; sp.style.setProperty('--d', (words0 + nw++ * 75) + 'ms'); sp.textContent = w; frag.appendChild(sp); });
+            const sp = document.createElement('span'); sp.className = 'w'; sp.style.setProperty('--d', (words0 + nw++ * 150) + 'ms'); sp.textContent = w; frag.appendChild(sp); });
           ch.replaceWith(frag); }
         else if (ch.nodeType === 1) walk(ch); });
       walk(p); });
     // the card stays as long as it takes to read it
     const listWords = c.kind === 'list' ? c.items.reduce((a, it) => a + String(it.text).split(/\s+/).length, 0) : 0;
     // time to read: the text comes in, then stays about a quarter-second a word (≈ 240 words a minute) plus a pause
-    V.dur = Math.min(25000, Math.max(6000, c.kind === 'list' ? 2500 + c.items.length * 900 + listWords * 250 : words0 + nw * 75 + 2500 + nw * 250));
+    V.dur = Math.min(25000, Math.max(6000, c.kind === 'list' ? 2500 + c.items.length * 900 + listWords * 250 : words0 + nw * 150 + 2500 + nw * 250));
     void body.offsetWidth; body.classList.add('go');
     V.el.querySelector('.pk-stv-count').textContent = (V.ci + 1) + ' / ' + s.cards.length;
     V.el.querySelector('.pk-stv-prev').disabled = V.si === 0 && V.ci === 0;
@@ -328,7 +328,7 @@
   .pk-stv-body.go .a{animation:pkStA .5s cubic-bezier(.2,.8,.2,1) var(--d,0ms) forwards}
   .pk-stv-body.go .a.pop{animation:pkStPop .5s cubic-bezier(.3,1.6,.5,1) var(--d,0ms) forwards}
   .pk-stv-body .w{opacity:0;filter:blur(4px)}
-  .pk-stv-body.go .w{animation:pkStW .4s ease var(--d,0ms) forwards}
+  .pk-stv-body.go .w{animation:pkStW .6s ease var(--d,0ms) forwards}
   .pk-stv-num{display:inline-block}.pk-stv-num.punch{animation:pkStPunch .45s cubic-bezier(.3,1.6,.5,1)}
   .pk-stv-sp{clip-path:inset(0 100% 0 0)}
   .pk-stv-body.go .pk-stv-sp{animation:pkStClip 1.3s cubic-bezier(.4,.1,.2,1) .6s forwards}
