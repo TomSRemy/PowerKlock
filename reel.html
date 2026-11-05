@@ -38,6 +38,9 @@ body{display:flex;align-items:center;justify-content:center;overflow:hidden}
 @keyframes rise{to{opacity:1;transform:none}}
 /* headlines build word by word (each word carries its own --d delay) */
 .scene.on > .h{animation:none;opacity:1;transform:none}
+.ww{display:inline-block;white-space:nowrap}.ch{opacity:0}
+.scene.on .ch{animation:typ .12s linear var(--d) forwards}
+@keyframes typ{to{opacity:1}}
 .w{display:inline-block;opacity:0;transform:translateY(.5em);filter:blur(6px)}
 .scene.on .w{animation:wordin .75s cubic-bezier(.2,.8,.2,1) var(--d,0ms) forwards}
 @keyframes wordin{to{opacity:1;transform:none;filter:none}}
@@ -162,7 +165,8 @@ svg{width:100%;height:auto;overflow:visible}
 .map .ctry{transform-box:fill-box;transform-origin:center}
 .mlab{font:800 34px var(--mono);fill:#0B0F14;opacity:0}.scene.on .mlab{animation:rise .4s ease var(--d) forwards}
 .map .flow line{stroke-dasharray:1;stroke-dashoffset:1}.scene.on .map .flow line{animation:draw2 .8s cubic-bezier(.3,.7,.2,1) var(--d) forwards}
-.map .flow{filter:drop-shadow(0 0 6px rgba(0,0,0,.6))}
+.map .flow{filter:drop-shadow(0 0 6px rgba(0,0,0,.6));opacity:0}.scene.on .map .flow{animation:flowin .25s ease var(--d) forwards}
+@keyframes flowin{to{opacity:1}}
 .scene.on #m-fr{stroke:#fff;stroke-width:5}
 /* nuclear gauge: the available fleet fills up to its level, the operator's forecast is a tick */
 .nuc-t{position:relative;height:calc(5*var(--u));background:var(--line);border-radius:99px;overflow:visible}
@@ -201,11 +205,9 @@ svg{width:100%;height:auto;overflow:visible}
 .scene > svg{flex:none}
 .say{margin-top:calc(2*var(--u));background:rgba(6,9,13,.86);border:1px solid rgba(230,237,243,.14);border-radius:calc(3*var(--u));padding:calc(3.6*var(--u)) calc(4.4*var(--u));
   font:700 calc(6*var(--u))/1.28 var(--sans);color:var(--fg);text-wrap:pretty;box-shadow:0 calc(2*var(--u)) calc(6*var(--u)) rgba(0,0,0,.45)}
-.say .k{opacity:.22;transition:none}
-.scene.on .say .k{animation:kon .35s ease var(--d) forwards}
-@keyframes kon{to{opacity:1}}
+
 .sub{color:#A9BACB}
-@media (prefers-reduced-motion: reduce){.scene{transition:none}.draw,.draw2{animation:none;stroke-dashoffset:0}.scene > *,.tile,.brief div,.w,.wb,.endpt,.mk,.say .k,.map .ctry,.mlab,.sr,.ppa-c{opacity:1;transform:none;filter:none;animation:none!important}
+@media (prefers-reduced-motion: reduce){.scene{transition:none}.draw,.draw2{animation:none;stroke-dashoffset:0}.scene > *,.tile,.brief div,.w,.wb,.endpt,.mk,.ch,.map .ctry,.mlab,.sr,.ppa-c{opacity:1;transform:none;filter:none;animation:none!important}
   #stage::before{animation:none!important}.g-fill{transform:none;animation:none!important}.g-t{left:var(--p1);animation:none!important}}
 </style>
 </head>
@@ -236,8 +238,15 @@ svg{width:100%;height:auto;overflow:visible}
   const arrow = v => v > 0.05 ? '▲' : v < -0.05 ? '▼' : '■';
   const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
   // a phrase split into words that come in one after the other; a figure stays glued to its unit
-  const words = (s, base = 0, step = 90, cls = 'w') => String(s).replace(/(\d)\s+(?=[€%$°]|GW|MW|TWh|pts)/g, '$1 ')
+  // the typewriter: CH ms per letter (base time, stretched by TS like the rest), words kept whole on their line
+  const CH = 34;
+  const typed = (s, base = 0) => { let i = 0;
+    return String(s).replace(/(\d)\s+(?=[€%$°]|GW|MW|TWh|pts)/g, '$1\u00a0').replace(/ ([:;?!»])/g, '\u00a0$1').split(/ +/)
+      .map(w => `<span class="ww">${[...w].map(c => `<span class="ch" style="--d:${base + (i++) * CH}ms">${c}</span>`).join('')}</span>`).join(' '); };
+  const typedLen = s => String(s).replace(/ +/g, ' ').length;
+  const words0 = (s, base = 0, step = 90, cls = 'w') => String(s).replace(/(\d)\s+(?=[€%$°]|GW|MW|TWh|pts)/g, '$1 ')
     .split(/ +/).map((w, i) => `<span class="${cls}" style="--d:${base + Math.round(i * step * 1.6)}ms">${w}</span>`).join(' ');
+  const words = (s, base = 0, step = 90, cls = 'w') => cls === 'w' ? typed(s, base) : words0(s, base, step, cls);
 
   // scene 1: the price counts from yesterday's to today's while a marker slides between the two on a gauge
   function priceScene(D0, D1) {
@@ -690,12 +699,17 @@ svg{width:100%;height:auto;overflow:visible}
   function run(S, keepDate) {
     S = S.map(x => typeof x === 'string' ? { html: x, ms: SCENE_MS } : Object.assign({ ms: SCENE_MS }, x));
     // the subtitle: one plain sentence per scene, read word by word (≈ 230 words a minute), the scene stays until it is read
-    S.forEach(x => { if (!x.say) return; const n = String(x.say).split(/ +/).length, at = x.sayAt == null ? 900 : x.sayAt;   // base times: run() stretches them by TS
-      x.html += `<div class="say" style="animation-delay:${Math.max(0, at - 300)}ms">${String(x.say).replace(/(\d)\s+(?=[€%$°]|GW|MW|TWh|pts)/g, '$1\u00a0').replace(/ ([:;?!])/g, '\u00a0$1').split(/ +/).map((w, i) => `<span class="k" style="--d:${at + i * 260}ms">${w}</span>`).join(' ')}</div>`;
-      x.ms = Math.max(x.ms, at + n * 260 + 1600); });
-    S.forEach(x => { x.ms = Math.round(x.ms * 1.35 * TS); });   // each scene holds a third longer once its animation ends: time to read
+    S.forEach(x => { if (!x.say) return; const at = x.sayAt == null ? 900 : x.sayAt;   // base times: run() stretches them by TS
+      x.html += `<div class="say" style="animation-delay:${Math.max(0, at - 300)}ms">${typed(x.say, at)}</div>`;
+      x.typeEnd = at + typedLen(x.say) * CH; });
     if (!keepDate) document.getElementById('brand-d').textContent = longDate(today);
     document.getElementById('scenes').innerHTML = S.map(x => '<section class="scene' + (x.cls ? ' ' + x.cls : '') + '">' + x.html + '</section>').join('');
+    // each scene lasts what it takes to read it: the words on screen (charts and the small source line aside) at about
+    // 250 words a minute, and never less than the end of its animations and of its typing, plus a pause to look
+    [...document.querySelectorAll('#scenes .scene')].forEach((el, i) => { const x = S[i], c = el.cloneNode(true);
+      c.querySelectorAll('svg,.src').forEach(n => n.remove());
+      const nw = (c.textContent.match(/[A-Za-zÀ-ÿ0-9€%][^\s]*/g) || []).length, read = nw * 240 + 1500;
+      x.ms = Math.round(Math.max(Math.max(x.ms, x.typeEnd || 0) * TS + 1400, read)); });
     document.getElementById('bar').innerHTML = S.map(() => '<i><b></b></i>').join('');
     // a scene with more to show than the frame holds shrinks a little (everything is sized in --u) until it fits
     const fit = () => document.querySelectorAll('.scene').forEach(sc => { sc.style.removeProperty('--u');
