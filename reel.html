@@ -82,7 +82,7 @@ body{display:flex;align-items:center;justify-content:center;overflow:hidden}
 .spread.go line,.spread.go path{transition:stroke-dashoffset .7s cubic-bezier(.3,.7,.2,1);stroke-dashoffset:0}
 .spread text{opacity:0;transition:opacity .4s ease .5s}.spread.go text{opacity:1}
 /* forward chart: the line draws itself, the end dot appears when it arrives */
-.draw2{stroke-dasharray:1;stroke-dashoffset:1}
+.draw2{stroke-dasharray:1;stroke-dashoffset:1}.draw2.sync{stroke-dasharray:none;stroke-dashoffset:0;animation:none!important}
 .scene.on .draw2{animation:draw2 var(--ms,1.8s) cubic-bezier(.4,.1,.2,1) var(--dl,.4s) forwards}
 @keyframes draw2{to{stroke-dashoffset:0}}
 .endpt{opacity:0}.scene.on .endpt{animation:rise .3s ease var(--dl2) forwards,endpulse 1.6s ease-in-out calc(var(--dl2) + .3s) infinite}
@@ -188,7 +188,7 @@ svg{width:100%;height:auto;overflow:visible}
 .ppa{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:calc(4*var(--u))}
 .ppa-c{display:flex;flex-direction:column;gap:calc(1.2*var(--u));opacity:0}.scene.on .ppa-c{animation:rise .5s ease var(--d) forwards}
 .ppa-n{font:700 calc(4*var(--u)) var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--c)}
-.ppa-v{font:800 calc(13*var(--u))/1 var(--mono);letter-spacing:-.03em;font-variant-numeric:tabular-nums}.ppa-v span{display:inline-block}.ppa-v span.punch{animation:punch .5s cubic-bezier(.3,1.6,.5,1)}
+.ppa-v{font:800 calc(13*var(--u))/1 var(--mono);letter-spacing:-.03em;font-variant-numeric:tabular-nums}.ppa-v span{display:inline-block}.ppa-v span.punch,.big.punch{animation:punch .5s cubic-bezier(.3,1.6,.5,1)}.ppa-v span.punch{animation:punch .5s cubic-bezier(.3,1.6,.5,1)}
 .ppa-u{font:500 calc(3.6*var(--u)) var(--mono);color:var(--muted)}
 .ppa-d{font:800 calc(4.4*var(--u)) var(--mono)}.ppa-d span{font-weight:500;color:var(--muted)}.ppa-d.up{color:var(--up)}.ppa-d.down{color:var(--down)}.ppa-d.flat{color:var(--muted)}
 .ppa-p{height:calc(2.4*var(--u));background:var(--line);border-radius:99px;overflow:hidden;margin-top:calc(1*var(--u))}.ppa-p i{display:block;height:100%;width:0;background:var(--c);border-radius:99px}
@@ -339,12 +339,12 @@ svg{width:100%;height:auto;overflow:visible}
     return { id: 'cal', ms: 5800, sayAt: land + 400, say: Math.abs(cal.dv) < 0.005 ? T(`Cal-${String(cal.y).slice(2)} base stable à la clôture, ${fmt(cal.v, 2)} €/MWh.`, `Cal-${String(cal.y).slice(2)} France baseload flat at settlement.`) : T(`Cal-${String(cal.y).slice(2)} base clôture à ${fmt(cal.v, 2)} €/MWh, ${sgn(cal.dv, 2)} € sur la séance.`, `Cal-${String(cal.y).slice(2)} France baseload: ${sgn(cal.dv, 2)} €/MWh at settlement.`), html: `<div class="kick">${T('Marché à terme', 'Forward market')}</div>
       <div class="h">${words(T('Électricité livrée en ' + cal.y, 'Power delivered in ' + cal.y), 150, 110)}</div>
       <svg viewBox="-10 -30 1030 ${Ht + 80}" aria-hidden="true" style="--ms:${DRAW}ms;--dl:${DL}ms;--dl2:${land}ms">
-        <polyline class="draw2" pathLength="1" points="${pts}" fill="none" stroke="#7FC8F8" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/>
+        <polyline class="draw2 sync" data-sync="cal" data-dl="${DL}" data-ms="${DRAW}" points="${pts}" fill="none" stroke="#7FC8F8" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/>
         <circle class="endpt" cx="${x(s.length - 1)}" cy="${y(s[s.length - 1])}" r="13" fill="${col}"/>
         <text x="0" y="${Ht + 46}" fill="#8DA2B8" font-family="JetBrains Mono" font-size="32">${new Date(cal.d0 + 'T12:00:00Z').toLocaleDateString(EN ? 'en-GB' : 'fr-FR', { day: 'numeric', month: 'short', timeZone: 'UTC' })}</text>
         <text x="${W}" y="${Ht + 46}" text-anchor="end" fill="#8DA2B8" font-family="JetBrains Mono" font-size="32">${new Date(cal.d + 'T12:00:00Z').toLocaleDateString(EN ? 'en-GB' : 'fr-FR', { day: 'numeric', month: 'short', timeZone: 'UTC' })}</text>
       </svg>
-      <div class="figline"><span class="big${fmt(cal.v, 2).length > 5 ? ' long' : ''}" data-count="${cal.v}" data-from="${cal.v - cal.dv}" data-dec="2" data-delay="${land - 700}" data-ms="900" data-punch="1">${fmt(cal.v - cal.dv, 2)}</span> <span class="unit">€/MWh</span></div>
+      <div class="figline"><span class="big${fmt(cal.v, 2).length > 5 ? ' long' : ''}" data-sync="cal" data-syncv='${JSON.stringify(s.map(q => +q.toFixed(3)))}' data-dec="2">${fmt(s[0], 2)}</span> <span class="unit">€/MWh</span></div>
       <div class="delta late ${d}" style="--late:${land + 150}ms"><span class="nw">${arrow(cal.dv)} ${sgn(cal.dv, 2)}&nbsp;€</span> <span class="unit">${T('en une séance', 'in one session')}</span></div>
       <div class="sub" style="animation-delay:${land + 600}ms">${T('Contrat Cal', 'Cal')} ${cal.y} ${T('base France, cotation du', 'France baseload, settlement of')} ${new Date(cal.d + 'T12:00:00Z').toLocaleDateString(EN ? 'en-GB' : 'fr-FR', { day: 'numeric', month: 'long', timeZone: 'UTC' })}.</div>` };
   }
@@ -388,12 +388,12 @@ svg{width:100%;height:auto;overflow:visible}
       html: `<div class="kick">${T('Carbone · EUA', 'Carbon · EUA')}</div>
       <div class="h">${words(T('Le prix du CO₂', 'The price of CO₂'), 150, 110)}</div>
       <svg viewBox="-10 -30 1030 ${Ht + 80}" aria-hidden="true" style="--ms:${DRAW}ms;--dl:${DL}ms;--dl2:${land}ms">
-        <polyline class="draw2" pathLength="1" points="${s.map((q, i) => x(i).toFixed(1) + ',' + y(q).toFixed(1)).join(' ')}" fill="none" stroke="#B8C9D9" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/>
+        <polyline class="draw2 sync" data-sync="co2" data-dl="${DL}" data-ms="${DRAW}" points="${s.map((q, i) => x(i).toFixed(1) + ',' + y(q).toFixed(1)).join(' ')}" fill="none" stroke="#B8C9D9" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/>
         <circle class="endpt" cx="${x(n - 1)}" cy="${y(v)}" r="13" fill="${col}"/>
         <text x="0" y="${Ht + 46}" fill="#8DA2B8" font-family="JetBrains Mono" font-size="32">${dd(pts[k0][0])}</text>
         <text x="${W}" y="${Ht + 46}" text-anchor="end" fill="#8DA2B8" font-family="JetBrains Mono" font-size="32">${dd(pts[pts.length - 1][0])}</text>
       </svg>
-      <div class="figline"><span class="big" data-count="${v}" data-from="${v - dv}" data-dec="2" data-delay="${land - 700}" data-ms="900" data-punch="1">${fmt(v - dv, 2)}</span> <span class="unit">€/t</span></div>
+      <div class="figline"><span class="big" data-sync="co2" data-syncv='${JSON.stringify(s.map(q => +q.toFixed(3)))}' data-dec="2">${fmt(s[0], 2)}</span> <span class="unit">€/t</span></div>
       <div class="delta late ${d}" style="--late:${land + 150}ms"><span class="nw">${arrow(dv)} ${sgn(dv, 2)}&nbsp;€</span> <span class="unit">${T('en une séance', 'in one session')}</span></div>
       <div class="sub" style="animation-delay:${land + 600}ms">${contract || 'EUA'} · SEFE Energy market cockpit, ${T('cotation du', 'price of')} ${dd(pts[pts.length - 1][0])}</div>` };
   }
@@ -461,12 +461,12 @@ svg{width:100%;height:auto;overflow:visible}
       : Math.abs(gap) < 0.3 ? T(`Dispo nucléaire ${fmt(v, 1)} GW, conforme à la prévision EDF.`, `Nuclear availability: ${fmt(v, 1)} GW, in line with the operator forecast.`)
       : T(`Dispo nucléaire ${fmt(v, 1)} GW, ${fmt(Math.abs(gap), 1)} GW ${gap < 0 ? 'sous' : 'au-dessus de'} la prévision EDF.`, `Nuclear availability: ${fmt(v, 1)} GW, ${fmt(Math.abs(gap), 1)} GW ${gap < 0 ? 'below' : 'above'} the operator forecast.`),
       html: `<div class="kick">${T('Nucléaire France · disponibilité', 'French nuclear · availability')}</div>
-      <div class="figline"><span class="big" data-count="${v}" data-from="${s[0]}" data-dec="1" data-delay="300" data-ms="1200" data-punch="1">${fmt(s[0], 1)}</span> <span class="unit">GW</span></div>
+      <div class="figline"><span class="big" data-sync="nuc" data-syncv='${JSON.stringify(s.map(q => +q.toFixed(3)))}' data-dec="1">${fmt(s[0], 1)}</span> <span class="unit">GW</span></div>
       <div class="nuc">${f == null ? '' : `<div class="nuc-top"><span style="left:${(f / (INST / 1000) * 100).toFixed(1)}%">${T('prévision', 'forecast')} ${fmt(f, 1)}</span></div>`}<div class="nuc-t"><i class="nuc-f" style="--w:${(v / (INST / 1000) * 100).toFixed(1)}%;background:${col}"></i>${f == null ? '' : `<span class="nuc-m" style="left:${(f / (INST / 1000) * 100).toFixed(1)}%"></span>`}</div>
         <div class="nuc-l"><span>0</span><span class="end">${fmt(INST / 1000, 0)} GW ${T('installés', 'installed')}</span></div></div>
       <svg viewBox="-10 -20 1030 ${Ht + 70}" aria-hidden="true" style="--ms:1600ms;--dl:600ms;--dl2:2200ms">
         ${f == null ? '' : `<line x1="0" x2="${W}" y1="${y(f)}" y2="${y(f)}" stroke="#8DA2B8" stroke-width="3" stroke-dasharray="10 10"/>`}
-        <polyline class="draw2" pathLength="1" points="${s.map((q, i) => x(i).toFixed(1) + ',' + y(q).toFixed(1)).join(' ')}" fill="none" stroke="#E6C86E" stroke-width="6" stroke-linejoin="round"/>
+        <polyline class="draw2 sync" data-sync="nuc" data-dl="600" data-ms="1600" points="${s.map((q, i) => x(i).toFixed(1) + ',' + y(q).toFixed(1)).join(' ')}" fill="none" stroke="#E6C86E" stroke-width="6" stroke-linejoin="round"/>
         <circle class="endpt" cx="${x(n - 1)}" cy="${y(v)}" r="12" fill="${col}"/>
         <text x="0" y="${Ht + 46}" fill="#8DA2B8" font-family="JetBrains Mono" font-size="32">${T('il y a 2 mois', '2 months ago')}</text><text x="${W}" y="${Ht + 46}" text-anchor="end" fill="#8DA2B8" font-family="JetBrains Mono" font-size="32">${T('aujourd’hui', 'today')}</text></svg>
       <div class="sub">${T('Puissance disponible du parc EDF et prévision d’EDF, SEFE Energy market cockpit.', 'EDF fleet available and the operator’s forecast, SEFE Energy market cockpit.')}</div>` };
@@ -495,9 +495,9 @@ svg{width:100%;height:auto;overflow:visible}
       const lo = Math.min(...ser), hi = Math.max(...ser), sx = 300 / Math.max(1, ser.length - 1), sy = v => 110 - (v - lo) / ((hi - lo) || 1) * 100;
       const pc = x.ref ? x.ppa / x.ref * 100 : null;
       return `<div class="ppa-c" style="--c:${c};--d:${400 + j * 500}ms"><div class="ppa-n">${n}</div>
-        <div class="ppa-v"><span data-count="${x.ppa}" data-from="${d == null ? x.ppa * .9 : x.ppa - d}" data-dec="1" data-delay="${600 + j * 500}" data-ms="1100" data-punch="1">${fmt(x.ppa, 1)}</span></div><div class="ppa-u">€/MWh</div>
+        <div class="ppa-v"><span data-sync="ppa${j}" data-syncv='${JSON.stringify(ser.map(q => +q.toFixed(3)))}' data-dec="1">${fmt(ser[0], 1)}</span></div><div class="ppa-u">€/MWh</div>
         ${d == null ? '' : `<div class="ppa-d ${dir(d)}">${arrow(d)} ${sgn(d, 1)} € <span>${T('5 j', '5 d')}</span></div>`}
-        <svg viewBox="-4 -6 308 124" aria-hidden="true" style="--ms:1300ms;--dl:${900 + j * 500}ms;--dl2:${2200 + j * 500}ms"><polyline class="draw2" pathLength="1" points="${ser.map((v, i) => (i * sx).toFixed(1) + ',' + sy(v).toFixed(1)).join(' ')}" fill="none" stroke="${c}" stroke-width="5" stroke-linejoin="round"/></svg>
+        <svg viewBox="-4 -6 308 124" aria-hidden="true" style="--ms:1300ms;--dl:${900 + j * 500}ms;--dl2:${2200 + j * 500}ms"><polyline class="draw2 sync" data-sync="ppa${j}" data-dl="${900 + j * 500}" data-ms="1300" points="${ser.map((v, i) => (i * sx).toFixed(1) + ',' + sy(v).toFixed(1)).join(' ')}" fill="none" stroke="${c}" stroke-width="5" stroke-linejoin="round"/></svg>
         ${pc == null ? '' : `<div class="ppa-r"><span data-count="${pc}" data-dec="0" data-delay="${1500 + j * 500}" data-ms="1000" data-punch="1">${fmt(pc, 0)}</span> %</div><div class="ppa-pl">${T('du Cal ' + cal3 + ' base', 'of Cal ' + cal3 + ' baseload')}</div><div class="ppa-p"><i style="--w:${Math.min(100, pc).toFixed(0)}%"></i></div>`}
         ${x.lo != null ? `<div class="ppa-pl">P10–P90 ${fmt(x.lo, 0)}–${fmt(x.hi, 0)} €</div>` : ''}</div>`; }).join('');
     const part = TT.map(([t, n]) => `${n.toLowerCase()} ${fmt(L[t].ppa, 1)} €/MWh${L[t].ref ? ` (${fmt(L[t].ppa / L[t].ref * 100, 0)} % ${T('du Cal', 'of Cal')})` : ''}`).join(', ');
@@ -738,6 +738,21 @@ svg{width:100%;height:auto;overflow:visible}
           if (x < 1) requestAnimationFrame(step); else if (el.dataset.punch) { void el.offsetWidth; el.classList.add('punch'); } };
         requestAnimationFrame(step);
       });
+      // curves with their figure: the line is drawn point by point and the figure shows the value of the point it has reached
+      sc[k].querySelectorAll('polyline.sync').forEach(pl => {
+        const P = (pl.dataset.pts || (pl.dataset.pts = pl.getAttribute('points'))).trim().split(/\s+/).map(q => q.split(',').map(Number));
+        const nums = [...sc[k].querySelectorAll('[data-syncv][data-sync="' + pl.dataset.sync + '"]')].map(el => ({ el, v: JSON.parse(el.dataset.syncv), dec: +el.dataset.dec }));
+        const paint = f => { const i = Math.min(P.length - 1, Math.floor(f)), u = f - i, j2 = Math.min(P.length - 1, i + 1);
+          const tip = [P[i][0] + (P[j2][0] - P[i][0]) * u, P[i][1] + (P[j2][1] - P[i][1]) * u];
+          pl.setAttribute('points', P.slice(0, i + 1).concat([tip]).map(q => q[0].toFixed(1) + ',' + q[1].toFixed(1)).join(' '));
+          nums.forEach(n => { const a = n.v[Math.min(n.v.length - 1, i)], b = n.v[Math.min(n.v.length - 1, j2)]; n.el.textContent = fmt(a + (b - a) * u, n.dec); }); };
+        if (reduced()) { paint(P.length - 1); return; }
+        paint(0); nums.forEach(n => n.el.classList.remove('punch'));
+        const t0 = performance.now() + (+pl.dataset.dl || 0) * TS, dur = (+pl.dataset.ms || 1500) * TS;
+        const step = now => { const x = Math.max(0, Math.min(1, (now - t0) / dur)), e = x < .5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2;
+          paint(e * (P.length - 1));
+          if (x < 1) requestAnimationFrame(step); else nums.forEach(n => { void n.el.offsetWidth; n.el.classList.add('punch'); }); };
+        requestAnimationFrame(step); });
       if (S[k].play) S[k].play(sc[k]);
       // the scene's CSS animations and transitions (they start with its .on class) play at the reel's pace, delays included
       requestAnimationFrame(() => [sc[k], ...(prev >= 0 ? [sc[prev]] : [])].forEach(el => el.getAnimations({ subtree: true }).forEach(a => { a.playbackRate = 1 / TS; })));
