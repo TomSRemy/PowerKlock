@@ -367,14 +367,14 @@
 
   const css = document.createElement('style');
   css.textContent = `
-  .pk-stories{display:flex;gap:14px;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none;padding:10px 2px 6px;margin:0 0 6px;-webkit-overflow-scrolling:touch}
+  .pk-stories{display:flex;gap:22px;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none;padding:18px 4px 14px;margin:4px 0 18px;-webkit-overflow-scrolling:touch}
   .pk-stories::-webkit-scrollbar{display:none}
-  .pk-st-c{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:5px;width:72px;background:none;border:0;padding:0;cursor:pointer;color:var(--text2,#B8C9D9);font:500 11px/1.25 inherit;text-align:center}
+  .pk-st-c{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:8px;width:76px;background:none;border:0;padding:0;cursor:pointer;color:var(--text2,#B8C9D9);font:500 11px/1.25 inherit;text-align:center}
   .pk-st-ring{display:block;width:62px;height:62px;border-radius:50%;padding:3px;box-sizing:border-box;background:conic-gradient(from 210deg,#F4B740,#ED6965,#7FC8F8,#F4B740)}
   .pk-st-ring.seen{background:#2a3644}
   .pk-st-in{display:flex;width:100%;height:100%;border-radius:50%;box-sizing:border-box;align-items:center;justify-content:center;background:var(--bg2,#111821);border:3px solid var(--bg,#0b1016);color:var(--text,#E6EDF3)}
   .pk-st-c:hover .pk-st-in{color:#F4B740}.pk-st-c:focus-visible{outline:none}.pk-st-c:focus-visible .pk-st-ring{box-shadow:0 0 0 2px #7FC8F8}
-  .pk-st-l{display:block;max-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pk-st-l{display:block;max-width:76px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   html.pk-stv-open,html.pk-stv-open body{overflow:hidden}
   html.pk-stv-open .es-hotspot,html.pk-stv-open .es-gamespot,html.pk-stv-open .es-volleyspot{display:none!important}
   .pk-stv{position:fixed;inset:0;z-index:10050;background:rgba(3,6,10,.86);display:flex;align-items:center;justify-content:center;gap:18px}
