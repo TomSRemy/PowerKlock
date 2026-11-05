@@ -35,7 +35,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--date', default=datetime.now(ZoneInfo('Europe/Paris')).strftime('%Y-%m-%d'))
     ap.add_argument('--lang', default='fr', choices=('fr', 'en'))
-    ap.add_argument('--reel', choices=REELS, help='one reel (default: all)')
+    ap.add_argument('--reel', choices=REELS, help='one reel (default: jour, the day’s reel that holds them all)')
     a = ap.parse_args()
     from playwright.sync_api import sync_playwright
 
@@ -50,7 +50,7 @@ def main():
     done = []
     with sync_playwright() as pw:
         b = pw.chromium.launch()
-        for reel in ([a.reel] if a.reel else REELS):
+        for reel in ([a.reel] if a.reel else ('jour',)):   # one reel a day: jour carries the price, Europe, forwards, CO₂ and the battery
             shutil.rmtree(tmp, ignore_errors=True)
             url = f'http://127.0.0.1:{srv.server_port}/reel.html?once&r={reel}&d={a.date}' + ('#en' if a.lang == 'en' else '')
             ctx = b.new_context(viewport={'width': 1080, 'height': 1920}, record_video_dir=tmp, record_video_size={'width': 1080, 'height': 1920})

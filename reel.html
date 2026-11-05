@@ -29,7 +29,7 @@ body{display:flex;align-items:center;justify-content:center;overflow:hidden}
   animation:drift 22s ease-in-out infinite}
 @keyframes drift{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(3%,-2%) scale(1.06)}66%{transform:translate(-2%,3%) scale(1.04)}}
 /* scenes slide in from the right and out to the left, like stories */
-.scene{position:absolute;inset:0;padding:calc(15*var(--u)) calc(8*var(--u)) calc(21*var(--u));display:flex;flex-direction:column;justify-content:space-evenly;gap:calc(3*var(--u));opacity:0;transform:translateX(calc(12*var(--u)));transition:opacity .45s ease,transform .6s cubic-bezier(.2,.8,.2,1)}
+.scene{position:absolute;inset:0;padding:calc(17*var(--u)) calc(9*var(--u)) calc(27*var(--u)) calc(8*var(--u));display:flex;flex-direction:column;justify-content:flex-start;gap:calc(3.4*var(--u));opacity:0;transform:translateX(calc(12*var(--u)));transition:opacity .45s ease,transform .6s cubic-bezier(.2,.8,.2,1)}
 .scene.on{opacity:1;transform:none}
 .scene.out{opacity:0;transform:translateX(calc(-12*var(--u)))}
 .scene > *{opacity:0;transform:translateY(calc(5*var(--u)))}
@@ -84,8 +84,8 @@ body{display:flex;align-items:center;justify-content:center;overflow:hidden}
 @keyframes draw2{to{stroke-dashoffset:0}}
 .endpt{opacity:0}.scene.on .endpt{animation:rise .3s ease var(--dl2) forwards,endpulse 1.6s ease-in-out calc(var(--dl2) + .3s) infinite}
 @keyframes endpulse{50%{r:18}}
-.kick{font:700 calc(4.2*var(--u)) var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
-.h{font:800 calc(9.6*var(--u))/1.08 var(--sans);letter-spacing:-.01em;text-wrap:balance;hyphens:none}
+.kick{font:700 calc(4.4*var(--u)) var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+.h{font:800 calc(10.4*var(--u))/1.06 var(--sans);letter-spacing:-.01em;text-wrap:balance;hyphens:none}
 .nw{white-space:nowrap}
 .big{font:800 calc(25*var(--u))/1 var(--mono);letter-spacing:-.03em;font-variant-numeric:tabular-nums}
 .unit{font:500 calc(4.4*var(--u)) var(--mono);color:var(--muted)}
@@ -132,10 +132,10 @@ svg{width:100%;height:auto;overflow:visible}
 .act{font:700 calc(3.6*var(--u)) var(--mono);letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
 .money.punch{animation:punch .5s cubic-bezier(.3,1.6,.5,1)}
 .money{display:inline-block;font:800 calc(12*var(--u)) var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
-.race{display:flex;flex-direction:column;gap:calc(1.6*var(--u))}
+.race{display:flex;flex-direction:column;gap:calc(1.1*var(--u))}
 .race .r{display:grid;grid-template-columns:calc(24*var(--u)) 1fr;align-items:center;gap:calc(2*var(--u))}
 .race .n{font:600 calc(3.6*var(--u)) var(--sans);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.race .t{height:calc(5.2*var(--u));display:flex;align-items:center}
+.race .t{height:calc(4.4*var(--u));display:flex;align-items:center}
 .race .t i{display:block;height:100%;width:0;border-radius:calc(.8*var(--u));background:#3A4A5E;transition:width 1.2s cubic-bezier(.2,.8,.2,1)}
 .race .t span{font:700 calc(3.4*var(--u)) var(--mono);margin-left:calc(1.6*var(--u));white-space:nowrap;opacity:0;transition:opacity .4s ease .9s}
 .race .r.fr .n{color:var(--accent);font-weight:800}.race .r.fr .t i{background:var(--accent)}
@@ -144,7 +144,63 @@ svg{width:100%;height:auto;overflow:visible}
 @keyframes frwin{50%{filter:brightness(1.6);transform:scale(1.06)}}
 .lg{display:flex;flex-wrap:wrap;gap:calc(1.5*var(--u)) calc(3.5*var(--u));font:600 calc(3.2*var(--u)) var(--mono);color:var(--muted)}
 .lg i{display:inline-block;width:calc(2.6*var(--u));height:calc(2.6*var(--u));border-radius:2px;margin-right:calc(1.2*var(--u));vertical-align:-2px}
-@media (prefers-reduced-motion: reduce){.scene{transition:none}.draw,.draw2{animation:none;stroke-dashoffset:0}.scene > *,.tile,.brief div,.w,.wb,.endpt,.mk{opacity:1;transform:none;filter:none;animation:none!important}
+/* map: countries colour in from the cheapest to the dearest, their prices appear, then France's flows draw themselves */
+.h-sm{font-size:calc(7.6*var(--u))}.sub.src{font-size:calc(3.2*var(--u))}
+.scene > svg.map{flex:none}
+/* the map scene: the map fills the frame from the top right, the words sit on the sea (Atlantic top left, Mediterranean below) */
+.mapsc > svg.map{position:absolute;top:calc(9*var(--u));right:calc(-14*var(--u));width:calc(128*var(--u));height:auto;z-index:0;margin:0}
+.mapsc > :not(svg){position:relative;z-index:1}
+.mapsc > .kick,.mapsc > .h{max-width:calc(44*var(--u));text-shadow:0 calc(.4*var(--u)) calc(3*var(--u)) #000,0 0 calc(1.5*var(--u)) #000}
+.mapsc > .sub{max-width:calc(34*var(--u));color:var(--fg);text-shadow:0 0 calc(2*var(--u)) #000,0 0 calc(1*var(--u)) #000,0 0 calc(.5*var(--u)) #000}
+.mapsc > svg.map{top:calc(13*var(--u));right:calc(-24*var(--u))}
+.map .ctry{opacity:0}.scene.on .map .ctry{animation:ctry .5s ease var(--d) forwards}
+@keyframes ctry{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:none}}
+.map .ctry{transform-box:fill-box;transform-origin:center}
+.mlab{font:800 34px var(--mono);fill:#0B0F14;opacity:0}.scene.on .mlab{animation:rise .4s ease var(--d) forwards}
+.map .flow line{stroke-dasharray:1;stroke-dashoffset:1}.scene.on .map .flow line{animation:draw2 .8s cubic-bezier(.3,.7,.2,1) var(--d) forwards}
+.map .flow{filter:drop-shadow(0 0 6px rgba(0,0,0,.6))}
+.scene.on #m-fr{stroke:#fff;stroke-width:5}
+/* nuclear gauge: the available fleet fills up to its level, the operator's forecast is a tick */
+.nuc-t{position:relative;height:calc(5*var(--u));background:var(--line);border-radius:99px;overflow:visible}
+.nuc-f{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:99px}.scene.on .nuc-f{animation:nucf 1.2s cubic-bezier(.3,.7,.2,1) .3s forwards}
+@keyframes nucf{to{width:var(--w)}}
+.nuc-m{position:absolute;top:calc(-1.4*var(--u));bottom:calc(-1.4*var(--u));width:calc(.8*var(--u));margin-left:calc(-.4*var(--u));background:var(--fg);border-radius:3px}
+.nuc-l{position:relative;height:calc(6*var(--u));font:600 calc(3*var(--u)) var(--mono);color:var(--muted)}.nuc-l span{position:absolute;top:calc(1.8*var(--u));left:0;white-space:nowrap}
+.nuc-l .end{left:auto;right:0}.nuc-top{position:relative;height:calc(6*var(--u));font:600 calc(3.2*var(--u)) var(--mono);color:var(--fg)}.nuc-top span{position:absolute;bottom:calc(1.6*var(--u));transform:translateX(-60%);white-space:nowrap}
+/* spark: one bar per zone from a centre line, right = margin, left = loss */
+.sprk{display:flex;flex-direction:column;gap:calc(1.8*var(--u))}
+.sr{display:grid;grid-template-columns:calc(22*var(--u)) minmax(0,1fr) calc(14*var(--u));align-items:center;gap:calc(2*var(--u));font:600 calc(4*var(--u)) var(--sans);opacity:0}
+.scene.on .sr{animation:rise .45s ease var(--d) forwards}
+.sr .t{position:relative;height:calc(5*var(--u))}.sr .t::before{content:"";position:absolute;left:50%;top:-20%;bottom:-20%;width:2px;background:var(--muted)}
+.sr .t i{position:absolute;left:50%;top:0;bottom:0;width:0;background:#7FC8F8;border-radius:0 6px 6px 0}.sr .t i.neg{left:auto;right:50%;background:var(--up);border-radius:6px 0 0 6px}
+.scene.on .sr .t i{animation:nucf .8s cubic-bezier(.3,.7,.2,1) calc(var(--d) + .2s) forwards}
+.sr .v{font:800 calc(4.2*var(--u)) var(--mono);text-align:right}
+.sr.fr .n,.sr.fr .v{color:var(--accent)}.sr.fr .t i{background:var(--accent)}
+/* PPA: solar and wind side by side, the price counts up, its 60-day line draws, a bar shows its share of the baseload forward */
+.ppa{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:calc(4*var(--u))}
+.ppa-c{display:flex;flex-direction:column;gap:calc(1.2*var(--u));opacity:0}.scene.on .ppa-c{animation:rise .5s ease var(--d) forwards}
+.ppa-n{font:700 calc(4*var(--u)) var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--c)}
+.ppa-v{font:800 calc(13*var(--u))/1 var(--mono);letter-spacing:-.03em;font-variant-numeric:tabular-nums}.ppa-v span{display:inline-block}.ppa-v span.punch{animation:punch .5s cubic-bezier(.3,1.6,.5,1)}
+.ppa-u{font:500 calc(3.6*var(--u)) var(--mono);color:var(--muted)}
+.ppa-d{font:800 calc(4.4*var(--u)) var(--mono)}.ppa-d span{font-weight:500;color:var(--muted)}.ppa-d.up{color:var(--up)}.ppa-d.down{color:var(--down)}.ppa-d.flat{color:var(--muted)}
+.ppa-p{height:calc(2.4*var(--u));background:var(--line);border-radius:99px;overflow:hidden;margin-top:calc(1*var(--u))}.ppa-p i{display:block;height:100%;width:0;background:var(--c);border-radius:99px}
+.scene.on .ppa-p i{animation:nucf 1s cubic-bezier(.3,.7,.2,1) calc(var(--d) + 1.4s) forwards}
+.ppa-pl{font:600 calc(3.1*var(--u)) var(--mono);color:#A9BACB}
+.ppa-r{font:800 calc(8*var(--u))/1 var(--mono);color:var(--c);margin-top:calc(1*var(--u))}.ppa-r span{display:inline-block}.ppa-r span.punch{animation:punch .5s cubic-bezier(.3,1.6,.5,1)}
+/* embedded in a story of the site: the story draws the progress bar */
+.embed .bar{display:none}
+.held *,.held *::before{animation-play-state:paused!important}
+/* layout of a scene (Instagram safe zones: nothing under the progress bars, the right-hand buttons or the caption):
+   title at the top, the visual in the middle taking the room left, the subtitle at the bottom */
+.scene > svg,.scene > .ppa,.scene > .sprk,.scene > .race,.scene > .brief,.scene > .event,.scene > .gauge{margin-block:auto}
+.scene > svg{flex:none}
+.say{margin-top:auto;background:rgba(6,9,13,.86);border:1px solid rgba(230,237,243,.14);border-radius:calc(3*var(--u));padding:calc(3.6*var(--u)) calc(4.4*var(--u));
+  font:700 calc(6*var(--u))/1.28 var(--sans);color:var(--fg);text-wrap:pretty;box-shadow:0 calc(2*var(--u)) calc(6*var(--u)) rgba(0,0,0,.45)}
+.say .k{opacity:.22;transition:none}
+.scene.on .say .k{animation:kon .35s ease var(--d) forwards}
+@keyframes kon{to{opacity:1}}
+.sub{color:#A9BACB}
+@media (prefers-reduced-motion: reduce){.scene{transition:none}.draw,.draw2{animation:none;stroke-dashoffset:0}.scene > *,.tile,.brief div,.w,.wb,.endpt,.mk,.say .k,.map .ctry,.mlab,.sr,.ppa-c{opacity:1;transform:none;filter:none;animation:none!important}
   #stage::before{animation:none!important}.g-fill{transform:none;animation:none!important}.g-t{left:var(--p1);animation:none!important}}
 </style>
 </head>
@@ -158,6 +214,7 @@ svg{width:100%;height:auto;overflow:visible}
 (function () {
   'use strict';
   const EN = location.hash === '#en';
+  if (new URLSearchParams(location.search).has('embed')) document.documentElement.classList.add('embed');
   const T = (f, e) => EN ? e : f;
   const SCENE_MS = 3600;
   const fmt = (v, d) => v == null || !isFinite(v) ? '–' : v.toLocaleString(EN ? 'en-GB' : 'fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d });
@@ -182,13 +239,12 @@ svg{width:100%;height:auto;overflow:visible}
     // the gauge is zoomed on yesterday's price (in the middle), so even a 1 % move travels a visible distance
     const R = b == null ? 1 : Math.max(Math.abs(dv) * 1.6, Math.abs(b) * 0.02, 1.5), pos = v => Math.max(4, Math.min(96, 50 + (v - b) / R * 50));
     const pa = b == null ? null : pos(a), pb = b == null ? null : 50;
-    return { ms: 5600, html: `<div class="kick">${T('Spot France · aujourd’hui', 'France spot · today')}</div>
+    return { id: 'price', ms: 5600, sayAt: DL + MS + 300, say: dv == null ? T('Spot day-ahead base France, moyenne du jour de livraison.', 'France day-ahead baseload spot, delivery-day average.') : Math.abs(dv) < 0.05 ? T('Spot base stable par rapport à la veille.', 'Baseload spot flat on the day before.') : T(`Spot base en ${dv > 0 ? 'hausse' : 'baisse'} de ${fmt(Math.abs(dv), 1)} €/MWh sur la veille.`, `Baseload spot ${dv > 0 ? 'up' : 'down'} ${fmt(Math.abs(dv), 1)} €/MWh on the day before.`), html: `<div class="kick">${T('Spot France · aujourd’hui', 'France spot · today')}</div>
       <div class="h">${words(T('Le prix de l’électricité', 'The power price'), 150, 110)}</div>
       <div class="figline"><span class="big${fmt(a, 1).length > 5 ? ' long' : ''}" data-count="${a}" data-from="${b == null ? 0 : b}" data-dec="1" data-delay="${b == null ? 300 : DL}" data-ms="${b == null ? 1100 : MS}" data-punch="1">${fmt(b == null ? a : b, 1)}</span> <span class="unit">€/MWh</span></div>
       ${pb == null ? '' : `<div class="gauge2 ${d}" style="--dl:${DL}ms;--ms:${MS}ms"><div class="g-track"><i class="g-fill" style="left:${Math.min(pa, pb)}%;width:${Math.abs(pa - pb)}%"></i><span class="g-y" style="left:${pb}%"></span><span class="g-t" style="--p0:${pb}%;--p1:${pa}%"></span></div>
         <div class="g-lab"><span style="left:${Math.max(12, Math.min(88, pb))}%">${T('hier', 'yesterday')} ${fmt(b, 0)}&nbsp;€</span></div></div>`}
-      ${dv == null ? '' : `<div class="delta late ${d}" style="--late:${DL + MS - 100}ms"><span class="nw">${arrow(dv)} ${sgn(dv, 1)}&nbsp;€</span> <span class="unit">${T('vs hier', 'vs yesterday')} (${sgn(dv / b * 100, 0)}&nbsp;%)</span></div>`}
-      <div class="sub" style="animation-delay:${DL + MS + 500}ms">${T('Moyenne du jour de livraison, enchère day-ahead d’hier midi.', 'Delivery-day average, yesterday’s noon day-ahead auction.')}</div>` };
+      ${dv == null ? '' : `<div class="delta late ${d}" style="--late:${DL + MS - 100}ms"><span class="nw">${arrow(dv)} ${sgn(dv, 1)}&nbsp;€</span> <span class="unit">${T('vs hier', 'vs yesterday')} (${sgn(dv / b * 100, 0)}&nbsp;%)</span></div>`}` };
   }
   function profileScene(D0) {
     // the full 96 quarter-hours, not a 24-point hourly mean: battery/solar swings are quarter-hour events,
@@ -206,7 +262,8 @@ svg{width:100%;height:auto;overflow:visible}
       <circle cx="${x(i)}" cy="${y(v)}" r="16" fill="${col}"/><text x="${lx(i)}" y="${above ? y(v) - 34 : y(v) + 64}" text-anchor="middle" fill="${col}" font-family="JetBrains Mono" font-size="44" font-weight="800">${fmt(v, 0)} €</text></g>`;
     // after the sweep: the gap between the lowest and highest quarter-hour drawn as a bracket on the right
     const bx = W + 6, yMn = y(mn), yMx = y(mx);
-    return { ms: SWEEP + 3000, html: `<div class="kick">${T('La journée quart d’heure par quart d’heure', 'The day, quarter-hour by quarter-hour')}</div>
+    const hh = i => T(Math.floor(i / 4) + '\u00a0h' + (i % 4 ? String(i % 4 * 15).padStart(2, '0') : ''), hhmm(i));
+    return { id: 'profile', ms: SWEEP + 3000, sayAt: SWEEP + 400, say: T(`Creux à ${hh(iMin)}, pointe à ${hh(iMax)} : spread de ${fmt(mx - mn, 0)} €/MWh.`, `Low at ${hh(iMin)}, peak at ${hh(iMax)}: a ${fmt(mx - mn, 0)} €/MWh spread.`), html: `<div class="kick">${T('La journée quart d’heure par quart d’heure', 'The day, quarter-hour by quarter-hour')}</div>
       <div class="row" style="align-items:baseline;justify-content:space-between"><div class="clock" id="p-clock">00:00</div><div class="act" id="p-act" style="color:var(--muted)">–</div></div>
       <svg viewBox="-20 -60 1040 660" aria-hidden="true">
         ${lo < 0 ? `<line x1="0" x2="${W}" y1="${y(0)}" y2="${y(0)}" stroke="#ED6965" stroke-dasharray="8 8"/>` : ''}
@@ -223,8 +280,7 @@ svg{width:100%;height:auto;overflow:visible}
         <circle id="p-head" cx="0" cy="${y(H[0])}" r="10" fill="#fff"/>
         ${[0, 24, 48, 72, 95].map(i => `<text x="${x(i)}" y="${Ht + 60}" text-anchor="middle" fill="#8DA2B8" font-family="JetBrains Mono" font-size="34">${Math.floor(i / 4)}&#160;h</text>`).join('')}
       </svg>
-      <div class="row"><div class="tile" style="animation-delay:${TILES}ms;border-color:rgba(251,191,36,.55)"><div class="l">${T('Pic − creux', 'Peak − low')}</div><div class="v nw" style="color:var(--amber)">${fmt(mx - mn, 0)}&nbsp;€</div><div class="s">${T('ce que voit une batterie', 'what a battery sees')}</div></div>
-        <div class="tile" style="animation-delay:${TILES + 250}ms"><div class="l">${T('Heures ≤ 0 €', 'Hours ≤ 0 €')}</div><div class="v">${fmt(neg, neg % 1 ? 1 : 0)}</div><div class="s">${T('prix nuls ou négatifs', 'zero or negative')}</div></div></div>`,
+      ${neg ? `<div class="row"><div class="tile" style="animation-delay:${TILES}ms"><div class="l">${T('Heures ≤ 0 €', 'Hours ≤ 0 €')}</div><div class="v">${fmt(neg, neg % 1 ? 1 : 0)}</div><div class="s">${T('prix nuls ou négatifs', 'zero or negative')}</div></div></div>` : ''}`,
       play(root) {
         const clock = root.querySelector('#p-clock'), act = root.querySelector('#p-act'),
           cr = root.querySelector('#p-cr'), cur = root.querySelector('#p-cur'), head = root.querySelector('#p-head'),
@@ -264,7 +320,7 @@ svg{width:100%;height:auto;overflow:visible}
     const pts = s.map((v, i) => x(i).toFixed(1) + ',' + y(v).toFixed(1)).join(' ');
     const d = dir(cal.dv), col = d === 'up' ? '#ED6965' : d === 'down' ? '#4ADE80' : '#8DA2B8';
     const land = DL + DRAW;
-    return { ms: 5800, html: `<div class="kick">${T('Marché à terme', 'Forward market')}</div>
+    return { id: 'cal', ms: 5800, sayAt: land + 400, say: Math.abs(cal.dv) < 0.005 ? T(`Cal-${String(cal.y).slice(2)} base France stable à la clôture.`, `Cal-${String(cal.y).slice(2)} France baseload flat at settlement.`) : T(`Cal-${String(cal.y).slice(2)} base France : ${sgn(cal.dv, 2)} €/MWh à la clôture.`, `Cal-${String(cal.y).slice(2)} France baseload: ${sgn(cal.dv, 2)} €/MWh at settlement.`), html: `<div class="kick">${T('Marché à terme', 'Forward market')}</div>
       <div class="h">${words(T('Électricité livrée en ' + cal.y, 'Power delivered in ' + cal.y), 150, 110)}</div>
       <svg viewBox="-10 -30 1030 ${Ht + 80}" aria-hidden="true" style="--ms:${DRAW}ms;--dl:${DL}ms;--dl2:${land}ms">
         <polyline class="draw2" pathLength="1" points="${pts}" fill="none" stroke="#7FC8F8" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/>
@@ -292,7 +348,7 @@ svg{width:100%;height:auto;overflow:visible}
   const first = s => { const t = String(s || ''), m = t.match(/^.+?[.!?](?=\s+[A-ZÀ-Ý«]|$)/); return m ? m[0] : t; };
   function briefScene(dg) {
     const items = (dg.context || []).slice(0, 3), GAP = 1900, FIRST = 600;
-    return { ms: FIRST + items.length * GAP + 900, html: `<div class="kick">${T('Le brief du marché', 'Market brief')}</div>
+    return { id: 'brief', ms: FIRST + items.length * GAP + 900, html: `<div class="kick">${T('Le brief du marché', 'Market brief')}</div>
       <div class="brief">${items.map(c => `<div class="${c.tone === 'up' ? 'up' : c.tone === 'down' ? 'down' : ''}"><b>${EN ? c.topic_en : c.topic} ${c.tone === 'up' ? '▲' : c.tone === 'down' ? '▼' : ''}</b>${words(first(EN ? c.text_en : c.text), 150, 55, 'wb')}</div>`).join('')}</div>`,
       play(root) {
         const it = [...root.querySelectorAll('.brief > div')];
@@ -304,19 +360,165 @@ svg{width:100%;height:auto;overflow:visible}
       } };
   }
 
+  // CO₂: two months of the front-December EUA draw themselves, then the last session's move lands; its weight in a gas plant's cost
+  function carbonScene(pts, contract) {
+    const k0 = Math.max(0, pts.length - 42), s = pts.slice(k0).map(p => p[1]), n = s.length, v = s[n - 1], dv = v - s[n - 2];
+    const DRAW = 1900, DL = 500, W = 1000, Ht = 230, land = DL + DRAW;
+    const lo = Math.min(...s), hi = Math.max(...s), x = i => i / (n - 1) * W, y = q => Ht - 12 - (q - lo) / ((hi - lo) || 1) * (Ht - 24);
+    const d = dir(dv), col = d === 'up' ? '#ED6965' : d === 'down' ? '#4ADE80' : '#8DA2B8';
+    const dd = iso => new Date(iso + 'T12:00:00Z').toLocaleDateString(EN ? 'en-GB' : 'fr-FR', { day: 'numeric', month: 'short', timeZone: 'UTC' });
+    const ccgt = 0.37 * v;   // a gas plant emits about 0.37 t of CO₂ per MWh produced
+    return { id: 'co2', ms: 5800, sayAt: land + 400, say: T(`EUA déc. : ${sgn(dv, 2)} €/t sur la séance. Soit ≈ ${fmt(ccgt, 0)} €/MWh dans le coût d’une centrale gaz.`, `EUA Dec: ${sgn(dv, 2)} €/t on the session. That is ≈ ${fmt(ccgt, 0)} €/MWh in a gas plant’s cost.`),
+      html: `<div class="kick">${T('Carbone · EUA', 'Carbon · EUA')}</div>
+      <div class="h">${words(T('Le prix du CO₂', 'The price of CO₂'), 150, 110)}</div>
+      <svg viewBox="-10 -30 1030 ${Ht + 80}" aria-hidden="true" style="--ms:${DRAW}ms;--dl:${DL}ms;--dl2:${land}ms">
+        <polyline class="draw2" pathLength="1" points="${s.map((q, i) => x(i).toFixed(1) + ',' + y(q).toFixed(1)).join(' ')}" fill="none" stroke="#B8C9D9" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/>
+        <circle class="endpt" cx="${x(n - 1)}" cy="${y(v)}" r="13" fill="${col}"/>
+        <text x="0" y="${Ht + 46}" fill="#8DA2B8" font-family="JetBrains Mono" font-size="32">${dd(pts[k0][0])}</text>
+        <text x="${W}" y="${Ht + 46}" text-anchor="end" fill="#8DA2B8" font-family="JetBrains Mono" font-size="32">${dd(pts[pts.length - 1][0])}</text>
+      </svg>
+      <div class="figline"><span class="big" data-count="${v}" data-from="${v - dv}" data-dec="2" data-delay="${land - 700}" data-ms="900" data-punch="1">${fmt(v - dv, 2)}</span> <span class="unit">€/t</span></div>
+      <div class="delta late ${d}" style="--late:${land + 150}ms"><span class="nw">${arrow(dv)} ${sgn(dv, 2)}&nbsp;€</span> <span class="unit">${T('en une séance', 'in one session')}</span></div>
+      <div class="sub" style="animation-delay:${land + 600}ms">${contract || 'EUA'} · SEFE Energy market cockpit, ${T('cotation du', 'price of')} ${dd(pts[pts.length - 1][0])}</div>` };
+  }
+
+  // ── map: today's day-ahead price country by country (cheapest first), then France's physical flows border by border ──
+  const MAP_ZONES = { FR: ['FR'], DE: ['DE_LU'], LU: ['DE_LU'], BE: ['BE'], NL: ['NL'], ES: ['ES'], PT: ['PT'], AT: ['AT'], CH: ['CH'],
+    CZ: ['CZ'], SK: ['SK'], HU: ['HU'], PL: ['PL'], RO: ['RO'], HR: ['HR'], SI: ['SI'], RS: ['RS'], BG: ['BG'], GR: ['GR'], MK: ['MK'],
+    ME: ['ME'], FI: ['FI'], EE: ['EE'], LV: ['LV'], LT: ['LT'], IT: ['IT_NORD', 'IT_CNOR', 'IT_CSUD', 'IT_SUD', 'IT_CALA', 'IT_SICI', 'IT_SARD'],
+    DK: ['DK_E', 'DK_W'], SE: ['SE', 'SE_1', 'SE_2', 'SE_3', 'SE_4'], NO: ['NO_1', 'NO_2', 'NO_3', 'NO_4', 'NO_5'] };   // as js/power-map.js
+  const RAMP = [[-20, [59, 130, 246]], [0, [20, 211, 169]], [60, [245, 235, 77]], [130, [249, 115, 22]], [250, [190, 30, 45]]];   // the site's price scale
+  const rampCol = v => { if (v <= RAMP[0][0]) return 'rgb(' + RAMP[0][1] + ')';
+    for (let i = 1; i < RAMP.length; i++) if (v <= RAMP[i][0]) { const [a, ca] = RAMP[i - 1], [b, cb] = RAMP[i], t = (v - a) / (b - a);
+      return 'rgb(' + ca.map((c, j) => Math.round(c + (cb[j] - c) * t)).join(',') + ')'; }
+    return 'rgb(' + RAMP[RAMP.length - 1][1] + ')'; };
+  const FLOW_N = { DE_LU: ['Allemagne', 'Germany', 'DE'], BE: ['Belgique', 'Belgium', 'BE'], ES: ['Espagne', 'Spain', 'ES'], IT_NORD: ['Italie', 'Italy', 'IT'], CH: ['Suisse', 'Switzerland', 'CH'], GB: ['Royaume-Uni', 'Great Britain', 'GB'] };
+  function mapScene(geo, zones, cb) {
+    const x0 = -14, x1 = 30, y0 = 34.5, y1 = 62, W = 1000, H = Math.round(W * (y1 - y0) / ((x1 - x0) * Math.cos(49 * Math.PI / 180)));
+    const px = lon => (lon - x0) / (x1 - x0) * W, py = lat => (y1 - lat) / (y1 - y0) * H;
+    const ring = r => 'M' + r.map(([lo, la]) => px(lo).toFixed(1) + ',' + py(la).toFixed(1)).join('L') + 'Z';
+    const price = iso => { const v = (MAP_ZONES[iso] || []).map(z => zones[z] && zones[z].avg).filter(v => v != null); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; };
+    const F = geo.features.map(f => ({ iso: f.properties.iso, lx: f.properties.lx, ly: f.properties.ly, v: price(f.properties.iso),
+      d: (f.geometry.type === 'Polygon' ? [f.geometry.coordinates] : f.geometry.coordinates).map(pg => ring(pg[0])).join('') }));
+    const priced = F.filter(f => f.v != null).sort((a, b) => a.v - b.v), order = new Map(priced.map((f, i) => [f.iso, i]));
+    // the colour follows today's range, not a fixed scale: on a dear day every country would be the same red
+    const vLo = priced[0].v, vHi = priced[priced.length - 1].v, vMid = priced[Math.floor(priced.length / 2)].v;
+    const dayCol = v => { const t = v <= vMid ? 0.5 * (v - vLo) / ((vMid - vLo) || 1) : 0.5 + 0.5 * (v - vMid) / ((vHi - vMid) || 1);
+      const st = [[0, [20, 211, 169]], [0.5, [245, 235, 77]], [0.8, [249, 115, 22]], [1, [190, 30, 45]]];
+      for (let i = 1; i < st.length; i++) if (t <= st[i][0]) { const [a, ca] = st[i - 1], [b, cb2] = st[i], u = (t - a) / (b - a); return 'rgb(' + ca.map((c, j) => Math.round(c + (cb2[j] - c) * u)).join(',') + ')'; }
+      return 'rgb(190,30,45)'; };
+    const STEP = 70, FILL = 300 + priced.length * STEP;
+    const paths = F.map(f => `<path d="${f.d}" fill="${f.v == null ? '#1A2330' : dayCol(f.v)}" stroke="#0B0F14" stroke-width="2.5"${f.v == null ? '' : ` class="ctry" style="--d:${300 + order.get(f.iso) * STEP}ms"`}${f.iso === 'FR' ? ' id="m-fr"' : ''}/>`).join('');
+    const LAB = ['FR', 'DE', 'ES', 'IT', 'PL', 'SE', 'FI', 'RO', 'NO', 'PT', 'GR', 'HU'];
+    const labs = F.filter(f => f.v != null && LAB.includes(f.iso) && f.lx != null).map(f => { const x = px(f.lx), y = py(f.ly); if (x < 20 || x > W - 20 || y < 20 || y > H - 20) return '';
+      return `<text class="mlab" x="${x.toFixed(0)}" y="${y.toFixed(0)}" text-anchor="middle" style="--d:${FILL + 200}ms"${f.iso === 'FR' ? ' fill="#fff" font-size="44"' : ''}>${fmt(f.v, 0)}</text>`; }).join('');
+    // France's borders: arrow from the exporter to the importer, width by the mean flow
+    const fr = F.find(f => f.iso === 'FR'), FX = px(fr.lx), FY = py(fr.ly), rows = ((cb && cb.countries && cb.countries.FR) || []).map(r => ({ k: r.partner.split(' ')[0], net: r.net })).filter(r => FLOW_N[r.k] && r.net);
+    const arrows = rows.map((r, i) => { const pf = F.find(f => f.iso === FLOW_N[r.k][2]); if (!pf) return '';
+      let ax = px(pf.lx), ay = py(pf.ly), bx = FX, by = FY; if (r.net < 0) [ax, ay, bx, by] = [bx, by, ax, ay];   // net > 0: France imports
+      const sx = ax + (bx - ax) * .22, sy = ay + (by - ay) * .22, ex = ax + (bx - ax) * .74, ey = ay + (by - ay) * .74, w = Math.max(6, Math.min(22, Math.sqrt(Math.abs(r.net)) / 2.6));
+      const col = r.net > 0 ? '#FFFFFF' : '#7FC8F8';
+      return `<g class="flow" style="--d:${FILL + 700 + i * 260}ms"><line x1="${sx.toFixed(0)}" y1="${sy.toFixed(0)}" x2="${ex.toFixed(0)}" y2="${ey.toFixed(0)}" stroke="${col}" stroke-width="${w.toFixed(1)}" stroke-linecap="round" marker-end="url(#ah${r.net > 0 ? 'i' : 'e'})" pathLength="1"/></g>`; }).join('');
+    const net = rows.reduce((a, r) => a + r.net, 0) / 1000, nm = r => FLOW_N[r.k][2];   // ISO codes: short, and the terms of the trade
+    const imp = rows.filter(r => r.net > 0).sort((a, b) => b.net - a.net).map(nm), exp = rows.filter(r => r.net < 0).sort((a, b) => a.net - b.net).map(nm);
+    const asc = priced, rk = asc.findIndex(f => f.iso === 'FR') + 1;
+    const ord = r => EN ? (r === 1 ? '1st' : r === 2 ? '2nd' : r === 3 ? '3rd' : r + 'th') : (r === 1 ? '1ʳᵉ' : r + 'ᵉ');
+    const list = a => a.join(', ');
+    const say = !rows.length ? T(`France : ${ord(rk)} prix le plus bas sur ${asc.length} pays.`, `France: ${ord(rk)} lowest price of ${asc.length} countries.`)
+      : T(`${net > 0 ? 'Importatrice' : 'Exportatrice'} nette ${fmt(Math.abs(net), 1)} GW · import ${list(imp) || '–'} · export ${list(exp) || '–'}`,
+          `Net ${net > 0 ? 'importer' : 'exporter'} ${fmt(Math.abs(net), 1)} GW · imports ${list(imp) || '–'} · exports ${list(exp) || '–'}`);
+    return { id: 'map', cls: 'mapsc', ms: FILL + 700 + rows.length * 260 + 2200, sayAt: FILL + 900, say,
+      html: `<div class="kick">${T('Europe · spot du jour', 'Europe · today’s spot')}</div>
+      <div class="h h-sm">${words(T(`France : ${ord(rk)} sur ${asc.length}`, `France: ${ord(rk)} of ${asc.length}`), 150, 90)}</div>
+      <svg class="map" viewBox="0 0 ${W} ${H}" aria-hidden="true" preserveAspectRatio="xMaxYMin meet"><defs>
+        <marker id="ahi" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="2.6" markerHeight="2.6" orient="auto"><path d="M0,0L10,5L0,10z" fill="#FFFFFF"/></marker>
+        <marker id="ahe" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="2.6" markerHeight="2.6" orient="auto"><path d="M0,0L10,5L0,10z" fill="#7FC8F8"/></marker></defs>
+        ${paths}${labs}${arrows}</svg>
+      <div class="sub src">${T('€/MWh day-ahead · flux ENTSO-E : blanc import, bleu export', '€/MWh day-ahead · ENTSO-E flows: white in, blue out')}</div>` };
+  }
+  // ── nuclear: available capacity against the operator's forecast and the installed fleet ──
+  function nuclearScene(av, fc) {
+    const INST = 63000, k0 = Math.max(0, av.length - 60), s = av.slice(k0).map(p => p[1] / 1000), n = s.length, v = s[n - 1], f = fc && fc.length ? fc[fc.length - 1][1] / 1000 : null, gap = f == null ? null : v - f;
+    const W = 1000, Ht = 200, lo = Math.min(...s), hi = Math.max(...s, f || 0), x = i => i / (n - 1) * W, y = q => Ht - 10 - (q - lo) / ((hi - lo) || 1) * (Ht - 20);
+    const col = gap == null ? '#B8C9D9' : gap < -0.3 ? '#ED6965' : gap > 0.3 ? '#4ADE80' : '#B8C9D9';
+    return { id: 'nuclear', ms: 5600, sayAt: 2600, say: gap == null ? T(`Disponibilité nucléaire : ${fmt(v, 1)} GW sur ${fmt(INST / 1000, 0)} GW installés.`, `Nuclear availability: ${fmt(v, 1)} GW of ${fmt(INST / 1000, 0)} GW installed.`)
+      : Math.abs(gap) < 0.3 ? T(`Disponibilité nucléaire : ${fmt(v, 1)} GW, en ligne avec la prévision exploitant.`, `Nuclear availability: ${fmt(v, 1)} GW, in line with the operator forecast.`)
+      : T(`Disponibilité nucléaire : ${fmt(v, 1)} GW, ${fmt(Math.abs(gap), 1)} GW ${gap < 0 ? 'sous' : 'au-dessus de'} la prévision exploitant.`, `Nuclear availability: ${fmt(v, 1)} GW, ${fmt(Math.abs(gap), 1)} GW ${gap < 0 ? 'below' : 'above'} the operator forecast.`),
+      html: `<div class="kick">${T('Nucléaire France · disponibilité', 'French nuclear · availability')}</div>
+      <div class="figline"><span class="big" data-count="${v}" data-from="${s[0]}" data-dec="1" data-delay="300" data-ms="1200" data-punch="1">${fmt(s[0], 1)}</span> <span class="unit">GW</span></div>
+      <div class="nuc">${f == null ? '' : `<div class="nuc-top"><span style="left:${(f / (INST / 1000) * 100).toFixed(1)}%">${T('prévision', 'forecast')} ${fmt(f, 1)}</span></div>`}<div class="nuc-t"><i class="nuc-f" style="--w:${(v / (INST / 1000) * 100).toFixed(1)}%;background:${col}"></i>${f == null ? '' : `<span class="nuc-m" style="left:${(f / (INST / 1000) * 100).toFixed(1)}%"></span>`}</div>
+        <div class="nuc-l"><span>0</span><span class="end">${fmt(INST / 1000, 0)} GW ${T('installés', 'installed')}</span></div></div>
+      <svg viewBox="-10 -20 1030 ${Ht + 70}" aria-hidden="true" style="--ms:1600ms;--dl:600ms;--dl2:2200ms">
+        ${f == null ? '' : `<line x1="0" x2="${W}" y1="${y(f)}" y2="${y(f)}" stroke="#8DA2B8" stroke-width="3" stroke-dasharray="10 10"/>`}
+        <polyline class="draw2" pathLength="1" points="${s.map((q, i) => x(i).toFixed(1) + ',' + y(q).toFixed(1)).join(' ')}" fill="none" stroke="#E6C86E" stroke-width="6" stroke-linejoin="round"/>
+        <circle class="endpt" cx="${x(n - 1)}" cy="${y(v)}" r="12" fill="${col}"/>
+        <text x="0" y="${Ht + 46}" fill="#8DA2B8" font-family="JetBrains Mono" font-size="32">${T('il y a 2 mois', '2 months ago')}</text><text x="${W}" y="${Ht + 46}" text-anchor="end" fill="#8DA2B8" font-family="JetBrains Mono" font-size="32">${T('aujourd’hui', 'today')}</text></svg>
+      <div class="sub">${T('Parc EDF disponible et prévision de l’exploitant, SEFE Energy market cockpit.', 'EDF fleet available and the operator’s forecast, SEFE Energy market cockpit.')}</div>` };
+  }
+  // ── clean spark spread: today's baseload minus the gas and CO₂ cost of a 49 % gas plant (formula of the site's spark page) ──
+  function sparkScene(zones, ttf, eua) {
+    const Z = [['FR', 'France', 'France'], ['DE_LU', 'Allemagne', 'Germany'], ['BE', 'Belgique', 'Belgium'], ['NL', 'Pays-Bas', 'Netherlands'], ['IT_NORD', 'Italie N.', 'Italy N.'], ['ES', 'Espagne', 'Spain'], ['PL', 'Pologne', 'Poland']];
+    const css = v => v - ttf / 0.4913 - eua * 0.202 / 0.4913;
+    const R = Z.filter(([k]) => zones[k] && zones[k].avg != null).map(([k, f, e]) => ({ k, n: EN ? e : f, v: css(zones[k].avg) })).sort((a, b) => b.v - a.v);
+    const mx = Math.max(...R.map(r => Math.abs(r.v)), 1), fr = R.find(r => r.k === 'FR');
+    return { id: 'spark', ms: 5200, sayAt: 600 + R.length * 160 + 900, say: fr ? (fr.v > 0 ? T(`Clean spark France : +${fmt(fr.v, 0)} €/MWh. Une centrale gaz couvre son gaz et son CO₂ au spot base.`, `France clean spark: +${fmt(fr.v, 0)} €/MWh. A gas plant covers its gas and CO₂ at the baseload spot.`)
+        : T(`Clean spark France : ${sgn(fr.v, 0)} €/MWh. Au spot base, une centrale gaz ne couvre pas son gaz et son CO₂.`, `France clean spark: ${sgn(fr.v, 0)} €/MWh. At the baseload spot, a gas plant does not cover its gas and CO₂.`)) : '',
+      html: `<div class="kick">${T('Clean spark spread · aujourd’hui', 'Clean spark spread · today')}</div>
+      <div class="h">${words(T('La marge d’une centrale gaz', 'A gas plant’s margin'), 150, 100)}</div>
+      <div class="sprk">${R.map((r, i) => `<div class="sr${r.k === 'FR' ? ' fr' : ''}" style="--d:${600 + i * 160}ms"><span class="n">${r.n}</span><span class="t"><i class="${r.v < 0 ? 'neg' : ''}" style="--w:${(Math.abs(r.v) / mx * 50).toFixed(1)}%"></i></span><span class="v">${sgn(r.v, 0)}</span></div>`).join('')}</div>
+      <div class="sub">${T(`Spot base − TTF ${fmt(ttf, 1)} €/MWh ÷ 49 % − EUA ${fmt(eua, 1)} €/t × 0,202 ÷ 49 %, en €/MWh.`, `Baseload spot − TTF ${fmt(ttf, 1)} €/MWh ÷ 49 % − EUA ${fmt(eua, 1)} €/t × 0.202 ÷ 49 %, in €/MWh.`)}</div>` };
+  }
+
+  // ── PPA: the day's PowerKlock benchmark (the site's pricer, default settings), solar and wind side by side ──
+  function ppaScene(bm) {
+    const days = Object.keys(bm.days).sort(), L = bm.days[days[days.length - 1]], W = bm.days[days[Math.max(0, days.length - 6)]] || {};
+    const dd = iso => new Date(iso + 'T12:00:00Z').toLocaleDateString(EN ? 'en-GB' : 'fr-FR', { day: 'numeric', month: 'short', timeZone: 'UTC' });
+    const tY = (L.tenor || '').split('-'), cal3 = tY.length > 1 ? tY[0].slice(2) + '–' + tY[tY.length - 1].slice(2) : (L.tenor || '');   // the strip the PPA is priced on: Cal 27–29
+    const TT = [['solar', T('Solaire', 'Solar'), '#FBBF24'], ['wind', T('Éolien', 'Wind'), '#7FC8F8']].filter(([t]) => L[t] && L[t].ppa != null);
+    const col = TT.map(([t, n, c], j) => { const x = L[t], d = W[t] && W[t].ppa != null ? x.ppa - W[t].ppa : null, ser = days.slice(-60).map(k => bm.days[k][t] && bm.days[k][t].ppa).filter(v => v != null);
+      const lo = Math.min(...ser), hi = Math.max(...ser), sx = 300 / Math.max(1, ser.length - 1), sy = v => 110 - (v - lo) / ((hi - lo) || 1) * 100;
+      const pc = x.ref ? x.ppa / x.ref * 100 : null;
+      return `<div class="ppa-c" style="--c:${c};--d:${400 + j * 500}ms"><div class="ppa-n">${n}</div>
+        <div class="ppa-v"><span data-count="${x.ppa}" data-from="${d == null ? x.ppa * .9 : x.ppa - d}" data-dec="1" data-delay="${600 + j * 500}" data-ms="1100" data-punch="1">${fmt(x.ppa, 1)}</span></div><div class="ppa-u">€/MWh</div>
+        ${d == null ? '' : `<div class="ppa-d ${dir(d)}">${arrow(d)} ${sgn(d, 1)} € <span>${T('5 j', '5 d')}</span></div>`}
+        <svg viewBox="-4 -6 308 124" aria-hidden="true" style="--ms:1300ms;--dl:${900 + j * 500}ms;--dl2:${2200 + j * 500}ms"><polyline class="draw2" pathLength="1" points="${ser.map((v, i) => (i * sx).toFixed(1) + ',' + sy(v).toFixed(1)).join(' ')}" fill="none" stroke="${c}" stroke-width="5" stroke-linejoin="round"/></svg>
+        ${pc == null ? '' : `<div class="ppa-r"><span data-count="${pc}" data-dec="0" data-delay="${1500 + j * 500}" data-ms="1000" data-punch="1">${fmt(pc, 0)}</span> %</div><div class="ppa-pl">${T('du Cal ' + cal3 + ' base', 'of Cal ' + cal3 + ' baseload')}</div><div class="ppa-p"><i style="--w:${Math.min(100, pc).toFixed(0)}%"></i></div>`}
+        ${x.lo != null ? `<div class="ppa-pl">P10–P90 ${fmt(x.lo, 0)}–${fmt(x.hi, 0)} €</div>` : ''}</div>`; }).join('');
+    const part = TT.map(([t, n]) => `${n.toLowerCase()} ${fmt(L[t].ppa, 1)} €/MWh${L[t].ref ? `${T(', soit', ', i.e.')} ${fmt(L[t].ppa / L[t].ref * 100, 0)} % ${T('du Cal', 'of Cal')}` : ''}`).join(', ');
+    const ten = (L.tenor || '').split('-'), tn = ten.length > 1 ? ten[0] + '–' + ten[ten.length - 1].slice(2) : L.tenor;
+    return { id: 'ppa', ms: 6200, sayAt: 2600, say: T(`PPA ${ten.length} ans ${tn}, pay-as-produced : ${part}.`, `${ten.length}-year PPA ${tn}, pay-as-produced: ${part}.`),
+      html: `<div class="kick">${T('PPA France · benchmark PowerKlock', 'France PPA · PowerKlock benchmark')}</div>
+      <div class="h">${words(T(`Le prix d’un PPA ${tn}`, `The price of a ${tn} PPA`), 150, 100)}</div>
+      <div class="ppa">${col}</div>
+      <div class="sub">${T(`Pricer du site, réglages par défaut : pay-as-produced, rien payé sous 0 €. % du Cal : prix fixe ÷ Cal base ${cal3} (moyenne pondérée). Calcul du ${dd(days[days.length - 1])}`, `The site’s pricer, default settings: pay-as-produced, nothing paid below 0 €. % of Cal: fixed price ÷ Cal ${cal3} baseload (weighted mean). Run of ${dd(days[days.length - 1])}`)}</div>` };
+  }
+
   async function main() {
-    const [D0f, D1f, chain, dg, ev, goCsv] = await Promise.all([
+    const [D0f, D1f, chain, dg, ev, goCsv, bess, cs, geo, cb, cm, bm] = await Promise.all([
       get('data/history/daily/' + today + '.json'), get('data/history/daily/' + addDays(today, -1) + '.json'),
-      get('data/history/fr_market_calchain.json'), get('data/market_digest.json'), get('data/events.json'), get('data/go_prices.csv')]);
+      get('data/history/fr_market_calchain.json'), get('data/market_digest.json'), get('data/events.json'), get('data/go_prices.csv'),
+      get('data/history/bess_da.json'), get('data/history/commodities_series.json'), get('data/geo/europe.json'), get('data/crossborder.json'), get('data/commodities.json'), get('data/history/ppa_benchmark.json')]);
     const D0 = D0f && D0f.zones && D0f.zones.FR, D1 = D1f && D1f.zones && D1f.zones.FR;
     const S = [];
     if (D0) { S.push(priceScene(D0, D1)); if (D0.hourly && D0.hourly.length === 96) S.push(profileScene(D0)); }
+    // the day's one reel holds it all: Europe's ranking (with the gap to the cheapest zone), then forwards, CO₂ and the battery
+    if (D0f && D0f.zones && geo && geo.features) S.push(mapScene(geo, D0f.zones, cb));
+    else { const es = europeScenes(D0f); if (es) S.push(Object.assign(es[0], { say: es[1].say })); }
+    const nu = cm && cm.series && cm.series.fr_nuc_avail && cm.series.fr_nuc_avail.points;
+    if (nu && nu.length > 10) S.push(nuclearScene(nu, cm.series.fr_nuc_avail_fc && cm.series.fr_nuc_avail_fc.points));
     // Cal+1: the last two settlements of next year's baseload contract
     const y1 = +today.slice(0, 4) + 1, c = chain && chain.FR && chain.FR.years && chain.FR.years[String(y1)];
     if (c && c.values && c.values.length > 1) {
       const n = c.values.length, k0 = Math.max(0, n - 42);   // about two months of sessions for the curve
       S.push(calScene({ y: y1, v: c.values[n - 1], dv: c.values[n - 1] - c.values[n - 2], d: c.dates[n - 1], d0: c.dates[k0], series: c.values.slice(k0) }));
     }
+    if (bm && bm.days && Object.keys(bm.days).length > 5) S.push(ppaScene(bm));
+    const eua = cs && cs.series && cs.series.eua && cs.series.eua.points;
+    if (eua && eua.length > 2) S.push(carbonScene(eua, cs.series.eua.contract));
+    // the same last TTF and EUA closes as the spark of data/prices.json (scripts/fetch_data.py)
+    const cl = k => { const q = cm && cm.series && cm.series[k] && cm.series[k].points; return q && q.length ? q[q.length - 1][1] : null; };
+    if (D0f && D0f.zones && cl('ttf') && cl('eua')) S.push(sparkScene(D0f.zones, cl('ttf'), cl('eua')));
+    const bs = battScenes(bess); if (bs) S.push(Object.assign(bs[2], { id: 'batt' }));
     // Monday: last week's spot against the week before, and the GO of next year (weekly broker prices)
     if (new Date(today + 'T12:00:00Z').getUTCDay() === 1) {
       const days = n => Promise.all(Array.from({ length: 7 }, (_, i) => get('data/history/daily/' + addDays(today, -n - i) + '.json')));
@@ -329,21 +531,22 @@ svg{width:100%;height:auto;overflow:visible}
         const r = rows[rows.length - 1];
         if (r) go = { y: r[5], v: (+r[6] + (+r[7] || +r[6])) / 2, dv: +r[8] || 0 };
       }
-      if (a != null) S.push(mondayScene({ v: a, dv: b == null ? 0 : a - b }, go));
+      if (a != null) S.push({ id: 'week', html: mondayScene({ v: a, dv: b == null ? 0 : a - b }, go) });
     }
     // an important event dated today or yesterday (checked against its source in data/events.json)
     const e = ev && (ev.items || []).find(x => (x.date === today || x.date === addDays(today, -1)) && (x.importance || 0) >= 2);
-    if (e) S.push(eventScene(e));
+    if (e) S.push({ id: 'event', html: eventScene(e) });
     if (dg && dg.context && dg.context.length) S.push(briefScene(dg));
+    const only = q.get('s');   // ?s=price,profile: only these scenes (a story of the site)
+    if (only) { const want = only.split(','); S.splice(0, S.length, ...S.filter(x => x && want.includes(x.id))); }
     if (!S.length) S.push(`<div class="h">${T('Données du jour pas encore publiées.', 'Today’s data not published yet.')}</div>`);
     run(S);
   }
 
   // ── reel 2: a battery through the day (data/history/bess_da.json, the optimal schedule of the day) ──
-  async function battery() {
-    const doc = await get('data/history/bess_da.json');
+  function battScenes(doc) {
     const E = doc && doc.example, X = E && E['2h'];
-    if (!X || E.d !== today) return run([`<div class="h">${T('Programme du jour pas encore calculé.', 'Today’s schedule not computed yet.')}</div>`]);
+    if (!X || E.d !== today) return null;
     const p = E.price, gw = doc.params.grid_withdrawal, wear = X.wear, L = doc.summary_ltm['2h'];
     const cum = []; let acc = 0;
     p.forEach((v, t) => { acc += (v * X.discharge[t] - (v + gw) * X.charge[t]) * 0.25; cum.push(acc); });
@@ -351,12 +554,11 @@ svg{width:100%;height:auto;overflow:visible}
     const line = p.map((v, t) => x(t).toFixed(1) + ',' + y(v).toFixed(1)).join(' ');
     const bars = p.map((v, t) => X.charge[t] > 0.01 ? `<rect class="q" data-t="${t}" x="${x(t) - 4}" y="${y(v)}" width="9" height="${H - y(v)}" fill="#7FC8F8" opacity="0"/>`
       : X.discharge[t] > 0.01 ? `<rect class="q" data-t="${t}" x="${x(t) - 4}" y="${y(v)}" width="9" height="${H - y(v)}" fill="#FBBF24" opacity="0"/>` : '').join('');
-    const intro = { ms: 3800, html: `<div class="kick">${T('Une batterie de 1 MW, 2 h', 'A 1 MW, 2 h battery')}</div>
+    const intro = { ms: 3800, sayAt: 2200, say: T('Arbitrage day-ahead : charge aux heures creuses, décharge à la pointe.', 'Day-ahead arbitrage: charge in the low hours, discharge at the peak.'), html: `<div class="kick">${T('Une batterie de 1 MW, 2 h', 'A 1 MW, 2 h battery')}</div>
       <div class="h">${words(T('Acheter au creux, revendre au pic', 'Buy low, sell at the peak'), 150, 110)}</div>
-      <div class="gauge"><div class="batt demo"><b></b></div></div>
-      <div class="sub" style="animation-delay:1.9s">${T('Aujourd’hui en France, sur les prix day-ahead : le meilleur programme possible, quart d’heure par quart d’heure.', 'Today in France, on day-ahead prices: the best possible schedule, quarter-hour by quarter-hour.')}</div>` };
+      <div class="gauge"><div class="batt demo"><b></b></div></div>` };
     const SWEEP = 9000;
-    const sweep = { ms: SWEEP + 1800, html: `<div class="kick">${T('La journée en accéléré', 'The day, fast-forward')}</div>
+    const sweep = { ms: SWEEP + 1800, sayAt: 800, say: T('Bleu : charge. Jaune : décharge. Le compteur cumule la marge.', 'Blue: charging. Yellow: discharging. The counter adds up the margin.'), html: `<div class="kick">${T('La journée en accéléré', 'The day, fast-forward')}</div>
       <div class="row" style="align-items:baseline;justify-content:space-between"><div class="clock" id="b-clock">00:00</div><div class="act" id="b-act" style="color:var(--muted)">${T('attend', 'waits')}</div></div>
       <svg viewBox="-10 -40 1020 520" aria-hidden="true"><defs><clipPath id="b-clip"><rect id="b-cr" x="-10" y="-40" width="0" height="560"/></clipPath></defs>
         <polyline points="${line}" fill="none" stroke="#243042" stroke-width="5"/>
@@ -383,30 +585,29 @@ svg{width:100%;height:auto;overflow:visible}
         requestAnimationFrame(step);
       } };
     const net = X.rev - wear;
-    const result = { ms: 4200, html: `<div class="kick">${T('Résultat de la journée', 'The day’s result')}</div>
+    const result = { ms: 4200, sayAt: 2200, say: T(`Marge nette du jour : ${fmt(net, 0)} €/MW, usure déduite.`, `Net margin of the day: ${fmt(net, 0)} €/MW, wear deducted.`), html: `<div class="kick">${T('Batterie 1 MW, 2 h · aujourd’hui', '1 MW, 2 h battery · today')}</div>
       <div class="figline"><span class="big" data-count="${net}" data-dec="0" data-delay="300" data-ms="1300" data-punch="1">${fmt(net, 0)}</span> <span class="unit">${T('€ gagnés par MW', '€ earned per MW')}</span></div>
       <div class="sub" style="animation-delay:1.7s">${T('Après ', 'After ')}${fmt(wear, 0)}&nbsp;€ ${T('d’usure de la batterie, sur le seul marché day-ahead.', 'of battery wear, on the day-ahead market alone.')}</div>
       <div class="row"><div class="tile"><div class="l">${T('Sur 12 mois', 'Over 12 months')}</div><div class="v nw">${fmt(L.pw, 0)}&nbsp;k€</div><div class="s">${T('par MW et par an', 'per MW per year')}</div></div>
         <div class="tile"><div class="l">${T('Cycles', 'Cycles')}</div><div class="v">${fmt(L.cycles_day, 1)}</div><div class="s">${T('par jour en moyenne', 'per day on average')}</div></div></div>` };
-    run([intro, sweep, result]);
+    return [intro, sweep, result];
+  }
+  async function battery() {
+    run(battScenes(await get('data/history/bess_da.json')) || [`<div class="h">${T('Programme du jour pas encore calculé.', 'Today’s schedule not computed yet.')}</div>`]);
   }
 
   // ── reel 3: today's price across Europe, a bar race (data/history/daily/<today>.json, all zones) ──
   const ZONES = { FR: ['France', 'France'], DE_LU: ['Allemagne', 'Germany'], BE: ['Belgique', 'Belgium'], NL: ['Pays-Bas', 'Netherlands'], ES: ['Espagne', 'Spain'],
     PT: ['Portugal', 'Portugal'], IT_NORD: ['Italie Nord', 'Italy North'], AT: ['Autriche', 'Austria'], CH: ['Suisse', 'Switzerland'], PL: ['Pologne', 'Poland'],
     CZ: ['Tchéquie', 'Czechia'], DK_W: ['Danemark O.', 'Denmark W.'], NO_1: ['Norvège Sud', 'Norway South'], SE: ['Suède', 'Sweden'], FI: ['Finlande', 'Finland'] };
-  async function europe() {
-    const f = await get('data/history/daily/' + today + '.json');
+  function europeScenes(f) {
     const z = f && f.zones;
-    if (!z || !z.FR) return run([`<div class="h">${T('Prix du jour pas encore publiés.', 'Today’s prices not published yet.')}</div>`]);
+    if (!z || !z.FR) return null;
     const L = Object.keys(ZONES).filter(k => z[k] && z[k].avg != null).map(k => ({ k, n: ZONES[k][EN ? 1 : 0], v: z[k].avg })).sort((a, b) => b.v - a.v);
     const asc = L.slice().sort((a, b) => a.v - b.v), rank = asc.findIndex(r => r.k === 'FR') + 1, max = L[0].v, min = asc[0];
     const ord = r => EN ? (r === 1 ? '1st' : r === 2 ? '2nd' : r === 3 ? '3rd' : r + 'th') : (r === 1 ? '1ʳᵉ' : r + 'ᵉ');
-    const intro = { ms: 3000, html: `<div class="kick">${T('Europe · aujourd’hui', 'Europe · today')}</div>
-      <div class="h">${words(T('Où l’électricité est-elle la moins chère\u00a0?', 'Where is power cheapest?'), 150, 100)}</div>
-      <div class="sub" style="animation-delay:1.1s">${T('Prix moyen du jour, enchère day-ahead, ', 'Average price of the day, day-ahead auction, ')}${L.length} ${T('pays.', 'countries.')}</div>` };
-    const race = { ms: 8000, html: `<div class="kick">${T('Prix moyen du jour · €/MWh', 'Average price · €/MWh')}</div>
-      <div class="h">${words(T('La France ' + ord(rank) + ' moins chère sur ' + L.length, 'France ' + ord(rank) + ' cheapest of ' + L.length), 150, 90)}</div>
+    const race = { ms: 8000, sayAt: 1600 + L.length * 180, say: T('Prix spot day-ahead base, moyenne du jour, par zone de prix.', 'Day-ahead baseload spot, daily average, by bidding zone.'), html: `<div class="kick">${T('Prix moyen du jour · €/MWh', 'Average price · €/MWh')}</div>
+      <div class="h">${words(T('France : ' + ord(rank) + ' prix le plus bas sur ' + L.length, 'France: ' + ord(rank) + ' lowest price of ' + L.length), 150, 90)}</div>
       <div class="race" id="race">${L.map(r => `<div class="r${r.k === 'FR' ? ' fr' : ''}"><div class="n">${r.n}</div><div class="t"><i data-w="${Math.max(2, r.v / max * 100).toFixed(1)}"></i><span>${fmt(r.v, 0)}</span></div></div>`).join('')}</div>`,
       play(root) {
         const rows = [...root.querySelectorAll('.race .t i')];
@@ -418,12 +619,15 @@ svg{width:100%;height:auto;overflow:visible}
         if (fr) setTimeout(() => fr.classList.add('win'), 1600 + rows.length * 180);
       } };
     const gap = z.FR.avg - min.v;
-    const outro = { ms: 4600, html: `<div class="kick">${T('À retenir', 'Takeaway')}</div>
+    const outro = { ms: 4600, sayAt: 2400, say: T(`Écart France / zone la moins chère : ${fmt(gap, 0)} €/MWh.`, `Gap France / cheapest zone: ${fmt(gap, 0)} €/MWh.`), html: `<div class="kick">${T('À retenir', 'Takeaway')}</div>
       <div class="figline"><span class="big" data-count="${z.FR.avg}" data-dec="0" data-delay="250" data-ms="1100" data-punch="1">${fmt(z.FR.avg, 0)}</span> <span class="unit">€/MWh ${T('en France', 'in France')}</span></div>
       <div class="sub" style="animation-delay:1.3s">${T('Le moins cher : ', 'Cheapest: ')}${min.n}, ${fmt(min.v, 0)}&nbsp;€.</div>
       <div class="sub" style="animation-delay:1.9s">${T('Le plus cher : ', 'Dearest: ')}${L[0].n}, ${fmt(L[0].v, 0)}&nbsp;€.</div>
-      <div class="sub" style="animation-delay:2.5s;color:var(--fg)">${T('Écart avec la France : ', 'Gap with France: ')}${fmt(gap, 0)}&nbsp;€.</div>` };
-    run([intro, race, outro]);
+` };
+    return [race, outro];
+  }
+  async function europe() {
+    run(europeScenes(await get('data/history/daily/' + today + '.json')) || [`<div class="h">${T('Prix du jour pas encore publiés.', 'Today’s prices not published yet.')}</div>`]);
   }
 
   // ── reel 4: yesterday's production hour by hour under the price (data/history/daily/<yesterday>.json) ──
@@ -447,7 +651,7 @@ svg{width:100%;height:auto;overflow:visible}
     const pline = price.map((v, i) => x(i) + ',' + yp(v)).join(' ');
     const sol = SER.find(s => s.k === 'solar'), hSol = sol.v.indexOf(Math.max(...sol.v)), hMin = price.indexOf(Math.min(...price)), hMax = price.indexOf(Math.max(...price));
     const SWEEP = 8000;
-    const sweep = { ms: SWEEP + 1500, html: `<div class="kick">${T('Hier en France · heure par heure', 'Yesterday in France · hour by hour')}</div>
+    const sweep = { ms: SWEEP + 1500, sayAt: 900, say: T('Production par filière en GW, prix day-ahead en blanc.', 'Output by source in GW, day-ahead price in white.'), html: `<div class="kick">${T('Hier en France · heure par heure', 'Yesterday in France · hour by hour')}</div>
       <div class="row" style="align-items:baseline;justify-content:space-between"><div class="clock" id="m-clock">0 h</div><div class="act" id="m-p">–</div></div>
       <svg viewBox="-10 -30 1020 660" aria-hidden="true"><defs><clipPath id="m-clip"><rect id="m-cr" x="-10" y="-30" width="0" height="700"/></clipPath></defs>
         <g clip-path="url(#m-clip)">${areas}<polyline points="${pline}" fill="none" stroke="#fff" stroke-width="7" stroke-linejoin="round"/></g>
@@ -466,7 +670,7 @@ svg{width:100%;height:auto;overflow:visible}
       } };
     const solarDay = Math.abs(hSol - hMin) <= 2 && sol.v[hSol] > 3;
     const head = solarDay ? T('Le solaire creuse le prix à midi', 'Solar digs the midday price') : T('Le prix suit la demande du soir', 'The price follows the evening demand');
-    const take = { ms: 5000, html: `<div class="kick">${T('Ce qu’on a vu', 'What we saw')}</div>
+    const take = { ms: 5000, sayAt: 2400, say: T(`Prix minimum à ${hMin}\u00a0h, maximum à ${hMax}\u00a0h.`, `Lowest price at ${hMin}:00, highest at ${hMax}:00.`), html: `<div class="kick">${T('Ce qu’on a vu', 'What we saw')}</div>
       <div class="h">${words(head, 150, 100)}</div>
       <div class="row"><div class="tile"><div class="l">${T('Prix le plus bas', 'Lowest price')}</div><div class="v nw"><span class="big-sm" data-count="${price[hMin]}" data-dec="0" data-delay="1700" data-ms="900">${fmt(price[hMin], 0)}</span>&nbsp;€</div><div class="s"><span class="nw">${T('à ', 'at ')}${hMin}&nbsp;h</span><br><span class="nw">${T('solaire', 'solar')} ${fmt(sol.v[hMin], 1)}&nbsp;GW</span></div></div>
         <div class="tile"><div class="l">${T('Prix le plus haut', 'Highest price')}</div><div class="v nw"><span class="big-sm" data-count="${price[hMax]}" data-dec="0" data-delay="1950" data-ms="900">${fmt(price[hMax], 0)}</span>&nbsp;€</div><div class="s"><span class="nw">${T('à ', 'at ')}${hMax}&nbsp;h</span><br><span class="nw">${T('solaire', 'solar')} ${fmt(sol.v[hMax], 1)}&nbsp;GW</span></div></div></div>
@@ -478,10 +682,23 @@ svg{width:100%;height:auto;overflow:visible}
   // plays the scenes: strings or {html, ms, play(root)}; window.REEL_DONE once the last one has run its time
   function run(S, keepDate) {
     S = S.map(x => typeof x === 'string' ? { html: x, ms: SCENE_MS } : Object.assign({ ms: SCENE_MS }, x));
+    // the subtitle: one plain sentence per scene, read word by word (≈ 230 words a minute), the scene stays until it is read
+    S.forEach(x => { if (!x.say) return; const n = String(x.say).split(/ +/).length, at = x.sayAt == null ? 900 : x.sayAt;
+      x.html += `<div class="say" style="animation-delay:${Math.max(0, at - 300)}ms">${String(x.say).replace(/(\d)\s+(?=[€%$°]|GW|MW|TWh|pts)/g, '$1\u00a0').replace(/ ([:;?!])/g, '\u00a0$1').split(/ +/).map((w, i) => `<span class="k" style="--d:${at + i * 260}ms">${w}</span>`).join(' ')}</div>`;
+      x.ms = Math.max(x.ms, at + n * 260 + 1600); });
     S.forEach(x => { x.ms = Math.round(x.ms * 1.35); });   // each scene holds a third longer once its animation ends: time to read
     if (!keepDate) document.getElementById('brand-d').textContent = longDate(today);
-    document.getElementById('scenes').innerHTML = S.map(x => '<section class="scene">' + x.html + '</section>').join('');
+    document.getElementById('scenes').innerHTML = S.map(x => '<section class="scene' + (x.cls ? ' ' + x.cls : '') + '">' + x.html + '</section>').join('');
     document.getElementById('bar').innerHTML = S.map(() => '<i><b></b></i>').join('');
+    // a scene with more to show than the frame holds shrinks a little (everything is sized in --u) until it fits
+    const fit = () => document.querySelectorAll('.scene').forEach(sc => { sc.style.removeProperty('--u');
+      const u0 = parseFloat(getComputedStyle(document.getElementById('stage')).getPropertyValue('--u')) || 3.6;
+      // too full = the last block ends below the scene's bottom padding (where the logo and Instagram's caption sit)
+      // (layout boxes, not the on-screen ones: the blocks wait slightly lower until their scene comes in)
+      const over = () => { const l = sc.lastElementChild; if (!l) return false;
+        return l.offsetTop + l.offsetHeight > sc.clientHeight - parseFloat(getComputedStyle(sc).paddingBottom) + 1; };
+      for (let f = 1, k = 0; over() && k < 14; k++) { f *= 0.95; sc.style.setProperty('--u', (u0 * f) + 'px'); } });
+    fit(); if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
     const sc = [...document.querySelectorAll('.scene')], bars = [...document.querySelectorAll('#bar i')];
     let k = 0, prev = -1;
     const show = () => {
@@ -501,16 +718,22 @@ svg{width:100%;height:auto;overflow:visible}
         requestAnimationFrame(step);
       });
       if (S[k].play) S[k].play(sc[k]);
-      setTimeout(next, S[k].ms);
+      left = S[k].ms; t0 = performance.now(); timer = setTimeout(next, left);
     };
+    let timer = null, t0 = 0, left = 0;
+    // the site's stories hold the reel on a long press: the scene's timer stops, its CSS animations freeze
+    window.addEventListener('message', e => { const m = e.data; if (!m || m.pkReel !== 'pause' || e.source !== parent) return;
+      if (m.on && timer) { clearTimeout(timer); timer = null; left -= performance.now() - t0; document.documentElement.classList.add('held'); }
+      else if (!m.on && !timer && k < S.length) { t0 = performance.now(); timer = setTimeout(next, Math.max(0, left)); document.documentElement.classList.remove('held'); } });
     const next = () => {
       prev = k;
       k += 1;
-      if (k >= S.length) { window.REEL_DONE = true; if (q.has('once')) return; k = 0; }
+      if (k >= S.length) { window.REEL_DONE = true; if (parent !== window) parent.postMessage({ pkReel: 'done' }, location.origin); if (q.has('once')) return; k = 0; }
       show();
     };
     window.REEL_SCENES = S.length;
     window.REEL_MS = S.reduce((a, x) => a + x.ms, 0);
+    if (parent !== window) parent.postMessage({ pkReel: 'start', ms: window.REEL_MS, scenes: S.length }, location.origin);
     show();
   }
 
