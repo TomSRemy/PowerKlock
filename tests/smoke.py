@@ -38,6 +38,8 @@ LIVE_WIDGETS = {'cb-intraday', 'cb-days', 'cb-fr-avg', 'kpi-fr-load', 'kpi-fr-ne
 NOISE = re.compile(r'Failed to load resource|net::ERR_|favicon|opendata\.elia|odre\.opendatasoft|open-meteo|supabase', re.I)
 
 errors, warnings = [], []
+# on a phone the page scrolls inside .main, not the document: a block wider than the screen shows as .main scrolling sideways
+WIDER = "Math.max(document.documentElement.scrollWidth, (document.querySelector('.main') || {}).scrollWidth || 0) > 392"
 
 
 def serve():
@@ -190,8 +192,14 @@ def main():
                 continue
             ph.evaluate(f"showPage('{pg}')")
             ph.wait_for_timeout(1500)
-            if ph.evaluate("document.documentElement.scrollWidth > 392"):
+            if ph.evaluate(WIDER):
                 errors.append(f"[phone/{pg}] wider than the screen (390px)")
+        # Today's Expert view, where most of the morning's tables and lists live
+        ph.evaluate("showPage('morning')"); ph.wait_for_timeout(1500)
+        ph.evaluate("document.querySelectorAll('#page-morning button').forEach(b => { if (/Expert/.test(b.textContent)) b.click(); })")
+        ph.wait_for_timeout(3000)
+        if ph.evaluate(WIDER):
+            errors.append("[phone/morning expert] wider than the screen (390px)")
         ph.close()
 
         # French, the default language: every address of the menu opens its page without an error,
