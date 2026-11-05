@@ -39,7 +39,7 @@ body{display:flex;align-items:center;justify-content:center;overflow:hidden}
 /* headlines build word by word (each word carries its own --d delay) */
 .scene.on > .h{animation:none;opacity:1;transform:none}
 .w{display:inline-block;opacity:0;transform:translateY(.5em);filter:blur(6px)}
-.scene.on .w{animation:wordin .55s cubic-bezier(.2,.8,.2,1) var(--d,0ms) forwards}
+.scene.on .w{animation:wordin .75s cubic-bezier(.2,.8,.2,1) var(--d,0ms) forwards}
 @keyframes wordin{to{opacity:1;transform:none;filter:none}}
 .scene.on .delta{animation:rise .6s ease .6s forwards,pop .5s ease 1.2s}
 .scene.on .delta.late{animation:rise .45s cubic-bezier(.3,1.5,.5,1) var(--late) forwards,pop .5s ease calc(var(--late) + .45s)}
@@ -172,7 +172,7 @@ svg{width:100%;height:auto;overflow:visible}
   const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
   // a phrase split into words that come in one after the other; a figure stays glued to its unit
   const words = (s, base = 0, step = 90, cls = 'w') => String(s).replace(/(\d)\s+(?=[€%$°]|GW|MW|TWh|pts)/g, '$1 ')
-    .split(/ +/).map((w, i) => `<span class="${cls}" style="--d:${base + i * step}ms">${w}</span>`).join(' ');
+    .split(/ +/).map((w, i) => `<span class="${cls}" style="--d:${base + Math.round(i * step * 1.6)}ms">${w}</span>`).join(' ');
 
   // scene 1: the price counts from yesterday's to today's while a marker slides between the two on a gauge
   function priceScene(D0, D1) {
