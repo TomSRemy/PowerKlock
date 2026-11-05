@@ -51,6 +51,17 @@ compter les quarts d'heure à prix nul ou négatif, puis diviser par 4.
   moyenne reste positive peut cacher un ou deux quarts d'heure négatifs.
 - pv magazine (2 octobre 2026) parle d'« environ 800 heures ». C'est le comptage au quart d'heure qui retombe dessus.
 
+**Pour 2025, trois chiffres circulent : 742, 735 et 722.** Ce sont trois définitions, pas trois erreurs :
+- **742** : quarts d'heure ≤ 0 € divisés par 4 (`calc.json`, `le0_quarter_hours`) ; c'est le bon comptage, puisque le
+  prix est au quart d'heure depuis octobre 2025 ;
+- **735** : heures ≤ 0 € dans la série horaire du cours (`data/history/fr_hourly/2025.json`, `calc.json`, champ
+  `h_le0`), utilisée aux chapitres 1 à 3 ;
+- **722** : le chiffre du diaporama du 28 octobre (« Revue des méthodes PPA », diapo 8), tiré des données horaires du
+  banc d'essai (`ppa_lab`). L'écart avec 735 n'a pas été expliqué en détail.
+
+(Le même recalcul, en faisant la moyenne des quatre quarts d'heure de chaque heure dans les fichiers journaliers,
+donne 732 : encore une variante de la moyenne horaire.)
+
 Pour comparer : **549 heures** à prix nul ou négatif sur toute l'année 2024.
 
 ![Heures négatives](../img/03_heures_negatives.png)

@@ -7,7 +7,7 @@ d'origine. Il dit qui est Tom, ce qu'il veut, ce qui est fait, où on en est, le
 
 ## 0. Comment ça marche entre les sessions
 
-- **Cette session (l'auteur du cours)** a tout écrit : le cours simple, le cours détaillé, les 13 chapitres à l'oral
+- **Cette session (l'auteur du cours)** a tout écrit : le cours simple, le cours détaillé, les 14 chapitres à l'oral
   dans `oral/`, les schémas.
 - **L'instance « discussion »** parle avec Tom. Elle répond à ses questions à partir de ces fichiers, raconte les
   chapitres, dessine des schémas, et vérifie sa compréhension.
@@ -66,10 +66,10 @@ Deux consignes données en cours de route :
 
 | Fichier | Contenu |
 |---|---|
-| `cours_simple.md` / `.pdf` | 13 chapitres. Chacun a : l'idée, un schéma, un vrai chiffre, « à retenir », « pour aller plus loin » (liens) et un texte à dire à voix haute |
+| `cours_simple.md` / `.pdf` | 14 chapitres. Chacun a : l'idée, un schéma, un vrai chiffre, « à retenir », « pour aller plus loin » (liens) et un texte à dire à voix haute |
 | `cours_detail.md` / `.pdf` | Les mêmes chapitres en profondeur : formules expliquées, tous les tests chiffrés, limites, questions ouvertes, sources externes en fin de document |
-| `oral/chapitre_01.md` à `chapitre_13.md` | Les 13 chapitres racontés en entier pour l'oral (environ 15 minutes chacun), avec une question de vérification à la fin |
-| `oral/cours_oral_complet.md` / `.pdf` | Les 13 chapitres oraux réunis (76 pages) |
+| `oral/chapitre_01.md` à `chapitre_14.md` | Les 14 chapitres racontés en entier pour l'oral (environ 15 minutes chacun), avec une question de vérification à la fin |
+| `oral/cours_oral_complet.md` / `.pdf` | Les 14 chapitres oraux réunis (76 pages) |
 | `img/` | 23 schémas (`01_merit_order` à `23_etats_couplage`) |
 | `calc.py` → `calc.json` | Recalcule les chiffres depuis `data/history/` : captures, heures ≤ 0 (horaires et au quart d'heure), coût du gaz, réservoirs, France–Allemagne, arrêts nucléaires 2027 |
 | `charts.py` | Redessine tous les schémas |
@@ -81,7 +81,7 @@ Pour tout refaire, depuis la racine du dépôt :
 2. `python3 docs/discussion/cours/charts.py`
 3. `python3 docs/discussion/cours/build_pdf.py cours_simple cours_detail`
 
-**Les 13 chapitres :**
+**Les 14 chapitres :**
 1. Bases (spot, merit order, forward, prix négatifs)
 2. Capture et cannibalisation
 3. Le PPA et son prix
@@ -94,7 +94,8 @@ Pour tout refaire, depuis la racine du dépôt :
 10. Tester honnêtement (rejeu, biais, dispersion, bruit)
 11. Risque, P50 / P75
 12. Coût des écarts
-13. Ce qu'on a testé et ce qu'on a gardé
+13. Ce qu'on a testé et ce qu'on a gardé (avec l'histoire des méthodes du 27 au 31 octobre)
+14. Le fournisseur et ses produits (formation « partie 2 »)
 
 **Sources internes à connaître :**
 - `docs/discussion/pricing/debrief-2026-10-31.md` : les tests de la nuit du 30 au 31 octobre ;
@@ -144,7 +145,7 @@ Réponse attendue :
 - (c) la rente baisse par MWh, puisque l'écart de prix se réduit. Sur le total, c'est plus incertain : plus de
   volume, mais un plus petit écart.
 
-**Suite :** les 13 chapitres sont écrits à l'oral (`oral/`). L'instance « discussion » peut les raconter dans
+**Suite :** les 14 chapitres sont écrits à l'oral (`oral/`). L'instance « discussion » peut les raconter dans
 l'ordre ou à la demande, poser la question de fin de chapitre, et approfondir avec le cours détaillé. Les chapitres
 oraux citent des chiffres RTE en plus du cours (bilan 2025, bilan du premier semestre 2026), vérifiés dans les PDF
 de RTE le 1er novembre.
@@ -185,6 +186,32 @@ de RTE le 1er novembre.
    - paramètres à jour : `pricing-v2/parametres.md` (dérive de capture 2,38 / 1,90 pt/√an ; lien volume–capture
      0,24 / 0,32 ; prix prudent tenu 78–89 %). `choix_v2.md` date du 31 octobre au soir et contient des valeurs
      antérieures (2,75 / 2,12 ; 0,06 / 0,26 ; 49,75 / 80,69).
+
+## 5 bis. Diaporamas lus en entier (5 novembre)
+
+Tom a demandé si tous les diaporamas avaient été lus : au départ, non. Ils l'ont été le 5 novembre, et le cours a été
+complété avec :
+- `couplage/couplage_europeen.pdf` (31 pages), `couplage/couplage_cas.pdf`, `formation/Formation_couplage_europeen.pdf` :
+  les **quatre cas** du couplage sur un seul merit order et leur fréquence depuis 2015 (chapitre 5), l'argent année par
+  année, la France coupée 100 % du temps, le canal forward / TRVE, la robustesse (chapitre 6) ;
+- `deck-ppa/Revue_methodes_PPA_2026-10-28.html` (55 diapos), `pricing-v2/v2_simple.html`, `v2_detail.html` :
+  l'histoire des méthodes, de la moyenne des 4 (28 oct.) au générateur seul (31 oct.) (chapitre 13), 2022 décomposée
+  et le stockage (chapitre 2), forward au mois et Jensen (chapitre 3), détails du générateur et des tests (9 à 11) ;
+- `formation/partie2/Formation_partie2_fournisseur.pdf` : nouveau **chapitre 14**, avec la facture 2026 vérifiée sur les
+  textes officiels (capacité CRE 2026-42, TURPE 7, CEE 6e période, accise, TVA).
+
+**Corrections faites à cette occasion :**
+- la limite Core **baisse** de 9,2 (2023) à 5,4 GW (2025), 5,9 en 2026 ; deux passages disaient l'inverse ;
+- causes du découplage : Boerman décrit le mécanisme de la limite, mais aucune source ne chiffre la part de chaque
+  cause (nucléaire disponible, limite JAO, 54 % au lieu de 70 %, vent allemand) ;
+- ancrage éolien : 0,97 l'hiver **et 1,06 l'été** ;
+- dérive : σ = (P50 − P25) ÷ 0,6745 ÷ √années, pas la bande P10–P90 ;
+- le générateur du prix publié tire **60 années** par année livrée et par filière (`ppa_generator.py`), pas « des
+  milliers » ; les 10 000 sont les trajectoires du Monte Carlo du pricer ;
+- « modèle publié 0,84 en éolien » = la v1 ; la v2 fait 0,56 ;
+- la France « coupée de tous, la plus chère » : 0 h depuis 2024, mais le cas 4 (import à pleine ligne face à Core)
+  ≈ 1 % en 2024–2025, quand l'Allemagne est à prix négatif ;
+- les cartes mois × heure `couplage/heat_*.png` utilisent du violet hors nucléaire : non reprises.
 
 ---
 

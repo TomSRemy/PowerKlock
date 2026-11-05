@@ -35,24 +35,49 @@ ferait 12 cas. On garde seulement ceux dont la dernière année connue est 2022 
 de limites JAO et le marché était dans un autre régime. Trois cas tombent (2023 pricée 2 ou 3 ans avant, 2024 pricée
 3 ans avant). Il reste **9 cas par filière**.
 
-**L'erreur d'un cas.** Valeur du MWh pricée − valeur réalisée, en €/MWh. La production n'est pas payée aux prix nuls
-ou négatifs. On résume les 9 cas par l'**erreur moyenne absolue** : la taille moyenne de l'erreur, sans regarder son
+**L'erreur d'un cas.** Valeur du MWh pricée − valeur réalisée, en €/MWh. Dans les tests du 31 octobre, la
+production n'était pas payée aux prix nuls ou négatifs (≤ 0) ; depuis le 1er novembre, le rejeu applique la même
+règle que le pricer, arrêt **strictement sous 0 €** (`pricing-v2/parametres.md`). Les chiffres de ce chapitre sont
+ceux du 31 octobre, donc avec « ≤ 0 ». On résume les 9 cas par l'**erreur moyenne absolue** : la taille moyenne de l'erreur, sans regarder son
 sens. Et on regarde à part le **biais** : la moyenne avec le sens.
 
 **Les résultats du pricer v2** (`choix_v2.md`) : **0,76 €/MWh** en solaire, **0,56** en éolien. Pour comparer, la
 moyenne des quatre anciennes méthodes se trompait de 2,59 € en solaire et 2,84 € en éolien.
 
-**D'autres formats, pour ne pas dépendre d'un seul découpage.** Le rejeu, refait chaque semaine, compte aussi :
-- **33 points trimestriels** ;
-- **12 glissants sur 12 mois** ;
-- **12 « reste de l'année + année suivante »**.
+**D'autres formats, pour ne pas dépendre d'un seul découpage.** Le rejeu, refait chaque semaine, a quatre formats
+(`v2_detail.html`, diapo 24) :
 
-Ces formats ressemblent à ce que tu signes vraiment. Mais attention : c'est sur les formats glissants que le mélange
-50/50 avec les analogues gagnait (0,68 et 1,03), alors qu'il perdait sur les années civiles (0,89 contre 0,63). Ta
-règle tranche : on teste sur des **années complètes**.
+| Format | Nombre de cas | Ce que c'est |
+|---|---|---|
+| Années civiles | **9** | livraisons 2023–2026 pricées 1 à 3 ans avant |
+| Points trimestriels | **33** | un pricing à chaque trimestre |
+| Glissant 12 mois | **12** | les 12 mois qui suivent la date du pricing |
+| Reste + année | **12** | le reste de l'année en cours + l'année civile suivante (ton format habituel) |
+
+Les trois formats de prix comparés en **éolien**, erreur du centre en €/MWh (`v2_detail.html`, diapo 26) :
+
+| Méthode | Années civiles | Reste + année | Glissant 12 mois |
+|---|---|---|---|
+| v1 | 0,88 | 1,07 | 1,56 |
+| **v2** | **0,63** | 0,86 | 1,46 |
+| Analogues | 1,63 | 0,75 | 0,85 |
+| Mélange 50/50 | 0,89 | **0,68** | 1,03 |
+
+Comment le lire :
+- **aucune méthode ne gagne partout** : la v2 gagne sur les années civiles, les analogues et le mélange sur les
+  formats glissants ;
+- en **solaire**, la v1/v2 est la meilleure dans les trois formats (0,81 / 0,74 / 0,70, même diapo) ;
+- le 0,63 de ce tableau et le 0,56 des années civiles plus haut sont la même mesure, sur des tirages différents :
+  0,56 est la moyenne de 3 tirages. C'est le bruit des tirages (section 5) qu'on voit ici.
+
+Ces formats glissants ressemblent à ce que tu signes vraiment. Mais le mélange perdait sur les années civiles (0,89
+contre 0,63), et son pourcentage aurait bougé d'un pricing à l'autre. Ta règle tranche : on teste sur des **années
+complètes**, et on ne change pas le pourcentage d'un mélange.
 
 **Un autre test : le prix prudent tient-il ?** Le prix publié doit tenir dans 3 cas sur 4. Au rejeu, avec le Monte
-Carlo complet, il tient dans **78 à 89 %** des cas (fiche des paramètres du 1er novembre). On le verra au chapitre 11.
+Carlo complet, il tient dans **78 à 89 %** des cas (fiche des paramètres du 1er novembre). Sur les 33 points
+trimestriels, la note du 31 octobre donnait **79 % et 70 %** selon la filière (`v2_detail.html`, diapo 27). On le
+verra au chapitre 11.
 
 ## 4. Biais contre dispersion
 **L'image : deux montres.**
