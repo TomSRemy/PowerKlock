@@ -1,0 +1,26 @@
+{
+ "date": "2026-11-05",
+ "countries": {
+  "FR": {
+   "spot": 278.29,
+   "nuclearCapacity": {
+    "actualMW": 46692.5,
+    "forecastMW": 49560
+   }
+  },
+  "UK": {
+   "spot": 221.16
+  },
+  "DE": {
+   "spot": 275.64
+  },
+  "NL": {
+   "spot": 273.9
+  }
+ },
+ "marketInsightsHtml": "<p>La réduction de la production nucléaire française apporte un soutien supplémentaire au marché face aux grèves et aux faibles niveaux des rivières, avec une production en baisse de 9 % en octobre. Même si l’amélioration du sentiment géopolitique et la baisse des prix du gaz et du pétrole sont à l’origine d’un mouvement baissier plus large, le temps plus froid, la production d’énergies renouvelables modérée et la plus faible disponibilité nucléaire française offrent une certaine résistance à de nouvelles baisses de prix.</p>",
+ "marketInsights": {
+  "gas": "<p>European gas prices have retreated from four year highs this week on renewed optimism surrounding a potential US-Iran peace deal. A draft memorandum of understanding, reportedly approved by the US, was presented to Iran this week, with both sides said to have made concessions regarding Tehran&rsquo;s nuclear programme. Sentiment has also been influenced by the US midterm elections, with Democrats taking control of Congress potentially signalling a softer stance towards Iran. Adding to the optimism, Iran has reportedly exempted vessels from India, China, Iraq and Qatar from restrictions on transit through the Strait of Hormuz, raising hopes of improved flows through the key shipping route. As a result some of the geopolitical risk premium has come out of prices this week with the front month TTF contract pricing at 86.70 &euro;/MWh at time of writing, roughly 1.00 &euro;/MWh down day on day. However, the downside remains capped by ongoing supply concerns. Unplanned Norwegian outages are providing support to the market, while European storage sites have been net withdrawing since late October, with EU storages currently at 74% fullness today.</p>",
+  "power": "<p>European power prices are following gas markets lower this morning, with renewed optimism surrounding a potential US-Iran deal weighing on the wider energy complex. Oil prices have also fallen sharply, down around 8%, reflecting a broader easing of geopolitical risk premiums. However, the downside in power markets is being cushioned by weather and generation fundamentals, with colder temperatures supporting near-term demand while lower wind and solar output this week are increasing reliance on gas-fired generation to meet demand. Reduced French nuclear generation is adding further support to the market on strikes and low river levels, with output falling by 9% in October. While improving geopolitical sentiment and the decline in gas and oil prices are driving the broader bearish move, colder weather, subdued renewable output and weaker French nuclear availability are providing some resistance to further price declines. The German Baseload front month contract is pricing at 199.90 &euro;/MWh at time of writing, down 2.60 &euro;/MWh day on day.</p>"
+ }
+}
