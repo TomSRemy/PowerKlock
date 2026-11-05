@@ -29,7 +29,7 @@ body{display:flex;align-items:center;justify-content:center;overflow:hidden}
   animation:drift 22s ease-in-out infinite}
 @keyframes drift{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(3%,-2%) scale(1.06)}66%{transform:translate(-2%,3%) scale(1.04)}}
 /* scenes slide in from the right and out to the left, like stories */
-.scene{position:absolute;inset:0;padding:calc(18*var(--U)) calc(9*var(--U)) calc(31*var(--U)) calc(8*var(--U));display:flex;flex-direction:column;justify-content:flex-start;gap:calc(3.4*var(--u));opacity:0;transform:translateX(calc(12*var(--u)));transition:opacity .45s ease,transform .6s cubic-bezier(.2,.8,.2,1)}
+.scene{position:absolute;inset:0;padding:calc(18*var(--U)) calc(9*var(--U)) calc(31*var(--U)) calc(8*var(--U));display:flex;flex-direction:column;justify-content:center;gap:calc(3.4*var(--u));opacity:0;transform:translateX(calc(12*var(--u)));transition:opacity .45s ease,transform .6s cubic-bezier(.2,.8,.2,1)}
 .scene.on{opacity:1;transform:none}
 .scene.out{opacity:0;transform:translateX(calc(-12*var(--u)))}
 .scene > *{opacity:0;transform:translateY(calc(5*var(--u)))}
@@ -197,9 +197,9 @@ svg{width:100%;height:auto;overflow:visible}
 .held *,.held *::before{animation-play-state:paused!important}
 /* layout of a scene (Instagram safe zones: nothing under the progress bars, the right-hand buttons or the caption):
    title at the top, the visual in the middle taking the room left, the subtitle at the bottom */
-.scene > svg,.scene > .ppa,.scene > .sprk,.scene > .race,.scene > .brief,.scene > .event,.scene > .gauge{margin-block:auto}
+
 .scene > svg{flex:none}
-.say{margin-top:auto;background:rgba(6,9,13,.86);border:1px solid rgba(230,237,243,.14);border-radius:calc(3*var(--u));padding:calc(3.6*var(--u)) calc(4.4*var(--u));
+.say{margin-top:calc(2*var(--u));background:rgba(6,9,13,.86);border:1px solid rgba(230,237,243,.14);border-radius:calc(3*var(--u));padding:calc(3.6*var(--u)) calc(4.4*var(--u));
   font:700 calc(6*var(--u))/1.28 var(--sans);color:var(--fg);text-wrap:pretty;box-shadow:0 calc(2*var(--u)) calc(6*var(--u)) rgba(0,0,0,.45)}
 .say .k{opacity:.22;transition:none}
 .scene.on .say .k{animation:kon .35s ease var(--d) forwards}
