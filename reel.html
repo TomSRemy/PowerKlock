@@ -151,8 +151,11 @@ svg{width:100%;height:auto;overflow:visible}
 .mapsc > svg.map{position:absolute;top:calc(9*var(--u));right:calc(-14*var(--u));width:calc(128*var(--u));height:auto;z-index:0;margin:0}
 .mapsc > :not(svg){position:relative;z-index:1}
 .mapsc > .kick,.mapsc > .h{max-width:calc(44*var(--u));text-shadow:0 calc(.4*var(--u)) calc(3*var(--u)) #000,0 0 calc(1.5*var(--u)) #000}
-.mapsc > .sub.src{margin-top:auto;align-self:flex-end;text-align:right;max-width:calc(52*var(--u));font-size:calc(2.8*var(--u));color:var(--fg);text-shadow:0 0 calc(2*var(--u)) #000,0 0 calc(1*var(--u)) #000,0 0 calc(.5*var(--u)) #000}
-.mapsc > .say{margin-top:calc(1.5*var(--u))}
+.mapsc > .sub.src{position:absolute;right:calc(8*var(--U));bottom:calc(8*var(--U));text-align:right;max-width:calc(46*var(--U));font-size:calc(2.6*var(--U));line-height:1.35;color:var(--fg);text-shadow:0 0 calc(2*var(--u)) #000,0 0 calc(1*var(--u)) #000,0 0 calc(.5*var(--u)) #000}
+.mapsc > .say{margin-top:auto}
+/* the map's title stays in the top left, over the Atlantic, clear of France */
+.mapsc{padding-top:calc(14*var(--U))}.embed .mapsc{padding-top:calc(19*var(--U))}
+.mapsc > .kick{font-size:calc(3.6*var(--U))}.mapsc > .h{font-size:calc(6.6*var(--U));max-width:calc(40*var(--U))}
 .mapsc > svg.map{top:calc(13*var(--u));right:calc(-24*var(--u))}
 .map .ctry{opacity:0}.scene.on .map .ctry{animation:ctry .5s ease var(--d) forwards}
 @keyframes ctry{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:none}}
@@ -432,7 +435,7 @@ svg{width:100%;height:auto;overflow:visible}
       : T(`FR ${net > 0 ? 'importatrice' : 'exportatrice'} nette, ${fmt(Math.abs(net), 1)} GW · import ${list(imp) || '–'} · export ${list(exp) || '–'}`,
           `Net ${net > 0 ? 'importer' : 'exporter'} ${fmt(Math.abs(net), 1)} GW · imports ${list(imp) || '–'} · exports ${list(exp) || '–'}`);
     return { id: 'map', cls: 'mapsc', ms: FILL + 700 + rows.length * 260 + 2200, sayAt: FILL + 900, say,
-      html: `<div class="kick">${T('Europe · spot base du jour', 'Europe · today’s spot')}</div>
+      html: `<div class="kick">${T('Spot base · Europe', 'Baseload spot · Europe')}</div>
       <div class="h h-sm">${words(T(`France : ${ord(rk)} prix le plus bas sur ${asc.length}`, `France: ${ord(rk)} lowest of ${asc.length}`), 150, 90)}</div>
       <svg class="map" viewBox="0 0 ${W} ${H}" aria-hidden="true" preserveAspectRatio="xMaxYMin meet"><defs>
         <marker id="ahi" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="2.6" markerHeight="2.6" orient="auto"><path d="M0,0L10,5L0,10z" fill="#FFFFFF"/></marker>
