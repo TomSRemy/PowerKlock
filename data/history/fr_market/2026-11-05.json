@@ -6,16 +6,102 @@
    "nuclearCapacity": {
     "actualMW": 46692.5,
     "forecastMW": 49560
+   },
+   "forwardCurve": {
+    "M+1": 199.06,
+    "M+2": 209.98,
+    "M+3": 194.3,
+    "Q+1": 180.48,
+    "Q+2": 75.16,
+    "Q+3": 93.72,
+    "S+1": 84.44,
+    "S+2": 112.72,
+    "Y+1": 116.02,
+    "Y+2": 65.23,
+    "Y+3": 59.13
+   },
+   "generationMix": {
+    "gas": 5.94,
+    "wind": 3.56,
+    "solar": 2.67,
+    "nuclear": 40.48,
+    "hydro": 2.3,
+    "other": 2.6
    }
   },
   "UK": {
-   "spot": 221.16
+   "spot": 221.16,
+   "forwardCurve": {
+    "M+1": 181.34,
+    "M+2": 191.66,
+    "M+3": 187.05,
+    "Q+1": 180.19,
+    "Q+2": 128.44,
+    "Q+3": 120.22,
+    "S+1": 124.31,
+    "S+2": 122.67,
+    "Y+1": 137.33,
+    "Y+2": 91.3,
+    "Y+3": 74.9
+   },
+   "generationMix": {
+    "gas": 17.54,
+    "wind": 9.1,
+    "solar": 0.59,
+    "nuclear": 5.01,
+    "hydro": 0.51,
+    "biomass": 3.28,
+    "other": 1.28
+   }
   },
   "DE": {
-   "spot": 275.64
+   "spot": 275.64,
+   "forwardCurve": {
+    "M+1": 208.01,
+    "M+2": 219.54,
+    "M+3": 208.56,
+    "Q+1": 194.67,
+    "Q+2": 122.44,
+    "Q+3": 131.82,
+    "S+1": 127.13,
+    "S+2": 142.55,
+    "Y+1": 148.18,
+    "Y+2": 105.8,
+    "Y+3": 91.63
+   },
+   "generationMix": {
+    "gas": 8.98,
+    "wind": 17.49,
+    "solar": 7.91,
+    "nuclear": 0,
+    "coal": 15.8,
+    "hydro": 0.13,
+    "other": 0.43
+   }
   },
   "NL": {
-   "spot": 273.9
+   "spot": 273.9,
+   "forwardCurve": {
+    "M+1": 210.97,
+    "M+2": 223.15,
+    "M+3": 209.34,
+    "Q+1": 194.75,
+    "Q+2": 121.31,
+    "Q+3": 129.9,
+    "S+1": 125.63,
+    "S+2": 142.45,
+    "Y+1": 147.15,
+    "Y+2": 103.09,
+    "Y+3": 91.85
+   },
+   "generationMix": {
+    "gas": 5.64,
+    "wind": 2.85,
+    "solar": 0.94,
+    "nuclear": 0.48,
+    "coal": 3.13,
+    "other": 0.35
+   }
   }
  },
  "marketInsightsHtml": "<p>Reduced French nuclear generation is adding further support to the market on strikes and low river levels, with output falling by 9% in October. While improving geopolitical sentiment and the decline in gas and oil prices are driving the broader bearish move, colder weather, subdued renewable output and weaker French nuclear availability are providing some resistance to further price declines.</p>",
