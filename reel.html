@@ -266,7 +266,7 @@ svg{width:100%;height:auto;overflow:visible}
     // the gauge is zoomed on yesterday's price (in the middle), so even a 1 % move travels a visible distance
     const R = b == null ? 1 : Math.max(Math.abs(dv) * 1.6, Math.abs(b) * 0.02, 1.5), pos = v => Math.max(4, Math.min(96, 50 + (v - b) / R * 50));
     const pa = b == null ? null : pos(a), pb = b == null ? null : 50;
-    return { id: 'price', ms: 5600, sayAt: DL + MS + 300, say: dv == null ? T('Spot base France, day-ahead, moyenne du jour de livraison.', 'France day-ahead baseload spot, delivery-day average.') : Math.abs(dv) < 0.05 ? T('Spot base stable vs J-1.', 'Baseload spot flat on the day before.') : T(`Spot base FR à ${fmt(a, 1)} €/MWh, ${sgn(dv, 1)} € vs J-1.`, `Baseload spot ${dv > 0 ? 'up' : 'down'} ${fmt(Math.abs(dv), 1)} €/MWh on the day before.`), html: `<div class="kick">${T('Spot France · aujourd’hui', 'France spot · today')}</div>
+    return { id: 'price', ms: 5600, sayAt: DL + MS + 300, say: dv == null ? T('Prix spot day-ahead France, moyenne du jour de livraison.', 'France day-ahead baseload spot, delivery-day average.') : Math.abs(dv) < 0.05 ? T('Prix spot stable vs J-1.', 'Baseload spot flat on the day before.') : T(`Spot day-ahead France à ${fmt(a, 1)} €/MWh, ${sgn(dv, 1)} € vs J-1.`, `Baseload spot ${dv > 0 ? 'up' : 'down'} ${fmt(Math.abs(dv), 1)} €/MWh on the day before.`), html: `<div class="kick">${T('Spot France · aujourd’hui', 'France spot · today')}</div>
       <div class="h">${words(T('Le prix de l’électricité', 'The power price'), 150, 110)}</div>
       <div class="figline"><span class="big${fmt(a, 1).length > 5 ? ' long' : ''}" data-count="${a}" data-from="${b == null ? 0 : b}" data-dec="1" data-delay="${b == null ? 300 : DL}" data-ms="${b == null ? 1100 : MS}" data-punch="1">${fmt(b == null ? a : b, 1)}</span> <span class="unit">€/MWh</span></div>
       ${pb == null ? '' : `<div class="gauge2 ${d}" style="--dl:${DL}ms;--ms:${MS}ms"><div class="g-track"><i class="g-fill" style="left:${Math.min(pa, pb)}%;width:${Math.abs(pa - pb)}%"></i><span class="g-y" style="left:${pb}%"></span><span class="g-t" style="--p0:${pb}%;--p1:${pa}%"></span></div>
@@ -455,7 +455,7 @@ svg{width:100%;height:auto;overflow:visible}
       : T(`FR ${net > 0 ? 'importatrice' : 'exportatrice'} nette, ${fmt(Math.abs(net), 1)} GW · import ${list(imp) || '–'} · export ${list(exp) || '–'}`,
           `Net ${net > 0 ? 'importer' : 'exporter'} ${fmt(Math.abs(net), 1)} GW · imports ${list(imp) || '–'} · exports ${list(exp) || '–'}`);
     return { id: 'map', cls: 'mapsc', ms: FILL + 700 + rows.length * 260 + 2200, sayAt: FILL + 900, say,
-      html: `<div class="kick">${T('Spot base · Europe', 'Baseload spot · Europe')}</div>
+      html: `<div class="kick">${T('Prix spot · Europe', 'Baseload spot · Europe')}</div>
       <div class="h h-sm">${words(T(`France : ${ord(rk)} prix le plus bas sur ${asc.length}`, `France: ${ord(rk)} lowest of ${asc.length}`), 150, 90)}</div>
       <svg class="map" viewBox="0 0 ${W} ${H}" aria-hidden="true" preserveAspectRatio="xMaxYMin meet"><defs>
         <marker id="ahi" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="2.6" markerHeight="2.6" orient="auto"><path d="M0,0L10,5L0,10z" fill="#FFFFFF"/></marker>
@@ -489,12 +489,12 @@ svg{width:100%;height:auto;overflow:visible}
     const F = zones.FR && zones.FR.avg; if (F == null) return null;
     const m = css(F), top = Math.max(F, gas + co2, 1);
     // France, step by step: what the plant sells at, what its gas and its CO₂ cost, what is left
-    const rows = [[T('Spot base', 'Baseload spot'), F, '', '#E6EDF3'], [T('− Gaz', '− Gas'), gas, `TTF ${fmt(ttf, 1)} € ÷ 49 %`, '#F97316'],
+    const rows = [[T('Prix spot', 'Baseload spot'), F, '', '#E6EDF3'], [T('− Gaz', '− Gas'), gas, `TTF ${fmt(ttf, 1)} € ÷ 49 %`, '#F97316'],
       [T('− CO₂', '− CO₂'), co2, `EUA ${fmt(eua, 1)} € × 0,41 t`, '#8D99AE'], [T('= Marge', '= Margin'), m, '', m >= 0 ? '#4ADE80' : '#ED6965']];
     const others = Z.slice(1).filter(([k]) => zones[k] && zones[k].avg != null).map(([k, c]) => ({ c, v: css(zones[k].avg) })).sort((a, b) => b.v - a.v);
     return { id: 'spark', ms: 600 + 4 * 700 + 1800, sayAt: 600 + 4 * 700 + 200,
-      say: m >= 0 ? T(`Au spot base, une CCGT paie son gaz et son CO₂ et garde ${fmt(m, 0)} €/MWh : elle est dans la monnaie.`, `At the baseload spot, a CCGT pays its gas and CO₂ and keeps ${fmt(m, 0)} €/MWh: in the money.`)
-        : T(`Au spot base, une CCGT ne couvre pas son gaz et son CO₂ : ${sgn(m, 0)} €/MWh, hors de la monnaie.`, `At the baseload spot, a CCGT does not cover its gas and CO₂: ${sgn(m, 0)} €/MWh, out of the money.`),
+      say: m >= 0 ? T(`Au prix spot, une CCGT paie son gaz et son CO₂ et garde ${fmt(m, 0)} €/MWh : elle est dans la monnaie.`, `At the baseload spot, a CCGT pays its gas and CO₂ and keeps ${fmt(m, 0)} €/MWh: in the money.`)
+        : T(`Au prix spot, une CCGT ne couvre pas son gaz et son CO₂ : ${sgn(m, 0)} €/MWh, hors de la monnaie.`, `At the baseload spot, a CCGT does not cover its gas and CO₂: ${sgn(m, 0)} €/MWh, out of the money.`),
       html: `<div class="kick">${T('Clean spark spread · France', 'Clean spark spread · France')}</div>
       <div class="h">${words(T('La marge d’une CCGT', 'A CCGT’s margin'), 150, 100)}</div>
       <div class="wf">${rows.map(([n, v, how, c], i) => `<div class="wr${i === 3 ? ' tot' : ''}" style="--d:${600 + i * 700}ms;--c:${c}"><span class="n">${n}</span><span class="t"><i style="--w:${(Math.abs(v) / top * 100).toFixed(1)}%"></i></span><span class="v">${i === 3 ? sgn(v, 0) : fmt(v, 0)}</span>${how ? `<span class="how">${how}</span>` : ''}</div>`).join('')}</div>
@@ -546,18 +546,18 @@ svg{width:100%;height:auto;overflow:visible}
     const mL = ld.slice(0, -1).reduce((a, b) => a + b, 0) / (n - 1), mS = sp.slice(0, -1).reduce((a, b) => a + b, 0) / (n - 1);
     const J = a => JSON.stringify(a.map(q => +q.toFixed(2)));
     return { id: 'load', ms: DL + DRAW + 2200, sayAt: DL + DRAW + 300,
-      say: nL != null ? T(`Conso ${fmt(L.loadAvg / 1000, 1)} GW, ${sgn(L.loadAvg / 1000 - nL, 1)} GW vs normale saisonnière. Spot base ${fmt(L.base, 0)} €/MWh, ${sgn(L.base - mS, 0)} € vs moyenne 30 j.`,
+      say: nL != null ? T(`Conso ${fmt(L.loadAvg / 1000, 1)} GW, ${sgn(L.loadAvg / 1000 - nL, 1)} GW vs normale saisonnière. Prix spot ${fmt(L.base, 0)} €/MWh, ${sgn(L.base - mS, 0)} € vs moyenne 30 j.`,
           `Load ${fmt(L.loadAvg / 1000, 1)} GW, ${sgn(L.loadAvg / 1000 - nL, 1)} GW vs the seasonal normal. Baseload spot ${fmt(L.base, 0)} €/MWh, ${sgn(L.base - mS, 0)} € vs the 30-day average.`)
-        : T(`Conso moyenne ${fmt(L.loadAvg / 1000, 1)} GW, ${sgn(L.loadAvg / 1000 - mL, 1)} GW vs moyenne 30 j. Spot base ${fmt(L.base, 0)} €/MWh, ${sgn(L.base - mS, 0)} €.`,
+        : T(`Conso moyenne ${fmt(L.loadAvg / 1000, 1)} GW, ${sgn(L.loadAvg / 1000 - mL, 1)} GW vs moyenne 30 j. Prix spot ${fmt(L.base, 0)} €/MWh, ${sgn(L.base - mS, 0)} €.`,
           `Average load ${fmt(L.loadAvg / 1000, 1)} GW, ${sgn(L.loadAvg / 1000 - mL, 1)} GW vs the 30-day average. Baseload spot ${fmt(L.base, 0)} €/MWh, ${sgn(L.base - mS, 0)} €.`),
       html: `<div class="kick">${T('Consommation France · 30 jours', 'French load · 30 days')}</div>
       <div class="h">${words(T('La demande et le prix', 'Demand and price'), 150, 100)}</div>
       <div class="ppa"><div class="ppa-c" style="--c:#7FC8F8;--d:300ms"><div class="ppa-n">${T('Conso', 'Load')}</div><div class="ppa-v"><span data-sync="ldsp" data-syncv='${J(ld)}' data-dec="1">${fmt(ld[0], 1)}</span></div><div class="ppa-u">${T('GW moyen', 'GW average')}</div>${nL != null ? `<div class="ppa-d ${dir(L.loadAvg / 1000 - nL)} a-late">${arrow(L.loadAvg / 1000 - nL)} ${sgn(L.loadAvg / 1000 - nL, 1)} GW <span>${T('vs normale', 'vs normal')}</span></div>` : ''}</div>
-        <div class="ppa-c" style="--c:#FBBF24;--d:500ms"><div class="ppa-n">${T('Spot base', 'Baseload spot')}</div><div class="ppa-v"><span data-sync="ldsp" data-syncv='${J(sp)}' data-dec="0">${fmt(sp[0], 0)}</span></div><div class="ppa-u">€/MWh</div></div></div>
+        <div class="ppa-c" style="--c:#FBBF24;--d:500ms"><div class="ppa-n">${T('Prix spot', 'Baseload spot')}</div><div class="ppa-v"><span data-sync="ldsp" data-syncv='${J(sp)}' data-dec="0">${fmt(sp[0], 0)}</span></div><div class="ppa-u">€/MWh</div></div></div>
       <svg viewBox="-10 -20 1020 ${H + 70}" aria-hidden="true">${bars}${nLine ? `<polyline class="nline" points="${nLine}" fill="none" stroke="#E6EDF3" stroke-width="5" stroke-dasharray="12 9"/>` : ''}
         <polyline class="draw2 sync" data-sync="ldsp" data-dl="${DL}" data-ms="${DRAW}" points="${line}" fill="none" stroke="#FBBF24" stroke-width="6" stroke-linejoin="round"/>
         <text x="0" y="${H + 46}" fill="#8DA2B8" font-family="JetBrains Mono" font-size="32">${dd(R[0].d)}</text><text x="${W}" y="${H + 46}" text-anchor="end" fill="#8DA2B8" font-family="JetBrains Mono" font-size="32">${dd(L.d)}</text></svg>
-      <div class="lg"><span><i style="background:#7FC8F8"></i>${T('conso, GW', 'load, GW')}</span><span><i style="background:#FBBF24;height:4px;vertical-align:5px"></i>${T('spot base, €/MWh', 'baseload spot, €/MWh')}</span>${nLine ? `<span><i style="background:#E6EDF3;height:3px;vertical-align:5px"></i>${T('normale saisonnière', 'seasonal normal')}</span>` : ''}</div>
+      <div class="lg"><span><i style="background:#7FC8F8"></i>${T('conso, GW', 'load, GW')}</span><span><i style="background:#FBBF24;height:4px;vertical-align:5px"></i>${T('prix spot, €/MWh', 'baseload spot, €/MWh')}</span>${nLine ? `<span><i style="background:#E6EDF3;height:3px;vertical-align:5px"></i>${T('normale saisonnière', 'seasonal normal')}</span>` : ''}</div>
       <div class="sub src2">${T('RTE éCO2mix (consommation) et day-ahead (spot), moyennes journalières. Normale : même date ± 3 j, 5 années précédentes.', 'RTE éCO2mix (load) and day-ahead (spot), daily averages. Normal: same date ± 3 d, 5 previous years.')}</div>` };
   }
 
@@ -695,7 +695,7 @@ svg{width:100%;height:auto;overflow:visible}
     const L = Object.keys(ZONES).filter(k => z[k] && z[k].avg != null).map(k => ({ k, n: ZONES[k][EN ? 1 : 0], v: z[k].avg })).sort((a, b) => b.v - a.v);
     const asc = L.slice().sort((a, b) => a.v - b.v), rank = asc.findIndex(r => r.k === 'FR') + 1, max = L[0].v, min = asc[0];
     const ord = r => EN ? (r === 1 ? '1st' : r === 2 ? '2nd' : r === 3 ? '3rd' : r + 'th') : (r === 1 ? '1ʳᵉ' : r + 'ᵉ');
-    const race = { ms: 8000, sayAt: 1600 + L.length * 180, say: T('Spot base day-ahead, moyenne du jour, par zone de prix.', 'Day-ahead baseload spot, daily average, by bidding zone.'), html: `<div class="kick">${T('Prix moyen du jour · €/MWh', 'Average price · €/MWh')}</div>
+    const race = { ms: 8000, sayAt: 1600 + L.length * 180, say: T('Prix spot day-ahead, moyenne du jour, par zone de prix.', 'Day-ahead baseload spot, daily average, by bidding zone.'), html: `<div class="kick">${T('Prix moyen du jour · €/MWh', 'Average price · €/MWh')}</div>
       <div class="h">${words(T('France : ' + ord(rank) + ' prix le plus bas sur ' + L.length, 'France: ' + ord(rank) + ' lowest price of ' + L.length), 150, 90)}</div>
       <div class="race" id="race">${L.map(r => `<div class="r${r.k === 'FR' ? ' fr' : ''}"><div class="n">${r.n}</div><div class="t"><i data-w="${Math.max(2, r.v / max * 100).toFixed(1)}"></i><span>${fmt(r.v, 0)}</span></div></div>`).join('')}</div>`,
       play(root) {
