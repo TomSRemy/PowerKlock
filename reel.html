@@ -184,6 +184,7 @@ svg{width:100%;height:auto;overflow:visible}
 .scene.on .sr .t i{animation:nucf .8s cubic-bezier(.3,.7,.2,1) calc(var(--d) + .2s) forwards}
 .sr .v{font:800 calc(4.2*var(--u)) var(--mono);text-align:right}
 .sr.fr .n,.sr.fr .v{color:var(--accent)}.sr.fr .t i{background:var(--accent)}
+.nline{opacity:0}.scene.on .nline{animation:flowin .6s ease 3.4s forwards}.a-late{opacity:0}.scene.on .a-late{animation:flowin .4s ease 3.6s forwards}
 .lbar{transform:scaleY(0);transform-box:fill-box;transform-origin:bottom}.scene.on .lbar{animation:lbar .35s ease var(--d) forwards}
 @keyframes lbar{to{transform:none}}
 /* PPA: solar and wind side by side, the price counts up, its 60-day line draws, a bar shows its share of the baseload forward */
@@ -209,7 +210,7 @@ svg{width:100%;height:auto;overflow:visible}
   font:700 calc(6*var(--u))/1.28 var(--sans);color:var(--fg);text-wrap:pretty;box-shadow:0 calc(2*var(--u)) calc(6*var(--u)) rgba(0,0,0,.45)}
 
 .sub{color:#A9BACB}
-@media (prefers-reduced-motion: reduce){.scene{transition:none}.draw,.draw2{animation:none;stroke-dashoffset:0}.scene > *,.tile,.brief div,.w,.wb,.endpt,.mk,.ch,.lbar,.map .ctry,.mlab,.sr,.ppa-c{opacity:1;transform:none;filter:none;animation:none!important}
+@media (prefers-reduced-motion: reduce){.scene{transition:none}.draw,.draw2{animation:none;stroke-dashoffset:0}.scene > *,.tile,.brief div,.w,.wb,.endpt,.mk,.ch,.lbar,.nline,.a-late,.map .ctry,.mlab,.sr,.ppa-c{opacity:1;transform:none;filter:none;animation:none!important}
   #stage::before{animation:none!important}.g-fill{transform:none;animation:none!important}.g-t{left:var(--p1);animation:none!important}}
 </style>
 </head>
@@ -516,25 +517,34 @@ svg{width:100%;height:auto;overflow:visible}
     const R = rows.filter(r => r.loadAvg != null && r.base != null).slice(-30), n = R.length, L = R[n - 1];
     const dd = iso => new Date(iso + 'T12:00:00Z').toLocaleDateString(EN ? 'en-GB' : 'fr-FR', { day: 'numeric', month: 'short', timeZone: 'UTC' });
     const ld = R.map(r => r.loadAvg / 1000), sp = R.map(r => r.base);
-    const W = 1000, H = 380, bw = W / n, lMax = Math.max(...ld) * 1.05, lMin = Math.min(...ld) * .8, sMin = Math.min(...sp) * .9, sMax = Math.max(...sp) * 1.05;
+    // the seasonal normal of each day: the same date ± 3 days over the 5 previous years (RTE éCO2mix history)
+    const byD = new Map(rows.filter(r => r.loadAvg != null).map(r => [r.d, r.loadAvg]));
+    const normal = iso => { const v = []; for (let k = 1; k <= 5; k++) for (let o = -3; o <= 3; o++) {
+        const t = new Date(Date.UTC(+iso.slice(0, 4) - k, +iso.slice(5, 7) - 1, +iso.slice(8, 10) + o)).toISOString().slice(0, 10), x = byD.get(t); if (x != null) v.push(x); }
+      return v.length >= 10 ? v.reduce((a, b) => a + b, 0) / v.length / 1000 : null; };
+    const nm = R.map(r => normal(r.d)), nL = nm[nm.length - 1];
+    const W = 1000, H = 380, bw = W / n, lMax = Math.max(...ld, ...nm.filter(v => v != null)) * 1.05, lMin = Math.min(...ld, ...nm.filter(v => v != null)) * .8, sMin = Math.min(...sp) * .9, sMax = Math.max(...sp) * 1.05;
     const yl = v => H - (v - lMin) / (lMax - lMin) * H, ys = v => H - (v - sMin) / (sMax - sMin) * H * .92;
     const DRAW = 2400, DL = 600, inv = q => q < .5 ? Math.sqrt(q / 2) : 1 - Math.sqrt(2 * (1 - q)) / 2;
     const bars = ld.map((v, i) => `<rect class="lbar" x="${(i * bw + bw * .15).toFixed(1)}" y="${yl(v).toFixed(1)}" width="${(bw * .7).toFixed(1)}" height="${(H - yl(v)).toFixed(1)}" rx="3" fill="#7FC8F8" style="--d:${DL + inv(i / (n - 1)) * DRAW}ms"/>`).join('');
     const line = sp.map((v, i) => ((i + .5) * bw).toFixed(1) + ',' + ys(v).toFixed(1)).join(' ');
+    const nLine = nm.map((v, i) => v == null ? null : ((i + .5) * bw).toFixed(1) + ',' + yl(v).toFixed(1)).filter(Boolean).join(' ');
     const mL = ld.slice(0, -1).reduce((a, b) => a + b, 0) / (n - 1), mS = sp.slice(0, -1).reduce((a, b) => a + b, 0) / (n - 1);
     const J = a => JSON.stringify(a.map(q => +q.toFixed(2)));
     return { id: 'load', ms: DL + DRAW + 2200, sayAt: DL + DRAW + 300,
-      say: T(`Conso moyenne ${fmt(L.loadAvg / 1000, 1)} GW, ${sgn(L.loadAvg / 1000 - mL, 1)} GW vs moyenne 30 j. Spot base ${fmt(L.base, 0)} €/MWh, ${sgn(L.base - mS, 0)} € : la demande tire les prix.`,
-        `Average load ${fmt(L.loadAvg / 1000, 1)} GW, ${sgn(L.loadAvg / 1000 - mL, 1)} GW vs the 30-day average. Baseload spot ${fmt(L.base, 0)} €/MWh, ${sgn(L.base - mS, 0)} €: demand drives prices.`),
+      say: nL != null ? T(`Conso ${fmt(L.loadAvg / 1000, 1)} GW, ${sgn(L.loadAvg / 1000 - nL, 1)} GW vs normale saisonnière. Spot base ${fmt(L.base, 0)} €/MWh, ${sgn(L.base - mS, 0)} € vs moyenne 30 j.`,
+          `Load ${fmt(L.loadAvg / 1000, 1)} GW, ${sgn(L.loadAvg / 1000 - nL, 1)} GW vs the seasonal normal. Baseload spot ${fmt(L.base, 0)} €/MWh, ${sgn(L.base - mS, 0)} € vs the 30-day average.`)
+        : T(`Conso moyenne ${fmt(L.loadAvg / 1000, 1)} GW, ${sgn(L.loadAvg / 1000 - mL, 1)} GW vs moyenne 30 j. Spot base ${fmt(L.base, 0)} €/MWh, ${sgn(L.base - mS, 0)} €.`,
+          `Average load ${fmt(L.loadAvg / 1000, 1)} GW, ${sgn(L.loadAvg / 1000 - mL, 1)} GW vs the 30-day average. Baseload spot ${fmt(L.base, 0)} €/MWh, ${sgn(L.base - mS, 0)} €.`),
       html: `<div class="kick">${T('Consommation France · 30 jours', 'French load · 30 days')}</div>
       <div class="h">${words(T('La demande et le prix', 'Demand and price'), 150, 100)}</div>
-      <div class="ppa"><div class="ppa-c" style="--c:#7FC8F8;--d:300ms"><div class="ppa-n">${T('Conso', 'Load')}</div><div class="ppa-v"><span data-sync="ldsp" data-syncv='${J(ld)}' data-dec="1">${fmt(ld[0], 1)}</span></div><div class="ppa-u">${T('GW moyen', 'GW average')}</div></div>
+      <div class="ppa"><div class="ppa-c" style="--c:#7FC8F8;--d:300ms"><div class="ppa-n">${T('Conso', 'Load')}</div><div class="ppa-v"><span data-sync="ldsp" data-syncv='${J(ld)}' data-dec="1">${fmt(ld[0], 1)}</span></div><div class="ppa-u">${T('GW moyen', 'GW average')}</div>${nL != null ? `<div class="ppa-d ${dir(L.loadAvg / 1000 - nL)} a-late">${arrow(L.loadAvg / 1000 - nL)} ${sgn(L.loadAvg / 1000 - nL, 1)} GW <span>${T('vs normale', 'vs normal')}</span></div>` : ''}</div>
         <div class="ppa-c" style="--c:#FBBF24;--d:500ms"><div class="ppa-n">${T('Spot base', 'Baseload spot')}</div><div class="ppa-v"><span data-sync="ldsp" data-syncv='${J(sp)}' data-dec="0">${fmt(sp[0], 0)}</span></div><div class="ppa-u">€/MWh</div></div></div>
-      <svg viewBox="-10 -20 1020 ${H + 70}" aria-hidden="true">${bars}
+      <svg viewBox="-10 -20 1020 ${H + 70}" aria-hidden="true">${bars}${nLine ? `<polyline class="nline" points="${nLine}" fill="none" stroke="#E6EDF3" stroke-width="5" stroke-dasharray="12 9"/>` : ''}
         <polyline class="draw2 sync" data-sync="ldsp" data-dl="${DL}" data-ms="${DRAW}" points="${line}" fill="none" stroke="#FBBF24" stroke-width="6" stroke-linejoin="round"/>
         <text x="0" y="${H + 46}" fill="#8DA2B8" font-family="JetBrains Mono" font-size="32">${dd(R[0].d)}</text><text x="${W}" y="${H + 46}" text-anchor="end" fill="#8DA2B8" font-family="JetBrains Mono" font-size="32">${dd(L.d)}</text></svg>
-      <div class="lg"><span><i style="background:#7FC8F8"></i>${T('conso, GW', 'load, GW')}</span><span><i style="background:#FBBF24;height:4px;vertical-align:5px"></i>${T('spot base, €/MWh', 'baseload spot, €/MWh')}</span></div>
-      <div class="sub src2">${T('RTE éCO2mix (consommation) et day-ahead (spot), moyennes journalières.', 'RTE éCO2mix (load) and day-ahead (spot), daily averages.')}</div>` };
+      <div class="lg"><span><i style="background:#7FC8F8"></i>${T('conso, GW', 'load, GW')}</span><span><i style="background:#FBBF24;height:4px;vertical-align:5px"></i>${T('spot base, €/MWh', 'baseload spot, €/MWh')}</span>${nLine ? `<span><i style="background:#E6EDF3;height:3px;vertical-align:5px"></i>${T('normale saisonnière', 'seasonal normal')}</span>` : ''}</div>
+      <div class="sub src2">${T('RTE éCO2mix (consommation) et day-ahead (spot), moyennes journalières. Normale : même date ± 3 j, 5 années précédentes.', 'RTE éCO2mix (load) and day-ahead (spot), daily averages. Normal: same date ± 3 d, 5 previous years.')}</div>` };
   }
 
   // ── the news of the day: the most important French market item of the last 36 hours (data/news.json, ranked by impact) ──
