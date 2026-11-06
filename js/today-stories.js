@@ -41,6 +41,11 @@
     why: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6"/><path d="M12 17h.01"/>',
     batt: '<rect x="2" y="7" width="17" height="10" rx="2"/><path d="M22 11v2"/><path d="M10 9l-2 3h4l-2 3"/>',
     europe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
+    day: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    mix: '<path d="M4 20V10M9 20V6M14 20v-8M19 20V4"/>',
+    load: '<path d="M9 2v6M15 2v6M7 8h10v4a5 5 0 0 1-10 0z"/><path d="M12 17v5"/>',
+    ppa: '<path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h6M9 17h6"/>',
+    co2: '<path d="M7 18a4 4 0 0 1 0-8 5 5 0 0 1 9.6-1.5A3.5 3.5 0 1 1 17.5 18z"/>',
     ahead: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
   };
   const icon = (k, s) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[k]}</svg>`;
@@ -164,11 +169,14 @@
     const LK = k.look || {}, MK = [['power', T('Électricité', 'Power')], ['gas', T('Gaz', 'Gas')], ['oil', T('Pétrole', 'Oil')], ['carbon', 'CO₂']].filter(([m]) => LK[m] && LK[m].tone);
     if (MK.length) out.push({ id: 'ahead', name: T('À venir', 'Ahead'), icon: 'ahead', cards: [{ kind: 'list', label: T('La semaine à venir · notes de marché', 'The week ahead · market notes'),
       items: MK.map(([m, n]) => ({ n, tone: LK[m].tone, text: esc(isEn ? (LK[m].text_en || LK[m].text) : LK[m].text) })) }] });
-    // each section plays its part of the morning reel (reel.html?r=jour&s=…): the same design as the Instagram video
-    const RS = { price: 'price,profile', why: 'brief', europe: 'map', nuclear: 'nuclear', fwd: 'cal,ppa', gas: 'co2,spark', batt: 'batt' };
-    const ORDER = ['price', 'why', 'europe', 'nuclear', 'fwd', 'gas', 'batt'];
-    return out.filter(x => RS[x.id]).sort((a, b) => ORDER.indexOf(a.id) - ORDER.indexOf(b.id))
-      .map(x => Object.assign(x, { cards: [{ reel: RS[x.id], label: x.name }] }));
+    // one circle = one scene of the morning reel (reel.html?r=jour&s=…), the same design as the Instagram video;
+    // a scene shows only when the facts it is built from are there
+    const has = new Set(out.map(x => x.id));
+    const SC = [['price', 'price', T('Prix', 'Price'), 'price'], ['profile', 'price', T('Journée', 'Day'), 'day'], ['brief', 'why', T('Pourquoi', 'Why'), 'why'],
+      ['map', 'europe', 'Europe', 'europe'], ['nuclear', 'nuclear', T('Nucléaire', 'Nuclear'), 'nuclear'], ['mix', 'windsun', T('Production', 'Output'), 'mix'],
+      ['load', 'windsun', T('Conso & CO₂', 'Load & CO₂'), 'load'], ['cal', 'fwd', 'Cal', 'fwd'], ['ppa', 'fwd', 'PPA', 'ppa'],
+      ['co2', 'gas', 'CO₂', 'co2'], ['spark', 'gas', 'Spark', 'gas'], ['batt', 'batt', T('Batterie', 'Battery'), 'batt']];
+    return SC.filter(([, need]) => has.has(need)).map(([sc, , name, ic]) => ({ id: 'r-' + sc, name, icon: ic, cards: [{ reel: sc, label: name }] }));
   }
 
   // ── seen today ──

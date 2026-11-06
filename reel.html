@@ -148,7 +148,7 @@ svg{width:100%;height:auto;overflow:visible}
 .lg{display:flex;flex-wrap:wrap;gap:calc(1.5*var(--u)) calc(3.5*var(--u));font:600 calc(3.2*var(--u)) var(--mono);color:var(--muted)}
 .lg i{display:inline-block;width:calc(2.6*var(--u));height:calc(2.6*var(--u));border-radius:2px;margin-right:calc(1.2*var(--u));vertical-align:-2px}
 /* map: countries colour in from the cheapest to the dearest, their prices appear, then France's flows draw themselves */
-.h-sm{font-size:calc(7.6*var(--u))}.sub.src{font-size:calc(3.2*var(--u))}
+.h-sm{font-size:calc(7.6*var(--u))}.sub.src{font-size:calc(3.2*var(--u))}.sub.src2{font-size:calc(3.4*var(--u));color:var(--muted)}
 .scene > svg.map{flex:none}
 /* the map scene: the map fills the frame from the top right, the words sit on the sea (Atlantic top left, Mediterranean below) */
 .mapsc > svg.map{position:absolute;top:calc(9*var(--u));right:calc(-14*var(--u));width:calc(128*var(--u));height:auto;z-index:0;margin:0}
@@ -346,7 +346,7 @@ svg{width:100%;height:auto;overflow:visible}
       </svg>
       <div class="figline"><span class="big${fmt(cal.v, 2).length > 5 ? ' long' : ''}" data-sync="cal" data-syncv='${JSON.stringify(s.map(q => +q.toFixed(3)))}' data-dec="2">${fmt(s[0], 2)}</span> <span class="unit">€/MWh</span></div>
       <div class="delta late ${d}" style="--late:${land + 150}ms"><span class="nw">${arrow(cal.dv)} ${sgn(cal.dv, 2)}&nbsp;€</span> <span class="unit">${T('en une séance', 'in one session')}</span></div>
-      <div class="sub" style="animation-delay:${land + 600}ms">${T('Contrat Cal', 'Cal')} ${cal.y} ${T('base France, cotation du', 'France baseload, settlement of')} ${new Date(cal.d + 'T12:00:00Z').toLocaleDateString(EN ? 'en-GB' : 'fr-FR', { day: 'numeric', month: 'long', timeZone: 'UTC' })}.</div>` };
+      <div class="sub src2" style="animation-delay:${land + 600}ms">${T('Contrat Cal', 'Cal')} ${cal.y} ${T('base France, cotation du', 'France baseload, settlement of')} ${new Date(cal.d + 'T12:00:00Z').toLocaleDateString(EN ? 'en-GB' : 'fr-FR', { day: 'numeric', month: 'long', timeZone: 'UTC' })}.</div>` };
   }
   function mondayScene(week, go) {
     return `<div class="kick">${T('La semaine', 'The week')}</div>
@@ -384,7 +384,7 @@ svg{width:100%;height:auto;overflow:visible}
     const d = dir(dv), col = d === 'up' ? '#ED6965' : d === 'down' ? '#4ADE80' : '#8DA2B8';
     const dd = iso => new Date(iso + 'T12:00:00Z').toLocaleDateString(EN ? 'en-GB' : 'fr-FR', { day: 'numeric', month: 'short', timeZone: 'UTC' });
     const ccgt = 0.37 * v;   // a gas plant emits about 0.37 t of CO₂ per MWh produced
-    return { id: 'co2', ms: 5800, sayAt: land + 400, say: T(`EUA Déc. à ${fmt(v, 2)} €/t, ${sgn(dv, 2)} € sur la séance. Coût CO₂ d’un CCGT ≈ ${fmt(ccgt, 0)} €/MWh.`, `EUA Dec: ${sgn(dv, 2)} €/t on the session. That is ≈ ${fmt(ccgt, 0)} €/MWh in a gas plant’s cost.`),
+    return { id: 'co2', ms: 5800, sayAt: land + 400, say: T(`EUA Déc. à ${fmt(v, 2)} €/t, ${sgn(dv, 2)} € sur la séance. Coût CO₂ d’une CCGT ≈ ${fmt(ccgt, 0)} €/MWh.`, `EUA Dec: ${sgn(dv, 2)} €/t on the session. That is ≈ ${fmt(ccgt, 0)} €/MWh in a gas plant’s cost.`),
       html: `<div class="kick">${T('Carbone · EUA', 'Carbon · EUA')}</div>
       <div class="h">${words(T('Le prix du CO₂', 'The price of CO₂'), 150, 110)}</div>
       <svg viewBox="-10 -30 1030 ${Ht + 80}" aria-hidden="true" style="--ms:${DRAW}ms;--dl:${DL}ms;--dl2:${land}ms">
@@ -395,7 +395,7 @@ svg{width:100%;height:auto;overflow:visible}
       </svg>
       <div class="figline"><span class="big" data-sync="co2" data-syncv='${JSON.stringify(s.map(q => +q.toFixed(3)))}' data-dec="2">${fmt(s[0], 2)}</span> <span class="unit">€/t</span></div>
       <div class="delta late ${d}" style="--late:${land + 150}ms"><span class="nw">${arrow(dv)} ${sgn(dv, 2)}&nbsp;€</span> <span class="unit">${T('en une séance', 'in one session')}</span></div>
-      <div class="sub" style="animation-delay:${land + 600}ms">${contract || 'EUA'} · SEFE Energy market cockpit, ${T('cotation du', 'price of')} ${dd(pts[pts.length - 1][0])}</div>` };
+      <div class="sub src2" style="animation-delay:${land + 600}ms">${contract || 'EUA'}, ${T('cotation du', 'price of')} ${dd(pts[pts.length - 1][0])}</div>` };
   }
 
   // ── map: today's day-ahead price country by country (cheapest first), then France's physical flows border by border ──
@@ -469,7 +469,7 @@ svg{width:100%;height:auto;overflow:visible}
         <polyline class="draw2 sync" data-sync="nuc" data-dl="600" data-ms="1600" points="${s.map((q, i) => x(i).toFixed(1) + ',' + y(q).toFixed(1)).join(' ')}" fill="none" stroke="#E6C86E" stroke-width="6" stroke-linejoin="round"/>
         <circle class="endpt" cx="${x(n - 1)}" cy="${y(v)}" r="12" fill="${col}"/>
         <text x="0" y="${Ht + 46}" fill="#8DA2B8" font-family="JetBrains Mono" font-size="32">${T('il y a 2 mois', '2 months ago')}</text><text x="${W}" y="${Ht + 46}" text-anchor="end" fill="#8DA2B8" font-family="JetBrains Mono" font-size="32">${T('aujourd’hui', 'today')}</text></svg>
-      <div class="sub">${T('Puissance disponible du parc EDF et prévision d’EDF, SEFE Energy market cockpit.', 'EDF fleet available and the operator’s forecast, SEFE Energy market cockpit.')}</div>` };
+      <div class="sub src2">${T('Puissance disponible du parc EDF et prévision EDF.', 'EDF fleet available and EDF’s forecast.')}</div>` };
   }
   // ── clean spark spread: today's baseload minus the gas and CO₂ cost of a 49 % gas plant (formula of the site's spark page) ──
   function sparkScene(zones, ttf, eua) {
@@ -477,12 +477,12 @@ svg{width:100%;height:auto;overflow:visible}
     const css = v => v - ttf / 0.4913 - eua * 0.202 / 0.4913;
     const R = Z.filter(([k]) => zones[k] && zones[k].avg != null).map(([k, f, e]) => ({ k, n: EN ? e : f, v: css(zones[k].avg) })).sort((a, b) => b.v - a.v);
     const mx = Math.max(...R.map(r => Math.abs(r.v)), 1), fr = R.find(r => r.k === 'FR');
-    return { id: 'spark', ms: 5200, sayAt: 600 + R.length * 160 + 900, say: fr ? (fr.v > 0 ? T(`Clean spark base FR à +${fmt(fr.v, 0)} €/MWh : le CCGT est dans la monnaie.`, `France clean spark: +${fmt(fr.v, 0)} €/MWh. A gas plant covers its gas and CO₂ at the baseload spot.`)
-        : T(`Clean spark base FR à ${sgn(fr.v, 0)} €/MWh : le CCGT est hors de la monnaie.`, `France clean spark: ${sgn(fr.v, 0)} €/MWh. At the baseload spot, a gas plant does not cover its gas and CO₂.`)) : '',
+    return { id: 'spark', ms: 5200, sayAt: 600 + R.length * 160 + 900, say: fr ? (fr.v > 0 ? T(`Clean spark base FR à +${fmt(fr.v, 0)} €/MWh : la CCGT est dans la monnaie.`, `France clean spark: +${fmt(fr.v, 0)} €/MWh. A gas plant covers its gas and CO₂ at the baseload spot.`)
+        : T(`Clean spark base FR à ${sgn(fr.v, 0)} €/MWh : la CCGT est hors de la monnaie.`, `France clean spark: ${sgn(fr.v, 0)} €/MWh. At the baseload spot, a gas plant does not cover its gas and CO₂.`)) : '',
       html: `<div class="kick">${T('Clean spark spread · base', 'Clean spark spread · baseload')}</div>
-      <div class="h">${words(T('La marge d’un CCGT', 'A CCGT’s margin'), 150, 100)}</div>
+      <div class="h">${words(T('La marge d’une CCGT', 'A CCGT’s margin'), 150, 100)}</div>
       <div class="sprk">${R.map((r, i) => `<div class="sr${r.k === 'FR' ? ' fr' : ''}" style="--d:${600 + i * 160}ms"><span class="n">${r.n}</span><span class="t"><i class="${r.v < 0 ? 'neg' : ''}" style="--w:${(Math.abs(r.v) / mx * 50).toFixed(1)}%"></i></span><span class="v">${sgn(r.v, 0)}</span></div>`).join('')}</div>
-      <div class="sub">${T(`Spot base − TTF ${fmt(ttf, 1)} €/MWh ÷ 49 % − EUA ${fmt(eua, 1)} €/t × 0,202 ÷ 49 % (CCGT 49 % PCI), en €/MWh.`, `Baseload spot − TTF ${fmt(ttf, 1)} €/MWh ÷ 49 % − EUA ${fmt(eua, 1)} €/t × 0.202 ÷ 49 %, in €/MWh.`)}</div>` };
+      <div class="sub src2">${T(`Spot base − TTF ${fmt(ttf, 1)} €/MWh ÷ 49 % − EUA ${fmt(eua, 1)} €/t × 0,202 ÷ 49 % (CCGT 49 % PCI), en €/MWh.`, `Baseload spot − TTF ${fmt(ttf, 1)} €/MWh ÷ 49 % − EUA ${fmt(eua, 1)} €/t × 0.202 ÷ 49 %, in €/MWh.`)}</div>` };
   }
 
   // ── PPA: the day's PowerKlock benchmark (the site's pricer, default settings), solar and wind side by side ──
@@ -506,14 +506,35 @@ svg{width:100%;height:auto;overflow:visible}
       html: `<div class="kick">${T('PPA France · benchmark PowerKlock', 'France PPA · PowerKlock benchmark')}</div>
       <div class="h">${words(T(`Le prix d’un PPA ${tn}`, `The price of a ${tn} PPA`), 150, 100)}</div>
       <div class="ppa">${col}</div>
-      <div class="sub">${T(`Pricer PowerKlock, réglages par défaut : pay-as-produced, arrêt sous 0 €. % du Cal : prix fixe ÷ Cal base ${cal3} (moyenne pondérée). Calcul du ${dd(days[days.length - 1])}`, `The site’s pricer, default settings: pay-as-produced, nothing paid below 0 €. % of Cal: fixed price ÷ Cal ${cal3} baseload (weighted mean). Run of ${dd(days[days.length - 1])}`)}</div>` };
+      <div class="sub src2">${T(`Pricer PowerKlock, réglages par défaut : pay-as-produced, arrêt sous 0 €. % du Cal : prix fixe ÷ Cal base ${cal3} (moyenne pondérée). Calcul du ${dd(days[days.length - 1])}`, `The site’s pricer, default settings: pay-as-produced, nothing paid below 0 €. % of Cal: fixed price ÷ Cal ${cal3} baseload (weighted mean). Run of ${dd(days[days.length - 1])}`)}</div>` };
+  }
+
+  // ── consumption and carbon intensity: the last published day (RTE éCO2mix) against the 30 days before, curves drawn with their figure ──
+  function loadScene(rows) {
+    const R = rows.filter(r => r.loadAvg != null && r.co2Avg != null).slice(-31), L = R[R.length - 1];
+    const dd = iso => new Date(iso + 'T12:00:00Z').toLocaleDateString(EN ? 'en-GB' : 'fr-FR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
+    const avg = f => { const v = R.slice(0, -1).map(r => r[f]); return v.reduce((a, b) => a + b, 0) / v.length; };
+    const col = (key, n, unit, dec, scale, c, j) => { const ser = R.map(r => r[key] / scale), lo = Math.min(...ser), hi = Math.max(...ser), sx = 300 / (ser.length - 1), sy = v => 110 - (v - lo) / ((hi - lo) || 1) * 100;
+      const m = avg(key) / scale, d = ser[ser.length - 1] - m;
+      return `<div class="ppa-c" style="--c:${c};--d:${400 + j * 500}ms"><div class="ppa-n">${n}</div>
+        <div class="ppa-v"><span data-sync="ld${j}" data-syncv='${JSON.stringify(ser.map(q => +q.toFixed(2)))}' data-dec="${dec}">${fmt(ser[0], dec)}</span></div><div class="ppa-u">${unit}</div>
+        <div class="ppa-d ${dir(d)}">${arrow(d)} ${sgn(d, dec)} <span>${T('vs 30 j', 'vs 30 d')}</span></div>
+        <svg viewBox="-4 -6 308 124" aria-hidden="true" style="--ms:1500ms;--dl:${900 + j * 500}ms;--dl2:${2400 + j * 500}ms"><polyline class="draw2 sync" data-sync="ld${j}" data-dl="${900 + j * 500}" data-ms="1500" points="${ser.map((v, i) => (i * sx).toFixed(1) + ',' + sy(v).toFixed(1)).join(' ')}" fill="none" stroke="${c}" stroke-width="5" stroke-linejoin="round"/></svg></div>`; };
+    const mL = avg('loadAvg') / 1000, mC = avg('co2Avg');
+    return { id: 'load', ms: 6200, sayAt: 3000,
+      say: T(`Conso moyenne ${fmt(L.loadAvg / 1000, 1)} GW, pointe ${fmt(L.loadMax / 1000, 1)} GW. Intensité carbone ${fmt(L.co2Avg, 0)} g CO₂/kWh, ${L.co2Avg > mC ? 'au-dessus' : 'en dessous'} de la moyenne 30 j (${fmt(mC, 0)}).`,
+        `Average load ${fmt(L.loadAvg / 1000, 1)} GW, peak ${fmt(L.loadMax / 1000, 1)} GW. Carbon intensity ${fmt(L.co2Avg, 0)} g CO₂/kWh, ${L.co2Avg > mC ? 'above' : 'below'} the 30-day average (${fmt(mC, 0)}).`),
+      html: `<div class="kick">${T('Système France · ', 'French system · ')}${dd(L.d)}</div>
+      <div class="h">${words(T('Consommation et intensité carbone', 'Load and carbon intensity'), 150, 100)}</div>
+      <div class="ppa">${col('loadAvg', T('Consommation', 'Load'), T('GW moyen', 'GW average'), 1, 1000, '#7FC8F8', 0)}${col('co2Avg', T('Intensité CO₂', 'CO₂ intensity'), 'g CO₂/kWh', 0, 1, '#B8C9D9', 1)}</div>
+      <div class="sub src2">${T('RTE éCO2mix, dernier jour publié, 30 jours glissants.', 'RTE éCO2mix, last published day, rolling 30 days.')}</div>` };
   }
 
   async function main() {
-    const [D0f, D1f, chain, dg, ev, goCsv, bess, cs, geo, cb, cm, bm] = await Promise.all([
+    const [D0f, D1f, chain, dg, ev, goCsv, bess, cs, geo, cb, cm, bm, rted] = await Promise.all([
       get('data/history/daily/' + today + '.json'), get('data/history/daily/' + addDays(today, -1) + '.json'),
       get('data/history/fr_market_calchain.json'), get('data/market_digest.json'), get('data/events.json'), get('data/go_prices.csv'),
-      get('data/history/bess_da.json'), get('data/history/commodities_series.json'), get('data/geo/europe.json'), get('data/crossborder.json'), get('data/commodities.json'), get('data/history/ppa_benchmark.json')]);
+      get('data/history/bess_da.json'), get('data/history/commodities_series.json'), get('data/geo/europe.json'), get('data/crossborder.json'), get('data/commodities.json'), get('data/history/ppa_benchmark.json'), get('data/history/rte/fr_daily.json')]);
     const D0 = D0f && D0f.zones && D0f.zones.FR, D1 = D1f && D1f.zones && D1f.zones.FR;
     const S = [];
     if (D0) { S.push(priceScene(D0, D1)); if (D0.hourly && D0.hourly.length === 96) S.push(profileScene(D0)); }
@@ -522,6 +543,9 @@ svg{width:100%;height:auto;overflow:visible}
     else { const es = europeScenes(D0f); if (es) S.push(Object.assign(es[0], { say: es[1].say })); }
     const nu = cm && cm.series && cm.series.fr_nuc_avail && cm.series.fr_nuc_avail.points;
     if (nu && nu.length > 10) S.push(nuclearScene(nu, cm.series.fr_nuc_avail_fc && cm.series.fr_nuc_avail_fc.points));
+    // yesterday's production by source under the price (the chart of the mail), then load and carbon intensity
+    const mx = mixScenes(D1f); if (mx) S.push(mx[0]);
+    if (rted && rted.rows && rted.rows.length > 10) S.push(loadScene(rted.rows));
     // Cal+1: the last two settlements of next year's baseload contract
     const y1 = +today.slice(0, 4) + 1, c = chain && chain.FR && chain.FR.years && chain.FR.years[String(y1)];
     if (c && c.values && c.values.length > 1) {
@@ -647,10 +671,10 @@ svg{width:100%;height:auto;overflow:visible}
   }
 
   // ── reel 4: yesterday's production hour by hour under the price (data/history/daily/<yesterday>.json) ──
-  async function mix() {
-    const dy = addDays(today, -1), f = await get('data/history/daily/' + dy + '.json'), F = f && f.zones && f.zones.FR;
+  function mixScenes(f) {
+    const F = f && f.zones && f.zones.FR;
     const ok = k => F && Array.isArray(F[k]) && F[k].length === 96;
-    if (!ok('hourly') || !ok('nuclear') || !ok('solar')) return run([`<div class="h">${T('Production d’hier pas encore complète.', 'Yesterday’s output not complete yet.')}</div>`]);
+    if (!ok('hourly') || !ok('nuclear') || !ok('solar')) return null;
     const hr = a => Array.from({ length: 24 }, (_, i) => a.slice(i * 4, i * 4 + 4).reduce((s, v) => s + (v || 0), 0) / 4 / 1000);   // GW per hour
     const SER = [['nuclear', T('Nucléaire', 'Nuclear'), '#E6C86E'], ['hydro', T('Hydraulique', 'Hydro'), '#5B8DEF'], ['wind', T('Éolien', 'Wind'), '#7FC8F8'],
       ['solar', T('Solaire', 'Solar'), '#FBBF24'], ['fossil', T('Gaz et fossiles', 'Gas and fossil'), '#8D99AE']].filter(([k]) => ok(k)).map(([k, n, c]) => ({ k, n, c, v: hr(F[k]) }));
@@ -658,7 +682,9 @@ svg{width:100%;height:auto;overflow:visible}
     const tot = Array.from({ length: 24 }, (_, i) => SER.reduce((s, x) => s + x.v[i], 0)), top = Math.max(...tot) * 1.08;
     const W = 1000, H = 560, x = i => i / 23 * W, y = v => H - v / top * H;
     const pl = Math.min(0, ...price), ph = Math.max(...price), yp = v => H - (v - pl) / (ph - pl || 1) * H * .9;
-    let base = Array(24).fill(0);
+    // hours the file has no output for yet (every source at 0: not published, not a blackout) end the areas there
+    const nH = tot.reduce((n, t, i) => t > 0 ? i + 1 : n, 0);
+    let base = Array(nH).fill(0);
     const areas = SER.map(sr => {
       const up = base.map((b, i) => b + sr.v[i]);
       const pts = up.map((v, i) => x(i) + ',' + y(v)).join(' ') + ' ' + base.map((v, i) => x(i) + ',' + y(v)).reverse().join(' ');
@@ -690,9 +716,14 @@ svg{width:100%;height:auto;overflow:visible}
       <div class="h">${words(head, 150, 100)}</div>
       <div class="row"><div class="tile"><div class="l">${T('Prix le plus bas', 'Lowest price')}</div><div class="v nw"><span class="big-sm" data-count="${price[hMin]}" data-dec="0" data-delay="1700" data-ms="900">${fmt(price[hMin], 0)}</span>&nbsp;€</div><div class="s"><span class="nw">${T('à ', 'at ')}${hMin}&nbsp;h</span><br><span class="nw">${T('solaire', 'solar')} ${fmt(sol.v[hMin], 1)}&nbsp;GW</span></div></div>
         <div class="tile"><div class="l">${T('Prix le plus haut', 'Highest price')}</div><div class="v nw"><span class="big-sm" data-count="${price[hMax]}" data-dec="0" data-delay="1950" data-ms="900">${fmt(price[hMax], 0)}</span>&nbsp;€</div><div class="s"><span class="nw">${T('à ', 'at ')}${hMax}&nbsp;h</span><br><span class="nw">${T('solaire', 'solar')} ${fmt(sol.v[hMax], 1)}&nbsp;GW</span></div></div></div>
-      <div class="sub" style="animation-delay:2.7s">${T('Production réelle par filière (ENTSO-E) et spot day-ahead, moyennes horaires.', 'Actual output by source (ENTSO-E) and day-ahead price, hourly means.')}</div>` };
+      <div class="sub src2" style="animation-delay:2.7s">${T('Production réelle par filière (ENTSO-E) et spot day-ahead, moyennes horaires.', 'Actual output by source (ENTSO-E) and day-ahead price, hourly means.')}</div>` };
+    return [Object.assign(sweep, { id: 'mix' }), Object.assign(take, { id: 'mixtake' })];
+  }
+  async function mix() {
+    const dy = addDays(today, -1), sc = mixScenes(await get('data/history/daily/' + dy + '.json'));
+    if (!sc) return run([`<div class="h">${T('Production d’hier pas encore complète.', 'Yesterday’s output not complete yet.')}</div>`]);
     document.getElementById('brand-d').textContent = longDate(dy);
-    run([sweep, take], true);
+    run(sc, true);
   }
 
   // plays the scenes: strings or {html, ms, play(root)}; window.REEL_DONE once the last one has run its time
@@ -707,9 +738,11 @@ svg{width:100%;height:auto;overflow:visible}
     // each scene lasts what it takes to read it: the words on screen (charts and the small source line aside) at about
     // 250 words a minute, and never less than the end of its animations and of its typing, plus a pause to look
     [...document.querySelectorAll('#scenes .scene')].forEach((el, i) => { const x = S[i], c = el.cloneNode(true);
-      c.querySelectorAll('svg,.src').forEach(n => n.remove());
-      const nw = (c.textContent.match(/[A-Za-zÀ-ÿ0-9€%][^\s]*/g) || []).length, read = nw * 240 + 1500;
-      x.ms = Math.round(Math.max(Math.max(x.ms, x.typeEnd || 0) * TS + 1400, read)); });
+      c.querySelectorAll('svg,.src,.src2').forEach(n => n.remove());   // source lines are not read in the time
+      const nw = (c.textContent.match(/[A-Za-zÀ-ÿ0-9€%][^\s]*/g) || []).length, read = nw * 340 + 2500;
+      x.ms = Math.round(Math.max(Math.max(x.ms, x.typeEnd || 0) * TS + 2600, read)); });
+    // Instagram takes reels up to 3 minutes: past 172 s the pauses shrink in proportion (the recording adds a second or two)
+    { const tot = S.reduce((t, x) => t + x.ms, 0), cap = 172000; if (!q.get('s') && tot > cap) S.forEach(x => { x.ms = Math.round(x.ms * cap / tot); }); }
     document.getElementById('bar').innerHTML = S.map(() => '<i><b></b></i>').join('');
     // a scene with more to show than the frame holds shrinks a little (everything is sized in --u) until it fits
     const fit = () => document.querySelectorAll('.scene').forEach(sc => { sc.style.removeProperty('--u');
