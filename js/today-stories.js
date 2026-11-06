@@ -169,14 +169,11 @@
     const LK = k.look || {}, MK = [['power', T('Électricité', 'Power')], ['gas', T('Gaz', 'Gas')], ['oil', T('Pétrole', 'Oil')], ['carbon', 'CO₂']].filter(([m]) => LK[m] && LK[m].tone);
     if (MK.length) out.push({ id: 'ahead', name: T('À venir', 'Ahead'), icon: 'ahead', cards: [{ kind: 'list', label: T('La semaine à venir · notes de marché', 'The week ahead · market notes'),
       items: MK.map(([m, n]) => ({ n, tone: LK[m].tone, text: esc(isEn ? (LK[m].text_en || LK[m].text) : LK[m].text) })) }] });
-    // one circle = one scene of the morning reel (reel.html?r=jour&s=…), the same design as the Instagram video;
-    // a scene shows only when the facts it is built from are there
-    const has = new Set(out.map(x => x.id));
-    const SC = [['price', 'price', T('Prix', 'Price'), 'price'], ['profile', 'price', T('Journée', 'Day'), 'day'], ['tomorrow', 'price', T('Demain', 'Tomorrow'), 'ahead'], ['brief', 'why', T('Pourquoi', 'Why'), 'why'], ['news', 'why', 'News', 'why'],
-      ['map', 'europe', 'Europe', 'europe'], ['nuclear', 'nuclear', T('Nucléaire', 'Nuclear'), 'nuclear'], ['outages', 'nuclear', T('Réacteurs', 'Reactors'), 'nuclear'], ['mix', 'windsun', T('Production', 'Output'), 'mix'],
-      ['load', 'windsun', T('Conso', 'Load'), 'load'], ['weather', 'windsun', T('Météo', 'Weather'), 'windsun'], ['cal', 'fwd', 'Cal', 'fwd'], ['curve', 'fwd', T('Courbe', 'Curve'), 'fwd'], ['ppa', 'fwd', 'PPA', 'ppa'],
-      ['co2', 'gas', 'CO₂', 'co2'], ['spark', 'gas', 'Spark', 'gas'], ['batt', 'batt', T('Batterie', 'Battery'), 'batt']];
-    return SC.filter(([, need]) => has.has(need)).map(([sc, , name, ic]) => ({ id: 'r-' + sc, name, icon: ic, cards: [{ reel: sc, label: name }] }));
+    // three circles, three reels: the day, the week, the month (reel.html?r=jour|semaine|mois), each played whole,
+    // one progress segment per scene; a tap moves scene by scene
+    if (!out.length) return [];
+    return [['jour', T('Aujourd’hui', 'Today'), 'day'], ['semaine', T('La semaine', 'The week'), 'fwd'], ['mois', T('Le mois', 'The month'), 'ahead']]
+      .map(([r, name, ic]) => ({ id: 'reel-' + r, name, icon: ic, cards: [{ reel: r, full: true, label: name }] }));
   }
 
   // ── seen today ──
@@ -232,7 +229,7 @@
   }
   function show(dir) {
     const s = SEC[V.si], c = s.cards[V.ci], st = V.el.querySelector('.pk-stv-stage');
-    V.el.classList.remove('reel'); V.reelFrame = null;
+    V.el.classList.remove('reel'); V.reelFrame = null; V.full = false;
     seenAdd(s.id);
     V.el.querySelector('.pk-stv-bars').innerHTML = s.cards.map((_, i) => `<span class="pk-stv-seg"><i class="${i < V.ci ? 'done' : i === V.ci ? 'run' : ''}"></i></span>`).join('');
     V.el.querySelector('.pk-stv-av').innerHTML = icon(s.icon, 16);
@@ -244,10 +241,11 @@
     let words0 = 1500;
     if (c.reel) {
       V.el.classList.add('reel');
-      const src = 'reel.html?r=jour&embed&once&s=' + c.reel + ((!window.PKI18n || PKI18n.lang !== 'en') ? '' : '#en');
+      const src = (c.full ? 'reel.html?r=' + c.reel + '&embed&once' : 'reel.html?r=jour&embed&once&s=' + c.reel) + ((!window.PKI18n || PKI18n.lang !== 'en') ? '' : '#en');
       body.innerHTML = `<iframe class="pk-stv-reel" src="${src}" title="${c.label}" tabindex="-1"></iframe>`;
       V.reelFrame = body.querySelector('iframe');
       V.dur = 60000;   // until the reel says how long it lasts
+      V.full = !!c.full;
     } else if (c.kind === 'text') {          // a market note's point: what moved, and its direction
       // the question first, then the figures it is about (they come in one by one), then the note, then its source
       const figs = (c.figs || []).map((f, i) => `<div class="pk-stv-fig a" style="--d:${700 + i * 250}ms"><span>${f.n}</span><b translate="no">${f.v}</b>${f.d ? `<i class="${f.t === 'up' ? 'up' : f.t === 'down' ? 'dn' : ''}">${f.d}</i>` : ''}${mini(f.sr, f.t)}</div>`).join('');
@@ -304,16 +302,22 @@
     const run = V.el.querySelector('.pk-stv-seg i.run');
     run.style.animationDuration = V.dur + 'ms';
     if (reduced()) run.classList.add('done');
-    else run.addEventListener('animationend', () => { if (!V.el.hidden) next(); }, { once: true });
+    else if (!V.full) run.addEventListener('animationend', () => { if (!V.el.hidden) next(); }, { once: true });
   }
   window.addEventListener('message', e => {
     const m = e.data; if (!V || V.el.hidden || !V.reelFrame || e.source !== V.reelFrame.contentWindow || !m || !m.pkReel) return;
     const run = V.el.querySelector('.pk-stv-seg i.run'); if (!run) return;
-    if (m.pkReel === 'start' && m.ms) { V.dur = m.ms; run.style.animation = 'none'; void run.offsetWidth; run.style.animation = ''; run.style.animationDuration = (m.ms + 300) + 'ms'; }
-    if (m.pkReel === 'done') next();
+    if (m.pkReel === 'scene' && V.full) {   // one segment per scene of the reel, the current one running for its time
+      V.el.querySelector('.pk-stv-bars').innerHTML = Array.from({ length: m.n }, (_, i) => `<span class="pk-stv-seg"><i class="${i < m.k ? 'done' : i === m.k ? 'run' : ''}"></i></span>`).join('');
+      const r2 = V.el.querySelector('.pk-stv-seg i.run'); if (r2) r2.style.animationDuration = (m.ms + 200) + 'ms';
+      V.el.querySelector('.pk-stv-count').textContent = (m.k + 1) + ' / ' + m.n; return; }
+    if (m.pkReel === 'start' && m.ms && !V.full) { V.dur = m.ms; run.style.animation = 'none'; void run.offsetWidth; run.style.animation = ''; run.style.animationDuration = (m.ms + 300) + 'ms'; }
+    if (m.pkReel === 'atstart') { if (V.si > 0) { V.si--; V.ci = 0; show('prev'); } return; }
+    if (m.pkReel === 'done') { if (V.full) nextSec(); else next(); }
   });
-  function next() { const s = SEC[V.si]; if (V.ci < s.cards.length - 1) { V.ci++; show('card'); } else nextSec(); }
-  function prev() { if (V.ci > 0) { V.ci--; show('card'); } else if (V.si > 0) { V.si--; V.ci = SEC[V.si].cards.length - 1; show('prev'); } else show('card'); }
+  const toReel = what => { if (V && V.full && V.reelFrame && V.reelFrame.contentWindow) { V.reelFrame.contentWindow.postMessage({ pkReel: what }, location.origin); return true; } return false; };
+  function next() { if (toReel('next')) return; const s = SEC[V.si]; if (V.ci < s.cards.length - 1) { V.ci++; show('card'); } else nextSec(); }
+  function prev() { if (toReel('prev')) return; if (V.ci > 0) { V.ci--; show('card'); } else if (V.si > 0) { V.si--; V.ci = SEC[V.si].cards.length - 1; show('prev'); } else show('card'); }
   function nextSec() { if (V.si < SEC.length - 1) { V.si++; V.ci = 0; show('next'); } else close(); }
   function prevSec() { if (V.si > 0) { V.si--; V.ci = 0; show('prev'); } else { V.ci = 0; show('card'); } }
   const PAUSE = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>',

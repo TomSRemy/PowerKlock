@@ -336,7 +336,7 @@ svg{width:100%;height:auto;overflow:visible}
         };
         if (reduced()) { paint(N - 1); spread.classList.add('go'); return; }
         const t0 = performance.now();
-        const step = now => {
+        const own = typeof root !== 'undefined' ? root : sc[k], runId = own.dataset.run, step = now => { if (own.dataset.run !== runId) return;
           const f = Math.min(1, (now - t0) / (SWEEP * TS));
           paint(f * (N - 1));
           if (f < 1) requestAnimationFrame(step);
@@ -868,7 +868,7 @@ svg{width:100%;height:auto;overflow:visible}
       play(root) {
         const t0 = performance.now(), clock = root.querySelector('#b-clock'), act = root.querySelector('#b-act'), soc = root.querySelector('#b-soc'),
           eur = root.querySelector('#b-eur'), cr = root.querySelector('#b-cr'), cur = root.querySelector('#b-cur'), qs = [...root.querySelectorAll('.q')];
-        const step = now => {
+        const own = typeof root !== 'undefined' ? root : sc[k], runId = own.dataset.run, step = now => { if (own.dataset.run !== runId) return;
           const f = Math.min(1, (now - t0) / (SWEEP * TS)), t = Math.min(95, Math.floor(f * 96));
           clock.textContent = String(Math.floor(t / 4)).padStart(2, '0') + ':' + String(t % 4 * 15).padStart(2, '0');
           const c = X.charge[t] > 0.01, d = X.discharge[t] > 0.01;
@@ -960,7 +960,7 @@ svg{width:100%;height:auto;overflow:visible}
       <div class="lg">${SER.map(s => `<span><i style="background:${s.c}"></i>${s.n}</span>`).join('')}<span><i style="background:#fff;height:3px;vertical-align:4px"></i>${T('prix', 'price')}</span></div>`,
       play(root) {
         const t0 = performance.now(), cr = root.querySelector('#m-cr'), ck = root.querySelector('#m-clock'), pe = root.querySelector('#m-p');
-        const step = now => {
+        const own = typeof root !== 'undefined' ? root : sc[k], runId = own.dataset.run, step = now => { if (own.dataset.run !== runId) return;
           const f = Math.min(1, (now - t0) / (SWEEP * TS)), i = Math.min(23, Math.floor(f * 24));
           cr.setAttribute('width', 10 + f * (W + 10)); ck.textContent = i + ' h';
           pe.textContent = fmt(price[i], 0) + ' €/MWh · ' + T('solaire ', 'solar ') + fmt(sol.v[i], 1) + ' GW';
@@ -1014,6 +1014,7 @@ svg{width:100%;height:auto;overflow:visible}
     let k = 0, prev = -1;
     const show = () => {
       sc.forEach((s, i) => { s.classList.toggle('on', i === k); s.classList.toggle('out', i === prev && i !== k); });
+      sc[k].dataset.run = String(++RUNS);   // a loop from an earlier showing of this scene stops at its next frame
       bars.forEach((b, i) => { b.className = i < k ? 'done' : i === k ? 'run' : ''; if (i === k) b.firstChild.style.animationDuration = S[k].ms + 'ms'; });
       // replay the curve drawing each time its scene comes back
       sc[k].querySelectorAll('.draw').forEach(p => { p.classList.remove('draw'); void p.getBoundingClientRect(); p.classList.add('draw'); });
@@ -1024,7 +1025,7 @@ svg{width:100%;height:auto;overflow:visible}
         el.classList.remove('punch');
         if (reduced()) { el.textContent = fmt(to, dec); return; }
         el.textContent = fmt(from, dec);
-        const step = now => { const x = Math.max(0, Math.min(1, (now - start) / dur)), e = 1 - Math.pow(1 - x, 3); el.textContent = fmt(from + (to - from) * e, dec);
+        const own = typeof root !== 'undefined' ? root : sc[k], runId = own.dataset.run, step = now => { if (own.dataset.run !== runId) return; const x = Math.max(0, Math.min(1, (now - start) / dur)), e = 1 - Math.pow(1 - x, 3); el.textContent = fmt(from + (to - from) * e, dec);
           if (x < 1) requestAnimationFrame(step); else if (el.dataset.punch) { void el.offsetWidth; el.classList.add('punch'); } };
         requestAnimationFrame(step);
       });
@@ -1039,7 +1040,7 @@ svg{width:100%;height:auto;overflow:visible}
         if (reduced()) { paint(P.length - 1); return; }
         paint(0); nums.forEach(n => n.el.classList.remove('punch'));
         const t0 = performance.now() + (+pl.dataset.dl || 0) * TS, dur = (+pl.dataset.ms || 1500) * TS;
-        const step = now => { const x = Math.max(0, Math.min(1, (now - t0) / dur)), e = x < .5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2;
+        const own = typeof root !== 'undefined' ? root : sc[k], runId = own.dataset.run, step = now => { if (own.dataset.run !== runId) return; const x = Math.max(0, Math.min(1, (now - t0) / dur)), e = x < .5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2;
           paint(e * (P.length - 1));
           if (x < 1) requestAnimationFrame(step); else nums.forEach(n => { void n.el.offsetWidth; n.el.classList.add('punch'); }); };
         requestAnimationFrame(step); });
@@ -1047,10 +1048,16 @@ svg{width:100%;height:auto;overflow:visible}
       // the scene's CSS animations and transitions (they start with its .on class) play at the reel's pace, delays included
       requestAnimationFrame(() => [sc[k], ...(prev >= 0 ? [sc[prev]] : [])].forEach(el => el.getAnimations({ subtree: true }).forEach(a => { a.playbackRate = 1 / TS; })));
       left = S[k].ms; t0 = performance.now(); timer = setTimeout(next, left);
+      if (parent !== window) parent.postMessage({ pkReel: 'scene', k, n: S.length, ms: S[k].ms }, location.origin);
     };
-    let timer = null, t0 = 0, left = 0;
+    let timer = null, t0 = 0, left = 0, RUNS = 0;
     // the site's stories hold the reel on a long press: the scene's timer stops, its CSS animations freeze
-    window.addEventListener('message', e => { const m = e.data; if (!m || m.pkReel !== 'pause' || e.source !== parent) return;
+    window.addEventListener('message', e => { const m = e.data; if (!m || e.source !== parent) return;
+      if (m.pkReel === 'next' || m.pkReel === 'prev') { if (timer) { clearTimeout(timer); timer = null; } document.documentElement.classList.remove('held');
+        if (m.pkReel === 'next') { next(); return; }
+        if (k === 0) { parent.postMessage({ pkReel: 'atstart' }, location.origin); left = S[k].ms; t0 = performance.now(); timer = setTimeout(next, left); return; }
+        k -= 2; next(); return; }
+      if (m.pkReel !== 'pause') return;
       if (m.on && timer) { clearTimeout(timer); timer = null; left -= performance.now() - t0; document.documentElement.classList.add('held'); }
       else if (!m.on && !timer && k < S.length) { t0 = performance.now(); timer = setTimeout(next, Math.max(0, left)); document.documentElement.classList.remove('held'); } });
     const next = () => {
