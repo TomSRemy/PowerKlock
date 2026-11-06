@@ -1,7 +1,7 @@
 {
-"updated": "2026-11-06T12:33:38+00:00",
+"updated": "2026-11-06T19:40:20+00:00",
 "storage": {
-"data_mb": 210.5
+"data_mb": 210.8
 },
 "open": [
 {
@@ -10,7 +10,7 @@
 "what": "2026-11-05: LT day-ahead 109.89 €/MWh here, 107.34 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E",
 "since": "2026-11-06T12:33:37+00:00",
-"lastSeen": "2026-11-06T12:33:38+00:00"
+"lastSeen": "2026-11-06T19:40:20+00:00"
 }
 ],
 "resolved": [
