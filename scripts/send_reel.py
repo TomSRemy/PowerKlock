@@ -23,27 +23,29 @@ def main():
         print('no reel to send')
         return 0
     day = os.path.basename(paths[0])[5:15]
-    m = EmailMessage()
-    m['Subject'] = f'PowerKlock · réels du {day}'
-    m['From'] = user
-    m['To'] = os.environ.get('REEL_TO') or user
-    CAP = {'jour': 'Le marché de l’électricité ce matin en France ⚡ Prix spot, profil de la journée, marché à terme et brief.',
+    CAP = {'jour': 'Le marché français de l’électricité ce matin ⚡ Spot, prévision de demain, Europe, nucléaire, météo, Cal, CO₂ et la news du jour.',
+           'semaine': 'La semaine sur le marché français de l’électricité 📊 Spot, Cal, courbe à terme, PPA, nucléaire, conso, spark et batterie.',
+           'mois': 'Le mois sur le marché français de l’électricité 🗓️ Spot, M0 solaire et éolien, Cal, PPA, stocks de gaz et batterie.',
            'batterie': 'Une batterie de 1 MW aujourd’hui : elle achète au creux, revend au pic 🔋 Combien elle gagne.',
            'europe': 'Où l’électricité est-elle la moins chère aujourd’hui en Europe ? 🇪🇺',
            'mix': 'Hier heure par heure : comment la production fait le prix ☀️💨⚛️'}
-    lines = [f'Les réels du matin ({day}), 1080 × 1920, prêts à publier sur Instagram.', '']
-    for path in paths:
-        kind = os.path.basename(path)[16:].rsplit('-', 1)[0]
-        lines.append(f'· {os.path.basename(path)} — légende proposée : {CAP.get(kind, "")} #électricité #énergie')
-    # the text first: once a file is attached the message is multipart and set_content refuses it
-    m.set_content('\n'.join(lines + ['', '— PowerKlock']))
-    for path in paths:
-        with open(path, 'rb') as f:
-            m.add_attachment(f.read(), maintype='video', subtype='mp4', filename=os.path.basename(path))
+    NAME = {'jour': 'réel du jour', 'semaine': 'réel de la semaine', 'mois': 'réel du mois'}
+    # one mail per reel: a long video stays under Gmail's 25 MB per message
     with smtplib.SMTP_SSL('smtp.gmail.com', 465, timeout=60) as s:
         s.login(user, pwd)
-        s.send_message(m)
-    print(len(paths), 'reels sent to', m['To'])
+        for path in paths:
+            kind = os.path.basename(path)[16:].rsplit('-', 1)[0]
+            m = EmailMessage()
+            m['Subject'] = f'PowerKlock · {NAME.get(kind, "réel " + kind)} · {day}'
+            m['From'] = user
+            m['To'] = os.environ.get('REEL_TO') or user
+            # the text first: once a file is attached the message is multipart and set_content refuses it
+            m.set_content('\n'.join([f'{NAME.get(kind, "Réel").capitalize()} du {day}, 1080 × 1920, prêt à publier sur Instagram.', '',
+                                     f'Légende proposée : {CAP.get(kind, "")} #électricité #énergie', '', '— PowerKlock']))
+            with open(path, 'rb') as f:
+                m.add_attachment(f.read(), maintype='video', subtype='mp4', filename=os.path.basename(path))
+            s.send_message(m)
+    print(len(paths), 'reels sent to', os.environ.get('REEL_TO') or user)
     return 0
 
 

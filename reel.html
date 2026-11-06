@@ -351,9 +351,9 @@ svg{width:100%;height:auto;overflow:visible}
     const DRAW = 1900, DL = 500, s = cal.series, W = 1000, Ht = 230;
     const lo = Math.min(...s), hi = Math.max(...s), x = i => i / (s.length - 1) * W, y = v => Ht - 12 - (v - lo) / ((hi - lo) || 1) * (Ht - 24);
     const pts = s.map((v, i) => x(i).toFixed(1) + ',' + y(v).toFixed(1)).join(' ');
-    const d = dir(cal.dv), col = d === 'up' ? '#ED6965' : d === 'down' ? '#4ADE80' : '#8DA2B8';
+    const d = dir(cal.dv), col = d === 'up' ? '#ED6965' : d === 'down' ? '#4ADE80' : '#8DA2B8', span = cal.span || [T('sur la séance', 'on the session'), T('en une séance', 'in one session')];
     const land = DL + DRAW;
-    return { id: 'cal', ms: 5800, sayAt: land + 400, say: Math.abs(cal.dv) < 0.005 ? T(`Cal-${String(cal.y).slice(2)} base stable à la clôture, ${fmt(cal.v, 2)} €/MWh.`, `Cal-${String(cal.y).slice(2)} France baseload flat at settlement.`) : T(`Cal-${String(cal.y).slice(2)} base clôture à ${fmt(cal.v, 2)} €/MWh, ${sgn(cal.dv, 2)} € sur la séance.`, `Cal-${String(cal.y).slice(2)} France baseload: ${sgn(cal.dv, 2)} €/MWh at settlement.`), html: `<div class="kick">${T('Marché à terme', 'Forward market')}</div>
+    return { id: 'cal', ms: 5800, sayAt: land + 400, say: Math.abs(cal.dv) < 0.005 ? T(`Cal-${String(cal.y).slice(2)} base stable à la clôture, ${fmt(cal.v, 2)} €/MWh.`, `Cal-${String(cal.y).slice(2)} France baseload flat at settlement.`) : T(`Cal-${String(cal.y).slice(2)} base clôture à ${fmt(cal.v, 2)} €/MWh, ${sgn(cal.dv, 2)} € ${span[0]}.`, `Cal-${String(cal.y).slice(2)} France baseload: ${sgn(cal.dv, 2)} €/MWh at settlement.`), html: `<div class="kick">${T('Marché à terme', 'Forward market')}</div>
       <div class="h">${words(T('Électricité livrée en ' + cal.y, 'Power delivered in ' + cal.y), 150, 110)}</div>
       <svg viewBox="-10 -30 1030 ${Ht + 80}" aria-hidden="true" style="--ms:${DRAW}ms;--dl:${DL}ms;--dl2:${land}ms">
         <polyline class="draw2 sync" data-sync="cal" data-dl="${DL}" data-ms="${DRAW}" points="${pts}" fill="none" stroke="#7FC8F8" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/>
@@ -362,7 +362,7 @@ svg{width:100%;height:auto;overflow:visible}
         <text x="${W}" y="${Ht + 46}" text-anchor="end" fill="#8DA2B8" font-family="JetBrains Mono" font-size="32">${new Date(cal.d + 'T12:00:00Z').toLocaleDateString(EN ? 'en-GB' : 'fr-FR', { day: 'numeric', month: 'short', timeZone: 'UTC' })}</text>
       </svg>
       <div class="figline"><span class="big${fmt(cal.v, 2).length > 5 ? ' long' : ''}" data-sync="cal" data-syncv='${JSON.stringify(s.map(q => +q.toFixed(3)))}' data-dec="2">${fmt(s[0], 2)}</span> <span class="unit">€/MWh</span></div>
-      <div class="delta late ${d}" style="--late:${land + 150}ms"><span class="nw">${arrow(cal.dv)} ${sgn(cal.dv, 2)}&nbsp;€</span> <span class="unit">${T('en une séance', 'in one session')}</span></div>
+      <div class="delta late ${d}" style="--late:${land + 150}ms"><span class="nw">${arrow(cal.dv)} ${sgn(cal.dv, 2)}&nbsp;€</span> <span class="unit">${span[1]}</span></div>
       <div class="sub src2" style="animation-delay:${land + 600}ms">${T('Contrat Cal', 'Cal')} ${cal.y} ${T('base France, cotation du', 'France baseload, settlement of')} ${new Date(cal.d + 'T12:00:00Z').toLocaleDateString(EN ? 'en-GB' : 'fr-FR', { day: 'numeric', month: 'long', timeZone: 'UTC' })}.</div>` };
   }
   function mondayScene(week, go) {
@@ -498,7 +498,7 @@ svg{width:100%;height:auto;overflow:visible}
     const rows = [[T('Prix spot moyen', 'Average spot'), F, '', '#E6EDF3'], [T('− Gaz', '− Gas'), gas, `TTF ${fmt(ttf, 1)} € ÷ 49 %`, '#F97316'],
       [T('− CO₂', '− CO₂'), co2, `EUA ${fmt(eua, 1)} € × 0,41 t`, '#8D99AE'], [T('= Marge', '= Margin'), m, '', m >= 0 ? '#4ADE80' : '#ED6965']];
     const others = Z.slice(1).filter(([k]) => zones[k] && zones[k].avg != null).map(([k, c]) => ({ c, v: css(zones[k].avg) })).sort((a, b) => b.v - a.v);
-    return { id: 'spark', ms: 600 + 4 * 700 + 1800, sayAt: 600 + 4 * 700 + 200,
+    return { id: 'spark', hot: m < 0, ms: 600 + 4 * 700 + 1800, sayAt: 600 + 4 * 700 + 200,
       say: m >= 0 ? T(`CCGT dans la monnaie : marge de ${fmt(m, 0)} €/MWh.`, `CCGT in the money: a ${fmt(m, 0)} €/MWh margin.`)
         : T(`CCGT hors de la monnaie : marge de ${sgn(m, 0)} €/MWh.`, `CCGT out of the money: a ${sgn(m, 0)} €/MWh margin.`),
       html: `<div class="kick">${T('Clean spark spread · France', 'Clean spark spread · France')}</div>
@@ -525,7 +525,8 @@ svg{width:100%;height:auto;overflow:visible}
         ${x.lo != null ? `<div class="ppa-pl">P10–P90 ${fmt(x.lo, 0)}–${fmt(x.hi, 0)} €</div>` : ''}</div>`; }).join('');
     const part = TT.map(([t, n]) => `${n.toLowerCase()} ${fmt(L[t].ppa, 1)} €/MWh${L[t].ref ? ` (${fmt(L[t].ppa / L[t].ref * 100, 0)} % ${T('du Cal', 'of Cal')})` : ''}`).join(', ');
     const ten = (L.tenor || '').split('-'), tn = ten.length > 1 ? ten[0] + '–' + ten[ten.length - 1].slice(2) : L.tenor;
-    return { id: 'ppa', ms: 6200, sayAt: 2600, say: T(`PPA ${tn} pay-as-produced : ${part}.`, `${ten.length}-year PPA ${tn}, pay-as-produced: ${part}.`),
+    const dPPA = TT.map(([t]) => W[t] && W[t].ppa != null ? Math.abs(L[t].ppa - W[t].ppa) : 0);
+    return { id: 'ppa', hot: Math.max(0, ...dPPA) >= 2, ms: 6200, sayAt: 2600, say: T(`PPA ${tn} pay-as-produced : ${part}.`, `${ten.length}-year PPA ${tn}, pay-as-produced: ${part}.`),
       html: `<div class="kick">${T('PPA France · benchmark PowerKlock', 'France PPA · PowerKlock benchmark')}</div>
       <div class="h">${words(T(`Le prix d’un PPA ${tn}`, `The price of a ${tn} PPA`), 150, 100)}</div>
       <div class="ppa">${col}</div>
@@ -551,7 +552,7 @@ svg{width:100%;height:auto;overflow:visible}
     const nLine = nm.map((v, i) => v == null ? null : ((i + .5) * bw).toFixed(1) + ',' + yl(v).toFixed(1)).filter(Boolean).join(' ');
     const mL = ld.slice(0, -1).reduce((a, b) => a + b, 0) / (n - 1), mS = sp.slice(0, -1).reduce((a, b) => a + b, 0) / (n - 1);
     const J = a => JSON.stringify(a.map(q => +q.toFixed(2)));
-    return { id: 'load', ms: DL + DRAW + 2200, sayAt: DL + DRAW + 300,
+    return { id: 'load', hot: nL != null && Math.abs(L.loadAvg / 1000 - nL) >= 4, ms: DL + DRAW + 2200, sayAt: DL + DRAW + 300,
       say: nL != null ? T(`Conso ${fmt(L.loadAvg / 1000, 1)} GW, ${sgn(L.loadAvg / 1000 - nL, 1)} GW vs normale saisonnière. Prix spot ${fmt(L.base, 0)} €/MWh, ${sgn(L.base - mS, 0)} € vs moyenne 30 j.`,
           `Load ${fmt(L.loadAvg / 1000, 1)} GW, ${sgn(L.loadAvg / 1000 - nL, 1)} GW vs the seasonal normal. Baseload spot ${fmt(L.base, 0)} €/MWh, ${sgn(L.base - mS, 0)} € vs the 30-day average.`)
         : T(`Conso moyenne ${fmt(L.loadAvg / 1000, 1)} GW, ${sgn(L.loadAvg / 1000 - mL, 1)} GW vs moyenne 30 j. Prix spot ${fmt(L.base, 0)} €/MWh, ${sgn(L.base - mS, 0)} €.`,
@@ -639,10 +640,12 @@ svg{width:100%;height:auto;overflow:visible}
     const U = [...byUnit.values()].sort((a, b) => Date.parse(a.end) - Date.parse(b.end));
     if (!U.length) return null;
     const tot = U.reduce((a, e) => a + e.unavail, 0) / 1000, forced = U.filter(e => e.type !== 'planned').length;
+    // worth the daily reel: a forced outage, or a reactor back within two days
+    const hotO = forced > 0 || U.some(e => Date.parse(e.end) - now < 2 * 864e5);
     const nm = u => String(u).toLowerCase().replace(/(^|[\s-])(\S)/g, (m, a, b) => a + b.toUpperCase());
     const dd = iso => new Date(iso).toLocaleDateString(EN ? 'en-GB' : 'fr-FR', { day: 'numeric', month: 'short', timeZone: 'Europe/Paris' });
     const show = U.slice(0, 7), more = U.length - show.length;
-    return { id: 'outages', ms: 600 + show.length * 350 + 2200, sayAt: 600 + show.length * 350 + 300,
+    return { id: 'outages', hot: hotO, ms: 600 + show.length * 350 + 2200, sayAt: 600 + show.length * 350 + 300,
       say: T(`${U.length} réacteurs à l’arrêt, ${fmt(tot, 1)} GW indisponibles${forced ? `, dont ${forced} en arrêt fortuit` : ''}. Prochain retour : ${nm(U[0].unit)} le ${dd(U[0].end).replace(/\.$/, '')}.`,
           `${U.length} reactors offline, ${fmt(tot, 1)} GW unavailable${forced ? `, ${forced} of them forced` : ''}. Next return: ${nm(U[0].unit)} on ${dd(U[0].end)}.`),
       html: `<div class="kick">${T('Nucléaire · arrêts en cours', 'Nuclear · outages now')}</div>
@@ -671,12 +674,110 @@ svg{width:100%;height:auto;overflow:visible}
       <div class="sub src2">${T('Dernières cotations des contrats base France, €/MWh.', 'Latest settlements of French baseload contracts, €/MWh.')}</div>` };
   }
 
-  async function main() {
+  // ── weekly: the spot of the last 7 delivery days, day by day, against the 7 before ──
+  function weekSpotScene(w, p7) {
+    const v = w.filter(x => x.v != null); if (v.length < 5) return null;
+    const avg = v.reduce((a, x) => a + x.v, 0) / v.length, pv = p7.filter(x => x.v != null), pa = pv.length ? pv.reduce((a, x) => a + x.v, 0) / pv.length : null;
+    const W = 1000, H = 340, n = v.length, bw = W / n, mx = Math.max(...v.map(x => x.v)) * 1.12, y = q => H - q / mx * H;
+    const day = iso => new Date(iso + 'T12:00:00Z').toLocaleDateString(EN ? 'en-GB' : 'fr-FR', { weekday: 'short', day: 'numeric', timeZone: 'UTC' });
+    const bars = v.map((x, i) => `<g class="cvb" style="--d:${600 + i * 220}ms"><rect x="${(i * bw + bw * .16).toFixed(1)}" y="${y(x.v).toFixed(1)}" width="${(bw * .68).toFixed(1)}" height="${(H - y(x.v)).toFixed(1)}" rx="5" fill="#7FC8F8"/>
+      <text x="${((i + .5) * bw).toFixed(1)}" y="${(y(x.v) - 12).toFixed(1)}" text-anchor="middle" fill="#E6EDF3" font-family="JetBrains Mono" font-size="30" font-weight="700">${fmt(x.v, 0)}</text>
+      <text x="${((i + .5) * bw).toFixed(1)}" y="${H + 44}" text-anchor="middle" fill="#8DA2B8" font-family="JetBrains Mono" font-size="26">${day(x.d)}</text></g>`).join('');
+    const line = pa == null ? '' : `<line class="nline" x1="0" x2="${W}" y1="${y(pa)}" y2="${y(pa)}" stroke="#E6EDF3" stroke-width="4" stroke-dasharray="12 9"/>`;
+    return { id: 'week', ms: 600 + n * 220 + 2200, sayAt: 600 + n * 220 + 300,
+      say: T(`Spot moyen sur 7 jours : ${fmt(avg, 1)} €/MWh${pa != null ? `, ${sgn(avg - pa, 1)} € vs la semaine précédente` : ''}.`, `Average spot over 7 days: ${fmt(avg, 1)} €/MWh${pa != null ? `, ${sgn(avg - pa, 1)} € vs the week before` : ''}.`),
+      html: `<div class="kick">${T('La semaine · spot France', 'The week · France spot')}</div>
+      <div class="h">${words(T('Sept jours de spot', 'Seven days of spot'), 150, 100)}</div>
+      <div class="figline"><span class="big" data-count="${avg}" data-from="${pa == null ? avg * .9 : pa}" data-dec="1" data-delay="300" data-ms="1400" data-punch="1">${fmt(pa == null ? avg : pa, 1)}</span> <span class="unit">${T('€/MWh en moyenne', '€/MWh on average')}</span></div>
+      <svg viewBox="-10 -40 1020 ${H + 100}" aria-hidden="true">${bars}${line}</svg>
+      <div class="sub src2">${T('Moyenne de chaque jour de livraison, day-ahead. Pointillés : moyenne de la semaine précédente.', 'Average of each delivery day, day-ahead. Dashes: the previous week’s average.')}</div>` };
+  }
+
+  // ── monthly: the last complete month's spot, day by day, against the month before (data/history/monthly/) ──
+  function monthSpotScene(cur, prev, mk) {
+    const v = (cur || []).filter(x => x.avg != null); if (v.length < 20) return null;
+    const mean = a => a.reduce((s2, x) => s2 + x.avg, 0) / a.length, avg = mean(v), pv = (prev || []).filter(x => x.avg != null), pa = pv.length ? mean(pv) : null;
+    const neg = v.reduce((a, x) => a + (x.negH || 0), 0);
+    const W = 1000, H = 340, n = v.length, bw = W / n, mx = Math.max(...v.map(x => x.avg)) * 1.08, mn = Math.min(0, ...v.map(x => x.avg)), y = q => H - (q - mn) / (mx - mn) * H;
+    const bars = v.map((x, i) => `<rect class="lbar" x="${(i * bw + bw * .12).toFixed(1)}" y="${y(Math.max(0, x.avg)).toFixed(1)}" width="${(bw * .76).toFixed(1)}" height="${Math.abs(y(x.avg) - y(0)).toFixed(1)}" rx="3" fill="#7FC8F8" style="--d:${600 + i * 70}ms"/>`).join('');
+    const mon = m => new Date(m + '-15T12:00:00Z').toLocaleDateString(EN ? 'en-GB' : 'fr-FR', { month: 'long', timeZone: 'UTC' });
+    const pm = pv.length ? pv[0].d.slice(0, 7) : null;
+    return { id: 'month', ms: 600 + n * 70 + 2400, sayAt: 600 + n * 70 + 300,
+      say: T(`Spot moyen en ${mon(mk)} : ${fmt(avg, 1)} €/MWh${pa != null ? `, ${sgn(avg - pa, 1)} € vs ${mon(pm)}` : ''}. ${neg ? `${fmt(neg, 0)} heures à prix négatif.` : 'Aucune heure à prix négatif.'}`,
+        `Average spot in ${mon(mk)}: ${fmt(avg, 1)} €/MWh${pa != null ? `, ${sgn(avg - pa, 1)} € vs ${mon(pm)}` : ''}. ${neg ? `${fmt(neg, 0)} negative-price hours.` : 'No negative-price hour.'}`),
+      html: `<div class="kick">${T('Le mois · spot France', 'The month · France spot')}</div>
+      <div class="h">${words(T('Le spot de ' + mon(mk), 'The spot of ' + mon(mk)), 150, 100)}</div>
+      <div class="figline"><span class="big" data-count="${avg}" data-from="${pa == null ? avg * .9 : pa}" data-dec="1" data-delay="300" data-ms="1400" data-punch="1">${fmt(pa == null ? avg : pa, 1)}</span> <span class="unit">${T('€/MWh en moyenne', '€/MWh on average')}</span></div>
+      <svg viewBox="-10 -20 1020 ${H + 40}" aria-hidden="true">${bars}${pa != null ? `<line class="nline" x1="0" x2="${W}" y1="${y(pa)}" y2="${y(pa)}" stroke="#E6EDF3" stroke-width="4" stroke-dasharray="12 9"/>` : ''}</svg>
+      <div class="sub src2">${T('Moyenne de chaque jour de livraison, day-ahead. Pointillés : moyenne du mois précédent.', 'Average of each delivery day, day-ahead. Dashes: the previous month’s average.')}</div>` };
+  }
+
+  // ── monthly: the M0 of solar and wind, the capture price of the CRE's contract for difference (data/m0.json) ──
+  function m0Scene(m0) {
+    const ms = (m0 && m0.months || []).filter(m => m.complete !== false && m.solarM0 != null && m.windM0 != null); if (ms.length < 2) return null;
+    const L = ms[ms.length - 1], P = ms[ms.length - 2];
+    const mon = m => new Date(m + '-15T12:00:00Z').toLocaleDateString(EN ? 'en-GB' : 'fr-FR', { month: 'long', timeZone: 'UTC' });
+    const col = (k, r, n, c, j) => `<div class="ppa-c" style="--c:${c};--d:${400 + j * 500}ms"><div class="ppa-n">${n}</div>
+      <div class="ppa-v"><span data-count="${L[k]}" data-from="${P[k]}" data-dec="1" data-delay="${600 + j * 500}" data-ms="1200" data-punch="1">${fmt(P[k], 1)}</span></div><div class="ppa-u">€/MWh</div>
+      <div class="ppa-d ${dir(L[k] - P[k])}">${arrow(L[k] - P[k])} ${sgn(L[k] - P[k], 1)} € <span>vs ${mon(P.month)}</span></div>
+      <div class="ppa-r"><span data-count="${L[r] * 100}" data-dec="0" data-delay="${1600 + j * 500}" data-ms="900" data-punch="1">${fmt(L[r] * 100, 0)}</span> %</div><div class="ppa-pl">${T('du spot moyen', 'of the average spot')}</div><div class="ppa-p"><i style="--w:${Math.min(100, L[r] * 100).toFixed(0)}%"></i></div></div>`;
+    return { id: 'm0', ms: 6000, sayAt: 2800,
+      say: T(`M0 de ${mon(L.month)} : solaire ${fmt(L.solarM0, 1)} €/MWh (${fmt(L.solarRatio * 100, 0)} % du spot), éolien ${fmt(L.windM0, 1)} €/MWh (${fmt(L.windRatio * 100, 0)} %), pour un spot moyen de ${fmt(L.base, 1)} €.`,
+        `${mon(L.month)} M0: solar ${fmt(L.solarM0, 1)} €/MWh (${fmt(L.solarRatio * 100, 0)} % of spot), wind ${fmt(L.windM0, 1)} €/MWh (${fmt(L.windRatio * 100, 0)} %), for an average spot of ${fmt(L.base, 1)} €.`),
+      html: `<div class="kick">${T('Le mois · prix capturés', 'The month · capture prices')}</div>
+      <div class="h">${words(T('Les M0 de ' + mon(L.month), mon(L.month) + ' M0'), 150, 100)}</div>
+      <div class="ppa">${col('solarM0', 'solarRatio', T('Solaire', 'Solar'), '#FBBF24', 0)}${col('windM0', 'windRatio', T('Éolien', 'Wind'), '#7FC8F8', 1)}</div>
+      <div class="sub src2">${T('M0 : prix spot moyen pondéré par la production nationale de la filière, référence du complément de rémunération (CRE).', 'M0: spot price weighted by the national output of the technology, the reference of the CRE contract for difference.')}</div>` };
+  }
+
+  // ── monthly: EU gas storage against the 5 previous years at the same date (AGSI) ──
+  function gasStorageScene(pts) {
+    if (!pts || pts.length < 400) return null;
+    const by = new Map(pts.map(p2 => [p2[0], p2[1]])), L = pts[pts.length - 1];
+    const sameDay = (iso, k) => { for (let o = 0; o <= 3; o++) { const t = new Date(Date.UTC(+iso.slice(0, 4) - k, +iso.slice(5, 7) - 1, +iso.slice(8, 10) - o)).toISOString().slice(0, 10); if (by.has(t)) return by.get(t); } return null; };
+    const five = [1, 2, 3, 4, 5].map(k => sameDay(L[0], k)).filter(v2 => v2 != null); if (five.length < 3) return null;
+    const avg5 = five.reduce((a, b) => a + b, 0) / five.length, ly = sameDay(L[0], 1);
+    const k0 = Math.max(0, pts.length - 90), ser = pts.slice(k0).map(p2 => p2[1]), nrm = pts.slice(k0).map(p2 => { const f = [1, 2, 3, 4, 5].map(k => sameDay(p2[0], k)).filter(v2 => v2 != null); return f.length ? f.reduce((a, b) => a + b, 0) / f.length : null; });
+    const W = 1000, H = 300, all = ser.concat(nrm.filter(v2 => v2 != null)), lo = Math.min(...all) - 3, hi = Math.max(...all) + 3, x = i => i / (ser.length - 1) * W, y = v2 => H - (v2 - lo) / (hi - lo) * H;
+    const J = a => JSON.stringify(a.map(q2 => +q2.toFixed(2)));
+    const d = L[1] - avg5;
+    return { id: 'gas', ms: 600 + 2000 + 2200, sayAt: 600 + 2000 + 300,
+      say: T(`Stocks de gaz UE à ${fmt(L[1], 1)} %, ${sgn(d, 1)} pts vs la moyenne des 5 dernières années${ly != null ? `, ${sgn(L[1] - ly, 1)} pts sur un an` : ''}.`,
+        `EU gas storage at ${fmt(L[1], 1)} %, ${sgn(d, 1)} pts vs the 5-year average${ly != null ? `, ${sgn(L[1] - ly, 1)} pts on a year` : ''}.`),
+      html: `<div class="kick">${T('Le mois · gaz', 'The month · gas')}</div>
+      <div class="h">${words(T('Les stocks de gaz européens', 'European gas storage'), 150, 100)}</div>
+      <div class="figline"><span class="big" data-sync="gst" data-syncv='${J(ser)}' data-dec="1">${fmt(ser[0], 1)}</span> <span class="unit">${T('% de remplissage', '% full')}</span></div>
+      <svg viewBox="-10 -20 1020 ${H + 70}" aria-hidden="true">
+        <polyline class="nline" points="${nrm.map((v2, i) => v2 == null ? null : x(i).toFixed(1) + ',' + y(v2).toFixed(1)).filter(Boolean).join(' ')}" fill="none" stroke="#E6EDF3" stroke-width="4" stroke-dasharray="12 9"/>
+        <polyline class="draw2 sync" data-sync="gst" data-dl="600" data-ms="2000" points="${ser.map((v2, i) => x(i).toFixed(1) + ',' + y(v2).toFixed(1)).join(' ')}" fill="none" stroke="#F97316" stroke-width="6" stroke-linejoin="round"/>
+        <text x="0" y="${H + 46}" fill="#8DA2B8" font-family="JetBrains Mono" font-size="32">${T('il y a 3 mois', '3 months ago')}</text><text x="${W}" y="${H + 46}" text-anchor="end" fill="#8DA2B8" font-family="JetBrains Mono" font-size="32">${T('aujourd’hui', 'today')}</text></svg>
+      <div class="lg"><span><i style="background:#F97316;height:4px;vertical-align:5px"></i>${T('stocks UE', 'EU storage')}</span><span><i style="background:#E6EDF3;height:4px;vertical-align:5px"></i>${T('moyenne 5 ans', '5-year average')}</span></div>
+      <div class="sub src2">${T('GIE AGSI, remplissage des stockages de gaz de l’UE.', 'GIE AGSI, EU gas storage filling.')}</div>` };
+  }
+
+  // ── monthly: what a 1 MW, 2 h battery earned on day-ahead over the last complete month (data/history/bess_da.json) ──
+  function bessMonthScene(b) {
+    const ms = (b && b.months || []).filter(m => m['2h'] && m.days >= 28); if (ms.length < 2) return null;
+    const L = ms[ms.length - 1], P = ms[ms.length - 2], v = L['2h'].pw * L.days / 1000, pv = P['2h'].pw * P.days / 1000;
+    const mon = m => new Date(m + '-15T12:00:00Z').toLocaleDateString(EN ? 'en-GB' : 'fr-FR', { month: 'long', timeZone: 'UTC' });
+    return { id: 'bessm', ms: 5000, sayAt: 2400,
+      say: T(`Batterie 1 MW / 2 h en ${mon(L.m)} : ${fmt(v, 1)} k€/MW sur le day-ahead, ${sgn(v - pv, 1)} k€ vs ${mon(P.m)}, ${fmt(L['2h'].pw_cyc, 1)} cycles par jour.`,
+        `1 MW / 2 h battery in ${mon(L.m)}: ${fmt(v, 1)} k€/MW on day-ahead, ${sgn(v - pv, 1)} k€ vs ${mon(P.m)}, ${fmt(L['2h'].pw_cyc, 1)} cycles a day.`),
+      html: `<div class="kick">${T('Le mois · batterie', 'The month · battery')}</div>
+      <div class="h">${words(T('Ce qu’a gagné une batterie', 'What a battery earned'), 150, 100)}</div>
+      <div class="figline"><span class="big" data-count="${v}" data-from="${pv}" data-dec="1" data-delay="300" data-ms="1300" data-punch="1">${fmt(pv, 1)}</span> <span class="unit">${T('k€ par MW', 'k€ per MW')}</span></div>
+      <div class="row"><div class="tile"><div class="l">${mon(P.m)}</div><div class="v">${fmt(pv, 1)} k€</div><div class="s">${T('par MW', 'per MW')}</div></div>
+        <div class="tile"><div class="l">${T('Sur 12 mois', 'Over 12 months')}</div><div class="v">${fmt(b.summary_ltm['2h'].pw, 0)} k€</div><div class="s">${T('par MW et par an', 'per MW per year')}</div></div></div>
+      <div class="sub src2">${T('Programme optimal sur les prix day-ahead, rendement 85 %, dégradation déduite.', 'Optimal schedule on day-ahead prices, 85 % round trip, degradation deducted.')}</div>` };
+  }
+
+  async function main(kind) {
     const [D0f, D1f, chain, dg, ev, goCsv, bess, cs, geo, cb, cm, bm, rted, news, nf, wo, outg, fmk] = await Promise.all([
       get('data/history/daily/' + today + '.json'), get('data/history/daily/' + addDays(today, -1) + '.json'),
       get('data/history/fr_market_calchain.json'), get('data/market_digest.json'), get('data/events.json'), get('data/go_prices.csv'),
       get('data/history/bess_da.json'), get('data/history/commodities_series.json'), get('data/geo/europe.json'), get('data/crossborder.json'), get('data/commodities.json'), get('data/history/ppa_benchmark.json'), get('data/history/rte/fr_daily.json'), get('data/news.json'), get('data/neg_forecast.json'), get('data/weather_outlook.json'), get('data/history/fr_outages.json'), get('data/fr_market.json')]);
     const D0 = D0f && D0f.zones && D0f.zones.FR, D1 = D1f && D1f.zones && D1f.zones.FR;
+    kind = kind || 'jour';
     const S = [];
     if (D0) { S.push(priceScene(D0, D1)); if (D0.hourly && D0.hourly.length === 96) S.push(profileScene(D0)); }
     const tmw = nf && nf.days && tomorrowScene(nf, addDays(today, 1), today); if (tmw) S.push(tmw);
@@ -705,27 +806,38 @@ svg{width:100%;height:auto;overflow:visible}
     const cl = k => { const q = cm && cm.series && cm.series[k] && cm.series[k].points; return q && q.length ? q[q.length - 1][1] : null; };
     if (D0f && D0f.zones && cl('ttf') && cl('eua')) { const sk = sparkScene(D0f.zones, cl('ttf'), cl('eua')); if (sk) S.push(sk); }
     const bs = battScenes(bess); if (bs) S.push(Object.assign(bs[2], { id: 'batt' }));
-    // Monday: last week's spot against the week before, and the GO of next year (weekly broker prices)
-    if (new Date(today + 'T12:00:00Z').getUTCDay() === 1) {
-      const days = n => Promise.all(Array.from({ length: 7 }, (_, i) => get('data/history/daily/' + addDays(today, -n - i) + '.json')));
-      const [w1, w2] = await Promise.all([days(1), days(8)]);
-      const m = w => { const v = w.map(f => f && f.zones && f.zones.FR && f.zones.FR.avg).filter(v => v != null); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; };
-      const a = m(w1), b = m(w2);
-      let go = null;
-      if (goCsv) {
-        const rows = goCsv.trim().split('\n').slice(1).map(l => l.split(',')).filter(r => r[4] === 'GO AIB Renewable' && r[9] === 'Y + 1' && r[6]);
-        const r = rows[rows.length - 1];
-        if (r) go = { y: r[5], v: (+r[6] + (+r[7] || +r[6])) / 2, dv: +r[8] || 0 };
-      }
-      if (a != null) S.push({ id: 'week', html: mondayScene({ v: a, dv: b == null ? 0 : a - b }, go) });
-    }
     // an important event dated today or yesterday (checked against its source in data/events.json)
     const e = ev && (ev.items || []).find(x => (x.date === today || x.date === addDays(today, -1)) && (x.importance || 0) >= 2);
     if (e) S.push({ id: 'event', html: eventScene(e) });
     const nw = newsScene(news && news.items); if (nw) S.push(nw);
     if (dg && dg.context && dg.context.length) S.push(briefScene(dg));
-    const only = q.get('s');   // ?s=price,profile: only these scenes (a story of the site)
-    if (only) { const want = only.split(','); S.splice(0, S.length, ...S.filter(x => x && want.includes(x.id))); }
+    const only = q.get('s');
+    const X = {}; S.forEach(x => { if (x && x.id) X[x.id] = x; });
+    // the weekly and monthly scenes read a few more files
+    if (kind !== 'jour' || only) {
+      const dayAvg = async d => { const f = await get('data/history/daily/' + d + '.json'); return { d, v: f && f.zones && f.zones.FR ? f.zones.FR.avg : null }; };
+      const [w7, p7] = await Promise.all([Promise.all([6, 5, 4, 3, 2, 1, 0].map(k => dayAvg(addDays(today, -k)))), Promise.all([13, 12, 11, 10, 9, 8, 7].map(k => dayAvg(addDays(today, -k))))]);
+      const ws = weekSpotScene(w7, p7); if (ws) X.week = ws;
+      const lm = addDays(today.slice(0, 8) + '01', -1).slice(0, 7), pm = addDays(lm + '-01', -1).slice(0, 7);
+      const [mc, mp, m0] = await Promise.all([get('data/history/monthly/' + lm + '.json'), get('data/history/monthly/' + pm + '.json'), get('data/m0.json')]);
+      const ms2 = monthSpotScene(mc && mc.zones && mc.zones.FR, mp && mp.zones && mp.zones.FR, lm); if (ms2) X.month = ms2;
+      const mz = m0Scene(m0); if (mz) X.m0 = mz;
+      const agsi = cs && cs.series && cs.series.agsi && cs.series.agsi.points, gs = gasStorageScene(agsi); if (gs) X.gas = gs;
+      const bmn = bessMonthScene(bess); if (bmn) X.bessm = bmn;
+      // Cal over a week and over a month
+      if (c && c.values && c.values.length > 22) { const n = c.values.length, k0 = Math.max(0, n - 42);
+        X.calw = Object.assign(calScene({ y: y1, v: c.values[n - 1], dv: c.values[n - 1] - c.values[n - 6], d: c.dates[n - 1], d0: c.dates[k0], series: c.values.slice(k0), span: [T('sur la semaine', 'on the week'), T('sur la semaine', 'on the week')] }), { id: 'calw' });
+        X.calm = Object.assign(calScene({ y: y1, v: c.values[n - 1], dv: c.values[n - 1] - c.values[n - 22], d: c.dates[n - 1], d0: c.dates[k0], series: c.values.slice(k0), span: [T('sur le mois', 'on the month'), T('sur le mois', 'on the month')] }), { id: 'calm' }); }
+    }
+    // daily: what moves every day; a slower scene joins it only when something happens that should not be missed
+    const hot = id => X[id] && X[id].hot;
+    const ORDER = {
+      jour: ['price', 'profile', 'tomorrow', 'map', 'nuclear', hot('outages') && 'outages', 'mix', hot('load') && 'load', 'weather', 'cal', 'co2', hot('ppa') && 'ppa', hot('spark') && 'spark', 'event', 'news', 'brief'],
+      semaine: ['week', 'calw', 'curve', 'ppa', 'nuclear', 'outages', 'load', 'weather', 'co2', 'spark', 'batt'],
+      mois: ['month', 'm0', 'calm', 'curve', 'ppa', 'gas', 'bessm', 'spark'],
+    };
+    let L2 = only ? only.split(',') : ORDER[kind] || ORDER.jour;
+    S.splice(0, S.length, ...L2.filter(Boolean).map(id => X[id]).filter(Boolean));
     if (!S.length) S.push(`<div class="h">${T('Données du jour pas encore publiées.', 'Today’s data not published yet.')}</div>`);
     run(S);
   }
@@ -953,8 +1065,8 @@ svg{width:100%;height:auto;overflow:visible}
     show();
   }
 
-  const R = { jour: main, batterie: battery, europe, mix };
-  (R[q.get('r')] || main)();
+  const R = { jour: () => main('jour'), semaine: () => main('semaine'), mois: () => main('mois'), batterie: battery, europe, mix };
+  (R[q.get('r')] || R.jour)();
 })();
 </script>
 </body>
