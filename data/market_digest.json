@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-06T14:27:58+00:00",
+ "updated": "2026-11-06T21:40:32+00:00",
  "asof": "2026-11-06",
  "notes": 2,
  "engine": "proxy",
@@ -7,45 +7,45 @@
   {
    "topic": "France",
    "topic_en": "France",
-   "text": "La disponibilité nucléaire en France est de 46692,5 MW, en hausse de 3,6% sur 7 jours. Cela pousse les prix à la baisse.",
-   "text_en": "French nuclear availability is 46692.5 MW, up 3.6% over 7 days. This pushes prices down.",
+   "text": "La centrale nucléaire de Chooz redémarre après 3 mois d’arrêt causés par la sécheresse, ce qui devrait augmenter la production d'électricité et faire baisser les prix. La disponibilité nucléaire en France est en hausse, avec 46692,5 MW disponibles, soit une augmentation de 3,6% en 7 jours.",
+   "text_en": "The Chooz nuclear power plant restarts after 3 months of shutdown due to drought, which should increase electricity production and lower prices. French nuclear availability is increasing, with 46692.5 MW available, a 3.6% increase in 7 days.",
    "tone": "down"
   },
   {
    "topic": "Golfe",
    "topic_en": "Gulf",
-   "text": "Les perspectives de négociations entre les États-Unis et l'Iran ont réduit le risque géopolitique, contribuant à la baisse des prix du Brent cette semaine.",
-   "text_en": "Prospects for US-Iran talks have reduced geopolitical risk, contributing to the fall in Brent prices this week.",
+   "text": "Les perspectives de négociations entre les États-Unis et l'Iran ont réduit le risque géopolitique, contribuant à la baisse des prix du pétrole cette semaine. Cependant, la situation reste fragile et les marchés restent volatils.",
+   "text_en": "The prospects for negotiations between the United States and Iran have reduced the geopolitical risk, contributing to the fall in oil prices this week. However, the situation remains fragile and markets remain volatile.",
    "tone": "down"
   },
   {
    "topic": "Norvège",
    "topic_en": "Norway",
-   "text": "Les flux norvégiens sont légèrement réduits en raison d'arrêts non planifiés, ce qui soutient les prix du gaz en Europe.",
-   "text_en": "Norwegian flows are slightly reduced due to unplanned outages, supporting European gas prices.",
+   "text": "Les flux norvégiens sont légèrement réduits en raison d'arrêts imprévus, ce qui pourrait augmenter les prix du gaz en Europe. Les marchés européens restent relativement tendus, avec une demande soutenue par des besoins de chauffage plus élevés et une faible production d'énergie éolienne.",
+   "text_en": "Norwegian flows are slightly reduced due to unplanned outages, which could increase European gas prices. European markets remain relatively tight, with demand supported by higher heating needs and low wind power generation.",
    "tone": "up"
   }
  ],
  "outlook": {
   "oil": {
    "tone": "down",
-   "text": "La baisse des prix du pétrole devrait se poursuivre",
-   "text_en": "Oil price decline is expected to continue"
+   "text": "Les prix du pétrole devraient rester sous pression en raison de la réduction du risque géopolitique.",
+   "text_en": "Oil prices are expected to remain under pressure due to reduced geopolitical risk."
   },
   "gas": {
-   "tone": "down",
-   "text": "Les prix du gaz devraient baisser en raison de la réduction du risque géopolitique",
-   "text_en": "Gas prices are expected to fall due to reduced geopolitical risk"
+   "tone": "up",
+   "text": "Les prix du gaz devraient rester soutenus en raison de la demande élevée et des flux norvégiens réduits.",
+   "text_en": "Gas prices are expected to remain supported due to high demand and reduced Norwegian flows."
   },
   "power": {
    "tone": "flat",
-   "text": "Les prix de l'électricité devraient rester stables",
-   "text_en": "Power prices are expected to remain stable"
+   "text": "Les prix de l'électricité devraient rester stables en raison de la disponibilité nucléaire en hausse et de la demande modérée.",
+   "text_en": "Power prices are expected to remain stable due to increasing nuclear availability and moderate demand."
   },
   "carbon": {
    "tone": "flat",
-   "text": "Les prix du carbone devraient rester stables",
-   "text_en": "Carbon prices are expected to remain stable"
+   "text": "Les prix du carbone devraient rester stables en raison de la faible volatilité des marchés.",
+   "text_en": "Carbon prices are expected to remain stable due to low market volatility."
   }
  }
 }
