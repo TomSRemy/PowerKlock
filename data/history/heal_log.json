@@ -1,13 +1,13 @@
 {
-"run": "2026-10-26",
+"run": "2026-11-06",
 "log": [
 {
-"day": "2026-10-25",
-"zone": "BG",
+"day": "2026-11-05",
+"zone": "LT",
 "result": "refetched",
-"was": 228.55,
-"now": 228.44,
-"second_source": 229.72
+"was": 109.89,
+"now": 107.34,
+"second_source": 107.34
 }
 ]
 }
