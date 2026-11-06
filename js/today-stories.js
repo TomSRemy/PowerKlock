@@ -172,9 +172,9 @@
     // one circle = one scene of the morning reel (reel.html?r=jour&s=…), the same design as the Instagram video;
     // a scene shows only when the facts it is built from are there
     const has = new Set(out.map(x => x.id));
-    const SC = [['price', 'price', T('Prix', 'Price'), 'price'], ['profile', 'price', T('Journée', 'Day'), 'day'], ['brief', 'why', T('Pourquoi', 'Why'), 'why'],
-      ['map', 'europe', 'Europe', 'europe'], ['nuclear', 'nuclear', T('Nucléaire', 'Nuclear'), 'nuclear'], ['mix', 'windsun', T('Production', 'Output'), 'mix'],
-      ['load', 'windsun', T('Conso & CO₂', 'Load & CO₂'), 'load'], ['cal', 'fwd', 'Cal', 'fwd'], ['ppa', 'fwd', 'PPA', 'ppa'],
+    const SC = [['price', 'price', T('Prix', 'Price'), 'price'], ['profile', 'price', T('Journée', 'Day'), 'day'], ['tomorrow', 'price', T('Demain', 'Tomorrow'), 'ahead'], ['brief', 'why', T('Pourquoi', 'Why'), 'why'], ['news', 'why', 'News', 'why'],
+      ['map', 'europe', 'Europe', 'europe'], ['nuclear', 'nuclear', T('Nucléaire', 'Nuclear'), 'nuclear'], ['outages', 'nuclear', T('Réacteurs', 'Reactors'), 'nuclear'], ['mix', 'windsun', T('Production', 'Output'), 'mix'],
+      ['load', 'windsun', T('Conso', 'Load'), 'load'], ['weather', 'windsun', T('Météo', 'Weather'), 'windsun'], ['cal', 'fwd', 'Cal', 'fwd'], ['curve', 'fwd', T('Courbe', 'Curve'), 'fwd'], ['ppa', 'fwd', 'PPA', 'ppa'],
       ['co2', 'gas', 'CO₂', 'co2'], ['spark', 'gas', 'Spark', 'gas'], ['batt', 'batt', T('Batterie', 'Battery'), 'batt']];
     return SC.filter(([, need]) => has.has(need)).map(([sc, , name, ic]) => ({ id: 'r-' + sc, name, icon: ic, cards: [{ reel: sc, label: name }] }));
   }
