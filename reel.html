@@ -202,6 +202,14 @@ svg{width:100%;height:auto;overflow:visible}
 .embed .bar{display:none}
 .embed .scene{padding-top:calc(25*var(--U))}
 .held *,.held *::before{animation-play-state:paused!important}
+.wf{display:flex;flex-direction:column;gap:calc(2.6*var(--u))}
+.wr{display:grid;grid-template-columns:calc(24*var(--u)) minmax(0,1fr) calc(14*var(--u));grid-template-rows:auto auto;align-items:center;column-gap:calc(2.4*var(--u));opacity:0}
+.scene.on .wr{animation:rise .45s ease var(--d) forwards}
+.wr .n{font:700 calc(4.4*var(--u)) var(--sans);color:var(--c)}.wr .v{font:800 calc(5.4*var(--u)) var(--mono);text-align:right;color:var(--c)}
+.wr .t{height:calc(5*var(--u));background:var(--line);border-radius:6px;overflow:hidden}.wr .t i{display:block;height:100%;width:0;background:var(--c);border-radius:6px}
+.scene.on .wr .t i{animation:nucf .7s cubic-bezier(.3,.7,.2,1) calc(var(--d) + .15s) forwards}
+.wr .how{grid-column:2 / 4;font:600 calc(3*var(--u)) var(--mono);color:var(--muted);margin-top:calc(.6*var(--u))}
+.wr.tot{border-top:2px solid var(--line);padding-top:calc(2.2*var(--u))}.wr.tot .v{font-size:calc(7*var(--u))}
 /* layout of a scene (Instagram safe zones: nothing under the progress bars, the right-hand buttons or the caption):
    title at the top, the visual in the middle taking the room left, the subtitle at the bottom */
 
@@ -210,7 +218,7 @@ svg{width:100%;height:auto;overflow:visible}
   font:700 calc(6*var(--u))/1.28 var(--sans);color:var(--fg);text-wrap:pretty;box-shadow:0 calc(2*var(--u)) calc(6*var(--u)) rgba(0,0,0,.45)}
 
 .sub{color:#A9BACB}
-@media (prefers-reduced-motion: reduce){.scene{transition:none}.draw,.draw2{animation:none;stroke-dashoffset:0}.scene > *,.tile,.brief div,.w,.wb,.endpt,.mk,.ch,.lbar,.nline,.a-late,.map .ctry,.mlab,.sr,.ppa-c{opacity:1;transform:none;filter:none;animation:none!important}
+@media (prefers-reduced-motion: reduce){.scene{transition:none}.draw,.draw2{animation:none;stroke-dashoffset:0}.scene > *,.tile,.brief div,.w,.wb,.endpt,.mk,.ch,.lbar,.wr,.nline,.a-late,.map .ctry,.mlab,.sr,.ppa-c{opacity:1;transform:none;filter:none;animation:none!important}
   #stage::before{animation:none!important}.g-fill{transform:none;animation:none!important}.g-t{left:var(--p1);animation:none!important}}
 </style>
 </head>
@@ -476,16 +484,22 @@ svg{width:100%;height:auto;overflow:visible}
   }
   // ── clean spark spread: today's baseload minus the gas and CO₂ cost of a 49 % gas plant (formula of the site's spark page) ──
   function sparkScene(zones, ttf, eua) {
-    const Z = [['FR', 'France', 'France'], ['DE_LU', 'Allemagne', 'Germany'], ['BE', 'Belgique', 'Belgium'], ['NL', 'Pays-Bas', 'Netherlands'], ['IT_NORD', 'Italie N.', 'Italy N.'], ['ES', 'Espagne', 'Spain'], ['PL', 'Pologne', 'Poland']];
-    const css = v => v - ttf / 0.4913 - eua * 0.202 / 0.4913;
-    const R = Z.filter(([k]) => zones[k] && zones[k].avg != null).map(([k, f, e]) => ({ k, n: EN ? e : f, v: css(zones[k].avg) })).sort((a, b) => b.v - a.v);
-    const mx = Math.max(...R.map(r => Math.abs(r.v)), 1), fr = R.find(r => r.k === 'FR');
-    return { id: 'spark', ms: 5200, sayAt: 600 + R.length * 160 + 900, say: fr ? (fr.v > 0 ? T(`Clean spark base FR à +${fmt(fr.v, 0)} €/MWh : la CCGT est dans la monnaie.`, `France clean spark: +${fmt(fr.v, 0)} €/MWh. A gas plant covers its gas and CO₂ at the baseload spot.`)
-        : T(`Clean spark base FR à ${sgn(fr.v, 0)} €/MWh : la CCGT est hors de la monnaie.`, `France clean spark: ${sgn(fr.v, 0)} €/MWh. At the baseload spot, a gas plant does not cover its gas and CO₂.`)) : '',
-      html: `<div class="kick">${T('Clean spark spread · base', 'Clean spark spread · baseload')}</div>
+    const Z = [['FR', 'FR'], ['DE_LU', 'DE'], ['BE', 'BE'], ['NL', 'NL'], ['IT_NORD', 'IT-N'], ['ES', 'ES'], ['PL', 'PL']];
+    const gas = ttf / 0.4913, co2 = eua * 0.202 / 0.4913, css = v => v - gas - co2;   // a 49 % CCGT: 2.04 MWh of gas and 0.41 t of CO₂ per MWh
+    const F = zones.FR && zones.FR.avg; if (F == null) return null;
+    const m = css(F), top = Math.max(F, gas + co2, 1);
+    // France, step by step: what the plant sells at, what its gas and its CO₂ cost, what is left
+    const rows = [[T('Spot base', 'Baseload spot'), F, '', '#E6EDF3'], [T('− Gaz', '− Gas'), gas, `TTF ${fmt(ttf, 1)} € ÷ 49 %`, '#F97316'],
+      [T('− CO₂', '− CO₂'), co2, `EUA ${fmt(eua, 1)} € × 0,41 t`, '#8D99AE'], [T('= Marge', '= Margin'), m, '', m >= 0 ? '#4ADE80' : '#ED6965']];
+    const others = Z.slice(1).filter(([k]) => zones[k] && zones[k].avg != null).map(([k, c]) => ({ c, v: css(zones[k].avg) })).sort((a, b) => b.v - a.v);
+    return { id: 'spark', ms: 600 + 4 * 700 + 1800, sayAt: 600 + 4 * 700 + 200,
+      say: m >= 0 ? T(`Au spot base, une CCGT paie son gaz et son CO₂ et garde ${fmt(m, 0)} €/MWh : elle est dans la monnaie.`, `At the baseload spot, a CCGT pays its gas and CO₂ and keeps ${fmt(m, 0)} €/MWh: in the money.`)
+        : T(`Au spot base, une CCGT ne couvre pas son gaz et son CO₂ : ${sgn(m, 0)} €/MWh, hors de la monnaie.`, `At the baseload spot, a CCGT does not cover its gas and CO₂: ${sgn(m, 0)} €/MWh, out of the money.`),
+      html: `<div class="kick">${T('Clean spark spread · France', 'Clean spark spread · France')}</div>
       <div class="h">${words(T('La marge d’une CCGT', 'A CCGT’s margin'), 150, 100)}</div>
-      <div class="sprk">${R.map((r, i) => `<div class="sr${r.k === 'FR' ? ' fr' : ''}" style="--d:${600 + i * 160}ms"><span class="n">${r.n}</span><span class="t"><i class="${r.v < 0 ? 'neg' : ''}" style="--w:${(Math.abs(r.v) / mx * 50).toFixed(1)}%"></i></span><span class="v">${sgn(r.v, 0)}</span></div>`).join('')}</div>
-      <div class="sub src2">${T(`Spot base − TTF ${fmt(ttf, 1)} €/MWh ÷ 49 % − EUA ${fmt(eua, 1)} €/t × 0,202 ÷ 49 % (CCGT 49 % PCI), en €/MWh.`, `Baseload spot − TTF ${fmt(ttf, 1)} €/MWh ÷ 49 % − EUA ${fmt(eua, 1)} €/t × 0.202 ÷ 49 %, in €/MWh.`)}</div>` };
+      <div class="wf">${rows.map(([n, v, how, c], i) => `<div class="wr${i === 3 ? ' tot' : ''}" style="--d:${600 + i * 700}ms;--c:${c}"><span class="n">${n}</span><span class="t"><i style="--w:${(Math.abs(v) / top * 100).toFixed(1)}%"></i></span><span class="v">${i === 3 ? sgn(v, 0) : fmt(v, 0)}</span>${how ? `<span class="how">${how}</span>` : ''}</div>`).join('')}</div>
+      ${others.length ? `<div class="sub" style="animation-delay:${600 + 4 * 700}ms">${T('Ailleurs : ', 'Elsewhere: ')}${others.map(o => `${o.c} ${sgn(o.v, 0)}`).join(' · ')}</div>` : ''}
+      <div class="sub src2">${T('€/MWh. CCGT de rendement 49 % PCI : 2,04 MWh de gaz et 0,41 t de CO₂ par MWh produit.', '€/MWh. CCGT at 49 % LHV efficiency: 2.04 MWh of gas and 0.41 t of CO₂ per MWh produced.')}</div>` };
   }
 
   // ── PPA: the day's PowerKlock benchmark (the site's pricer, default settings), solar and wind side by side ──
@@ -591,7 +605,7 @@ svg{width:100%;height:auto;overflow:visible}
     if (eua && eua.length > 2) S.push(carbonScene(eua, cs.series.eua.contract));
     // the same last TTF and EUA closes as the spark of data/prices.json (scripts/fetch_data.py)
     const cl = k => { const q = cm && cm.series && cm.series[k] && cm.series[k].points; return q && q.length ? q[q.length - 1][1] : null; };
-    if (D0f && D0f.zones && cl('ttf') && cl('eua')) S.push(sparkScene(D0f.zones, cl('ttf'), cl('eua')));
+    if (D0f && D0f.zones && cl('ttf') && cl('eua')) { const sk = sparkScene(D0f.zones, cl('ttf'), cl('eua')); if (sk) S.push(sk); }
     const bs = battScenes(bess); if (bs) S.push(Object.assign(bs[2], { id: 'batt' }));
     // Monday: last week's spot against the week before, and the GO of next year (weekly broker prices)
     if (new Date(today + 'T12:00:00Z').getUTCDay() === 1) {
