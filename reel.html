@@ -184,6 +184,8 @@ svg{width:100%;height:auto;overflow:visible}
 .scene.on .sr .t i{animation:nucf .8s cubic-bezier(.3,.7,.2,1) calc(var(--d) + .2s) forwards}
 .sr .v{font:800 calc(4.2*var(--u)) var(--mono);text-align:right}
 .sr.fr .n,.sr.fr .v{color:var(--accent)}.sr.fr .t i{background:var(--accent)}
+.lbar{transform:scaleY(0);transform-box:fill-box;transform-origin:bottom}.scene.on .lbar{animation:lbar .35s ease var(--d) forwards}
+@keyframes lbar{to{transform:none}}
 /* PPA: solar and wind side by side, the price counts up, its 60-day line draws, a bar shows its share of the baseload forward */
 .ppa{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:calc(4*var(--u))}
 .ppa-c{display:flex;flex-direction:column;gap:calc(1.2*var(--u));opacity:0}.scene.on .ppa-c{animation:rise .5s ease var(--d) forwards}
@@ -207,7 +209,7 @@ svg{width:100%;height:auto;overflow:visible}
   font:700 calc(6*var(--u))/1.28 var(--sans);color:var(--fg);text-wrap:pretty;box-shadow:0 calc(2*var(--u)) calc(6*var(--u)) rgba(0,0,0,.45)}
 
 .sub{color:#A9BACB}
-@media (prefers-reduced-motion: reduce){.scene{transition:none}.draw,.draw2{animation:none;stroke-dashoffset:0}.scene > *,.tile,.brief div,.w,.wb,.endpt,.mk,.ch,.map .ctry,.mlab,.sr,.ppa-c{opacity:1;transform:none;filter:none;animation:none!important}
+@media (prefers-reduced-motion: reduce){.scene{transition:none}.draw,.draw2{animation:none;stroke-dashoffset:0}.scene > *,.tile,.brief div,.w,.wb,.endpt,.mk,.ch,.lbar,.map .ctry,.mlab,.sr,.ppa-c{opacity:1;transform:none;filter:none;animation:none!important}
   #stage::before{animation:none!important}.g-fill{transform:none;animation:none!important}.g-t{left:var(--p1);animation:none!important}}
 </style>
 </head>
@@ -242,7 +244,7 @@ svg{width:100%;height:auto;overflow:visible}
   const CH = 34;
   const typed = (s, base = 0) => { let i = 0;
     return String(s).replace(/(\d)\s+(?=[€%$°]|GW|MW|TWh|pts)/g, '$1\u00a0').replace(/ ([:;?!»])/g, '\u00a0$1').split(/ +/)
-      .map(w => `<span class="ww">${[...w].map(c => `<span class="ch" style="--d:${base + (i++) * CH}ms">${c}</span>`).join('')}</span>`).join(' '); };
+      .map(w => `<span class="ww">${[...w].map(c => `<span class="ch" style="--d:${base + (i++) * CH}ms">${c === '<' ? '&lt;' : c === '&' ? '&amp;' : c === '>' ? '&gt;' : c}</span>`).join('')}</span>`).join(' '); };
   const typedLen = s => String(s).replace(/ +/g, ' ').length;
   const words0 = (s, base = 0, step = 90, cls = 'w') => String(s).replace(/(\d)\s+(?=[€%$°]|GW|MW|TWh|pts)/g, '$1 ')
     .split(/ +/).map((w, i) => `<span class="${cls}" style="--d:${base + Math.round(i * step * 1.6)}ms">${w}</span>`).join(' ');
@@ -509,32 +511,53 @@ svg{width:100%;height:auto;overflow:visible}
       <div class="sub src2">${T(`Pricer PowerKlock, réglages par défaut : pay-as-produced, arrêt sous 0 €. % du Cal : prix fixe ÷ Cal base ${cal3} (moyenne pondérée). Calcul du ${dd(days[days.length - 1])}`, `The site’s pricer, default settings: pay-as-produced, nothing paid below 0 €. % of Cal: fixed price ÷ Cal ${cal3} baseload (weighted mean). Run of ${dd(days[days.length - 1])}`)}</div>` };
   }
 
-  // ── consumption and carbon intensity: the last published day (RTE éCO2mix) against the 30 days before, curves drawn with their figure ──
+  // ── consumption and the spot: 30 days of daily load (bars) under the baseload spot (line), RTE éCO2mix ──
   function loadScene(rows) {
-    const R = rows.filter(r => r.loadAvg != null && r.co2Avg != null).slice(-31), L = R[R.length - 1];
-    const dd = iso => new Date(iso + 'T12:00:00Z').toLocaleDateString(EN ? 'en-GB' : 'fr-FR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
-    const avg = f => { const v = R.slice(0, -1).map(r => r[f]); return v.reduce((a, b) => a + b, 0) / v.length; };
-    const col = (key, n, unit, dec, scale, c, j) => { const ser = R.map(r => r[key] / scale), lo = Math.min(...ser), hi = Math.max(...ser), sx = 300 / (ser.length - 1), sy = v => 110 - (v - lo) / ((hi - lo) || 1) * 100;
-      const m = avg(key) / scale, d = ser[ser.length - 1] - m;
-      return `<div class="ppa-c" style="--c:${c};--d:${400 + j * 500}ms"><div class="ppa-n">${n}</div>
-        <div class="ppa-v"><span data-sync="ld${j}" data-syncv='${JSON.stringify(ser.map(q => +q.toFixed(2)))}' data-dec="${dec}">${fmt(ser[0], dec)}</span></div><div class="ppa-u">${unit}</div>
-        <div class="ppa-d ${dir(d)}">${arrow(d)} ${sgn(d, dec)} <span>${T('vs 30 j', 'vs 30 d')}</span></div>
-        <svg viewBox="-4 -6 308 124" aria-hidden="true" style="--ms:1500ms;--dl:${900 + j * 500}ms;--dl2:${2400 + j * 500}ms"><polyline class="draw2 sync" data-sync="ld${j}" data-dl="${900 + j * 500}" data-ms="1500" points="${ser.map((v, i) => (i * sx).toFixed(1) + ',' + sy(v).toFixed(1)).join(' ')}" fill="none" stroke="${c}" stroke-width="5" stroke-linejoin="round"/></svg></div>`; };
-    const mL = avg('loadAvg') / 1000, mC = avg('co2Avg');
-    return { id: 'load', ms: 6200, sayAt: 3000,
-      say: T(`Conso moyenne ${fmt(L.loadAvg / 1000, 1)} GW, pointe ${fmt(L.loadMax / 1000, 1)} GW. Intensité carbone ${fmt(L.co2Avg, 0)} g CO₂/kWh, ${L.co2Avg > mC ? 'au-dessus' : 'en dessous'} de la moyenne 30 j (${fmt(mC, 0)}).`,
-        `Average load ${fmt(L.loadAvg / 1000, 1)} GW, peak ${fmt(L.loadMax / 1000, 1)} GW. Carbon intensity ${fmt(L.co2Avg, 0)} g CO₂/kWh, ${L.co2Avg > mC ? 'above' : 'below'} the 30-day average (${fmt(mC, 0)}).`),
-      html: `<div class="kick">${T('Système France · ', 'French system · ')}${dd(L.d)}</div>
-      <div class="h">${words(T('Consommation et intensité carbone', 'Load and carbon intensity'), 150, 100)}</div>
-      <div class="ppa">${col('loadAvg', T('Consommation', 'Load'), T('GW moyen', 'GW average'), 1, 1000, '#7FC8F8', 0)}${col('co2Avg', T('Intensité CO₂', 'CO₂ intensity'), 'g CO₂/kWh', 0, 1, '#B8C9D9', 1)}</div>
-      <div class="sub src2">${T('RTE éCO2mix, dernier jour publié, 30 jours glissants.', 'RTE éCO2mix, last published day, rolling 30 days.')}</div>` };
+    const R = rows.filter(r => r.loadAvg != null && r.base != null).slice(-30), n = R.length, L = R[n - 1];
+    const dd = iso => new Date(iso + 'T12:00:00Z').toLocaleDateString(EN ? 'en-GB' : 'fr-FR', { day: 'numeric', month: 'short', timeZone: 'UTC' });
+    const ld = R.map(r => r.loadAvg / 1000), sp = R.map(r => r.base);
+    const W = 1000, H = 380, bw = W / n, lMax = Math.max(...ld) * 1.05, lMin = Math.min(...ld) * .8, sMin = Math.min(...sp) * .9, sMax = Math.max(...sp) * 1.05;
+    const yl = v => H - (v - lMin) / (lMax - lMin) * H, ys = v => H - (v - sMin) / (sMax - sMin) * H * .92;
+    const DRAW = 2400, DL = 600, inv = q => q < .5 ? Math.sqrt(q / 2) : 1 - Math.sqrt(2 * (1 - q)) / 2;
+    const bars = ld.map((v, i) => `<rect class="lbar" x="${(i * bw + bw * .15).toFixed(1)}" y="${yl(v).toFixed(1)}" width="${(bw * .7).toFixed(1)}" height="${(H - yl(v)).toFixed(1)}" rx="3" fill="#7FC8F8" style="--d:${DL + inv(i / (n - 1)) * DRAW}ms"/>`).join('');
+    const line = sp.map((v, i) => ((i + .5) * bw).toFixed(1) + ',' + ys(v).toFixed(1)).join(' ');
+    const mL = ld.slice(0, -1).reduce((a, b) => a + b, 0) / (n - 1), mS = sp.slice(0, -1).reduce((a, b) => a + b, 0) / (n - 1);
+    const J = a => JSON.stringify(a.map(q => +q.toFixed(2)));
+    return { id: 'load', ms: DL + DRAW + 2200, sayAt: DL + DRAW + 300,
+      say: T(`Conso moyenne ${fmt(L.loadAvg / 1000, 1)} GW, ${sgn(L.loadAvg / 1000 - mL, 1)} GW vs moyenne 30 j. Spot base ${fmt(L.base, 0)} €/MWh, ${sgn(L.base - mS, 0)} € : la demande tire les prix.`,
+        `Average load ${fmt(L.loadAvg / 1000, 1)} GW, ${sgn(L.loadAvg / 1000 - mL, 1)} GW vs the 30-day average. Baseload spot ${fmt(L.base, 0)} €/MWh, ${sgn(L.base - mS, 0)} €: demand drives prices.`),
+      html: `<div class="kick">${T('Consommation France · 30 jours', 'French load · 30 days')}</div>
+      <div class="h">${words(T('La demande et le prix', 'Demand and price'), 150, 100)}</div>
+      <div class="ppa"><div class="ppa-c" style="--c:#7FC8F8;--d:300ms"><div class="ppa-n">${T('Conso', 'Load')}</div><div class="ppa-v"><span data-sync="ldsp" data-syncv='${J(ld)}' data-dec="1">${fmt(ld[0], 1)}</span></div><div class="ppa-u">${T('GW moyen', 'GW average')}</div></div>
+        <div class="ppa-c" style="--c:#FBBF24;--d:500ms"><div class="ppa-n">${T('Spot base', 'Baseload spot')}</div><div class="ppa-v"><span data-sync="ldsp" data-syncv='${J(sp)}' data-dec="0">${fmt(sp[0], 0)}</span></div><div class="ppa-u">€/MWh</div></div></div>
+      <svg viewBox="-10 -20 1020 ${H + 70}" aria-hidden="true">${bars}
+        <polyline class="draw2 sync" data-sync="ldsp" data-dl="${DL}" data-ms="${DRAW}" points="${line}" fill="none" stroke="#FBBF24" stroke-width="6" stroke-linejoin="round"/>
+        <text x="0" y="${H + 46}" fill="#8DA2B8" font-family="JetBrains Mono" font-size="32">${dd(R[0].d)}</text><text x="${W}" y="${H + 46}" text-anchor="end" fill="#8DA2B8" font-family="JetBrains Mono" font-size="32">${dd(L.d)}</text></svg>
+      <div class="lg"><span><i style="background:#7FC8F8"></i>${T('conso, GW', 'load, GW')}</span><span><i style="background:#FBBF24;height:4px;vertical-align:5px"></i>${T('spot base, €/MWh', 'baseload spot, €/MWh')}</span></div>
+      <div class="sub src2">${T('RTE éCO2mix (consommation) et day-ahead (spot), moyennes journalières.', 'RTE éCO2mix (load) and day-ahead (spot), daily averages.')}</div>` };
+  }
+
+  // ── the news of the day: the most important French market item of the last 36 hours (data/news.json, ranked by impact) ──
+  function newsScene(items) {
+    const now = Date.now(), WANT = ['power', 'markets', 'regulation', 'gas', 'nuclear', 'carbon', 'deal', 'build'];
+    const it = (items || []).filter(x => x && x.title && (x.tags || []).includes('fr') && (x.countries || []).includes('FR') && now - Date.parse(x.date) < 36 * 3600e3 && (x.tags || []).some(t => WANT.includes(t)))
+      .sort((a, b) => (b.impact || 0) - (a.impact || 0) || Date.parse(b.date) - Date.parse(a.date))[0];
+    if (!it) return null;
+    const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    const sn = String(it.snippet || '').replace(/\s+/g, ' ').trim(), first = (sn.match(/^.+?[.!?](?=\s|$)/) || [sn])[0];
+    const short = first.split(' ').length > 26 ? first.split(' ').slice(0, 24).join(' ') + '…' : first;
+    const when = new Date(it.date).toLocaleDateString(EN ? 'en-GB' : 'fr-FR', { day: 'numeric', month: 'short', timeZone: 'Europe/Paris' });
+    return { id: 'news', ms: 5200, sayAt: 400 + typedLen(it.title) * CH + 400, say: short || null,
+      html: `<div class="kick">${T('La news du jour', 'News of the day')} · ${esc(it.source)}</div>
+      <div class="h h-sm">${typed(it.title, 300)}</div>
+      <div class="sub src2">${esc(it.source)}, ${when}</div>` };
   }
 
   async function main() {
-    const [D0f, D1f, chain, dg, ev, goCsv, bess, cs, geo, cb, cm, bm, rted] = await Promise.all([
+    const [D0f, D1f, chain, dg, ev, goCsv, bess, cs, geo, cb, cm, bm, rted, news] = await Promise.all([
       get('data/history/daily/' + today + '.json'), get('data/history/daily/' + addDays(today, -1) + '.json'),
       get('data/history/fr_market_calchain.json'), get('data/market_digest.json'), get('data/events.json'), get('data/go_prices.csv'),
-      get('data/history/bess_da.json'), get('data/history/commodities_series.json'), get('data/geo/europe.json'), get('data/crossborder.json'), get('data/commodities.json'), get('data/history/ppa_benchmark.json'), get('data/history/rte/fr_daily.json')]);
+      get('data/history/bess_da.json'), get('data/history/commodities_series.json'), get('data/geo/europe.json'), get('data/crossborder.json'), get('data/commodities.json'), get('data/history/ppa_benchmark.json'), get('data/history/rte/fr_daily.json'), get('data/news.json')]);
     const D0 = D0f && D0f.zones && D0f.zones.FR, D1 = D1f && D1f.zones && D1f.zones.FR;
     const S = [];
     if (D0) { S.push(priceScene(D0, D1)); if (D0.hourly && D0.hourly.length === 96) S.push(profileScene(D0)); }
@@ -544,7 +567,8 @@ svg{width:100%;height:auto;overflow:visible}
     const nu = cm && cm.series && cm.series.fr_nuc_avail && cm.series.fr_nuc_avail.points;
     if (nu && nu.length > 10) S.push(nuclearScene(nu, cm.series.fr_nuc_avail_fc && cm.series.fr_nuc_avail_fc.points));
     // yesterday's production by source under the price (the chart of the mail), then load and carbon intensity
-    const mx = mixScenes(D1f); if (mx) S.push(mx[0]);
+    const rl = rted && rted.rows && rted.rows[rted.rows.length - 1];
+    const mx = mixScenes(D1f, rl && D1f && rl.d === D1f.date ? rl.co2Avg : null); if (mx) S.push(mx[0]);
     if (rted && rted.rows && rted.rows.length > 10) S.push(loadScene(rted.rows));
     // Cal+1: the last two settlements of next year's baseload contract
     const y1 = +today.slice(0, 4) + 1, c = chain && chain.FR && chain.FR.years && chain.FR.years[String(y1)];
@@ -576,6 +600,7 @@ svg{width:100%;height:auto;overflow:visible}
     // an important event dated today or yesterday (checked against its source in data/events.json)
     const e = ev && (ev.items || []).find(x => (x.date === today || x.date === addDays(today, -1)) && (x.importance || 0) >= 2);
     if (e) S.push({ id: 'event', html: eventScene(e) });
+    const nw = newsScene(news && news.items); if (nw) S.push(nw);
     if (dg && dg.context && dg.context.length) S.push(briefScene(dg));
     const only = q.get('s');   // ?s=price,profile: only these scenes (a story of the site)
     if (only) { const want = only.split(','); S.splice(0, S.length, ...S.filter(x => x && want.includes(x.id))); }
@@ -671,7 +696,7 @@ svg{width:100%;height:auto;overflow:visible}
   }
 
   // ── reel 4: yesterday's production hour by hour under the price (data/history/daily/<yesterday>.json) ──
-  function mixScenes(f) {
+  function mixScenes(f, co2d) {
     const F = f && f.zones && f.zones.FR;
     const ok = k => F && Array.isArray(F[k]) && F[k].length === 96;
     if (!ok('hourly') || !ok('nuclear') || !ok('solar')) return null;
@@ -693,7 +718,7 @@ svg{width:100%;height:auto;overflow:visible}
     const pline = price.map((v, i) => x(i) + ',' + yp(v)).join(' ');
     const sol = SER.find(s => s.k === 'solar'), hSol = sol.v.indexOf(Math.max(...sol.v)), hMin = price.indexOf(Math.min(...price)), hMax = price.indexOf(Math.max(...price));
     const SWEEP = 8000;
-    const sweep = { ms: SWEEP + 1500, sayAt: 900, say: T('Production par filière (GW) et spot day-ahead (ligne blanche).', 'Output by source in GW, day-ahead price in white.'), html: `<div class="kick">${T('Hier en France · heure par heure', 'Yesterday in France · hour by hour')}</div>
+    const sweep = { ms: SWEEP + 1500, sayAt: 900, say: T('Production par filière (GW) et spot day-ahead (ligne blanche).' + (co2d ? ` Intensité carbone : ${fmt(co2d, 0)} g CO₂/kWh.` : ''), 'Output by source in GW, day-ahead price in white.'), html: `<div class="kick">${T('Hier en France · heure par heure', 'Yesterday in France · hour by hour')}</div>
       <div class="row" style="align-items:baseline;justify-content:space-between"><div class="clock" id="m-clock">0 h</div><div class="act" id="m-p">–</div></div>
       <svg viewBox="-10 -30 1020 660" aria-hidden="true"><defs><clipPath id="m-clip"><rect id="m-cr" x="-10" y="-30" width="0" height="700"/></clipPath></defs>
         <g clip-path="url(#m-clip)">${areas}<polyline points="${pline}" fill="none" stroke="#fff" stroke-width="7" stroke-linejoin="round"/></g>
