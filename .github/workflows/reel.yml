@@ -17,7 +17,7 @@ concurrency:
 jobs:
   reel:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 35
     steps:
       - name: The slot of the current Paris time? (winter UTC+1 → 07:00 UTC, summer UTC+2 → 06:00 UTC; a late start still runs once)
         id: due
