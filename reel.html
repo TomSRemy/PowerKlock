@@ -182,7 +182,7 @@ svg{width:100%;height:auto;overflow:visible}
 .sr .t{position:relative;height:calc(5*var(--u))}.sr .t::before{content:"";position:absolute;left:50%;top:-20%;bottom:-20%;width:2px;background:var(--muted)}
 .sr .t i{position:absolute;left:50%;top:0;bottom:0;width:0;background:#7FC8F8;border-radius:0 6px 6px 0}.sr .t i.neg{left:auto;right:50%;background:var(--up);border-radius:6px 0 0 6px}
 .scene.on .sr .t i{animation:nucf .8s cubic-bezier(.3,.7,.2,1) calc(var(--d) + .2s) forwards}
-.sr .v{font:800 calc(4.2*var(--u)) var(--mono);text-align:right}
+.sr .v{font:800 calc(4.2*var(--u)) var(--mono);text-align:right;white-space:nowrap}
 .sr.fr .n,.sr.fr .v{color:var(--accent)}.sr.fr .t i{background:var(--accent)}
 .nline{opacity:0}.scene.on .nline{animation:flowin .6s ease 3.4s forwards}.a-late{opacity:0}.scene.on .a-late{animation:flowin .4s ease 3.6s forwards}
 .lbar{transform:scaleY(0);transform-box:fill-box;transform-origin:bottom}.scene.on .lbar{animation:lbar .35s ease var(--d) forwards}
@@ -210,6 +210,12 @@ svg{width:100%;height:auto;overflow:visible}
 .scene.on .wr .t i{animation:nucf .7s cubic-bezier(.3,.7,.2,1) calc(var(--d) + .15s) forwards}
 .wr .how{grid-column:2 / 4;font:600 calc(3*var(--u)) var(--mono);color:var(--muted);margin-top:calc(.6*var(--u))}
 .wr.tot{border-top:2px solid var(--line);padding-top:calc(2.2*var(--u))}.wr.tot .v{font-size:calc(7*var(--u))}
+.wx-l{font:600 calc(3.1*var(--u)) var(--mono);color:#A9BACB;margin:calc(-1*var(--u)) 0 calc(1*var(--u)) calc(24*var(--u));opacity:0}.scene.on .wx-l{animation:rise .45s ease var(--d) forwards}
+.otl{display:flex;flex-direction:column;gap:calc(1.6*var(--u))}
+.ot{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:calc(3*var(--u));align-items:baseline;font:600 calc(4.2*var(--u)) var(--sans);opacity:0;border-left:calc(.8*var(--u)) solid #E6C86E;padding-left:calc(2.4*var(--u))}
+.scene.on .ot{animation:rise .45s ease var(--d) forwards}.ot.f{border-left-color:var(--up)}.ot.f .n{color:var(--up)}
+.ot .mw{font:700 calc(4*var(--u)) var(--mono)}.ot .ret{font:600 calc(3.4*var(--u)) var(--mono);color:var(--muted)}.ot.more{border:0;color:var(--muted);font-size:calc(3.6*var(--u))}
+.cvb{opacity:0}.scene.on .cvb{animation:rise .45s ease var(--d) forwards}
 /* layout of a scene (Instagram safe zones: nothing under the progress bars, the right-hand buttons or the caption):
    title at the top, the visual in the middle taking the room left, the subtitle at the bottom */
 
@@ -218,7 +224,7 @@ svg{width:100%;height:auto;overflow:visible}
   font:700 calc(6*var(--u))/1.28 var(--sans);color:var(--fg);text-wrap:pretty;box-shadow:0 calc(2*var(--u)) calc(6*var(--u)) rgba(0,0,0,.45)}
 
 .sub{color:#A9BACB}
-@media (prefers-reduced-motion: reduce){.scene{transition:none}.draw,.draw2{animation:none;stroke-dashoffset:0}.scene > *,.tile,.brief div,.w,.wb,.endpt,.mk,.ch,.lbar,.wr,.nline,.a-late,.map .ctry,.mlab,.sr,.ppa-c{opacity:1;transform:none;filter:none;animation:none!important}
+@media (prefers-reduced-motion: reduce){.scene{transition:none}.draw,.draw2{animation:none;stroke-dashoffset:0}.scene > *,.tile,.brief div,.w,.wb,.endpt,.mk,.ch,.lbar,.wx-l,.ot,.cvb,.wr,.nline,.a-late,.map .ctry,.mlab,.sr,.ppa-c{opacity:1;transform:none;filter:none;animation:none!important}
   #stage::before{animation:none!important}.g-fill{transform:none;animation:none!important}.g-t{left:var(--p1);animation:none!important}}
 </style>
 </head>
@@ -577,29 +583,121 @@ svg{width:100%;height:auto;overflow:visible}
       <div class="sub src2">${esc(it.source)}, ${when}</div>` };
   }
 
+  // ── tomorrow: the PowerKlock day-ahead forecast hour by hour (data/neg_forecast.json), and how yesterday's forecast did today ──
+  function tomorrowScene(nf, tm, td) {
+    const D = nf.days[tm], P = D && D.price; if (!P || P.length < 20) return null;
+    const n = P.length, avg = P.reduce((a, b) => a + b, 0) / n, iMx = P.indexOf(Math.max(...P)), iMn = P.indexOf(Math.min(...P));
+    const W = 1000, H = 360, pMin = Math.min(...P), lo = pMin < 0 ? pMin * 1.1 : pMin * .8, hi = Math.max(...P) * 1.05, x = i => i / (n - 1) * W, y = v => H - (v - lo) / ((hi - lo) || 1) * H;
+    const pts = P.map((v, i) => x(i).toFixed(1) + ',' + y(v).toFixed(1)).join(' ');
+    const T0 = nf.days[td], fc = T0 && T0.price, ac = T0 && T0.actual;
+    const mean = a => a && a.length ? a.reduce((p, q) => p + q, 0) / a.length : null, err = fc && ac && ac.length >= 20 ? mean(ac) - mean(fc) : null;
+    const neg = D.expected_hours || 0;
+    const J = a => JSON.stringify(a.map(q => +q.toFixed(1)));
+    return { id: 'tomorrow', ms: 600 + 2200 + 2000, sayAt: 600 + 2200 + 300,
+      say: T(`Prévision spot demain : ${fmt(avg, 0)} €/MWh en moyenne, creux ${fmt(P[iMn], 0)} € à ${iMn} h, pointe ${fmt(P[iMx], 0)} € à ${iMx} h${neg >= 0.5 ? `, ${fmt(neg, 0)} h négatives attendues` : ''}.`,
+          `Tomorrow's spot forecast: ${fmt(avg, 0)} €/MWh on average, low ${fmt(P[iMn], 0)} € at ${iMn}:00, peak ${fmt(P[iMx], 0)} € at ${iMx}:00${neg >= 0.5 ? `, ${fmt(neg, 0)} negative hours expected` : ''}.`) +
+        (err != null && Math.abs(err) >= 1 ? T(` Aujourd’hui, le spot est sorti ${fmt(Math.abs(err), 0)} € ${err < 0 ? 'sous' : 'au-dessus de'} notre prévision.`, ` Today the spot came out ${fmt(Math.abs(err), 0)} € ${err < 0 ? 'below' : 'above'} our forecast.`) : ''),
+      html: `<div class="kick">${T('Demain · prévision PowerKlock', 'Tomorrow · PowerKlock forecast')}</div>
+      <div class="h">${words(T('Le spot de demain', 'Tomorrow’s spot'), 150, 100)}</div>
+      <div class="figline"><span class="big" data-sync="tmw" data-syncv='${J(P)}' data-dec="0">${fmt(P[0], 0)}</span> <span class="unit">${T('€/MWh à l’heure', '€/MWh by the hour')}</span></div>
+      <svg viewBox="-10 -20 1020 ${H + 70}" aria-hidden="true">
+        <line x1="0" x2="${W}" y1="${y(avg)}" y2="${y(avg)}" stroke="#8DA2B8" stroke-width="3" stroke-dasharray="10 9"/>
+        <polyline class="draw2 sync" data-sync="tmw" data-dl="600" data-ms="2200" points="${pts}" fill="none" stroke="#FBBF24" stroke-width="6" stroke-linejoin="round"/>
+        ${[0, 6, 12, 18, 23].map(i => `<text x="${x(i)}" y="${H + 50}" text-anchor="middle" fill="#8DA2B8" font-family="JetBrains Mono" font-size="32">${i}&#160;h</text>`).join('')}</svg>
+      <div class="sub src2">${T('Modèle PowerKlock (vent, soleil, conso, nucléaire, gaz), publié avant l’enchère day-ahead de midi. Pointillés : moyenne du jour.', 'PowerKlock model (wind, sun, load, nuclear, gas), published before the noon day-ahead auction. Dashes: daily average.')}</div>` };
+  }
+
+  // ── weather for the 7 days ahead against the normal: wind, sun, temperature (data/weather_outlook.json, ensemble mean) ──
+  function weatherScene(wo, td) {
+    const S = wo && wo.countries && wo.countries.FR && wo.countries.FR.series; if (!S) return null;
+    const next = s => s.days.map((d, i) => [d, s.mean[i], s.normal[i]]).filter(([d, m, nm]) => d >= td && m != null && nm != null).slice(0, 7);
+    const row = (key, n, unit, kind, inv) => { const s = S[key]; if (!s) return null; const r = next(s); if (r.length < 4) return null;
+      const m = r.reduce((a, q) => a + q[1], 0) / r.length, nm = r.reduce((a, q) => a + q[2], 0) / r.length;
+      const d = kind === 'pct' ? (m / nm - 1) * 100 : m - nm;
+      // tone by the effect on prices: more wind or sun lowers them (green), and so does a milder week (less heating); colder raises them (red)
+      const t = Math.abs(d) < (kind === 'pct' ? 5 : 0.5) ? 'flat' : (d > 0) !== !!inv ? 'down' : 'up';
+      return { n, m, nm, d, unit, kind, t }; };
+    const R = [row('wind', T('Vent', 'Wind'), 'GWh/j', 'pct'), row('solar', T('Soleil', 'Sun'), 'GWh/j', 'pct'), row('temp', T('Température', 'Temperature'), '°C', 'abs')].filter(Boolean);
+    if (!R.length) return null;
+    const mx = Math.max(...R.map(r => r.kind === 'pct' ? Math.abs(r.d) / 100 : Math.abs(r.d) / 5), .2);
+    const txt = r => r.kind === 'pct' ? `${sgn(r.d, 0)}\u00a0%` : `${sgn(r.d, 1)}\u00a0°C`;
+    return { id: 'weather', ms: 600 + R.length * 600 + 1800, sayAt: 600 + R.length * 600 + 200,
+      say: T(`7 jours à venir vs normale : ${R.map(r => `${r.n.toLowerCase()} ${txt(r)}`).join(', ')}.`, `Next 7 days vs normal: ${R.map(r => `${r.n.toLowerCase()} ${txt(r)}`).join(', ')}.`),
+      html: `<div class="kick">${T('Météo France · 7 jours', 'French weather · 7 days')}</div>
+      <div class="h">${words(T('La semaine par rapport à la normale', 'The week against the normal'), 150, 100)}</div>
+      <div class="sprk">${R.map((r, i) => `<div class="sr" style="--d:${600 + i * 600}ms"><span class="n">${r.n}</span><span class="t"><i class="${r.d < 0 ? 'neg' : ''}" style="--w:${Math.min(50, (r.kind === 'pct' ? Math.abs(r.d) / 100 : Math.abs(r.d) / 5) / mx * 50).toFixed(1)}%;background:${r.t === 'up' ? 'var(--up)' : r.t === 'down' ? 'var(--down)' : 'var(--muted)'}"></i></span><span class="v" style="color:${r.t === 'up' ? 'var(--up)' : r.t === 'down' ? 'var(--down)' : 'var(--fg)'}">${txt(r)}</span></div>
+        <div class="wx-l" style="--d:${800 + i * 600}ms">${fmt(r.m, r.kind === 'pct' ? 0 : 1)} ${r.unit} ${T('prévu', 'expected')} · ${T('normale', 'normal')} ${fmt(r.nm, r.kind === 'pct' ? 0 : 1)} ${r.unit}</div>`).join('')}</div>
+      <div class="sub src2">${T('Moyenne d’ensemble des prévisions météo, production éolienne et solaire estimée, température pondérée par la population.', 'Ensemble mean of weather forecasts, estimated wind and solar output, population-weighted temperature.')}</div>` };
+  }
+
+  // ── nuclear outages: the reactors offline now and when they come back (ENTSO-E unavailability, data/history/fr_outages.json) ──
+  function outagesScene(o) {
+    const now = Date.now(), last = new Map();
+    (o.events || []).filter(e => e.fuel === 'nuclear').forEach(e => { const k = e.id || (e.unit + e.start); const p = last.get(k); if (!p || (e.rev || 0) >= (p.rev || 0)) last.set(k, e); });
+    const act = [...last.values()].filter(e => Date.parse(e.start) <= now && Date.parse(e.end) > now && (e.unavail || 0) >= 300);
+    const byUnit = new Map(); act.forEach(e => { const p = byUnit.get(e.unit); if (!p || e.unavail > p.unavail) byUnit.set(e.unit, e); });
+    const U = [...byUnit.values()].sort((a, b) => Date.parse(a.end) - Date.parse(b.end));
+    if (!U.length) return null;
+    const tot = U.reduce((a, e) => a + e.unavail, 0) / 1000, forced = U.filter(e => e.type !== 'planned').length;
+    const nm = u => String(u).toLowerCase().replace(/(^|[\s-])(\S)/g, (m, a, b) => a + b.toUpperCase());
+    const dd = iso => new Date(iso).toLocaleDateString(EN ? 'en-GB' : 'fr-FR', { day: 'numeric', month: 'short', timeZone: 'Europe/Paris' });
+    const show = U.slice(0, 7), more = U.length - show.length;
+    return { id: 'outages', ms: 600 + show.length * 350 + 2200, sayAt: 600 + show.length * 350 + 300,
+      say: T(`${U.length} réacteurs à l’arrêt, ${fmt(tot, 1)} GW indisponibles${forced ? `, dont ${forced} en arrêt fortuit` : ''}. Prochain retour : ${nm(U[0].unit)} le ${dd(U[0].end).replace(/\.$/, '')}.`,
+          `${U.length} reactors offline, ${fmt(tot, 1)} GW unavailable${forced ? `, ${forced} of them forced` : ''}. Next return: ${nm(U[0].unit)} on ${dd(U[0].end)}.`),
+      html: `<div class="kick">${T('Nucléaire · arrêts en cours', 'Nuclear · outages now')}</div>
+      <div class="h">${words(T(`${U.length} réacteurs à l’arrêt`, `${U.length} reactors offline`), 150, 100)}</div>
+      <div class="otl">${show.map((e, i) => `<div class="ot${e.type !== 'planned' ? ' f' : ''}" style="--d:${600 + i * 350}ms"><span class="n">${nm(e.unit)}</span><span class="mw">${fmt(e.unavail, 0)} MW</span><span class="ret">${T('retour', 'back')} ${dd(e.end)}</span></div>`).join('')}
+        ${more > 0 ? `<div class="ot more" style="--d:${600 + show.length * 350}ms">${T(`+ ${more} autres`, `+ ${more} more`)}</div>` : ''}</div>
+      <div class="sub src2">${T('Indisponibilités déclarées à ENTSO-E (≥ 300 MW), date de retour annoncée. En rouge : arrêt fortuit.', 'Unavailabilities reported to ENTSO-E (≥ 300 MW), announced return date. In red: forced outage.')}</div>` };
+  }
+
+  // ── the shape of the forward curve: every quoted French baseload product, month to Cal+3 (data/fr_market.json) ──
+  function curveScene(fm) {
+    const C = (fm && fm.forwardCurve || []).filter(r => r.value != null); if (C.length < 4) return null;
+    const MO = EN ? null : { Jan: 'Janv.', Feb: 'Févr.', Mar: 'Mars', Apr: 'Avr.', May: 'Mai', Jun: 'Juin', Jul: 'Juil.', Aug: 'Août', Sep: 'Sept.', Oct: 'Oct.', Nov: 'Nov.', Dec: 'Déc.' };
+    const lab = r => String(r.contract || r.tenor).replace(/^FR\s+/, '').replace(/\s+base$/i, '').replace(/^([A-Z][a-z]{2})(\d\d)$/, (m, a, b) => MO && MO[a] ? MO[a] + ' ' + b : a + ' ' + b).replace(/^Cal(\d\d)(\d\d)$/, 'Cal-$2').replace(/^Sum(\d\d)(\d\d)$/, 'Été $2').replace(/^Win(\d\d)(\d\d)$/, 'Hiver $2');
+    const W = 1000, H = 360, n = C.length, bw = W / n, mx = Math.max(...C.map(r => r.value)) * 1.12, y = v => H - v / mx * H;
+    const bars = C.map((r, i) => `<g class="cvb" style="--d:${600 + i * 180}ms"><rect x="${(i * bw + bw * .14).toFixed(1)}" y="${y(r.value).toFixed(1)}" width="${(bw * .72).toFixed(1)}" height="${(H - y(r.value)).toFixed(1)}" rx="4" fill="${/^Y/.test(r.tenor) ? '#7FC8F8' : /^Q|^S/.test(r.tenor) ? '#5B8DEF' : '#B8C9D9'}"/>
+      <text x="${((i + .5) * bw).toFixed(1)}" y="${(y(r.value) - 12).toFixed(1)}" text-anchor="middle" fill="#E6EDF3" font-family="JetBrains Mono" font-size="26" font-weight="700">${fmt(r.value, 0)}</text>
+      <text x="${((i + .5) * bw).toFixed(1)}" y="${H + 40}" text-anchor="end" fill="#8DA2B8" font-family="JetBrains Mono" font-size="24" transform="rotate(-40 ${((i + .5) * bw).toFixed(1)} ${H + 40})">${lab(r)}</text></g>`).join('');
+    const f = C[0], l = C[n - 1], back = l.value < f.value;
+    return { id: 'curve', ms: 600 + n * 180 + 2000, sayAt: 600 + n * 180 + 300,
+      say: T(`Courbe ${back ? 'en backwardation' : 'en contango'} : ${lab(f)} à ${fmt(f.value, 0)} €/MWh, ${lab(l)} à ${fmt(l.value, 0)} €/MWh.`, `Curve in ${back ? 'backwardation' : 'contango'}: ${lab(f)} at ${fmt(f.value, 0)} €/MWh, ${lab(l)} at ${fmt(l.value, 0)} €/MWh.`),
+      html: `<div class="kick">${T('Marché à terme · France base', 'Forward market · France baseload')}</div>
+      <div class="h">${words(T('La courbe à terme', 'The forward curve'), 150, 100)}</div>
+      <svg viewBox="-10 -40 1020 ${H + 130}" aria-hidden="true">${bars}</svg>
+      <div class="lg"><span><i style="background:#B8C9D9"></i>${T('mois', 'months')}</span><span><i style="background:#5B8DEF"></i>${T('trimestres, saisons', 'quarters, seasons')}</span><span><i style="background:#7FC8F8"></i>${T('années', 'years')}</span></div>
+      <div class="sub src2">${T('Dernières cotations des contrats base France, €/MWh.', 'Latest settlements of French baseload contracts, €/MWh.')}</div>` };
+  }
+
   async function main() {
-    const [D0f, D1f, chain, dg, ev, goCsv, bess, cs, geo, cb, cm, bm, rted, news] = await Promise.all([
+    const [D0f, D1f, chain, dg, ev, goCsv, bess, cs, geo, cb, cm, bm, rted, news, nf, wo, outg, fmk] = await Promise.all([
       get('data/history/daily/' + today + '.json'), get('data/history/daily/' + addDays(today, -1) + '.json'),
       get('data/history/fr_market_calchain.json'), get('data/market_digest.json'), get('data/events.json'), get('data/go_prices.csv'),
-      get('data/history/bess_da.json'), get('data/history/commodities_series.json'), get('data/geo/europe.json'), get('data/crossborder.json'), get('data/commodities.json'), get('data/history/ppa_benchmark.json'), get('data/history/rte/fr_daily.json'), get('data/news.json')]);
+      get('data/history/bess_da.json'), get('data/history/commodities_series.json'), get('data/geo/europe.json'), get('data/crossborder.json'), get('data/commodities.json'), get('data/history/ppa_benchmark.json'), get('data/history/rte/fr_daily.json'), get('data/news.json'), get('data/neg_forecast.json'), get('data/weather_outlook.json'), get('data/history/fr_outages.json'), get('data/fr_market.json')]);
     const D0 = D0f && D0f.zones && D0f.zones.FR, D1 = D1f && D1f.zones && D1f.zones.FR;
     const S = [];
     if (D0) { S.push(priceScene(D0, D1)); if (D0.hourly && D0.hourly.length === 96) S.push(profileScene(D0)); }
+    const tmw = nf && nf.days && tomorrowScene(nf, addDays(today, 1), today); if (tmw) S.push(tmw);
     // the day's one reel holds it all: Europe's ranking (with the gap to the cheapest zone), then forwards, CO₂ and the battery
     if (D0f && D0f.zones && geo && geo.features) S.push(mapScene(geo, D0f.zones, cb));
     else { const es = europeScenes(D0f); if (es) S.push(Object.assign(es[0], { say: es[1].say })); }
     const nu = cm && cm.series && cm.series.fr_nuc_avail && cm.series.fr_nuc_avail.points;
     if (nu && nu.length > 10) S.push(nuclearScene(nu, cm.series.fr_nuc_avail_fc && cm.series.fr_nuc_avail_fc.points));
+    const og = outg && outagesScene(outg); if (og) S.push(og);
     // yesterday's production by source under the price (the chart of the mail), then load and carbon intensity
     const rl = rted && rted.rows && rted.rows[rted.rows.length - 1];
     const mx = mixScenes(D1f, rl && D1f && rl.d === D1f.date ? rl.co2Avg : null); if (mx) S.push(mx[0]);
     if (rted && rted.rows && rted.rows.length > 10) S.push(loadScene(rted.rows));
+    const wx = weatherScene(wo, today); if (wx) S.push(wx);
     // Cal+1: the last two settlements of next year's baseload contract
     const y1 = +today.slice(0, 4) + 1, c = chain && chain.FR && chain.FR.years && chain.FR.years[String(y1)];
     if (c && c.values && c.values.length > 1) {
       const n = c.values.length, k0 = Math.max(0, n - 42);   // about two months of sessions for the curve
       S.push(calScene({ y: y1, v: c.values[n - 1], dv: c.values[n - 1] - c.values[n - 2], d: c.dates[n - 1], d0: c.dates[k0], series: c.values.slice(k0) }));
     }
+    const cv = curveScene(fmk); if (cv) S.push(cv);
     if (bm && bm.days && Object.keys(bm.days).length > 5) S.push(ppaScene(bm));
     const eua = cs && cs.series && cs.series.eua && cs.series.eua.points;
     if (eua && eua.length > 2) S.push(carbonScene(eua, cs.series.eua.contract));
@@ -790,8 +888,6 @@ svg{width:100%;height:auto;overflow:visible}
       c.querySelectorAll('svg,.src,.src2').forEach(n => n.remove());   // source lines are not read in the time
       const nw = (c.textContent.match(/[A-Za-zÀ-ÿ0-9€%][^\s]*/g) || []).length, read = nw * 340 + 2500;
       x.ms = Math.round(Math.max(Math.max(x.ms, x.typeEnd || 0) * TS + 2600, read)); });
-    // Instagram takes reels up to 3 minutes: past 172 s the pauses shrink in proportion (the recording adds a second or two)
-    { const tot = S.reduce((t, x) => t + x.ms, 0), cap = 172000; if (!q.get('s') && tot > cap) S.forEach(x => { x.ms = Math.round(x.ms * cap / tot); }); }
     document.getElementById('bar').innerHTML = S.map(() => '<i><b></b></i>').join('');
     // a scene with more to show than the frame holds shrinks a little (everything is sized in --u) until it fits
     const fit = () => document.querySelectorAll('.scene').forEach(sc => { sc.style.removeProperty('--u');
