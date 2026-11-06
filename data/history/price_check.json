@@ -1,9 +1,9 @@
 {
-"updated": "2026-11-05T12:43:03+00:00",
+"updated": "2026-11-06T12:26:28+00:00",
 "source": "Energy-Charts (Fraunhofer ISE) day-ahead prices",
 "window": [
-"2026-09-05",
-"2026-11-04"
+"2026-09-06",
+"2026-11-05"
 ],
 "tolerance": 0.5,
 "zones": {
@@ -12,203 +12,209 @@
 "differ": 0,
 "days": [],
 "explained": [],
-"checked": "2026-11-05T12:43:03+00:00"
+"checked": "2026-11-06T12:26:28+00:00"
 },
 "DE_LU": {
 "agree": 61,
 "differ": 0,
 "days": [],
 "explained": [],
-"checked": "2026-11-05T12:43:03+00:00"
+"checked": "2026-11-06T12:26:28+00:00"
 },
 "BE": {
 "agree": 61,
 "differ": 0,
 "days": [],
 "explained": [],
-"checked": "2026-11-05T12:43:03+00:00"
+"checked": "2026-11-06T12:26:28+00:00"
 },
 "NL": {
 "agree": 61,
 "differ": 0,
 "days": [],
 "explained": [],
-"checked": "2026-11-05T12:43:03+00:00"
+"checked": "2026-11-06T12:26:28+00:00"
 },
 "ES": {
 "agree": 61,
 "differ": 0,
 "days": [],
 "explained": [],
-"checked": "2026-11-05T12:43:03+00:00"
+"checked": "2026-11-06T12:26:28+00:00"
 },
 "PT": {
 "agree": 61,
 "differ": 0,
 "days": [],
 "explained": [],
-"checked": "2026-11-05T12:43:03+00:00"
+"checked": "2026-11-06T12:26:28+00:00"
 },
 "IT_NORD": {
 "agree": 61,
 "differ": 0,
 "days": [],
 "explained": [],
-"checked": "2026-11-05T12:43:03+00:00"
+"checked": "2026-11-06T12:26:28+00:00"
 },
 "CH": {
-"agree": 60,
+"agree": 61,
 "differ": 0,
 "days": [],
 "explained": [],
-"checked": "2026-11-05T12:43:03+00:00"
+"checked": "2026-11-06T12:26:28+00:00"
 },
 "AT": {
 "agree": 61,
 "differ": 0,
 "days": [],
 "explained": [],
-"checked": "2026-11-05T12:43:03+00:00"
+"checked": "2026-11-06T12:26:28+00:00"
 },
 "PL": {
 "agree": 61,
 "differ": 0,
 "days": [],
 "explained": [],
-"checked": "2026-11-05T12:43:03+00:00"
+"checked": "2026-11-06T12:26:28+00:00"
 },
 "CZ": {
 "agree": 61,
 "differ": 0,
 "days": [],
 "explained": [],
-"checked": "2026-11-05T12:43:03+00:00"
+"checked": "2026-11-06T12:26:28+00:00"
 },
 "DK_W": {
 "agree": 61,
 "differ": 0,
 "days": [],
 "explained": [],
-"checked": "2026-11-05T12:43:03+00:00"
+"checked": "2026-11-06T12:26:28+00:00"
 },
 "DK_E": {
 "agree": 61,
 "differ": 0,
 "days": [],
 "explained": [],
-"checked": "2026-11-05T12:43:03+00:00"
+"checked": "2026-11-06T12:26:28+00:00"
 },
 "HU": {
 "agree": 61,
 "differ": 0,
 "days": [],
 "explained": [],
-"checked": "2026-11-05T12:43:03+00:00"
+"checked": "2026-11-06T12:26:28+00:00"
 },
 "SI": {
 "agree": 61,
 "differ": 0,
 "days": [],
 "explained": [],
-"checked": "2026-11-05T12:43:03+00:00"
+"checked": "2026-11-06T12:26:28+00:00"
 },
 "FI": {
 "agree": 61,
 "differ": 0,
 "days": [],
 "explained": [],
-"checked": "2026-11-05T12:43:03+00:00"
+"checked": "2026-11-06T12:26:28+00:00"
 },
 "BG": {
 "agree": 61,
 "differ": 0,
 "days": [],
 "explained": [],
-"checked": "2026-11-05T12:43:03+00:00"
+"checked": "2026-11-06T12:26:28+00:00"
 },
 "GR": {
 "agree": 61,
 "differ": 0,
 "days": [],
 "explained": [],
-"checked": "2026-11-05T12:43:03+00:00"
+"checked": "2026-11-06T12:26:28+00:00"
 },
 "HR": {
 "agree": 61,
 "differ": 0,
 "days": [],
 "explained": [],
-"checked": "2026-11-05T12:43:03+00:00"
+"checked": "2026-11-06T12:26:28+00:00"
 },
 "RO": {
 "agree": 61,
 "differ": 0,
 "days": [],
 "explained": [],
-"checked": "2026-11-05T12:43:03+00:00"
+"checked": "2026-11-06T12:26:28+00:00"
 },
 "RS": {
 "agree": 61,
 "differ": 0,
 "days": [],
 "explained": [],
-"checked": "2026-11-05T12:43:03+00:00"
+"checked": "2026-11-06T12:26:28+00:00"
 },
 "SK": {
 "agree": 61,
 "differ": 0,
 "days": [],
 "explained": [],
-"checked": "2026-11-05T12:43:03+00:00"
+"checked": "2026-11-06T12:26:28+00:00"
 },
 "ME": {
 "agree": 61,
 "differ": 0,
 "days": [],
 "explained": [],
-"checked": "2026-11-05T12:43:03+00:00"
+"checked": "2026-11-06T12:26:28+00:00"
 },
 "EE": {
 "agree": 61,
 "differ": 0,
 "days": [],
 "explained": [],
-"checked": "2026-11-05T12:43:03+00:00"
+"checked": "2026-11-06T12:26:28+00:00"
 },
 "LT": {
-"agree": 61,
-"differ": 0,
-"days": [],
+"agree": 60,
+"differ": 1,
+"days": [
+{
+"day": "2026-11-05",
+"ours": 109.89,
+"ec": 107.34
+}
+],
 "explained": [],
-"checked": "2026-11-05T12:43:03+00:00"
+"checked": "2026-11-06T12:26:28+00:00"
 },
 "LV": {
 "agree": 61,
 "differ": 0,
 "days": [],
 "explained": [],
-"checked": "2026-11-05T12:43:03+00:00"
+"checked": "2026-11-06T12:26:28+00:00"
 },
 "NO_1": {
 "agree": 61,
 "differ": 0,
 "days": [],
 "explained": [],
-"checked": "2026-11-05T12:43:03+00:00"
+"checked": "2026-11-06T12:26:28+00:00"
 },
 "SE": {
 "agree": 61,
 "differ": 0,
 "days": [],
 "explained": [],
-"checked": "2026-11-05T12:43:03+00:00"
+"checked": "2026-11-06T12:26:28+00:00"
 },
 "IT_SICI": {
 "agree": 61,
 "differ": 0,
 "days": [],
 "explained": [],
-"checked": "2026-11-05T12:43:03+00:00"
+"checked": "2026-11-06T12:26:28+00:00"
 }
 }
 }
