@@ -94,6 +94,7 @@
         <div class="bl-cols"><div class="bl-c" style="height:260px"><canvas id="bl-spot"></canvas></div><div class="bl-c" style="height:260px"><canvas id="bl-neg"></canvas></div></div>
         <div class="bl-mini bl-mini-row">${[[N(sp.avg, 1) + ' €', T('spot moyen', 'average spot')], [N(sp.neg_h, 0) + ' h', T('à prix négatif', 'at a negative price')], [N(sp.high_h, 0) + ' h', T('au-dessus de 100 €/MWh', 'above 100 €/MWh')],
           [N(sp.max_day_avg, 0) + ' €', T('journée la plus chère', 'dearest day') + ' (' + (sp.max_day ? new Date(sp.max_day + 'T12:00:00Z').toLocaleDateString(T('fr-FR', 'en-GB'), { day: 'numeric', month: 'short', timeZone: 'UTC' }) : '–') + ')']].map(([v, l]) => `<div><b>${v}</b>${l}</div>`).join('')}</div></section>
+      <section class="bl-blk" id="bl-spiral"></section>
       <section class="bl-blk"><div class="bl-t"><h2>${T('Nucléaire et renouvelables · facteurs de charge', 'Nuclear and renewables · load factors')}</h2><span class="bl-src">RTE éCO2mix · Energy-Charts · ${T('production ÷ (capacité × heures)', 'output ÷ (capacity × hours)')}</span></div>
         <div class="bl-c" style="height:260px"><canvas id="bl-lf"></canvas></div><p class="bl-foot" id="bl-lf-note" style="margin:6px 0 0"></p></section>
       <div class="bl-cols">
@@ -107,6 +108,8 @@
       <p class="bl-foot">${T('Méthode : sommes des données quotidiennes de RTE (éCO2mix consolidé puis temps réel) et des prix day-ahead ENTSO-E. Vérifié sur 2025 contre le Bilan électrique de RTE : nucléaire ', 'Method: sums of RTE’s daily data (éCO2mix consolidated then real time) and ENTSO-E day-ahead prices. Checked on 2025 against RTE’s Bilan électrique: nuclear ')}${N(D.check_2025.nuclear[0], 1)} TWh (RTE ${N(D.check_2025.nuclear[1], 1)}), ${T('production', 'production')} ${N(D.check_2025.production[0], 1)} (${N(D.check_2025.production[1], 1)}), ${T('solde exportateur', 'net exports')} ${N(D.check_2025.net_export[0], 1)} (${N(D.check_2025.net_export[1], 1)}), spot ${N(D.check_2025.spot[0], 1)} € (${N(D.check_2025.spot[1], 0)}), ${T('heures négatives', 'negative hours')} ${N(D.check_2025.neg_h[0], 0)} (${N(D.check_2025.neg_h[1], 0)}). ${T('La consommation est brute (RTE publie aussi une consommation corrigée de la météo) ; toutes les bioénergies comptent comme bas carbone ; les heures au-dessus de 100 € sont comptées sur les pas publiés (heure, puis quart d’heure depuis octobre 2025), RTE en compte 1 807 en 2025 contre 1 580 ici. Les émissions sont le taux de CO₂ d’éCO2mix appliqué à la production : 10,0 Mt en 2025, RTE publie 10,9 Mt dans son bilan (périmètre plus large).', 'Consumption is raw (RTE also publishes a weather-corrected figure); all bioenergy counts as low-carbon; hours above 100 € are counted on the published steps (hour, then quarter-hour since October 2025), RTE counts 1,807 in 2025 against 1,580 here. Emissions are éCO2mix’s CO₂ rate applied to production: 10.0 Mt in 2025, RTE’s review gives 10.9 Mt (wider scope).')}</p>`;
     host.querySelectorAll('.bl-y').forEach(b => b.addEventListener('click', () => { year = b.dataset.y; render(); }));
     charts(A, B, live, vs);
+    // the spiral of every hourly price since 2019, with the review's year as a filter (js/spiral.js)
+    if (window.PKSpiral) PKSpiral.mount(document.getElementById('bl-spiral'), { year });
     rteCharts();
     residual();
   }

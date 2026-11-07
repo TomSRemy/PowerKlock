@@ -249,7 +249,9 @@ def main():
             const it = el._item, c = el.querySelector('canvas'), ch = c && Chart.getChart(c);
             const txt = el.querySelector('.pkd-body').innerText;
             const html = !c && !el.querySelector('.no-data-msg, .pkd-empty-w, .pkd-loading, .pkd-kpi') && txt.trim().length > 40;
-            return { wid: it.wid, chart: !!ch || html, kpi: !!el.querySelector('.pkd-kpi .pkd-kpi-v:not(.pkd-kpi-na)'),
+            // a widget drawn on its own canvas without Chart.js (js/spiral.js) marks it data-pk-drawn="1" once painted
+            const own = !!el.querySelector('canvas[data-pk-drawn="1"]');
+            return { wid: it.wid, chart: !!ch || html || own, kpi: !!el.querySelector('.pkd-kpi .pkd-kpi-v:not(.pkd-kpi-na)'),
                      msg: (el.querySelector('.no-data-msg, .pkd-empty-w, .pkd-loading') || {}).innerText || '' };
         })""")
         for r in res:
