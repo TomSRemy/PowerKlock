@@ -1,9 +1,9 @@
 {
- "lastUpdate": "2026-11-06T22:11:01.663226+00:00",
+ "lastUpdate": "2026-11-07T13:22:01.031613+00:00",
  "spot": {
-  "value": 258.75,
+  "value": 242.16,
   "unit": "EUR/MWh",
-  "date": "2026-11-06"
+  "date": "2026-11-07"
  },
  "forwardCurve": [
   {
@@ -11,116 +11,116 @@
    "contract": "FR Dec26 base",
    "marketId": 68889,
    "unit": "EUR/MWh",
-   "value": 199.06,
-   "date": "2026-11-05",
-   "varD1Pct": 2.03,
-   "varW1Pct": -2.55
+   "value": 189.57,
+   "date": "2026-11-06",
+   "varD1Pct": -4.77,
+   "varW1Pct": -4.74
   },
   {
    "tenor": "M+2",
    "contract": "FR Jan27 base",
    "marketId": 68890,
    "unit": "EUR/MWh",
-   "value": 209.98,
-   "date": "2026-11-05",
-   "varD1Pct": 1.5,
-   "varW1Pct": -3.36
+   "value": 201.73,
+   "date": "2026-11-06",
+   "varD1Pct": -3.93,
+   "varW1Pct": -6.17
   },
   {
    "tenor": "M+3",
    "contract": "FR Feb27 base",
    "marketId": 68891,
    "unit": "EUR/MWh",
-   "value": 194.3,
-   "date": "2026-11-05",
-   "varD1Pct": 1.53,
-   "varW1Pct": -8
+   "value": 185.55,
+   "date": "2026-11-06",
+   "varD1Pct": -4.5,
+   "varW1Pct": -10.71
   },
   {
    "tenor": "Q+1",
    "contract": "FR Q1 27 base",
    "marketId": 69171,
    "unit": "EUR/MWh",
-   "value": 180.48,
-   "date": "2026-11-05",
-   "varD1Pct": 1.63,
-   "varW1Pct": -8.3
+   "value": 173.3,
+   "date": "2026-11-06",
+   "varD1Pct": -3.98,
+   "varW1Pct": -10.84
   },
   {
    "tenor": "Q+2",
    "contract": "FR Q2 27 base",
    "marketId": 69172,
    "unit": "EUR/MWh",
-   "value": 75.16,
-   "date": "2026-11-05",
-   "varD1Pct": 6.14,
-   "varW1Pct": -7.6
+   "value": 73.45,
+   "date": "2026-11-06",
+   "varD1Pct": -2.28,
+   "varW1Pct": -8.88
   },
   {
    "tenor": "Q+3",
    "contract": "FR Q3 27 base",
    "marketId": 69175,
    "unit": "EUR/MWh",
-   "value": 93.72,
-   "date": "2026-11-05",
-   "varD1Pct": 3,
-   "varW1Pct": -3.63
+   "value": 92.56,
+   "date": "2026-11-06",
+   "varD1Pct": -1.24,
+   "varW1Pct": -3.67
   },
   {
    "tenor": "S+1",
    "contract": "FR Sum2027 base",
    "marketId": 69277,
    "unit": "EUR/MWh",
-   "value": 84.44,
-   "date": "2026-11-05",
-   "varD1Pct": 4.38,
-   "varW1Pct": -5.44
+   "value": 83,
+   "date": "2026-11-06",
+   "varD1Pct": -1.7,
+   "varW1Pct": -6.05
   },
   {
    "tenor": "S+2",
    "contract": "FR Win2027 base",
    "marketId": 69276,
    "unit": "EUR/MWh",
-   "value": 112.72,
-   "date": "2026-11-05",
-   "varD1Pct": 2.4,
-   "varW1Pct": -5.12
+   "value": 111.52,
+   "date": "2026-11-06",
+   "varD1Pct": -1.06,
+   "varW1Pct": -4.61
   },
   {
    "tenor": "Y+1",
    "contract": "FR Cal2027 base",
    "marketId": 69249,
    "unit": "EUR/MWh",
-   "value": 116.02,
-   "date": "2026-11-05",
-   "varD1Pct": 2.68,
-   "varW1Pct": -6.47
+   "value": 113.29,
+   "date": "2026-11-06",
+   "varD1Pct": -2.35,
+   "varW1Pct": -7.6
   },
   {
    "tenor": "Y+2",
    "contract": "FR Cal2028 base",
    "marketId": 69250,
    "unit": "EUR/MWh",
-   "value": 65.23,
-   "date": "2026-11-05",
-   "varD1Pct": 1.08,
-   "varW1Pct": -8.73
+   "value": 64.27,
+   "date": "2026-11-06",
+   "varD1Pct": -1.47,
+   "varW1Pct": -8.04
   },
   {
    "tenor": "Y+3",
    "contract": "FR Cal2029 base",
    "marketId": 69251,
    "unit": "EUR/MWh",
-   "value": 59.13,
-   "date": "2026-11-05",
-   "varD1Pct": -0.03,
-   "varW1Pct": -6.35
+   "value": 59.04,
+   "date": "2026-11-06",
+   "varD1Pct": -0.15,
+   "varW1Pct": -5.51
   }
  ],
- "forwardCurveDate": "2026-11-05",
+ "forwardCurveDate": "2026-11-06",
  "nuclearCapacity": {
   "actualMW": 46692.5,
-  "forecastMW": 49560
+  "forecastMW": 48650
  },
  "nuclearCapacityDate": "2026-11-05",
  "generationMix": {
@@ -137,15 +137,15 @@
   "gas": "<p>European gas prices have come under significant downward pressure in recent sessions, falling by approximately 15% from their late October highs as markets reassess the geopolitical risk premium following the US midterm elections. The Democrats&rsquo; victory in both chambers of Congress could encourage the Trump administration to pursue a diplomatic resolution to the conflict with Iran, rather than further military escalation. However, the market remains highly sensitive to developments, with traders awaiting clearer signals on next steps. Renewed hopes for de-escalation are being countered in the markets by continued security concerns in the Strait of Hormuz, with multiple reports of vessels being struck by mines this week.</p>\n<p>On the fundamentals, several factors continue to provide support to prompt European gas prices. Below average temperatures and forecasts for wind generation across Northwest Europe for the remainder of the week are expected to increase heating demand and gas-fired power generation, tightening the near term supply and demand balance. Reduced Norwegian pipeline deliveries, due to unplanned outages, are adding further pressure to available supply, while European storage levels remain relatively low at approximately 74% full, well below the five year &nbsp;average. The TTF front month contract is pricing at 90.80 &euro;/MWh at open this morning, up 0.70 &euro;/MWh day on day.</p>",
   "power": "<p>European power markets have opened higher today on increasingly tight near term generation fundamentals. The UK Baseload front month contract is currently pricing at 185.00 &pound;/MWh at open this morning, up 3.75 &pound;/MWh day on day. Renewable generation is subdued, with wind output expected to remain well below seasonal norms for the remainder of the week. Although forecasts point to a recovery next week. A colder start to November has also been supportive of prices with an increasing reliance on gas to meet the additional weather related demand. French nuclear availability is beginning to improve as the impact of industrial action eases, removing some of the upward pressure on prices from reduced reactor output. Wider market sentiment remains heavily influenced by developments in the Middle East. Oil prices have edged higher this morning as investors weigh the possibility of renewed military escalation between the US and Iran against a potential diplomatic breakthrough following the US midterm elections. Tanker attacks in the Strait also continue to add support.</p>"
  },
- "marketInsightsDate": "2026-11-06",
+ "marketInsightsDate": "2026-11-07",
  "countries": {
   "FR": {
    "label": "France",
    "currency": "EUR",
    "spot": {
-    "value": 258.75,
+    "value": 242.16,
     "unit": "EUR/MWh",
-    "date": "2026-11-06"
+    "date": "2026-11-07"
    },
    "forwardCurve": [
     {
@@ -153,116 +153,116 @@
      "contract": "FR Dec26 base",
      "marketId": 68889,
      "unit": "EUR/MWh",
-     "value": 199.06,
-     "date": "2026-11-05",
-     "varD1Pct": 2.03,
-     "varW1Pct": -2.55
+     "value": 189.57,
+     "date": "2026-11-06",
+     "varD1Pct": -4.77,
+     "varW1Pct": -4.74
     },
     {
      "tenor": "M+2",
      "contract": "FR Jan27 base",
      "marketId": 68890,
      "unit": "EUR/MWh",
-     "value": 209.98,
-     "date": "2026-11-05",
-     "varD1Pct": 1.5,
-     "varW1Pct": -3.36
+     "value": 201.73,
+     "date": "2026-11-06",
+     "varD1Pct": -3.93,
+     "varW1Pct": -6.17
     },
     {
      "tenor": "M+3",
      "contract": "FR Feb27 base",
      "marketId": 68891,
      "unit": "EUR/MWh",
-     "value": 194.3,
-     "date": "2026-11-05",
-     "varD1Pct": 1.53,
-     "varW1Pct": -8
+     "value": 185.55,
+     "date": "2026-11-06",
+     "varD1Pct": -4.5,
+     "varW1Pct": -10.71
     },
     {
      "tenor": "Q+1",
      "contract": "FR Q1 27 base",
      "marketId": 69171,
      "unit": "EUR/MWh",
-     "value": 180.48,
-     "date": "2026-11-05",
-     "varD1Pct": 1.63,
-     "varW1Pct": -8.3
+     "value": 173.3,
+     "date": "2026-11-06",
+     "varD1Pct": -3.98,
+     "varW1Pct": -10.84
     },
     {
      "tenor": "Q+2",
      "contract": "FR Q2 27 base",
      "marketId": 69172,
      "unit": "EUR/MWh",
-     "value": 75.16,
-     "date": "2026-11-05",
-     "varD1Pct": 6.14,
-     "varW1Pct": -7.6
+     "value": 73.45,
+     "date": "2026-11-06",
+     "varD1Pct": -2.28,
+     "varW1Pct": -8.88
     },
     {
      "tenor": "Q+3",
      "contract": "FR Q3 27 base",
      "marketId": 69175,
      "unit": "EUR/MWh",
-     "value": 93.72,
-     "date": "2026-11-05",
-     "varD1Pct": 3,
-     "varW1Pct": -3.63
+     "value": 92.56,
+     "date": "2026-11-06",
+     "varD1Pct": -1.24,
+     "varW1Pct": -3.67
     },
     {
      "tenor": "S+1",
      "contract": "FR Sum2027 base",
      "marketId": 69277,
      "unit": "EUR/MWh",
-     "value": 84.44,
-     "date": "2026-11-05",
-     "varD1Pct": 4.38,
-     "varW1Pct": -5.44
+     "value": 83,
+     "date": "2026-11-06",
+     "varD1Pct": -1.7,
+     "varW1Pct": -6.05
     },
     {
      "tenor": "S+2",
      "contract": "FR Win2027 base",
      "marketId": 69276,
      "unit": "EUR/MWh",
-     "value": 112.72,
-     "date": "2026-11-05",
-     "varD1Pct": 2.4,
-     "varW1Pct": -5.12
+     "value": 111.52,
+     "date": "2026-11-06",
+     "varD1Pct": -1.06,
+     "varW1Pct": -4.61
     },
     {
      "tenor": "Y+1",
      "contract": "FR Cal2027 base",
      "marketId": 69249,
      "unit": "EUR/MWh",
-     "value": 116.02,
-     "date": "2026-11-05",
-     "varD1Pct": 2.68,
-     "varW1Pct": -6.47
+     "value": 113.29,
+     "date": "2026-11-06",
+     "varD1Pct": -2.35,
+     "varW1Pct": -7.6
     },
     {
      "tenor": "Y+2",
      "contract": "FR Cal2028 base",
      "marketId": 69250,
      "unit": "EUR/MWh",
-     "value": 65.23,
-     "date": "2026-11-05",
-     "varD1Pct": 1.08,
-     "varW1Pct": -8.73
+     "value": 64.27,
+     "date": "2026-11-06",
+     "varD1Pct": -1.47,
+     "varW1Pct": -8.04
     },
     {
      "tenor": "Y+3",
      "contract": "FR Cal2029 base",
      "marketId": 69251,
      "unit": "EUR/MWh",
-     "value": 59.13,
-     "date": "2026-11-05",
-     "varD1Pct": -0.03,
-     "varW1Pct": -6.35
+     "value": 59.04,
+     "date": "2026-11-06",
+     "varD1Pct": -0.15,
+     "varW1Pct": -5.51
     }
    ],
-   "forwardCurveDate": "2026-11-05",
+   "forwardCurveDate": "2026-11-06",
    "nuclearCapacity": {
     "actualMW": 46692.5,
-    "forecastMW": 49560
+    "forecastMW": 48650
    },
    "nuclearCapacityDate": "2026-11-05",
    "generationMix": {
@@ -279,9 +279,9 @@
    "label": "United Kingdom",
    "currency": "GBP",
    "spot": {
-    "value": 215,
+    "value": 208,
     "unit": "GBP/MWh",
-    "date": "2026-11-06"
+    "date": "2026-11-07"
    },
    "forwardCurve": [
     {
@@ -289,113 +289,113 @@
      "contract": "UK Dec26 base",
      "marketId": 82193,
      "unit": "GBP/MWh",
-     "value": 181.34,
-     "date": "2026-11-05",
-     "varD1Pct": 3.14,
-     "varW1Pct": -5.03
+     "value": 174,
+     "date": "2026-11-06",
+     "varD1Pct": -4.05,
+     "varW1Pct": -7.04
     },
     {
      "tenor": "M+2",
      "contract": "UK Jan27 base",
      "marketId": 82194,
      "unit": "GBP/MWh",
-     "value": 191.66,
-     "date": "2026-11-05",
-     "varD1Pct": 2.19,
-     "varW1Pct": -6.99
+     "value": 184.54,
+     "date": "2026-11-06",
+     "varD1Pct": -3.71,
+     "varW1Pct": -8.69
     },
     {
      "tenor": "M+3",
      "contract": "UK Feb27 base",
      "marketId": 82195,
      "unit": "GBP/MWh",
-     "value": 187.05,
-     "date": "2026-11-05",
-     "varD1Pct": 2.19,
-     "varW1Pct": -7.1
+     "value": 179.04,
+     "date": "2026-11-06",
+     "varD1Pct": -4.28,
+     "varW1Pct": -9.55
     },
     {
      "tenor": "Q+1",
      "contract": "UK Q1 27 base",
      "marketId": 189670,
      "unit": "GBP/MWh",
-     "value": 180.2,
-     "date": "2026-11-05",
-     "varD1Pct": 2.18,
-     "varW1Pct": -8.04
+     "value": 172.95,
+     "date": "2026-11-06",
+     "varD1Pct": -4.03,
+     "varW1Pct": -9.88
     },
     {
      "tenor": "Q+2",
      "contract": "UK Q2 27 base",
      "marketId": 189702,
      "unit": "GBP/MWh",
-     "value": 128.44,
-     "date": "2026-11-05",
-     "varD1Pct": 2.37,
-     "varW1Pct": -8.56
+     "value": 126.8,
+     "date": "2026-11-06",
+     "varD1Pct": -1.28,
+     "varW1Pct": -8.28
     },
     {
      "tenor": "Q+3",
      "contract": "UK Q3 27 base",
      "marketId": 189741,
      "unit": "GBP/MWh",
-     "value": 120.22,
-     "date": "2026-11-05",
-     "varD1Pct": 2.84,
-     "varW1Pct": -7.07
+     "value": 119.33,
+     "date": "2026-11-06",
+     "varD1Pct": -0.74,
+     "varW1Pct": -7.34
     },
     {
      "tenor": "S+1",
      "contract": "UK Sum27 base",
      "marketId": 202957,
      "unit": "GBP/MWh",
-     "value": 124.31,
-     "date": "2026-11-05",
-     "varD1Pct": 2.6,
-     "varW1Pct": -7.84
+     "value": 123.05,
+     "date": "2026-11-06",
+     "varD1Pct": -1.02,
+     "varW1Pct": -7.82
     },
     {
      "tenor": "S+2",
      "contract": "UK Win27 base",
      "marketId": 85259,
      "unit": "GBP/MWh",
-     "value": 122.67,
-     "date": "2026-11-05",
-     "varD1Pct": 2.22,
-     "varW1Pct": -8.77
+     "value": 120.97,
+     "date": "2026-11-06",
+     "varD1Pct": -1.39,
+     "varW1Pct": -9.68
     },
     {
      "tenor": "Y+1",
      "contract": "UK Cal 2027 base",
      "marketId": 189470,
      "unit": "GBP/MWh",
-     "value": 137.32,
-     "date": "2026-11-05",
-     "varD1Pct": 2.36,
-     "varW1Pct": -7.83
+     "value": 134.59,
+     "date": "2026-11-06",
+     "varD1Pct": -1.99,
+     "varW1Pct": -8.55
     },
     {
      "tenor": "Y+2",
      "contract": "UK Cal 2028 base",
      "marketId": 189467,
      "unit": "GBP/MWh",
-     "value": 91.29,
-     "date": "2026-11-05",
-     "varD1Pct": 1.24,
-     "varW1Pct": -10.04
+     "value": 89.91,
+     "date": "2026-11-06",
+     "varD1Pct": -1.51,
+     "varW1Pct": -10.8
     },
     {
      "tenor": "Y+3",
      "contract": "UK Cal 2029 base",
      "marketId": 189487,
      "unit": "GBP/MWh",
-     "value": 74.9,
-     "date": "2026-11-05",
-     "varD1Pct": -0.2,
-     "varW1Pct": -7.93
+     "value": 73.51,
+     "date": "2026-11-06",
+     "varD1Pct": -1.86,
+     "varW1Pct": -9.3
     }
    ],
-   "forwardCurveDate": "2026-11-05",
+   "forwardCurveDate": "2026-11-06",
    "nuclearCapacity": null,
    "nuclearCapacityDate": null,
    "generationMix": {
@@ -413,9 +413,9 @@
    "label": "Germany",
    "currency": "EUR",
    "spot": {
-    "value": 259.83,
+    "value": 242.13,
     "unit": "EUR/MWh",
-    "date": "2026-11-06"
+    "date": "2026-11-07"
    },
    "forwardCurve": [
     {
@@ -423,113 +423,113 @@
      "contract": "GE Dec26 base",
      "marketId": 69371,
      "unit": "EUR/MWh",
-     "value": 208.01,
-     "date": "2026-11-05",
-     "varD1Pct": 2.72,
-     "varW1Pct": -3.22
+     "value": 198.72,
+     "date": "2026-11-06",
+     "varD1Pct": -4.47,
+     "varW1Pct": -5.09
     },
     {
      "tenor": "M+2",
      "contract": "GE Jan27 base",
      "marketId": 69372,
      "unit": "EUR/MWh",
-     "value": 219.54,
-     "date": "2026-11-05",
-     "varD1Pct": 1.93,
-     "varW1Pct": -4.82
+     "value": 211.08,
+     "date": "2026-11-06",
+     "varD1Pct": -3.85,
+     "varW1Pct": -6.68
     },
     {
      "tenor": "M+3",
      "contract": "GE Feb27 base",
      "marketId": 69373,
      "unit": "EUR/MWh",
-     "value": 208.56,
-     "date": "2026-11-05",
-     "varD1Pct": 2.17,
-     "varW1Pct": -7.44
+     "value": 199.75,
+     "date": "2026-11-06",
+     "varD1Pct": -4.22,
+     "varW1Pct": -9.55
     },
     {
      "tenor": "Q+1",
      "contract": "GE Q1 27 base",
      "marketId": 70304,
      "unit": "EUR/MWh",
-     "value": 194.67,
-     "date": "2026-11-05",
-     "varD1Pct": 2.43,
-     "varW1Pct": -8.81
+     "value": 186.99,
+     "date": "2026-11-06",
+     "varD1Pct": -3.95,
+     "varW1Pct": -10.64
     },
     {
      "tenor": "Q+2",
      "contract": "GE Q2 27 base",
      "marketId": 70305,
      "unit": "EUR/MWh",
-     "value": 122.44,
-     "date": "2026-11-05",
-     "varD1Pct": 2.23,
-     "varW1Pct": -7.17
+     "value": 119.66,
+     "date": "2026-11-06",
+     "varD1Pct": -2.27,
+     "varW1Pct": -8.17
     },
     {
      "tenor": "Q+3",
      "contract": "GE Q3 27 base",
      "marketId": 70306,
      "unit": "EUR/MWh",
-     "value": 131.82,
-     "date": "2026-11-05",
-     "varD1Pct": 2.04,
-     "varW1Pct": -6.38
+     "value": 129.18,
+     "date": "2026-11-06",
+     "varD1Pct": -2,
+     "varW1Pct": -7.31
     },
     {
      "tenor": "S+1",
      "contract": "GE Sum2027 base",
      "marketId": 70427,
      "unit": "EUR/MWh",
-     "value": 127.13,
-     "date": "2026-11-05",
-     "varD1Pct": 2.13,
-     "varW1Pct": -6.76
+     "value": 124.42,
+     "date": "2026-11-06",
+     "varD1Pct": -2.13,
+     "varW1Pct": -7.73
     },
     {
      "tenor": "S+2",
      "contract": "GE Win2027 base",
      "marketId": 70428,
      "unit": "EUR/MWh",
-     "value": 142.55,
-     "date": "2026-11-05",
-     "varD1Pct": 1.39,
-     "varW1Pct": -7.86
+     "value": 141.55,
+     "date": "2026-11-06",
+     "varD1Pct": -0.7,
+     "varW1Pct": -8.11
     },
     {
      "tenor": "Y+1",
      "contract": "GE Cal2027 base",
      "marketId": 55788,
      "unit": "EUR/MWh",
-     "value": 148.18,
-     "date": "2026-11-05",
-     "varD1Pct": 2.02,
-     "varW1Pct": -7.76
+     "value": 144.71,
+     "date": "2026-11-06",
+     "varD1Pct": -2.34,
+     "varW1Pct": -8.7
     },
     {
      "tenor": "Y+2",
      "contract": "GE Cal2028 base",
      "marketId": 69795,
      "unit": "EUR/MWh",
-     "value": 105.8,
-     "date": "2026-11-05",
-     "varD1Pct": 0.76,
-     "varW1Pct": -9.8
+     "value": 105.04,
+     "date": "2026-11-06",
+     "varD1Pct": -0.72,
+     "varW1Pct": -9.35
     },
     {
      "tenor": "Y+3",
      "contract": "GE Cal2029 base",
      "marketId": 69796,
      "unit": "EUR/MWh",
-     "value": 91.63,
-     "date": "2026-11-05",
-     "varD1Pct": -0.16,
-     "varW1Pct": -7.9
+     "value": 91.21,
+     "date": "2026-11-06",
+     "varD1Pct": -0.46,
+     "varW1Pct": -8.4
     }
    ],
-   "forwardCurveDate": "2026-11-05",
+   "forwardCurveDate": "2026-11-06",
    "nuclearCapacity": null,
    "nuclearCapacityDate": null,
    "generationMix": {
@@ -547,9 +547,9 @@
    "label": "Netherlands",
    "currency": "EUR",
    "spot": {
-    "value": 259.68,
+    "value": 242.27,
     "unit": "EUR/MWh",
-    "date": "2026-11-06"
+    "date": "2026-11-07"
    },
    "forwardCurve": [
     {
@@ -557,113 +557,113 @@
      "contract": "NL Dec26 base",
      "marketId": 73230,
      "unit": "EUR/MWh",
-     "value": 210.97,
-     "date": "2026-11-05",
-     "varD1Pct": 2.63,
-     "varW1Pct": -3.29
+     "value": 201.69,
+     "date": "2026-11-06",
+     "varD1Pct": -4.4,
+     "varW1Pct": -4.4
     },
     {
      "tenor": "M+2",
      "contract": "NL Jan27 base",
      "marketId": 73231,
      "unit": "EUR/MWh",
-     "value": 223.15,
-     "date": "2026-11-05",
-     "varD1Pct": 1.39,
-     "varW1Pct": -4.27
+     "value": 215.26,
+     "date": "2026-11-06",
+     "varD1Pct": -3.54,
+     "varW1Pct": -6.04
     },
     {
      "tenor": "M+3",
      "contract": "NL Feb27 base",
      "marketId": 73232,
      "unit": "EUR/MWh",
-     "value": 209.34,
-     "date": "2026-11-05",
-     "varD1Pct": 2.81,
-     "varW1Pct": -7.06
+     "value": 201.11,
+     "date": "2026-11-06",
+     "varD1Pct": -3.93,
+     "varW1Pct": -9.43
     },
     {
      "tenor": "Q+1",
      "contract": "NL Q1 27 base",
      "marketId": 73473,
      "unit": "EUR/MWh",
-     "value": 194.75,
-     "date": "2026-11-05",
-     "varD1Pct": 2.35,
-     "varW1Pct": -8.81
+     "value": 187.86,
+     "date": "2026-11-06",
+     "varD1Pct": -3.53,
+     "varW1Pct": -10.63
     },
     {
      "tenor": "Q+2",
      "contract": "NL Q2 27 base",
      "marketId": 73474,
      "unit": "EUR/MWh",
-     "value": 121.31,
-     "date": "2026-11-05",
-     "varD1Pct": 2.45,
-     "varW1Pct": -7.88
+     "value": 118.08,
+     "date": "2026-11-06",
+     "varD1Pct": -2.66,
+     "varW1Pct": -9.92
     },
     {
      "tenor": "Q+3",
      "contract": "NL Q3 27 base",
      "marketId": 73475,
      "unit": "EUR/MWh",
-     "value": 129.9,
-     "date": "2026-11-05",
-     "varD1Pct": 2.99,
-     "varW1Pct": -5.25
+     "value": 126.05,
+     "date": "2026-11-06",
+     "varD1Pct": -2.96,
+     "varW1Pct": -8.33
     },
     {
      "tenor": "S+1",
      "contract": "NL Sum2027 base",
      "marketId": 73871,
      "unit": "EUR/MWh",
-     "value": 125.63,
-     "date": "2026-11-05",
-     "varD1Pct": 2.73,
-     "varW1Pct": -6.53
+     "value": 122.09,
+     "date": "2026-11-06",
+     "varD1Pct": -2.82,
+     "varW1Pct": -9.1
     },
     {
      "tenor": "S+2",
      "contract": "NL Win2027 base",
      "marketId": 73872,
      "unit": "EUR/MWh",
-     "value": 142.45,
-     "date": "2026-11-05",
-     "varD1Pct": 1.99,
-     "varW1Pct": -8.26
+     "value": 140.81,
+     "date": "2026-11-06",
+     "varD1Pct": -1.15,
+     "varW1Pct": -10.66
     },
     {
      "tenor": "Y+1",
      "contract": "NL Cal2027 base",
      "marketId": 73882,
      "unit": "EUR/MWh",
-     "value": 147.15,
-     "date": "2026-11-05",
-     "varD1Pct": 2.44,
-     "varW1Pct": -7.74
+     "value": 143.06,
+     "date": "2026-11-06",
+     "varD1Pct": -2.78,
+     "varW1Pct": -10.02
     },
     {
      "tenor": "Y+2",
      "contract": "NL Cal2028 base",
      "marketId": 73883,
      "unit": "EUR/MWh",
-     "value": 103.09,
-     "date": "2026-11-05",
-     "varD1Pct": 0.86,
-     "varW1Pct": -9.89
+     "value": 103.11,
+     "date": "2026-11-06",
+     "varD1Pct": 0.02,
+     "varW1Pct": -10.2
     },
     {
      "tenor": "Y+3",
      "contract": "NL Cal2029 base",
      "marketId": 73884,
      "unit": "EUR/MWh",
-     "value": 91.85,
-     "date": "2026-11-05",
-     "varD1Pct": 1.4,
-     "varW1Pct": -6.87
+     "value": 91,
+     "date": "2026-11-06",
+     "varD1Pct": -0.93,
+     "varW1Pct": -7.91
     }
    ],
-   "forwardCurveDate": "2026-11-05",
+   "forwardCurveDate": "2026-11-06",
    "nuclearCapacity": null,
    "nuclearCapacityDate": null,
    "generationMix": {
