@@ -8,6 +8,7 @@
 //                   (scripts/fetch_fr_imbalance_cost.py → data/history/fr_imbalance_price/)
 //   neg-cost        hours below 0 € and what they cost a solar or wind park
 //   month-review    the last full month in a few written lines
+//   fr-spiral       La Spirale: every hourly French price since 2019 on a 24-hour dial, flat or in relief (js/spiral.js)
 // Texts in both languages (_mT, js/morning.js).
 // ════════════════════════════════════════════════════════════════════
 (function () {
@@ -180,6 +181,11 @@
       host.innerHTML = `<div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">${_mT('Mois', 'Month')}</th><th>${_mT('Heures < 0 €', 'Hours < 0 €')}</th><th>${_mT('Solaire, par MW', 'Solar, per MW')}</th><th>${_mT('Éolien, par MW', 'Wind, per MW')}</th></tr></thead><tbody>` +
         st.map(row).join('') + `</tbody></table></div><div class="fuel-note">${_mT('Production d’1 MW (production nationale RTE ÷ parc installé) pendant les heures sous 0 €, et sa part de la production du mois. Coût = cette production non payée, au prix PPA benchmark du jour', 'Output of 1 MW (RTE national output ÷ installed fleet) in the hours below 0 €, and its share of the month’s output. Cost = that output unpaid, at today’s PPA benchmark')} (${_mT('solaire', 'solar')} ${_mN(price.s, 2)}, ${_mT('éolien', 'wind')} ${_mN(price.w, 2)} €/MWh).</div>`;
     } });
+
+  // ── La Spirale (js/spiral.js), also on Power system › Yearly review ──
+  R({ id: 'fr-spiral', kind: 'html', title: 'The Spiral · every hourly price since 2019', category: 'prices', page: 'bilan', source: 'ENTSO-E day-ahead · PowerKlock', size: { w: 6, h: 8 },
+    desc: 'Every hourly French day-ahead price since 2019 on a 24-hour dial (1 day = 1 turn), or laid flat, in 2D or in relief: the noon hollow of solar, the 2021-22 crisis, filters for negative hours.',
+    async html(host) { if (!window.PKSpiral) { host.innerHTML = '<div class="fuel-note">' + _mT('Spirale indisponible.', 'Spiral not available.') + '</div>'; return; } PKSpiral.mount(host, { widget: true }); } });
 
   // ── the month in a few lines ──
   R({ id: 'month-review', kind: 'html', title: 'The month in review · France', category: 'intel', page: 'morning', size: { w: 12, h: 5 },

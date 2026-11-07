@@ -3702,3 +3702,29 @@ html body .pm-o-l, html body .pkf-t-l, html body .mrn2-tc { white-space: normal;
 /* PPA pricer: the risks the aggregator can leave out of the price */
 .pp-incl { display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
 .pp-incl label { display:inline-flex; gap:4px; align-items:center; cursor:pointer; font-size:13px; text-transform:none; letter-spacing:0; }
+
+/* La Spirale (js/spiral.js) in the yearly review */
+.sp-grid { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 18px; align-items: start; }
+.sp-stage { position: relative; width: 100%; max-width: 640px; aspect-ratio: 1; justify-self: center; }
+.sp-cv, .sp-ov { position: absolute; inset: 0; display: block; }
+.sp-ov { cursor: crosshair; touch-action: pan-y; }
+.sp-g3 { position: absolute; inset: 0; display: none; }
+.sp-g3 canvas { display: block; width: 100% !important; height: 100% !important; cursor: grab; }
+.sp-tip { position: absolute; pointer-events: none; background: var(--bg2); border: 1px solid var(--border); border-left: 3px solid #FFD23F; padding: 7px 11px; font: 500 11px 'JetBrains Mono', monospace; color: var(--text); opacity: 0; white-space: nowrap; z-index: 2; }
+.sp-tip b { display: block; font-size: 16px; } .sp-tip small { display: block; color: var(--tx3); font-size: 10px; margin-top: 2px; }
+.sp-hint { position: absolute; left: 0; right: 0; bottom: 2px; text-align: center; font-size: 10px; color: var(--tx3); pointer-events: none; }
+.sp-side { display: grid; gap: 12px; }
+.sp-k { border-top: 1px solid var(--border); padding-top: 9px; display: grid; gap: 2px; }
+.sp-kl { font-size: 10px; letter-spacing: 1.4px; color: var(--tx3); font-weight: 600; text-transform: uppercase; }
+.sp-kv { font: 700 26px 'JetBrains Mono', monospace; line-height: 1.1; }
+.sp-ks { font-size: 11px; color: var(--tx2); }
+.sp-cy { color: #00B8D4; } html:not([data-theme="light"]) .sp-cy { color: #00E5FF; } .sp-rd { color: #FF3B30; } .sp-am { color: #FFB000; }
+.sp-btns { display: flex; flex-wrap: wrap; gap: 6px; }
+.sp-btns button { font: 600 11px Inter, sans-serif; color: var(--tx2); background: transparent; border: 1px solid var(--border); border-radius: 999px; padding: 6px 11px; cursor: pointer; }
+.sp-btns button.on { color: #0f1419; background: #FFD23F; border-color: #FFD23F; }
+.sp-btns button.sp-alt { border-color: #FFD23F; color: #C99A00; } html:not([data-theme="light"]) .sp-btns button.sp-alt { color: #FFD23F; }
+.sp-leg { display: flex; align-items: center; gap: 8px; font: 500 10px 'JetBrains Mono', monospace; color: var(--tx3); } .sp-leg i { flex: 1; height: 8px; border-radius: 4px; }
+.sp-note { font-size: 10px; margin: 0; }
+.sp-wrap { container-type: inline-size; }
+@container (max-width: 760px) { .sp-grid { grid-template-columns: 1fr; } .sp-side { grid-template-columns: 1fr 1fr 1fr; } .sp-btns, .sp-leg, .sp-note { grid-column: 1 / -1; } .sp-kv { font-size: 18px; } }
+.sp-widget .sp-stage { max-width: 520px; }
