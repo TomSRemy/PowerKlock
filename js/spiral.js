@@ -225,7 +225,7 @@
       ren.domElement.addEventListener('pointerdown', e => { auto = false; pts.set(e.pointerId, [e.clientX, e.clientY]); ren.domElement.setPointerCapture(e.pointerId); });
       ren.domElement.addEventListener('pointermove', e => { if (!pts.has(e.pointerId)) return; const [x0, y0] = pts.get(e.pointerId); pts.set(e.pointerId, [e.clientX, e.clientY]);
         if (pts.size === 2) { const [a, b] = [...pts.values()], dd = Math.hypot(a[0] - b[0], a[1] - b[1]); if (pinch) dist = Math.max(0.8, Math.min(6, dist * pinch / dd)); pinch = dd; return; }
-        az -= (e.clientX - x0) * 0.008; el = Math.max(0.08, Math.min(1.45, el + (e.clientY - y0) * 0.006)); });
+        az -= (e.clientX - x0) * 0.008; el = Math.max(-1.35, Math.min(1.45, el + (e.clientY - y0) * 0.006)); });
       const up = e => { pts.delete(e.pointerId); pinch = 0; }; ren.domElement.addEventListener('pointerup', up); ren.domElement.addEventListener('pointercancel', up);
       ren.domElement.addEventListener('wheel', e => { e.preventDefault(); auto = false; dist = Math.max(0.8, Math.min(6, dist * (1 + Math.sign(e.deltaY) * 0.1))); }, { passive: false });
       function resize() { const b = g3.getBoundingClientRect(); if (!b.width) return; ren.setSize(b.width, b.height); cam.aspect = b.width / b.height; cam.updateProjectionMatrix(); }
@@ -237,7 +237,7 @@
         geo.setDrawRange(0, (show - 1) * A * 6); mesh.scale.y = 0.15 + 0.85 * Math.min(1, u * 1.6); kpis(e);
         recs.forEach(r => { r.line.visible = r.s.visible = show > r.d; });
         if (auto) az = ts / 1000 * 0.12;
-        const dd = dist * (lin ? 1.35 : 1); cam.position.set(Math.sin(az) * Math.cos(el) * dd, Math.sin(el) * dd, Math.cos(az) * Math.cos(el) * dd); cam.lookAt(0, 0.04, 0);
+        const dd = dist * (lin ? 1.35 : 1); cam.position.set(Math.sin(az) * Math.cos(el) * dd, Math.sin(el) * dd, Math.cos(az) * Math.cos(el) * dd); cam.lookAt(0, 0.04, 0); disc.material.opacity = el < 0 ? 0 : 0.06;
         ren.render(scene, cam);
       }
       const R = { layout: recolour, grow: () => { g0 = performance.now(); } };
