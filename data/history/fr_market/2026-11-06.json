@@ -2,16 +2,68 @@
  "date": "2026-11-06",
  "countries": {
   "FR": {
-   "spot": 258.75
+   "spot": 258.75,
+   "forwardCurve": {
+    "M+1": 189.57,
+    "M+2": 201.73,
+    "M+3": 185.55,
+    "Q+1": 173.3,
+    "Q+2": 73.45,
+    "Q+3": 92.56,
+    "S+1": 83,
+    "S+2": 111.52,
+    "Y+1": 113.29,
+    "Y+2": 64.27,
+    "Y+3": 59.04
+   }
   },
   "UK": {
-   "spot": 215
+   "spot": 215,
+   "forwardCurve": {
+    "M+1": 174,
+    "M+2": 184.54,
+    "M+3": 179.04,
+    "Q+1": 172.95,
+    "Q+2": 126.8,
+    "Q+3": 119.33,
+    "S+1": 123.05,
+    "S+2": 120.97,
+    "Y+1": 134.59,
+    "Y+2": 89.91,
+    "Y+3": 73.51
+   }
   },
   "DE": {
-   "spot": 259.83
+   "spot": 259.83,
+   "forwardCurve": {
+    "M+1": 198.72,
+    "M+2": 211.08,
+    "M+3": 199.75,
+    "Q+1": 186.99,
+    "Q+2": 119.66,
+    "Q+3": 129.18,
+    "S+1": 124.42,
+    "S+2": 141.55,
+    "Y+1": 144.71,
+    "Y+2": 105.04,
+    "Y+3": 91.21
+   }
   },
   "NL": {
-   "spot": 259.68
+   "spot": 259.68,
+   "forwardCurve": {
+    "M+1": 201.69,
+    "M+2": 215.26,
+    "M+3": 201.11,
+    "Q+1": 187.86,
+    "Q+2": 118.08,
+    "Q+3": 126.05,
+    "S+1": 122.09,
+    "S+2": 140.81,
+    "Y+1": 143.06,
+    "Y+2": 103.11,
+    "Y+3": 91
+   }
   }
  },
  "marketInsightsHtml": "<p>La disponibilité nucléaire française commence à s’améliorer à mesure que l’impact des actions revendicatives s’atténue, supprimant une partie de la pression à la hausse sur les prix due à la réduction de la production des réacteurs.</p>",
