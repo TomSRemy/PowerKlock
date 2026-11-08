@@ -492,6 +492,7 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
           <div class="hist-section-body open" id="hs-body-prfwd-read">
             <div class="pk-gf-group" id="fr-read-win" style="margin-bottom:10px;display:inline-flex"><button type="button" class="pk-gf-btn" data-w="1D">Day</button><button type="button" class="pk-gf-btn active" data-w="1W">Week</button><button type="button" class="pk-gf-btn" data-w="1M">Month</button></div>
             <div class="fr-read" id="fr-read"></div>
+            <div class="fuel-note cqp-xlink"><span>Why this move?</span> <a href="#markets/drivers" data-route="markets/drivers">What drives the price ›</a></div>
           </div>
         </div>
 
@@ -2306,7 +2307,7 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
       </div><div id="ma-cursor-badges" hidden></div><div style="margin:0 0 12px">
         <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-bottom:8px">Key moments of the window · numbered on the price chart (click = position the crosshair)</div>
         <div id="ma-episodes" class="ma-episodes-top"></div>
-      </div><div id="ma-drivers-strip" class="ma-drivers-strip"></div><div class="ma-layout">
+      </div><div id="ma-drivers-strip" class="ma-drivers-strip"></div><div class="fuel-note cqp-xlink"><span>Why this move?</span> <a href="#markets/drivers" data-route="markets/drivers">What drives the French price ›</a></div><div class="ma-layout">
       <div id="ma-panels-wrap" style="position:relative;transition:opacity .2s;margin-top:12px;min-width:0">
 
         <div class="ma-panel-row">
@@ -3712,6 +3713,49 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
       </div>
     </div>
 
+    <!-- WHAT DRIVES THE PRICE (js/drivers.js, data/drivers/frames.json) -->
+    <div class="page" id="page-drivers">
+      <div class="pr-tabs-sticky">
+        <div class="pr-tabs-bar">
+          <div class="pr-breadcrumb"><span class="pr-breadcrumb-parent pk-bc-static">Markets</span><span class="pr-breadcrumb-sep">›</span><span class="pr-breadcrumb-current">What drives the price</span></div>
+          <div class="pr-tabs-separator"></div>
+          <div class="tabs-nav" id="cqp-tabs" role="tablist"><button type="button" class="tab-btn active" role="tab" aria-selected="true" data-v="flux">Flows</button><button type="button" class="tab-btn" role="tab" aria-selected="false" data-v="table">Table</button></div>
+          <div class="pr-tabs-bar-filters">
+            <span class="updated-badge" id="cqp-upd">France</span>
+            <span class="fuel-toolbar-lbl">Period</span>
+            <div class="pk-gf-group" id="cqp-per"><button type="button" class="pk-gf-btn active" data-p="1">1 wk</button><button type="button" class="pk-gf-btn" data-p="4">1 month</button><button type="button" class="pk-gf-btn" data-p="13">3 months</button></div>
+          </div>
+        </div>
+      </div>
+      <div class="hist-section hist-section-strong" id="hs-drivers-0">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-drivers-0')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h5c4 0 4 12 8 12h5"/><path d="M3 18h5c4 0 4-12 8-12h5"/></svg>Reading of the period<span class="pk-hs-meta" id="cqp-meta">spot, M+1, Q+1, Cal+1</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-drivers-0">
+          <p class="cqp-lede" id="cqp-lede"></p>
+          <div class="kpi-strip cqp-kpis" id="cqp-kpis"></div>
+          <div class="chart-container fuel-card cqp-card">
+            <div class="fuel-card-head"><div><div class="table-title" id="cqp-ctitle">Fundamentals → maturities</div><div class="fuel-card-sub" id="cqp-csub">width: weight over one year · colour on arrival: effect over the period · €/MWh</div></div><span class="source-badge">PowerKlock</span></div>
+            <div class="cqp-leg" id="cqp-leg"></div>
+            <div class="cqp-viz" id="cqp-viz"><div class="loading-row" style="padding:14px"><span class="spinner"></span></div></div>
+            <div class="cqp-tl"><button type="button" class="pk-btn-ghost cqp-play" id="cqp-play" aria-label="Replay the weeks" title="Replay the weeks">▶</button><span class="cqp-wk" id="cqp-wk"></span><input type="range" id="cqp-rng" min="0" step="1" value="0" aria-label="Week"></div>
+          </div>
+          <div class="fuel-note">Source: PowerKlock regressions on EEX forwards, ENTSO-E day-ahead prices, RTE éCO2mix, TTF, EUA and API2 closes. Indicative, not a pricing model: the calculation is in the Method section below.</div>
+        </div>
+      </div>
+      <div class="hist-section hist-section-strong collapsed" id="hs-drivers-1">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-drivers-1')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Method<span class="pk-hs-meta">regressions, weights, limits</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-drivers-1">
+          <p class="fuel-note cqp-method">Sensitivities come from one-year linear regressions (Nov 2025 to Nov 2026): daily changes for the forwards, daily levels for the spot. Weight of a fundamental = its importance in the regression × the explained share (R²). Contribution over the period = sensitivity × change of the fundamental, summed week by week. Unexplained covers alignment with Germany, expectations and anything the measured fundamentals miss.</p>
+          <p class="fuel-note cqp-method">Limits: TTF day-ahead stands in for the TTF forwards, which are not stored yet; nuclear availability is known only in the short term, so it has no measurable effect on the forwards. M+1 has been quoted in the warehouse since March 2026 only.</p>
+        </div>
+      </div>
+    </div>
+
     <!-- EUA SPOT -->
     <div class="page" id="page-eua">
       <div class="pr-tabs-sticky">
@@ -4391,6 +4435,7 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
         <div id="mrn-q-negal" hidden></div>
         <section class="mrn2-tiles mrn3-tiles" id="mrn-q-tiles" style="margin:0 0 12px"></section>
         <div class="mrn-3d" data-3d></div>
+        <section class="chart-container fuel-card cqp-today" id="mrn-q-drivers"><div class="loading-row" style="padding:14px"><span class="spinner"></span></div></section>
         <div class="mrn3-qrow" style="grid-template-columns:minmax(0,1fr)">
           <section class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">What moved</div><div class="fuel-card-sub">One line per market; the tiles above carry the prices</div></div><span class="source-badge">PowerKlock</span></div><p class="fuel-note mrn-x">One line per market on why its price moved. Read it with the tiles above: the tile gives the figure, the line gives the reason.</p>
             <ul class="mrn3-lines" id="mrn-q-moved"><li class="fuel-note">Loading…</li></ul></section>
@@ -5434,6 +5479,7 @@ prix     = coût gaz × 1 / (1 + exp(−(a − b × (couverture − 100)))) × (
 <script src="js/chartjs-plugin-annotation.min.js"></script>
 <script src="js/fullscreen.js"></script>
 <script src="js/palette.js"></script>
+<script src="js/pk-chart-system.js"></script>
 <script src="js/commodities.js"></script>
 <script src="js/carbon.js"></script>
 <script src="js/carbon-ghg.js"></script>
@@ -5503,6 +5549,7 @@ prix     = coût gaz × 1 / (1 + exp(−(a − b × (couverture − 100)))) × (
 <script src="js/i18n.js"></script>
 <script src="js/theme.js"></script>
 <script src="js/market-brief.js"></script>
+<script src="js/drivers.js"></script>
 <script src="js/today-widgets.js"></script>
 <script src="js/dash-widgets.js"></script>
 <script src="js/compare.js"></script>

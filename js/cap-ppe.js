@@ -19,9 +19,9 @@
       return y <= 2030 ? +(v0 + (T[2030] - v0) * (y - y0) / (2030 - y0)).toFixed(2) : +(T[2030] + (T[2035] - T[2030]) * (y - 2030) / 5).toFixed(2); });
     const pts = (t) => labels.map(l => [2030, 2035].includes(+l) ? PPE3[t][+l] : null);
     _fuelChart(cid, { type: 'line', data: { labels, datasets: [
-      { label: 'Solar installed', data: labels.map(l => at(S, +l)), borderColor: '#F4C430', borderWidth: 2.4, pointRadius: 2 },
-      { label: 'Solar · path to PPE3', data: path(S, 'solar'), borderColor: '#F4C430', borderDash: [5, 4], borderWidth: 1.4, pointRadius: 0 },
-      { label: 'Solar targets', data: pts('solar'), borderColor: '#F4C430', backgroundColor: '#F4C430', pointStyle: 'rectRot', pointRadius: 7, showLine: false },
+      { label: 'Solar installed', data: labels.map(l => at(S, +l)), borderColor: '#FBBF24', borderWidth: 2.4, pointRadius: 2 },
+      { label: 'Solar · path to PPE3', data: path(S, 'solar'), borderColor: '#FBBF24', borderDash: [5, 4], borderWidth: 1.4, pointRadius: 0 },
+      { label: 'Solar targets', data: pts('solar'), borderColor: '#FBBF24', backgroundColor: '#FBBF24', pointStyle: 'rectRot', pointRadius: 7, showLine: false },
       { label: 'Onshore wind installed', data: labels.map(l => at(W, +l)), borderColor: '#14D3A9', borderWidth: 2.4, pointRadius: 2 },
       { label: 'Wind · path to PPE3', data: path(W, 'wind'), borderColor: '#14D3A9', borderDash: [5, 4], borderWidth: 1.4, pointRadius: 0 },
       { label: 'Wind targets', data: pts('wind'), borderColor: '#14D3A9', backgroundColor: '#14D3A9', pointStyle: 'rectRot', pointRadius: 7, showLine: false }] },

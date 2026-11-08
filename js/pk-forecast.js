@@ -15,7 +15,7 @@
   'use strict';
   const _fT = (fr, en) => (!window.PKI18n || PKI18n.lang !== 'en') ? fr : en;   // French unless the site is in English
   const ZONES = { FR: 'France', DE_LU: 'Germany', BE: 'Belgium', NL: 'Netherlands', ES: 'Spain' };
-  const COL = { solar: '#F4C430', wind: '#14D3A9', load: '#E6EDF3', resid: '#5FA8D3' };
+  const COL = { solar: '#FBBF24', wind: '#14D3A9', load: '#E6EDF3', resid: '#5FA8D3' };
   const KIND = { solar: 'solar', wind: 'wind', load: 'load' };
   let fcP = null;
   const dayP = {};
@@ -247,7 +247,7 @@
           mid.push(g((x.mid || [])[h])); lo.push(g((x.p10 || [])[h])); hi.push(g((x.p90 || [])[h])); tso.push(g((x.tso || [])[h]));
           const a = s && s.days && s.days.indexOf(d) >= 0 && s.actual[tech] ? s.actual[tech].slice(s.days.indexOf(d) * 96 + h * 4, s.days.indexOf(d) * 96 + h * 4 + 4).filter(v => v != null) : [];
           act.push(a.length ? Math.round(a.reduce((u, v) => u + v, 0) / a.length / 10) / 100 : null); } });
-        const col = tech === 'solar' ? '#F4C430' : '#14D3A9';
+        const col = tech === 'solar' ? '#FBBF24' : '#14D3A9';   // = PK_PAL.fuel
         _fuelChart(cid, { type: 'line', data: { labels: lbl, datasets: [
           { label: 'P90', data: hi, borderColor: 'transparent', backgroundColor: tech === 'solar' ? 'rgba(244,196,48,.15)' : 'rgba(20,211,169,.15)', pointRadius: 0, fill: '+1' },
           { label: 'P10', data: lo, borderColor: 'transparent', pointRadius: 0, fill: false },

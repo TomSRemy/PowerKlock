@@ -8,6 +8,7 @@
 //                   (scripts/fetch_fr_imbalance_cost.py → data/history/fr_imbalance_price/)
 //   neg-cost        hours below 0 € and what they cost a solar or wind park
 //   month-review    the last full month in a few written lines
+//   price-drivers   the 4 maturity cards of What drives the price (js/drivers.js)
 //   fr-spiral       La Spirale: every hourly French price since 2019 on a 24-hour dial, flat or in relief (js/spiral.js)
 // Texts in both languages (_mT, js/morning.js).
 // ════════════════════════════════════════════════════════════════════
@@ -70,6 +71,11 @@
         `<span class="mrn3-tx"><span>${_mT('forward', 'forward')} <b>${_mN(L[t].ref, 2)}</b> · PPA ÷ forward <b>${_mN(L[t].ppa / L[t].ref * 100, 0)} %</b></span><span>${all[all.length - 1]}</span></span></div>`;
       host.innerHTML = '<div class="mrn2-tiles" style="grid-template-columns:1fr 1fr">' + cell('solar') + cell('wind') + '</div>';
     } });
+
+  // ── what drives the price: the 4 maturity cards of Markets › What drives the price (js/drivers.js) ──
+  R({ id: 'price-drivers', kind: 'html', title: 'What drives the price · France', category: 'kpi', page: 'drivers', size: { w: 12, h: 3 },
+    desc: 'Spot, M+1, Q+1 and Cal+1 over the last week: price, change and the two fundamentals that moved it most (gas, carbon, wind, demand…), from the PowerKlock regressions.',
+    async html(host) { if (window.PKDrivers) await PKDrivers.tile(host, { head: false }); else host.innerHTML = '<div class="fuel-note">' + _mT('Indisponible.', 'Not available.') + '</div>'; } });
 
   // ── PowerKlock BESS index: forward (day-ahead value over the Cal strip) and realised best market (scripts/bess_optim.py) ──
   R({ id: 'bess-index', title: 'BESS index · France', category: 'prices', page: 'bess', size: { w: 6, h: 5 },

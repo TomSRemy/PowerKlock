@@ -4,12 +4,13 @@
 // individually; the live weekly mail since 2026 quotes Renewable + the
 // combined HWS bucket — see scripts/fetch_go_prices.py.
 const GO_SERIES = {
-  renewable: {l:'GO AIB Renewable', c:'#5FA8D3'},
-  wind:      {l:'GO AIB Wind',      c:'#3FA6B4'},
+  // technology GOs wear their fuel colour (PK_PAL.fuel); the all-renewable product is the reference line
+  renewable: {l:'GO AIB Renewable', c:'#E6EDF3'},
+  wind:      {l:'GO AIB Wind',      c:'#14D3A9'},
   solar:     {l:'GO AIB Solar',     c:'#FBBF24'},
-  hydro:     {l:'GO AIB Hydro',     c:'#14D3A9'},
-  hws:       {l:'GO AIB HWS',       c:'#ED6965'},
-  ireland:   {l:'GO Ireland Wind',  c:'#f472b6'},
+  hydro:     {l:'GO AIB Hydro',     c:'#5CB2F5'},
+  hws:       {l:'GO AIB HWS',       c:'#E879A6'},
+  ireland:   {l:'GO Ireland Wind',  c:'#0B8F7E'},
 };
 // Palette for the "one line per vintage year" chart (chart5 in the Commerg
 // reference workbook — GOs Price Indications).
@@ -512,9 +513,9 @@ function drawGoAuctionTechChart() {
     data: {
       labels,
       datasets: [
-        { type:'bar',  label:'Wind — Volume (MWh)',  data: wind.map(t => t ? t.allocated_mwh : null),  backgroundColor: rgba('#7FC8F8',.45), yAxisID:'vol', order:3 },
+        { type:'bar',  label:'Wind — Volume (MWh)',  data: wind.map(t => t ? t.allocated_mwh : null),  backgroundColor: rgba('#14D3A9',.45), yAxisID:'vol', order:3 },
         { type:'bar',  label:'Solar — Volume (MWh)', data: solar.map(t => t ? t.allocated_mwh : null), backgroundColor: rgba('#FBBF24',.5), yAxisID:'vol', order:4 },
-        { type:'line', label:'Wind — Weighted price (€/GO)',  data: wind.map(t => t ? t.price_eur_mwh : null),  borderColor: '#7FC8F8', borderWidth:2, pointRadius:0, tension:0, yAxisID:'price', order:1 },
+        { type:'line', label:'Wind — Weighted price (€/GO)',  data: wind.map(t => t ? t.price_eur_mwh : null),  borderColor: '#14D3A9', borderWidth:2, pointRadius:0, tension:0, yAxisID:'price', order:1 },
         { type:'line', label:'Solar — Weighted price (€/GO)', data: solar.map(t => t ? t.price_eur_mwh : null), borderColor: '#FBBF24', borderWidth:2, pointRadius:0, tension:0, yAxisID:'price', order:2 },
       ]
     },
