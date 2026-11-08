@@ -2524,8 +2524,8 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
           <div class="pr-breadcrumb"><span class="pr-breadcrumb-parent pk-bc-static">Tools</span><span class="pr-breadcrumb-sep">›</span><span class="pr-breadcrumb-current">PPA pricer</span></div>
           <div class="pr-tabs-bar-filters"><span class="updated-badge">France · pay-as-produced · solar or wind</span><button type="button" class="pk-btn-ghost" id="pp-xlsx" title="All inputs and results in one workbook">⤓ Excel</button></div>
         </div>
-        <div class="pp-resbar" id="pp-resbar" aria-live="polite"></div>
       </div>
+      <div class="pp-main-grid">
       <div class="hist-section hist-section-strong" id="hs-pp-in">
         <div class="hist-section-header open" onclick="toggleStrongSection('hs-pp-in')">
           <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/></svg>Inputs<span class="pk-hs-meta" id="pp-in-sum">Filled from market data · type to override · ↺ back to auto · ⓘ what it means</span></div>
@@ -2595,6 +2595,8 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
           </div>
           <div class="cf-status" id="pp-status" role="status"></div>
         </div>
+      </div>
+      <div class="pp-pin"><div class="pp-resbar" id="pp-resbar" aria-live="polite"></div></div>
       </div>
       <div class="hist-section hist-section-strong" id="hs-pp-sum">
         <div class="hist-section-header open" onclick="toggleStrongSection('hs-pp-sum')">

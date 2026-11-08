@@ -3118,8 +3118,17 @@
   @media (max-width: 1100px) { .pp-k5 { grid-template-columns:repeat(3,minmax(0,1fr)); } .pp-pgrid { grid-template-columns:minmax(0,1fr); } .pp-pgrid .pp-scen-card { grid-column:auto; } }
   @media (max-width: 640px) { .pp-k5 { grid-template-columns:repeat(2,minmax(0,1fr)); } .pp-steps .cf-field > span:first-child { white-space:normal; } }
   /* pricer: result bar, advanced settings, folds */
+  /* Inputs (left) and the PPA price (right, pinned so it stays in view while the inputs are filled in,
+     below the sticky breadcrumb bar) on wide screens; one column, answer last, on narrow ones. */
+  #page-ppapricer .pp-main-grid { display:grid; grid-template-columns:1fr 280px; gap:16px; align-items:start; }
+  #page-ppapricer .pp-main-grid > #hs-pp-in { grid-column:1; }
+  .pp-pin { grid-column:2; position:sticky; top:74px; }
+  @media (max-width:1000px) { #page-ppapricer .pp-main-grid { grid-template-columns:1fr; } .pp-pin { grid-column:1; position:static; } }
+
   .pp-resbar { display:flex; flex-wrap:wrap; align-items:center; gap:6px 8px; margin-top:8px; padding:8px 12px; background:var(--bg2); border:1px solid var(--border); border-radius:8px; font-size:12px; color:var(--text3); }
   .pp-resbar:empty { display:none; }
+  .pp-pin .pp-resbar { flex-direction:column; align-items:stretch; margin-top:0; }
+  .pp-pin .pp-rb, .pp-pin .pp-resbar .rel { width:100%; box-sizing:border-box; justify-content:space-between; margin-left:0; }
   .pp-resbar .lbl { font:700 10px 'Outfit',sans-serif; letter-spacing:.08em; text-transform:uppercase; color:var(--text3); margin-right:2px; }
   .pp-rb { display:inline-flex; align-items:baseline; gap:6px; padding:4px 10px; border:1px solid var(--border2); border-radius:6px; background:transparent; color:var(--text2); font:500 12px 'Inter',sans-serif; cursor:pointer; }
   .pp-rb b { font:600 14px 'JetBrains Mono',monospace; color:var(--text); }
