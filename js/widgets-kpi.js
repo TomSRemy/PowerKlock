@@ -37,7 +37,7 @@
       if (!z || z.today == null) {   // the day's file is there but this zone not yet: its latest published day
         const j = await fetch(DATA_BASE + 'prices.json').then(r => r.ok ? r.json() : null).catch(() => null);
         z = j && (j.zones || []).find(x => x.code === p.zone);
-        asOf = z && j.updated ? ' · as of ' + new Date(j.updated).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : '';
+        asOf = z && j.updated ? ' · as of ' + new Date(j.updated).toLocaleDateString(window.PKI18n && PKI18n.lang === 'en' ? 'en-GB' : 'fr-FR', { day: 'numeric', month: 'short' }) : '';
       }
       if (!z || z.today == null) return empty(host, 'No price for ' + p.zone + ' yet');
       // Rising power price = red, as on the Prices table.

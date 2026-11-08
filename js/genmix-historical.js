@@ -488,7 +488,7 @@
     // Header dates · "23 Feb 2026 → 25 May 2026"
     const end = _gmhEndDate();
     const start = _gmhStartDate();
-    const fmtD = d => d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    const fmtD = d => d.toLocaleDateString(window.PKI18n && PKI18n.lang === 'en' ? 'en-GB' : 'fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
     const rangeText = `${fmtD(start)} → ${fmtD(end)} · ENTSO-E A75`;
     const setText = (id, txt) => { const el = document.getElementById(id); if (el) el.textContent = txt; };
     setText('gmh-main-header-date', rangeText);
@@ -881,7 +881,7 @@
         fuelTWh[f] += meanMW * 24 * stepDays / 1e6; // block energy (TWh)
         dayMeanMW += meanMW; num += meanMW * (META[f] ? META[f].co2 : 0); den += meanMW;
       });
-      dailySeries.date.push(dt.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: stepDays >= 28 ? '2-digit' : undefined }));
+      dailySeries.date.push(dt.toLocaleDateString(window.PKI18n && PKI18n.lang === 'en' ? 'en-GB' : 'fr-FR', { day: '2-digit', month: 'short', year: stepDays >= 28 ? '2-digit' : undefined }));
       dailySeries.co2.push(den > 0 ? num / den : 0);
       loadSumGW += dayMeanMW / 1000; samples++;
       const dow = (dt.getDay() + 6) % 7; // Mon = 0
@@ -937,7 +937,8 @@
       let sum = 0;
       for (let s = 0; s < N; s++) sum += fuels.reduce((a, f) => a + ((Array.isArray(zd[f]) ? zd[f][s] : 0) || 0), 0);
       load.push(sum / N / 1000); // mean slot total → GW
-      labels.push(monthLbl ? dt.toLocaleDateString('en-GB', { month: 'short', year: '2-digit' }) : dt.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }));
+      const _gmhLoc = window.PKI18n && PKI18n.lang === 'en' ? 'en-GB' : 'fr-FR';
+      labels.push(monthLbl ? dt.toLocaleDateString(_gmhLoc, { month: 'short', year: '2-digit' }) : dt.toLocaleDateString(_gmhLoc, { day: '2-digit', month: 'short' }));
     }
     const stepLbl = stepDays === 1 ? 'day' : (stepDays === 7 ? 'week' : (stepDays >= 28 ? 'month' : stepDays + 'd'));
     return { labels, load, stepLbl };
@@ -1434,7 +1435,7 @@
     // Header date
     const today = new Date();
     const start = new Date(today.getTime()); start.setDate(start.getDate() - (_gmhDays(window._gmhPeriod) || 91));
-    const fmtD = d => d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    const fmtD = d => d.toLocaleDateString(window.PKI18n && PKI18n.lang === 'en' ? 'en-GB' : 'fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
     const hd = document.getElementById('gmhcz-header-date');
     if (hd) hd.textContent = `${fmtD(start)} → ${fmtD(today)}`;
   }

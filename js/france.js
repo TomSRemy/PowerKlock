@@ -80,7 +80,7 @@
 
   function fmtDateLong(isoStr) {
     var p = isoStr.split('-');
-    return new Date(+p[0], +p[1] - 1, +p[2]).toLocaleDateString('en-GB', {
+    return new Date(+p[0], +p[1] - 1, +p[2]).toLocaleDateString(window.PKI18n && PKI18n.lang === 'en' ? 'en-GB' : 'fr-FR', {
       weekday: 'short', day: '2-digit', month: 'short', year: 'numeric'
     });
   }

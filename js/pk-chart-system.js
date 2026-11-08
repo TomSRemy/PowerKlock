@@ -68,7 +68,8 @@
     ['nuclear', /nucl/i],
     ['biomass', /biomass|bio(é|e)nerg|bioenerg/i],
     ['lignite', /lignite/i],
-    ['coal', /charbon|\bcoal\b|houille|hard coal/i],
+    // "coal-derived gas" (ENTSO-E B03) is a gas category, not coal: excluded here so it falls through to ['gas'] below
+    ['coal', /charbon|\bcoal\b(?!-derived)|houille|hard coal/i],
     ['oil', /fioul|p(é|e)trole|\boil\b/i],
     ['gas', /^gaz\b|\bgaz\b|^gas\b|\bgas\b(?!oil)|ccgt|cycle combin/i],
     ['fossil', /fossil/i],
