@@ -68,6 +68,17 @@
     --bd: #1e2d3d;
     --bd2: #243447;
     --dn: #ED6965;
+
+    /* ── Motion (one system for the whole site, see a2/REPORT.md). Four durations, two curves.
+       Data never animates: charts, tables, KPI values and bars change instantly. */
+    --dur-press: 100ms;   /* press feedback (:active) */
+    --dur-fast: 150ms;    /* hover, colour, row highlight, fades, chevrons */
+    --dur-base: 200ms;    /* toast, dropdown, popover: things that enter or leave */
+    --dur-slow: 250ms;    /* mobile drawer, overlay */
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);    /* enter, exit, press */
+    --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1); /* drawer sliding in from an edge */
+    --t-ui: color var(--dur-fast) ease, background-color var(--dur-fast) ease, border-color var(--dur-fast) ease,
+            box-shadow var(--dur-fast) ease, transform var(--dur-press) var(--ease-out);
   }  /* ── Light theme (js/theme.js): the same variables, light values ── */
   html[data-theme="light"] {
     --bg-void: #E9EEF3; --bg: #F3F6F9; --bg2: #FFFFFF; --bg3: #F1F4F8; --bg4: #E6ECF2;
@@ -139,8 +150,8 @@
     position:absolute; top:calc(100% + 6px); left:0;
     background:var(--bg3); border:1px solid var(--border2); border-radius:9px;
     padding:5px 0; min-width:160px; box-shadow:0 10px 32px rgba(0,0,0,0.6);
-    z-index:500; opacity:0; pointer-events:none; transform:translateY(-6px);
-    transition:opacity 0.15s, transform 0.15s;
+    z-index:500; opacity:0; pointer-events:none; transform:translateY(-6px); transform-origin:top left;
+    transition:opacity var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
   }
   .dd-menu.open { opacity:1; pointer-events:all; transform:translateY(0); }
   .dd-row {
@@ -148,7 +159,7 @@
     font-size:11px; font-family:'JetBrains Mono',monospace; color:var(--text2); transition:background 0.1s; user-select:none;
   }
   .dd-row:hover { background:var(--bg4); }
-  .dd-check { width:14px; height:14px; border-radius:3px; border:1px solid var(--border2); display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:9px; font-weight:700; transition:all 0.12s; }
+  .dd-check { width:14px; height:14px; border-radius:3px; border:1px solid var(--border2); display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:9px; font-weight:700; transition: var(--t-ui); }
   .dd-row.on .dd-check { background:var(--accent); border-color:var(--accent); color:#000; }
   .dd-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
   .dd-dot.power { background:var(--cat-power); }
@@ -370,7 +381,7 @@
     scrollbar-width: thin;
     scrollbar-color: var(--border2) transparent;
     position: relative;
-    transition: width 0.2s ease, min-width 0.2s ease;
+    /* no width animation: every frame re-laid out the page and resized each chart (12 on Day-ahead) */
   }
   .sidebar::-webkit-scrollbar { width: 4px; }
   .sidebar::-webkit-scrollbar-track { background: transparent; }
@@ -449,7 +460,7 @@
     cursor: pointer;
     font-size: 13px;
     color: var(--text2);
-    transition: all 0.12s;
+    transition: var(--t-ui);
     position: relative;
     border-left: 2px solid transparent;
   }
@@ -687,7 +698,7 @@
     font-family: 'JetBrains Mono', monospace;
     letter-spacing: 0.04em;
     text-transform: uppercase;
-    transition: all 0.15s;
+    transition: var(--t-ui);
   }
   .pk-btn-primary {
     background: var(--bg2);
@@ -781,8 +792,7 @@
   thead th:hover { color: var(--text2); }
   tbody tr {
     border-bottom: 1px solid rgba(30,45,61,0.5);
-    transition: background 0.1s;
-    cursor: default;
+    cursor: default;   /* no transition: the highlight follows the pointer, no fading trail across rows */
   }
   tbody tr:hover { background: var(--bg3); }
   tbody tr:last-child { border-bottom: none; }
@@ -880,7 +890,7 @@
   .fuel-name { font-size: 11px; color: var(--text3); margin-bottom: 4px; }
   .fuel-value { font-size: 18px; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
   .fuel-bar { height: 3px; border-radius: 2px; margin-top: 8px; background: var(--border); overflow: hidden; }
-  .fuel-bar-fill { height: 100%; border-radius: 2px; transition: width 1s ease; }
+  .fuel-bar-fill { height: 100%; border-radius: 2px; }   /* data: no 1 s width growth */
   .fuel-nuclear { background: #7B4B9C; }
   .fuel-solar { background: #FBBF24; }
   .fuel-wind { background: #C4A57B; }
@@ -915,7 +925,7 @@
     border: 1px solid var(--border2);
     color: var(--text2);
     background: var(--bg2);
-    transition: all 0.15s;
+    transition: var(--t-ui);
   }
   .filter-btn:hover { border-color: var(--accent); color: var(--accent); }
   .filter-btn.active { background: var(--accent-dim); color: var(--accent); border-color: rgba(0,212,168,0.4); }
@@ -931,7 +941,7 @@
     border-radius: 8px;
     padding: 14px 16px;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: var(--t-ui);
     text-decoration: none;
     display: block;
   }
@@ -1017,7 +1027,7 @@
     color: var(--text2);
     background: none;
     font-family: 'JetBrains Mono', monospace;
-    transition: all 0.15s;
+    transition: var(--t-ui);
   }
   .conv-tab.active { background: var(--accent); color: var(--bg); border-color: var(--accent); }
   .conv-input-wrap {
@@ -1128,7 +1138,7 @@
     color: var(--text2);
     background: none;
     font-family: 'JetBrains Mono', monospace;
-    transition: all 0.15s;
+    transition: var(--t-ui);
   }
   .day-tab.active { background: var(--accent); color: var(--bg); border-color: var(--accent); }
   .day-tab:hover:not(.active) { border-color: var(--text3); color: var(--text); }
@@ -1204,24 +1214,25 @@
     display: block !important;
     width: 14px; height: 14px;
     color: var(--tx3);
-    transition: transform 0.2s ease;
+    transition: transform var(--dur-fast) var(--ease-out);
     flex-shrink: 0;
   }
   .hist-section-strong.collapsed .hist-section-chevron {
     transform: rotate(-90deg);
   }
-  /* Body — animated collapse via max-height */
+  /* Body: the height changes at once (a max-height of 8000px took 200 ms to start moving, blanked the section
+     first, and cut anything taller than 8000px); only the opening content fades in */
   .hist-section-strong .hist-section-body {
     padding: 18px;
-    max-height: 8000px;
     overflow: hidden;
-    transition: max-height 0.3s ease, padding 0.2s ease, opacity 0.2s ease;
+    transition: opacity var(--dur-fast) var(--ease-out);
   }
   .hist-section-strong.collapsed .hist-section-body {
     max-height: 0;
     padding-top: 0;
     padding-bottom: 0;
     opacity: 0;
+    transition: none;
   }
   .hist-section-eyebrow {
     display: inline-flex; align-items: center; justify-content: center;
@@ -1357,7 +1368,7 @@
   .hw-btn {
     padding: 4px 11px; border-radius: 4px; font-size: 11px; font-weight: 600;
     cursor: pointer; border: 1px solid var(--bd); color: var(--tx3);
-    background: none; font-family: 'Outfit','Inter',sans-serif; transition: all 0.12s;
+    background: none; font-family: 'Outfit','Inter',sans-serif; transition: var(--t-ui);
     height: 28px; line-height: 1; box-sizing: border-box;
     display: inline-flex; align-items: center; justify-content: center;
   }
@@ -1410,7 +1421,7 @@
     border: 1px solid var(--border2); background: var(--bg3);
     color: var(--text2); font-family: 'Outfit','Inter',sans-serif;
     font-size: 12px; font-weight: 500; cursor: pointer;
-    transition: all 0.15s;
+    transition: var(--t-ui);
   }
   .date-picker-btn:hover { background: var(--bg4); color: var(--text); }
   .date-picker-btn svg { flex-shrink: 0; }
@@ -1432,7 +1443,7 @@
   .dp-nav {
     background: none; border: none; color: var(--text3); cursor: pointer;
     font-size: 18px; line-height: 1; padding: 2px 6px; border-radius: 4px;
-    transition: all 0.12s;
+    transition: var(--t-ui);
   }
   .dp-nav:hover { background: var(--bg4); color: var(--text); }
   .dp-weekdays {
@@ -1450,7 +1461,7 @@
     position: relative; aspect-ratio: 1; display: flex; align-items: center;
     justify-content: center; border-radius: 5px; font-size: 11px;
     font-weight: 500; cursor: pointer; color: var(--text2);
-    transition: all 0.1s; font-family: 'JetBrains Mono', monospace;
+    transition: var(--t-ui); font-family: 'JetBrains Mono', monospace;
   }
   .dp-day:hover:not(.dp-empty):not(.dp-future) { background: var(--bg4); color: var(--text); }
   .dp-day.dp-today { color: var(--accent); font-weight: 700; }
@@ -1468,7 +1479,7 @@
   .dp-today-btn {
     background: none; border: 1px solid var(--border2); border-radius: 5px;
     color: var(--text3); font-size: 11px; padding: 4px 14px; cursor: pointer;
-    font-family: 'Outfit','Inter',sans-serif; transition: all 0.12s;
+    font-family: 'Outfit','Inter',sans-serif; transition: var(--t-ui);
   }
   .dp-today-btn:hover { border-color: var(--accent); color: var(--accent); }
 
@@ -1752,7 +1763,7 @@
     .pkd-cat-nav { flex-direction: row; overflow-x: auto; border-right: none; border-bottom: 1px solid var(--border); }
     .pkd-cat-tab { white-space: nowrap; }
   }
-  #pkd-toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 20px); opacity: 0; pointer-events: none; z-index: 10001; background: var(--bg3); color: var(--text); border: 1px solid var(--border2); border-radius: 8px; padding: 8px 14px; font-size: 12.5px; box-shadow: 0 8px 24px rgba(0,0,0,.5); transition: opacity .18s, transform .18s; }
+  #pkd-toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 20px); opacity: 0; pointer-events: none; z-index: 10001; background: var(--bg3); color: var(--text); border: 1px solid var(--border2); border-radius: 8px; padding: 8px 14px; font-size: 12.5px; box-shadow: 0 8px 24px rgba(0,0,0,.5); transition: opacity var(--dur-base) var(--ease-out), transform var(--dur-base) var(--ease-out); }
   #pkd-toast.show { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
   @media (prefers-reduced-motion: reduce) { #pkd-toast, .pkd-actions { transition: none; } }
 
@@ -1779,7 +1790,7 @@
   #page-france .fr-tab {
     background: none; border: none; border-bottom: 2px solid transparent;
     color: var(--text3); font-family: inherit; font-size: 12px; font-weight: 500;
-    letter-spacing: 0.03em; padding: 9px 16px; cursor: pointer; transition: all 0.12s;
+    letter-spacing: 0.03em; padding: 9px 16px; cursor: pointer; transition: var(--t-ui);
   }
   #page-france .fr-tab:hover { color: var(--text2); }
   #page-france .fr-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
@@ -1912,7 +1923,7 @@
     color: var(--text2);
     font-size: 11px;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: var(--t-ui);
     letter-spacing: 0.02em;
   }
   /* Horizontal grey connector */
@@ -2073,7 +2084,7 @@
     font-family: inherit;
     border-radius: 4px;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: var(--t-ui);
     white-space: nowrap;
   }
   .tab-btn:hover { color: var(--text); background: var(--bg3); }
@@ -2105,7 +2116,7 @@
     cursor: pointer;
     font-family: 'JetBrains Mono', monospace;
     letter-spacing: 0.02em;
-    transition: all 0.15s;
+    transition: var(--t-ui);
     white-space: nowrap;
   }
   .pk-gf-btn:hover { color: var(--tx); background: var(--bg2); }
@@ -2126,7 +2137,7 @@
     border: 1px solid var(--border);
     background: var(--bg3);
     color: var(--tx2);
-    transition: all 0.15s;
+    transition: var(--t-ui);
     white-space: nowrap;
   }
   .pk-gf-zone-btn:hover { color: var(--tx); background: var(--bg2); border-color: var(--border2); }
@@ -2173,7 +2184,7 @@
     border-radius: 8px;
     padding: 18px 20px;
     cursor: pointer;
-    transition: all 0.15s ease;
+    transition: var(--t-ui);
     text-decoration: none;
   }
   .pr-overview-card:hover {
@@ -2484,7 +2495,7 @@
     background: rgba(20, 211, 169, 0.08) !important;
   }
   tr[data-slot] {
-    transition: background 0.1s ease;
+    /* highlight follows the pointer at once */
   }
 
   /* Fullscreen overlay scrollbar styling */
@@ -2557,7 +2568,7 @@
       height: 100vh;
       z-index: 999;
       transform: translateX(-100%);
-      transition: transform 0.25s ease;
+      transition: transform var(--dur-slow) var(--ease-drawer);
       box-shadow: 4px 0 18px rgba(0,0,0,0.5);
       padding-top: 12px;
     }
@@ -3536,7 +3547,7 @@ html:not([lang="fr"]) .pk-fr-only{display:none !important}
 #page-boa .boa-grid2 .boa-card { margin-bottom: 0; }
 #page-boa .boa-div { height: 1px; background: var(--border); margin: 10px 0; }
 #page-boa .boa-pills, #page-boa .boa-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
-#page-boa .boa-pill { padding: 5px 12px; font: 500 12px 'Outfit', 'Inter', sans-serif; border-radius: 999px; border: 1px solid var(--border2); background: transparent; color: var(--text2); cursor: pointer; transition: all .12s; }
+#page-boa .boa-pill { padding: 5px 12px; font: 500 12px 'Outfit', 'Inter', sans-serif; border-radius: 999px; border: 1px solid var(--border2); background: transparent; color: var(--text2); cursor: pointer; transition: var(--t-ui); }
 #page-boa .boa-pill:hover:not(.active) { background: var(--bg3); color: var(--text); }
 #page-boa .boa-pill.active { background: #7FC8F8; border-color: #7FC8F8; color: #0B1A26; font-weight: 600; }
 #page-boa .boa-pill.is-low.active { background: #ED6965; border-color: #ED6965; } #page-boa .boa-pill.is-high.active { background: #FBBF24; border-color: #FBBF24; }
@@ -3829,4 +3840,20 @@ html body .pm-o-l, html body .pkf-t-l, html body .mrn2-tc { white-space: normal;
   .ma-panel-label-col { flex-direction: row; flex-wrap: wrap; align-items: baseline; justify-content: flex-start; gap: 2px 8px; padding: 0 0 2px; border-right: 0; border-bottom: 1px solid var(--bd); }
   .ma-panel-label-col .ma-lbl, .ma-panel-label-col .ma-lbl-sub { text-align: left; }
   .ma-panel-label-col .ma-lbl-sub { margin-top: 0; }
+/* ══ Motion system (proposal a2, 8 Nov. 2026): tokens in :root, rules below ══
+   · Navigation (pages, view tabs, Ctrl K) and data (charts, tables, KPI values) never animate.
+   · Press: scale .97 in --dur-press. Hover and colour: --dur-fast, `ease`. Enter/exit: --dur-base, --ease-out.
+   · Movement on hover only where a mouse hovers: a tap on a phone leaves no lifted card behind. */
+:where(.tab-btn, .pk-gf-btn, .pk-gf-zone-btn, .pk-btn-ghost, .pk-btn-primary, .filter-btn, .day-tab, .conv-tab, .hw-btn, .pk-tool, .dd-btn, .date-picker-btn, .dp-today-btn):active:not(:disabled) { transform: scale(.97); }
+.pk-tool { transition: var(--t-ui); }
+@media (hover: none) {
+  .news-card:hover, .pr-overview-card:hover, a.mrn2-tile:hover, .date-picker-btn:hover { transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  /* fewer and gentler, not zero: colour and opacity stay, movement and loops go */
+  .live-dot, .dd-pulse, .pk-boot-dot, .pk-boot-bar i { animation: none; }   /* loops stop; the spinner keeps turning: it says the page is working */
+  .sidebar, .sidebar-chevron, .hist-section-strong .hist-section-chevron, .pkd-sec-fold svg, .dd-btn svg, #date-picker-chevron { transition: none; }
+  :where(.tab-btn, .pk-gf-btn, .pk-gf-zone-btn, .pk-btn-ghost, .pk-btn-primary, .filter-btn, .day-tab, .conv-tab, .hw-btn, .pk-tool, .dd-btn, .date-picker-btn, .dp-today-btn):active { transform: none; }
+  .news-card:hover, .pr-overview-card:hover, .date-picker-btn:hover { transform: none; }
+  .dd-menu, .dd-menu.open { transform: none; }
 }
