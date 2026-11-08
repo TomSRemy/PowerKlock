@@ -467,7 +467,10 @@ _muReg({
       { label: '30-day mean ' + mean.toFixed(1), data: v.map(() => Math.round(mean * 10) / 10), borderColor: 'rgba(184,201,217,.7)', borderDash: [4, 3], borderWidth: 1.2, pointRadius: 0 },
     ] }, options: _fuelOpts({ scales: { x: Object.assign(_fuelXAxis(), { ticks: { color: C_TX3, font: { size: 10 }, maxTicksLimit: 10, maxRotation: 0 } }), y: _fuelAxis('€/MWh') }, plugins: { legend: _muLegend() } }) }, 'spot-30d-' + (p.zone || 'FR'));
     const last = rows[rows.length - 1];
-    return { sub: `Last session ${_muDay(last[0])}: ${last[1].toFixed(1)} €/MWh · 30-day mean ${mean.toFixed(1)} · range ${Math.min(...v).toFixed(0)} → ${Math.max(...v).toFixed(0)}` };
+    // the day is already in the reader's language (_muDay), so no i18n template can match this line: it is written in both
+    const fr = !window.PKI18n || PKI18n.lang !== 'en', nf = (x, d) => fr ? x.toFixed(d).replace('.', ',') : x.toFixed(d);
+    return { sub: fr ? `Dernière séance ${_muDay(last[0])} : ${nf(last[1], 1)} €/MWh · moyenne 30 jours ${nf(mean, 1)} · plage ${nf(Math.min(...v), 0)} → ${nf(Math.max(...v), 0)}`
+      : `Last session ${_muDay(last[0])}: ${last[1].toFixed(1)} €/MWh · 30-day mean ${mean.toFixed(1)} · range ${Math.min(...v).toFixed(0)} → ${Math.max(...v).toFixed(0)}` };
   },
 });
 

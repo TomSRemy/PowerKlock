@@ -98,5 +98,11 @@
     show(Math.min(Math.max(0, start), present.length - 1));
   }
 
+  // Today's three views (Quick look, Discovery, Expert) are all in the HTML: set them up as soon as the page is parsed, so the
+  // two hidden views never show stacked while the data loads (8 Nov 2026: CLS 1,44 on a phone, 0,36 on a desktop).
+  // The other pages keep the window load, as before (setup() is idempotent).
+  const EARLY = ['morning'];
+  const early = () => EARLY.forEach(k => { if (VIEWS[k]) setup(k, VIEWS[k]); });
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', early); else early();
   window.addEventListener('load', () => setTimeout(() => Object.entries(VIEWS).forEach(([k, d]) => setup(k, d)), 0));
 })();

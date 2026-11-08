@@ -13,7 +13,19 @@
     let w = cv; while (w.parentElement && w.parentElement !== card) w = w.parentElement;
     return w.parentElement === card ? w : null;
   }
-  function align() { for (let k = 0; k < 3; k++) if (!pass(k === 0)) break; }   // a few passes: lining up one row can move the next
+  // KPI cards of one row: a label on two lines ("HEURES NÉGATIVES / FR") pushed its figure 11 px below its neighbours'.
+  // The labels of a row take the height of the tallest, so the figures read on one line (Analysis sections, phones included).
+  function alignKpi() {
+    const page = document.querySelector('.page.active'); if (!page) return;
+    const rows = [];
+    page.querySelectorAll('.hist-section-strong .kpi-card .kpi-label').forEach(l => { if (l.style.minHeight) l.style.minHeight = ''; });
+    page.querySelectorAll('.hist-section-strong .kpi-card').forEach(c => { if (!vis(c)) return; const l = c.querySelector('.kpi-label'); if (!l) return;
+      const top = c.getBoundingClientRect().top;
+      let row = rows.find(g => g.p === c.parentElement && Math.abs(g.top - top) < 4); if (!row) rows.push(row = { p: c.parentElement, top, ls: [] }); row.ls.push(l); });
+    rows.forEach(g => { if (g.ls.length < 2) return; const hs = g.ls.map(l => l.getBoundingClientRect().height), mx = Math.max(...hs);
+      if (mx - Math.min(...hs) > 1) g.ls.forEach(l => { l.style.minHeight = mx + 'px'; }); });
+  }
+  function align() { alignKpi(); for (let k = 0; k < 3; k++) if (!pass(k === 0)) break; }   // a few passes: lining up one row can move the next
   function pass(reset) {
     const page = document.querySelector('.page.active') || document; if (!page) return;
     const cards = [...page.querySelectorAll('.chart-container')].filter(c => vis(c) && !c.parentElement.closest('.chart-container') && !c.closest('.grid-stack, .pk-fs, .mrn-3d'));

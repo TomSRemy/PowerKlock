@@ -172,6 +172,9 @@
     // three circles, three reels: the day, the week, the month (reel.html?r=jour|semaine|mois), each played whole,
     // one progress segment per scene; a tap moves scene by scene
     if (!out.length) return [];
+    return reels();
+  }
+  function reels() {
     return [['jour', T('Aujourd’hui', 'Today'), 'day'], ['semaine', T('La semaine', 'The week'), 'fwd'], ['mois', T('Le mois', 'The month'), 'ahead']]
       .map(([r, name, ic]) => ({ id: 'reel-' + r, name, icon: ic, cards: [{ reel: r, full: true, label: name }] }));
   }
@@ -181,10 +184,20 @@
   const seenAdd = id => { const s = seenGet(); if (!s.includes(id)) s.push(id); try { localStorage.setItem('pk-st-seen', JSON.stringify({ d: today(), s })); } catch (_) {} };
 
   let SEC = [], V = null;
+  // the circles are the same three reels whatever the data: placeholder() draws them before the data arrives, so the page
+  // does not jump down by their height once it is there (layout shift); render() then hides them if there is no data at all
+  function placeholder(host) {
+    host = host || document.getElementById('mrn-stories'); if (!host || host.children.length) return;
+    SEC = reels(); paint(host);
+  }
   function render(k, host) {
     host = host || document.getElementById('mrn-stories'); if (!host) return;
-    SEC = build(k); const seen = seenGet();
+    SEC = build(k);
     if (!SEC.length) { host.hidden = true; return; }
+    paint(host);
+  }
+  function paint(host) {
+    const seen = seenGet();
     host.hidden = false; host.setAttribute('aria-label', T('Stories du matin', 'Morning stories'));
     host.innerHTML = SEC.map((s, i) => `<button type="button" class="pk-st-c" role="listitem" data-i="${i}" aria-label="${T('Voir la story', 'View the story')} ${s.name}${seen.includes(s.id) ? ' (' + T('vue', 'seen') + ')' : ''}">` +
       `<span class="pk-st-ring${seen.includes(s.id) ? ' seen' : ''}"><span class="pk-st-in">${icon(s.icon, 24)}</span></span><span class="pk-st-l">${s.name}</span></button>`).join('');
@@ -380,7 +393,7 @@
   const css = document.createElement('style');
   css.textContent = `
   .pk-stories{display:flex;gap:22px;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none;padding:18px 4px 14px;margin:4px 0 18px;-webkit-overflow-scrolling:touch}
-  .pk-stories::-webkit-scrollbar{display:none}
+  .pk-stories::-webkit-scrollbar{display:none} .pk-stories[hidden]{display:none}
   .pk-st-c{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:8px;width:76px;background:none;border:0;padding:0;cursor:pointer;color:var(--text2,#B8C9D9);font:500 11px/1.25 inherit;text-align:center}
   .pk-st-ring{display:block;width:62px;height:62px;border-radius:50%;padding:3px;box-sizing:border-box;background:conic-gradient(from 210deg,#F4B740,#ED6965,#7FC8F8,#F4B740)}
   .pk-st-ring.seen{background:#2a3644}
@@ -466,5 +479,5 @@
   `;
   document.head.appendChild(css);
 
-  window.PKStories = { render, open, close, _build: build };
+  window.PKStories = { render, placeholder, open, close, _build: build };
 })();

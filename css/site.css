@@ -3259,7 +3259,7 @@
 .pkd-kpi .pkd-kpi-m { font-size: clamp(10px, 5cqi, 13px); }
 .pkd-body .mrn2-tile { container-type: inline-size; }
 .pkd-body .mrn2-tile .mrn2-tv { font-size: clamp(16px, 17cqi, 30px); }
-.pkd-body .mrn2-tile .mrn2-tn, .pkd-body .mrn2-tile .mrn2-tc, .pkd-body .mrn2-tile .mrn3-tx { font-size: clamp(9.5px, 7cqi, 12.5px); }
+.pkd-body .mrn2-tile .mrn2-tn, .pkd-body .mrn2-tile .mrn2-tc, .pkd-body .mrn2-tile .mrn3-tx { font-size: clamp(10px, 7cqi, 12.5px); }
 .pkd-body .mrn2-tiles { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
 .pkd-body .mrn3-lines li, .pkd-body .mrn3-sent, .pkd-body .mrn3-learn, .pkd-body .mrn-movers { font-size: clamp(11px, 2.4cqi, 14px); }
 .pkd-body .fuel-table { font-size: clamp(10px, 1.8cqi, 13px); }
@@ -3728,3 +3728,105 @@ html body .pm-o-l, html body .pkf-t-l, html body .mrn2-tc { white-space: normal;
 .sp-wrap { container-type: inline-size; }
 @container (max-width: 760px) { .sp-grid { grid-template-columns: 1fr; } .sp-side { grid-template-columns: 1fr 1fr 1fr; } .sp-btns, .sp-leg, .sp-note { grid-column: 1 / -1; } .sp-kv { font-size: 18px; } }
 .sp-widget .sp-stage { max-width: 520px; }
+
+/* ══ G1 Analyse pass (8 Nov 2026): section headers, KPI rows, empty states, selects, phone bar ══
+   One block for the 62 views of the Analysis template (Marchés, Renouvelables, Système, État des données). */
+/* Section header: the title never breaks inside ("TABLEAU DES / RENOUVELABLES"); its description follows on the same
+   line or goes under it; the chevron stays on the first line, top right (on a phone it fell on a line of its own). */
+.hist-section-strong .hist-section-header { flex-wrap: nowrap !important; align-items: flex-start; gap: 12px; }
+.hist-section-strong .hist-section-header > .hist-section-title { flex: 1 1 auto; min-width: 0; flex-wrap: wrap; row-gap: 4px; white-space: nowrap; }
+.hist-section-strong .hist-section-header > .hist-section-title > :is(.pk-hs-meta, span[style*="JetBrains"]) { flex: 1 1 240px; min-width: 0; white-space: normal; overflow: visible; }
+.hist-section-strong .hist-section-header > .hist-section-chevron { margin-top: 1px; }
+@media (max-width: 760px) {
+  .hist-section-strong .hist-section-header > .hist-section-title { white-space: normal; }
+  .hist-section-strong .hist-section-header > .hist-section-title > :is(.pk-hs-meta, span[style*="JetBrains"]) { flex-basis: 100%; margin-left: 26px !important; }
+}
+/* KPI: a lone last card on a two-column phone grid takes the whole row instead of leaving a hole */
+@media (max-width: 640px) {
+  .kpi-strip > .kpi-card:last-child:nth-child(odd):not(:first-child),
+  .fuel-kpis > .kpi-card:last-child:nth-child(odd):not(:first-child) { grid-column: 1 / -1; }
+}
+/* Empty chart: the reason is readable (its hint was at 60 % opacity, about 2.9:1) */
+.no-data-msg > span:first-of-type { color: var(--text2); }
+.no-data-msg > span:last-child { opacity: 1 !important; color: var(--text3); font-size: 11px !important; max-width: 46ch; }
+/* Selects inside sections and card heads: the norm of the bar (26 px, 11 px), not the browser's 32 px / 13 px */
+.hist-section-strong select.country-select, .hist-section-strong select.hist-zone-select {
+  height: 26px; padding: 0 24px 0 10px; font-size: 11px; font-weight: 600; border-radius: 5px; }
+/* Phone: when the group bar replaces the breadcrumb, its separator no longer draws a stray line (or an empty row) */
+@media (max-width: 768px) { .page:has(> .pk-gbar:not([hidden])) .pr-tabs-bar > .pr-tabs-separator { display: none; } }
+/* Forwards › Tableau, analyst reading: on a phone the figure, its change and the sentence stack; the change chip and the
+   end of the sentence were cut at the right edge (390 px). Cards at the 8 px radius of the norm (were 10 px). */
+.fr-read-hero > * { min-width: 0; }
+@media (max-width: 600px) { .fr-read-hero { grid-template-columns: minmax(0, 1fr); } .fr-read-chg { justify-self: start; } .fr-read-big { font-size: 26px; } }
+.fr-read-hero, .fr-read-card { border-radius: 8px; }
+/* A table wider than its box scrolls inside it instead of being cut (STYLEGUIDE § 4): Spark & dark spreads lost its last
+   column at 1 440 px, Intensité carbone and the overview anomalies table theirs at 390 px. */
+.table-wrap { overflow-x: auto; }
+.hist-section-strong .hist-section-body > table { display: block; max-width: 100%; overflow-x: auto; }
+.pr-home-anomalies-card { overflow-x: auto; }
+/* 10 px floor (STYLEGUIDE § 5) in the Analysis template: units and times under table headers (« €/MWh », « @15:00 »),
+   the « Dernier » button and phone table headers were drawn at 9 or 9.5 px (113 texts at 1 440 px, 390 at 390 px). */
+:is(.hist-section-strong, .pr-tabs-sticky, .subdomain-panel) :is([style*="font-size:9px"], [style*="font-size: 9px"], [style*="font-size:9.5px"], [style*="font-size: 9.5px"]) { font-size: 10px !important; }
+@media (max-width: 768px) { .hist-section-strong .table-wrap table thead th { font-size: 10px !important; } }
+@media (max-width: 380px) { .hist-section-strong .table-wrap table, .hist-section-strong .table-wrap table thead th { font-size: 10px !important; } }
+/* a header that also carries controls (Intensité carbone: period, zones) keeps wrapping them under the title */
+.hist-section-strong .hist-section-header:has(> :not(.hist-section-title):not(.hist-section-chevron)) { flex-wrap: wrap !important; }
+/* ── G3/G4 design pass (8 Nov 2026, proposal): tool and reference pages ──
+   1. Reference pages (Methodology, About, BESS method, Events) read in one column of 760 px at most (STYLEGUIDE § 1,
+      "Outil / référence"); the column is left-aligned with the sticky bar, as on every other page.
+   2. Notes under charts on tool and reference pages stop at the same 760 px (they ran to 165-180 characters a line).
+   3. Pricer PPA: the ⓘ help marks were 9 px (10 px floor) and the "Offer received" field kept the browser's white box;
+      Production forecast: the "Forecast" chip was 9 px. */
+#page-methodology .meth-wrap, #page-about .meth-wrap { padding: 2px 0 60px; max-width: calc(240px + 32px + 760px); }
+#page-methodology .meth-body, #page-about .meth-body { max-width: 760px; }
+#page-methodology .meth-nav { top: 72px; max-height: calc(100vh - 160px); }
+#page-bess .bess-method, .reg-lead { max-width: 760px; }
+#page-ppapricer .fuel-note, #page-boa .fuel-note, #page-fcst .fuel-note, #page-carbonfoot .fuel-note, #page-replay .fuel-note,
+#page-compare .fuel-note, #page-converter .fuel-note, #page-api .fuel-note, #page-regulation .fuel-note, #page-bess .fuel-note,
+#page-boa .boa-guide { max-width: 760px; }
+.pk-tool-lead { margin: -6px 0 14px; font: 11px/1.6 'JetBrains Mono', monospace; color: var(--text3); }
+.pp-help { min-width: 16px; height: 16px; font-size: 10px; }
+#page-fcst .pkf-chip { font-size: 10px; }   /* was 9 px ("Prévision" chip on Production forecast) */
+.pp-help:hover::after, .pp-help:focus::after { font-family: inherit; font-size: 12px; }
+.pp-offer input { background: var(--bg3); border: 1px solid var(--border2); border-radius: 5px; color: var(--text);
+  font: 12px 'JetBrains Mono', monospace; padding: 6px 8px; min-width: 0; color-scheme: dark; }
+@media (max-width: 700px) {
+  #page-methodology .meth-wrap, #page-about .meth-wrap { padding: 0 0 40px; }
+  #page-methodology .meth-nav { position: static; max-height: 240px; }
+/* Today: nothing below the sticky bar is painted before the page is parsed. Until then the three views showed stacked and the
+   date, first-visit line and story circles arrived one by one, each pushing the tiles down (8 Nov 2026: CLS 1,44 on a phone).
+   morning.js adds .mrn-ready at DOMContentLoaded; the 4 s animation is a fallback if the script never runs. */
+#page-morning:not(.mrn-ready) > :not(.pr-tabs-sticky) { visibility: hidden; animation: mrn-reveal 0s 4s forwards; }
+@keyframes mrn-reveal { to { visibility: visible; } }
+/* the update time arrives with the data: its line is kept from the start */
+.mrn2-upd:empty::before { content: '\a0'; }
+/* tiles and the three day charts arrive with the data: their room is kept while they are empty (heights measured on 8 Nov) */
+#mrn-q-tiles:empty, #mrn-kpis:has(> .loading-row) { min-height: 194px; }
+.mrn-3d:empty, .mrn-3d:has(.mrn-3d-h:empty) { min-height: 371px; }
+@media (max-width: 1250px) { #mrn-q-tiles:empty, #mrn-kpis:has(> .loading-row) { min-height: 340px; } }
+@media (max-width: 1100px) { .mrn-3d:empty, .mrn-3d:has(.mrn-3d-h:empty) { min-height: 918px; } }
+@media (max-width: 560px) { #mrn-q-tiles:empty, #mrn-kpis:has(> .loading-row) { min-height: 600px; } }
+/* Market analysis: the key moments and the driver cards arrive with the data and pushed the four charts down
+   (8 Nov 2026: CLS 0,69 on a phone, 0,17 on a desktop). Their room is kept while they are empty (heights measured on 8 Nov). */
+#ma-episodes:empty { min-height: 120px; }
+#ma-drivers-strip:empty { min-height: 174px; }
+@media (max-width: 1250px) { #ma-episodes:empty { min-height: 138px; } #ma-drivers-strip:empty { min-height: 187px; } }
+@media (max-width: 1100px) { #ma-episodes:empty { min-height: 168px; } #ma-drivers-strip:empty { min-height: 250px; } }
+@media (max-width: 900px) { #ma-episodes:empty { min-height: 250px; } #ma-drivers-strip:empty { min-height: 349px; } }
+@media (max-width: 560px) { #ma-episodes:empty { min-height: 357px; } #ma-drivers-strip:empty { min-height: 466px; } }
+/* its bars wrap on a narrow screen once the pills and the source badge are drawn: their final height is kept from the start */
+@media (max-width: 900px) { #page-analysis .pk-filters-bar { min-height: 59px; } }
+@media (max-width: 560px) { #page-analysis .pr-tabs-bar { min-height: 100px; } #page-analysis .pk-filters-bar { min-height: 92px; } }
+/* Map: its styles come with js/power-map.js, at the end of the page; painted before, the controls showed unstyled and then
+   jumped (8 Nov 2026: CLS 0,41 on a desktop, 0,46 on a phone). The section body waits for them (4 s fallback). */
+#page-map:not(.pm-styled) .hist-section-body { visibility: hidden; animation: mrn-reveal 0s 4s forwards; }
+#pm-kpis:empty { min-height: 97px; }
+@media (max-width: 760px) { #pm-kpis:empty { min-height: 90px; } }
+/* Market analysis on a phone: the 136 px label column and the 118 px of series names left a plot about 60 px wide, with the
+   dates on top of each other (8 Nov 2026, 390 px). Below 600 px the label goes above its chart, which takes the full width. */
+@media (max-width: 600px) {
+  .ma-panel-row { grid-template-columns: minmax(0, 1fr); gap: 2px; margin-bottom: 10px; }
+  .ma-panel-label-col { flex-direction: row; flex-wrap: wrap; align-items: baseline; justify-content: flex-start; gap: 2px 8px; padding: 0 0 2px; border-right: 0; border-bottom: 1px solid var(--bd); }
+  .ma-panel-label-col .ma-lbl, .ma-panel-label-col .ma-lbl-sub { text-align: left; }
+  .ma-panel-label-col .ma-lbl-sub { margin-top: 0; }
+}
