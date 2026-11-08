@@ -14574,6 +14574,14 @@
   Linear.prototype.__pkClampZero = true;
 })();
 
+// Motion system (proposal a2, 8 Nov. 2026): data does not animate. Chart.js grew 13 of 86 charts from zero
+// for 1 s (easeOutQuart) on every draw and every filter change, and eased each hover for 400 ms behind the
+// readout line. A chart that sets its own `animation` (Historical > hour-shape replay) keeps it.
+if (window.Chart && Chart.defaults) {
+  Chart.defaults.animation.duration = 0;
+  if (Chart.defaults.transitions && Chart.defaults.transitions.active) Chart.defaults.transitions.active.animation.duration = 0;
+}
+
 // ════════════════════════════════════════════════════════════════════
 // pkHoverReadout — site-wide hover redesign (concept "B" from the hover
 // mockup): a vertical crosshair follows the cursor, and the values at that
