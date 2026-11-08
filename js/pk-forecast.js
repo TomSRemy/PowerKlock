@@ -131,12 +131,12 @@
   function chip(text) { return '<span class="pkf-chip" title="Forecast, not measured data">' + (text || 'Forecast') + '</span>'; }
   const style = document.createElement('style');
   style.textContent = `
-  .pkf-chip{display:inline-flex;align-items:center;gap:4px;font:600 9px/1 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--acc,#7FC8F8);background:rgba(127,200,248,.12);border:1px dashed rgba(127,200,248,.55);border-radius:4px;padding:3px 6px;white-space:nowrap;vertical-align:middle}
+  .pkf-chip{display:inline-flex;align-items:center;gap:4px;font:600 10px/1 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--acc,#7FC8F8);background:rgba(127,200,248,.12);border:1px dashed rgba(127,200,248,.55);border-radius:4px;padding:3px 6px;white-space:nowrap;vertical-align:middle}
   .pkf-note{font-size:10.5px;color:var(--tx3);margin-top:6px;line-height:1.45}
   .pkf-note b{color:var(--tx2);font-weight:600}
   .pkf-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;height:100%;align-content:start}
   .pkf-t{background:var(--bg2);border:1px dashed rgba(127,200,248,.4);border-radius:8px;padding:8px 10px;min-width:0}
-  .pkf-t-l{font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pkf-t-l{font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .pkf-t-v{font-family:'IBM Plex Mono',monospace;font-size:18px;color:var(--tx);margin-top:3px;white-space:nowrap}
   .pkf-t-v small{font-size:10px;color:var(--tx3)}
   .pkf-t-s{font-size:10px;color:var(--tx3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

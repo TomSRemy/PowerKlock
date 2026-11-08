@@ -976,14 +976,29 @@ function _mrnFirstVisit() {
   const el = document.getElementById('mrn-first'); if (!el) return;
   let seen = false; try { seen = localStorage.getItem('pk-first-done') === '1'; } catch (_) {}
   if (seen || document.body.classList.contains('pk-solo')) { el.hidden = true; return; }
+  if (el.dataset.ready) return;   // drawn once, when the page is parsed (_mrnEarly), not again on each render
+  el.dataset.ready = '1';
   const done = () => { el.hidden = true; try { localStorage.setItem('pk-first-done', '1'); } catch (_) {} };
   el.innerHTML = `<span>${_mT('<b>Première visite ?</b> Commencez par <b>Découverte</b> : le marché du jour en quelques chiffres, chacun expliqué. <b>Coup d’œil</b> résume tout en un écran, <b>Expert</b> montre tout.', '<b>First visit?</b> Start with <b>Discovery</b>: today’s market in a few figures, each one explained. <b>Quick look</b> sums it up on one screen, <b>Expert</b> shows everything.')}</span>` +
     `<button type="button" class="pk-btn-primary" id="mrn-first-go">${_mT('Ouvrir Découverte', 'Open Discovery')}</button><button type="button" class="pkd-ic" id="mrn-first-x" title="${_mT('Masquer', 'Hide')}" aria-label="${_mT('Masquer', 'Hide')}">✕</button>`;
   el.setAttribute('translate', 'no'); el.hidden = false;
   el.querySelector('#mrn-first-x').addEventListener('click', done);
   el.querySelector('#mrn-first-go').addEventListener('click', () => { done(); const b = [...document.querySelectorAll('#page-morning .pk-views .tab-btn')][1]; if (b) b.click(); });
-  document.querySelectorAll('#page-morning .pk-views .tab-btn').forEach(b => b.addEventListener('click', done, { once: true }));
+  // the view tabs may not exist yet: listen on the page
+  const pg = document.getElementById('page-morning');
+  if (pg) pg.addEventListener('click', function f(e) { if (e.target.closest && e.target.closest('.pk-views .tab-btn')) { done(); pg.removeEventListener('click', f); } });
 }
+// what does not wait for the data (title date, first-visit line, story circles) is drawn as soon as the page is parsed:
+// drawn later, each pushed the tiles down while the reader was looking at them (layout shift, 8 Nov 2026)
+function _mrnDate() {
+  const upd = document.getElementById('mrn-date');
+  if (upd) { const t = new Date().toLocaleDateString(_mrnFr() ? 'fr-FR' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/Paris' }); upd.textContent = _mT('Aujourd’hui · ', 'Today · ') + t; }
+}
+function _mrnEarly() {
+  try { _mrnDate(); _mrnFirstVisit(); if (window.PKStories && PKStories.placeholder) PKStories.placeholder(); } catch (e) { console.warn('[morning early]', e); }
+  const pg = document.getElementById('page-morning'); if (pg) pg.classList.add('mrn-ready');   // see site.css « Today: nothing below the bar… »
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _mrnEarly); else _mrnEarly();
 // ── France production (note 177): today by default, back to D-7 with the pills, and after the last published quarter-hour
 //    the forecasts, dashed on a hatched band: wind and solar from PowerKlock's combined forecast (data/fr_fc_combined.json,
 //    hourly, the TSO's day-ahead forecast of data/forecast.json when it is missing), consumption from RTE's D-1 forecast
@@ -1063,8 +1078,7 @@ function _mrnProdCtl() {
 }
 async function renderMorning() {
   _mrnFirstVisit();
-  const upd = document.getElementById('mrn-date');
-  if (upd) { const t = new Date().toLocaleDateString(_mrnFr() ? 'fr-FR' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/Paris' }); upd.textContent = _mT('Aujourd’hui · ', 'Today · ') + t; }
+  _mrnDate();
   const sub = (id, r) => { const e = document.getElementById(id); if (e && r && r.sub) e.textContent = r.sub; };
   _mrnFacts().then(k => {
     MRN.k = k;
@@ -1224,7 +1238,7 @@ document.addEventListener('click', e => {   // a tile opens its chart full size 
   .mrn-kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(178px,1fr));gap:10px;margin-bottom:14px}
   .mrn-kpis .kpi-card{min-width:0}.mrn-kpis .kpi-label,.mrn-kpis .kpi-meta{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .mrn-k{background:var(--bg2);border:1px solid var(--bd);border-radius:9px;padding:10px 12px;min-width:0}
-  .mrn-k-l{font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mrn-k-l{font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .mrn-k-v{font-family:'IBM Plex Mono',monospace;font-size:20px;color:var(--tx);margin-top:4px;white-space:nowrap}
   .mrn-k-v small{font-size:10px;color:var(--tx3)}
   .mrn-k-s{font-size:10px;color:var(--tx3);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -1236,15 +1250,15 @@ document.addEventListener('click', e => {   // a tile opens its chart full size 
   .mrn-neg{color:#7FC8F8}
   .mrn-movers{list-style:none;margin:0;padding:0} .mrn-movers li{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px;padding:5px 0;border-bottom:1px solid var(--bd);font-size:12.5px} .mrn-movers a{color:var(--tx);text-decoration:none;flex:1 1 60%;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .mrn-movers a:hover{color:var(--acc)} .mrn-cat{width:18px;text-align:center;color:var(--tx3)} .mrn-vote{margin:0 0 0 auto}
   .mrn-fwd{width:100%;border-collapse:collapse;font-size:12px}
-  .mrn-fwd th{font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3);font-weight:600;text-align:right;padding:6px 8px;border-bottom:1px solid var(--bd);white-space:nowrap}   /* headers on one line (note 80) */
+  .mrn-fwd th{font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3);font-weight:600;text-align:right;padding:6px 8px;border-bottom:1px solid var(--bd);white-space:nowrap}   /* headers on one line (note 80) */
   .mrn-fwd th:first-child,.mrn-fwd td:first-child{text-align:left}
   .mrn-fwd td{padding:5px 8px;text-align:right;font-family:'IBM Plex Mono',monospace;color:var(--tx2);border-bottom:1px solid rgba(255,255,255,.03);white-space:nowrap}
   .mrn-fwd td:first-child{font-family:inherit;color:var(--tx)} .mrn-fwd td small{color:var(--tx3);font-size:10px}
   .mrn-fwd .mrn-fwd-p{color:var(--tx);font-weight:600}
   .mrn-fwd .mrn-up{color:var(--down,#ED6965)} .mrn-fwd .mrn-down{color:var(--up,#14D3A9)}
-  .mrn-fwd-g td{font-size:9.5px!important;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3)!important;padding-top:10px!important;font-family:inherit!important}
+  .mrn-fwd-g td{font-size:10px!important;letter-spacing:.08em;text-transform:uppercase;color:var(--tx3)!important;padding-top:10px!important;font-family:inherit!important}
   .mrn-fwd-note{font-size:10px;color:var(--tx3);margin-top:8px}
-  @media (max-width:600px){ .mrn-fwd th{white-space:normal} .mrn-fwd td,.mrn-fwd th{padding:5px 4px} .mrn-fwd td small{display:block;font-size:9px} .mrn-fwd{font-size:11px} }
+  @media (max-width:600px){ .mrn-fwd th{white-space:normal} .mrn-fwd td,.mrn-fwd th{padding:5px 4px} .mrn-fwd td small{display:block;font-size:10px} .mrn-fwd{font-size:11px} }
   .mrn2{display:flex;flex-direction:column;gap:14px;margin-bottom:16px}
   .mrn2-hdr{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
   .mrn2-hdr h1{font:600 22px 'Outfit',sans-serif;margin:0;color:var(--text)} .mrn2-hdr h1::first-letter{text-transform:uppercase} .mrn2-upd{font-size:12px;color:var(--text3)}
@@ -1284,7 +1298,7 @@ document.addEventListener('click', e => {   // a tile opens its chart full size 
   .mrn3-day{border:1px solid var(--border);border-radius:10px;padding:8px 12px;display:flex;flex-direction:column;gap:3px;min-width:0}
   .mrn3-day.fcst{border-style:dashed;border-color:rgba(127,200,248,.5)}
   .mrn3-day-h{display:flex;justify-content:space-between;align-items:center;gap:6px;font-size:12px;color:var(--text2)}
-  .mrn3-chip{font:600 9.5px 'JetBrains Mono',monospace;letter-spacing:.06em;text-transform:uppercase;border-radius:4px;padding:2px 6px;white-space:nowrap}
+  .mrn3-chip{font:600 10px 'JetBrains Mono',monospace;letter-spacing:.06em;text-transform:uppercase;border-radius:4px;padding:2px 6px;white-space:nowrap}
   .mrn3-chip.real{color:var(--accent);background:var(--accent-dim)} .mrn3-chip.fc{color:#7FC8F8;background:rgba(127,200,248,.12);border:1px dashed rgba(127,200,248,.55)} .mrn3-chip.av{color:var(--text2);background:rgba(122,147,171,.14)}
   .mrn3-big{font:600 22px 'Outfit',sans-serif;color:var(--text);font-variant-numeric:tabular-nums} .mrn3-big small{font:500 11px Inter,sans-serif;color:var(--text3);margin-left:4px} .mrn3-big.fc{color:#7FC8F8}
   .mrn3-kv{font-size:12px;color:var(--text3)} .mrn3-kv b{color:var(--text);font-weight:600} .mrn3-kv b.mrn-up{color:var(--down)} .mrn3-kv b.mrn-dn{color:var(--up)}

@@ -101,6 +101,8 @@
   }
 
   const FRDOC = () => !window.PKI18n || PKI18n.lang !== 'en';
+  // ISO day → '6 Nov 2026' (translated to '6 nov. 2026' by the page); dates on screen are never ISO (STYLEGUIDE § 8)
+  const dLongPP = iso => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); return m ? +m[3] + ' ' + ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+m[2] - 1] + ' ' + m[1] : iso; };
   // one sentence on the method's past-bias correction (scripts/ppa_bias.py), in the page's language
   function biasLine(o, k) {
     if (!o || !o.biasOf) return '';
@@ -889,7 +891,7 @@
     host.dataset.key = key;
     host.innerHTML = o.tenor.map((y, i) => { const man = S.fwd[y] != null, a = o.fwdAuto(y), need = !man && a == null;
       return `<label class="cf-field${need ? ' pp-need' : ''}"><span>Cal ${y} <i class="pp-auto${man && a != null ? ' man' : ''}" data-fy="${y}">${man ? (a != null ? '↺ market ' + f2(a) : 'entered') : a == null ? 'not quoted · enter your price' : D.fwd[y] == null ? 'Cal ' + o.lastQ + ' · liquidity risk' : 'market'}</i></span><span class="cf-in"><input type="number" step="0.01" data-fy="${y}" placeholder="${a != null ? a.toFixed(2) : 'your price'}" value="${man ? S.fwd[y] : ''}"><em>€/MWh</em></span></label>`; }).join('') +
-      `<div class="pp-fwd-note">France baseload calendar contracts${D.fwdDate ? ', settlements of ' + D.fwdDate : ''}. A year past the last quoted Cal takes that Cal, and the risk that its own price strays from it comes off the price (liquidity risk): enter your own price if you have one.</div>`;
+      `<div class="pp-fwd-note">France baseload calendar contracts${D.fwdDate ? ', settlements of ' + dLongPP(D.fwdDate) : ''}. A year past the last quoted Cal takes that Cal, and the risk that its own price strays from it comes off the price (liquidity risk): enter your own price if you have one.</div>`;
     host.querySelectorAll('input[data-fy]').forEach(inp => inp.addEventListener('change', () => { const v = parseFloat(inp.value); if (isFinite(v)) S.fwd[+inp.dataset.fy] = v; else delete S.fwd[+inp.dataset.fy]; run(); }));
     host.querySelectorAll('.pp-auto.man[data-fy]').forEach(t => t.addEventListener('click', e => { e.preventDefault(); delete S.fwd[+t.dataset.fy]; run(); }));
   }

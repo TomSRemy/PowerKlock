@@ -554,7 +554,11 @@
       const isFlat = !valid.length || Math.abs(deltaPct) < 1;
       const cls = isFlat ? 'flat' : (delta > 0 ? 'up' : 'down');
       const arrow = isFlat ? '·' : (delta > 0 ? '▲' : '▼');
-      const deltaTxt = !valid.length ? (d.src || 'not available') : isFlat ? 'stable over the window' : (arrow + ' ' + Math.abs(deltaPct).toFixed(0) + '% over the window');
+      // a series that crosses or nears zero (net imports) has no meaningful % change (8 Nov 2026: « ▼ 992 % »): its change is given in its unit
+      const absMove = d.id === 'flux' || (v0 != null && vN != null && (Math.sign(v0) !== Math.sign(vN) || Math.abs(v0) < 1));
+      const deltaTxt = !valid.length ? (d.src || 'not available') : isFlat && !absMove ? 'stable over the window'
+        : absMove ? (Math.abs(delta) < 0.05 ? 'stable over the window' : arrow + ' ' + Math.abs(delta).toFixed(d.dec) + ' ' + d.unit + ' over the window')
+        : (arrow + ' ' + Math.abs(deltaPct).toFixed(0) + '% over the window');
       const min = valid.length ? Math.min.apply(null, valid) : 0;
       const max = valid.length ? Math.max.apply(null, valid) : 1;
       const range = (max - min) || 1;
@@ -945,7 +949,7 @@
         + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px">'
         + '<div class="ma-badge" style="background:' + _hexA(colour, 0.18) + ';color:' + colour + '">' + (i + 1) + '</div>'
         + '<div style="font-size:11.5px;color:#fff;font-weight:700">' + n.title + '</div>'
-        + '<div style="margin-left:auto;font-family:\'JetBrains Mono\',monospace;font-size:9px;color:' + colour + ';font-weight:700">' + n.price + ' €</div>'
+        + '<div style="margin-left:auto;font-family:\'JetBrains Mono\',monospace;font-size:10px;color:' + colour + ';font-weight:700">' + n.price + ' €</div>'
         + '</div>'
         + '<div style="font-size:11px;color:#B8C9D9;line-height:1.65">' + n.body + '</div>'
         + '</div>';
@@ -1119,7 +1123,7 @@
 
   function _paintControls() {
     const pkPill = window.pkPill || function (o) {
-      return '<button onclick="' + o.onClick + '" style="padding:4px 10px;font-size:9px;border-radius:12px;cursor:pointer;background:' + (o.active ? 'rgba(20,211,169,0.15)' : 'transparent') + ';color:' + (o.active ? '#14D3A9' : 'var(--tx3)') + ';border:1px solid ' + (o.active ? 'rgba(20,211,169,0.4)' : 'var(--bd)') + ';font-family:\'JetBrains Mono\',monospace;font-weight:600">' + o.label + '</button>';
+      return '<button onclick="' + o.onClick + '" style="padding:4px 10px;font-size:10px;border-radius:12px;cursor:pointer;background:' + (o.active ? 'rgba(20,211,169,0.15)' : 'transparent') + ';color:' + (o.active ? '#14D3A9' : 'var(--tx3)') + ';border:1px solid ' + (o.active ? 'rgba(20,211,169,0.4)' : 'var(--bd)') + ';font-family:\'JetBrains Mono\',monospace;font-weight:600">' + o.label + '</button>';
     };
 
     const win = document.getElementById('ma-window-pills');

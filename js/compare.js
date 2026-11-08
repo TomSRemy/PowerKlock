@@ -14,6 +14,8 @@
   const LS = 'pk-compare';
   const COLORS = ['#14D3A9', '#F5A524', '#C4A57B', '#7FC8F8', '#ED6965', '#94D2BD', '#FBBF24', '#38BDF8'];
   const T = (fr, en) => (typeof _mT === 'function' ? _mT(fr, en) : en);
+  // ISO day → '7 Nov 2025' (the page translation turns the month into 'nov.'); dates on screen are never ISO (STYLEGUIDE § 8)
+  const dLong = iso => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); return m ? +m[3] + ' ' + ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+m[2] - 1] + ' ' + m[1] : iso; };
   const N = (v, d) => (typeof _mN === 'function' ? _mN(v, d) : v == null ? '–' : v.toFixed(d));
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const cache = {};
@@ -232,7 +234,7 @@
       cfg = { type: 'line', data: { labels: all, datasets: ds }, options: _fuelOpts({ scales: Object.assign({ x: _fuelXAxis() }, yScales()) }) };
       // headline: where each series ends against where it started
       const moves = raw.map((a, i) => { const f = first(a), l = [...a].reverse().find(x => x != null); return f && l ? label(sel[i]) + ' ' + (l / f >= 1 ? '×' + N(l / f, 2) : (l / f - 1) * 100 > -100 ? N((l / f - 1) * 100, 0) + ' %' : '') : null; }).filter(Boolean);
-      sub = all[0] + ' → ' + all[all.length - 1] + ' · ' + moves.join(' · ');
+      sub = dLong(all[0]) + ' → ' + dLong(all[all.length - 1]) + ' · ' + moves.join(' · ');
     }
     // political and market events of the window (data/events.json, js/regulatory.js): a dashed line each, numbered
     const ME = st.events !== false && D.type === 'line' && window.PKReg ? await PKReg.marketEvents() : null;
@@ -265,7 +267,7 @@
     _fuelChart('cmp-chart', B.cfg, 'comparator');
     const EV = document.getElementById('cmp-events');
     if (EV) EV.innerHTML = B.evs && B.evs.length ? '<ol class="cmp-evs">' + B.evs.map(e => { const c = B.cats[e.cat] || [e.cat, e.cat];
-      return `<li><span class="cmp-dates">${e.d}</span><b>${esc(T(c[0], c[1]))} · ${esc(T(e.fr, e.en))}</b><span>${esc(T(e.why_fr, e.why_en))}${e.url ? ` <a href="${esc(e.url)}" target="_blank" rel="noopener">${esc(e.src || 'source')}</a>` : ''}</span></li>`; }).join('') + '</ol>' : '';
+      return `<li><span class="cmp-dates">${dLong(e.d)}</span><b>${esc(T(c[0], c[1]))} · ${esc(T(e.fr, e.en))}</b><span>${esc(T(e.why_fr, e.why_en))}${e.url ? ` <a href="${esc(e.url)}" target="_blank" rel="noopener">${esc(e.src || 'source')}</a>` : ''}</span></li>`; }).join('') + '</ol>' : '';
     analyse(B.maps, B.from, B.to);
     watch();
   }

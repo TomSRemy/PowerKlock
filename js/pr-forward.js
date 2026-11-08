@@ -618,7 +618,7 @@
   function renderAll() {
     if (!PF.snap || !PF.series) return;
     var boardMeta = document.getElementById('prfwd-board-meta');
-    if (boardMeta) boardMeta.textContent = 'M+1 to Y+3 · ' + (PF.snap.forwardCurveDate || '');
+    if (boardMeta) boardMeta.textContent = (window.PKI18n && PKI18n.tr ? PKI18n.tr('M+1 to Y+3') : 'M+1 to Y+3') + ' · ' + (PF.snap.forwardCurveDate || '');
     renderTopKpis();
     renderCountriesTable();
     renderCompareZoneChips();
