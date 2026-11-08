@@ -170,7 +170,7 @@
   function chart(all, rows) {
     const kept = new Set(rows.map(r => r.ym));
     _fuelChart('pp-cr-chart', { type: 'line', data: { labels: all.map(r => r.ym), datasets: [
-      { label: 'Park market value (€/MWh)', data: all.map(r => +r.price.toFixed(2)), borderColor: LAST.tech === 'solar' ? '#F4C430' : '#14D3A9', borderWidth: 2, pointRadius: all.map(r => kept.has(r.ym) ? 2 : 0) },
+      { label: 'Park market value (€/MWh)', data: all.map(r => +r.price.toFixed(2)), borderColor: LAST.tech === 'solar' ? '#FBBF24' : '#14D3A9', borderWidth: 2, pointRadius: all.map(r => kept.has(r.ym) ? 2 : 0) },
       { label: 'M0 (€/MWh)', data: all.map(r => +r.m0.toFixed(2)), borderColor: '#7FC8F8', borderWidth: 1.6, borderDash: [5, 3], pointRadius: 0 },
       { type: 'bar', label: 'Park ÷ M0 − 1 (%)', data: all.map(r => +((r.ratio - 1) * 100).toFixed(1)), backgroundColor: all.map(r => r.ratio < 1 ? 'rgba(237,105,101,.45)' : 'rgba(20,211,169,.4)'), yAxisID: 'y1' }] },
       options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('€/MWh'), y1: _fuelAxis('% vs M0', { position: 'right', grid: { display: false } }) } }) }, 'cr-park-vs-m0');

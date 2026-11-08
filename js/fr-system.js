@@ -10,8 +10,9 @@
 // data/history/rte/fr_daily.json, js/eco2mix.js (exchanges per border).
 // ════════════════════════════════════════════════════════════════════
 const FRS = { day: null, envSeries: 'nuclear', monthlyView: 'twh' };
-const FRS_COLORS = { nuclear: '#7B4B9C', hydro: '#3FA6B4', hydroPS: '#60A5FA', windOn: '#14D3A9', windOff: '#0EA5E9', wind: '#14D3A9', solar: '#FBBF24',
-  gas: '#F97316', coal: '#78716C', oil: '#B45309', bio: '#94D2BD', battery: '#38BDF8', pumping: '#1E3A8A', load: '#F8FAFC' };
+// fuel colours: the site-wide chart system (js/pk-chart-system.js); pumping and battery charge keep their fuel's colour (drawn below zero)
+const FRS_COLORS = { nuclear: '#9B6BC4', hydro: '#5CB2F5', hydroPS: '#2F6FC0', windOn: '#14D3A9', windOff: '#0B8F7E', wind: '#14D3A9', solar: '#FBBF24',
+  gas: '#F79A3E', coal: '#83563A', oil: '#E0525A', bio: '#4E8A2C', battery: '#C2457E', pumping: '#2F6FC0', load: '#E6EDF3' };
 const FRS_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 function _frsToday() { return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris' }).format(new Date()); }

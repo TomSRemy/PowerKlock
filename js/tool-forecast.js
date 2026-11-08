@@ -249,7 +249,7 @@
     const iEnd = Math.min(n, T.findIndex(t => dayOf(t) === addDay(t0, 7)) > 0 ? T.findIndex(t => dayOf(t) === addDay(t0, 7)) : n);
     const sl = a => a.slice(0, iEnd).map(v => v == null ? null : Math.round(v * 100) / 100);
     const lbl = T.slice(0, iEnd).map(t => t.slice(11, 13) === '00' ? new Date(t.slice(0, 10) + 'T12:00:00Z').toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', timeZone: 'UTC' }) : t.slice(11, 16));
-    const col = S.tech === 'solar' ? '#F4C430' : '#14D3A9';
+    const col = S.tech === 'solar' ? '#FBBF24' : '#14D3A9';
     _fuelChart('fc-hourly', { type: 'line', data: { labels: lbl, datasets: [
       { label: '_hi', data: sl(band.hi), borderWidth: 0, pointRadius: 0, fill: '+1', backgroundColor: 'rgba(127,200,248,.18)' },
       { label: 'P10–P90 (31 weather scenarios)', data: sl(band.lo), borderWidth: 0, pointRadius: 0, fill: false, backgroundColor: 'rgba(127,200,248,.18)' },
@@ -518,7 +518,7 @@
       ] }, options: _fuelOpts({ plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 8 } } },
         scales: { x: Object.assign(_fuelXAxis(), { ticks: { color: C_TX3, font: { size: 10 }, autoSkip: false, maxRotation: 0, callback: (v, i) => /^[A-Z]/.test(L[i]) ? L[i] : '' } }), y: _fuelAxis('load factor, %', { beginAtZero: true }) } }) }, cid); };
     nationalBlock();
-    draw('fc-bt-solar', 'solar|Occitanie|summer', '#F4C430');
+    draw('fc-bt-solar', 'solar|Occitanie|summer', '#FBBF24');
     draw('fc-bt-wind', 'wind|Hauts-de-France|winter', '#14D3A9');
   }
   // France as a whole: our model vs the TSO day-ahead forecast published on ENTSO-E (scripts/fcst_national.py)
@@ -535,7 +535,7 @@
     const draw = (cid, t) => { const m = j.monthly[t]; if (!m) return; const L = Object.keys(m);
       _fuelChart(cid, { type: 'line', data: { labels: L, datasets: [
         { label: 'ENTSO-E', data: L.map(k => m[k].ent), borderColor: 'rgba(122,147,171,.9)', borderWidth: 1.6, pointRadius: 2, fill: false },
-        { label: 'Ours', data: L.map(k => m[k].n2), borderColor: t === 'solar' ? '#F4C430' : '#14D3A9', borderWidth: 2, pointRadius: 2, fill: false },
+        { label: 'Ours', data: L.map(k => m[k].n2), borderColor: t === 'solar' ? '#FBBF24' : '#14D3A9', borderWidth: 2, pointRadius: 2, fill: false },
         { label: 'Average of both', data: L.map(k => m[k].mix), borderColor: '#5FA8D3', borderDash: [5, 4], borderWidth: 1.6, pointRadius: 0, fill: false },
         ...(L.some(k => m[k].stack != null) ? [{ label: 'PowerKlock combined', data: L.map(k => m[k].stack), borderColor: '#E6EDF3', borderWidth: 2, pointRadius: 0, fill: false }] : []),
       ] }, options: _fuelOpts({ plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 8 } } }, scales: { x: _fuelXAxis(), y: _fuelAxis('hourly error, % of capacity', { beginAtZero: true }) } }) }, cid); };
@@ -638,7 +638,7 @@
         { type: 'line', label: 'P90', data: ys.map(() => +(p90 / 1000).toFixed(2)), borderColor: '#ED6965', borderDash: [5, 4], borderWidth: 1.4, pointRadius: 0 }] },
         options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('GWh', { beginAtZero: true }) } }) }, 'park-yearly-output');
       _fuelChart('fc-hist-c', { type: 'line', data: { labels: capY, datasets: [
-        { label: 'Capture rate (%)', data: capY.map(y => +(cap[y].v / cap[y].e / (cap[y].b / cap[y].n) * 100).toFixed(1)), borderColor: '#F4C430', borderWidth: 2.2, pointRadius: 3, yAxisID: 'y' },
+        { label: 'Capture rate (%)', data: capY.map(y => +(cap[y].v / cap[y].e / (cap[y].b / cap[y].n) * 100).toFixed(1)), borderColor: '#FBBF24', borderWidth: 2.2, pointRadius: 3, yAxisID: 'y' },
         { type: 'bar', label: 'Output at prices ≤ 0 (%)', data: capY.map(y => +(cap[y].neg / Y[y] * 100).toFixed(1)), backgroundColor: 'rgba(237,105,101,.45)', borderRadius: 3, yAxisID: 'y1' }] },
         options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('capture rate, %'), y1: _fuelAxis('% of output', { position: 'right', beginAtZero: true, grid: { display: false } }) } }) }, 'park-capture-rate');
       if (st) st.textContent = `${S.tech === 'solar' ? TT('Parc solaire', 'Solar park') : TT('Parc éolien', 'Wind park')} ${TT('à', 'at')} ${(+S.lat).toFixed(3)}, ${(+S.lon).toFixed(3)}${com ? ' (' + com.nom + ')' : ''} · ${S.mw} MW · ${TT('historique construit à', 'history built')} ${new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' })}`;

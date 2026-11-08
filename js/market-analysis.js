@@ -39,8 +39,8 @@
     biomass: 230, fossil: 820, other: 400,
   };
   const FUEL_COLORS = {
-    nuclear: '#7B4B9C', wind: '#14D3A9', solar: '#FBBF24', hydro: '#3FA6B4',
-    biomass: '#94D2BD', fossil: '#ED6965', other: '#7A93AB',
+    nuclear: '#9B6BC4', wind: '#14D3A9', solar: '#FBBF24', hydro: '#5CB2F5',   // = PK_PAL.fuel
+    biomass: '#4E8A2C', fossil: '#ED6965', other: '#8D99AE',
   };
   // Stack order from bottom to top (baseload first, marginal on top)
   const FUEL_STACK = ['nuclear', 'hydro', 'wind', 'solar', 'fossil'];

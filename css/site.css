@@ -35,12 +35,21 @@
     --text-brand: #14D3A9;
 
     /* ── Energy mix (production sectors) */
-    --gen-nuclear: #7B4B9C;
+    --gen-nuclear: #9B6BC4;
     --gen-wind: #14D3A9;
     --gen-solar: #FBBF24;
-    --gen-hydro: #3FA6B4;
+    --gen-hydro: #5CB2F5;
     --gen-fossil: #ED6965;
-    --gen-biomass: #94D2BD;
+    --gen-biomass: #4E8A2C;
+    --gen-pumped: #2F6FC0;
+    --gen-wind-offshore: #0B8F7E;
+    --gen-gas: #F79A3E;
+    --gen-coal: #83563A;
+    --gen-oil: #E0525A;
+    --gen-battery: #C2457E;
+    --gen-other: #8D99AE;
+    --price-up: #ED6965;   /* rising price */
+    --price-down: #14D3A9; /* falling price */
 
     /* ── Market categories (ticker, news) */
     --cat-power: #14D3A9;
@@ -3740,6 +3749,25 @@ html body .pm-o-l, html body .pkf-t-l, html body .mrn2-tc { white-space: normal;
 @container (max-width: 760px) { .sp-grid { grid-template-columns: 1fr; } .sp-side { grid-template-columns: 1fr 1fr 1fr; } .sp-btns, .sp-leg, .sp-note { grid-column: 1 / -1; } .sp-kv { font-size: 18px; } }
 .sp-widget .sp-stage { max-width: 520px; }
 
+/* ══ Motion system (proposal a2, 8 Nov. 2026): tokens in :root, rules below ══
+   · Navigation (pages, view tabs, Ctrl K) and data (charts, tables, KPI values) never animate.
+   · Press: scale .97 in --dur-press. Hover and colour: --dur-fast, `ease`. Enter/exit: --dur-base, --ease-out.
+   · Movement on hover only where a mouse hovers: a tap on a phone leaves no lifted card behind. */
+:where(.tab-btn, .pk-gf-btn, .pk-gf-zone-btn, .pk-btn-ghost, .pk-btn-primary, .filter-btn, .day-tab, .conv-tab, .hw-btn, .pk-tool, .dd-btn, .date-picker-btn, .dp-today-btn):active:not(:disabled) { transform: scale(.97); }
+.pk-tool { transition: var(--t-ui); }
+@media (hover: none) {
+  .news-card:hover, .pr-overview-card:hover, a.mrn2-tile:hover, .date-picker-btn:hover { transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  /* fewer and gentler, not zero: colour and opacity stay, movement and loops go */
+  .live-dot, .dd-pulse, .pk-boot-dot, .pk-boot-bar i { animation: none; }   /* loops stop; the spinner keeps turning: it says the page is working */
+  .sidebar, .sidebar-chevron, .hist-section-strong .hist-section-chevron, .pkd-sec-fold svg, .dd-btn svg, #date-picker-chevron { transition: none; }
+  :where(.tab-btn, .pk-gf-btn, .pk-gf-zone-btn, .pk-btn-ghost, .pk-btn-primary, .filter-btn, .day-tab, .conv-tab, .hw-btn, .pk-tool, .dd-btn, .date-picker-btn, .dp-today-btn):active { transform: none; }
+  .news-card:hover, .pr-overview-card:hover, .date-picker-btn:hover { transform: none; }
+  .dd-menu, .dd-menu.open { transform: none; }
+}
+
+
 /* ══ G1 Analyse pass (8 Nov 2026): section headers, KPI rows, empty states, selects, phone bar ══
    One block for the 62 views of the Analysis template (Marchés, Renouvelables, Système, État des données). */
 /* Section header: the title never breaks inside ("TABLEAU DES / RENOUVELABLES"); its description follows on the same
@@ -3782,6 +3810,8 @@ html body .pm-o-l, html body .pkf-t-l, html body .mrn2-tc { white-space: normal;
 @media (max-width: 380px) { .hist-section-strong .table-wrap table, .hist-section-strong .table-wrap table thead th { font-size: 10px !important; } }
 /* a header that also carries controls (Intensité carbone: period, zones) keeps wrapping them under the title */
 .hist-section-strong .hist-section-header:has(> :not(.hist-section-title):not(.hist-section-chevron)) { flex-wrap: wrap !important; }
+
+
 /* ── G3/G4 design pass (8 Nov 2026, proposal): tool and reference pages ──
    1. Reference pages (Methodology, About, BESS method, Events) read in one column of 760 px at most (STYLEGUIDE § 1,
       "Outil / référence"); the column is left-aligned with the sticky bar, as on every other page.
@@ -3804,6 +3834,9 @@ html body .pm-o-l, html body .pkf-t-l, html body .mrn2-tc { white-space: normal;
 @media (max-width: 700px) {
   #page-methodology .meth-wrap, #page-about .meth-wrap { padding: 0 0 40px; }
   #page-methodology .meth-nav { position: static; max-height: 240px; }
+}
+
+
 /* Today: nothing below the sticky bar is painted before the page is parsed. Until then the three views showed stacked and the
    date, first-visit line and story circles arrived one by one, each pushing the tiles down (8 Nov 2026: CLS 1,44 on a phone).
    morning.js adds .mrn-ready at DOMContentLoaded; the 4 s animation is a fallback if the script never runs. */
@@ -3840,20 +3873,68 @@ html body .pm-o-l, html body .pkf-t-l, html body .mrn2-tc { white-space: normal;
   .ma-panel-label-col { flex-direction: row; flex-wrap: wrap; align-items: baseline; justify-content: flex-start; gap: 2px 8px; padding: 0 0 2px; border-right: 0; border-bottom: 1px solid var(--bd); }
   .ma-panel-label-col .ma-lbl, .ma-panel-label-col .ma-lbl-sub { text-align: left; }
   .ma-panel-label-col .ma-lbl-sub { margin-top: 0; }
-/* ══ Motion system (proposal a2, 8 Nov. 2026): tokens in :root, rules below ══
-   · Navigation (pages, view tabs, Ctrl K) and data (charts, tables, KPI values) never animate.
-   · Press: scale .97 in --dur-press. Hover and colour: --dur-fast, `ease`. Enter/exit: --dur-base, --ease-out.
-   · Movement on hover only where a mouse hovers: a tap on a phone leaves no lifted card behind. */
-:where(.tab-btn, .pk-gf-btn, .pk-gf-zone-btn, .pk-btn-ghost, .pk-btn-primary, .filter-btn, .day-tab, .conv-tab, .hw-btn, .pk-tool, .dd-btn, .date-picker-btn, .dp-today-btn):active:not(:disabled) { transform: scale(.97); }
-.pk-tool { transition: var(--t-ui); }
-@media (hover: none) {
-  .news-card:hover, .pr-overview-card:hover, a.mrn2-tile:hover, .date-picker-btn:hover { transform: none; }
 }
-@media (prefers-reduced-motion: reduce) {
-  /* fewer and gentler, not zero: colour and opacity stay, movement and loops go */
-  .live-dot, .dd-pulse, .pk-boot-dot, .pk-boot-bar i { animation: none; }   /* loops stop; the spinner keeps turning: it says the page is working */
-  .sidebar, .sidebar-chevron, .hist-section-strong .hist-section-chevron, .pkd-sec-fold svg, .dd-btn svg, #date-picker-chevron { transition: none; }
-  :where(.tab-btn, .pk-gf-btn, .pk-gf-zone-btn, .pk-btn-ghost, .pk-btn-primary, .filter-btn, .day-tab, .conv-tab, .hw-btn, .pk-tool, .dd-btn, .date-picker-btn, .dp-today-btn):active { transform: none; }
-  .news-card:hover, .pr-overview-card:hover, .date-picker-btn:hover { transform: none; }
-  .dd-menu, .dd-menu.open { transform: none; }
-}
+
+
+/* ══ What drives the price (js/drivers.js): only what the Sankey, its table and its cards need, namespaced .cqp- ══ */
+.cqp-lede{font-size:13px;color:var(--text2);line-height:1.55;margin:0 0 14px;max-width:760px}
+.cqp-lede b{color:var(--text);font-weight:600;font-family:'JetBrains Mono',monospace}
+.cqp-rise{color:var(--down)!important}.cqp-fall{color:var(--up)!important}.cqp-flat{color:var(--text3)!important}
+.cqp-kpis{grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:14px}
+@media (max-width:640px){.cqp-kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}}
+.cqp-kpi{cursor:pointer;text-decoration:none;color:inherit;display:block}
+a.cqp-kpi:hover,.cqp-kpi:hover{border-color:var(--border3)!important}
+.cqp-kpi.cqp-on{outline:1px solid var(--accent);outline-offset:-1px}
+.cqp-kpi:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.cqp-why{color:var(--text2)!important}.cqp-why .cqp-dn{font-family:'Outfit','Inter',sans-serif}
+.cqp-why b{font-weight:600}
+.cqp-expl{height:4px;background:var(--border);border-radius:2px;margin-top:8px;overflow:hidden}.cqp-expl i{display:block;height:100%;background:var(--text3)}
+.cqp-card{margin-bottom:6px}
+.cqp-leg{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:11px;color:var(--text3);margin:-2px 0 8px}
+.cqp-leg span{display:inline-flex;align-items:center;gap:6px}.cqp-leg i{display:inline-block;width:20px;height:8px;border-radius:1px}
+.cqp-hatch{display:inline-block;width:20px;height:8px;border:1px solid var(--border3);background:repeating-linear-gradient(45deg,var(--border3) 0 2px,transparent 2px 5px)}
+.cqp-viz{min-height:200px;position:relative}
+.cqp-svg{display:block;max-width:100%}
+.cqp-svg text{font-family:'Outfit','Inter',sans-serif}
+.cqp-nl{font-size:12px;font-weight:600;fill:var(--text)}
+.cqp-nv{font-family:'JetBrains Mono',monospace!important;font-size:10px;fill:var(--text3)}
+.cqp-mult{font-weight:600}
+.cqp-pv{font-family:'JetBrains Mono',monospace!important;font-size:15px;font-weight:600;fill:var(--text)}
+.cqp-pill text{font-family:'JetBrains Mono',monospace!important;font-size:11px;font-weight:600}
+.cqp-annt{font-size:11px;fill:var(--text3)}
+.cqp-annl{stroke:var(--border3);stroke-width:1;fill:none;stroke-dasharray:2 3}
+.cqp-rib{transition:opacity .2s}.cqp-nd{cursor:pointer;transition:opacity .2s}
+.cqp-dim .cqp-rib,.cqp-dim .cqp-pill{opacity:.08}.cqp-dim .cqp-rib.cqp-hi,.cqp-dim .cqp-pill.cqp-hi{opacity:1}
+.cqp-dim .cqp-nd{opacity:.3}.cqp-dim .cqp-nd.cqp-hi{opacity:1}
+@media (prefers-reduced-motion:reduce){.cqp-rib,.cqp-nd{transition:none}}
+.cqp-tl{display:flex;align-items:center;gap:12px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
+.cqp-play{min-width:30px;justify-content:center}
+.cqp-wk{font:400 11px 'JetBrains Mono',monospace;color:var(--text2);min-width:150px}
+.cqp-tl input[type=range]{flex:1;min-width:0;accent-color:var(--accent)}
+@media (max-width:600px){.cqp-tl{flex-wrap:wrap}.cqp-tl input[type=range]{flex-basis:100%}}
+.cqp-tip{position:fixed;pointer-events:none;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;padding:8px 10px;font-size:12px;line-height:1.55;opacity:0;transition:opacity .1s;z-index:1300;min-width:190px;color:var(--text2)}
+.cqp-tip b{font-weight:600;color:var(--text)}
+.cqp-tr{display:flex;justify-content:space-between;gap:14px}.cqp-tr span:last-child{font-family:'JetBrains Mono',monospace}
+.cqp-tt{border-top:1px solid var(--border2);margin-top:3px;padding-top:3px}
+.cqp-tn{color:var(--text3);margin-top:4px;font-size:11px}
+.cqp-tw{overflow-x:auto;max-width:100%}
+.cqp-ht{width:100%;border-collapse:separate;border-spacing:3px}
+.cqp-ht th{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);padding:10px 12px;border-bottom:1px solid var(--border)}
+.cqp-ht th .cqp-thsub{display:block;font:400 10px 'JetBrains Mono',monospace;text-transform:none;letter-spacing:0;color:var(--text3);margin-top:2px}
+.cqp-ht td{font-size:13px;padding:9px 12px;border-radius:3px;font-variant-numeric:tabular-nums}
+.cqp-ht td.cqp-k{font-family:'Outfit','Inter',sans-serif;color:var(--text2);white-space:nowrap}
+.cqp-ht td.cqp-k i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:8px;vertical-align:0}
+.cqp-ht td.cqp-k i.cqp-hatch{width:8px}
+.cqp-ht td.cqp-na{color:var(--text4)}
+.cqp-ht tr.cqp-tot td{border-top:1px solid var(--border);font-weight:600}.cqp-ht tr.cqp-tot td.cqp-k{color:var(--text)}
+.cqp-mlw{margin-top:14px}.cqp-mt{margin-bottom:4px}.cqp-mt .fuel-card-sub{display:inline;text-transform:none;letter-spacing:0;margin-left:4px}
+.cqp-mr{display:grid;grid-template-columns:110px minmax(0,1fr) 56px;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)}
+.cqp-mtot{border-bottom:0}.cqp-mtot .cqp-mk{color:var(--text);font-weight:600}
+.cqp-mk{display:flex;align-items:center;gap:6px;color:var(--text2);font-size:12px}.cqp-mk i{width:8px;height:8px;border-radius:2px;flex:none}.cqp-mk i.cqp-hatch{width:8px}
+.cqp-b2{height:14px;position:relative;background:linear-gradient(var(--border),var(--border)) 50% 0/1px 100% no-repeat}
+.cqp-b2 i{position:absolute;top:0;bottom:0;border-radius:2px}.cqp-bg-rise{background:var(--down)}.cqp-bg-fall{background:var(--up)}
+.cqp-mv{font:600 12px 'JetBrains Mono',monospace;text-align:right}
+.cqp-method{max-width:760px;color:var(--text2);margin:0 2px 10px}
+.cqp-xlink{margin:8px 2px 0}.cqp-xlink a{color:var(--accent);text-decoration:none}.cqp-xlink a:hover{text-decoration:underline}
+.cqp-today{margin:0 0 12px}.cqp-today .cqp-kpis{margin-bottom:0}
+.cqp-more{font-size:11px;color:var(--accent);text-decoration:none;white-space:nowrap;align-self:center}.cqp-more:hover{text-decoration:underline}

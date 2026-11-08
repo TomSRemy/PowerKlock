@@ -876,9 +876,9 @@ function buildHourlyDetail(idx, z) {
         if ((gm[k] || 0) > domVal) { domVal = gm[k] || 0; domKey = k; }
       }
       if (domKey) {
-        const fuelColors = { wind:'#14D3A9', solar:'#FBBF24', hydro:'#06B6D4',
-                             biomass:'#84CC16', nuclear:'#A78BFA', gas:'#F97316',
-                             coal:'#7A93AB', oil:'#ED6965', other:'#7A93AB' };
+        const fuelColors = { wind:'#14D3A9', solar:'#FBBF24', hydro:'#5CB2F5',   // = PK_PAL.fuel
+                             biomass:'#4E8A2C', nuclear:'#9B6BC4', gas:'#F79A3E',
+                             coal:'#83563A', oil:'#E0525A', other:'#8D99AE' };
         mixDomFuel = domKey.charAt(0).toUpperCase() + domKey.slice(1);
         mixDomFuelColor = fuelColors[domKey] || '#7A93AB';
       }

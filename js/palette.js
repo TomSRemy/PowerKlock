@@ -25,15 +25,15 @@ if (typeof Chart !== 'undefined' && typeof window !== 'undefined') {
 
 // Multi-zone series pool — 8 hand-picked colours with max contrast
 var SERIES_POOL = [
-  '#14D3A9',  // 1. Mint Leaf
-  '#ED6965',  // 2. Vibrant Coral
-  '#FFFD82',  // 3. Canary Yellow
-  '#1A7B8C',  // 4. Lagoon
-  '#CA6702',  // 5. Burnt Caramel
-  '#BB3E03',  // 6. Rusty Spice
-  '#7DD3FC',  // 7. Sky Blue
-  '#C4A57B',  // 8. Sand (violet is kept for nuclear)
-];
+  '#14D3A9',  // 1. Mint (FR)
+  '#F2A65A',  // 2. Orange (DE)
+  '#4AA3E0',  // 3. Blue (BE)
+  '#ED6965',  // 4. Coral (ES)
+  '#E8C547',  // 5. Gold (NL)
+  '#E879A6',  // 6. Pink (IT), not violet: violet is kept for nuclear
+  '#7DD3FC',  // 7. Sky (GB)
+  '#8BC34A',  // 8. Green (CH)
+];  // order validated on #0f1419: worst adjacent CVD ΔE 10.6, normal 21.9 (sitepass/a3/out/palette_validation.txt)
 var SERIES_NEUTRAL = '#7A93AB';
 var SERIES_MAX_DISTINCT = 8;
 

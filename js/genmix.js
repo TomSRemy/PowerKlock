@@ -16,13 +16,13 @@ window.GM = GM;
 
 // Fuel meta — aligned with Daily DA and Historical
 const GM_FUEL_META = {
-  nuclear: { emoji: '', label: 'Nuclear',  color: '#7B4B9C', co2: 12   },
+  nuclear: { emoji: '', label: 'Nuclear',  color: '#9B6BC4', co2: 12   },
   wind:    { emoji: '', label: 'Wind',     color: '#14D3A9', co2: 11   },
   solar:   { emoji: '', label: 'Solar',    color: '#FBBF24', co2: 45   },
-  hydro:   { emoji: '', label: 'Hydro',    color: '#3FA6B4', co2: 24   },
-  biomass: { emoji: '', label: 'Biomass',  color: '#94D2BD', co2: 230  },
+  hydro:   { emoji: '', label: 'Hydro',    color: '#5CB2F5', co2: 24   },
+  biomass: { emoji: '', label: 'Biomass',  color: '#4E8A2C', co2: 230  },
   fossil:  { emoji: '', label: 'Fossil',   color: '#ED6965', co2: 650  }, // gas+coal blend, same as js/carbon.js LEGACY_BUCKET
-  other:   { emoji: '◇', label: 'Other',    color: '#7A93AB', co2: 400  },
+  other:   { emoji: '◇', label: 'Other',    color: '#8D99AE', co2: 400  },
 };
 
 // Exposed on window: genmix-historical.js reads window.GM_FUEL_META (a top-
@@ -1004,7 +1004,7 @@ async function _gmRenderProfileReal(canvasId, zone, dateStr, chartKey) {
       responsive: true, maintainAspectRatio: false,
       interaction: { mode: 'index', intersect: false },
       plugins: {
-        legend: { display: true, position: 'top', align: 'end', labels: { color: '#4A6280', font: { size: 10, family: 'JetBrains Mono' }, boxWidth: 16, usePointStyle: true, pointStyle: 'line', filter: (item) => !(item.text || '').startsWith('__') } },
+        legend: { display: true, position: 'top', align: 'end', labels: { color: '#B8C9D9', font: { size: 10, family: 'JetBrains Mono' }, boxWidth: 16, usePointStyle: true, pointStyle: 'line', filter: (item) => !(item.text || '').startsWith('__') } },
         zoom: GM_ZOOM_OPTS,
         tooltip: {
           backgroundColor: '#0A1018', titleColor: '#fff', bodyColor: '#B8C9D9', borderColor: '#1A2533', borderWidth: 1, padding: 8,
@@ -1014,8 +1014,8 @@ async function _gmRenderProfileReal(canvasId, zone, dateStr, chartKey) {
         },
       },
       scales: {
-        x: { ticks: { color: '#4A6280', font: { size: 9, family: 'JetBrains Mono' }, maxTicksLimit: 12, autoSkip: true }, grid: { color: 'rgba(255,255,255,0.04)' } },
-        y: { ticks: { color: '#4A6280', font: { size: 9, family: 'JetBrains Mono' }, callback: (v) => v + ' GW' }, grid: { color: 'rgba(255,255,255,0.04)' }, title: { display: true, text: 'Generation (GW)', color: '#4A6280', font: { size: 9, family: 'JetBrains Mono' } } },
+        x: { ticks: { color: '#7A93AB', font: { size: 10, family: 'JetBrains Mono' }, maxTicksLimit: 12, autoSkip: true }, grid: { color: 'rgba(255,255,255,0.04)' } },
+        y: { ticks: { color: '#7A93AB', font: { size: 10, family: 'JetBrains Mono' }, callback: (v) => v + ' GW' }, grid: { color: 'rgba(255,255,255,0.04)' }, title: { display: true, text: 'Generation (GW)', color: '#7A93AB', font: { size: 10, family: 'JetBrains Mono' } } },
       },
     },
   });
@@ -1163,7 +1163,7 @@ async function _gmRenderCarbonReal(zone, dateStr, pre) {
       responsive: true, maintainAspectRatio: false,
       interaction: { mode: 'index', intersect: false },
       plugins: {
-        legend: { display: true, position: 'top', align: 'end', labels: { color: '#4A6280', font: { size: 10, family: 'JetBrains Mono' }, boxWidth: 16, usePointStyle: true, pointStyle: 'line' } },
+        legend: { display: true, position: 'top', align: 'end', labels: { color: '#B8C9D9', font: { size: 10, family: 'JetBrains Mono' }, boxWidth: 16, usePointStyle: true, pointStyle: 'line' } },
         zoom: GM_ZOOM_OPTS,
         tooltip: {
           backgroundColor: '#0A1018', titleColor: '#fff', bodyColor: '#B8C9D9', borderColor: '#1A2533', borderWidth: 1, padding: 8,
@@ -1173,7 +1173,7 @@ async function _gmRenderCarbonReal(zone, dateStr, pre) {
       },
       scales: {
         x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#7A93AB', font: { family: 'JetBrains Mono', size: 9 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 12 } },
-        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#7A93AB', font: { family: 'JetBrains Mono', size: 9 } }, title: { display: true, text: 'g CO₂ / kWh', color: '#7A93AB', font: { family: 'JetBrains Mono', size: 9, weight: '600' } } },
+        y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#7A93AB', font: { family: 'JetBrains Mono', size: 10 } }, title: { display: true, text: 'g CO₂ / kWh', color: '#7A93AB', font: { family: 'JetBrains Mono', size: 9, weight: '600' } } },
       },
     },
   });
@@ -1976,7 +1976,7 @@ async function renderGmHistory() {
         // Fossil/Wind 7D rolling, the last 3 only added conditionally) with
         // no legend — the only way to tell them apart was hovering one
         // point at a time. The KPI cards above only cover Wind/Solar.
-        legend: { display: true, position: 'top', align: 'end', labels: { color: '#4A6280', font: { size: 10, family: 'JetBrains Mono' }, boxWidth: 16, usePointStyle: true, pointStyle: 'line' } },
+        legend: { display: true, position: 'top', align: 'end', labels: { color: '#B8C9D9', font: { size: 10, family: 'JetBrains Mono' }, boxWidth: 16, usePointStyle: true, pointStyle: 'line' } },
         tooltip: { backgroundColor: '#0f1419', borderColor: 'rgba(255,255,255,.08)', borderWidth: 1, padding: 10,
           callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y == null ? '--' : ctx.parsed.y.toFixed(2)} GW` } },
       },
@@ -2541,7 +2541,7 @@ window.gmSetHistDate = function (ds) {
           },
           scales: {
             x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#7A93AB', font: { family: 'JetBrains Mono', size: 9 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 7 } },
-            y: { stacked: true, beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#7A93AB', font: { family: 'JetBrains Mono', size: 9 } }, title: { display: true, text: 'Production · GW', color: '#7A93AB', font: { family: 'JetBrains Mono', size: 9, weight: '600' } } },
+            y: { stacked: true, beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#7A93AB', font: { family: 'JetBrains Mono', size: 10 } }, title: { display: true, text: 'Production · GW', color: '#7A93AB', font: { family: 'JetBrains Mono', size: 9, weight: '600' } } },
           },
         },
       });

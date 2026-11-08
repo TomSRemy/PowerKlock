@@ -12,7 +12,8 @@
   const T = (en, f) => fr() ? f : en;
   const n1 = v => v == null || !isFinite(v) ? '–' : (fr() ? (+v).toFixed(1).replace('.', ',') : (+v).toFixed(1));
   const pc = v => v == null || !isFinite(v) ? '–' : Math.round(v * 100) + ' %';
-  const C = { oa: '#D4BE96', oaStop: '#E07B39', cr: '#7FC8F8', merchant: '#5B8DEF', wind: '#7FC8F8', large: '#E07B39', small: '#FBBF24', proj: '#9FB4C7' };
+  // wind and solar = PK_PAL.fuel; large solar = solar, small solar = lighter solar step (same family)
+  const C = { oa: '#D4BE96', oaStop: '#E07B39', cr: '#7FC8F8', merchant: '#5B8DEF', wind: '#14D3A9', large: '#FBBF24', small: '#FDD87C', proj: '#7A93AB' };
   let D = null, busy = false;
 
   function load() {

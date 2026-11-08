@@ -12,8 +12,8 @@
   const S = (v, d = 1, u = '') => v == null || isNaN(v) ? '–' : (v > 0 ? '+' : v < 0 ? '−' : '') + N(Math.abs(v), d) + u;
   const pct = (a, b) => a == null || !b ? null : (a / b - 1) * 100;
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-  const SRC = [['nuclear', ['Nucléaire', 'Nuclear'], '#A98BD4'], ['hydro', ['Hydraulique', 'Hydro'], '#4FB8C6'], ['wind', ['Éolien', 'Wind'], '#14D3A9'], ['solar', ['Solaire', 'Solar'], '#FBBF24'],
-    ['bio', ['Bioénergies', 'Bioenergy'], '#9BC46A'], ['gas', ['Gaz', 'Gas'], '#F07B6B'], ['coal', ['Charbon', 'Coal'], '#8D7B6A'], ['oil', ['Fioul', 'Oil'], '#B07A5A']];
+  const SRC = [['nuclear', ['Nucléaire', 'Nuclear'], '#9B6BC4'], ['hydro', ['Hydraulique', 'Hydro'], '#5CB2F5'], ['wind', ['Éolien', 'Wind'], '#14D3A9'], ['solar', ['Solaire', 'Solar'], '#FBBF24'],
+    ['bio', ['Bioénergies', 'Bioenergy'], '#4E8A2C'], ['gas', ['Gaz', 'Gas'], '#F79A3E'], ['coal', ['Charbon', 'Coal'], '#83563A'], ['oil', ['Fioul', 'Oil'], '#E0525A']];   // = PK_PAL.fuel
   const BORDER = { GB: ['Grande-Bretagne', 'Great Britain'], CH: ['Suisse', 'Switzerland'], IT: ['Italie', 'Italy'], DE: ['Allemagne', 'Germany'], BE: ['Belgique', 'Belgium'], ES: ['Espagne', 'Spain'] };
   const L = a => T(a[0], a[1]);
   let D = null, RM = null, RF = null, RC = null, year = null;
@@ -134,7 +134,7 @@
       options: opts({ plugins: { legend: { display: true, position: 'bottom', labels: { color: '#B8C9D9', boxWidth: 10 } }, title: { display: true, text: T('Émissions, MtCO₂', 'Emissions, MtCO₂'), color: '#B8C9D9' } }, scales: { x: { ticks: { color: '#7A93AB' }, grid: { display: false } }, y: ax('MtCO₂') } }) });
     const C = (RC && RC.years) || {}, cy = Object.keys(C).sort();
     mk('bl-rte-curt', { type: 'bar', data: { labels: cy, datasets: [
-      { label: T('Éolien', 'Wind'), data: cy.map(y => C[y].wind), backgroundColor: '#7FC8F8', stack: 'c', borderRadius: 3 },
+      { label: T('Éolien', 'Wind'), data: cy.map(y => C[y].wind), backgroundColor: '#14D3A9', stack: 'c', borderRadius: 3 },
       { label: T('Solaire', 'Solar'), data: cy.map(y => C[y].solar), backgroundColor: '#FBBF24', stack: 'c', borderRadius: 3 },
       { label: T('Total (sans détail)', 'Total (no split)'), data: cy.map(y => C[y].wind == null ? C[y].total : null), backgroundColor: '#9FB4C7', stack: 'c', borderRadius: 3 }] },
       options: opts({ plugins: { legend: { display: true, position: 'bottom', labels: { color: '#B8C9D9', boxWidth: 10 } }, title: { display: true, text: T('Renouvelables arrêtés aux prix négatifs, TWh', 'Renewables stopped at negative prices, TWh'), color: '#B8C9D9' } }, scales: { x: { stacked: true, ticks: { color: '#7A93AB' }, grid: { display: false } }, y: Object.assign(ax('TWh'), { stacked: true }) } }) });
@@ -190,7 +190,7 @@
       const hrs = m => { const y = +m.slice(0, 4), mo = +m.slice(5, 7), full = new Date(Date.UTC(y, mo, 0)).getUTCDate(); const to = D.to || ''; return 24 * (to.slice(0, 7) === m ? +to.slice(8, 10) : full); };
       const lf = (src, m, yy, k) => { const r = src && src[m], gw = capAt(yy, m, k); if (!r) return null; return gw && r[k] != null ? Math.round(r[k] * 1e6 / (gw * hrs(m))) / 10 : null; };   // TWh·10⁶ ÷ (GW·10³ × h) × 100, one decimal
       const pm = m => (+m.slice(0, 4) - 1) + m.slice(4);
-      const LFS = [['nuclear', T('Nucléaire', 'Nuclear'), '#B48CF2'], ['wind', T('Éolien', 'Wind'), '#7FC8F8'], ['solar', T('Solaire', 'Solar'), '#F4B740']];
+      const LFS = [['nuclear', T('Nucléaire', 'Nuclear'), '#9B6BC4'], ['wind', T('Éolien', 'Wind'), '#14D3A9'], ['solar', T('Solaire', 'Solar'), '#FBBF24']];   // = PK_PAL.fuel
       mk('bl-lf', { type: 'line', data: { labels: lab, datasets: LFS.flatMap(([k, n, c]) => [
         { label: n + ' ' + year, data: mons.map(m => PJ(m) ? null : lf(M, m, year, k)), borderColor: c, borderWidth: 2.2, pointRadius: 2, tension: 0 },
         { label: n + ' ' + (+year - 1), data: mons.map(m => lf(P, pm(m), String(+year - 1), k)), borderColor: c, borderDash: [4, 3], borderWidth: 1.3, pointRadius: 0, tension: 0 }]) },

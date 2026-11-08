@@ -34,6 +34,7 @@
     capacity: svg('<rect x="3" y="12" width="4" height="8"/><rect x="10" y="8" width="4" height="12"/><rect x="17" y="4" width="4" height="16"/>'),
     genmix: svg('<path d="M12 3v9l7 4"/><circle cx="12" cy="12" r="9"/>'),
     load: svg('<path d="M7 7h11l-3-3M17 17H6l3 3"/>'),
+    drivers: svg('<path d="M3 6h5c4 0 4 12 8 12h5"/><path d="M3 18h5c4 0 4-12 8-12h5"/>'),
     frsystem: svg('<path stroke-linejoin="round" d="M12.3 2l4.2 2.5 2.5 1.5 1.8 1-.6 4-1.4 2 1 3 1.2 2-3 1.2-2.5.2-2 .9-1.5 1.5-4-1-2.4-.6-.2-.6.9-4.1-.7-2.3-.8-1.2-1.8-1-1.5-1.6 2.3-.8 2.4.2.3-2 1.3.6 2-.9.7-2.1z"/><ellipse cx="22.3" cy="20.9" rx=".55" ry="1.1"/>'),
   });
 
@@ -41,6 +42,7 @@
   const R = {
     'today': { page: 'morning' },
     'dashboards': { dash: 'mydash' },
+    'markets/drivers': { page: 'drivers' },   // what drives the price: fundamentals → maturities (js/drivers.js)
     'markets/spot': { page: 'prices', sub: 'da' },
     'markets/spot/overview': { page: 'prices', sub: 'overview' },
     'markets/spot/negative': { page: 'prices', sub: 'negative' },
@@ -91,6 +93,7 @@
   const MENU = [
     [null, [['today', 'Today', 'today'], ['dashboards', 'My dashboards', 'dashboards']]],
     ['Markets', [
+      ['markets/drivers', 'What drives the price', 'drivers'],   // first: the why before the prices
       ['markets/spot', 'Power spot', 'prices', [['markets/spot/overview', 'Overview'], ['markets/spot', 'Day-ahead'], ['markets/spot/negative', 'Negative prices'], ['markets/spot/spread', 'Spreads'], ['markets/spot/imbalance', 'Imbalance']]],
       ['markets/forwards', 'Power forwards', 'forward'],
       ['markets/fuels', 'Gas, carbon & oil', 'eua', [['markets/fuels', 'Spot prices'], ['markets/fuels/forwards', 'Forward curves'], ['markets/fuels/spreads', 'Spark & dark spreads']]],   // TTF forwards: same page, now one entry (notes 47, 48, 93); its address stays

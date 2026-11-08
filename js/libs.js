@@ -15160,12 +15160,12 @@ const C_UP   = '#14D3A9';
 const C_DN   = '#ED6965';
 const C_WARN = '#e8a020';
 const C_ACC  = '#14D3A9';
-const C_WIND = '#C4A57B';
+const C_WIND = '#14D3A9';   // fuel colours = PK_PAL.fuel (js/pk-chart-system.js)
 const C_SOLAR= '#FBBF24';
-const C_NUC  = '#7B4B9C';
-const C_HYD  = '#94D2BD';
+const C_NUC  = '#9B6BC4';
+const C_HYD  = '#5CB2F5';
 const C_FOS  = '#ED6965';
-const C_BIO  = '#94D2BD';
+const C_BIO  = '#4E8A2C';
 const C_TX2  = '#B8C9D9';
 const C_TX3  = '#7A93AB';
 
