@@ -15,7 +15,7 @@ const C_WON = '#C4A57B', C_WOFF = '#7FC8F8', C_SOL = '#FBBF24';
 
 function _renISO(d) { return d.toISOString().slice(0, 10); }
 function _renAdd(iso, n) { const [y, m, d] = iso.split('-').map(Number); return _renISO(new Date(Date.UTC(y, m - 1, d + n))); }
-function _renFmtDay(iso) { return new Date(iso + 'T12:00:00Z').toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' }); }
+function _renFmtDay(iso) { return new Date(iso + 'T12:00:00Z').toLocaleDateString(window.PKI18n && PKI18n.lang === 'en' ? 'en-GB' : 'fr-FR', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' }); }
 function _renMean(a) { const v = (a || []).filter(x => x != null); return v.length ? v.reduce((s, x) => s + x, 0) / v.length : null; }
 
 async function _renDaily(iso) {

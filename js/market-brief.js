@@ -150,12 +150,14 @@
     const chip = t => `<span class="wk-chip ${t === 'up' ? 'wk-up' : t === 'down' ? 'wk-dn' : 'wk-fl'}">${t === 'up' ? '↑ ' + T('haussier', 'bullish') : t === 'down' ? '↓ ' + T('baissier', 'bearish') : '→ ' + T('neutre', 'neutral')}</span>`;
     const byPrice = c => c == null || Math.abs(c) < 1 ? 'flat' : c > 0 ? 'up' : 'down';
     const txt = o => { if (!o) return ''; const t = String((isFr() ? o.text : (o.text_en || o.text)) || '').replace(/\.?\s*$/, '.'); return esc(t.charAt(0).toUpperCase() + t.slice(1)); };
-    // the bubble: the notes' call for the week ahead when there is one, else the direction prices took over 7 days
-    const look = (key, tones, move) => { const o = OL[key];
-      if (o && o.tone) return [o.tone, NOTE, o];
+    // the bubble: the notes' call for the week ahead when there is one, else the direction prices took over 7 days.
+    // A note's call can go stale (written days ago): when the figure shown next to it has since moved the other
+    // way, trust that computed figure instead of repeating a chip that now contradicts it.
+    const look = (key, tones, move) => { const o = OL[key], computed = byPrice(move);
+      if (o && o.tone && (computed === 'flat' || o.tone === computed)) return [o.tone, NOTE, o];
       const up = (tones || []).filter(x => x > 0).length, dn = (tones || []).filter(x => x < 0).length;
       if (up || dn) return [up > dn ? 'up' : dn > up ? 'down' : 'flat', NOTE, null];
-      return [byPrice(move), PRICE, null]; };
+      return [computed, PRICE, null]; };
     const R = [];   // [label, [tone, source, outlook], text]
     if (ctxT.length) { const u = ctxT.filter(c => c.tone === 'up').length - ctxT.filter(c => c.tone === 'down').length;
       R.push([T('Contexte', 'Context'), [u > 0 ? 'up' : u < 0 ? 'down' : 'flat', NOTE, null],

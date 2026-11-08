@@ -1808,46 +1808,14 @@ async function renderGmHistory() {
 
   if (periodEl) periodEl.textContent = `${zone} · ${w} · loading...`;
 
-  // ──────────────────────────────────────────────────────────────
-  // Fetch enriched summary.json — contains per-fuel daily avg/max
-  // (windAvg, solarAvg, nuclearAvg, hydroAvg, fossilAvg, biomassAvg, ...Max)
-  // Falls back to per-day fetch if summary lacks these fields (backward compat)
-  // ──────────────────────────────────────────────────────────────
+  // summary.json never carried per-fuel daily averages for any zone (that comment described an earlier
+  // architecture): windAvg/solarAvg/etc. always came back null here, so this always fell through to the
+  // per-day fetch below anyway — after downloading the 19 MB file for nothing. Go straight to the per-day
+  // fetch; it's the only path that has ever produced data.
   let series = [];
-  let fullZoneData = [];  // unfiltered series for rolling-window context
-  try {
-    if (!window._GM_HIST_SUMMARY_CACHE) {
-      const sm = await window.pkSummary();
-      if (sm) window._GM_HIST_SUMMARY_CACHE = sm;
-    }
-    const summary = window._GM_HIST_SUMMARY_CACHE;
-    const zoneData = summary?.zones?.[zone];
-    if (zoneData && zoneData.length) {
-      fullZoneData = zoneData.map(e => ({
-        d:         e.d,
-        windAvg:   e.windAvg    ?? null,
-        windMax:   e.windMax    ?? null,
-        solarAvg:  e.solarAvg   ?? null,
-        solarMax:  e.solarMax   ?? null,
-        nuclearAvg:e.nuclearAvg ?? null,
-        hydroAvg:  e.hydroAvg   ?? null,
-        fossilAvg: e.fossilAvg  ?? null,
-        biomassAvg:e.biomassAvg ?? null,
-      }));
-      // Filter by window
-      const days = _gmHistDaysForWindow(w);
-      const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - days);
-      const cutoffStr = cutoff.toISOString().slice(0, 10);
-      const filtered = (w === 'All') ? fullZoneData : fullZoneData.filter(e => e.d >= cutoffStr);
-      series = filtered.filter(s => s.windAvg != null || s.solarAvg != null);
-    }
-  } catch (e) {
-    console.warn('GenMix history fetch error:', e);
-  }
-
-  // Backward-compatible fallback (slow path): fetch daily files if summary empty
-  if (!series.length) {
-    if (periodEl) periodEl.textContent = `${zone} · ${w} · fallback fetch (slow)`;
+  const fullZoneData = [];   // r7Context's unfiltered-history argument below; summary.json never had it, so this was always empty
+  {
+    if (periodEl) periodEl.textContent = `${zone} · ${w} · loading (day by day)`;
     const days = _gmHistDaysForWindow(w);
     const today = new Date();
     for (let i = 0; i < Math.min(days, 31); i++) {  // cap fallback at 31 days for safety
