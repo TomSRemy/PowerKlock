@@ -42,10 +42,14 @@
     },
   };
   function apply(t) {
+    // reload only when leaving the light theme: charts drawn in light keep light-theme colours. init() calls apply() with
+    // the current theme, and on a direct open (e.g. #system/generation) charts can already exist then: reloading there
+    // looped forever (9 to 44 loads in the 8 Nov Lighthouse runs, summary.json re-downloaded each time)
+    const wasLight = light();
     document.documentElement.setAttribute('data-theme', t);
     try { localStorage.setItem(KEY, t); } catch (_) {}
     if (window.Chart) { Chart.defaults.color = t === 'light' ? TXT2 : '#B8C9D9';
-      Object.values(Chart.instances || {}).forEach(c => { try { if (t === 'dark') { location.reload(); return; } c.update('none'); } catch (_) {} }); }
+      Object.values(Chart.instances || {}).forEach(c => { try { if (t === 'dark') { if (wasLight) { location.reload(); return; } } else c.update('none'); } catch (_) {} }); }
     const b = document.getElementById('pk-theme-btn'); if (b) { b.title = t === 'light' ? 'Dark theme' : 'Light theme'; b.innerHTML = t === 'light' ? MOON : SUN; }
   }
   const SUN = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>';
