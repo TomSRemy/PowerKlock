@@ -132,7 +132,7 @@
       if (lin) { if (x < LX0 || x >= LX1 || y < LY0 || y >= LY1) return null; return [Math.floor((x - LX0) / (LX1 - LX0) * N), Math.floor((y - LY0) / (LY1 - LY0) * 24)]; }
       const dx = x - CX, dy = y - CY, r = Math.hypot(dx, dy); if (r < R0 || r > R1) return null;
       let a = Math.atan2(dx, -dy); if (a < 0) a += 2 * Math.PI; const d = Math.floor(tOfR(r)); if (d >= N) return null;
-      return [d, Math.floor(a / (2 * Math.PI) * 24)];
+      return [d, Math.floor(a / (2 * Math.PI) * 24 + 0.5) % 24];   // each hour's wedge is centred on its label
     }
     function size() {
       DPR = Math.min(2, window.devicePixelRatio || 1); const b = stage.getBoundingClientRect(); S = Math.max(240, Math.floor(b.width));
@@ -157,7 +157,7 @@
       if (lin) {
         octx.textAlign = 'right'; octx.textBaseline = 'middle';
         const fs = Math.max(11, Math.min(16, S / 40));
-        for (let h = 0; h <= 24; h += 3) { const main = h % 6 === 0; octx.font = `${main ? 800 : 600} ${(main ? fs + 2 : fs) * f}px Inter,system-ui,sans-serif`; octx.fillStyle = main ? t1 : t2; octx.fillText(h + ' h', LX0 - 6 * f, LY0 + (LY1 - LY0) * h / 24); }
+        for (let h = 0; h < 24; h += 3) { const main = h % 6 === 0; octx.font = `${main ? 800 : 600} ${(main ? fs + 2 : fs) * f}px Inter,system-ui,sans-serif`; octx.fillStyle = main ? t1 : t2; octx.fillText(h + ' h', LX0 - 6 * f, LY0 + (LY1 - LY0) * (h + 0.5) / 24); }
         octx.textAlign = 'center'; octx.textBaseline = 'top'; octx.font = `700 ${10 * f}px 'JetBrains Mono',monospace`;
         for (let y = Y0; y <= dayDate(D, N - 1).getUTCFullYear(); y++) { const t = (Date.UTC(y, 6, 1) - D.d0) / 864e5; if (t > N) break; octx.fillStyle = t2; octx.fillText(y, LX0 + (LX1 - LX0) * Math.max(0, t) / N, LY1 + 8 * f); }
         return;
@@ -191,7 +191,8 @@
       if (F0 < 0) F0 = 0;
     }
     function kpis(p) {
-      const d = Math.min(N - 1, Math.floor(p * N)), lo = RMIN[d], hi = RMAX[d], set = (k, s) => { const e = host.querySelector(`[data-k="${k}"]`); if (e) e.textContent = s; };
+      // (the relief's first frame can come with a negative time)
+      const d = Math.max(0, Math.min(N - 1, Math.floor((p > 0 ? p : 0) * N))), lo = RMIN[d], hi = RMAX[d], set = (k, s) => { const e = host.querySelector(`[data-k="${k}"]`); if (e) e.textContent = s; };
       const none = lo[0] === 1e9;
       set('neg', NEG[d].toLocaleString(T('fr-FR', 'en-GB')) + ' h'); set('negs', d < F0 ? '' : `${fmtD(D, F0)} → ${fmtD(D, Math.min(d, F1))}`);
       set('avg', CNT[d] ? fmtN(SUM[d] / CNT[d]) + ' €' : '–'); set('avgs', CNT[d] ? CNT[d].toLocaleString(T('fr-FR', 'en-GB')) + ' ' + T('heures', 'hours') : '');
@@ -221,7 +222,7 @@
       const [d, h] = q, v = val(d, h); draw(1);
       octx.strokeStyle = '#FFD23F'; octx.lineWidth = 2 * DPR; octx.beginPath();
       if (lin) { const yy = LY0 + (LY1 - LY0) * (h + 0.5) / 24, xx = LX0 + (LX1 - LX0) * (d + 0.5) / N; octx.moveTo(LX0, yy); octx.lineTo(LX1, yy); octx.stroke(); octx.lineWidth = DPR; octx.beginPath(); octx.moveTo(xx, LY0); octx.lineTo(xx, LY1); octx.stroke(); }
-      else { const a = (h + 0.5) / 24 * 2 * Math.PI; octx.moveTo(CX, CY); octx.lineTo(CX + Math.sin(a) * R1, CY - Math.cos(a) * R1); octx.stroke(); octx.lineWidth = DPR; octx.beginPath(); octx.arc(CX, CY, rOfT(d + 0.5), 0, 2 * Math.PI); octx.stroke(); }
+      else { const a = h / 24 * 2 * Math.PI; octx.moveTo(CX, CY); octx.lineTo(CX + Math.sin(a) * R1, CY - Math.cos(a) * R1); octx.stroke(); octx.lineWidth = DPR; octx.beginPath(); octx.arc(CX, CY, rOfT(d + 0.5), 0, 2 * Math.PI); octx.stroke(); }
       const s = D.sol[d * 24 + h], w = D.win[d * 24 + h];
       tip.innerHTML = `${fmtD(D, d)} · ${String(h).padStart(2, '0')} h<b class="${v < 0 ? 'sp-cy' : v > 150 ? 'sp-rd' : v > 60 ? 'sp-am' : ''}">${fmtN(v)} €/MWh</b>${!isNaN(s) || !isNaN(w) ? `<small>${T('solaire', 'solar')} ${isNaN(s) ? '–' : fmtN(s / 1000)} GW · ${T('éolien', 'wind')} ${isNaN(w) ? '–' : fmtN(w / 1000)} GW</small>` : ''}`;
       const sb = stage.getBoundingClientRect(); let lx = e.clientX - sb.left + 14; if (lx > sb.width - 190) lx -= 210;
@@ -232,7 +233,7 @@
     // ── relief (Three.js, loaded on first use) ──
     let TH = null, R3 = null;
     async function relief(onOff) {
-      on3 = onOff; g3.style.display = on3 ? 'block' : 'none'; cv.style.visibility = ov.style.visibility = on3 ? 'hidden' : 'visible';
+      on3 = onOff; host.querySelector('.sp-wrap').classList.toggle('sp-3d', on3); g3.style.display = on3 ? 'block' : 'none'; cv.style.visibility = ov.style.visibility = on3 ? 'hidden' : 'visible';
       hint.textContent = on3 ? T('Glisser pour tourner · molette ou pincer pour zoomer · creux = prix négatif', 'Drag to turn · wheel or pinch to zoom · hollows = negative prices') : '';
       if (!on3) return;
       if (!TH) { try { TH = await import(new URL('vendor/three.module.min.js', document.querySelector('script[src*="spiral.js"]').src).href); } catch (e) { hint.textContent = T('Relief indisponible sur ce navigateur.', 'Relief not available in this browser.'); return; } }
