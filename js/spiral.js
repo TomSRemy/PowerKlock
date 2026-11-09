@@ -71,9 +71,9 @@
           <div class="sp-sel" data-k="sel"></div>
           <div class="sp-k"><span class="sp-kl">${T('Prix moyen', 'Average price')}</span><span class="sp-kv" data-k="avg">–</span><span class="sp-ks" data-k="avgs"></span></div>
           <div class="sp-k"><span class="sp-kl">${T('Prix moyen des heures négatives', 'Average of the negative hours')}</span><span class="sp-kv sp-cy" data-k="navg">–</span><span class="sp-ks" data-k="navgs"></span></div>
-          <div class="sp-k"><span class="sp-kl">${T('Heures négatives', 'Negative hours')}</span><span class="sp-kv sp-cy" data-k="neg">–</span><span class="sp-ks" data-k="negs"></span></div>
           <div class="sp-k"><span class="sp-kl">${T('Record bas', 'Record low')}</span><span class="sp-kv sp-cy" data-k="min">–</span><span class="sp-ks" data-k="mins"></span></div>
           <div class="sp-k"><span class="sp-kl">${T('Record haut', 'Record high')}</span><span class="sp-kv sp-rd" data-k="max">–</span><span class="sp-ks" data-k="maxs"></span></div>
+          <div class="sp-k sp-k-neg"><span class="sp-kl">${T('Heures négatives', 'Negative hours')}</span><span class="sp-kv sp-cy" data-k="neg">–</span><span class="sp-ks" data-k="negs"></span></div>
           <div class="sp-f">
             <div class="sp-fh"><span>${T('Filtres', 'Filters')}</span><button type="button" data-a="reset">${T('Tout réinitialiser', 'Reset all')}</button></div>
             <div class="sp-fg"><span class="sp-fl">${T('Années', 'Years')}</span><div class="sp-btns">${Array.from({ length: new Date().getUTCFullYear() - Y0 + 1 }, (_, i) => Y0 + i).map(y => `<button type="button" data-g="y" data-v="${y}">${y}</button>`).join('')}</div></div>
