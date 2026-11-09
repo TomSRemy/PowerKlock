@@ -73,6 +73,7 @@
       <p class="bl-foot" style="margin:0">${T('Une horloge de 24 heures : chaque tour est un jour, 2019 au centre, le dernier jour publié au bord. Le cyan est un prix négatif, l’ambre puis le rouge un prix élevé. Le creux cyan de midi qui grandit, c’est le solaire ; l’anneau rouge, la crise de 2021-2022.', 'A 24-hour clock: each turn is a day, 2019 at the centre, the last published day at the edge. Cyan is a negative price, amber then red a high one. The growing cyan hollow at noon is solar; the red ring is the 2021-22 crisis.')}</p>`) + `
       <div class="sp-wrap${widget ? ' sp-widget' : ''}"><div class="sp-grid"><div class="sp-stage"><canvas class="sp-cv"></canvas><canvas class="sp-ov"></canvas><div class="sp-g3"></div><div class="sp-tip"></div><div class="sp-hint"></div></div>
         <div class="sp-side">
+          <div class="sp-btns sp-cyc" role="group" aria-label="${T('Cycle du cadran', 'Dial cycle')}"><span class="sp-fl">${T('Un tour =', 'One turn =')}</span><button type="button" data-c="h" class="on">${T('1 jour · heures', '1 day · hours')}</button><button type="button" data-c="w">${T('1 semaine · jours', '1 week · days')}</button><button type="button" data-c="m">${T('1 an · mois', '1 year · months')}</button></div>
           <div class="sp-btns sp-view"><button type="button" class="sp-alt" data-a="lin">${T('Linéaire', 'Linear')}</button><button type="button" class="sp-alt" data-a="3d">3D</button><button type="button" data-a="replay">↺ ${T('Rejouer', 'Replay')}</button><button type="button" data-a="full" aria-pressed="false">⤢ ${T('Plein écran', 'Full screen')}</button></div>
           <div class="sp-leg"><i></i><div class="sp-lsel" role="slider" aria-label="${T('Choisir les prix sur la légende', 'Pick prices on the legend')}" title="${T('Glisser pour une fourchette de prix, cliquer pour un prix', 'Drag for a price range, click for one price')}"><b class="sp-lr"></b><span class="sp-lh" data-h="0"></span><span class="sp-lh" data-h="1"></span></div><div class="sp-tk">${[[-200, 0], [0, 4], [60, 6], [150, 8], [500, 11]].map(([v, k]) => `<span style="left:${(k / 12 * 100).toFixed(1)}%">${v < 0 ? '−' + -v : v}${v === 500 ? '+' : ''}</span>`).join('')}<span class="u">€/MWh</span></div><b class="sp-l0" title="${T('Heures à exactement 0 €', 'Hours at exactly 0 €')}">= 0 €</b></div>
           <button type="button" class="sp-lclear" data-a="pclear" hidden></button>
@@ -111,10 +112,30 @@
     const SEASON = [0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 0];   // Dec–Feb winter, Mar–May spring, Jun–Aug summer, Sep–Nov autumn
     const SE_K = ['w', 'sp', 'su', 'a'];
     const iso2d = iso => Math.round((Date.parse(iso + 'T00:00:00Z') - D.d0) / 864e5);
-    let DAVG, MAVG;
+    let DAVG, MAVG, DO, YDAY;
+    // CYC: the dial's cycle. A turn (a row) is a day, a week or a year; a slot is an hour, a weekday or a day of the year.
+    // In the day and month cycles each cell is a day, coloured by the mean of its selected hours.
+    let CYC = 'h', A = 24, NR = 1, OFF0 = 0, YR0 = Y0;
+    const MSTART = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
+    function cycle() {
+      if (CYC === 'h') { A = 24; NR = N; }
+      else if (CYC === 'w') { A = 7; OFF0 = (DW[0] + 6) % 7; NR = Math.ceil((N + OFF0) / 7); }
+      else { A = 366; YR0 = DY[0]; NR = DY[N - 1] - YR0 + 1; }
+    }
+    // the row coordinate of a day index (or of a date), and the day of a cell
+    const tRow = d => CYC === 'h' ? d : CYC === 'w' ? (d + OFF0) / 7 : (DY[d] - YR0) + DO[d] / 366;
+    const tRowDate = (y, m, dd) => { const di = (Date.UTC(y, m, dd) - D.d0) / 864e5; if (CYC === 'h') return di; if (CYC === 'w') return (di + OFF0) / 7;
+      return (y - YR0) + (Date.UTC(y, m, dd) - Date.UTC(y, 0, 1)) / 864e5 / 366; };
+    const cellDay = (r, sl) => { if (CYC === 'h') return r; if (CYC === 'w') { const d = r * 7 + sl - OFF0; return d >= 0 && d < N ? d : -1; }
+      if (r < 0 || r >= NR) return -1; const d = YDAY[r] + sl; return d >= 0 && d < N && DY[d] === YR0 + r ? d : -1; };
+    const rowDay = t => { const r = Math.max(0, Math.min(NR - 1e-9, t)); let d;
+      if (CYC === 'h') d = Math.floor(r); else if (CYC === 'w') d = Math.floor(r * 7) - OFF0; else { const yi = Math.floor(r); d = YDAY[yi] + Math.floor((r - yi) * 366); }
+      return Math.max(0, Math.min(N - 1, d)); };
     function calendar() {   // once per data load: each day's year, month, weekday, mean; each month's mean; the 99th percentile; the events
       DY = new Int16Array(N); DM = new Int8Array(N); DW = new Int8Array(N);
-      for (let d = 0; d < N; d++) { const t = dayDate(D, d); DY[d] = t.getUTCFullYear(); DM[d] = t.getUTCMonth(); DW[d] = t.getUTCDay(); }
+      DO = new Int16Array(N); YDAY = [];
+      for (let d = 0; d < N; d++) { const t = dayDate(D, d); DY[d] = t.getUTCFullYear(); DM[d] = t.getUTCMonth(); DW[d] = t.getUTCDay();
+        DO[d] = Math.round((t - Date.UTC(DY[d], 0, 1)) / 864e5); if (YDAY[DY[d] - DY[0]] === undefined) YDAY[DY[d] - DY[0]] = d - DO[d]; }
       DAVG = new Float32Array(N); MAVG = new Map(); const ms = new Map();
       for (let d = 0; d < N; d++) { let a = 0; for (let h = 0; h < 24; h++) a += D.v[d * 24 + h]; DAVG[d] = a / 24;
         const k = DY[d] * 12 + DM[d], o = ms.get(k) || [0, 0]; o[0] += DAVG[d]; o[1]++; ms.set(k, o); }
@@ -145,13 +166,17 @@
     let VW0 = 0, VWN = 1;
     const tOfR = r => VW0 + (r - R0) / (R1 - R0) * VWN, rOfT = t => R0 + (R1 - R0) * Math.max(0, Math.min(1, (t - VW0) / VWN));
     let Z = 1, TX = 0, TY = 0, BZ = 1, BTX = 0, BTY = 0; const BASE = document.createElement('canvas');   // BASE: the last full drawing, for the view (BZ, BTX, BTY)   // the 2D zoom: a screen pixel (x, y) shows the dial's point ((x − TX) / Z, (y − TY) / Z)
-    function hit(x, y) {
+    const flipY = () => CYC === 'h';   // linear view: 0 h at the bottom; weekdays and months read downwards
+    function cellAt(x, y) {
       x = (x - TX) / Z; y = (y - TY) / Z;
-      if (lin) { if (x < LX0 || x >= LX1 || y < LY0 || y >= LY1) return null; return [VW0 + Math.floor((x - LX0) / (LX1 - LX0) * VWN), 23 - Math.floor((y - LY0) / (LY1 - LY0) * 24)]; }   // 0 h at the bottom
-      const dx = x - CX, dy = y - CY, r = Math.hypot(dx, dy); if (r < R0 || r > R1) return null;
-      let a = Math.atan2(dx, -dy); if (a < 0) a += 2 * Math.PI; const d = Math.floor(tOfR(r)); if (d < VW0 || d >= VW0 + VWN || d >= N) return null;
-      return [d, Math.floor(a / (2 * Math.PI) * 24 + 0.5) % 24];   // each hour's wedge is centred on its label
+      let r, sl;
+      if (lin) { if (x < LX0 || x >= LX1 || y < LY0 || y >= LY1) return null; r = VW0 + Math.floor((x - LX0) / (LX1 - LX0) * VWN); const k = Math.floor((y - LY0) / (LY1 - LY0) * A); sl = flipY() ? A - 1 - k : k; }
+      else { const dx = x - CX, dy = y - CY, rr = Math.hypot(dx, dy); if (rr < R0 || rr > R1) return null;
+        let a = Math.atan2(dx, -dy); if (a < 0) a += 2 * Math.PI; r = Math.floor(tOfR(rr)); sl = Math.floor(a / (2 * Math.PI) * A + 0.5) % A; }   // each slot centred on its angle
+      if (r < VW0 || r >= VW0 + VWN || r >= NR) return null;
+      return [r, sl];
     }
+    function hit(x, y) { const c = cellAt(x, y); if (!c) return null; const d = cellDay(c[0], c[1]); if (d < 0) return null; return [d, CYC === 'h' ? c[1] : -1, c[0], c[1]]; }
     function size() {
       // the drawing takes the whole stage, a rectangle: the dial is centred in it at the largest size its shorter side allows
       DPR = Math.min(2, window.devicePixelRatio || 1); const b = stage.getBoundingClientRect(); S = Math.max(240, Math.floor(b.width)); SH = Math.max(240, Math.floor(b.height || b.width));
@@ -163,19 +188,24 @@
       LX0 = Math.min(70, S * 0.1) * DPR; LX1 = S * DPR * 0.985; LY0 = SH * DPR * 0.06; LY1 = SH * DPR * 0.9;
     }
     // each hour's colour once, the selected ones bright and the others close to the background (2. the selection stands out)
-    let CR, CG, CB, KP, ZR;
+    let CR, CG, CB, KP, ZR, EM;
     function colours() {
-      const bg = light() ? [255, 255, 255] : [15, 20, 25]; CR = new Uint8ClampedArray(N * 24); CG = new Uint8ClampedArray(N * 24); CB = new Uint8ClampedArray(N * 24); KP = new Uint8Array(N * 24); ZR = new Uint8Array(N * 24);
-      // with a selection, a kept hour whose colour is as dark as the background (prices around 0–60 €) is lifted towards a light
+      const n = NR * A, bg = light() ? [255, 255, 255] : [15, 20, 25];
+      CR = new Uint8ClampedArray(n); CG = new Uint8ClampedArray(n); CB = new Uint8ClampedArray(n); KP = new Uint8Array(n); ZR = new Uint8Array(n); EM = new Uint8Array(n);
+      // with a selection, a kept cell whose colour is as dark as the background (prices around 0–60 €) is lifted towards a light
       // slate, so it never looks like an excluded one
       const sel = F.y.size || F.se.size || F.dy || F.pr.size || !isNaN(F.pmin) || !isNaN(F.pmax) || F.pd.size || F.ev.size || F.d0 >= 0 || F.d1 < 1e9 || F.hs.some(x => !x);
       const lift = light() ? [70, 96, 130] : [150, 175, 200];
-      for (let d = 0; d < N; d++) for (let h = 0; h < 24; h++) { const i = d * 24 + h, v = D.v[i]; let [r, g, b] = col(v);
-        const kp = keep(d, h, v); KP[i] = kp ? 1 : 0; ZR[i] = kp && ZERO(v) ? 1 : 0;
-        if (!kp) { const m2 = (r + g + b) / 3; r = bg[0] * 0.9 + m2 * 0.1; g = bg[1] * 0.9 + m2 * 0.1; b = bg[2] * 0.9 + m2 * 0.1; }
-        else if (sel) { const L = 0.3 * r + 0.59 * g + 0.11 * b, dk = light() ? Math.max(0, (L - 200) / 55) : Math.max(0, 1 - L / 110);
-          if (dk > 0) { const t = 0.9 * dk; r += (lift[0] - r) * t; g += (lift[1] - g) * t; b += (lift[2] - b) * t; } }
-        CR[i] = r; CG[i] = g; CB[i] = b; }
+      for (let r = 0; r < NR; r++) for (let sl = 0; sl < A; sl++) { const i = r * A + sl, d = cellDay(r, sl);
+        if (d < 0) { EM[i] = 1; continue; }
+        let v, kp;
+        if (CYC === 'h') { v = D.v[d * 24 + sl]; kp = keep(d, sl, v); ZR[i] = kp && ZERO(v) ? 1 : 0; }
+        else { let a = 0, k = 0; for (let h = 0; h < 24; h++) { const x = D.v[d * 24 + h]; if (keep(d, h, x)) { a += x; k++; } } kp = k > 0; v = kp ? a / k : DAVG[d]; }   // a day: the mean of its selected hours
+        let [cr, cg, cb] = col(v); KP[i] = kp ? 1 : 0;
+        if (!kp) { const m2 = (cr + cg + cb) / 3; cr = bg[0] * 0.9 + m2 * 0.1; cg = bg[1] * 0.9 + m2 * 0.1; cb = bg[2] * 0.9 + m2 * 0.1; }
+        else if (sel) { const L = 0.3 * cr + 0.59 * cg + 0.11 * cb, dk = light() ? Math.max(0, (L - 200) / 55) : Math.max(0, 1 - L / 110);
+          if (dk > 0) { const t = 0.9 * dk; cr += (lift[0] - cr) * t; cg += (lift[1] - cg) * t; cb += (lift[2] - cb) * t; } }
+        CR[i] = cr; CG[i] = cg; CB[i] = cb; }
     }
     function build() {
       colours();
@@ -183,17 +213,18 @@
       for (let y = 0; y < HH; y++) for (let x = 0; x < W; x++) {
         let dA, dB, h;
         const ux = (x - TX) / Z, uy = (y - TY) / Z, px = 1 / Z;   // this pixel on the dial, and its size there
-        if (lin) { if (ux < LX0 || ux >= LX1 || uy < LY0 || uy >= LY1) continue; h = 23 - Math.floor((uy + px / 2 - LY0) / (LY1 - LY0) * 24);
+        if (lin) { if (ux < LX0 || ux >= LX1 || uy < LY0 || uy >= LY1) continue; { const kk2 = Math.min(A - 1, Math.floor((uy + px / 2 - LY0) / (LY1 - LY0) * A)); h = flipY() ? A - 1 - kk2 : kk2; }
           dA = VW0 + Math.floor((ux - LX0) / (LX1 - LX0) * VWN); dB = VW0 + Math.floor((ux + px - LX0) / (LX1 - LX0) * VWN - 1e-9); }
         else { const dx = ux + px / 2 - CX, dy = uy + px / 2 - CY, r = Math.hypot(dx, dy); if (r < R0 || r > R1) continue;
-          let a = Math.atan2(dx, -dy); if (a < 0) a += 2 * Math.PI; h = Math.floor(a / (2 * Math.PI) * 24 + 0.5) % 24;
+          let a = Math.atan2(dx, -dy); if (a < 0) a += 2 * Math.PI; h = Math.floor(a / (2 * Math.PI) * A + 0.5) % A;
           dA = Math.floor(tOfR(Math.max(R0, r - px / 2))); dB = Math.floor(tOfR(Math.min(R1, r + px / 2)) - 1e-9); }
-        dA = Math.max(VW0, Math.min(N - 1, dA)); dB = Math.max(dA, Math.min(N - 1, VW0 + VWN - 1, dB));
+        dA = Math.max(VW0, Math.min(NR - 1, dA)); dB = Math.max(dA, Math.min(NR - 1, VW0 + VWN - 1, dB));
         // the mean of the days under the pixel (at most 16 of them, evenly spaced)
         // the kept days win: a pixel holding even one selected hour shows the selection, so sparse selections stay visible
         let r2 = 0, g2 = 0, b2 = 0, k = 0, rk = 0, gk = 0, bk = 0, kk = 0;
-        let zk = 0;
-        for (let d = dA; d <= dB; d++) { const i = d * 24 + h; zk += ZR[i]; if (KP[i]) { rk += CR[i]; gk += CG[i]; bk += CB[i]; kk++; } else if (k < 16) { r2 += CR[i]; g2 += CG[i]; b2 += CB[i]; k++; } }
+        let zk = 0, em = 0;
+        for (let d = dA; d <= dB; d++) { const i = d * A + h; if (EM[i]) { em++; continue; } zk += ZR[i]; if (KP[i]) { rk += CR[i]; gk += CG[i]; bk += CB[i]; kk++; } else if (k < 16) { r2 += CR[i]; g2 += CG[i]; b2 += CB[i]; k++; } }
+        if (!k && !kk) continue;   // only empty cells (before the first day, after the last)
         if (kk) { r2 = rk; g2 = gk; b2 = bk; k = kk; }
         // 0 € hours weigh four times in their pixel: sparse, they would vanish in the mean, but they must not cover their neighbours
         if (zk) { const zc = ZCOL(), n2 = kk || (dB - dA + 1), t = Math.min(0.85, 4 * zk / n2), rr = r2 / k, gg = g2 / k, bb = b2 / k;
@@ -203,40 +234,49 @@
       BASE.width = W; BASE.height = HH; BASE.getContext('2d').putImageData(img, 0, 0); BZ = Z; BTX = TX; BTY = TY;
       cv.dataset.pkDrawn = '1';
     }
+    // the labels around the dial (slot, text, main) and the spokes (slot), for the cycle
+    const WDN = () => [T('lun.', 'Mon'), T('mar.', 'Tue'), T('mer.', 'Wed'), T('jeu.', 'Thu'), T('ven.', 'Fri'), T('sam.', 'Sat'), T('dim.', 'Sun')];
+    const MON = () => [T('janv.', 'Jan'), T('févr.', 'Feb'), T('mars', 'Mar'), T('avr.', 'Apr'), T('mai', 'May'), T('juin', 'Jun'), T('juil.', 'Jul'), T('août', 'Aug'), T('sept.', 'Sep'), T('oct.', 'Oct'), T('nov.', 'Nov'), T('déc.', 'Dec')];
+    function slotLabels(linear) {
+      if (CYC === 'h') return Array.from({ length: 24 }, (_, h) => [h, h + ' h', h % 6 === 0]).filter(x => !linear || x[0] % 3 === 0);
+      if (CYC === 'w') return WDN().map((t, k) => [k, t, k >= 5]);
+      return MON().map((t, k) => [MSTART[k] + 14.5, t, k % 3 === 0]);
+    }
+    const spokes = () => CYC === 'h' ? [0, 3, 6, 9, 12, 15, 18, 21].map(h => [h, h % 6 === 0]) : CYC === 'w' ? [0, 1, 2, 3, 4, 5, 6].map(k => [k + 0.5, k === 4 || k === 6]) : MSTART.map((m2, k) => [m2 - 0.5, k % 3 === 0]);
     const txt = () => light() ? ['#1F2D3D', '#5E6B80', '#8DA3BA'] : ['#E8EDF5', '#9AA7BA', '#5E6B80'];
     function axes(p) {
       octx.setTransform(1, 0, 0, 1, 0, 0); octx.clearRect(0, 0, ov.width, ov.height); octx.setTransform(Z, 0, 0, Z, TX, TY);
       const f = DPR / Z, [t1, t2, t3] = txt();   // sizes divided by the zoom: text and lines keep their size on screen
-      octx.font = `600 ${11 * f}px Inter,system-ui,sans-serif`;
+      const yLast = dayDate(D, N - 1).getUTCFullYear();
       if (lin) {
         octx.textAlign = 'right'; octx.textBaseline = 'middle';
         const fs = Math.max(11, Math.min(16, S / 40));
-        for (let h = 0; h < 24; h += 3) { const main = h % 6 === 0; octx.font = `${main ? 800 : 600} ${(main ? fs + 2 : fs) * f}px Inter,system-ui,sans-serif`; octx.fillStyle = main ? t1 : t2; octx.fillText(h + ' h', LX0 - 6 * f, LY1 - (LY1 - LY0) * (h + 0.5) / 24); }
+        slotLabels(true).forEach(([sl, t, main]) => { const u = (sl + 0.5) / A, yy = flipY() ? LY1 - (LY1 - LY0) * u : LY0 + (LY1 - LY0) * u;
+          octx.font = `${main ? 800 : 600} ${(main ? fs + 2 : fs) * f}px Inter,system-ui,sans-serif`; octx.fillStyle = main ? t1 : t2; octx.fillText(t, LX0 - 6 * f, yy); });
         octx.textAlign = 'center'; octx.textBaseline = 'top'; octx.font = `700 ${10 * f}px 'JetBrains Mono',monospace`;
-        for (let y = Y0; y <= dayDate(D, N - 1).getUTCFullYear(); y++) { const t = (Date.UTC(y, 6, 1) - D.d0) / 864e5; if (t < VW0 || t > VW0 + VWN) continue; octx.fillStyle = t2; octx.fillText(y, LX0 + (LX1 - LX0) * (t - VW0) / VWN, LY1 + 8 * f); }
+        for (let y = Y0; y <= yLast; y++) { const t = tRowDate(y, 6, 1); if (t < VW0 || t > VW0 + VWN) continue; octx.fillStyle = t2; octx.fillText(y, LX0 + (LX1 - LX0) * (t - VW0) / VWN, LY1 + 8 * f); }
         return;
       }
       octx.textAlign = 'center'; octx.textBaseline = 'middle';
-      // the hours scale with the dial: 0, 6, 12 and 18 h larger and bright, the others readable but quieter
-      const fs = FS, off = OFF / Z;
-      for (let h = 0; h < 24; h++) { const a = h / 24 * 2 * Math.PI, r = R1 + off, main = h % 6 === 0;
-        octx.font = `${main ? 800 : 600} ${(main ? fs + 3 : fs) * f}px Inter,system-ui,sans-serif`; octx.fillStyle = main ? t1 : t2; const W0 = ov.width, H0 = ov.height, m = 22 * DPR;   // zoomed in, a label that would leave the frame stays on its edge, along its spoke
-          let sx = (CX + Math.sin(a) * r) * Z + TX, sy = (CY - Math.cos(a) * r) * Z + TY;
-          if (Z > 1.001) { const ex = sx - W0 / 2, ey = sy - H0 / 2, k = Math.min(1, (W0 / 2 - m) / Math.max(Math.abs(ex), 1e-6), (H0 / 2 - m) / Math.max(Math.abs(ey), 1e-6)); sx = W0 / 2 + ex * k; sy = H0 / 2 + ey * k; }
-          octx.fillText(h + ' h', (sx - TX) / Z, (sy - TY) / Z); }
-      // spokes every 3 hours, the four main ones stronger, to follow an hour across the years
-      for (let h = 0; h < 24; h += 3) { const a = h / 24 * 2 * Math.PI, main = h % 6 === 0;
+      // the slot labels scale with the dial, the main ones larger and bright; zoomed in, a label that would leave the frame stays on its edge
+      const fs = FS, off = OFF / Z, W0 = ov.width, H0 = ov.height, m = 22 * DPR;
+      slotLabels(false).forEach(([sl, t, main]) => { const a = sl / A * 2 * Math.PI, r = R1 + off;
+        octx.font = `${main ? 800 : 600} ${(main ? fs + 3 : fs) * f}px Inter,system-ui,sans-serif`; octx.fillStyle = main ? t1 : t2;
+        let sx = (CX + Math.sin(a) * r) * Z + TX, sy = (CY - Math.cos(a) * r) * Z + TY;
+        if (Z > 1.001) { const ex = sx - W0 / 2, ey = sy - H0 / 2, k = Math.min(1, (W0 / 2 - m) / Math.max(Math.abs(ex), 1e-6), (H0 / 2 - m) / Math.max(Math.abs(ey), 1e-6)); sx = W0 / 2 + ex * k; sy = H0 / 2 + ey * k; }
+        octx.fillText(t, (sx - TX) / Z, (sy - TY) / Z); });
+      // spokes: every 3 hours, between the weekdays (the weekend's edges stronger), at each month's start
+      spokes().forEach(([sl, main]) => { const a = sl / A * 2 * Math.PI;
         octx.strokeStyle = light() ? `rgba(31,45,61,${main ? .35 : .18})` : `rgba(232,237,245,${main ? .28 : .13})`; octx.lineWidth = (main ? 1.4 : 1) * f;
-        octx.beginPath(); octx.moveTo(CX + Math.sin(a) * R0, CY - Math.cos(a) * R0); octx.lineTo(CX + Math.sin(a) * R1, CY - Math.cos(a) * R1); octx.stroke(); }
-      // each 1 January a solid ring, its year written on the 0 h axis (the ring's own top), on a small plate
+        octx.beginPath(); octx.moveTo(CX + Math.sin(a) * R0, CY - Math.cos(a) * R0); octx.lineTo(CX + Math.sin(a) * R1, CY - Math.cos(a) * R1); octx.stroke(); });
+      // each 1 January a solid ring, its year written on the first spoke, in the middle of its band
       octx.font = `700 ${Math.max(10, Math.min(13, S / 60)) * f}px 'JetBrains Mono',monospace`;
-      const y0w = dayDate(D, VW0).getUTCFullYear(), y1w = dayDate(D, Math.min(N - 1, VW0 + VWN - 1)).getUTCFullYear();
-      for (let y = y0w; y <= y1w + 1; y++) {
-        const t = (Date.UTC(y, 0, 1) - D.d0) / 864e5; if (t <= VW0 || t >= VW0 + VWN || t > VW0 + p * VWN) continue; const r = rOfT(t);
+      for (let y = Y0; y <= yLast + 1; y++) {
+        const t = tRowDate(y, 0, 1); if (t <= VW0 || t >= VW0 + VWN || t > VW0 + p * VWN) continue; const r = rOfT(t);
         octx.strokeStyle = light() ? 'rgba(31,45,61,.45)' : 'rgba(232,237,245,.38)'; octx.lineWidth = 1.2 * f; octx.beginPath(); octx.arc(CX, CY, r, 0, 2 * Math.PI); octx.stroke();
       }
-      for (let y = y0w; y <= y1w; y++) {   // the year in the middle of its band, on the 0 h spoke
-        const ta = Math.max(VW0, (Date.UTC(y, 0, 1) - D.d0) / 864e5), tb = Math.min(VW0 + VWN, (Date.UTC(y + 1, 0, 1) - D.d0) / 864e5); if (tb <= ta || ta > VW0 + p * VWN) continue;
+      for (let y = Y0; y <= yLast; y++) {
+        const ta = Math.max(VW0, tRowDate(y, 0, 1)), tb = Math.min(VW0 + VWN, tRowDate(y + 1, 0, 1)); if (tb <= ta || ta > VW0 + p * VWN) continue;
         const r = rOfT((ta + tb) / 2), yy = CY - r, w = 40 * f, hh = 16 * f;
         octx.fillStyle = light() ? 'rgba(255,255,255,.9)' : 'rgba(15,20,25,.88)'; octx.fillRect(CX - w / 2, yy - hh / 2, w, hh); octx.fillStyle = t1; octx.fillText(String(y), CX, yy);
       }
@@ -253,11 +293,11 @@
         NEG[d] = c; ZH[d] = z0; H200[d] = g2; CNT[d] = k; SUM[d] = sm; NSUM[d] = ns; RMIN.push(lo); RMAX.push(hi); }
       if (F0 < 0) F0 = 0;
       const dated = F.y.size || F.d0 >= 0 || F.d1 < 1e9 || F.ev.size;
-      if (dated && F1 >= F0) { VW0 = F0; VWN = F1 - F0 + 1; } else { VW0 = 0; VWN = N; }
+      if (dated && F1 >= F0) { VW0 = Math.floor(tRow(F0)); VWN = Math.floor(tRow(F1)) - VW0 + 1; } else { VW0 = 0; VWN = NR; }
     }
     function kpis(p) {
       // (the relief's first frame can come with a negative time)
-      const d = Math.max(0, Math.min(N - 1, VW0 + Math.floor((p > 0 ? p : 0) * VWN))), lo = RMIN[d], hi = RMAX[d], set = (k, s) => { const e = host.querySelector(`[data-k="${k}"]`); if (e) e.textContent = s; };
+      const d = rowDay(VW0 + (p > 0 ? p : 0) * VWN - 1e-6), lo = RMIN[d], hi = RMAX[d], set = (k, s) => { const e = host.querySelector(`[data-k="${k}"]`); if (e) e.textContent = s; };
       const none = lo[0] === 1e9;
       const pc = n => CNT[d] ? ' · ' + fmtN(n / CNT[d] * 100, 1) + ' % ' + T('des heures', 'of hours') : '';
       set('zero', ZH[d].toLocaleString(T('fr-FR', 'en-GB')) + ' h'); set('zeros', pc(ZH[d]).replace(/^ · /, ''));
@@ -287,6 +327,13 @@
 
     // the tooltip of an hour: its price, solar and wind, the day's average and its gap to the month (flat dial and relief)
     function showTip(d, h, cx, cy) {
+      if (h < 0) {   // a day (day and month cycles): its mean, its range, its gap to the month
+        let a = 0, k = 0, lo = Infinity, hi = -Infinity; for (let hh = 0; hh < 24; hh++) { const x = D.v[d * 24 + hh]; if (keep(d, hh, x)) { a += x; k++; } lo = Math.min(lo, x); hi = Math.max(hi, x); }
+        const v = k ? a / k : DAVG[d], mv = MAVG.get(DY[d] * 12 + DM[d]), wd = dayDate(D, d).toLocaleDateString(T('fr-FR', 'en-GB'), { weekday: 'long', timeZone: 'UTC' });
+        tip.innerHTML = `${wd} ${fmtD(D, d)}<b class="${v < 0 ? 'sp-cy' : v > 150 ? 'sp-rd' : v > 60 ? 'sp-am' : ''}">${fmtN(v)} €/MWh</b><small>${k && k < 24 ? T(`moyenne de ${k} h sélectionnées`, `mean of ${k} selected hours`) : T('moyenne du jour', 'day average')} · ${T('heures de', 'hours from')} ${fmtN(lo, 0)} ${T('à', 'to')} ${fmtN(hi, 0)} €</small><small>${T('écart au mois', 'vs the month')} ${(DAVG[d] - mv >= 0 ? '+' : '')}${fmtN(DAVG[d] - mv)} €</small>`;
+        const sb = stage.getBoundingClientRect(); let lx = cx - sb.left + 14; if (lx > sb.width - 190) lx -= 210;
+        tip.style.left = lx + 'px'; tip.style.top = (cy - sb.top + 14) + 'px'; tip.style.opacity = 1; return;
+      }
       const v = val(d, h), s = D.sol[d * 24 + h], w = D.win[d * 24 + h];
       tip.innerHTML = `${fmtD(D, d)} · ${String(h).padStart(2, '0')} h<b class="${v < 0 ? 'sp-cy' : v > 150 ? 'sp-rd' : v > 60 ? 'sp-am' : ''}">${fmtN(v)} €/MWh</b>${!isNaN(s) || !isNaN(w) ? `<small>${T('solaire', 'solar')} ${isNaN(s) ? '–' : fmtN(s / 1000)} GW · ${T('éolien', 'wind')} ${isNaN(w) ? '–' : fmtN(w / 1000)} GW</small>` : ''}` + (() => { const mv = MAVG.get(DY[d] * 12 + DM[d]); return `<small>${T('moyenne du jour', 'day average')} ${fmtN(DAVG[d])} € · ${T('écart au mois', 'vs the month')} ${(DAVG[d] - mv >= 0 ? '+' : '')}${fmtN(DAVG[d] - mv)} €</small>`; })();
       const sb = stage.getBoundingClientRect(); let lx = cx - sb.left + 14; if (lx > sb.width - 190) lx -= 210;
@@ -296,10 +343,10 @@
     ov.addEventListener('pointermove', e => {
       if (on3) return; const b = ov.getBoundingClientRect(), x = (e.clientX - b.left) * DPR, y = (e.clientY - b.top) * DPR, q = hit(x, y);
       if (!q || P0 < 1) { tip.style.opacity = 0; if (P0 >= 1) draw(1); return; }
-      const [d, h] = q, v = val(d, h); draw(1);
+      const [d, h, rw, sl] = q; draw(1);
       octx.strokeStyle = '#FFD23F'; octx.lineWidth = 2 * DPR / Z; octx.beginPath();
-      if (lin) { const yy = LY1 - (LY1 - LY0) * (h + 0.5) / 24, xx = LX0 + (LX1 - LX0) * (d + 0.5 - VW0) / VWN; octx.moveTo(LX0, yy); octx.lineTo(LX1, yy); octx.stroke(); octx.lineWidth = DPR / Z; octx.beginPath(); octx.moveTo(xx, LY0); octx.lineTo(xx, LY1); octx.stroke(); }
-      else { const a = h / 24 * 2 * Math.PI; octx.moveTo(CX, CY); octx.lineTo(CX + Math.sin(a) * R1, CY - Math.cos(a) * R1); octx.stroke(); octx.lineWidth = DPR / Z; octx.beginPath(); octx.arc(CX, CY, rOfT(d + 0.5), 0, 2 * Math.PI); octx.stroke(); }
+      if (lin) { const u = (sl + 0.5) / A, yy = flipY() ? LY1 - (LY1 - LY0) * u : LY0 + (LY1 - LY0) * u, xx = LX0 + (LX1 - LX0) * (rw + 0.5 - VW0) / VWN; octx.moveTo(LX0, yy); octx.lineTo(LX1, yy); octx.stroke(); octx.lineWidth = DPR / Z; octx.beginPath(); octx.moveTo(xx, LY0); octx.lineTo(xx, LY1); octx.stroke(); }
+      else { const a = sl / A * 2 * Math.PI; octx.moveTo(CX, CY); octx.lineTo(CX + Math.sin(a) * R1, CY - Math.cos(a) * R1); octx.stroke(); octx.lineWidth = DPR / Z; octx.beginPath(); octx.arc(CX, CY, rOfT(rw + 0.5), 0, 2 * Math.PI); octx.stroke(); }
       showTip(d, h, e.clientX, e.clientY);
     });
     ov.addEventListener('pointerleave', () => { tip.style.opacity = 0; if (P0 >= 1) draw(1); });
@@ -523,13 +570,20 @@
       fb.setAttribute('aria-pressed', on); fb.textContent = on ? '✕ ' + T('Quitter le plein écran', 'Exit full screen') : '⤢ ' + T('Plein écran', 'Full screen'); };
     fb.addEventListener('click', () => full(!wrap.classList.contains('sp-full')));
     document.addEventListener('keydown', e => { if (e.key === 'Escape' && wrap.classList.contains('sp-full')) full(false); });
+    host.querySelectorAll('[data-c]').forEach(b => b.addEventListener('click', () => {
+      if (b.classList.contains('on') || !D) return;
+      host.querySelectorAll('[data-c]').forEach(x => x.classList.toggle('on', x === b)); CYC = b.dataset.c;
+      if (on3 && CYC !== 'h') { const b3 = host.querySelector('[data-a="3d"]'); b3.textContent = '3D'; relief(false); }
+      host.querySelector('[data-a="3d"]').hidden = CYC !== 'h';   // the relief draws the hours only
+      Z = 1; TX = TY = 0; clampT(); cycle(); prep(); build(); play();
+    }));
     host.querySelector('[data-a="3d"]').addEventListener('click', e => { e.currentTarget.textContent = on3 ? '3D' : '2D'; relief(!on3); });
     new ResizeObserver(() => { if (!D) return; const bb = stage.getBoundingClientRect(), w = Math.floor(bb.width), hh = Math.floor(bb.height); if (Math.abs(w - S) > 4 || Math.abs(hh - SH) > 4) { size(); clampT(); build(); draw(P0); } }).observe(stage);
 
     load().then(data => {
       if (!host.isConnected) return;
       if (!data) { host.querySelector('.sp-grid').innerHTML = `<div class="fuel-note">${T('Prix horaires indisponibles.', 'Hourly prices not available.')}</div>`; return; }
-      D = data; N = D.n; calendar(); prep(); size(); build(); hint.textContent = HINT2D();
+      D = data; N = D.n; calendar(); cycle(); prep(); size(); build(); hint.textContent = HINT2D();
       { const e = host.querySelector('[data-k="sel"]'); if (e) e.textContent = selText(); }
       // play the drawing once, when the section comes into view
       const io = new IntersectionObserver(es => { if (es.some(x => x.isIntersecting)) { io.disconnect(); play(); } }, { threshold: 0.3 });
