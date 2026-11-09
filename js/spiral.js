@@ -291,7 +291,13 @@
     const redraw = () => { if (zraf) return; zraf = requestAnimationFrame(() => { zraf = 0; build(); draw(P0 >= 1 ? 1 : P0); }); };
     const clampT = () => { const W = cv.width, H = cv.height; TX = Math.min(0, Math.max(W - W * Z, TX)); TY = Math.min(0, Math.max(H - H * Z, TY)); ov.style.touchAction = Z > 1.001 ? 'none' : 'pan-y'; };
     const zoomAt = (mx, my, k) => { const z2 = Math.max(1, Math.min(16, Z * k)); TX = mx - (mx - TX) * z2 / Z; TY = my - (my - TY) * z2 / Z; Z = z2; clampT(); redraw(); };
-    ov.addEventListener('wheel', e => { if (on3) return; e.preventDefault(); const b = ov.getBoundingClientRect(); zoomAt((e.clientX - b.left) * DPR, (e.clientY - b.top) * DPR, e.deltaY < 0 ? 1.2 : 1 / 1.2); }, { passive: false });
+    // on the page the wheel scrolls the page: zoom with Ctrl (or ⌘) + wheel, or the buttons; in full screen the wheel alone zooms
+    let wheelHintT = 0;
+    ov.addEventListener('wheel', e => { if (on3) return;
+      if (!host.querySelector('.sp-wrap').classList.contains('sp-full') && !e.ctrlKey && !e.metaKey) {
+        if (Z <= 1.001) { hint.textContent = T('Ctrl + molette pour zoomer · ou les boutons + −', 'Ctrl + wheel to zoom · or the + − buttons'); clearTimeout(wheelHintT); wheelHintT = setTimeout(() => { if (!on3) hint.textContent = ''; }, 1800); }
+        return; }
+      e.preventDefault(); const b = ov.getBoundingClientRect(); zoomAt((e.clientX - b.left) * DPR, (e.clientY - b.top) * DPR, e.deltaY < 0 ? 1.2 : 1 / 1.2); }, { passive: false });
     const zp = new Map(); let zpinch = 0;
     ov.addEventListener('pointerdown', e => { if (on3) return; zp.set(e.pointerId, [e.clientX, e.clientY]); if (Z > 1.001 || zp.size > 1) ov.setPointerCapture(e.pointerId); });
     ov.addEventListener('pointermove', e => { if (on3 || !zp.has(e.pointerId)) return; const [x0, y0] = zp.get(e.pointerId); zp.set(e.pointerId, [e.clientX, e.clientY]); const b = ov.getBoundingClientRect();
