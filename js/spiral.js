@@ -48,7 +48,7 @@
   const light = () => document.documentElement.getAttribute('data-theme') === 'light';
   // an hour at exactly 0 € (the CfD rule, the floor of many bids) has its own colour, between the cyan of negative prices and the night
   // blue of low ones, so it shows on its own
-  const ZERO = v => Math.abs(v) < 0.01;
+  const ZERO = v => Math.abs(v) < 0.005;   // (the prices are stored as 32-bit floats: 0.01 €/MWh reads 0.0099…)
   const ZCOL = () => light() ? [55, 80, 115] : [190, 210, 232];
   function col(v) {
     if (ZERO(v)) return ZCOL();
@@ -82,6 +82,8 @@
           <div class="sp-k"><span class="sp-kl">${T('Record bas', 'Record low')}</span><span class="sp-kv sp-cy" data-k="min">–</span><span class="sp-ks" data-k="mins"></span></div>
           <div class="sp-k"><span class="sp-kl">${T('Record haut', 'Record high')}</span><span class="sp-kv sp-rd" data-k="max">–</span><span class="sp-ks" data-k="maxs"></span></div>
           <div class="sp-k sp-k-neg"><span class="sp-kl">${T('Heures négatives', 'Negative hours')}</span><span class="sp-kv sp-cy" data-k="neg">–</span><span class="sp-ks" data-k="negs"></span></div>
+          <div class="sp-k sp-k-neg"><span class="sp-kl">${T('Heures à 0 €', 'Hours at 0 €')}</span><span class="sp-kv sp-z0" data-k="zero">–</span><span class="sp-ks" data-k="zeros"></span></div>
+          <div class="sp-k sp-k-neg"><span class="sp-kl">${T('Heures > 200 €', 'Hours > 200 €')}</span><span class="sp-kv sp-rd" data-k="hi200">–</span><span class="sp-ks" data-k="hi200s"></span></div>
           <div class="sp-f">
             <div class="sp-fh"><span>${T('Filtres', 'Filters')}</span><button type="button" data-a="reset">${T('Tout réinitialiser', 'Reset all')}</button></div>
             <div class="sp-fg"><span class="sp-fl">${T('Années', 'Years')}</span><div class="sp-btns">${Array.from({ length: new Date().getUTCFullYear() - Y0 + 1 }, (_, i) => Y0 + i).map(y => `<button type="button" data-g="y" data-v="${y}">${y}</button>`).join('')}</div></div>
@@ -128,7 +130,7 @@
       if (F.se.size && !F.se.has(SE_K[SEASON[DM[d]]])) return false;
       if (F.dy === 'wd' && (DW[d] === 0 || DW[d] === 6)) return false;
       if (F.dy === 'we' && DW[d] !== 0 && DW[d] !== 6) return false;
-      if (F.pr.size && !((F.pr.has('neg') && v < 0) || (F.pr.has('zero') && Math.abs(v) < 0.005) || (F.pr.has('gt200') && v > 200) || (F.pr.has('top1') && v >= P99))) return false;
+      if (F.pr.size && !((F.pr.has('neg') && v < 0) || (F.pr.has('zero') && ZERO(v)) || (F.pr.has('gt200') && v > 200) || (F.pr.has('top1') && v >= P99))) return false;
       if (!isNaN(F.pmin) && v < F.pmin) return false;
       if (!isNaN(F.pmax) && v > F.pmax) return false;
       if (F.pd.size) { const i = d * 24 + h, so = D.sol[i], wi = D.win[i];
@@ -241,13 +243,13 @@
     // figures follow the reveal
     let NEG, RMIN, RMAX;
     // the figures count only the hours of the selection (all, negative hours, the 2022 crisis, midday vs evening, the year)
-    let F0 = 0, F1 = 0, CNT, SUM, NSUM;
+    let F0 = 0, F1 = 0, CNT, SUM, NSUM, ZH, H200;
     function prep() {
-      NEG = new Int32Array(N); CNT = new Int32Array(N); SUM = new Float64Array(N); NSUM = new Float64Array(N); RMIN = []; RMAX = [];
-      let c = 0, k = 0, sm = 0, ns = 0, lo = [1e9, 0, 0], hi = [-1e9, 0, 0]; F0 = -1;
+      NEG = new Int32Array(N); CNT = new Int32Array(N); SUM = new Float64Array(N); NSUM = new Float64Array(N); ZH = new Int32Array(N); H200 = new Int32Array(N); RMIN = []; RMAX = [];
+      let c = 0, k = 0, sm = 0, ns = 0, z0 = 0, g2 = 0, lo = [1e9, 0, 0], hi = [-1e9, 0, 0]; F0 = -1;
       for (let d = 0; d < N; d++) { for (let h = 0; h < 24; h++) { const v = val(d, h); if (isNaN(v) || !keep(d, h, v)) continue; if (F0 < 0) F0 = d; F1 = d;
-        k++; sm += v; if (v < 0) { c++; ns += v; } if (v < lo[0]) lo = [v, d, h]; if (v > hi[0]) hi = [v, d, h]; }
-        NEG[d] = c; CNT[d] = k; SUM[d] = sm; NSUM[d] = ns; RMIN.push(lo); RMAX.push(hi); }
+        k++; sm += v; if (v < 0) { c++; ns += v; } if (ZERO(v)) z0++; if (v > 200) g2++; if (v < lo[0]) lo = [v, d, h]; if (v > hi[0]) hi = [v, d, h]; }
+        NEG[d] = c; ZH[d] = z0; H200[d] = g2; CNT[d] = k; SUM[d] = sm; NSUM[d] = ns; RMIN.push(lo); RMAX.push(hi); }
       if (F0 < 0) F0 = 0;
       const dated = F.y.size || F.d0 >= 0 || F.d1 < 1e9 || F.ev.size;
       if (dated && F1 >= F0) { VW0 = F0; VWN = F1 - F0 + 1; } else { VW0 = 0; VWN = N; }
@@ -256,6 +258,9 @@
       // (the relief's first frame can come with a negative time)
       const d = Math.max(0, Math.min(N - 1, VW0 + Math.floor((p > 0 ? p : 0) * VWN))), lo = RMIN[d], hi = RMAX[d], set = (k, s) => { const e = host.querySelector(`[data-k="${k}"]`); if (e) e.textContent = s; };
       const none = lo[0] === 1e9;
+      const pc = n => CNT[d] ? ' · ' + fmtN(n / CNT[d] * 100, 1) + ' % ' + T('des heures', 'of hours') : '';
+      set('zero', ZH[d].toLocaleString(T('fr-FR', 'en-GB')) + ' h'); set('zeros', pc(ZH[d]).replace(/^ · /, ''));
+      set('hi200', H200[d].toLocaleString(T('fr-FR', 'en-GB')) + ' h'); set('hi200s', pc(H200[d]).replace(/^ · /, ''));
       set('neg', NEG[d].toLocaleString(T('fr-FR', 'en-GB')) + ' h'); set('negs', d < F0 ? '' : `${fmtD(D, F0)} → ${fmtD(D, Math.min(d, F1))}`);
       set('avg', CNT[d] ? fmtN(SUM[d] / CNT[d]) + ' €' : '–'); set('avgs', CNT[d] ? CNT[d].toLocaleString(T('fr-FR', 'en-GB')) + ' ' + T('heures', 'hours') : '');
       set('navg', NEG[d] ? fmtN(NSUM[d] / NEG[d]) + ' €' : '–'); set('navgs', NEG[d] ? T('sur ', 'over ') + NEG[d].toLocaleString(T('fr-FR', 'en-GB')) + ' h' : '');
