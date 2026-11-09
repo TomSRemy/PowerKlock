@@ -78,13 +78,14 @@
           <div class="sp-leg"><i></i><div class="sp-lsel" role="slider" aria-label="${T('Choisir les prix sur la légende', 'Pick prices on the legend')}" title="${T('Glisser pour une fourchette de prix, cliquer pour un prix', 'Drag for a price range, click for one price')}"><b class="sp-lr"></b><span class="sp-lh" data-h="0"></span><span class="sp-lh" data-h="1"></span></div><div class="sp-tk">${[[-200, 0], [0, 4], [60, 6], [150, 8], [500, 11]].map(([v, k]) => `<span style="left:${(k / 12 * 100).toFixed(1)}%">${v < 0 ? '−' + -v : v}${v === 500 ? '+' : ''}</span>`).join('')}<span class="u">€/MWh</span></div><b class="sp-l0" title="${T('Heures à exactement 0 €', 'Hours at exactly 0 €')}">= 0 €</b></div>
           <button type="button" class="sp-lclear" data-a="pclear" hidden></button>
           <div class="sp-sel" data-k="sel"></div>
-          <div class="sp-k"><span class="sp-kl">${T('Prix moyen', 'Average price')}</span><span class="sp-kv" data-k="avg">–</span><span class="sp-ks" data-k="avgs"></span></div>
-          <div class="sp-k"><span class="sp-kl">${T('Prix moyen des heures négatives', 'Average of the negative hours')}</span><span class="sp-kv sp-cy" data-k="navg">–</span><span class="sp-ks" data-k="navgs"></span></div>
-          <div class="sp-k"><span class="sp-kl">${T('Record bas', 'Record low')}</span><span class="sp-kv sp-cy" data-k="min">–</span><span class="sp-ks" data-k="mins"></span></div>
-          <div class="sp-k"><span class="sp-kl">${T('Record haut', 'Record high')}</span><span class="sp-kv sp-rd" data-k="max">–</span><span class="sp-ks" data-k="maxs"></span></div>
-          <div class="sp-k sp-k-neg"><span class="sp-kl">${T('Heures négatives', 'Negative hours')}</span><span class="sp-kv sp-cy" data-k="neg">–</span><span class="sp-ks" data-k="negs"></span></div>
-          <div class="sp-k sp-k-neg"><span class="sp-kl">${T('Heures à 0 €', 'Hours at 0 €')}</span><span class="sp-kv sp-z0" data-k="zero">–</span><span class="sp-ks" data-k="zeros"></span></div>
-          <div class="sp-k sp-k-neg"><span class="sp-kl">${T('Heures > 200 €', 'Hours > 200 €')}</span><span class="sp-kv sp-rd" data-k="hi200">–</span><span class="sp-ks" data-k="hi200s"></span></div>
+          <div class="sp-k"><span class="sp-kl" data-l="avg">${T('Prix moyen', 'Average price')}</span><span class="sp-kv" data-k="avg">–</span><span class="sp-ks" data-k="avgs"></span></div>
+          <div class="sp-k"><span class="sp-kl" data-l="navg">${T('Prix moyen des heures négatives', 'Average of the negative hours')}</span><span class="sp-kv sp-cy" data-k="navg">–</span><span class="sp-ks" data-k="navgs"></span></div>
+          <div class="sp-k"><span class="sp-kl" data-l="min">${T('Record bas', 'Record low')}</span><span class="sp-kv sp-cy" data-k="min">–</span><span class="sp-ks" data-k="mins"></span></div>
+          <div class="sp-k"><span class="sp-kl" data-l="max">${T('Record haut', 'Record high')}</span><span class="sp-kv sp-rd" data-k="max">–</span><span class="sp-ks" data-k="maxs"></span></div>
+          <div class="sp-k sp-k-neg"><span class="sp-kl" data-l="neg">${T('Heures négatives', 'Negative hours')}</span><span class="sp-kv sp-cy" data-k="neg">–</span><span class="sp-ks" data-k="negs"></span></div>
+          <div class="sp-k sp-k-neg"><span class="sp-kl" data-l="zero">${T('Heures à 0 €', 'Hours at 0 €')}</span><span class="sp-kv sp-z0" data-k="zero">–</span><span class="sp-ks" data-k="zeros"></span></div>
+          <div class="sp-k sp-k-neg"><span class="sp-kl" data-l="hi200">${T('Heures > 200 €', 'Hours > 200 €')}</span><span class="sp-kv sp-rd" data-k="hi200">–</span><span class="sp-ks" data-k="hi200s"></span></div>
+          <div class="sp-prof"><span class="sp-kl" data-l="prof"></span><div class="sp-pb" data-k="prof"></div></div>
           <div class="sp-f">
             <div class="sp-fh"><span>${T('Filtres', 'Filters')}</span><button type="button" data-a="reset">${T('Tout réinitialiser', 'Reset all')}</button></div>
             <div class="sp-fg"><span class="sp-fl">${T('Années', 'Years')}</span><div class="sp-btns">${Array.from({ length: new Date().getUTCFullYear() - Y0 + 1 }, (_, i) => Y0 + i).map(y => `<button type="button" data-g="y" data-v="${y}">${y}</button>`).join('')}</div></div>
@@ -98,7 +99,7 @@
             <div class="sp-fg"><span class="sp-fl">${T('Production', 'Output')}</span><div class="sp-btns"><button type="button" data-g="pd" data-v="sol">${T('Solaire > 15 GW', 'Solar > 15 GW')}</button><button type="button" data-g="pd" data-v="win">${T('Éolien > 15 GW', 'Wind > 15 GW')}</button><button type="button" data-g="pd" data-v="calm">${T('Ni vent ni soleil', 'No wind, no sun')}</button></div></div>
             <div class="sp-fg"><span class="sp-fl">${T('Événements', 'Events')}</span><div class="sp-btns"><button type="button" data-g="ev" data-v="lock">${T('Confinement 2020', '2020 lockdown')}</button><button type="button" data-g="ev" data-v="crise">${T('Crise 2021-22', '2021-22 crisis')}</button><button type="button" data-g="ev" data-v="ete22">${T('Été 2022', 'Summer 2022')}</button></div></div>
           </div>
-          ${widget ? '' : `<p class="bl-foot sp-note">${T('Rayon proportionnel au temps : chaque année a la même épaisseur ; une sélection de dates (années, période, événement) remplit tout le cadran. En relief, hauteur en échelle logarithmique. Les heures négatives sont comptées sur la moyenne horaire ; le bilan les compte sur les pas publiés (quart d’heure depuis octobre 2025).', 'Radius in proportion to time: every year has the same thickness; a date selection (years, period, event) fills the whole dial. In relief, height on a log scale. Negative hours are counted on the hourly mean; the review counts them on the published steps (quarter-hour since October 2025).')}</p>`}
+          ${widget ? '' : `<p class="bl-foot sp-note">${T('Rayon proportionnel au temps : chaque année a la même épaisseur ; une sélection de dates (années, période, événement) remplit tout le cadran. En relief, hauteur en échelle logarithmique. En cycle semaine ou an, chaque case est un jour : sa couleur, le filtre de prix et les chiffres portent sur la moyenne de ses heures sélectionnées. Les heures négatives sont comptées sur la moyenne horaire ; le bilan les compte sur les pas publiés (quart d’heure depuis octobre 2025).', 'Radius in proportion to time: every year has the same thickness; a date selection (years, period, event) fills the whole dial. In relief, height on a log scale. In the week and year cycles each cell is a day: its colour, the price filter and the figures use the mean of its selected hours. Negative hours are counted on the hourly mean; the review counts them on the published steps (quarter-hour since October 2025).')}</p>`}
         </div></div></div>`;
     const $ = s => host.querySelector(s);
     const stage = $('.sp-stage'), cv = $('.sp-cv'), ov = $('.sp-ov'), g3 = $('.sp-g3'), tip = $('.sp-tip'), hint = $('.sp-hint');
@@ -108,7 +109,7 @@
     const val = (d, h) => D.v[d * 24 + h];
     // F: years, hours (24 flags), seasons, days, period (day indices), price (mode, min, max), output, events
     const F = { y: new Set(), hs: Array(24).fill(true), se: new Set(), dy: '', d0: -1, d1: 1e9, pr: new Set(), pmin: NaN, pmax: NaN, pd: new Set(), ev: new Set() };
-    let DY, DM, DW, P99 = Infinity, EV = {};
+    let DY, DM, DW, P99 = Infinity, P99D = Infinity, EV = {};
     const SEASON = [0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 0];   // Dec–Feb winter, Mar–May spring, Jun–Aug summer, Sep–Nov autumn
     const SE_K = ['w', 'sp', 'su', 'a'];
     const iso2d = iso => Math.round((Date.parse(iso + 'T00:00:00Z') - D.d0) / 864e5);
@@ -141,19 +142,25 @@
         const k = DY[d] * 12 + DM[d], o = ms.get(k) || [0, 0]; o[0] += DAVG[d]; o[1]++; ms.set(k, o); }
       ms.forEach((o, k) => MAVG.set(k, o[0] / o[1]));
       const all = Array.from(D.v).filter(v => !isNaN(v)).sort((a, b) => a - b); P99 = all[Math.floor(all.length * 0.99)];
+      const dm = Array.from(DAVG).sort((a, b) => a - b); P99D = dm[Math.floor(dm.length * 0.99)];
       // France's first lockdown: 17 March to 10 May 2020 (lifted on 11 May); the 2021-22 crisis: Sept. 2021 to Dec. 2022; summer 2022: June to August
       EV = { lock: [iso2d('2020-03-17'), iso2d('2020-05-10')], crise: [iso2d('2021-09-01'), iso2d('2022-12-31')], ete22: [iso2d('2022-06-01'), iso2d('2022-08-31')] };
     }
-    const keep = (d, h, v) => {
+    const priceOK = (v, p99) => {
+      if (F.pr.size && !((F.pr.has('neg') && v < 0) || (F.pr.has('zero') && ZERO(v)) || (F.pr.has('gt200') && v > 200) || (F.pr.has('top1') && v >= p99))) return false;
+      if (!isNaN(F.pmin) && v < F.pmin) return false;
+      if (!isNaN(F.pmax) && v > F.pmax) return false;
+      return true;
+    };
+    // np: leave the price out (the day and month cycles test a day's mean instead)
+    const keep = (d, h, v, np) => {
       if (!F.hs[h]) return false;
       if (d < F.d0 || d > F.d1) return false;
       if (F.y.size && !F.y.has(DY[d])) return false;
       if (F.se.size && !F.se.has(SE_K[SEASON[DM[d]]])) return false;
       if (F.dy === 'wd' && (DW[d] === 0 || DW[d] === 6)) return false;
       if (F.dy === 'we' && DW[d] !== 0 && DW[d] !== 6) return false;
-      if (F.pr.size && !((F.pr.has('neg') && v < 0) || (F.pr.has('zero') && ZERO(v)) || (F.pr.has('gt200') && v > 200) || (F.pr.has('top1') && v >= P99))) return false;
-      if (!isNaN(F.pmin) && v < F.pmin) return false;
-      if (!isNaN(F.pmax) && v > F.pmax) return false;
+      if (np !== true && !priceOK(v, P99)) return false;
       if (F.pd.size) { const i = d * 24 + h, so = D.sol[i], wi = D.win[i];
         if (F.pd.has('sol') && !(so >= 15000)) return false;
         if (F.pd.has('win') && !(wi >= 15000)) return false;
@@ -200,7 +207,7 @@
         if (d < 0) { EM[i] = 1; continue; }
         let v, kp;
         if (CYC === 'h') { v = D.v[d * 24 + sl]; kp = keep(d, sl, v); ZR[i] = kp && ZERO(v) ? 1 : 0; }
-        else { let a = 0, k = 0; for (let h = 0; h < 24; h++) { const x = D.v[d * 24 + h]; if (keep(d, h, x)) { a += x; k++; } } kp = k > 0; v = kp ? a / k : DAVG[d]; }   // a day: the mean of its selected hours
+        else { v = DMEAN[d]; kp = DKEEP[d] === 1; }   // a day: the mean of its selected hours, its price tested on that mean
         let [cr, cg, cb] = col(v); KP[i] = kp ? 1 : 0; CV[i] = v;
         if (!kp) { const m2 = (cr + cg + cb) / 3; cr = bg[0] * 0.9 + m2 * 0.1; cg = bg[1] * 0.9 + m2 * 0.1; cb = bg[2] * 0.9 + m2 * 0.1; }
         else if (sel) { const L = 0.3 * cr + 0.59 * cg + 0.11 * cb, dk = light() ? Math.max(0, (L - 200) / 55) : Math.max(0, 1 - L / 110);
@@ -285,13 +292,41 @@
     let NEG, RMIN, RMAX;
     // the figures count only the hours of the selection (all, negative hours, the 2022 crisis, midday vs evening, the year)
     let F0 = 0, F1 = 0, CNT, SUM, NSUM, ZH, H200;
+    // each day's mean over its selected hours (price aside), whether the day is kept (its mean passes the price filter), its hours ≤ 0 €
+    let DMEAN, DKEEP, DNH, DZH;
+    function dayStats() {
+      DMEAN = new Float32Array(N); DKEEP = new Uint8Array(N); DNH = new Int16Array(N); DZH = new Int16Array(N);
+      for (let d = 0; d < N; d++) { let a = 0, k = 0, nh = 0, zh = 0; for (let h = 0; h < 24; h++) { const x = D.v[d * 24 + h]; if (isNaN(x) || !keep(d, h, x, true)) continue; a += x; k++; if (x < 0) nh++; else if (ZERO(x)) zh++; }
+        DMEAN[d] = k ? a / k : DAVG[d]; DKEEP[d] = k && priceOK(DMEAN[d], P99D) ? 1 : 0; DNH[d] = nh; DZH[d] = zh; }
+    }
+    let PROF = [];   // the profile of the selection: the mean per hour, per weekday or per month
     function prep() {
+      if (CYC !== 'h') return prepDays();
       NEG = new Int32Array(N); CNT = new Int32Array(N); SUM = new Float64Array(N); NSUM = new Float64Array(N); ZH = new Int32Array(N); H200 = new Int32Array(N); RMIN = []; RMAX = [];
       let c = 0, k = 0, sm = 0, ns = 0, z0 = 0, g2 = 0, lo = [1e9, 0, 0], hi = [-1e9, 0, 0]; F0 = -1;
       for (let d = 0; d < N; d++) { for (let h = 0; h < 24; h++) { const v = val(d, h); if (isNaN(v) || !keep(d, h, v)) continue; if (F0 < 0) F0 = d; F1 = d;
         k++; sm += v; if (v < 0) { c++; ns += v; } if (ZERO(v)) z0++; if (v > 200) g2++; if (v < lo[0]) lo = [v, d, h]; if (v > hi[0]) hi = [v, d, h]; }
         NEG[d] = c; ZH[d] = z0; H200[d] = g2; CNT[d] = k; SUM[d] = sm; NSUM[d] = ns; RMIN.push(lo); RMAX.push(hi); }
       if (F0 < 0) F0 = 0;
+      { const a = new Float64Array(24), k = new Int32Array(24); for (let d = F0; d <= F1; d++) for (let h = 0; h < 24; h++) { const v = val(d, h); if (!isNaN(v) && keep(d, h, v)) { a[h] += v; k[h]++; } }
+        PROF = Array.from({ length: 24 }, (_, h) => [h % 3 ? '' : String(h), k[h] ? a[h] / k[h] : NaN, h + ' h']); }
+      win();
+    }
+    // the day and month cycles: the same figures, counted in days (a day = the mean of its selected hours)
+    function prepDays() {
+      dayStats();
+      NEG = new Int32Array(N); CNT = new Int32Array(N); SUM = new Float64Array(N); NSUM = new Float64Array(N); ZH = new Int32Array(N); H200 = new Int32Array(N); RMIN = []; RMAX = [];
+      let c = 0, k = 0, sm = 0, ns = 0, z0 = 0, g2 = 0, lo = [1e9, 0, -1], hi = [-1e9, 0, -1]; F0 = -1;
+      const W = CYC === 'w', ps = new Float64Array(W ? 7 : 12), pk = new Int32Array(W ? 7 : 12);
+      for (let d = 0; d < N; d++) { if (DKEEP[d]) { const v = DMEAN[d]; if (F0 < 0) F0 = d; F1 = d;
+          k++; sm += v; if (v < 0) { c++; ns += v; } if (DNH[d] + DZH[d]) z0++; if (v > 200) g2++; if (v < lo[0]) lo = [v, d, -1]; if (v > hi[0]) hi = [v, d, -1];
+          const sl = W ? (DW[d] + 6) % 7 : DM[d]; ps[sl] += v; pk[sl]++; }
+        NEG[d] = c; ZH[d] = z0; H200[d] = g2; CNT[d] = k; SUM[d] = sm; NSUM[d] = ns; RMIN.push(lo); RMAX.push(hi); }
+      if (F0 < 0) F0 = 0;
+      const nm = W ? WDN() : MON(); PROF = nm.map((t, i) => [t, pk[i] ? ps[i] / pk[i] : NaN, t]);
+      win();
+    }
+    function win() {
       const dated = F.y.size || F.d0 >= 0 || F.d1 < 1e9 || F.ev.size;
       if (dated && F1 >= F0) { VW0 = Math.floor(tRow(F0)); VWN = Math.floor(tRow(F1)) - VW0 + 1; } else { VW0 = 0; VWN = NR; }
     }
@@ -299,15 +334,18 @@
       // (the relief's first frame can come with a negative time)
       const d = rowDay(VW0 + (p > 0 ? p : 0) * VWN - 1e-6), lo = RMIN[d], hi = RMAX[d], set = (k, s) => { const e = host.querySelector(`[data-k="${k}"]`); if (e) e.textContent = s; };
       const none = lo[0] === 1e9;
-      const pc = n => CNT[d] ? ' · ' + fmtN(n / CNT[d] * 100, 1) + ' % ' + T('des heures', 'of hours') : '';
-      set('zero', ZH[d].toLocaleString(T('fr-FR', 'en-GB')) + ' h'); set('zeros', pc(ZH[d]).replace(/^ · /, ''));
-      set('hi200', H200[d].toLocaleString(T('fr-FR', 'en-GB')) + ' h'); set('hi200s', pc(H200[d]).replace(/^ · /, ''));
-      set('neg', NEG[d].toLocaleString(T('fr-FR', 'en-GB')) + ' h'); set('negs', d < F0 ? '' : `${fmtD(D, F0)} → ${fmtD(D, Math.min(d, F1))}`);
-      set('avg', CNT[d] ? fmtN(SUM[d] / CNT[d]) + ' €' : '–'); set('avgs', CNT[d] ? CNT[d].toLocaleString(T('fr-FR', 'en-GB')) + ' ' + T('heures', 'hours') : '');
-      set('navg', NEG[d] ? fmtN(NSUM[d] / NEG[d]) + ' €' : '–'); set('navgs', NEG[d] ? T('sur ', 'over ') + NEG[d].toLocaleString(T('fr-FR', 'en-GB')) + ' h' : '');
-      set('min', none ? '–' : fmtN(lo[0]) + ' €'); set('mins', none ? '' : `${fmtD(D, lo[1])} · ${String(lo[2]).padStart(2, '0')} h`);
+      const HC = CYC === 'h', loc = T('fr-FR', 'en-GB');
+      const pc = n => CNT[d] ? ' · ' + fmtN(n / CNT[d] * 100, 1) + ' % ' + (HC ? T('des heures', 'of hours') : T('des jours', 'of days')) : '';
+      const when = q => HC ? `${fmtD(D, q[1])} · ${String(q[2]).padStart(2, '0')} h` : dayDate(D, q[1]).toLocaleDateString(loc, { weekday: 'short', timeZone: 'UTC' }) + ' ' + fmtD(D, q[1]);
+      const u = HC ? ' h' : ' ' + T('j', 'd');
+      set('zero', ZH[d].toLocaleString(loc) + u); set('zeros', pc(ZH[d]).replace(/^ · /, ''));
+      set('hi200', H200[d].toLocaleString(loc) + u); set('hi200s', pc(H200[d]).replace(/^ · /, ''));
+      set('neg', NEG[d].toLocaleString(loc) + u); set('negs', d < F0 ? '' : `${fmtD(D, F0)} → ${fmtD(D, Math.min(d, F1))}`);
+      set('avg', CNT[d] ? fmtN(SUM[d] / CNT[d]) + ' €' : '–'); set('avgs', CNT[d] ? CNT[d].toLocaleString(loc) + ' ' + (HC ? T('heures', 'hours') : T('jours', 'days')) : '');
+      set('navg', NEG[d] ? fmtN(NSUM[d] / NEG[d]) + ' €' : '–'); set('navgs', NEG[d] ? T('sur ', 'over ') + NEG[d].toLocaleString(loc) + u : '');
+      set('min', none ? '–' : fmtN(lo[0]) + ' €'); set('mins', none ? '' : when(lo));
       const noHi = none || (F.pr.size === 1 && F.pr.has('neg')) || F.pmax < 0;   // among negative hours a « record high » would only be the one closest to zero
-      set('max', noHi ? '–' : fmtN(hi[0]) + ' €'); set('maxs', noHi ? '' : `${fmtD(D, hi[1])} · ${String(hi[2]).padStart(2, '0')} h`);
+      set('max', noHi ? '–' : fmtN(hi[0]) + ' €'); set('maxs', noHi ? '' : when(hi));
     }
     function draw(p) {
       const W = cv.width; ctx.clearRect(0, 0, W, cv.height);
@@ -328,9 +366,9 @@
     // the tooltip of an hour: its price, solar and wind, the day's average and its gap to the month (flat dial and relief)
     function showTip(d, h, cx, cy) {
       if (h < 0) {   // a day (day and month cycles): its mean, its range, its gap to the month
-        let a = 0, k = 0, lo = Infinity, hi = -Infinity; for (let hh = 0; hh < 24; hh++) { const x = D.v[d * 24 + hh]; if (keep(d, hh, x)) { a += x; k++; } lo = Math.min(lo, x); hi = Math.max(hi, x); }
-        const v = k ? a / k : DAVG[d], mv = MAVG.get(DY[d] * 12 + DM[d]), wd = dayDate(D, d).toLocaleDateString(T('fr-FR', 'en-GB'), { weekday: 'long', timeZone: 'UTC' });
-        tip.innerHTML = `${wd} ${fmtD(D, d)}<b class="${v < 0 ? 'sp-cy' : v > 150 ? 'sp-rd' : v > 60 ? 'sp-am' : ''}">${fmtN(v)} €/MWh</b><small>${k && k < 24 ? T(`moyenne de ${k} h sélectionnées`, `mean of ${k} selected hours`) : T('moyenne du jour', 'day average')} · ${T('heures de', 'hours from')} ${fmtN(lo, 0)} ${T('à', 'to')} ${fmtN(hi, 0)} €</small><small>${T('écart au mois', 'vs the month')} ${(DAVG[d] - mv >= 0 ? '+' : '')}${fmtN(DAVG[d] - mv)} €</small>`;
+        let a = 0, k = 0, lo = Infinity, hi = -Infinity; for (let hh = 0; hh < 24; hh++) { const x = D.v[d * 24 + hh]; if (keep(d, hh, x, true)) { a += x; k++; } lo = Math.min(lo, x); hi = Math.max(hi, x); }
+        const v = DMEAN[d], mv = MAVG.get(DY[d] * 12 + DM[d]), wd = dayDate(D, d).toLocaleDateString(T('fr-FR', 'en-GB'), { weekday: 'long', timeZone: 'UTC' });
+        tip.innerHTML = `${wd} ${fmtD(D, d)}<b class="${v < 0 ? 'sp-cy' : v > 150 ? 'sp-rd' : v > 60 ? 'sp-am' : ''}">${fmtN(v)} €/MWh</b><small>${!DKEEP[d] ? T('hors sélection', 'not selected') + ' · ' : ''}${k && k < 24 ? T(`moyenne de ${k} h sélectionnées`, `mean of ${k} selected hours`) : T('moyenne du jour', 'day average')} · ${T('heures de', 'hours from')} ${fmtN(lo, 0)} ${T('à', 'to')} ${fmtN(hi, 0)} €</small><small>${T('écart au mois', 'vs the month')} ${(DAVG[d] - mv >= 0 ? '+' : '')}${fmtN(DAVG[d] - mv)} €</small>`;
         const sb = stage.getBoundingClientRect(); let lx = cx - sb.left + 14; if (lx > sb.width - 190) lx -= 210;
         tip.style.left = lx + 'px'; tip.style.top = (cy - sb.top + 14) + 'px'; tip.style.opacity = 1; return;
       }
@@ -500,10 +538,30 @@
       ['se', 'dy', 'pr', 'pd', 'ev'].forEach(g => { const o = on(g); if (o.length) parts.push(o.join(', ')); });
       const a = host.querySelector('[data-r="from"]').value, b2 = host.querySelector('[data-r="to"]').value; if (a || b2) parts.push(`${a || '…'} → ${b2 || '…'}`);
       if (!isNaN(F.pmin) || !isNaN(F.pmax)) parts.push(`${isNaN(F.pmin) ? '…' : F.pmin} → ${isNaN(F.pmax) ? '…' : F.pmax} €`);
-      return parts.length ? T('Sélection : ', 'Selection: ') + parts.join(' · ') : T('Toutes les heures', 'Every hour');
+      return parts.length ? T('Sélection : ', 'Selection: ') + parts.join(' · ') : CYC === 'h' ? T('Toutes les heures', 'Every hour') : T('Tous les jours', 'Every day');
+    }
+    // the figures' names follow the cycle: hours, or days (each day by the mean of its selected hours)
+    function labels() {
+      const HC = CYC === 'h', L = {
+        avg: HC ? T('Prix moyen', 'Average price') : T('Prix moyen des jours', 'Average daily price'),
+        navg: HC ? T('Prix moyen des heures négatives', 'Average of the negative hours') : T('Prix moyen des jours négatifs', 'Average of the negative days'),
+        min: HC ? T('Record bas', 'Record low') : T('Jour le moins cher', 'Cheapest day'),
+        max: HC ? T('Record haut', 'Record high') : T('Jour le plus cher', 'Dearest day'),
+        neg: HC ? T('Heures négatives', 'Negative hours') : T('Jours à moyenne négative', 'Days with a negative mean'),
+        zero: HC ? T('Heures à 0 €', 'Hours at 0 €') : T('Jours avec des heures ≤ 0 €', 'Days with hours ≤ 0 €'),
+        hi200: HC ? T('Heures > 200 €', 'Hours > 200 €') : T('Jours > 200 €', 'Days > 200 €'),
+        prof: HC ? T('Moyenne par heure', 'Mean by hour') : CYC === 'w' ? T('Moyenne par jour de la semaine', 'Mean by weekday') : T('Moyenne par mois', 'Mean by month') };
+      Object.keys(L).forEach(k => { const e = host.querySelector(`[data-l="${k}"]`); if (e) e.textContent = L[k]; });
+    }
+    // the profile of the selection: one bar per hour, weekday or month, its height the mean, its colour the scale's
+    function profile() {
+      const e = host.querySelector('[data-k="prof"]'); if (!e) return;
+      const mx = Math.max(1, ...PROF.map(p => isNaN(p[1]) ? 0 : Math.abs(p[1])));
+      e.style.setProperty('--n', PROF.length);
+      e.innerHTML = PROF.map(([t, v, full]) => `<div title="${full} · ${isNaN(v) ? '–' : fmtN(v) + ' €/MWh'}"><em>${isNaN(v) || PROF.length > 12 ? '' : fmtN(v, 0)}</em><i style="height:${isNaN(v) ? 0 : Math.max(3, Math.abs(v) / mx * 100).toFixed(1)}%;background:rgb(${isNaN(v) ? '0,0,0' : col(v)})"></i><span>${t}</span></div>`).join('');
     }
     function apply() {
-      prep(); build(); draw(P0); if (R3) R3.layout(); legSync();
+      prep(); build(); draw(P0); if (R3) R3.layout(); legSync(); profile();
       const e = host.querySelector('[data-k="sel"]'); if (e) e.textContent = selText();
     }
     const HP = { nuit: [0, 6], midi: [11, 15], soir: [18, 21], hp: [6, 22], hc: [22, 6] };
@@ -581,7 +639,8 @@
       if (b.classList.contains('on') || !D) return;
       host.querySelectorAll('[data-c]').forEach(x => x.classList.toggle('on', x === b)); CYC = b.dataset.c;
       if (R3) { R3.dead = true; R3 = null; }   // the relief is rebuilt for the new cycle
-      Z = 1; TX = TY = 0; clampT(); cycle(); prep(); build(); if (on3) relief(true); else play();
+      Z = 1; TX = TY = 0; clampT(); cycle(); prep(); labels(); profile(); build(); if (on3) relief(true); else play();
+      { const e = host.querySelector('[data-k="sel"]'); if (e) e.textContent = selText(); }
     }));
     host.querySelector('[data-a="3d"]').addEventListener('click', e => { e.currentTarget.textContent = on3 ? '3D' : '2D'; relief(!on3); });
     new ResizeObserver(() => { if (!D) return; const bb = stage.getBoundingClientRect(), w = Math.floor(bb.width), hh = Math.floor(bb.height); if (Math.abs(w - S) > 4 || Math.abs(hh - SH) > 4) { size(); clampT(); build(); draw(P0); } }).observe(stage);
@@ -589,7 +648,7 @@
     load().then(data => {
       if (!host.isConnected) return;
       if (!data) { host.querySelector('.sp-grid').innerHTML = `<div class="fuel-note">${T('Prix horaires indisponibles.', 'Hourly prices not available.')}</div>`; return; }
-      D = data; N = D.n; calendar(); cycle(); prep(); size(); build(); hint.textContent = HINT2D();
+      D = data; N = D.n; calendar(); cycle(); prep(); labels(); profile(); size(); build(); hint.textContent = HINT2D();
       { const e = host.querySelector('[data-k="sel"]'); if (e) e.textContent = selText(); }
       // play the drawing once, when the section comes into view
       const io = new IntersectionObserver(es => { if (es.some(x => x.isIntersecting)) { io.disconnect(); play(); } }, { threshold: 0.3 });
