@@ -3805,19 +3805,27 @@ html[data-theme="light"] .sp-l0 { background: #375073; box-shadow: 0 0 0 1px #ff
 .sp-range output { font: 600 11px 'JetBrains Mono', monospace; color: var(--tx2); white-space: nowrap; }
 .sp-dates { display: flex; gap: 6px; align-items: center; } .sp-dates span { color: var(--tx3); }
 .sp-dates input { flex: 1 1 0; width: 0; min-width: 0; font: 500 12px Inter, sans-serif; color: var(--text); background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 5px 8px; }
-@container (max-width: 760px) { .sp-f, .sp-sel { grid-column: 1 / -1; } }
+@container (max-width: 760px) { .sp-f, .sp-sel, .sp-prof { grid-column: 1 / -1; } }
+/* the selection's profile: one bar per hour, weekday or month */
+.sp-prof { border-top: 1px solid var(--border); padding-top: 9px; display: grid; gap: 6px; }
+.sp-pb { display: grid; grid-template-columns: repeat(var(--n, 24), minmax(0, 1fr)); gap: 2px; height: 86px; align-items: end; }
+.sp-pb > div { display: grid; grid-template-rows: auto 1fr auto; height: 100%; min-width: 0; text-align: center; }
+.sp-pb em { font: 600 10px 'JetBrains Mono', monospace; font-style: normal; color: var(--tx2); white-space: nowrap; overflow: hidden; }
+.sp-pb i { align-self: end; display: block; border-radius: 2px 2px 0 0; min-height: 0; }
+.sp-pb span { font-size: 10px; color: var(--tx3); white-space: nowrap; overflow: hidden; padding-top: 3px; }
+
 /* wide screens: a larger dial, centred, and a wider panel in two columns (figures, then filters) so it is no taller than the dial */
 @container (min-width: 1100px) {
   .sp-grid { grid-template-columns: minmax(0, 1fr) minmax(460px, 620px); align-items: center; gap: 28px; }
   .sp-stage { max-width: none; justify-self: stretch; aspect-ratio: auto; height: min(86vh, 1000px); }
   .sp-side { grid-template-columns: 1fr 1fr; column-gap: 20px; row-gap: 12px; }
-  .sp-side > .sp-sel, .sp-side > .sp-f, .sp-side > .sp-btns, .sp-side > .sp-leg, .sp-side > .sp-note { grid-column: 1 / -1; }
+  .sp-side > .sp-sel, .sp-side > .sp-f, .sp-side > .sp-btns, .sp-side > .sp-leg, .sp-side > .sp-note, .sp-side > .sp-prof { grid-column: 1 / -1; }
 }
 /* middle widths: the panel goes under the dial, figures in three columns, filters in two */
 @container (min-width: 761px) and (max-width: 1099px) {
   .sp-grid { grid-template-columns: 1fr; }
   .sp-side { grid-template-columns: repeat(3, 1fr); column-gap: 20px; }
-  .sp-side > .sp-sel, .sp-side > .sp-f, .sp-side > .sp-btns, .sp-side > .sp-leg, .sp-side > .sp-note { grid-column: 1 / -1; }
+  .sp-side > .sp-sel, .sp-side > .sp-f, .sp-side > .sp-btns, .sp-side > .sp-leg, .sp-side > .sp-note, .sp-side > .sp-prof { grid-column: 1 / -1; }
 }
 
 
@@ -3829,6 +3837,7 @@ html[data-theme="light"] .sp-l0 { background: #375073; box-shadow: 0 0 0 1px #ff
 .sp-full .sp-kv { font-size: 22px; } .sp-full .sp-k { padding-top: 6px; }
 .sp-full .sp-fg { padding: 6px 0; row-gap: 6px; } .sp-full .sp-f .sp-btns button { padding: 4px 10px; }
 .sp-full .sp-note { display: none; }
+.sp-full .sp-pb { height: 64px; }
 .sp-side { min-width: 0; }
 .sp-full .sp-stage { max-width: none; justify-self: stretch; aspect-ratio: auto; height: calc(100vh - 40px); height: calc(100dvh - 40px); }
 html.sp-lock, html.sp-lock body { overflow: hidden; }
