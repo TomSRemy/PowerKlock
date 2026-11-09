@@ -96,7 +96,7 @@
     const stage = $('.sp-stage'), cv = $('.sp-cv'), ov = $('.sp-ov'), g3 = $('.sp-g3'), tip = $('.sp-tip'), hint = $('.sp-hint');
     const ctx = cv.getContext('2d'), octx = ov.getContext('2d');
     $('.sp-leg i').style.background = 'linear-gradient(90deg,' + [-200, -100, -30, -1, 0, 30, 60, 100, 150, 250, 400, 500, 1500].map(v => `rgb(${col(v)})`).join(',') + ')';
-    let FS = 12, OFF = 15, D, N, S, DPR, CX, CY, R0, R1, LX0, LX1, LY0, LY1, img, lin = false, on3 = false, P0 = 1, raf = 0, t0 = null;
+    let FS = 12, OFF = 15, SH = 0, D, N, S, DPR, CX, CY, R0, R1, LX0, LX1, LY0, LY1, img, lin = false, on3 = false, P0 = 1, raf = 0, t0 = null;
     const val = (d, h) => D.v[d * 24 + h];
     // F: years, hours (24 flags), seasons, days, period (day indices), price (mode, min, max), output, events
     const F = { y: new Set(), hs: Array(24).fill(true), se: new Set(), dy: '', d0: -1, d1: 1e9, pr: new Set(), pmin: NaN, pmax: NaN, pd: new Set(), ev: new Set() };
@@ -146,11 +146,14 @@
       return [d, Math.floor(a / (2 * Math.PI) * 24 + 0.5) % 24];   // each hour's wedge is centred on its label
     }
     function size() {
-      DPR = Math.min(2, window.devicePixelRatio || 1); const b = stage.getBoundingClientRect(); S = Math.max(240, Math.floor(b.width));
-      [cv, ov].forEach(c => { c.width = S * DPR; c.height = S * DPR; c.style.width = c.style.height = S + 'px'; });
+      // the drawing takes the whole stage, a rectangle: the dial is centred in it at the largest size its shorter side allows
+      DPR = Math.min(2, window.devicePixelRatio || 1); const b = stage.getBoundingClientRect(); S = Math.max(240, Math.floor(b.width)); SH = Math.max(240, Math.floor(b.height || b.width));
+      [cv, ov].forEach(c => { c.width = S * DPR; c.height = SH * DPR; c.style.width = S + 'px'; c.style.height = SH + 'px'; });
+      const M = Math.min(S, SH);
       // the hours sit outside the dial: their size and gap first, then the dial takes the room that is left
-      FS = Math.max(10, Math.min(18, S / 36)); OFF = Math.min(26, S * 0.05) * DPR;
-      CX = CY = S * DPR / 2; R1 = Math.min(S * DPR * 0.44, S * DPR / 2 - OFF - (FS + 3) * DPR * 1.25); R0 = S * DPR * 0.05; LX0 = S * DPR * 0.1; LX1 = S * DPR * 0.98; LY0 = S * DPR * 0.16; LY1 = S * DPR * 0.84;
+      FS = Math.max(10, Math.min(18, M / 36)); OFF = Math.min(26, M * 0.05) * DPR;
+      CX = S * DPR / 2; CY = SH * DPR / 2; R1 = Math.min(M * DPR * 0.44, M * DPR / 2 - OFF - (FS + 3) * DPR * 1.25); R0 = M * DPR * 0.05;
+      LX0 = Math.min(70, S * 0.1) * DPR; LX1 = S * DPR * 0.985; LY0 = SH * DPR * 0.06; LY1 = SH * DPR * 0.9;
     }
     // each hour's colour once, the selected ones bright and the others close to the background (2. the selection stands out)
     let CR, CG, CB, KP;
@@ -169,8 +172,8 @@
     }
     function build() {
       colours();
-      const W = cv.width; img = ctx.createImageData(W, W); const P = img.data;
-      for (let y = 0; y < W; y++) for (let x = 0; x < W; x++) {
+      const W = cv.width, HH = cv.height; img = ctx.createImageData(W, HH); const P = img.data;
+      for (let y = 0; y < HH; y++) for (let x = 0; x < W; x++) {
         let dA, dB, h;
         const ux = (x - TX) / Z, uy = (y - TY) / Z, px = 1 / Z;   // this pixel on the dial, and its size there
         if (lin) { if (ux < LX0 || ux >= LX1 || uy < LY0 || uy >= LY1) continue; h = 23 - Math.floor((uy + px / 2 - LY0) / (LY1 - LY0) * 24);
@@ -205,7 +208,10 @@
       // the hours scale with the dial: 0, 6, 12 and 18 h larger and bright, the others readable but quieter
       const fs = FS, off = OFF / Z;
       for (let h = 0; h < 24; h++) { const a = h / 24 * 2 * Math.PI, r = R1 + off, main = h % 6 === 0;
-        octx.font = `${main ? 800 : 600} ${(main ? fs + 3 : fs) * f}px Inter,system-ui,sans-serif`; octx.fillStyle = main ? t1 : t2; octx.fillText(h + ' h', CX + Math.sin(a) * r, CY - Math.cos(a) * r); }
+        octx.font = `${main ? 800 : 600} ${(main ? fs + 3 : fs) * f}px Inter,system-ui,sans-serif`; octx.fillStyle = main ? t1 : t2; const W0 = ov.width, H0 = ov.height, m = 22 * DPR;   // zoomed in, a label that would leave the frame stays on its edge, along its spoke
+          let sx = (CX + Math.sin(a) * r) * Z + TX, sy = (CY - Math.cos(a) * r) * Z + TY;
+          if (Z > 1.001) { const ex = sx - W0 / 2, ey = sy - H0 / 2, k = Math.min(1, (W0 / 2 - m) / Math.max(Math.abs(ex), 1e-6), (H0 / 2 - m) / Math.max(Math.abs(ey), 1e-6)); sx = W0 / 2 + ex * k; sy = H0 / 2 + ey * k; }
+          octx.fillText(h + ' h', (sx - TX) / Z, (sy - TY) / Z); }
       // spokes every 3 hours, the four main ones stronger, to follow an hour across the years
       for (let h = 0; h < 24; h += 3) { const a = h / 24 * 2 * Math.PI, main = h % 6 === 0;
         octx.strokeStyle = light() ? `rgba(31,45,61,${main ? .35 : .18})` : `rgba(232,237,245,${main ? .28 : .13})`; octx.lineWidth = (main ? 1.4 : 1) * f;
@@ -249,10 +255,10 @@
       set('max', noHi ? '–' : fmtN(hi[0]) + ' €'); set('maxs', noHi ? '' : `${fmtD(D, hi[1])} · ${String(hi[2]).padStart(2, '0')} h`);
     }
     function draw(p) {
-      const W = cv.width; ctx.clearRect(0, 0, W, W); ctx.putImageData(img, 0, 0);
+      const W = cv.width; ctx.clearRect(0, 0, W, cv.height); ctx.putImageData(img, 0, 0);
       if (p < 1) {
         ctx.save(); ctx.setTransform(Z, 0, 0, Z, TX, TY); ctx.globalCompositeOperation = 'destination-in'; ctx.beginPath();
-        if (lin) ctx.rect(0, 0, LX0 + (LX1 - LX0) * p, W); else ctx.arc(CX, CY, rOfT(VW0 + p * VWN), 0, 2 * Math.PI);
+        if (lin) ctx.rect(0, 0, LX0 + (LX1 - LX0) * p, cv.height); else ctx.arc(CX, CY, rOfT(VW0 + p * VWN), 0, 2 * Math.PI);
         ctx.fill(); ctx.restore();
         ctx.save(); ctx.setTransform(Z, 0, 0, Z, TX, TY); ctx.strokeStyle = '#FFD23F'; ctx.lineWidth = 2 * DPR / Z; ctx.beginPath();
         if (lin) { const x = LX0 + (LX1 - LX0) * p; ctx.moveTo(x, LY0); ctx.lineTo(x, LY1); } else ctx.arc(CX, CY, rOfT(VW0 + p * VWN), 0, 2 * Math.PI);
@@ -283,7 +289,7 @@
     // zoom: wheel or pinch around the pointer, drag to move once zoomed, double-click or ⟲ to come back; the dial is redrawn sharp
     let zraf = 0;
     const redraw = () => { if (zraf) return; zraf = requestAnimationFrame(() => { zraf = 0; build(); draw(P0 >= 1 ? 1 : P0); }); };
-    const clampT = () => { const W = cv.width; TX = Math.min(0, Math.max(W - W * Z, TX)); TY = Math.min(0, Math.max(W - W * Z, TY)); ov.style.touchAction = Z > 1.001 ? 'none' : 'pan-y'; };
+    const clampT = () => { const W = cv.width, H = cv.height; TX = Math.min(0, Math.max(W - W * Z, TX)); TY = Math.min(0, Math.max(H - H * Z, TY)); ov.style.touchAction = Z > 1.001 ? 'none' : 'pan-y'; };
     const zoomAt = (mx, my, k) => { const z2 = Math.max(1, Math.min(16, Z * k)); TX = mx - (mx - TX) * z2 / Z; TY = my - (my - TY) * z2 / Z; Z = z2; clampT(); redraw(); };
     ov.addEventListener('wheel', e => { if (on3) return; e.preventDefault(); const b = ov.getBoundingClientRect(); zoomAt((e.clientX - b.left) * DPR, (e.clientY - b.top) * DPR, e.deltaY < 0 ? 1.2 : 1 / 1.2); }, { passive: false });
     const zp = new Map(); let zpinch = 0;
@@ -297,7 +303,7 @@
     const zc = document.createElement('div'); zc.className = 'sp-zc';
     zc.innerHTML = `<button type="button" data-z="in" aria-label="${T('Zoomer', 'Zoom in')}">+</button><button type="button" data-z="out" aria-label="${T('Dézoomer', 'Zoom out')}">−</button><button type="button" data-z="0" aria-label="${T('Vue d’ensemble', 'Whole view')}">⟲</button>`;
     stage.appendChild(zc);
-    zc.addEventListener('click', e => { const z = e.target.dataset && e.target.dataset.z; if (!z || on3) return; const W = cv.width; if (z === '0') zreset(); else zoomAt(W / 2, W / 2, z === 'in' ? 1.5 : 1 / 1.5); });
+    zc.addEventListener('click', e => { const z = e.target.dataset && e.target.dataset.z; if (!z || on3) return; const W = cv.width; if (z === '0') zreset(); else zoomAt(W / 2, cv.height / 2, z === 'in' ? 1.5 : 1 / 1.5); });
 
     // ── relief (Three.js, loaded on first use) ──
     let TH = null, R3 = null;
@@ -491,7 +497,7 @@
     fb.addEventListener('click', () => full(!wrap.classList.contains('sp-full')));
     document.addEventListener('keydown', e => { if (e.key === 'Escape' && wrap.classList.contains('sp-full')) full(false); });
     host.querySelector('[data-a="3d"]').addEventListener('click', e => { e.currentTarget.textContent = on3 ? '3D' : '2D'; relief(!on3); });
-    new ResizeObserver(() => { if (!D) return; const w = Math.floor(stage.getBoundingClientRect().width); if (Math.abs(w - S) > 4) { size(); build(); draw(P0); } }).observe(stage);
+    new ResizeObserver(() => { if (!D) return; const bb = stage.getBoundingClientRect(), w = Math.floor(bb.width), hh = Math.floor(bb.height); if (Math.abs(w - S) > 4 || Math.abs(hh - SH) > 4) { size(); clampT(); build(); draw(P0); } }).observe(stage);
 
     load().then(data => {
       if (!host.isConnected) return;

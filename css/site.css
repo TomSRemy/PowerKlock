@@ -3802,7 +3802,7 @@ html body .pm-o-l, html body .pkf-t-l, html body .mrn2-tc { white-space: normal;
 /* wide screens: a larger dial, centred, and a wider panel in two columns (figures, then filters) so it is no taller than the dial */
 @container (min-width: 1100px) {
   .sp-grid { grid-template-columns: minmax(0, 1fr) minmax(460px, 620px); align-items: center; gap: 28px; }
-  .sp-stage { max-width: min(100%, 860px); }
+  .sp-stage { max-width: none; justify-self: stretch; aspect-ratio: auto; height: min(86vh, 1000px); }
   .sp-side { grid-template-columns: 1fr 1fr; column-gap: 20px; row-gap: 12px; }
   .sp-side > .sp-sel, .sp-side > .sp-f, .sp-side > .sp-btns, .sp-side > .sp-leg, .sp-side > .sp-note { grid-column: 1 / -1; }
 }
@@ -3823,7 +3823,7 @@ html body .pm-o-l, html body .pkf-t-l, html body .mrn2-tc { white-space: normal;
 .sp-full .sp-fg { padding: 6px 0; row-gap: 6px; } .sp-full .sp-f .sp-btns button { padding: 4px 10px; }
 .sp-full .sp-note { display: none; }
 .sp-side { min-width: 0; }
-.sp-full .sp-stage { max-width: min(100%, calc(100vh - 40px)); max-width: min(100%, calc(100dvh - 40px)); }
+.sp-full .sp-stage { max-width: none; justify-self: stretch; aspect-ratio: auto; height: calc(100vh - 40px); height: calc(100dvh - 40px); }
 html.sp-lock, html.sp-lock body { overflow: hidden; }
 html.sp-lock .es-hotspot, html.sp-lock .es-gamespot, html.sp-lock .es-volleyspot { display: none !important; }
 /* in relief the scene takes the whole room left by the panel, not a square */
