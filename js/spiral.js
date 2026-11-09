@@ -69,7 +69,7 @@
       <div class="sp-wrap${widget ? ' sp-widget' : ''}"><div class="sp-grid"><div class="sp-stage"><canvas class="sp-cv"></canvas><canvas class="sp-ov"></canvas><div class="sp-g3"></div><div class="sp-tip"></div><div class="sp-hint"></div></div>
         <div class="sp-side">
           <div class="sp-btns sp-view"><button type="button" class="sp-alt" data-a="lin">${T('Linéaire', 'Linear')}</button><button type="button" class="sp-alt" data-a="3d">3D</button><button type="button" data-a="replay">↺ ${T('Rejouer', 'Replay')}</button><button type="button" data-a="full" aria-pressed="false">⤢ ${T('Plein écran', 'Full screen')}</button></div>
-          <div class="sp-leg"><i></i><div class="sp-tk">${[[-200, 0], [0, 4], [60, 6], [150, 8], [500, 11]].map(([v, k]) => `<span style="left:${(k / 12 * 100).toFixed(1)}%">${v < 0 ? '−' + -v : v}${v === 500 ? '+' : ''}</span>`).join('')}<span class="u">€/MWh</span></div></div>
+          <div class="sp-leg"><i></i><div class="sp-lsel" role="slider" aria-label="${T('Choisir les prix sur la légende', 'Pick prices on the legend')}" title="${T('Glisser pour une fourchette de prix, cliquer pour un prix', 'Drag for a price range, click for one price')}"><b class="sp-lr"></b><span class="sp-lh" data-h="0"></span><span class="sp-lh" data-h="1"></span></div><div class="sp-tk">${[[-200, 0], [0, 4], [60, 6], [150, 8], [500, 11]].map(([v, k]) => `<span style="left:${(k / 12 * 100).toFixed(1)}%">${v < 0 ? '−' + -v : v}${v === 500 ? '+' : ''}</span>`).join('')}<span class="u">€/MWh</span></div></div>
           <div class="sp-sel" data-k="sel"></div>
           <div class="sp-k"><span class="sp-kl">${T('Prix moyen', 'Average price')}</span><span class="sp-kv" data-k="avg">–</span><span class="sp-ks" data-k="avgs"></span></div>
           <div class="sp-k"><span class="sp-kl">${T('Prix moyen des heures négatives', 'Average of the negative hours')}</span><span class="sp-kv sp-cy" data-k="navg">–</span><span class="sp-ks" data-k="navgs"></span></div>
@@ -364,7 +364,7 @@
       return parts.length ? T('Sélection : ', 'Selection: ') + parts.join(' · ') : T('Toutes les heures', 'Every hour');
     }
     function apply() {
-      prep(); build(); draw(P0); if (R3) R3.layout();
+      prep(); build(); draw(P0); if (R3) R3.layout(); legSync();
       const e = host.querySelector('[data-k="sel"]'); if (e) e.textContent = selText();
     }
     const HP = { nuit: [0, 6], midi: [11, 15], soir: [18, 21], hp: [6, 22], hc: [22, 6] };
@@ -390,6 +390,35 @@
       host.querySelectorAll('[data-g].on').forEach(x => x.classList.remove('on')); ['from', 'to', 'pmin', 'pmax'].forEach(k => { host.querySelector(`[data-r="${k}"]`).value = ''; });
       host.querySelector('[data-r="h0"]').value = 0; host.querySelector('[data-r="h1"]').value = 24; host.querySelector('[data-k="hr"]').textContent = '0 h → 24 h';
       Object.assign(F, { hs: Array(24).fill(true), dy: '', d0: -1, d1: 1e9, pmin: NaN, pmax: NaN }); [F.y, F.se, F.pr, F.pd, F.ev].forEach(x => x.clear()); apply(); });
+    // the legend as a price picker: drag across it for a range, click for one price (± a few €), drag a handle to adjust
+    const LSTOP = [-200, -100, -30, -1, 0, 30, 60, 100, 150, 250, 400, 500, 1500];   // the gradient's stops, evenly spaced
+    const f2v = f => { const x = Math.max(0, Math.min(1, f)) * (LSTOP.length - 1), i = Math.min(LSTOP.length - 2, Math.floor(x)); return LSTOP[i] + (LSTOP[i + 1] - LSTOP[i]) * (x - i); };
+    const v2f = v => { if (v <= LSTOP[0]) return 0; for (let i = 0; i < LSTOP.length - 1; i++) if (v <= LSTOP[i + 1]) return (i + (v - LSTOP[i]) / (LSTOP[i + 1] - LSTOP[i])) / (LSTOP.length - 1); return 1; };
+    const rnd = v => Math.abs(v) < 100 ? Math.round(v) : Math.round(v / 5) * 5;
+    const lsel = host.querySelector('.sp-lsel'), lr = lsel.querySelector('.sp-lr'), lh = [...lsel.querySelectorAll('.sp-lh')];
+    function legSync() {
+      const on = !isNaN(F.pmin) || !isNaN(F.pmax); lsel.classList.toggle('on', on); if (!on) return;
+      const a = v2f(isNaN(F.pmin) ? LSTOP[0] : F.pmin), b2 = v2f(isNaN(F.pmax) ? LSTOP[LSTOP.length - 1] : F.pmax);
+      lr.style.left = (a * 100) + '%'; lr.style.width = (Math.max(0.006, b2 - a) * 100) + '%'; lh[0].style.left = (a * 100) + '%'; lh[1].style.left = (b2 * 100) + '%';
+    }
+    function setPrices(lo, hi) {
+      F.pmin = lo; F.pmax = hi; host.querySelector('[data-r="pmin"]').value = isNaN(lo) ? '' : lo; host.querySelector('[data-r="pmax"]').value = isNaN(hi) ? '' : hi; apply();
+    }
+    let drag = null;
+    lsel.addEventListener('pointerdown', e => {
+      e.preventDefault(); lsel.setPointerCapture(e.pointerId); const b = lsel.getBoundingClientRect(), f = (e.clientX - b.left) / b.width;
+      const hd = e.target.classList.contains('sp-lh') ? +e.target.dataset.h : -1;
+      drag = { x0: e.clientX, f0: f, hd, moved: false, b };
+    });
+    lsel.addEventListener('pointermove', e => {
+      if (!drag) return; const f = (e.clientX - drag.b.left) / drag.b.width; if (Math.abs(e.clientX - drag.x0) > 3) drag.moved = true; if (!drag.moved) return;
+      if (drag.hd >= 0) { const v = rnd(f2v(f)); if (drag.hd === 0) setPrices(Math.min(v, isNaN(F.pmax) ? v : F.pmax), F.pmax); else setPrices(F.pmin, Math.max(v, isNaN(F.pmin) ? v : F.pmin)); }
+      else { const a = rnd(f2v(Math.min(drag.f0, f))), b2 = rnd(f2v(Math.max(drag.f0, f))); setPrices(a, b2); }
+    });
+    const end = e => { if (!drag) return; if (!drag.moved && drag.hd < 0) {   // a click: one price, with a margin of 3 % (at least 2 €)
+        const v = rnd(f2v(drag.f0)), m = Math.max(2, Math.round(Math.abs(v) * 0.03)); setPrices(v - m, v + m); }
+      drag = null; };
+    lsel.addEventListener('pointerup', end); lsel.addEventListener('pointercancel', end);
     host.querySelector('[data-a="replay"]').addEventListener('click', () => { if (on3 && R3) R3.grow(); else play(); });
     host.querySelector('[data-a="lin"]').addEventListener('click', e => {
       lin = !lin; e.currentTarget.textContent = lin ? T('Spirale', 'Spiral') : T('Linéaire', 'Linear'); build(); if (R3) { R3.layout(); if (on3) R3.grow(); } if (!on3) play();
