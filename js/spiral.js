@@ -71,7 +71,7 @@
           <div class="sp-k"><span class="sp-kl">${T('Record bas', 'Record low')}</span><span class="sp-kv sp-cy" data-k="min">–</span><span class="sp-ks" data-k="mins"></span></div>
           <div class="sp-k"><span class="sp-kl">${T('Record haut', 'Record high')}</span><span class="sp-kv sp-rd" data-k="max">–</span><span class="sp-ks" data-k="maxs"></span></div>
           <div class="sp-btns"><button type="button" data-f="all" class="on">${T('Tout', 'All')}</button><button type="button" data-f="neg">${T('Heures négatives', 'Negative hours')}</button><button type="button" data-f="crise">${T('Crise 2022', '2022 crisis')}</button><button type="button" data-f="midi">${T('Midi vs soir', 'Noon vs evening')}</button>${year ? `<button type="button" data-f="year">${year}</button>` : ''}</div>
-          <div class="sp-btns"><button type="button" class="sp-alt" data-a="lin">${T('Linéaire', 'Linear')}</button><button type="button" class="sp-alt" data-a="3d">3D</button><button type="button" data-a="replay">↺ ${T('Rejouer', 'Replay')}</button></div>
+          <div class="sp-btns"><button type="button" class="sp-alt" data-a="lin">${T('Linéaire', 'Linear')}</button><button type="button" class="sp-alt" data-a="3d">3D</button><button type="button" data-a="replay">↺ ${T('Rejouer', 'Replay')}</button><button type="button" data-a="full" aria-pressed="false">⤢ ${T('Plein écran', 'Full screen')}</button></div>
           <div class="sp-leg"><span>−200</span><i></i><span>500+ €</span></div>
           ${widget ? '' : `<p class="bl-foot sp-note">${T('Rayon proportionnel à la racine du temps : chaque jour a la même surface. En relief, hauteur en échelle logarithmique. Les heures négatives sont comptées sur la moyenne horaire ; le bilan les compte sur les pas publiés (quart d’heure depuis octobre 2025).', 'Radius in proportion to the square root of time: every day has the same area. In relief, height on a log scale. Negative hours are counted on the hourly mean; the review counts them on the published steps (quarter-hour since October 2025).')}</p>`}
         </div></div></div>`;
@@ -253,6 +253,12 @@
     host.querySelector('[data-a="lin"]').addEventListener('click', e => {
       lin = !lin; e.currentTarget.textContent = lin ? T('Spirale', 'Spiral') : T('Linéaire', 'Linear'); build(); if (R3) { R3.layout(); if (on3) R3.grow(); } if (!on3) play();
     });
+    // full screen: the dial as large as the window allows, its figures and filters beside it; Esc or the button again leaves
+    const wrap = host.querySelector('.sp-wrap'), fb = host.querySelector('[data-a="full"]');
+    const full = on => { wrap.classList.toggle('sp-full', on); document.documentElement.classList.toggle('sp-lock', on);
+      fb.setAttribute('aria-pressed', on); fb.textContent = on ? '✕ ' + T('Quitter le plein écran', 'Exit full screen') : '⤢ ' + T('Plein écran', 'Full screen'); };
+    fb.addEventListener('click', () => full(!wrap.classList.contains('sp-full')));
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && wrap.classList.contains('sp-full')) full(false); });
     host.querySelector('[data-a="3d"]').addEventListener('click', e => { e.currentTarget.textContent = on3 ? '3D' : '2D'; relief(!on3); });
     new ResizeObserver(() => { if (!D) return; const w = Math.floor(stage.getBoundingClientRect().width); if (Math.abs(w - S) > 4) { size(); build(); draw(P0); } }).observe(stage);
 
