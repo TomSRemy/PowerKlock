@@ -1,7 +1,8 @@
 // ════════════════════════════════════════════════════════════════════
 // spiral.js · "La Spirale" in Power system › Yearly review: every hourly French day-ahead price since 2019 on one
 // 24-hour dial (1 day = 1 turn, 2019 at the centre, today at the edge), or laid flat (1 column = 1 day), in 2D or
-// in relief (height = price). Filters: negative hours, the 2021-22 crisis, noon against evening, the review's year.
+// in relief (height = price). Filters that combine: years, hours, season, weekdays, period, price, output (solar, wind),
+// events (2020 lockdown, 2021-22 crisis, summer 2022); figures of the selection: average, negative hours and their average, records.
 // Data: data/history/fr_hourly/YYYY.json (scripts/build_fr_hourly.py, hourly = mean of the four quarter-hours since
 // October 2025), rebuilt every day. Three.js is loaded only when the relief is opened (js/vendor/three.module.min.js).
 // Mock-up validated by Tom on 7 Nov. 2026.
@@ -67,10 +68,25 @@
       <p class="bl-foot" style="margin:0">${T('Une horloge de 24 heures : chaque tour est un jour, 2019 au centre, le dernier jour publié au bord. Le cyan est un prix négatif, l’ambre puis le rouge un prix élevé. Le creux cyan de midi qui grandit, c’est le solaire ; l’anneau rouge, la crise de 2021-2022.', 'A 24-hour clock: each turn is a day, 2019 at the centre, the last published day at the edge. Cyan is a negative price, amber then red a high one. The growing cyan hollow at noon is solar; the red ring is the 2021-22 crisis.')}</p>`) + `
       <div class="sp-wrap${widget ? ' sp-widget' : ''}"><div class="sp-grid"><div class="sp-stage"><canvas class="sp-cv"></canvas><canvas class="sp-ov"></canvas><div class="sp-g3"></div><div class="sp-tip"></div><div class="sp-hint"></div></div>
         <div class="sp-side">
+          <div class="sp-sel" data-k="sel"></div>
+          <div class="sp-k"><span class="sp-kl">${T('Prix moyen', 'Average price')}</span><span class="sp-kv" data-k="avg">–</span><span class="sp-ks" data-k="avgs"></span></div>
+          <div class="sp-k"><span class="sp-kl">${T('Prix moyen des heures négatives', 'Average of the negative hours')}</span><span class="sp-kv sp-cy" data-k="navg">–</span><span class="sp-ks" data-k="navgs"></span></div>
           <div class="sp-k"><span class="sp-kl">${T('Heures négatives', 'Negative hours')}</span><span class="sp-kv sp-cy" data-k="neg">–</span><span class="sp-ks" data-k="negs"></span></div>
           <div class="sp-k"><span class="sp-kl">${T('Record bas', 'Record low')}</span><span class="sp-kv sp-cy" data-k="min">–</span><span class="sp-ks" data-k="mins"></span></div>
           <div class="sp-k"><span class="sp-kl">${T('Record haut', 'Record high')}</span><span class="sp-kv sp-rd" data-k="max">–</span><span class="sp-ks" data-k="maxs"></span></div>
-          <div class="sp-btns"><button type="button" data-f="all" class="on">${T('Tout', 'All')}</button><button type="button" data-f="neg">${T('Heures négatives', 'Negative hours')}</button><button type="button" data-f="crise">${T('Crise 2022', '2022 crisis')}</button><button type="button" data-f="midi">${T('Midi vs soir', 'Noon vs evening')}</button>${year ? `<button type="button" data-f="year">${year}</button>` : ''}</div>
+          <div class="sp-f">
+            <div class="sp-fh"><span>${T('Filtres', 'Filters')}</span><button type="button" data-a="reset">${T('Tout réinitialiser', 'Reset all')}</button></div>
+            <div class="sp-fg"><span class="sp-fl">${T('Années', 'Years')}</span><div class="sp-btns">${Array.from({ length: new Date().getUTCFullYear() - Y0 + 1 }, (_, i) => Y0 + i).map(y => `<button type="button" data-g="y" data-v="${y}">${y}</button>`).join('')}</div></div>
+            <div class="sp-fg"><span class="sp-fl">${T('Heures', 'Hours')}</span><div class="sp-btns"><button type="button" data-g="hp" data-v="nuit">${T('Nuit 0–6 h', 'Night 0–6')}</button><button type="button" data-g="hp" data-v="midi">${T('Midi solaire 11–15 h', 'Solar noon 11–15')}</button><button type="button" data-g="hp" data-v="soir">${T('Pointe du soir 18–21 h', 'Evening peak 18–21')}</button><button type="button" data-g="hp" data-v="hp">${T('Heures pleines 6–22 h', 'Peak hours 6–22')}</button><button type="button" data-g="hp" data-v="hc">${T('Heures creuses 22–6 h', 'Off-peak 22–6')}</button></div>
+              <div class="sp-range"><input type="range" min="0" max="23" step="1" value="0" data-r="h0" aria-label="${T('De', 'From')}"><input type="range" min="1" max="24" step="1" value="24" data-r="h1" aria-label="${T('À', 'To')}"><output data-k="hr">0 h → 24 h</output></div></div>
+            <div class="sp-fg"><span class="sp-fl">${T('Saison', 'Season')}</span><div class="sp-btns"><button type="button" data-g="se" data-v="w">${T('Hiver', 'Winter')}</button><button type="button" data-g="se" data-v="sp">${T('Printemps', 'Spring')}</button><button type="button" data-g="se" data-v="su">${T('Été', 'Summer')}</button><button type="button" data-g="se" data-v="a">${T('Automne', 'Autumn')}</button></div></div>
+            <div class="sp-fg"><span class="sp-fl">${T('Jours', 'Days')}</span><div class="sp-btns"><button type="button" data-g="dy" data-v="wd">${T('Lun.–ven.', 'Mon–Fri')}</button><button type="button" data-g="dy" data-v="we">${T('Week-end', 'Weekend')}</button></div></div>
+            <div class="sp-fg"><span class="sp-fl">${T('Période', 'Period')}</span><div class="sp-dates"><input type="date" data-r="from" aria-label="${T('Du', 'From')}"><span>→</span><input type="date" data-r="to" aria-label="${T('Au', 'To')}"></div></div>
+            <div class="sp-fg"><span class="sp-fl">${T('Prix', 'Price')}</span><div class="sp-btns"><button type="button" data-g="pr" data-v="neg">&lt; 0 €</button><button type="button" data-g="pr" data-v="gt200">&gt; 200 €</button><button type="button" data-g="pr" data-v="top1">${T('Top 1 % les plus chères', 'Dearest 1 %')}</button></div>
+              <div class="sp-dates"><input type="number" step="10" data-r="pmin" placeholder="${T('min €', 'min €')}" aria-label="${T('Prix minimum', 'Minimum price')}"><span>→</span><input type="number" step="10" data-r="pmax" placeholder="${T('max €', 'max €')}" aria-label="${T('Prix maximum', 'Maximum price')}"></div></div>
+            <div class="sp-fg"><span class="sp-fl">${T('Production', 'Output')}</span><div class="sp-btns"><button type="button" data-g="pd" data-v="sol">${T('Solaire > 15 GW', 'Solar > 15 GW')}</button><button type="button" data-g="pd" data-v="win">${T('Éolien > 15 GW', 'Wind > 15 GW')}</button><button type="button" data-g="pd" data-v="calm">${T('Ni vent ni soleil', 'No wind, no sun')}</button></div></div>
+            <div class="sp-fg"><span class="sp-fl">${T('Événements', 'Events')}</span><div class="sp-btns"><button type="button" data-g="ev" data-v="lock">${T('Confinement 2020', '2020 lockdown')}</button><button type="button" data-g="ev" data-v="crise">${T('Crise 2021-22', '2021-22 crisis')}</button><button type="button" data-g="ev" data-v="ete22">${T('Été 2022', 'Summer 2022')}</button></div></div>
+          </div>
           <div class="sp-btns"><button type="button" class="sp-alt" data-a="lin">${T('Linéaire', 'Linear')}</button><button type="button" class="sp-alt" data-a="3d">3D</button><button type="button" data-a="replay">↺ ${T('Rejouer', 'Replay')}</button><button type="button" data-a="full" aria-pressed="false">⤢ ${T('Plein écran', 'Full screen')}</button></div>
           <div class="sp-leg"><span>−200</span><i></i><span>500+ €</span></div>
           ${widget ? '' : `<p class="bl-foot sp-note">${T('Rayon proportionnel à la racine du temps : chaque jour a la même surface. En relief, hauteur en échelle logarithmique. Les heures négatives sont comptées sur la moyenne horaire ; le bilan les compte sur les pas publiés (quart d’heure depuis octobre 2025).', 'Radius in proportion to the square root of time: every day has the same area. In relief, height on a log scale. Negative hours are counted on the hourly mean; the review counts them on the published steps (quarter-hour since October 2025).')}</p>`}
@@ -79,13 +95,36 @@
     const stage = $('.sp-stage'), cv = $('.sp-cv'), ov = $('.sp-ov'), g3 = $('.sp-g3'), tip = $('.sp-tip'), hint = $('.sp-hint');
     const ctx = cv.getContext('2d'), octx = ov.getContext('2d');
     $('.sp-leg i').style.background = 'linear-gradient(90deg,' + [-200, -100, -30, -1, 0, 30, 60, 100, 150, 250, 400, 500, 1500].map(v => `rgb(${col(v)})`).join(',') + ')';
-    let D, N, S, DPR, CX, CY, R0, R1, LX0, LX1, LY0, LY1, img, filt = 'all', lin = false, on3 = false, P0 = 1, raf = 0, t0 = null;
+    let FS = 12, OFF = 15, D, N, S, DPR, CX, CY, R0, R1, LX0, LX1, LY0, LY1, img, lin = false, on3 = false, P0 = 1, raf = 0, t0 = null;
     const val = (d, h) => D.v[d * 24 + h];
+    // F: years, hours (24 flags), seasons, days, period (day indices), price (mode, min, max), output, events
+    const F = { y: new Set(), hs: Array(24).fill(true), se: new Set(), dy: '', d0: -1, d1: 1e9, pr: new Set(), pmin: NaN, pmax: NaN, pd: new Set(), ev: new Set() };
+    let DY, DM, DW, P99 = Infinity, EV = {};
+    const SEASON = [0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 0];   // Dec–Feb winter, Mar–May spring, Jun–Aug summer, Sep–Nov autumn
+    const SE_K = ['w', 'sp', 'su', 'a'];
+    const iso2d = iso => Math.round((Date.parse(iso + 'T00:00:00Z') - D.d0) / 864e5);
+    function calendar() {   // once per data load: each day's year, month, weekday; the 99th percentile; the events as day ranges
+      DY = new Int16Array(N); DM = new Int8Array(N); DW = new Int8Array(N);
+      for (let d = 0; d < N; d++) { const t = dayDate(D, d); DY[d] = t.getUTCFullYear(); DM[d] = t.getUTCMonth(); DW[d] = t.getUTCDay(); }
+      const all = Array.from(D.v).filter(v => !isNaN(v)).sort((a, b) => a - b); P99 = all[Math.floor(all.length * 0.99)];
+      // France's first lockdown: 17 March to 10 May 2020 (lifted on 11 May); the 2021-22 crisis: Sept. 2021 to Dec. 2022; summer 2022: June to August
+      EV = { lock: [iso2d('2020-03-17'), iso2d('2020-05-10')], crise: [iso2d('2021-09-01'), iso2d('2022-12-31')], ete22: [iso2d('2022-06-01'), iso2d('2022-08-31')] };
+    }
     const keep = (d, h, v) => {
-      if (filt === 'neg') return v < 0;
-      if (filt === 'crise') { const t = dayDate(D, d); const y = t.getUTCFullYear(); return y === 2022 || (y === 2021 && t.getUTCMonth() >= 8); }
-      if (filt === 'midi') return (h >= 11 && h <= 15) || (h >= 18 && h <= 21);
-      if (filt === 'year') return String(dayDate(D, d).getUTCFullYear()) === year;
+      if (!F.hs[h]) return false;
+      if (d < F.d0 || d > F.d1) return false;
+      if (F.y.size && !F.y.has(DY[d])) return false;
+      if (F.se.size && !F.se.has(SE_K[SEASON[DM[d]]])) return false;
+      if (F.dy === 'wd' && (DW[d] === 0 || DW[d] === 6)) return false;
+      if (F.dy === 'we' && DW[d] !== 0 && DW[d] !== 6) return false;
+      if (F.pr.size && !((F.pr.has('neg') && v < 0) || (F.pr.has('gt200') && v > 200) || (F.pr.has('top1') && v >= P99))) return false;
+      if (!isNaN(F.pmin) && v < F.pmin) return false;
+      if (!isNaN(F.pmax) && v > F.pmax) return false;
+      if (F.pd.size) { const i = d * 24 + h, so = D.sol[i], wi = D.win[i];
+        if (F.pd.has('sol') && !(so >= 15000)) return false;
+        if (F.pd.has('win') && !(wi >= 15000)) return false;
+        if (F.pd.has('calm') && !(so < 2000 && wi < 5000)) return false; }
+      if (F.ev.size && ![...F.ev].some(k => EV[k] && d >= EV[k][0] && d <= EV[k][1])) return false;
       return true;
     };
     const tOfR = r => { const u = (r - R0) / (R1 - R0); return u * u * N; }, rOfT = t => R0 + (R1 - R0) * Math.sqrt(Math.max(0, t) / N);
@@ -98,7 +137,9 @@
     function size() {
       DPR = Math.min(2, window.devicePixelRatio || 1); const b = stage.getBoundingClientRect(); S = Math.max(240, Math.floor(b.width));
       [cv, ov].forEach(c => { c.width = S * DPR; c.height = S * DPR; c.style.width = c.style.height = S + 'px'; });
-      CX = CY = S * DPR / 2; R1 = S * DPR * 0.44; R0 = S * DPR * 0.05; LX0 = S * DPR * 0.1; LX1 = S * DPR * 0.98; LY0 = S * DPR * 0.16; LY1 = S * DPR * 0.84;
+      // the hours sit outside the dial: their size and gap first, then the dial takes the room that is left
+      FS = Math.max(10, Math.min(18, S / 36)); OFF = Math.min(26, S * 0.05) * DPR;
+      CX = CY = S * DPR / 2; R1 = Math.min(S * DPR * 0.44, S * DPR / 2 - OFF - (FS + 3) * DPR * 1.25); R0 = S * DPR * 0.05; LX0 = S * DPR * 0.1; LX1 = S * DPR * 0.98; LY0 = S * DPR * 0.16; LY1 = S * DPR * 0.84;
     }
     function build() {
       const W = cv.width; img = ctx.createImageData(W, W); const P = img.data; const bg = light() ? [255, 255, 255] : [15, 20, 25];
@@ -123,7 +164,7 @@
       }
       octx.textAlign = 'center'; octx.textBaseline = 'middle';
       // the hours scale with the dial: 0, 6, 12 and 18 h larger and bright, the others readable but quieter
-      const fs = Math.max(11, Math.min(18, S / 36)), off = Math.min(26 * f, S * f * 0.05);
+      const fs = FS, off = OFF;
       for (let h = 0; h < 24; h++) { const a = h / 24 * 2 * Math.PI, r = R1 + off, main = h % 6 === 0;
         octx.font = `${main ? 800 : 600} ${(main ? fs + 3 : fs) * f}px Inter,system-ui,sans-serif`; octx.fillStyle = main ? t1 : t2; octx.fillText(h + ' h', CX + Math.sin(a) * r, CY - Math.cos(a) * r); }
       octx.font = `700 ${10 * f}px 'JetBrains Mono',monospace`;
@@ -140,19 +181,23 @@
     // figures follow the reveal
     let NEG, RMIN, RMAX;
     // the figures count only the hours of the selection (all, negative hours, the 2022 crisis, midday vs evening, the year)
-    let F0 = 0, F1 = 0;
+    let F0 = 0, F1 = 0, CNT, SUM, NSUM;
     function prep() {
-      NEG = new Int32Array(N); RMIN = []; RMAX = []; let c = 0, lo = [1e9, 0, 0], hi = [-1e9, 0, 0]; F0 = -1;
+      NEG = new Int32Array(N); CNT = new Int32Array(N); SUM = new Float64Array(N); NSUM = new Float64Array(N); RMIN = []; RMAX = [];
+      let c = 0, k = 0, sm = 0, ns = 0, lo = [1e9, 0, 0], hi = [-1e9, 0, 0]; F0 = -1;
       for (let d = 0; d < N; d++) { for (let h = 0; h < 24; h++) { const v = val(d, h); if (isNaN(v) || !keep(d, h, v)) continue; if (F0 < 0) F0 = d; F1 = d;
-        if (v < 0) c++; if (v < lo[0]) lo = [v, d, h]; if (v > hi[0]) hi = [v, d, h]; } NEG[d] = c; RMIN.push(lo); RMAX.push(hi); }
+        k++; sm += v; if (v < 0) { c++; ns += v; } if (v < lo[0]) lo = [v, d, h]; if (v > hi[0]) hi = [v, d, h]; }
+        NEG[d] = c; CNT[d] = k; SUM[d] = sm; NSUM[d] = ns; RMIN.push(lo); RMAX.push(hi); }
       if (F0 < 0) F0 = 0;
     }
     function kpis(p) {
       const d = Math.min(N - 1, Math.floor(p * N)), lo = RMIN[d], hi = RMAX[d], set = (k, s) => { const e = host.querySelector(`[data-k="${k}"]`); if (e) e.textContent = s; };
-      const none = lo[0] === 1e9, lab = host.querySelector('[data-f].on'), sel = filt === 'all' ? '' : (lab ? lab.textContent.trim() + ' · ' : '');
-      set('neg', NEG[d].toLocaleString(T('fr-FR', 'en-GB')) + ' h'); set('negs', sel + (d < F0 ? '–' : `${fmtD(D, F0)} → ${fmtD(D, Math.min(d, F1))}`));
+      const none = lo[0] === 1e9;
+      set('neg', NEG[d].toLocaleString(T('fr-FR', 'en-GB')) + ' h'); set('negs', d < F0 ? '' : `${fmtD(D, F0)} → ${fmtD(D, Math.min(d, F1))}`);
+      set('avg', CNT[d] ? fmtN(SUM[d] / CNT[d]) + ' €' : '–'); set('avgs', CNT[d] ? CNT[d].toLocaleString(T('fr-FR', 'en-GB')) + ' ' + T('heures', 'hours') : '');
+      set('navg', NEG[d] ? fmtN(NSUM[d] / NEG[d]) + ' €' : '–'); set('navgs', NEG[d] ? T('sur ', 'over ') + NEG[d].toLocaleString(T('fr-FR', 'en-GB')) + ' h' : '');
       set('min', none ? '–' : fmtN(lo[0]) + ' €'); set('mins', none ? '' : `${fmtD(D, lo[1])} · ${String(lo[2]).padStart(2, '0')} h`);
-      const noHi = none || filt === 'neg';   // among negative hours a « record high » would only be the one closest to zero
+      const noHi = none || (F.pr.size === 1 && F.pr.has('neg')) || F.pmax < 0;   // among negative hours a « record high » would only be the one closest to zero
       set('max', noHi ? '–' : fmtN(hi[0]) + ' €'); set('maxs', noHi ? '' : `${fmtD(D, hi[1])} · ${String(hi[2]).padStart(2, '0')} h`);
     }
     function draw(p) {
@@ -223,7 +268,7 @@
         const P = geo.attributes.position.array, C = geo.attributes.color.array, src = lin ? LP : SP, c3 = new THREE.Color();
         for (let j = 0; j < n; j++) { const d = Math.floor(j / (A + 1)), v = VV[j], ok = keep(d, HH[j], v), c = col(v); c3.setRGB(c[0] / 255, c[1] / 255, c[2] / 255, THREE.SRGBColorSpace);
           if (!ok) { const m = (c3.r + c3.g + c3.b) / 3 * 0.18; c3.setRGB(m, m, m); }
-          C[j * 3] = c3.r; C[j * 3 + 1] = c3.g; C[j * 3 + 2] = c3.b; P[j * 3] = src[j * 3]; P[j * 3 + 2] = src[j * 3 + 2]; P[j * 3 + 1] = ok ? (filt === 'neg' ? YY[j] * 4 : YY[j]) : YY[j] * 0.15; }
+          C[j * 3] = c3.r; C[j * 3 + 1] = c3.g; C[j * 3 + 2] = c3.b; P[j * 3] = src[j * 3]; P[j * 3 + 2] = src[j * 3 + 2]; P[j * 3 + 1] = ok ? (F.pr.size === 1 && F.pr.has('neg') ? YY[j] * 4 : YY[j]) : YY[j] * 0.15; }
         geo.attributes.position.needsUpdate = true; geo.attributes.color.needsUpdate = true; geo.computeVertexNormals(); geo.computeBoundingSphere();
         dial.forEach(o => { o.visible = !lin; }); flat.forEach(o => { o.visible = lin; }); disc.visible = !lin;
         recs.forEach(r => { const x = lin ? ((r.d + 0.5) / N - 0.5) * 2.6 : Math.sin((r.h + 0.5) / 24 * 2 * Math.PI) * (0.12 + 0.88 * Math.sqrt((r.d + 0.5) / N)), z = lin ? ((r.h + 0.5) / 24 - 0.5) : -Math.cos((r.h + 0.5) / 24 * 2 * Math.PI) * (0.12 + 0.88 * Math.sqrt((r.d + 0.5) / N));
@@ -256,9 +301,44 @@
     }
 
     // ── controls ──
-    host.querySelectorAll('[data-f]').forEach(b => b.addEventListener('click', () => {
-      host.querySelectorAll('[data-f]').forEach(x => x.classList.toggle('on', x === b)); filt = b.dataset.f; prep(); build(); draw(P0); if (R3) R3.layout();
+    // the selection in a line (it also says how many hours it keeps)
+    function selText() {
+      const on = g => [...host.querySelectorAll(`[data-g="${g}"].on`)].map(b => b.textContent.trim()), parts = [];
+      if (F.y.size) parts.push([...F.y].sort().join(', '));
+      const h0 = +host.querySelector('[data-r="h0"]').value, h1 = +host.querySelector('[data-r="h1"]').value, hp = on('hp');
+      if (hp.length) parts.push(hp.join(', ')); else if (h0 !== 0 || h1 !== 24) parts.push(`${h0}–${h1} h`);
+      ['se', 'dy', 'pr', 'pd', 'ev'].forEach(g => { const o = on(g); if (o.length) parts.push(o.join(', ')); });
+      const a = host.querySelector('[data-r="from"]').value, b2 = host.querySelector('[data-r="to"]').value; if (a || b2) parts.push(`${a || '…'} → ${b2 || '…'}`);
+      if (!isNaN(F.pmin) || !isNaN(F.pmax)) parts.push(`${isNaN(F.pmin) ? '…' : F.pmin} → ${isNaN(F.pmax) ? '…' : F.pmax} €`);
+      return parts.length ? T('Sélection : ', 'Selection: ') + parts.join(' · ') : T('Toutes les heures', 'Every hour');
+    }
+    function apply() {
+      prep(); build(); draw(P0); if (R3) R3.layout();
+      const e = host.querySelector('[data-k="sel"]'); if (e) e.textContent = selText();
+    }
+    const HP = { nuit: [0, 6], midi: [11, 15], soir: [18, 21], hp: [6, 22], hc: [22, 6] };
+    const hoursFromPresets = () => { const on = [...host.querySelectorAll('[data-g="hp"].on')].map(b => b.dataset.v);
+      if (!on.length) { const a = +host.querySelector('[data-r="h0"]').value, b2 = +host.querySelector('[data-r="h1"]').value;
+        F.hs = Array.from({ length: 24 }, (_, h) => a < b2 ? h >= a && h < b2 : h >= a || h < b2); return; }
+      F.hs = Array.from({ length: 24 }, (_, h) => on.some(k => { const [a, b2] = HP[k]; return a < b2 ? h >= a && h < b2 : h >= a || h < b2; })); };
+    host.querySelectorAll('[data-g]').forEach(b => b.addEventListener('click', () => {
+      const g = b.dataset.g, v = b.dataset.v; b.classList.toggle('on');
+      if (g === 'dy') { host.querySelectorAll('[data-g="dy"]').forEach(x => { if (x !== b) x.classList.remove('on'); }); F.dy = b.classList.contains('on') ? v : ''; }
+      else if (g === 'hp') { host.querySelector('[data-r="h0"]').value = 0; host.querySelector('[data-r="h1"]').value = 24; hoursFromPresets(); }
+      else { const set = { y: F.y, se: F.se, pr: F.pr, pd: F.pd, ev: F.ev }[g], val2 = g === 'y' ? +v : v; if (b.classList.contains('on')) set.add(val2); else set.delete(val2); }
+      apply();
     }));
+    host.querySelectorAll('[data-r="h0"], [data-r="h1"]').forEach(r => r.addEventListener('input', () => {
+      host.querySelectorAll('[data-g="hp"].on').forEach(x => x.classList.remove('on')); hoursFromPresets();
+      host.querySelector('[data-k="hr"]').textContent = `${host.querySelector('[data-r="h0"]').value} h → ${host.querySelector('[data-r="h1"]').value} h`; apply(); }));
+    host.querySelectorAll('[data-r="from"], [data-r="to"]').forEach(r => r.addEventListener('change', () => {
+      const a = host.querySelector('[data-r="from"]').value, b2 = host.querySelector('[data-r="to"]').value; F.d0 = a ? iso2d(a) : -1; F.d1 = b2 ? iso2d(b2) : 1e9; apply(); }));
+    host.querySelectorAll('[data-r="pmin"], [data-r="pmax"]').forEach(r => r.addEventListener('change', () => {
+      F.pmin = parseFloat(host.querySelector('[data-r="pmin"]').value); F.pmax = parseFloat(host.querySelector('[data-r="pmax"]').value); apply(); }));
+    host.querySelector('[data-a="reset"]').addEventListener('click', () => {
+      host.querySelectorAll('[data-g].on').forEach(x => x.classList.remove('on')); ['from', 'to', 'pmin', 'pmax'].forEach(k => { host.querySelector(`[data-r="${k}"]`).value = ''; });
+      host.querySelector('[data-r="h0"]').value = 0; host.querySelector('[data-r="h1"]').value = 24; host.querySelector('[data-k="hr"]').textContent = '0 h → 24 h';
+      Object.assign(F, { hs: Array(24).fill(true), dy: '', d0: -1, d1: 1e9, pmin: NaN, pmax: NaN }); [F.y, F.se, F.pr, F.pd, F.ev].forEach(x => x.clear()); apply(); });
     host.querySelector('[data-a="replay"]').addEventListener('click', () => { if (on3 && R3) R3.grow(); else play(); });
     host.querySelector('[data-a="lin"]').addEventListener('click', e => {
       lin = !lin; e.currentTarget.textContent = lin ? T('Spirale', 'Spiral') : T('Linéaire', 'Linear'); build(); if (R3) { R3.layout(); if (on3) R3.grow(); } if (!on3) play();
@@ -275,7 +355,8 @@
     load().then(data => {
       if (!host.isConnected) return;
       if (!data) { host.querySelector('.sp-grid').innerHTML = `<div class="fuel-note">${T('Prix horaires indisponibles.', 'Hourly prices not available.')}</div>`; return; }
-      D = data; N = D.n; prep(); size(); build();
+      D = data; N = D.n; calendar(); prep(); size(); build();
+      { const e = host.querySelector('[data-k="sel"]'); if (e) e.textContent = selText(); }
       // play the drawing once, when the section comes into view
       const io = new IntersectionObserver(es => { if (es.some(x => x.isIntersecting)) { io.disconnect(); play(); } }, { threshold: 0.3 });
       P0 = 0; draw(0); io.observe(stage);
