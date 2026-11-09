@@ -151,11 +151,18 @@
       CX = CY = S * DPR / 2; R1 = Math.min(S * DPR * 0.44, S * DPR / 2 - OFF - (FS + 3) * DPR * 1.25); R0 = S * DPR * 0.05; LX0 = S * DPR * 0.1; LX1 = S * DPR * 0.98; LY0 = S * DPR * 0.16; LY1 = S * DPR * 0.84;
     }
     // each hour's colour once, the selected ones bright and the others close to the background (2. the selection stands out)
-    let CR, CG, CB;
+    let CR, CG, CB, KP;
     function colours() {
-      const bg = light() ? [255, 255, 255] : [15, 20, 25]; CR = new Uint8ClampedArray(N * 24); CG = new Uint8ClampedArray(N * 24); CB = new Uint8ClampedArray(N * 24);
+      const bg = light() ? [255, 255, 255] : [15, 20, 25]; CR = new Uint8ClampedArray(N * 24); CG = new Uint8ClampedArray(N * 24); CB = new Uint8ClampedArray(N * 24); KP = new Uint8Array(N * 24);
+      // with a selection, a kept hour whose colour is as dark as the background (prices around 0–60 €) is lifted towards a light
+      // slate, so it never looks like an excluded one
+      const sel = F.y.size || F.se.size || F.dy || F.pr.size || !isNaN(F.pmin) || !isNaN(F.pmax) || F.pd.size || F.ev.size || F.d0 >= 0 || F.d1 < 1e9 || F.hs.some(x => !x);
+      const lift = light() ? [70, 96, 130] : [150, 175, 200];
       for (let d = 0; d < N; d++) for (let h = 0; h < 24; h++) { const i = d * 24 + h, v = D.v[i]; let [r, g, b] = col(v);
-        if (!keep(d, h, v)) { const m2 = (r + g + b) / 3; r = bg[0] * 0.9 + m2 * 0.1; g = bg[1] * 0.9 + m2 * 0.1; b = bg[2] * 0.9 + m2 * 0.1; }
+        const kp = keep(d, h, v); KP[i] = kp ? 1 : 0;
+        if (!kp) { const m2 = (r + g + b) / 3; r = bg[0] * 0.9 + m2 * 0.1; g = bg[1] * 0.9 + m2 * 0.1; b = bg[2] * 0.9 + m2 * 0.1; }
+        else if (sel) { const L = 0.3 * r + 0.59 * g + 0.11 * b, dk = light() ? Math.max(0, (L - 200) / 55) : Math.max(0, 1 - L / 110);
+          if (dk > 0) { const t = 0.9 * dk; r += (lift[0] - r) * t; g += (lift[1] - g) * t; b += (lift[2] - b) * t; } }
         CR[i] = r; CG[i] = g; CB[i] = b; }
     }
     function build() {
@@ -170,8 +177,10 @@
           dA = Math.floor(tOfR(Math.max(R0, r - 0.5))); dB = Math.floor(tOfR(Math.min(R1, r + 0.5)) - 1e-9); }
         dA = Math.max(VW0, Math.min(N - 1, dA)); dB = Math.max(dA, Math.min(N - 1, VW0 + VWN - 1, dB));
         // the mean of the days under the pixel (at most 16 of them, evenly spaced)
-        const n = dB - dA + 1, st = Math.max(1, Math.floor(n / 16)); let r2 = 0, g2 = 0, b2 = 0, k = 0;
-        for (let d = dA; d <= dB; d += st) { const i = d * 24 + h; r2 += CR[i]; g2 += CG[i]; b2 += CB[i]; k++; }
+        // the kept days win: a pixel holding even one selected hour shows the selection, so sparse selections stay visible
+        let r2 = 0, g2 = 0, b2 = 0, k = 0, rk = 0, gk = 0, bk = 0, kk = 0;
+        for (let d = dA; d <= dB; d++) { const i = d * 24 + h; if (KP[i]) { rk += CR[i]; gk += CG[i]; bk += CB[i]; kk++; } else if (k < 16) { r2 += CR[i]; g2 += CG[i]; b2 += CB[i]; k++; } }
+        if (kk) { r2 = rk; g2 = gk; b2 = bk; k = kk; }
         const o = (y * W + x) * 4; P[o] = r2 / k; P[o + 1] = g2 / k; P[o + 2] = b2 / k; P[o + 3] = 255;
       }
       cv.dataset.pkDrawn = '1';
@@ -315,8 +324,10 @@
           SP[i] = Math.sin(th) * r; SP[i + 2] = -Math.cos(th) * r; LP[i] = (Math.max(0, Math.min(1, u)) - 0.5) * 2.6; } }
         makeRecs();
         const P = geo.attributes.position.array, C = geo.attributes.color.array, src = lin ? LP : SP, c3 = new THREE.Color();
+        const selOn = F.y.size || F.se.size || F.dy || F.pr.size || !isNaN(F.pmin) || !isNaN(F.pmax) || F.pd.size || F.ev.size || F.d0 >= 0 || F.d1 < 1e9 || F.hs.some(x => !x);
         for (let j = 0; j < n; j++) { const d = Math.floor(j / (A + 1)), v = VV[j], ok = keep(d, HH[j], v), c = col(v); c3.setRGB(c[0] / 255, c[1] / 255, c[2] / 255, THREE.SRGBColorSpace);
           if (!ok) { const m = (c3.r + c3.g + c3.b) / 3 * 0.18; c3.setRGB(m, m, m); }
+          else if (selOn) { const L = 0.3 * c3.r + 0.59 * c3.g + 0.11 * c3.b, dk = Math.max(0, 1 - L / 0.12); if (dk > 0) { const t = 0.7 * dk; c3.setRGB(c3.r + (0.32 - c3.r) * t, c3.g + (0.42 - c3.g) * t, c3.b + (0.55 - c3.b) * t); } }
           C[j * 3] = c3.r; C[j * 3 + 1] = c3.g; C[j * 3 + 2] = c3.b; P[j * 3] = src[j * 3]; P[j * 3 + 2] = src[j * 3 + 2]; P[j * 3 + 1] = ok ? (F.pr.size === 1 && F.pr.has('neg') ? YY[j] * 4 : YY[j]) : YY[j] * 0.15; }
         geo.attributes.position.needsUpdate = true; geo.attributes.color.needsUpdate = true; geo.computeVertexNormals(); geo.computeBoundingSphere();
         dial.forEach(o => { o.visible = !lin; }); flat.forEach(o => { o.visible = lin; }); disc.visible = !lin;
