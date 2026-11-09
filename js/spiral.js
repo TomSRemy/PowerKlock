@@ -84,7 +84,7 @@
             <div class="sp-fg"><span class="sp-fl">${T('Saison', 'Season')}</span><div class="sp-btns"><button type="button" data-g="se" data-v="w">${T('Hiver', 'Winter')}</button><button type="button" data-g="se" data-v="sp">${T('Printemps', 'Spring')}</button><button type="button" data-g="se" data-v="su">${T('Été', 'Summer')}</button><button type="button" data-g="se" data-v="a">${T('Automne', 'Autumn')}</button></div></div>
             <div class="sp-fg"><span class="sp-fl">${T('Jours', 'Days')}</span><div class="sp-btns"><button type="button" data-g="dy" data-v="wd">${T('Lun.–ven.', 'Mon–Fri')}</button><button type="button" data-g="dy" data-v="we">${T('Week-end', 'Weekend')}</button></div></div>
             <div class="sp-fg"><span class="sp-fl">${T('Période', 'Period')}</span><div class="sp-dates"><input type="date" data-r="from" aria-label="${T('Du', 'From')}"><span>→</span><input type="date" data-r="to" aria-label="${T('Au', 'To')}"></div></div>
-            <div class="sp-fg"><span class="sp-fl">${T('Prix', 'Price')}</span><div class="sp-btns"><button type="button" data-g="pr" data-v="neg">&lt; 0 €</button><button type="button" data-g="pr" data-v="gt200">&gt; 200 €</button><button type="button" data-g="pr" data-v="top1">${T('Top 1 % les plus chères', 'Dearest 1 %')}</button></div>
+            <div class="sp-fg"><span class="sp-fl">${T('Prix', 'Price')}</span><div class="sp-btns"><button type="button" data-g="pr" data-v="neg">&lt; 0 €</button><button type="button" data-g="pr" data-v="zero">= 0 €</button><button type="button" data-g="pr" data-v="gt200">&gt; 200 €</button><button type="button" data-g="pr" data-v="top1">${T('Top 1 % les plus chères', 'Dearest 1 %')}</button></div>
               <div class="sp-dates"><input type="number" step="10" data-r="pmin" placeholder="${T('min €', 'min €')}" aria-label="${T('Prix minimum', 'Minimum price')}"><span>→</span><input type="number" step="10" data-r="pmax" placeholder="${T('max €', 'max €')}" aria-label="${T('Prix maximum', 'Maximum price')}"></div></div>
             <div class="sp-fg"><span class="sp-fl">${T('Production', 'Output')}</span><div class="sp-btns"><button type="button" data-g="pd" data-v="sol">${T('Solaire > 15 GW', 'Solar > 15 GW')}</button><button type="button" data-g="pd" data-v="win">${T('Éolien > 15 GW', 'Wind > 15 GW')}</button><button type="button" data-g="pd" data-v="calm">${T('Ni vent ni soleil', 'No wind, no sun')}</button></div></div>
             <div class="sp-fg"><span class="sp-fl">${T('Événements', 'Events')}</span><div class="sp-btns"><button type="button" data-g="ev" data-v="lock">${T('Confinement 2020', '2020 lockdown')}</button><button type="button" data-g="ev" data-v="crise">${T('Crise 2021-22', '2021-22 crisis')}</button><button type="button" data-g="ev" data-v="ete22">${T('Été 2022', 'Summer 2022')}</button></div></div>
@@ -122,7 +122,7 @@
       if (F.se.size && !F.se.has(SE_K[SEASON[DM[d]]])) return false;
       if (F.dy === 'wd' && (DW[d] === 0 || DW[d] === 6)) return false;
       if (F.dy === 'we' && DW[d] !== 0 && DW[d] !== 6) return false;
-      if (F.pr.size && !((F.pr.has('neg') && v < 0) || (F.pr.has('gt200') && v > 200) || (F.pr.has('top1') && v >= P99))) return false;
+      if (F.pr.size && !((F.pr.has('neg') && v < 0) || (F.pr.has('zero') && Math.abs(v) < 0.005) || (F.pr.has('gt200') && v > 200) || (F.pr.has('top1') && v >= P99))) return false;
       if (!isNaN(F.pmin) && v < F.pmin) return false;
       if (!isNaN(F.pmax) && v > F.pmax) return false;
       if (F.pd.size) { const i = d * 24 + h, so = D.sol[i], wi = D.win[i];
@@ -297,19 +297,30 @@
       const [t1, t2, t3] = txt();
       const dial = []; for (let h = 0; h < 24; h += 3) { const th = h / 24 * 2 * Math.PI; dial.push(lab(h + ' h', Math.sin(th) * 1.12, 0, -Math.cos(th) * 1.12, h % 6 ? t3 : t1)); }
       const flat = []; for (let h = 0; h <= 24; h += 6) flat.push(lab(h + ' h', -1.42, 0, (h / 24 - 0.5), t2));
-      for (let y = Y0; y <= dayDate(D, N - 1).getUTCFullYear(); y++) { const t = (Date.UTC(y, 6, 1) - D.d0) / 864e5; if (t < N) flat.push(lab(String(y), (Math.max(0, t) / N - 0.5) * 2.6, 0, 0.62, t2)); }
-      const recs = [RMAX[N - 1], RMIN[N - 1]].map(([v, d, h], i) => { const c = i ? '#00E5FF' : '#FF3B30', y = hOf(v), up = y > 0 ? 0.12 : -0.12;
-        const pt = new THREE.Vector3(), line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([pt, pt.clone()]), new THREE.LineBasicMaterial({ color: c })); scene.add(line);
-        const s = lab(fmtN(v, 0) + ' €', 0, 0, 0, c); return { d, h, y, up, line, s }; });
+      const yl3 = []; for (let y = Y0; y <= dayDate(D, N - 1).getUTCFullYear(); y++) { const t = (Date.UTC(y, 6, 1) - D.d0) / 864e5; if (t < N) { const o = lab(String(y), (Math.max(0, t) / N - 0.5) * 2.6, 0, 0.62, t2); o.userData.t = t; yl3.push(o); } }
+      // the selection's records, a line and a price above (or under) their peak; rebuilt when the selection changes
+      let recs = [];
+      function makeRecs() {
+        recs.forEach(r => { scene.remove(r.line); scene.remove(r.s); });
+        const last = Math.min(N - 1, VW0 + VWN - 1), hi = RMAX[last], lo = RMIN[last], none = !lo || lo[0] === 1e9, noHi = none || (F.pr.size === 1 && F.pr.has('neg')) || F.pmax < 0;
+        recs = [noHi ? null : hi, none ? null : lo].map((q, i) => { if (!q) return null; const [v, d, h] = q, c = i ? '#00E5FF' : '#FF3B30', y = hOf(v), up = y > 0 ? 0.12 : -0.12;
+          const pt = new THREE.Vector3(), line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([pt, pt.clone()]), new THREE.LineBasicMaterial({ color: c })); scene.add(line);
+          const s2 = lab(fmtN(v, 0) + ' €', 0, 0, 0, c); return { d, h, y, up, line, s: s2 }; }).filter(Boolean);
+      }
       let az = 0, el = 0.55, dist = 2.75, auto = true, g0 = 0;
       function recolour() {
+        // the window: every day, or the span of a date selection, which then fills the whole dial (as in 2D)
+        for (let d = 0; d < rows; d++) { const u = (d + 0.5 - VW0) / VWN, r = 0.12 + 0.88 * Math.max(0, Math.min(1, u)); for (let a = 0; a <= A; a++) { const j = d * (A + 1) + a, i = j * 3, th = a / A * 2 * Math.PI;
+          SP[i] = Math.sin(th) * r; SP[i + 2] = -Math.cos(th) * r; LP[i] = (Math.max(0, Math.min(1, u)) - 0.5) * 2.6; } }
+        makeRecs();
         const P = geo.attributes.position.array, C = geo.attributes.color.array, src = lin ? LP : SP, c3 = new THREE.Color();
         for (let j = 0; j < n; j++) { const d = Math.floor(j / (A + 1)), v = VV[j], ok = keep(d, HH[j], v), c = col(v); c3.setRGB(c[0] / 255, c[1] / 255, c[2] / 255, THREE.SRGBColorSpace);
           if (!ok) { const m = (c3.r + c3.g + c3.b) / 3 * 0.18; c3.setRGB(m, m, m); }
           C[j * 3] = c3.r; C[j * 3 + 1] = c3.g; C[j * 3 + 2] = c3.b; P[j * 3] = src[j * 3]; P[j * 3 + 2] = src[j * 3 + 2]; P[j * 3 + 1] = ok ? (F.pr.size === 1 && F.pr.has('neg') ? YY[j] * 4 : YY[j]) : YY[j] * 0.15; }
         geo.attributes.position.needsUpdate = true; geo.attributes.color.needsUpdate = true; geo.computeVertexNormals(); geo.computeBoundingSphere();
         dial.forEach(o => { o.visible = !lin; }); flat.forEach(o => { o.visible = lin; }); disc.visible = !lin;
-        recs.forEach(r => { const x = lin ? ((r.d + 0.5) / N - 0.5) * 2.6 : Math.sin((r.h + 0.5) / 24 * 2 * Math.PI) * (0.12 + 0.88 * ((r.d + 0.5) / N)), z = lin ? ((r.h + 0.5) / 24 - 0.5) : -Math.cos((r.h + 0.5) / 24 * 2 * Math.PI) * (0.12 + 0.88 * ((r.d + 0.5) / N));
+        yl3.forEach(o => { const t = o.userData.t, u = (t - VW0) / VWN; o.visible = lin && u >= 0 && u <= 1; o.position.x = (u - 0.5) * 2.6; });
+        recs.forEach(r => { const u = (r.d + 0.5 - VW0) / VWN, x = lin ? (u - 0.5) * 2.6 : Math.sin((r.h + 0.5) / 24 * 2 * Math.PI) * (0.12 + 0.88 * u), z = lin ? ((r.h + 0.5) / 24 - 0.5) : -Math.cos((r.h + 0.5) / 24 * 2 * Math.PI) * (0.12 + 0.88 * u);
           r.line.geometry.setFromPoints([new THREE.Vector3(x, r.y, z), new THREE.Vector3(x, r.y + r.up, z)]); r.s.position.set(x, r.y + r.up * 1.35, z); });
       }
       // orbit: drag to turn, wheel or pinch to zoom
@@ -339,9 +350,9 @@
       function frame(ts) {
         if (!host.isConnected) { ren.dispose(); return; }
         requestAnimationFrame(frame); if (!on3) return;
-        const u = Math.min(1, (ts - g0) / 9000), e = 1 - Math.pow(1 - u, 2.2), show = Math.max(2, Math.floor(e * N));
-        geo.setDrawRange(0, (show - 1) * A * 6); mesh.scale.y = 0.15 + 0.85 * Math.min(1, u * 1.6); kpis(e);
-        recs.forEach(r => { r.line.visible = r.s.visible = show > r.d; });
+        const u = Math.min(1, (ts - g0) / 9000), e = 1 - Math.pow(1 - u, 2.2), show = Math.max(2, Math.floor(e * VWN));
+        geo.setDrawRange(VW0 * A * 6, Math.max(1, Math.min(show, VWN, N - VW0) - 1) * A * 6); mesh.scale.y = 0.15 + 0.85 * Math.min(1, u * 1.6); kpis(e);
+        recs.forEach(r => { r.line.visible = r.s.visible = VW0 + show > r.d; });
         if (auto) az = ts / 1000 * 0.12;
         const dd = dist * (lin ? 1.35 : 1); cam.position.set(Math.sin(az) * Math.cos(el) * dd, Math.sin(el) * dd, Math.cos(az) * Math.cos(el) * dd); cam.lookAt(0, 0.04, 0); disc.material.opacity = el < 0 ? 0 : 0.06;
         ren.render(scene, cam);
