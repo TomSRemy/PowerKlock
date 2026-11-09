@@ -3769,6 +3769,7 @@ html body .pm-o-l, html body .pkf-t-l, html body .mrn2-tc { white-space: normal;
 .sp-cyc { align-items: center; } .sp-cyc .sp-fl { margin-right: 4px; }
 .sp-cyc button.on { color: #0f1419; background: #FFD23F; border-color: #FFD23F; }
 .sp-zc { position: absolute; right: 4px; bottom: 4px; display: flex; flex-direction: column; gap: 4px; z-index: 3; }
+.sp-zc[hidden] { display: none; }
 .sp-zc button { width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg2); color: var(--text); font: 700 15px Inter, sans-serif; cursor: pointer; }
 .sp-zc button:hover { border-color: #FFD23F; }
 .sp-lsel { position: absolute; left: 0; right: 0; top: -6px; height: 22px; cursor: crosshair; touch-action: none; }

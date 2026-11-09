@@ -188,10 +188,10 @@
       LX0 = Math.min(70, S * 0.1) * DPR; LX1 = S * DPR * 0.985; LY0 = SH * DPR * 0.06; LY1 = SH * DPR * 0.9;
     }
     // each hour's colour once, the selected ones bright and the others close to the background (2. the selection stands out)
-    let CR, CG, CB, KP, ZR, EM;
+    let CR, CG, CB, KP, ZR, EM, CV;
     function colours() {
       const n = NR * A, bg = light() ? [255, 255, 255] : [15, 20, 25];
-      CR = new Uint8ClampedArray(n); CG = new Uint8ClampedArray(n); CB = new Uint8ClampedArray(n); KP = new Uint8Array(n); ZR = new Uint8Array(n); EM = new Uint8Array(n);
+      CR = new Uint8ClampedArray(n); CG = new Uint8ClampedArray(n); CB = new Uint8ClampedArray(n); KP = new Uint8Array(n); ZR = new Uint8Array(n); EM = new Uint8Array(n); CV = new Float32Array(n);
       // with a selection, a kept cell whose colour is as dark as the background (prices around 0–60 €) is lifted towards a light
       // slate, so it never looks like an excluded one
       const sel = F.y.size || F.se.size || F.dy || F.pr.size || !isNaN(F.pmin) || !isNaN(F.pmax) || F.pd.size || F.ev.size || F.d0 >= 0 || F.d1 < 1e9 || F.hs.some(x => !x);
@@ -201,7 +201,7 @@
         let v, kp;
         if (CYC === 'h') { v = D.v[d * 24 + sl]; kp = keep(d, sl, v); ZR[i] = kp && ZERO(v) ? 1 : 0; }
         else { let a = 0, k = 0; for (let h = 0; h < 24; h++) { const x = D.v[d * 24 + h]; if (keep(d, h, x)) { a += x; k++; } } kp = k > 0; v = kp ? a / k : DAVG[d]; }   // a day: the mean of its selected hours
-        let [cr, cg, cb] = col(v); KP[i] = kp ? 1 : 0;
+        let [cr, cg, cb] = col(v); KP[i] = kp ? 1 : 0; CV[i] = v;
         if (!kp) { const m2 = (cr + cg + cb) / 3; cr = bg[0] * 0.9 + m2 * 0.1; cg = bg[1] * 0.9 + m2 * 0.1; cb = bg[2] * 0.9 + m2 * 0.1; }
         else if (sel) { const L = 0.3 * cr + 0.59 * cg + 0.11 * cb, dk = light() ? Math.max(0, (L - 200) / 55) : Math.max(0, 1 - L / 110);
           if (dk > 0) { const t = 0.9 * dk; cr += (lift[0] - cr) * t; cg += (lift[1] - cg) * t; cb += (lift[2] - cb) * t; } }
@@ -392,12 +392,13 @@
       const ren = new THREE.WebGLRenderer({ antialias: true }); ren.setPixelRatio(Math.min(2, window.devicePixelRatio || 1)); g3.appendChild(ren.domElement);
       const scene = new THREE.Scene(), bgc = light() ? 0xffffff : 0x0f1419; scene.background = new THREE.Color(bgc); scene.fog = new THREE.Fog(bgc, 5, 10);
       const cam = new THREE.PerspectiveCamera(40, 1, 0.01, 50);
-      const A = 48, rows = N, n = rows * (A + 1), pos = new Float32Array(n * 3), colr = new Float32Array(n * 3), SP = new Float32Array(n * 3), LP = new Float32Array(n * 3), VV = new Float32Array(n), HH = new Uint8Array(n), YY = new Float32Array(n), idx = new Uint32Array((rows - 1) * A * 6);
+      // hours: 48 interpolated points a turn; weekdays: 8 points each (a round ring, flat on each day); months: one point a day
+      const HC = CYC === 'h', SUB = CYC === 'w' ? 8 : 1, A3 = HC ? 48 : A * SUB, rows = NR, n = rows * (A3 + 1), pos = new Float32Array(n * 3), colr = new Float32Array(n * 3), SP = new Float32Array(n * 3), LP = new Float32Array(n * 3), VV = new Float32Array(n), HH = new Uint8Array(n), YY = new Float32Array(n), idx = new Uint32Array(Math.max(1, rows - 1) * A3 * 6);
       const hOf = v => Math.sign(v) * Math.log1p(Math.abs(v) / 40) * 0.09;
-      const vAt = (d, a) => { const hf = a / A * 24 - 0.5, h0 = Math.floor(hf), f = hf - h0; const g = h => { let dd = d, hh = h; if (hh < 0) { hh += 24; dd--; } if (hh > 23) { hh -= 24; dd++; } dd = Math.max(0, Math.min(N - 1, dd)); return val(dd, hh); }; return g(h0) * (1 - f) + g(h0 + 1) * f; };
-      for (let d = 0; d < rows; d++) { const r = 0.12 + 0.88 * ((d + 0.5) / N); for (let a = 0; a <= A; a++) { const j = d * (A + 1) + a, i = j * 3, th = a / A * 2 * Math.PI, v = vAt(d, a % A);
-        SP[i] = Math.sin(th) * r; SP[i + 2] = -Math.cos(th) * r; LP[i] = ((d + 0.5) / N - 0.5) * 2.6; LP[i + 2] = (a / A - 0.5) * 1.0; VV[j] = v; HH[j] = Math.floor((a % A) / A * 24); YY[j] = hOf(v); } }
-      let k = 0; for (let d = 0; d < rows - 1; d++) for (let a = 0; a < A; a++) { const p = d * (A + 1) + a, q = p + A + 1; idx[k++] = p; idx[k++] = q; idx[k++] = p + 1; idx[k++] = p + 1; idx[k++] = q; idx[k++] = q + 1; }
+      const vAt = (d, a) => { if (!HC) { const i = d * A + Math.floor(a / SUB) % A; return EM[i] ? 0 : CV[i]; } const hf = a / A3 * 24 - 0.5, h0 = Math.floor(hf), f = hf - h0; const g = h => { let dd = d, hh = h; if (hh < 0) { hh += 24; dd--; } if (hh > 23) { hh -= 24; dd++; } dd = Math.max(0, Math.min(N - 1, dd)); return val(dd, hh); }; return g(h0) * (1 - f) + g(h0 + 1) * f; };
+      for (let d = 0; d < rows; d++) { const r = 0.12 + 0.88 * ((d + 0.5) / rows); for (let a = 0; a <= A3; a++) { const j = d * (A3 + 1) + a, i = j * 3, th = (a / A3 - (SUB > 1 ? 0.5 / A : 0)) * 2 * Math.PI, v = vAt(d, a % A3);
+        SP[i] = Math.sin(th) * r; SP[i + 2] = -Math.cos(th) * r; LP[i] = ((d + 0.5) / rows - 0.5) * 2.6; LP[i + 2] = (a / A3 - 0.5) * 1.0; VV[j] = v; HH[j] = HC ? Math.floor((a % A3) / A3 * 24) : Math.floor((a % A3) / SUB); YY[j] = hOf(v); } }
+      let k = 0; for (let d = 0; d < rows - 1; d++) for (let a = 0; a < A3; a++) { const p = d * (A3 + 1) + a, q = p + A3 + 1; idx[k++] = p; idx[k++] = q; idx[k++] = p + 1; idx[k++] = p + 1; idx[k++] = q; idx[k++] = q + 1; }
       const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setAttribute('color', new THREE.BufferAttribute(colr, 3)); geo.setIndex(new THREE.BufferAttribute(idx, 1));
       const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.7, metalness: 0, side: THREE.DoubleSide });
       mat.onBeforeCompile = sh => { sh.fragmentShader = sh.fragmentShader.replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n totalEmissiveRadiance=vColor.rgb*0.35;'); };
@@ -407,34 +408,39 @@
       const lab = (t, x, y, z, c) => { const q = document.createElement('canvas'); q.width = 128; q.height = 48; const g = q.getContext('2d'); g.font = '600 26px Inter,system-ui'; g.fillStyle = c; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(t, 64, 24);
         const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(q), transparent: true, depthWrite: false })); s.position.set(x, y, z); s.scale.set(0.16, 0.06, 1); scene.add(s); return s; };
       const [t1, t2, t3] = txt();
-      const dial = []; for (let h = 0; h < 24; h += 3) { const th = h / 24 * 2 * Math.PI; dial.push(lab(h + ' h', Math.sin(th) * 1.12, 0, -Math.cos(th) * 1.12, h % 6 ? t3 : t1)); }
-      const flat = []; for (let h = 0; h <= 24; h += 6) flat.push(lab(h + ' h', -1.42, 0, (h / 24 - 0.5), t2));
-      const yl3 = []; for (let y = Y0; y <= dayDate(D, N - 1).getUTCFullYear(); y++) { const t = (Date.UTC(y, 6, 1) - D.d0) / 864e5; if (t < N) { const o = lab(String(y), (Math.max(0, t) / N - 0.5) * 2.6, 0, 0.62, t2); o.userData.t = t; yl3.push(o); } }
+      const dial = [], flat = [];
+      if (HC) { for (let h = 0; h < 24; h += 3) { const th = h / 24 * 2 * Math.PI; dial.push(lab(h + ' h', Math.sin(th) * 1.12, 0, -Math.cos(th) * 1.12, h % 6 ? t3 : t1)); }
+        for (let h = 0; h <= 24; h += 6) flat.push(lab(h + ' h', -1.42, 0, (h / 24 - 0.5), t2)); }
+      else slotLabels(false).forEach(([sl, t, main]) => { const th = sl / A * 2 * Math.PI; dial.push(lab(t, Math.sin(th) * 1.12, 0, -Math.cos(th) * 1.12, main ? t1 : t3)); flat.push(lab(t, -1.42, 0, (sl + 0.5) / A - 0.5, t2)); });
+      const yl3 = []; for (let y = Y0; y <= dayDate(D, N - 1).getUTCFullYear(); y++) { const t = tRowDate(y, 6, 1); if (t < rows) { const o = lab(String(y), (Math.max(0, t) / rows - 0.5) * 2.6, 0, 0.62, t2); o.userData.t = t; yl3.push(o); } }
       // the selection's records, a line and a price above (or under) their peak; rebuilt when the selection changes
       let recs = [];
       function makeRecs() {
         recs.forEach(r => { scene.remove(r.line); scene.remove(r.s); });
-        const last = Math.min(N - 1, VW0 + VWN - 1), hi = RMAX[last], lo = RMIN[last], none = !lo || lo[0] === 1e9, noHi = none || (F.pr.size === 1 && F.pr.has('neg')) || F.pmax < 0;
+        const last = rowDay(VW0 + VWN - 1e-6), hi = RMAX[last], lo = RMIN[last], none = !lo || lo[0] === 1e9, noHi = none || (F.pr.size === 1 && F.pr.has('neg')) || F.pmax < 0;
         recs = [noHi ? null : hi, none ? null : lo].map((q, i) => { if (!q) return null; const [v, d, h] = q, c = i ? '#00E5FF' : '#FF3B30', y = hOf(v), up = y > 0 ? 0.12 : -0.12;
           const pt = new THREE.Vector3(), line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([pt, pt.clone()]), new THREE.LineBasicMaterial({ color: c })); scene.add(line);
-          const s2 = lab(fmtN(v, 0) + ' €', 0, 0, 0, c); return { d, h, y, up, line, s: s2 }; }).filter(Boolean);
+          const s2 = lab(fmtN(v, 0) + ' €', 0, 0, 0, c);
+          // its row and its angle: the hour of its day, or (day and month cycles) its day's slot, raised to its hour's price
+          const row = HC ? d : Math.floor(tRow(d)), ang = HC ? (h + 0.5) / 24 : (CYC === 'w' ? (DW[d] + 6) % 7 : DO[d]) / A;
+          return { d: row, h, ang, y, up, line, s: s2 }; }).filter(Boolean);
       }
       let az = 0, el = 0.55, dist = 2.75, auto = true, g0 = 0, tx = 0, tz = 0, panMode = false;   // tx, tz: the point the camera looks at, moved by a pan
       function recolour() {
         // the window: every day, or the span of a date selection, which then fills the whole dial (as in 2D)
-        for (let d = 0; d < rows; d++) { const u = (d + 0.5 - VW0) / VWN, r = 0.12 + 0.88 * Math.max(0, Math.min(1, u)); for (let a = 0; a <= A; a++) { const j = d * (A + 1) + a, i = j * 3, th = a / A * 2 * Math.PI;
+        for (let d = 0; d < rows; d++) { const u = (d + 0.5 - VW0) / VWN, r = 0.12 + 0.88 * Math.max(0, Math.min(1, u)); for (let a = 0; a <= A3; a++) { const j = d * (A3 + 1) + a, i = j * 3, th = (a / A3 - (SUB > 1 ? 0.5 / A : 0)) * 2 * Math.PI;
           SP[i] = Math.sin(th) * r; SP[i + 2] = -Math.cos(th) * r; LP[i] = (Math.max(0, Math.min(1, u)) - 0.5) * 2.6; } }
         makeRecs();
         const P = geo.attributes.position.array, C = geo.attributes.color.array, src = lin ? LP : SP, c3 = new THREE.Color();
         const selOn = F.y.size || F.se.size || F.dy || F.pr.size || !isNaN(F.pmin) || !isNaN(F.pmax) || F.pd.size || F.ev.size || F.d0 >= 0 || F.d1 < 1e9 || F.hs.some(x => !x);
-        for (let j = 0; j < n; j++) { const d = Math.floor(j / (A + 1)), v = VV[j], ok = keep(d, HH[j], v), c = col(v); c3.setRGB(c[0] / 255, c[1] / 255, c[2] / 255, THREE.SRGBColorSpace);
+        for (let j = 0; j < n; j++) { const d = Math.floor(j / (A3 + 1)), v = VV[j], ci = d * A + HH[j], em = !HC && EM[ci], ok = HC ? keep(d, HH[j], v) : !em && KP[ci] === 1, c = em ? [15, 20, 25] : col(v); c3.setRGB(c[0] / 255, c[1] / 255, c[2] / 255, THREE.SRGBColorSpace);
           if (!ok) { const m = (c3.r + c3.g + c3.b) / 3 * 0.18; c3.setRGB(m, m, m); }
           else if (selOn) { const L = 0.3 * c3.r + 0.59 * c3.g + 0.11 * c3.b, dk = Math.max(0, 1 - L / 0.12); if (dk > 0) { const t = 0.7 * dk; c3.setRGB(c3.r + (0.32 - c3.r) * t, c3.g + (0.42 - c3.g) * t, c3.b + (0.55 - c3.b) * t); } }
           C[j * 3] = c3.r; C[j * 3 + 1] = c3.g; C[j * 3 + 2] = c3.b; P[j * 3] = src[j * 3]; P[j * 3 + 2] = src[j * 3 + 2]; P[j * 3 + 1] = ok ? (F.pr.size === 1 && F.pr.has('neg') ? YY[j] * 4 : YY[j]) : YY[j] * 0.15; }
         geo.attributes.position.needsUpdate = true; geo.attributes.color.needsUpdate = true; geo.computeVertexNormals(); geo.computeBoundingSphere();
         dial.forEach(o => { o.visible = !lin; }); flat.forEach(o => { o.visible = lin; }); disc.visible = !lin;
         yl3.forEach(o => { const t = o.userData.t, u = (t - VW0) / VWN; o.visible = lin && u >= 0 && u <= 1; o.position.x = (u - 0.5) * 2.6; });
-        recs.forEach(r => { const u = (r.d + 0.5 - VW0) / VWN, x = lin ? (u - 0.5) * 2.6 : Math.sin((r.h + 0.5) / 24 * 2 * Math.PI) * (0.12 + 0.88 * u), z = lin ? ((r.h + 0.5) / 24 - 0.5) : -Math.cos((r.h + 0.5) / 24 * 2 * Math.PI) * (0.12 + 0.88 * u);
+        recs.forEach(r => { const u = (r.d + 0.5 - VW0) / VWN, x = lin ? (u - 0.5) * 2.6 : Math.sin(r.ang * 2 * Math.PI) * (0.12 + 0.88 * u), z = lin ? (r.ang - 0.5) : -Math.cos(r.ang * 2 * Math.PI) * (0.12 + 0.88 * u);
           r.line.geometry.setFromPoints([new THREE.Vector3(x, r.y, z), new THREE.Vector3(x, r.y + r.up, z)]); r.s.position.set(x, r.y + r.up * 1.35, z); });
       }
       // orbit: drag to turn, wheel or pinch to zoom
@@ -459,7 +465,8 @@
         if (!hit || !hit.face) { tip.style.opacity = 0; return; }
         let best = hit.face.a, bd = Infinity;
         [hit.face.a, hit.face.b, hit.face.c].forEach(j => { vtx.fromBufferAttribute(geo.attributes.position, j).applyMatrix4(mesh.matrixWorld); const dd = vtx.distanceToSquared(hit.point); if (dd < bd) { bd = dd; best = j; } });
-        const d = Math.floor(best / (A + 1)), a = best % (A + 1), h = ((Math.round(a / A * 24 - 0.5) % 24) + 24) % 24;
+        const rw = Math.floor(best / (A3 + 1)), a = best % (A3 + 1);
+        const d = HC ? rw : cellDay(rw, Math.floor((a % A3) / SUB)), h = HC ? ((Math.round(a / A3 * 24 - 0.5) % 24) + 24) % 24 : -1;
         if (d < 0 || d >= N) { tip.style.opacity = 0; return; }
         showTip(d, h, e.clientX, e.clientY);
       });
@@ -469,16 +476,16 @@
       function resize() { const b = g3.getBoundingClientRect(); if (!b.width) return; ren.setSize(b.width, b.height); cam.aspect = b.width / b.height; cam.updateProjectionMatrix(); }
       new ResizeObserver(resize).observe(g3);
       function frame(ts) {
-        if (!host.isConnected) { ren.dispose(); return; }
+        if (!host.isConnected || R.dead) { ren.dispose(); ren.domElement.remove(); return; }
         requestAnimationFrame(frame); if (!on3) return;
         const u = Math.min(1, (ts - g0) / 9000), e = 1 - Math.pow(1 - u, 2.2), show = Math.max(2, Math.floor(e * VWN));
-        geo.setDrawRange(VW0 * A * 6, Math.max(1, Math.min(show, VWN, N - VW0) - 1) * A * 6); mesh.scale.y = 0.15 + 0.85 * Math.min(1, u * 1.6); kpis(e);
+        geo.setDrawRange(VW0 * A3 * 6, Math.max(1, Math.min(show, VWN, rows - VW0) - 1) * A3 * 6); mesh.scale.y = 0.15 + 0.85 * Math.min(1, u * 1.6); kpis(e);
         recs.forEach(r => { r.line.visible = r.s.visible = VW0 + show > r.d; });
         if (auto) az = ts / 1000 * 0.12;
         const dd = dist * (lin ? 1.35 : 1); cam.position.set(tx + Math.sin(az) * Math.cos(el) * dd, Math.sin(el) * dd, tz + Math.cos(az) * Math.cos(el) * dd); cam.lookAt(tx, 0.04, tz); disc.material.opacity = el < 0 ? 0 : 0.06;
         ren.render(scene, cam);
       }
-      const R = { layout: recolour, grow: () => { g0 = performance.now(); } };
+      const R = { layout: recolour, grow: () => { g0 = performance.now(); }, dead: false };
       recolour(); resize(); R.grow(); requestAnimationFrame(frame);
       return R;
     }
@@ -573,9 +580,8 @@
     host.querySelectorAll('[data-c]').forEach(b => b.addEventListener('click', () => {
       if (b.classList.contains('on') || !D) return;
       host.querySelectorAll('[data-c]').forEach(x => x.classList.toggle('on', x === b)); CYC = b.dataset.c;
-      if (on3 && CYC !== 'h') { const b3 = host.querySelector('[data-a="3d"]'); b3.textContent = '3D'; relief(false); }
-      host.querySelector('[data-a="3d"]').hidden = CYC !== 'h';   // the relief draws the hours only
-      Z = 1; TX = TY = 0; clampT(); cycle(); prep(); build(); play();
+      if (R3) { R3.dead = true; R3 = null; }   // the relief is rebuilt for the new cycle
+      Z = 1; TX = TY = 0; clampT(); cycle(); prep(); build(); if (on3) relief(true); else play();
     }));
     host.querySelector('[data-a="3d"]').addEventListener('click', e => { e.currentTarget.textContent = on3 ? '3D' : '2D'; relief(!on3); });
     new ResizeObserver(() => { if (!D) return; const bb = stage.getBoundingClientRect(), w = Math.floor(bb.width), hh = Math.floor(bb.height); if (Math.abs(w - S) > 4 || Math.abs(hh - SH) > 4) { size(); clampT(); build(); draw(P0); } }).observe(stage);
