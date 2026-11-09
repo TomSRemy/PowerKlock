@@ -12,7 +12,9 @@
   const signed = (v, dp) => v == null || isNaN(v) ? '–' : (v >= 0 ? '+' : '') + Number(v).toFixed(dp == null ? 1 : dp);
 
   // tone: 'up' (green), 'down' (red) or null.
+  // o.spark: the values of a small line under the figure in a bare shared widget (js/dashboard.js, index.html?bare#solo=…)
   function tile(host, o) {
+    host._bare = o;
     host.innerHTML = `<div class="pkd-kpi">
       <div class="pkd-kpi-v">${esc(o.value)}<span class="pkd-kpi-u">${esc(o.unit || '')}</span></div>
       ${o.chg ? `<div class="pkd-kpi-c ${o.tone || ''}">${esc(o.chg)}</div>` : ''}
@@ -46,6 +48,7 @@
         chg: z.vsYday != null ? (z.vsYday >= 0 ? '▲ ' : '▼ ') + signed(z.vsYday, 2) + ' d/d' : '',
         tone: z.vsYday == null ? null : z.vsYday > 0 ? 'down' : 'up',
         meta: 'min ' + f(z.min, 1) + ' · max ' + f(z.max, 1) + (z.negHours ? ' · ' + z.negHours + ' h < 0' : '') + asOf,
+        spark: Array.isArray(z.hourly) ? z.hourly : null,   // the delivery day, quarter-hour by quarter-hour
       });
     },
   });
@@ -79,6 +82,7 @@
         // A rising cost is red; a rising storage level is green.
         tone: l.chg == null || l.chg === 0 ? null : (l.chg > 0) === !!d.level ? 'up' : 'down',
         meta: 'close ' + l.d,
+        spark: PKC.pts(p.c).slice(-90).map(x => x[1]),   // the last 90 closes
       });
     },
   });
@@ -96,6 +100,7 @@
         chg: l.chg == null ? '' : (l.chg >= 0 ? '▲ ' : '▼ ') + signed(l.chg / 1000, 2) + ' GW d/d',
         tone: l.chg == null || l.chg === 0 ? null : l.chg > 0 ? 'up' : 'down',
         meta: Math.round(l.v / 63000 * 100) + ' % of 63 GW · ' + l.d,
+        spark: PKC.pts('fr_nuc_avail').slice(-90).map(x => x[1] / 1000),
       });
     },
   });

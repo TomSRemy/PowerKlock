@@ -4039,3 +4039,17 @@ a.cqp-kpi:hover,.cqp-kpi:hover{border-color:var(--border3)!important}
 .cqp-xlink{margin:8px 2px 0}.cqp-xlink a{color:var(--accent);text-decoration:none}.cqp-xlink a:hover{text-decoration:underline}
 .cqp-today{margin:0 0 12px}.cqp-today .cqp-kpis{margin-bottom:0}
 .cqp-more{font-size:11px;color:var(--accent);text-decoration:none;white-space:nowrap;align-self:center}.cqp-more:hover{text-decoration:underline}
+
+/* a shared widget alone (index.html?bare#solo=…): the figure, its change and a small line, on a transparent ground for an iframe */
+html.pk-bare, html.pk-bare body { background: transparent !important; color-scheme: normal !important; overflow: hidden !important; min-width: 0 !important; }
+html.pk-bare body > *:not(#pk-bare) { display: none !important; }
+#pk-bare { position: fixed; inset: 0; display: flex; flex-direction: column; gap: 2px; padding: 4px 6px; box-sizing: border-box; container-type: size; font-family: 'JetBrains Mono', monospace; }
+.pkb-v { font-weight: 600; font-size: clamp(14px, min(14cqw, 26cqh), 44px); line-height: 1.1; color: var(--text); white-space: nowrap; overflow: hidden; font-variant-numeric: tabular-nums; }
+.pkb-u { font-size: .48em; font-weight: 400; color: var(--text3); margin-left: .3em; }
+.pkb-c { font-size: clamp(10px, min(6.5cqw, 10cqh), 15px); color: var(--text3); white-space: nowrap; overflow: hidden; font-variant-numeric: tabular-nums; }
+.pkb-c.up { color: var(--up); } .pkb-c.down { color: var(--down); }
+.pkb-s { flex: 1 1 0; min-height: 0; padding: 3px 0 1px; }
+.pkb-s svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.pkb-l { stroke: #4AA3E0; stroke-width: 1.6; stroke-linejoin: round; stroke-linecap: round; }
+.pkb-l.up { stroke: var(--up); } .pkb-l.down { stroke: var(--down); }
+#pk-bare.pkb-html { overflow: hidden; font-family: inherit; }
