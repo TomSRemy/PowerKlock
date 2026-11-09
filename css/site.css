@@ -3768,9 +3768,27 @@ html body .pm-o-l, html body .pkf-t-l, html body .mrn2-tc { white-space: normal;
 .sp-wrap { container-type: inline-size; }
 @container (max-width: 760px) { .sp-grid { grid-template-columns: 1fr; } .sp-side { grid-template-columns: 1fr 1fr 1fr; } .sp-btns, .sp-leg, .sp-note { grid-column: 1 / -1; } .sp-kv { font-size: 18px; } }
 .sp-widget .sp-stage { max-width: 520px; }
+/* La Spirale's filters: groups of chips that combine, a two-handled hour range, dates and prices */
+.sp-sel { font: 600 11px Inter, sans-serif; color: var(--tx2); line-height: 1.45; }
+.sp-f { display: grid; gap: 10px; border-top: 1px solid var(--border); padding-top: 10px; }
+.sp-fh { display: flex; justify-content: space-between; align-items: center; font-size: 10px; letter-spacing: 1.4px; color: var(--tx3); font-weight: 700; text-transform: uppercase; }
+.sp-fh button { font: 600 11px Inter, sans-serif; color: var(--tx2); background: none; border: 0; cursor: pointer; text-decoration: underline; padding: 0; text-transform: none; letter-spacing: 0; }
+.sp-fg { display: grid; gap: 5px; min-width: 0; }
+.sp-f { min-width: 0; } .sp-f .sp-btns { flex-wrap: wrap; min-width: 0; }
+.sp-range { min-width: 0; } .sp-range input { min-width: 0; }
+.sp-fl { font-size: 10px; color: var(--tx3); font-weight: 600; }
+.sp-f .sp-btns button { padding: 5px 10px; }
+.sp-range { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: 8px; align-items: center; }
+.sp-range input { width: 100%; accent-color: #FFD23F; }
+.sp-range output { font: 600 11px 'JetBrains Mono', monospace; color: var(--tx2); white-space: nowrap; }
+.sp-dates { display: flex; gap: 6px; align-items: center; } .sp-dates span { color: var(--tx3); }
+.sp-dates input { flex: 1 1 0; width: 0; min-width: 0; font: 500 12px Inter, sans-serif; color: var(--text); background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 5px 8px; }
+@container (max-width: 760px) { .sp-f, .sp-sel { grid-column: 1 / -1; } }
+
 /* La Spirale in full screen: the dial takes the height of the window, the side panel stays beside it (under it on a phone) */
 .sp-wrap.sp-full { position: fixed; inset: 0; z-index: 100000; background: var(--bg); padding: max(16px, env(safe-area-inset-top)) 16px 16px; overflow: auto; }
-.sp-full .sp-grid { grid-template-columns: minmax(0, 1fr) 260px; align-items: center; min-height: 100%; }
+.sp-full .sp-grid { grid-template-columns: minmax(0, 1fr) minmax(300px, 360px); align-items: center; min-height: 100%; }
+.sp-side { min-width: 0; }
 .sp-full .sp-stage { max-width: min(100%, calc(100vh - 40px)); max-width: min(100%, calc(100dvh - 40px)); }
 html.sp-lock, html.sp-lock body { overflow: hidden; }
 html.sp-lock .es-gamespot { display: none; }
