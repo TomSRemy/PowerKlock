@@ -144,7 +144,7 @@
     // the span of a selection that limits the dates (years, period, events), which then fills the whole dial
     let VW0 = 0, VWN = 1;
     const tOfR = r => VW0 + (r - R0) / (R1 - R0) * VWN, rOfT = t => R0 + (R1 - R0) * Math.max(0, Math.min(1, (t - VW0) / VWN));
-    let Z = 1, TX = 0, TY = 0;   // the 2D zoom: a screen pixel (x, y) shows the dial's point ((x − TX) / Z, (y − TY) / Z)
+    let Z = 1, TX = 0, TY = 0, BZ = 1, BTX = 0, BTY = 0; const BASE = document.createElement('canvas');   // BASE: the last full drawing, for the view (BZ, BTX, BTY)   // the 2D zoom: a screen pixel (x, y) shows the dial's point ((x − TX) / Z, (y − TY) / Z)
     function hit(x, y) {
       x = (x - TX) / Z; y = (y - TY) / Z;
       if (lin) { if (x < LX0 || x >= LX1 || y < LY0 || y >= LY1) return null; return [VW0 + Math.floor((x - LX0) / (LX1 - LX0) * VWN), 23 - Math.floor((y - LY0) / (LY1 - LY0) * 24)]; }   // 0 h at the bottom
@@ -200,6 +200,7 @@
           r2 = rr + (zc[0] - rr) * t; g2 = gg + (zc[1] - gg) * t; b2 = bb + (zc[2] - bb) * t; k = 1; }
         const o = (y * W + x) * 4; P[o] = r2 / k; P[o + 1] = g2 / k; P[o + 2] = b2 / k; P[o + 3] = 255;
       }
+      BASE.width = W; BASE.height = HH; BASE.getContext('2d').putImageData(img, 0, 0); BZ = Z; BTX = TX; BTY = TY;
       cv.dataset.pkDrawn = '1';
     }
     const txt = () => light() ? ['#1F2D3D', '#5E6B80', '#8DA3BA'] : ['#E8EDF5', '#9AA7BA', '#5E6B80'];
@@ -269,7 +270,9 @@
       set('max', noHi ? '–' : fmtN(hi[0]) + ' €'); set('maxs', noHi ? '' : `${fmtD(D, hi[1])} · ${String(hi[2]).padStart(2, '0')} h`);
     }
     function draw(p) {
-      const W = cv.width; ctx.clearRect(0, 0, W, cv.height); ctx.putImageData(img, 0, 0);
+      const W = cv.width; ctx.clearRect(0, 0, W, cv.height);
+      if (BZ === Z && BTX === TX && BTY === TY) ctx.putImageData(img, 0, 0);
+      else { const k = Z / BZ; ctx.save(); ctx.imageSmoothingEnabled = k < 1.5; ctx.setTransform(k, 0, 0, k, TX - BTX * k, TY - BTY * k); ctx.drawImage(BASE, 0, 0); ctx.restore(); }
       if (p < 1) {
         ctx.save(); ctx.setTransform(Z, 0, 0, Z, TX, TY); ctx.globalCompositeOperation = 'destination-in'; ctx.beginPath();
         if (lin) ctx.rect(0, 0, LX0 + (LX1 - LX0) * p, cv.height); else ctx.arc(CX, CY, rOfT(VW0 + p * VWN), 0, 2 * Math.PI);
@@ -302,14 +305,18 @@
     ov.addEventListener('pointerleave', () => { tip.style.opacity = 0; if (P0 >= 1) draw(1); });
     // zoom: wheel or pinch around the pointer, drag to move once zoomed, double-click or ⟲ to come back; the dial is redrawn sharp
     let zraf = 0;
-    const redraw = () => { if (zraf) return; zraf = requestAnimationFrame(() => { zraf = 0; build(); draw(P0 >= 1 ? 1 : P0); }); };
+    let sharpT = 0;
+    const HINT2D = () => (host.querySelector('.sp-wrap').classList.contains('sp-full') ? T('Molette ou pincer : zoomer', 'Wheel or pinch: zoom') : T('Ctrl + molette ou pincer : zoomer', 'Ctrl + wheel or pinch: zoom'))
+      + T(' · zoomé, glisser : déplacer · double-clic : revenir', ' · zoomed in, drag: move · double-click: back');
+    const redraw = () => { if (!zraf) zraf = requestAnimationFrame(() => { zraf = 0; draw(P0 >= 1 ? 1 : P0); });
+      clearTimeout(sharpT); sharpT = setTimeout(() => { build(); draw(P0 >= 1 ? 1 : P0); }, 180); };   // fluid while moving, sharp once still
     const clampT = () => { const W = cv.width, H = cv.height; TX = Math.min(0, Math.max(W - W * Z, TX)); TY = Math.min(0, Math.max(H - H * Z, TY)); ov.style.touchAction = Z > 1.001 ? 'none' : 'pan-y'; };
     const zoomAt = (mx, my, k) => { const z2 = Math.max(1, Math.min(16, Z * k)); TX = mx - (mx - TX) * z2 / Z; TY = my - (my - TY) * z2 / Z; Z = z2; clampT(); redraw(); };
     // on the page the wheel scrolls the page: zoom with Ctrl (or ⌘) + wheel, or the buttons; in full screen the wheel alone zooms
     let wheelHintT = 0;
     ov.addEventListener('wheel', e => { if (on3) return;
       if (!host.querySelector('.sp-wrap').classList.contains('sp-full') && !e.ctrlKey && !e.metaKey) {
-        if (Z <= 1.001) { hint.textContent = T('Ctrl + molette pour zoomer · ou les boutons + −', 'Ctrl + wheel to zoom · or the + − buttons'); clearTimeout(wheelHintT); wheelHintT = setTimeout(() => { if (!on3) hint.textContent = ''; }, 1800); }
+        if (Z <= 1.001) { hint.classList.add('flash'); clearTimeout(wheelHintT); wheelHintT = setTimeout(() => hint.classList.remove('flash'), 1400); }
         return; }
       e.preventDefault(); const b = ov.getBoundingClientRect(); zoomAt((e.clientX - b.left) * DPR, (e.clientY - b.top) * DPR, e.deltaY < 0 ? 1.2 : 1 / 1.2); }, { passive: false });
     const zp = new Map(); let zpinch = 0;
@@ -329,7 +336,7 @@
     let TH = null, R3 = null;
     async function relief(onOff) {
       on3 = onOff; host.querySelector('.sp-wrap').classList.toggle('sp-3d', on3); const zcb = stage.querySelector('.sp-zc'); if (zcb) zcb.hidden = on3; g3.style.display = on3 ? 'block' : 'none'; cv.style.visibility = ov.style.visibility = on3 ? 'hidden' : 'visible';
-      hint.textContent = on3 ? T('Glisser pour tourner · clic droit ou Maj + glisser pour déplacer · molette ou pincer pour zoomer · double-clic pour recentrer', 'Drag to turn · right-click or Shift + drag to move · wheel or pinch to zoom · double-click to recentre') : '';
+      hint.textContent = on3 ? T('Glisser pour tourner · clic droit ou Maj + glisser pour déplacer · molette ou pincer pour zoomer · double-clic pour recentrer', 'Drag to turn · right-click or Shift + drag to move · wheel or pinch to zoom · double-click to recentre') : HINT2D();
       if (!on3) return;
       if (!TH) { try { TH = await import(new URL('vendor/three.module.min.js', document.querySelector('script[src*="spiral.js"]').src).href); } catch (e) { hint.textContent = T('Relief indisponible sur ce navigateur.', 'Relief not available in this browser.'); return; } }
       if (!R3) R3 = make3D(TH); else { R3.layout(); R3.grow(); }
@@ -512,7 +519,7 @@
     });
     // full screen: the dial as large as the window allows, its figures and filters beside it; Esc or the button again leaves
     const wrap = host.querySelector('.sp-wrap'), fb = host.querySelector('[data-a="full"]');
-    const full = on => { wrap.classList.toggle('sp-full', on); document.documentElement.classList.toggle('sp-lock', on);
+    const full = on => { wrap.classList.toggle('sp-full', on); document.documentElement.classList.toggle('sp-lock', on); if (!on3 && D) hint.textContent = HINT2D();
       fb.setAttribute('aria-pressed', on); fb.textContent = on ? '✕ ' + T('Quitter le plein écran', 'Exit full screen') : '⤢ ' + T('Plein écran', 'Full screen'); };
     fb.addEventListener('click', () => full(!wrap.classList.contains('sp-full')));
     document.addEventListener('keydown', e => { if (e.key === 'Escape' && wrap.classList.contains('sp-full')) full(false); });
@@ -522,7 +529,7 @@
     load().then(data => {
       if (!host.isConnected) return;
       if (!data) { host.querySelector('.sp-grid').innerHTML = `<div class="fuel-note">${T('Prix horaires indisponibles.', 'Hourly prices not available.')}</div>`; return; }
-      D = data; N = D.n; calendar(); prep(); size(); build();
+      D = data; N = D.n; calendar(); prep(); size(); build(); hint.textContent = HINT2D();
       { const e = host.querySelector('[data-k="sel"]'); if (e) e.textContent = selText(); }
       // play the drawing once, when the section comes into view
       const io = new IntersectionObserver(es => { if (es.some(x => x.isIntersecting)) { io.disconnect(); play(); } }, { threshold: 0.3 });
