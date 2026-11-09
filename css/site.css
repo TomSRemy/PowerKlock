@@ -3758,6 +3758,7 @@ html body .pm-o-l, html body .pkf-t-l, html body .mrn2-tc { white-space: normal;
 .sp-kl { font-size: 10px; letter-spacing: 1.4px; color: var(--tx3); font-weight: 600; text-transform: uppercase; }
 .sp-kv { font: 700 26px 'JetBrains Mono', monospace; line-height: 1.1; }
 .sp-ks { font-size: 11px; color: var(--tx2); }
+.sp-z0 { color: #375073; } html:not([data-theme="light"]) .sp-z0 { color: #BED2E8; }
 .sp-cy { color: #00B8D4; } html:not([data-theme="light"]) .sp-cy { color: #00E5FF; } .sp-rd { color: #FF3B30; } .sp-am { color: #FFB000; }
 .sp-btns { display: flex; flex-wrap: wrap; gap: 6px; }
 .sp-btns button { font: 600 11px Inter, sans-serif; color: var(--tx2); background: transparent; border: 1px solid var(--border); border-radius: 999px; padding: 6px 11px; cursor: pointer; }
