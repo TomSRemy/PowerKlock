@@ -46,7 +46,12 @@
 
   // ── colour: cyan below 0, the page's background for ordinary prices, amber then red then white-hot above ──
   const light = () => document.documentElement.getAttribute('data-theme') === 'light';
+  // an hour at exactly 0 € (the CfD rule, the floor of many bids) has its own colour, between the cyan of negative prices and the night
+  // blue of low ones, so it shows on its own
+  const ZERO = v => Math.abs(v) < 0.01;
+  const ZCOL = () => light() ? [55, 80, 115] : [190, 210, 232];
   function col(v) {
+    if (ZERO(v)) return ZCOL();
     let r, g, b; const L = light();
     if (v < 0) { const t = Math.min(1, Math.pow(-v / 120, 0.5)); r = 0; g = 150 + 79 * t; b = 190 + 65 * t; if (v < -150) { const u = Math.min(1, (-v - 150) / 300); r = 220 * u; g = 229 + 26 * u; b = 255; } if (L) { g -= 40; b -= 30; } }
     else if (v < 60) { const t = v / 60; if (L) { r = 226 - 26 * t; g = 232 - 22 * t; b = 240 - 16 * t; } else { r = 20 + 20 * t; g = 28 + 30 * t; b = 44 + 40 * t; } }
@@ -69,7 +74,7 @@
       <div class="sp-wrap${widget ? ' sp-widget' : ''}"><div class="sp-grid"><div class="sp-stage"><canvas class="sp-cv"></canvas><canvas class="sp-ov"></canvas><div class="sp-g3"></div><div class="sp-tip"></div><div class="sp-hint"></div></div>
         <div class="sp-side">
           <div class="sp-btns sp-view"><button type="button" class="sp-alt" data-a="lin">${T('Linéaire', 'Linear')}</button><button type="button" class="sp-alt" data-a="3d">3D</button><button type="button" data-a="replay">↺ ${T('Rejouer', 'Replay')}</button><button type="button" data-a="full" aria-pressed="false">⤢ ${T('Plein écran', 'Full screen')}</button></div>
-          <div class="sp-leg"><i></i><div class="sp-lsel" role="slider" aria-label="${T('Choisir les prix sur la légende', 'Pick prices on the legend')}" title="${T('Glisser pour une fourchette de prix, cliquer pour un prix', 'Drag for a price range, click for one price')}"><b class="sp-lr"></b><span class="sp-lh" data-h="0"></span><span class="sp-lh" data-h="1"></span></div><div class="sp-tk">${[[-200, 0], [0, 4], [60, 6], [150, 8], [500, 11]].map(([v, k]) => `<span style="left:${(k / 12 * 100).toFixed(1)}%">${v < 0 ? '−' + -v : v}${v === 500 ? '+' : ''}</span>`).join('')}<span class="u">€/MWh</span></div></div>
+          <div class="sp-leg"><i></i><div class="sp-lsel" role="slider" aria-label="${T('Choisir les prix sur la légende', 'Pick prices on the legend')}" title="${T('Glisser pour une fourchette de prix, cliquer pour un prix', 'Drag for a price range, click for one price')}"><b class="sp-lr"></b><span class="sp-lh" data-h="0"></span><span class="sp-lh" data-h="1"></span></div><div class="sp-tk">${[[-200, 0], [0, 4], [60, 6], [150, 8], [500, 11]].map(([v, k]) => `<span style="left:${(k / 12 * 100).toFixed(1)}%">${v < 0 ? '−' + -v : v}${v === 500 ? '+' : ''}</span>`).join('')}<span class="u">€/MWh</span></div><b class="sp-l0" title="${T('Heures à exactement 0 €', 'Hours at exactly 0 €')}">= 0 €</b></div>
           <button type="button" class="sp-lclear" data-a="pclear" hidden></button>
           <div class="sp-sel" data-k="sel"></div>
           <div class="sp-k"><span class="sp-kl">${T('Prix moyen', 'Average price')}</span><span class="sp-kv" data-k="avg">–</span><span class="sp-ks" data-k="avgs"></span></div>
@@ -95,7 +100,7 @@
     const $ = s => host.querySelector(s);
     const stage = $('.sp-stage'), cv = $('.sp-cv'), ov = $('.sp-ov'), g3 = $('.sp-g3'), tip = $('.sp-tip'), hint = $('.sp-hint');
     const ctx = cv.getContext('2d'), octx = ov.getContext('2d');
-    $('.sp-leg i').style.background = 'linear-gradient(90deg,' + [-200, -100, -30, -1, 0, 30, 60, 100, 150, 250, 400, 500, 1500].map(v => `rgb(${col(v)})`).join(',') + ')';
+    $('.sp-leg i').style.background = 'linear-gradient(90deg,' + [-200, -100, -30, -1, 0.5, 30, 60, 100, 150, 250, 400, 500, 1500].map(v => `rgb(${col(v)})`).join(',') + ')';
     let FS = 12, OFF = 15, SH = 0, D, N, S, DPR, CX, CY, R0, R1, LX0, LX1, LY0, LY1, img, lin = false, on3 = false, P0 = 1, raf = 0, t0 = null;
     const val = (d, h) => D.v[d * 24 + h];
     // F: years, hours (24 flags), seasons, days, period (day indices), price (mode, min, max), output, events
@@ -156,15 +161,15 @@
       LX0 = Math.min(70, S * 0.1) * DPR; LX1 = S * DPR * 0.985; LY0 = SH * DPR * 0.06; LY1 = SH * DPR * 0.9;
     }
     // each hour's colour once, the selected ones bright and the others close to the background (2. the selection stands out)
-    let CR, CG, CB, KP;
+    let CR, CG, CB, KP, ZR;
     function colours() {
-      const bg = light() ? [255, 255, 255] : [15, 20, 25]; CR = new Uint8ClampedArray(N * 24); CG = new Uint8ClampedArray(N * 24); CB = new Uint8ClampedArray(N * 24); KP = new Uint8Array(N * 24);
+      const bg = light() ? [255, 255, 255] : [15, 20, 25]; CR = new Uint8ClampedArray(N * 24); CG = new Uint8ClampedArray(N * 24); CB = new Uint8ClampedArray(N * 24); KP = new Uint8Array(N * 24); ZR = new Uint8Array(N * 24);
       // with a selection, a kept hour whose colour is as dark as the background (prices around 0–60 €) is lifted towards a light
       // slate, so it never looks like an excluded one
       const sel = F.y.size || F.se.size || F.dy || F.pr.size || !isNaN(F.pmin) || !isNaN(F.pmax) || F.pd.size || F.ev.size || F.d0 >= 0 || F.d1 < 1e9 || F.hs.some(x => !x);
       const lift = light() ? [70, 96, 130] : [150, 175, 200];
       for (let d = 0; d < N; d++) for (let h = 0; h < 24; h++) { const i = d * 24 + h, v = D.v[i]; let [r, g, b] = col(v);
-        const kp = keep(d, h, v); KP[i] = kp ? 1 : 0;
+        const kp = keep(d, h, v); KP[i] = kp ? 1 : 0; ZR[i] = kp && ZERO(v) ? 1 : 0;
         if (!kp) { const m2 = (r + g + b) / 3; r = bg[0] * 0.9 + m2 * 0.1; g = bg[1] * 0.9 + m2 * 0.1; b = bg[2] * 0.9 + m2 * 0.1; }
         else if (sel) { const L = 0.3 * r + 0.59 * g + 0.11 * b, dk = light() ? Math.max(0, (L - 200) / 55) : Math.max(0, 1 - L / 110);
           if (dk > 0) { const t = 0.9 * dk; r += (lift[0] - r) * t; g += (lift[1] - g) * t; b += (lift[2] - b) * t; } }
@@ -185,8 +190,12 @@
         // the mean of the days under the pixel (at most 16 of them, evenly spaced)
         // the kept days win: a pixel holding even one selected hour shows the selection, so sparse selections stay visible
         let r2 = 0, g2 = 0, b2 = 0, k = 0, rk = 0, gk = 0, bk = 0, kk = 0;
-        for (let d = dA; d <= dB; d++) { const i = d * 24 + h; if (KP[i]) { rk += CR[i]; gk += CG[i]; bk += CB[i]; kk++; } else if (k < 16) { r2 += CR[i]; g2 += CG[i]; b2 += CB[i]; k++; } }
+        let zk = 0;
+        for (let d = dA; d <= dB; d++) { const i = d * 24 + h; zk += ZR[i]; if (KP[i]) { rk += CR[i]; gk += CG[i]; bk += CB[i]; kk++; } else if (k < 16) { r2 += CR[i]; g2 += CG[i]; b2 += CB[i]; k++; } }
         if (kk) { r2 = rk; g2 = gk; b2 = bk; k = kk; }
+        // 0 € hours weigh four times in their pixel: sparse, they would vanish in the mean, but they must not cover their neighbours
+        if (zk) { const zc = ZCOL(), n2 = kk || (dB - dA + 1), t = Math.min(0.85, 4 * zk / n2), rr = r2 / k, gg = g2 / k, bb = b2 / k;
+          r2 = rr + (zc[0] - rr) * t; g2 = gg + (zc[1] - gg) * t; b2 = bb + (zc[2] - bb) * t; k = 1; }
         const o = (y * W + x) * 4; P[o] = r2 / k; P[o + 1] = g2 / k; P[o + 2] = b2 / k; P[o + 3] = 255;
       }
       cv.dataset.pkDrawn = '1';
