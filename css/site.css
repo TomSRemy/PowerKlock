@@ -3780,7 +3780,7 @@ html body .pm-o-l, html body .pkf-t-l, html body .mrn2-tc { white-space: normal;
 .sp-note { font-size: 10px; margin: 0; }
 .sp-wrap { container-type: inline-size; }
 @container (max-width: 760px) { .sp-grid { grid-template-columns: 1fr; } .sp-side { grid-template-columns: 1fr 1fr 1fr; } .sp-btns, .sp-leg, .sp-note { grid-column: 1 / -1; } .sp-kv { font-size: 18px; } }
-.sp-widget .sp-stage { max-width: 520px; }
+.sp-widget .sp-stage { max-width: none; }   /* the widget fills its card, as the review does */
 /* La Spirale's filters: groups of chips that combine, a two-handled hour range, dates and prices */
 .sp-sel { font: 600 11px Inter, sans-serif; color: var(--tx2); line-height: 1.45; }
 .sp-f { display: grid; gap: 0; border-top: 1px solid var(--border); padding-top: 10px; }
