@@ -3770,14 +3770,16 @@ html body .pm-o-l, html body .pkf-t-l, html body .mrn2-tc { white-space: normal;
 .sp-widget .sp-stage { max-width: 520px; }
 /* La Spirale's filters: groups of chips that combine, a two-handled hour range, dates and prices */
 .sp-sel { font: 600 11px Inter, sans-serif; color: var(--tx2); line-height: 1.45; }
-.sp-f { display: grid; gap: 10px; border-top: 1px solid var(--border); padding-top: 10px; }
-.sp-fh { display: flex; justify-content: space-between; align-items: center; font-size: 10px; letter-spacing: 1.4px; color: var(--tx3); font-weight: 700; text-transform: uppercase; }
+.sp-f { display: grid; gap: 0; border-top: 1px solid var(--border); padding-top: 10px; }
+.sp-fh { display: flex; justify-content: space-between; align-items: center; padding-bottom: 6px; font-size: 11px; letter-spacing: 1.4px; color: var(--tx3); font-weight: 700; text-transform: uppercase; }
 .sp-fh button { font: 600 11px Inter, sans-serif; color: var(--tx2); background: none; border: 0; cursor: pointer; text-decoration: underline; padding: 0; text-transform: none; letter-spacing: 0; }
-.sp-fg { display: grid; gap: 5px; min-width: 0; }
+.sp-fg { display: grid; grid-template-columns: 96px minmax(0, 1fr); column-gap: 14px; row-gap: 8px; align-items: start; min-width: 0; padding: 10px 0; border-top: 1px solid var(--border); }
+.sp-fg > :not(.sp-fl) { grid-column: 2; }
+@container (max-width: 520px) { .sp-fg { grid-template-columns: 1fr; } .sp-fg > :not(.sp-fl) { grid-column: 1; } }
 .sp-f { min-width: 0; } .sp-f .sp-btns { flex-wrap: wrap; min-width: 0; }
 .sp-range { min-width: 0; } .sp-range input { min-width: 0; }
-.sp-fl { font-size: 10px; color: var(--tx3); font-weight: 600; }
-.sp-f .sp-btns button { padding: 5px 10px; }
+.sp-fl { font-size: 11px; color: var(--tx2); font-weight: 700; letter-spacing: .6px; text-transform: uppercase; padding-top: 7px; }
+.sp-f .sp-btns { gap: 7px; } .sp-f .sp-btns button { padding: 6px 12px; font-size: 12px; }
 .sp-range { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: 8px; align-items: center; }
 .sp-range input { width: 100%; accent-color: #FFD23F; }
 .sp-range output { font: 600 11px 'JetBrains Mono', monospace; color: var(--tx2); white-space: nowrap; }
@@ -3790,16 +3792,12 @@ html body .pm-o-l, html body .pkf-t-l, html body .mrn2-tc { white-space: normal;
   .sp-stage { max-width: min(100%, 860px); }
   .sp-side { grid-template-columns: 1fr 1fr; column-gap: 20px; row-gap: 12px; }
   .sp-side > .sp-sel, .sp-side > .sp-f, .sp-side > .sp-btns, .sp-side > .sp-leg, .sp-side > .sp-note { grid-column: 1 / -1; }
-  .sp-f { grid-template-columns: 1fr 1fr; column-gap: 20px; align-items: start; }
-  .sp-f > .sp-fh { grid-column: 1 / -1; }
 }
 /* middle widths: the panel goes under the dial, figures in three columns, filters in two */
 @container (min-width: 761px) and (max-width: 1099px) {
   .sp-grid { grid-template-columns: 1fr; }
   .sp-side { grid-template-columns: repeat(3, 1fr); column-gap: 20px; }
   .sp-side > .sp-sel, .sp-side > .sp-f, .sp-side > .sp-btns, .sp-side > .sp-leg, .sp-side > .sp-note { grid-column: 1 / -1; }
-  .sp-f { grid-template-columns: 1fr 1fr; column-gap: 20px; align-items: start; }
-  .sp-f > .sp-fh { grid-column: 1 / -1; }
 }
 
 
@@ -3809,7 +3807,12 @@ html body .pm-o-l, html body .pkf-t-l, html body .mrn2-tc { white-space: normal;
 .sp-side { min-width: 0; }
 .sp-full .sp-stage { max-width: min(100%, calc(100vh - 40px)); max-width: min(100%, calc(100dvh - 40px)); }
 html.sp-lock, html.sp-lock body { overflow: hidden; }
-html.sp-lock .es-gamespot { display: none; }
+html.sp-lock .es-hotspot, html.sp-lock .es-gamespot, html.sp-lock .es-volleyspot { display: none !important; }
+/* in relief the scene takes the whole room left by the panel, not a square */
+.sp-wrap.sp-3d .sp-stage { aspect-ratio: 4 / 3; max-width: none; justify-self: stretch; }
+.sp-full.sp-3d .sp-stage { aspect-ratio: auto; height: calc(100vh - 40px); height: calc(100dvh - 40px); max-width: none; align-self: start; }
+.sp-full .sp-side { align-self: start; max-height: calc(100vh - 32px); max-height: calc(100dvh - 32px); overflow: auto; padding-right: 6px; }
+@container (max-width: 760px) { .sp-full.sp-3d .sp-stage { height: 70vh; height: 70dvh; } .sp-wrap.sp-3d .sp-stage { aspect-ratio: 1; } }
 @container (max-width: 760px) { .sp-full .sp-grid { grid-template-columns: 1fr; align-items: start; } .sp-full .sp-stage { max-width: min(100%, calc(100dvh - 260px)); } }
 
 
