@@ -137,7 +137,7 @@
     let VW0 = 0, VWN = 1;
     const tOfR = r => VW0 + (r - R0) / (R1 - R0) * VWN, rOfT = t => R0 + (R1 - R0) * Math.max(0, Math.min(1, (t - VW0) / VWN));
     function hit(x, y) {
-      if (lin) { if (x < LX0 || x >= LX1 || y < LY0 || y >= LY1) return null; return [VW0 + Math.floor((x - LX0) / (LX1 - LX0) * VWN), Math.floor((y - LY0) / (LY1 - LY0) * 24)]; }
+      if (lin) { if (x < LX0 || x >= LX1 || y < LY0 || y >= LY1) return null; return [VW0 + Math.floor((x - LX0) / (LX1 - LX0) * VWN), 23 - Math.floor((y - LY0) / (LY1 - LY0) * 24)]; }   // 0 h at the bottom
       const dx = x - CX, dy = y - CY, r = Math.hypot(dx, dy); if (r < R0 || r > R1) return null;
       let a = Math.atan2(dx, -dy); if (a < 0) a += 2 * Math.PI; const d = Math.floor(tOfR(r)); if (d < VW0 || d >= VW0 + VWN || d >= N) return null;
       return [d, Math.floor(a / (2 * Math.PI) * 24 + 0.5) % 24];   // each hour's wedge is centred on its label
@@ -162,7 +162,7 @@
       const W = cv.width; img = ctx.createImageData(W, W); const P = img.data;
       for (let y = 0; y < W; y++) for (let x = 0; x < W; x++) {
         let dA, dB, h;
-        if (lin) { if (x < LX0 || x >= LX1 || y < LY0 || y >= LY1) continue; h = Math.floor((y - LY0) / (LY1 - LY0) * 24);
+        if (lin) { if (x < LX0 || x >= LX1 || y < LY0 || y >= LY1) continue; h = 23 - Math.floor((y - LY0) / (LY1 - LY0) * 24);
           dA = VW0 + Math.floor((x - LX0) / (LX1 - LX0) * VWN); dB = VW0 + Math.floor((x + 1 - LX0) / (LX1 - LX0) * VWN - 1e-9); }
         else { const dx = x + 0.5 - CX, dy = y + 0.5 - CY, r = Math.hypot(dx, dy); if (r < R0 || r > R1) continue;
           let a = Math.atan2(dx, -dy); if (a < 0) a += 2 * Math.PI; h = Math.floor(a / (2 * Math.PI) * 24 + 0.5) % 24;
@@ -182,7 +182,7 @@
       if (lin) {
         octx.textAlign = 'right'; octx.textBaseline = 'middle';
         const fs = Math.max(11, Math.min(16, S / 40));
-        for (let h = 0; h < 24; h += 3) { const main = h % 6 === 0; octx.font = `${main ? 800 : 600} ${(main ? fs + 2 : fs) * f}px Inter,system-ui,sans-serif`; octx.fillStyle = main ? t1 : t2; octx.fillText(h + ' h', LX0 - 6 * f, LY0 + (LY1 - LY0) * (h + 0.5) / 24); }
+        for (let h = 0; h < 24; h += 3) { const main = h % 6 === 0; octx.font = `${main ? 800 : 600} ${(main ? fs + 2 : fs) * f}px Inter,system-ui,sans-serif`; octx.fillStyle = main ? t1 : t2; octx.fillText(h + ' h', LX0 - 6 * f, LY1 - (LY1 - LY0) * (h + 0.5) / 24); }
         octx.textAlign = 'center'; octx.textBaseline = 'top'; octx.font = `700 ${10 * f}px 'JetBrains Mono',monospace`;
         for (let y = Y0; y <= dayDate(D, N - 1).getUTCFullYear(); y++) { const t = (Date.UTC(y, 6, 1) - D.d0) / 864e5; if (t < VW0 || t > VW0 + VWN) continue; octx.fillStyle = t2; octx.fillText(y, LX0 + (LX1 - LX0) * (t - VW0) / VWN, LY1 + 8 * f); }
         return;
@@ -254,7 +254,7 @@
       if (!q || P0 < 1) { tip.style.opacity = 0; if (P0 >= 1) draw(1); return; }
       const [d, h] = q, v = val(d, h); draw(1);
       octx.strokeStyle = '#FFD23F'; octx.lineWidth = 2 * DPR; octx.beginPath();
-      if (lin) { const yy = LY0 + (LY1 - LY0) * (h + 0.5) / 24, xx = LX0 + (LX1 - LX0) * (d + 0.5 - VW0) / VWN; octx.moveTo(LX0, yy); octx.lineTo(LX1, yy); octx.stroke(); octx.lineWidth = DPR; octx.beginPath(); octx.moveTo(xx, LY0); octx.lineTo(xx, LY1); octx.stroke(); }
+      if (lin) { const yy = LY1 - (LY1 - LY0) * (h + 0.5) / 24, xx = LX0 + (LX1 - LX0) * (d + 0.5 - VW0) / VWN; octx.moveTo(LX0, yy); octx.lineTo(LX1, yy); octx.stroke(); octx.lineWidth = DPR; octx.beginPath(); octx.moveTo(xx, LY0); octx.lineTo(xx, LY1); octx.stroke(); }
       else { const a = h / 24 * 2 * Math.PI; octx.moveTo(CX, CY); octx.lineTo(CX + Math.sin(a) * R1, CY - Math.cos(a) * R1); octx.stroke(); octx.lineWidth = DPR; octx.beginPath(); octx.arc(CX, CY, rOfT(d + 0.5), 0, 2 * Math.PI); octx.stroke(); }
       const s = D.sol[d * 24 + h], w = D.win[d * 24 + h];
       tip.innerHTML = `${fmtD(D, d)} · ${String(h).padStart(2, '0')} h<b class="${v < 0 ? 'sp-cy' : v > 150 ? 'sp-rd' : v > 60 ? 'sp-am' : ''}">${fmtN(v)} €/MWh</b>${!isNaN(s) || !isNaN(w) ? `<small>${T('solaire', 'solar')} ${isNaN(s) ? '–' : fmtN(s / 1000)} GW · ${T('éolien', 'wind')} ${isNaN(w) ? '–' : fmtN(w / 1000)} GW</small>` : ''}` + (() => { const mv = MAVG.get(DY[d] * 12 + DM[d]); return `<small>${T('moyenne du jour', 'day average')} ${fmtN(DAVG[d])} € · ${T('écart au mois', 'vs the month')} ${(DAVG[d] - mv >= 0 ? '+' : '')}${fmtN(DAVG[d] - mv)} €</small>`; })();
