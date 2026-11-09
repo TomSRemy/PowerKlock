@@ -3768,6 +3768,13 @@ html body .pm-o-l, html body .pkf-t-l, html body .mrn2-tc { white-space: normal;
 .sp-wrap { container-type: inline-size; }
 @container (max-width: 760px) { .sp-grid { grid-template-columns: 1fr; } .sp-side { grid-template-columns: 1fr 1fr 1fr; } .sp-btns, .sp-leg, .sp-note { grid-column: 1 / -1; } .sp-kv { font-size: 18px; } }
 .sp-widget .sp-stage { max-width: 520px; }
+/* La Spirale in full screen: the dial takes the height of the window, the side panel stays beside it (under it on a phone) */
+.sp-wrap.sp-full { position: fixed; inset: 0; z-index: 100000; background: var(--bg); padding: max(16px, env(safe-area-inset-top)) 16px 16px; overflow: auto; }
+.sp-full .sp-grid { grid-template-columns: minmax(0, 1fr) 260px; align-items: center; min-height: 100%; }
+.sp-full .sp-stage { max-width: min(100%, calc(100vh - 40px)); max-width: min(100%, calc(100dvh - 40px)); }
+html.sp-lock, html.sp-lock body { overflow: hidden; }
+@container (max-width: 760px) { .sp-full .sp-grid { grid-template-columns: 1fr; align-items: start; } .sp-full .sp-stage { max-width: min(100%, calc(100dvh - 260px)); } }
+
 
 /* ══ Motion system (proposal a2, 8 Nov. 2026): tokens in :root, rules below ══
    · Navigation (pages, view tabs, Ctrl K) and data (charts, tables, KPI values) never animate.
