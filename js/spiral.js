@@ -70,6 +70,7 @@
         <div class="sp-side">
           <div class="sp-btns sp-view"><button type="button" class="sp-alt" data-a="lin">${T('Linéaire', 'Linear')}</button><button type="button" class="sp-alt" data-a="3d">3D</button><button type="button" data-a="replay">↺ ${T('Rejouer', 'Replay')}</button><button type="button" data-a="full" aria-pressed="false">⤢ ${T('Plein écran', 'Full screen')}</button></div>
           <div class="sp-leg"><i></i><div class="sp-lsel" role="slider" aria-label="${T('Choisir les prix sur la légende', 'Pick prices on the legend')}" title="${T('Glisser pour une fourchette de prix, cliquer pour un prix', 'Drag for a price range, click for one price')}"><b class="sp-lr"></b><span class="sp-lh" data-h="0"></span><span class="sp-lh" data-h="1"></span></div><div class="sp-tk">${[[-200, 0], [0, 4], [60, 6], [150, 8], [500, 11]].map(([v, k]) => `<span style="left:${(k / 12 * 100).toFixed(1)}%">${v < 0 ? '−' + -v : v}${v === 500 ? '+' : ''}</span>`).join('')}<span class="u">€/MWh</span></div></div>
+          <button type="button" class="sp-lclear" data-a="pclear" hidden></button>
           <div class="sp-sel" data-k="sel"></div>
           <div class="sp-k"><span class="sp-kl">${T('Prix moyen', 'Average price')}</span><span class="sp-kv" data-k="avg">–</span><span class="sp-ks" data-k="avgs"></span></div>
           <div class="sp-k"><span class="sp-kl">${T('Prix moyen des heures négatives', 'Average of the negative hours')}</span><span class="sp-kv sp-cy" data-k="navg">–</span><span class="sp-ks" data-k="navgs"></span></div>
@@ -271,7 +272,7 @@
     let TH = null, R3 = null;
     async function relief(onOff) {
       on3 = onOff; host.querySelector('.sp-wrap').classList.toggle('sp-3d', on3); g3.style.display = on3 ? 'block' : 'none'; cv.style.visibility = ov.style.visibility = on3 ? 'hidden' : 'visible';
-      hint.textContent = on3 ? T('Glisser pour tourner · molette ou pincer pour zoomer · creux = prix négatif', 'Drag to turn · wheel or pinch to zoom · hollows = negative prices') : '';
+      hint.textContent = on3 ? T('Glisser pour tourner · clic droit ou Maj + glisser pour déplacer · molette ou pincer pour zoomer · double-clic pour recentrer', 'Drag to turn · right-click or Shift + drag to move · wheel or pinch to zoom · double-click to recentre') : '';
       if (!on3) return;
       if (!TH) { try { TH = await import(new URL('vendor/three.module.min.js', document.querySelector('script[src*="spiral.js"]').src).href); } catch (e) { hint.textContent = T('Relief indisponible sur ce navigateur.', 'Relief not available in this browser.'); return; } }
       if (!R3) R3 = make3D(TH); else { R3.layout(); R3.grow(); }
@@ -307,7 +308,7 @@
           const pt = new THREE.Vector3(), line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([pt, pt.clone()]), new THREE.LineBasicMaterial({ color: c })); scene.add(line);
           const s2 = lab(fmtN(v, 0) + ' €', 0, 0, 0, c); return { d, h, y, up, line, s: s2 }; }).filter(Boolean);
       }
-      let az = 0, el = 0.55, dist = 2.75, auto = true, g0 = 0;
+      let az = 0, el = 0.55, dist = 2.75, auto = true, g0 = 0, tx = 0, tz = 0, panMode = false;   // tx, tz: the point the camera looks at, moved by a pan
       function recolour() {
         // the window: every day, or the span of a date selection, which then fills the whole dial (as in 2D)
         for (let d = 0; d < rows; d++) { const u = (d + 0.5 - VW0) / VWN, r = 0.12 + 0.88 * Math.max(0, Math.min(1, u)); for (let a = 0; a <= A; a++) { const j = d * (A + 1) + a, i = j * 3, th = a / A * 2 * Math.PI;
@@ -326,9 +327,16 @@
       // orbit: drag to turn, wheel or pinch to zoom
       const pts = new Map(); let pinch = 0;
       ren.domElement.style.touchAction = 'none';
-      ren.domElement.addEventListener('pointerdown', e => { auto = false; pts.set(e.pointerId, [e.clientX, e.clientY]); ren.domElement.setPointerCapture(e.pointerId); });
+      // pan: right button or Shift + drag, or two fingers; the ground point under the view slides with the pointer
+      const pan = (dx, dy) => { const k = dist * 0.0016 * (lin ? 1.35 : 1), cx = Math.cos(az), sx = Math.sin(az);
+        tx -= (dx * cx + dy * sx) * k; tz -= (-dx * sx + dy * cx) * k;   // right on screen = (cos az, −sin az), forward = (−sin az, −cos az)
+        tx = Math.max(-2, Math.min(2, tx)); tz = Math.max(-2, Math.min(2, tz)); };
+      ren.domElement.addEventListener('contextmenu', e => e.preventDefault());
+      ren.domElement.addEventListener('dblclick', () => { tx = tz = 0; });
+      ren.domElement.addEventListener('pointerdown', e => { auto = false; panMode = e.button === 2 || e.shiftKey; pts.set(e.pointerId, [e.clientX, e.clientY]); ren.domElement.setPointerCapture(e.pointerId); });
       ren.domElement.addEventListener('pointermove', e => { if (!pts.has(e.pointerId)) return; const [x0, y0] = pts.get(e.pointerId); pts.set(e.pointerId, [e.clientX, e.clientY]);
-        if (pts.size === 2) { const [a, b] = [...pts.values()], dd = Math.hypot(a[0] - b[0], a[1] - b[1]); if (pinch) dist = Math.max(0.8, Math.min(6, dist * pinch / dd)); pinch = dd; return; }
+        if (pts.size === 2) { const [a, b] = [...pts.values()], dd = Math.hypot(a[0] - b[0], a[1] - b[1]); if (pinch) dist = Math.max(0.8, Math.min(6, dist * pinch / dd)); pinch = dd; pan((e.clientX - x0) / 2, (e.clientY - y0) / 2); return; }
+        if (panMode) { pan(e.clientX - x0, e.clientY - y0); return; }
         az -= (e.clientX - x0) * 0.008; el = Math.max(-1.35, Math.min(1.45, el + (e.clientY - y0) * 0.006)); });
       const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(), vtx = new THREE.Vector3();
       ren.domElement.addEventListener('pointermove', e => {
@@ -354,7 +362,7 @@
         geo.setDrawRange(VW0 * A * 6, Math.max(1, Math.min(show, VWN, N - VW0) - 1) * A * 6); mesh.scale.y = 0.15 + 0.85 * Math.min(1, u * 1.6); kpis(e);
         recs.forEach(r => { r.line.visible = r.s.visible = VW0 + show > r.d; });
         if (auto) az = ts / 1000 * 0.12;
-        const dd = dist * (lin ? 1.35 : 1); cam.position.set(Math.sin(az) * Math.cos(el) * dd, Math.sin(el) * dd, Math.cos(az) * Math.cos(el) * dd); cam.lookAt(0, 0.04, 0); disc.material.opacity = el < 0 ? 0 : 0.06;
+        const dd = dist * (lin ? 1.35 : 1); cam.position.set(tx + Math.sin(az) * Math.cos(el) * dd, Math.sin(el) * dd, tz + Math.cos(az) * Math.cos(el) * dd); cam.lookAt(tx, 0.04, tz); disc.material.opacity = el < 0 ? 0 : 0.06;
         ren.render(scene, cam);
       }
       const R = { layout: recolour, grow: () => { g0 = performance.now(); } };
@@ -407,8 +415,11 @@
     const v2f = v => { if (v <= LSTOP[0]) return 0; for (let i = 0; i < LSTOP.length - 1; i++) if (v <= LSTOP[i + 1]) return (i + (v - LSTOP[i]) / (LSTOP[i + 1] - LSTOP[i])) / (LSTOP.length - 1); return 1; };
     const rnd = v => Math.abs(v) < 100 ? Math.round(v) : Math.round(v / 5) * 5;
     const lsel = host.querySelector('.sp-lsel'), lr = lsel.querySelector('.sp-lr'), lh = [...lsel.querySelectorAll('.sp-lh')];
+    const lclr = host.querySelector('[data-a="pclear"]');
     function legSync() {
-      const on = !isNaN(F.pmin) || !isNaN(F.pmax); lsel.classList.toggle('on', on); if (!on) return;
+      const on = !isNaN(F.pmin) || !isNaN(F.pmax); lsel.classList.toggle('on', on); lclr.hidden = !on;
+      if (!on) return;
+      lclr.textContent = '✕ ' + T('Prix : ', 'Price: ') + (isNaN(F.pmin) ? '…' : fmtN(F.pmin, 0)) + ' → ' + (isNaN(F.pmax) ? '…' : fmtN(F.pmax, 0)) + ' €  ·  ' + T('effacer', 'clear');
       const a = v2f(isNaN(F.pmin) ? LSTOP[0] : F.pmin), b2 = v2f(isNaN(F.pmax) ? LSTOP[LSTOP.length - 1] : F.pmax);
       lr.style.left = (a * 100) + '%'; lr.style.width = (Math.max(0.006, b2 - a) * 100) + '%'; lh[0].style.left = (a * 100) + '%'; lh[1].style.left = (b2 * 100) + '%';
     }
@@ -418,17 +429,23 @@
     let drag = null;
     lsel.addEventListener('pointerdown', e => {
       e.preventDefault(); lsel.setPointerCapture(e.pointerId); const b = lsel.getBoundingClientRect(), f = (e.clientX - b.left) / b.width;
-      const hd = e.target.classList.contains('sp-lh') ? +e.target.dataset.h : -1;
-      drag = { x0: e.clientX, f0: f, hd, moved: false, b };
+      const on = lsel.classList.contains('on'), fa = v2f(isNaN(F.pmin) ? LSTOP[0] : F.pmin), fb = v2f(isNaN(F.pmax) ? LSTOP[LSTOP.length - 1] : F.pmax);
+      // a narrow bracket (one price) is moved whole even from its handles, which then cover it
+      const hd = e.target.classList.contains('sp-lh') && (fb - fa) * b.width > 26 ? +e.target.dataset.h : -1;
+      const inside = hd < 0 && on && f >= fa - 0.01 && f <= fb + 0.01;   // grabbing the bracket: it slides whole, same width
+      drag = { x0: e.clientX, f0: f, hd, moved: false, b, inside, fa, fb };
     });
     lsel.addEventListener('pointermove', e => {
       if (!drag) return; const f = (e.clientX - drag.b.left) / drag.b.width; if (Math.abs(e.clientX - drag.x0) > 3) drag.moved = true; if (!drag.moved) return;
+      if (drag.inside) { const df = f - drag.f0, w = drag.fb - drag.fa, a = Math.max(0, Math.min(1 - w, drag.fa + df)); setPrices(rnd(f2v(a)), rnd(f2v(a + w))); return; }
       if (drag.hd >= 0) { const v = rnd(f2v(f)); if (drag.hd === 0) setPrices(Math.min(v, isNaN(F.pmax) ? v : F.pmax), F.pmax); else setPrices(F.pmin, Math.max(v, isNaN(F.pmin) ? v : F.pmin)); }
       else { const a = rnd(f2v(Math.min(drag.f0, f))), b2 = rnd(f2v(Math.max(drag.f0, f))); setPrices(a, b2); }
     });
-    const end = e => { if (!drag) return; if (!drag.moved && drag.hd < 0) {   // a click: one price, with a margin of 3 % (at least 2 €)
+    const end = e => { if (!drag) return; if (!drag.moved && drag.hd < 0 && !drag.inside) {   // a click: one price, with a margin of 3 % (at least 2 €)
         const v = rnd(f2v(drag.f0)), m = Math.max(2, Math.round(Math.abs(v) * 0.03)); setPrices(v - m, v + m); }
       drag = null; };
+    const clearP = () => setPrices(NaN, NaN);
+    lclr.addEventListener('click', clearP); lsel.addEventListener('dblclick', clearP);
     lsel.addEventListener('pointerup', end); lsel.addEventListener('pointercancel', end);
     host.querySelector('[data-a="replay"]').addEventListener('click', () => { if (on3 && R3) R3.grow(); else play(); });
     host.querySelector('[data-a="lin"]').addEventListener('click', e => {

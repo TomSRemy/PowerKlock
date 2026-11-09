@@ -3769,6 +3769,8 @@ html body .pm-o-l, html body .pkf-t-l, html body .mrn2-tc { white-space: normal;
 .sp-lr { position: absolute; top: 4px; height: 14px; border: 2px solid #FFD23F; border-radius: 6px; box-shadow: 0 0 0 9999px rgba(10,14,19,.55); pointer-events: none; }
 .sp-lsel { overflow: hidden; border-radius: 5px; }
 .sp-lh { position: absolute; top: 1px; width: 10px; height: 20px; margin-left: -5px; background: #FFD23F; border-radius: 3px; cursor: ew-resize; box-shadow: 0 1px 3px rgba(0,0,0,.5); }
+.sp-lsel.on { cursor: grab; } .sp-lsel.on:active { cursor: grabbing; }
+.sp-lclear { justify-self: start; font: 600 11px Inter, sans-serif; color: #0f1419; background: #FFD23F; border: 0; border-radius: 999px; padding: 4px 11px; cursor: pointer; }
 .sp-tk { position: absolute; left: 0; right: 0; top: 13px; height: 14px; } .sp-tk span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
 .sp-tk span:first-child { transform: none; } .sp-tk span.u { right: 0; left: auto; transform: none; color: var(--tx3); top: 14px; }
 .sp-tk span::before { content: ''; position: absolute; left: 50%; top: -5px; width: 1px; height: 4px; background: var(--tx3); } .sp-tk span:first-child::before { left: 0; } .sp-tk span.u::before { display: none; }
