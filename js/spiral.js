@@ -248,6 +248,13 @@
     }
     function play() { cancelAnimationFrame(raf); t0 = null; const step = ts => { if (!host.isConnected) return; if (t0 === null) t0 = ts; const u = Math.min(1, (ts - t0) / 8000); P0 = 1 - Math.pow(1 - u, 2.2); draw(P0); if (u < 1) raf = requestAnimationFrame(step); }; raf = requestAnimationFrame(step); }
 
+    // the tooltip of an hour: its price, solar and wind, the day's average and its gap to the month (flat dial and relief)
+    function showTip(d, h, cx, cy) {
+      const v = val(d, h), s = D.sol[d * 24 + h], w = D.win[d * 24 + h];
+      tip.innerHTML = `${fmtD(D, d)} · ${String(h).padStart(2, '0')} h<b class="${v < 0 ? 'sp-cy' : v > 150 ? 'sp-rd' : v > 60 ? 'sp-am' : ''}">${fmtN(v)} €/MWh</b>${!isNaN(s) || !isNaN(w) ? `<small>${T('solaire', 'solar')} ${isNaN(s) ? '–' : fmtN(s / 1000)} GW · ${T('éolien', 'wind')} ${isNaN(w) ? '–' : fmtN(w / 1000)} GW</small>` : ''}` + (() => { const mv = MAVG.get(DY[d] * 12 + DM[d]); return `<small>${T('moyenne du jour', 'day average')} ${fmtN(DAVG[d])} € · ${T('écart au mois', 'vs the month')} ${(DAVG[d] - mv >= 0 ? '+' : '')}${fmtN(DAVG[d] - mv)} €</small>`; })();
+      const sb = stage.getBoundingClientRect(); let lx = cx - sb.left + 14; if (lx > sb.width - 190) lx -= 210;
+      tip.style.left = lx + 'px'; tip.style.top = (cy - sb.top + 14) + 'px'; tip.style.opacity = 1;
+    }
     // hover: the hour and the day under the pointer
     ov.addEventListener('pointermove', e => {
       if (on3) return; const b = ov.getBoundingClientRect(), x = (e.clientX - b.left) * DPR, y = (e.clientY - b.top) * DPR, q = hit(x, y);
@@ -256,10 +263,7 @@
       octx.strokeStyle = '#FFD23F'; octx.lineWidth = 2 * DPR; octx.beginPath();
       if (lin) { const yy = LY1 - (LY1 - LY0) * (h + 0.5) / 24, xx = LX0 + (LX1 - LX0) * (d + 0.5 - VW0) / VWN; octx.moveTo(LX0, yy); octx.lineTo(LX1, yy); octx.stroke(); octx.lineWidth = DPR; octx.beginPath(); octx.moveTo(xx, LY0); octx.lineTo(xx, LY1); octx.stroke(); }
       else { const a = h / 24 * 2 * Math.PI; octx.moveTo(CX, CY); octx.lineTo(CX + Math.sin(a) * R1, CY - Math.cos(a) * R1); octx.stroke(); octx.lineWidth = DPR; octx.beginPath(); octx.arc(CX, CY, rOfT(d + 0.5), 0, 2 * Math.PI); octx.stroke(); }
-      const s = D.sol[d * 24 + h], w = D.win[d * 24 + h];
-      tip.innerHTML = `${fmtD(D, d)} · ${String(h).padStart(2, '0')} h<b class="${v < 0 ? 'sp-cy' : v > 150 ? 'sp-rd' : v > 60 ? 'sp-am' : ''}">${fmtN(v)} €/MWh</b>${!isNaN(s) || !isNaN(w) ? `<small>${T('solaire', 'solar')} ${isNaN(s) ? '–' : fmtN(s / 1000)} GW · ${T('éolien', 'wind')} ${isNaN(w) ? '–' : fmtN(w / 1000)} GW</small>` : ''}` + (() => { const mv = MAVG.get(DY[d] * 12 + DM[d]); return `<small>${T('moyenne du jour', 'day average')} ${fmtN(DAVG[d])} € · ${T('écart au mois', 'vs the month')} ${(DAVG[d] - mv >= 0 ? '+' : '')}${fmtN(DAVG[d] - mv)} €</small>`; })();
-      const sb = stage.getBoundingClientRect(); let lx = e.clientX - sb.left + 14; if (lx > sb.width - 190) lx -= 210;
-      tip.style.left = lx + 'px'; tip.style.top = (e.clientY - sb.top + 14) + 'px'; tip.style.opacity = 1;
+      showTip(d, h, e.clientX, e.clientY);
     });
     ov.addEventListener('pointerleave', () => { tip.style.opacity = 0; if (P0 >= 1) draw(1); });
 
@@ -315,6 +319,19 @@
       ren.domElement.addEventListener('pointermove', e => { if (!pts.has(e.pointerId)) return; const [x0, y0] = pts.get(e.pointerId); pts.set(e.pointerId, [e.clientX, e.clientY]);
         if (pts.size === 2) { const [a, b] = [...pts.values()], dd = Math.hypot(a[0] - b[0], a[1] - b[1]); if (pinch) dist = Math.max(0.8, Math.min(6, dist * pinch / dd)); pinch = dd; return; }
         az -= (e.clientX - x0) * 0.008; el = Math.max(-1.35, Math.min(1.45, el + (e.clientY - y0) * 0.006)); });
+      const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(), vtx = new THREE.Vector3();
+      ren.domElement.addEventListener('pointermove', e => {
+        if (pts.size) { tip.style.opacity = 0; return; }   // turning the relief, no tooltip
+        const b = ren.domElement.getBoundingClientRect(); ndc.set((e.clientX - b.left) / b.width * 2 - 1, -((e.clientY - b.top) / b.height) * 2 + 1);
+        ray.setFromCamera(ndc, cam); const hit = ray.intersectObject(mesh, false)[0];
+        if (!hit || !hit.face) { tip.style.opacity = 0; return; }
+        let best = hit.face.a, bd = Infinity;
+        [hit.face.a, hit.face.b, hit.face.c].forEach(j => { vtx.fromBufferAttribute(geo.attributes.position, j).applyMatrix4(mesh.matrixWorld); const dd = vtx.distanceToSquared(hit.point); if (dd < bd) { bd = dd; best = j; } });
+        const d = Math.floor(best / (A + 1)), a = best % (A + 1), h = ((Math.round(a / A * 24 - 0.5) % 24) + 24) % 24;
+        if (d < 0 || d >= N) { tip.style.opacity = 0; return; }
+        showTip(d, h, e.clientX, e.clientY);
+      });
+      ren.domElement.addEventListener('pointerleave', () => { tip.style.opacity = 0; });
       const up = e => { pts.delete(e.pointerId); pinch = 0; }; ren.domElement.addEventListener('pointerup', up); ren.domElement.addEventListener('pointercancel', up);
       ren.domElement.addEventListener('wheel', e => { e.preventDefault(); auto = false; dist = Math.max(0.8, Math.min(6, dist * (1 + Math.sign(e.deltaY) * 0.1))); }, { passive: false });
       function resize() { const b = g3.getBoundingClientRect(); if (!b.width) return; ren.setSize(b.width, b.height); cam.aspect = b.width / b.height; cam.updateProjectionMatrix(); }
