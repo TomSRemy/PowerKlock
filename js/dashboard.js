@@ -1197,6 +1197,51 @@
     window.addEventListener('hashchange', () => { if (!/^#solo=/.test(location.hash)) history.back(); });   // no way out by the address either
   }
 
+  // ── A shared widget alone (index.html?bare#solo=…): its figure, its change and a small line, nothing else, on a transparent
+  // ground, to sit in a small iframe on another site. &w=2 takes the dashboard's second widget; &theme=light|dark sets the text colours.
+  function sparkSVG(vals, tone) {
+    const v = (vals || []).map(x => x && typeof x === 'object' ? x.y : x).filter(x => x != null && isFinite(x));
+    if (v.length < 2) return '';
+    const lo = Math.min(...v), hi = Math.max(...v), k = hi - lo || 1;
+    const pts = v.map((x, i) => (i / (v.length - 1) * 100).toFixed(2) + ',' + (96 - (x - lo) / k * 92).toFixed(2)).join(' ');   // straight lines between the points
+    return `<svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><polyline points="${pts}" fill="none" class="pkb-l ${tone || ''}" vector-effect="non-scaling-stroke"/></svg>`;
+  }
+  async function bareView(b) {
+    const n = Math.max(1, parseInt((location.search.match(/[?&]w=(\d+)/) || [])[1], 10) || 1);
+    const it = b.items.filter(x => x.t === 'w')[n - 1], w = it && PKW.get(it.wid);
+    const host = document.createElement('div'); host.id = 'pk-bare'; document.body.appendChild(host);
+    if (!w) { host.innerHTML = '<div class="pkb-v">–</div>'; return; }
+    const p = PKW.params(w.id, it.p);
+    const out = o => {
+      host.innerHTML = `<div class="pkb-v">${esc(o.value)}<span class="pkb-u">${esc((o.unit || '').trim())}</span></div>` +
+        (o.chg ? `<div class="pkb-c ${o.tone || ''}">${esc(o.chg)}</div>` : '') + `<div class="pkb-s">${sparkSVG(o.spark, o.tone)}</div>`;
+      document.body.dataset.bareReady = '1';
+    };
+    if (w.kind === 'html') {
+      const src = document.createElement('div'); src.className = 'pkb-src';
+      try { await w.html(src, p); } catch (e) { console.warn(e); }
+      if (src._bare) return out(src._bare);
+      host.classList.add('pkb-html'); host.appendChild(src); document.body.dataset.bareReady = '1'; return;   // a widget with no single figure: shown as it is
+    }
+    // a chart: drawn off screen, then its first line gives the last value, its change and the small line
+    const off = document.createElement('div'); off.style.cssText = 'position:fixed;left:-10000px;top:0;width:640px;height:320px';
+    off.innerHTML = '<canvas id="pkb-cv"></canvas>'; document.body.appendChild(off);
+    await PKW.draw(w.id, 'pkb-cv', p);
+    const ch = window.Chart && Chart.getChart(document.getElementById('pkb-cv')), ds = ch && ch.data.datasets[0];
+    const vals = ds ? ds.data.map(x => x && typeof x === 'object' ? x.y : x) : [];
+    let i = vals.length - 1; while (i >= 0 && (vals[i] == null || !isFinite(vals[i]))) i--;
+    if (i < 0) { off.remove(); return out({ value: '–' }); }
+    const v = vals[i]; let j = i - 1; while (j >= 0 && (vals[j] == null || vals[j] === v) && j > i - 8) j--;   // the last different value
+    const pv = j >= 0 && vals[j] != null ? vals[j] : null, d = pv == null ? null : v - pv;
+    const yt = ch.options && ch.options.scales && ch.options.scales.y && ch.options.scales.y.title;
+    const sg = x => (x >= 0 ? '+' : '') + x.toFixed(2);
+    try { ch.destroy(); } catch (_) {} off.remove();
+    out({ value: v.toFixed(2), unit: yt && yt.display !== false && yt.text ? ' ' + yt.text : '',
+      chg: d == null ? '' : (d >= 0 ? '▲ ' : '▼ ') + sg(d) + (pv ? ' (' + sg(d / pv * 100) + ' %)' : ''),
+      tone: !d ? null : d > 0 ? 'down' : 'up',   // a rise in red, a fall in green
+      spark: vals });
+  }
+
   async function openFromLink() {
     const m = location.hash.match(/^#(board|solo)=(r[0-9a-f]+|[zj][A-Za-z0-9_-]+)$/);
     if (!m) return;
@@ -1209,6 +1254,7 @@
       } else shared = await decodeBoard(m[2]);
     } catch (e) { console.warn('[PKDash] shared link', e); toast('This dashboard link is damaged or incomplete'); return; }
     if (m[1] === 'solo') { document.body.classList.add('pk-solo'); sealLinks(); }
+    if (m[1] === 'solo' && document.documentElement.classList.contains('pk-bare')) return bareView(shared);
     const tab = document.querySelector('.nav-tab[data-dash="mydash"]');
     if (typeof switchDashboard === 'function') switchDashboard('mydash', tab);
     else open();

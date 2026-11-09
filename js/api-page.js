@@ -73,7 +73,10 @@
     const id = $('api-dash').value, h = $('api-dash-h').value || 900, out = $('api-dash-out');
     const url = await PKDash.soloLink(id, SITE + 'index.html'); if (!url) { out.innerHTML = ''; return; }
     const iframe = `<iframe src="${url}" width="100%" height="${h}" style="border:0;border-radius:8px" loading="lazy" title="PowerKlock dashboard"></iframe>`;
-    out.innerHTML = `<div class="api-line"><span>Link</span><code>${esc(url.slice(0, 90))}…</code>${copyBtn(url)}</div><div class="api-line"><span>iframe</span><code>${esc(iframe.slice(0, 90))}…</code>${copyBtn(iframe)}</div>`;
+    // one widget alone: its figure, its change and a small line on a transparent ground (index.html?bare#solo=…)
+    const bare = url.replace('index.html#', 'index.html?bare#'), bif = `<iframe src="${bare}" width="200" height="120" style="border:0" loading="lazy" title="PowerKlock"></iframe>`;
+    out.innerHTML = `<div class="api-line"><span>Link</span><code>${esc(url.slice(0, 90))}…</code>${copyBtn(url)}</div><div class="api-line"><span>iframe</span><code>${esc(iframe.slice(0, 90))}…</code>${copyBtn(iframe)}</div>` +
+      `<div class="api-line"><span>Widget only</span><code>${esc(bif.slice(0, 90))}…</code>${copyBtn(bif)}</div><div class="fuel-note">Widget only: the first chart of the dashboard (&amp;w=2 for the second), its last value, its change and a small line, on a transparent ground; &amp;theme=light or &amp;theme=dark sets the text colours.</div>`;
     wireCopies(out);
   }
   function dashboards() {

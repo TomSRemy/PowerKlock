@@ -1,7 +1,12 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<script>try { if (localStorage.getItem('pk-theme') === 'light') document.documentElement.setAttribute('data-theme', 'light'); } catch (_) {}</script>
+<script>try {
+  // a bare shared widget (index.html?bare#solo=…, for an iframe on another site): transparent, its theme chosen by &theme=light|dark
+  var pkQ = location.search, pkBare = /^#solo=/.test(location.hash) && /[?&]bare(=|&|$)/.test(pkQ), pkTh = (pkQ.match(/[?&]theme=(light|dark)/) || [])[1];
+  if (pkBare) document.documentElement.classList.add('pk-bare');
+  if (pkBare && pkTh ? pkTh === 'light' : localStorage.getItem('pk-theme') === 'light') document.documentElement.setAttribute('data-theme', 'light');
+} catch (_) {}</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#0a0d12">
@@ -52,7 +57,7 @@
 <script>/* shared dashboard-only link: the class is set before anything paints, so the rest of PowerKlock never shows;
    a short animation covers the first seconds until the first chart is drawn */
 if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
-  document.write('<div id="pk-boot" aria-label="Loading"><div class="pk-boot-w" translate="no"><span class="pk-boot-a">Power</span><i class="pk-boot-dot"></i><span class="pk-boot-b">Klock</span></div><div class="pk-boot-bar"><i></i></div></div>');
+  if (!document.documentElement.classList.contains('pk-bare')) document.write('<div id="pk-boot" aria-label="Loading"><div class="pk-boot-w" translate="no"><span class="pk-boot-a">Power</span><i class="pk-boot-dot"></i><span class="pk-boot-b">Klock</span></div><div class="pk-boot-bar"><i></i></div></div>');
   function pkBall(dot, word) {
     // the dot bounces like a ball in its slot, then, if loading lasts, hops all around the word and drops back in
     if (!dot || !word) return;
