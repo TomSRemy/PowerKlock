@@ -137,7 +137,9 @@
     // the span of a selection that limits the dates (years, period, events), which then fills the whole dial
     let VW0 = 0, VWN = 1;
     const tOfR = r => VW0 + (r - R0) / (R1 - R0) * VWN, rOfT = t => R0 + (R1 - R0) * Math.max(0, Math.min(1, (t - VW0) / VWN));
+    let Z = 1, TX = 0, TY = 0;   // the 2D zoom: a screen pixel (x, y) shows the dial's point ((x − TX) / Z, (y − TY) / Z)
     function hit(x, y) {
+      x = (x - TX) / Z; y = (y - TY) / Z;
       if (lin) { if (x < LX0 || x >= LX1 || y < LY0 || y >= LY1) return null; return [VW0 + Math.floor((x - LX0) / (LX1 - LX0) * VWN), 23 - Math.floor((y - LY0) / (LY1 - LY0) * 24)]; }   // 0 h at the bottom
       const dx = x - CX, dy = y - CY, r = Math.hypot(dx, dy); if (r < R0 || r > R1) return null;
       let a = Math.atan2(dx, -dy); if (a < 0) a += 2 * Math.PI; const d = Math.floor(tOfR(r)); if (d < VW0 || d >= VW0 + VWN || d >= N) return null;
@@ -170,11 +172,12 @@
       const W = cv.width; img = ctx.createImageData(W, W); const P = img.data;
       for (let y = 0; y < W; y++) for (let x = 0; x < W; x++) {
         let dA, dB, h;
-        if (lin) { if (x < LX0 || x >= LX1 || y < LY0 || y >= LY1) continue; h = 23 - Math.floor((y - LY0) / (LY1 - LY0) * 24);
-          dA = VW0 + Math.floor((x - LX0) / (LX1 - LX0) * VWN); dB = VW0 + Math.floor((x + 1 - LX0) / (LX1 - LX0) * VWN - 1e-9); }
-        else { const dx = x + 0.5 - CX, dy = y + 0.5 - CY, r = Math.hypot(dx, dy); if (r < R0 || r > R1) continue;
+        const ux = (x - TX) / Z, uy = (y - TY) / Z, px = 1 / Z;   // this pixel on the dial, and its size there
+        if (lin) { if (ux < LX0 || ux >= LX1 || uy < LY0 || uy >= LY1) continue; h = 23 - Math.floor((uy + px / 2 - LY0) / (LY1 - LY0) * 24);
+          dA = VW0 + Math.floor((ux - LX0) / (LX1 - LX0) * VWN); dB = VW0 + Math.floor((ux + px - LX0) / (LX1 - LX0) * VWN - 1e-9); }
+        else { const dx = ux + px / 2 - CX, dy = uy + px / 2 - CY, r = Math.hypot(dx, dy); if (r < R0 || r > R1) continue;
           let a = Math.atan2(dx, -dy); if (a < 0) a += 2 * Math.PI; h = Math.floor(a / (2 * Math.PI) * 24 + 0.5) % 24;
-          dA = Math.floor(tOfR(Math.max(R0, r - 0.5))); dB = Math.floor(tOfR(Math.min(R1, r + 0.5)) - 1e-9); }
+          dA = Math.floor(tOfR(Math.max(R0, r - px / 2))); dB = Math.floor(tOfR(Math.min(R1, r + px / 2)) - 1e-9); }
         dA = Math.max(VW0, Math.min(N - 1, dA)); dB = Math.max(dA, Math.min(N - 1, VW0 + VWN - 1, dB));
         // the mean of the days under the pixel (at most 16 of them, evenly spaced)
         // the kept days win: a pixel holding even one selected hour shows the selection, so sparse selections stay visible
@@ -187,7 +190,8 @@
     }
     const txt = () => light() ? ['#1F2D3D', '#5E6B80', '#8DA3BA'] : ['#E8EDF5', '#9AA7BA', '#5E6B80'];
     function axes(p) {
-      octx.clearRect(0, 0, ov.width, ov.height); const f = DPR, [t1, t2, t3] = txt();
+      octx.setTransform(1, 0, 0, 1, 0, 0); octx.clearRect(0, 0, ov.width, ov.height); octx.setTransform(Z, 0, 0, Z, TX, TY);
+      const f = DPR / Z, [t1, t2, t3] = txt();   // sizes divided by the zoom: text and lines keep their size on screen
       octx.font = `600 ${11 * f}px Inter,system-ui,sans-serif`;
       if (lin) {
         octx.textAlign = 'right'; octx.textBaseline = 'middle';
@@ -199,7 +203,7 @@
       }
       octx.textAlign = 'center'; octx.textBaseline = 'middle';
       // the hours scale with the dial: 0, 6, 12 and 18 h larger and bright, the others readable but quieter
-      const fs = FS, off = OFF;
+      const fs = FS, off = OFF / Z;
       for (let h = 0; h < 24; h++) { const a = h / 24 * 2 * Math.PI, r = R1 + off, main = h % 6 === 0;
         octx.font = `${main ? 800 : 600} ${(main ? fs + 3 : fs) * f}px Inter,system-ui,sans-serif`; octx.fillStyle = main ? t1 : t2; octx.fillText(h + ' h', CX + Math.sin(a) * r, CY - Math.cos(a) * r); }
       // spokes every 3 hours, the four main ones stronger, to follow an hour across the years
@@ -247,12 +251,12 @@
     function draw(p) {
       const W = cv.width; ctx.clearRect(0, 0, W, W); ctx.putImageData(img, 0, 0);
       if (p < 1) {
-        ctx.save(); ctx.globalCompositeOperation = 'destination-in'; ctx.beginPath();
+        ctx.save(); ctx.setTransform(Z, 0, 0, Z, TX, TY); ctx.globalCompositeOperation = 'destination-in'; ctx.beginPath();
         if (lin) ctx.rect(0, 0, LX0 + (LX1 - LX0) * p, W); else ctx.arc(CX, CY, rOfT(VW0 + p * VWN), 0, 2 * Math.PI);
         ctx.fill(); ctx.restore();
-        ctx.strokeStyle = '#FFD23F'; ctx.lineWidth = 2 * DPR; ctx.beginPath();
+        ctx.save(); ctx.setTransform(Z, 0, 0, Z, TX, TY); ctx.strokeStyle = '#FFD23F'; ctx.lineWidth = 2 * DPR / Z; ctx.beginPath();
         if (lin) { const x = LX0 + (LX1 - LX0) * p; ctx.moveTo(x, LY0); ctx.lineTo(x, LY1); } else ctx.arc(CX, CY, rOfT(VW0 + p * VWN), 0, 2 * Math.PI);
-        ctx.stroke();
+        ctx.stroke(); ctx.restore();
       }
       axes(p); kpis(p);
     }
@@ -270,17 +274,35 @@
       if (on3) return; const b = ov.getBoundingClientRect(), x = (e.clientX - b.left) * DPR, y = (e.clientY - b.top) * DPR, q = hit(x, y);
       if (!q || P0 < 1) { tip.style.opacity = 0; if (P0 >= 1) draw(1); return; }
       const [d, h] = q, v = val(d, h); draw(1);
-      octx.strokeStyle = '#FFD23F'; octx.lineWidth = 2 * DPR; octx.beginPath();
-      if (lin) { const yy = LY1 - (LY1 - LY0) * (h + 0.5) / 24, xx = LX0 + (LX1 - LX0) * (d + 0.5 - VW0) / VWN; octx.moveTo(LX0, yy); octx.lineTo(LX1, yy); octx.stroke(); octx.lineWidth = DPR; octx.beginPath(); octx.moveTo(xx, LY0); octx.lineTo(xx, LY1); octx.stroke(); }
-      else { const a = h / 24 * 2 * Math.PI; octx.moveTo(CX, CY); octx.lineTo(CX + Math.sin(a) * R1, CY - Math.cos(a) * R1); octx.stroke(); octx.lineWidth = DPR; octx.beginPath(); octx.arc(CX, CY, rOfT(d + 0.5), 0, 2 * Math.PI); octx.stroke(); }
+      octx.strokeStyle = '#FFD23F'; octx.lineWidth = 2 * DPR / Z; octx.beginPath();
+      if (lin) { const yy = LY1 - (LY1 - LY0) * (h + 0.5) / 24, xx = LX0 + (LX1 - LX0) * (d + 0.5 - VW0) / VWN; octx.moveTo(LX0, yy); octx.lineTo(LX1, yy); octx.stroke(); octx.lineWidth = DPR / Z; octx.beginPath(); octx.moveTo(xx, LY0); octx.lineTo(xx, LY1); octx.stroke(); }
+      else { const a = h / 24 * 2 * Math.PI; octx.moveTo(CX, CY); octx.lineTo(CX + Math.sin(a) * R1, CY - Math.cos(a) * R1); octx.stroke(); octx.lineWidth = DPR / Z; octx.beginPath(); octx.arc(CX, CY, rOfT(d + 0.5), 0, 2 * Math.PI); octx.stroke(); }
       showTip(d, h, e.clientX, e.clientY);
     });
     ov.addEventListener('pointerleave', () => { tip.style.opacity = 0; if (P0 >= 1) draw(1); });
+    // zoom: wheel or pinch around the pointer, drag to move once zoomed, double-click or ⟲ to come back; the dial is redrawn sharp
+    let zraf = 0;
+    const redraw = () => { if (zraf) return; zraf = requestAnimationFrame(() => { zraf = 0; build(); draw(P0 >= 1 ? 1 : P0); }); };
+    const clampT = () => { const W = cv.width; TX = Math.min(0, Math.max(W - W * Z, TX)); TY = Math.min(0, Math.max(W - W * Z, TY)); ov.style.touchAction = Z > 1.001 ? 'none' : 'pan-y'; };
+    const zoomAt = (mx, my, k) => { const z2 = Math.max(1, Math.min(16, Z * k)); TX = mx - (mx - TX) * z2 / Z; TY = my - (my - TY) * z2 / Z; Z = z2; clampT(); redraw(); };
+    ov.addEventListener('wheel', e => { if (on3) return; e.preventDefault(); const b = ov.getBoundingClientRect(); zoomAt((e.clientX - b.left) * DPR, (e.clientY - b.top) * DPR, e.deltaY < 0 ? 1.2 : 1 / 1.2); }, { passive: false });
+    const zp = new Map(); let zpinch = 0;
+    ov.addEventListener('pointerdown', e => { if (on3) return; zp.set(e.pointerId, [e.clientX, e.clientY]); if (Z > 1.001 || zp.size > 1) ov.setPointerCapture(e.pointerId); });
+    ov.addEventListener('pointermove', e => { if (on3 || !zp.has(e.pointerId)) return; const [x0, y0] = zp.get(e.pointerId); zp.set(e.pointerId, [e.clientX, e.clientY]); const b = ov.getBoundingClientRect();
+      if (zp.size === 2) { const [a, c] = [...zp.values()], dd = Math.hypot(a[0] - c[0], a[1] - c[1]); if (zpinch) zoomAt(((a[0] + c[0]) / 2 - b.left) * DPR, ((a[1] + c[1]) / 2 - b.top) * DPR, dd / zpinch); zpinch = dd; return; }
+      if (Z > 1.001 && (e.buttons & 1 || e.pointerType === 'touch')) { TX += (e.clientX - x0) * DPR; TY += (e.clientY - y0) * DPR; clampT(); redraw(); tip.style.opacity = 0; } });
+    const zup = e => { zp.delete(e.pointerId); zpinch = 0; }; ov.addEventListener('pointerup', zup); ov.addEventListener('pointercancel', zup);
+    const zreset = () => { Z = 1; TX = TY = 0; clampT(); redraw(); };
+    ov.addEventListener('dblclick', () => { if (!on3) zreset(); });
+    const zc = document.createElement('div'); zc.className = 'sp-zc';
+    zc.innerHTML = `<button type="button" data-z="in" aria-label="${T('Zoomer', 'Zoom in')}">+</button><button type="button" data-z="out" aria-label="${T('Dézoomer', 'Zoom out')}">−</button><button type="button" data-z="0" aria-label="${T('Vue d’ensemble', 'Whole view')}">⟲</button>`;
+    stage.appendChild(zc);
+    zc.addEventListener('click', e => { const z = e.target.dataset && e.target.dataset.z; if (!z || on3) return; const W = cv.width; if (z === '0') zreset(); else zoomAt(W / 2, W / 2, z === 'in' ? 1.5 : 1 / 1.5); });
 
     // ── relief (Three.js, loaded on first use) ──
     let TH = null, R3 = null;
     async function relief(onOff) {
-      on3 = onOff; host.querySelector('.sp-wrap').classList.toggle('sp-3d', on3); g3.style.display = on3 ? 'block' : 'none'; cv.style.visibility = ov.style.visibility = on3 ? 'hidden' : 'visible';
+      on3 = onOff; host.querySelector('.sp-wrap').classList.toggle('sp-3d', on3); const zcb = stage.querySelector('.sp-zc'); if (zcb) zcb.hidden = on3; g3.style.display = on3 ? 'block' : 'none'; cv.style.visibility = ov.style.visibility = on3 ? 'hidden' : 'visible';
       hint.textContent = on3 ? T('Glisser pour tourner · clic droit ou Maj + glisser pour déplacer · molette ou pincer pour zoomer · double-clic pour recentrer', 'Drag to turn · right-click or Shift + drag to move · wheel or pinch to zoom · double-click to recentre') : '';
       if (!on3) return;
       if (!TH) { try { TH = await import(new URL('vendor/three.module.min.js', document.querySelector('script[src*="spiral.js"]').src).href); } catch (e) { hint.textContent = T('Relief indisponible sur ce navigateur.', 'Relief not available in this browser.'); return; } }
