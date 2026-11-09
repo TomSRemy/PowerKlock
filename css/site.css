@@ -3763,7 +3763,10 @@ html body .pm-o-l, html body .pkf-t-l, html body .mrn2-tc { white-space: normal;
 .sp-btns button { font: 600 11px Inter, sans-serif; color: var(--tx2); background: transparent; border: 1px solid var(--border); border-radius: 999px; padding: 6px 11px; cursor: pointer; }
 .sp-btns button.on { color: #0f1419; background: #FFD23F; border-color: #FFD23F; }
 .sp-btns button.sp-alt { border-color: #FFD23F; color: #C99A00; } html:not([data-theme="light"]) .sp-btns button.sp-alt { color: #FFD23F; }
-.sp-leg { display: flex; align-items: center; gap: 8px; font: 500 10px 'JetBrains Mono', monospace; color: var(--tx3); } .sp-leg i { flex: 1; height: 8px; border-radius: 4px; }
+.sp-leg { position: relative; padding-bottom: 20px; font: 600 10px 'JetBrains Mono', monospace; color: var(--tx2); } .sp-leg i { display: block; height: 10px; border-radius: 5px; }
+.sp-tk { position: absolute; left: 0; right: 0; top: 13px; height: 14px; } .sp-tk span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+.sp-tk span:first-child { transform: none; } .sp-tk span.u { right: 0; left: auto; transform: none; color: var(--tx3); top: 12px; }
+.sp-tk span::before { content: ''; position: absolute; left: 50%; top: -5px; width: 1px; height: 4px; background: var(--tx3); } .sp-tk span:first-child::before { left: 0; } .sp-tk span.u::before { display: none; }
 .sp-note { font-size: 10px; margin: 0; }
 .sp-wrap { container-type: inline-size; }
 @container (max-width: 760px) { .sp-grid { grid-template-columns: 1fr; } .sp-side { grid-template-columns: 1fr 1fr 1fr; } .sp-btns, .sp-leg, .sp-note { grid-column: 1 / -1; } .sp-kv { font-size: 18px; } }

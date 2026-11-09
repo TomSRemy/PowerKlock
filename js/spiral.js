@@ -88,8 +88,8 @@
             <div class="sp-fg"><span class="sp-fl">${T('Événements', 'Events')}</span><div class="sp-btns"><button type="button" data-g="ev" data-v="lock">${T('Confinement 2020', '2020 lockdown')}</button><button type="button" data-g="ev" data-v="crise">${T('Crise 2021-22', '2021-22 crisis')}</button><button type="button" data-g="ev" data-v="ete22">${T('Été 2022', 'Summer 2022')}</button></div></div>
           </div>
           <div class="sp-btns"><button type="button" class="sp-alt" data-a="lin">${T('Linéaire', 'Linear')}</button><button type="button" class="sp-alt" data-a="3d">3D</button><button type="button" data-a="replay">↺ ${T('Rejouer', 'Replay')}</button><button type="button" data-a="full" aria-pressed="false">⤢ ${T('Plein écran', 'Full screen')}</button></div>
-          <div class="sp-leg"><span>−200</span><i></i><span>500+ €</span></div>
-          ${widget ? '' : `<p class="bl-foot sp-note">${T('Rayon proportionnel à la racine du temps : chaque jour a la même surface. En relief, hauteur en échelle logarithmique. Les heures négatives sont comptées sur la moyenne horaire ; le bilan les compte sur les pas publiés (quart d’heure depuis octobre 2025).', 'Radius in proportion to the square root of time: every day has the same area. In relief, height on a log scale. Negative hours are counted on the hourly mean; the review counts them on the published steps (quarter-hour since October 2025).')}</p>`}
+          <div class="sp-leg"><i></i><div class="sp-tk">${[[-200, 0], [0, 4], [60, 6], [150, 8], [500, 11]].map(([v, k]) => `<span style="left:${(k / 12 * 100).toFixed(1)}%">${v < 0 ? '−' + -v : v}${v === 500 ? '+' : ''}</span>`).join('')}<span class="u">€/MWh</span></div></div>
+          ${widget ? '' : `<p class="bl-foot sp-note">${T('Rayon proportionnel au temps : chaque année a la même épaisseur ; une sélection de dates (années, période, événement) remplit tout le cadran. En relief, hauteur en échelle logarithmique. Les heures négatives sont comptées sur la moyenne horaire ; le bilan les compte sur les pas publiés (quart d’heure depuis octobre 2025).', 'Radius in proportion to time: every year has the same thickness; a date selection (years, period, event) fills the whole dial. In relief, height on a log scale. Negative hours are counted on the hourly mean; the review counts them on the published steps (quarter-hour since October 2025).')}</p>`}
         </div></div></div>`;
     const $ = s => host.querySelector(s);
     const stage = $('.sp-stage'), cv = $('.sp-cv'), ov = $('.sp-ov'), g3 = $('.sp-g3'), tip = $('.sp-tip'), hint = $('.sp-hint');
@@ -103,9 +103,14 @@
     const SEASON = [0, 0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 0];   // Dec–Feb winter, Mar–May spring, Jun–Aug summer, Sep–Nov autumn
     const SE_K = ['w', 'sp', 'su', 'a'];
     const iso2d = iso => Math.round((Date.parse(iso + 'T00:00:00Z') - D.d0) / 864e5);
-    function calendar() {   // once per data load: each day's year, month, weekday; the 99th percentile; the events as day ranges
+    let DAVG, MAVG;
+    function calendar() {   // once per data load: each day's year, month, weekday, mean; each month's mean; the 99th percentile; the events
       DY = new Int16Array(N); DM = new Int8Array(N); DW = new Int8Array(N);
       for (let d = 0; d < N; d++) { const t = dayDate(D, d); DY[d] = t.getUTCFullYear(); DM[d] = t.getUTCMonth(); DW[d] = t.getUTCDay(); }
+      DAVG = new Float32Array(N); MAVG = new Map(); const ms = new Map();
+      for (let d = 0; d < N; d++) { let a = 0; for (let h = 0; h < 24; h++) a += D.v[d * 24 + h]; DAVG[d] = a / 24;
+        const k = DY[d] * 12 + DM[d], o = ms.get(k) || [0, 0]; o[0] += DAVG[d]; o[1]++; ms.set(k, o); }
+      ms.forEach((o, k) => MAVG.set(k, o[0] / o[1]));
       const all = Array.from(D.v).filter(v => !isNaN(v)).sort((a, b) => a - b); P99 = all[Math.floor(all.length * 0.99)];
       // France's first lockdown: 17 March to 10 May 2020 (lifted on 11 May); the 2021-22 crisis: Sept. 2021 to Dec. 2022; summer 2022: June to August
       EV = { lock: [iso2d('2020-03-17'), iso2d('2020-05-10')], crise: [iso2d('2021-09-01'), iso2d('2022-12-31')], ete22: [iso2d('2022-06-01'), iso2d('2022-08-31')] };
@@ -127,11 +132,14 @@
       if (F.ev.size && ![...F.ev].some(k => EV[k] && d >= EV[k][0] && d <= EV[k][1])) return false;
       return true;
     };
-    const tOfR = r => { const u = (r - R0) / (R1 - R0); return u * u * N; }, rOfT = t => R0 + (R1 - R0) * Math.sqrt(Math.max(0, t) / N);
+    // radius in proportion to time: every year has the same thickness. VW0..VW0+VWN is the window shown: every day, or only
+    // the span of a selection that limits the dates (years, period, events), which then fills the whole dial
+    let VW0 = 0, VWN = 1;
+    const tOfR = r => VW0 + (r - R0) / (R1 - R0) * VWN, rOfT = t => R0 + (R1 - R0) * Math.max(0, Math.min(1, (t - VW0) / VWN));
     function hit(x, y) {
-      if (lin) { if (x < LX0 || x >= LX1 || y < LY0 || y >= LY1) return null; return [Math.floor((x - LX0) / (LX1 - LX0) * N), Math.floor((y - LY0) / (LY1 - LY0) * 24)]; }
+      if (lin) { if (x < LX0 || x >= LX1 || y < LY0 || y >= LY1) return null; return [VW0 + Math.floor((x - LX0) / (LX1 - LX0) * VWN), Math.floor((y - LY0) / (LY1 - LY0) * 24)]; }
       const dx = x - CX, dy = y - CY, r = Math.hypot(dx, dy); if (r < R0 || r > R1) return null;
-      let a = Math.atan2(dx, -dy); if (a < 0) a += 2 * Math.PI; const d = Math.floor(tOfR(r)); if (d >= N) return null;
+      let a = Math.atan2(dx, -dy); if (a < 0) a += 2 * Math.PI; const d = Math.floor(tOfR(r)); if (d < VW0 || d >= VW0 + VWN || d >= N) return null;
       return [d, Math.floor(a / (2 * Math.PI) * 24 + 0.5) % 24];   // each hour's wedge is centred on its label
     }
     function size() {
@@ -141,12 +149,29 @@
       FS = Math.max(10, Math.min(18, S / 36)); OFF = Math.min(26, S * 0.05) * DPR;
       CX = CY = S * DPR / 2; R1 = Math.min(S * DPR * 0.44, S * DPR / 2 - OFF - (FS + 3) * DPR * 1.25); R0 = S * DPR * 0.05; LX0 = S * DPR * 0.1; LX1 = S * DPR * 0.98; LY0 = S * DPR * 0.16; LY1 = S * DPR * 0.84;
     }
+    // each hour's colour once, the selected ones bright and the others close to the background (2. the selection stands out)
+    let CR, CG, CB;
+    function colours() {
+      const bg = light() ? [255, 255, 255] : [15, 20, 25]; CR = new Uint8ClampedArray(N * 24); CG = new Uint8ClampedArray(N * 24); CB = new Uint8ClampedArray(N * 24);
+      for (let d = 0; d < N; d++) for (let h = 0; h < 24; h++) { const i = d * 24 + h, v = D.v[i]; let [r, g, b] = col(v);
+        if (!keep(d, h, v)) { const m2 = (r + g + b) / 3; r = bg[0] * 0.9 + m2 * 0.1; g = bg[1] * 0.9 + m2 * 0.1; b = bg[2] * 0.9 + m2 * 0.1; }
+        CR[i] = r; CG[i] = g; CB[i] = b; }
+    }
     function build() {
-      const W = cv.width; img = ctx.createImageData(W, W); const P = img.data; const bg = light() ? [255, 255, 255] : [15, 20, 25];
+      colours();
+      const W = cv.width; img = ctx.createImageData(W, W); const P = img.data;
       for (let y = 0; y < W; y++) for (let x = 0; x < W; x++) {
-        const q = hit(x, y); if (!q) continue; const [d, h] = q; const v = val(d, h); let [r, g, b] = col(v);
-        if (!keep(d, h, v)) { const m = (r + g + b) / 3; r = bg[0] * 0.75 + m * 0.25; g = bg[1] * 0.75 + m * 0.25; b = bg[2] * 0.75 + m * 0.25; }
-        const i = (y * W + x) * 4; P[i] = r; P[i + 1] = g; P[i + 2] = b; P[i + 3] = 255;
+        let dA, dB, h;
+        if (lin) { if (x < LX0 || x >= LX1 || y < LY0 || y >= LY1) continue; h = Math.floor((y - LY0) / (LY1 - LY0) * 24);
+          dA = VW0 + Math.floor((x - LX0) / (LX1 - LX0) * VWN); dB = VW0 + Math.floor((x + 1 - LX0) / (LX1 - LX0) * VWN - 1e-9); }
+        else { const dx = x + 0.5 - CX, dy = y + 0.5 - CY, r = Math.hypot(dx, dy); if (r < R0 || r > R1) continue;
+          let a = Math.atan2(dx, -dy); if (a < 0) a += 2 * Math.PI; h = Math.floor(a / (2 * Math.PI) * 24 + 0.5) % 24;
+          dA = Math.floor(tOfR(Math.max(R0, r - 0.5))); dB = Math.floor(tOfR(Math.min(R1, r + 0.5)) - 1e-9); }
+        dA = Math.max(VW0, Math.min(N - 1, dA)); dB = Math.max(dA, Math.min(N - 1, VW0 + VWN - 1, dB));
+        // the mean of the days under the pixel (at most 16 of them, evenly spaced)
+        const n = dB - dA + 1, st = Math.max(1, Math.floor(n / 16)); let r2 = 0, g2 = 0, b2 = 0, k = 0;
+        for (let d = dA; d <= dB; d += st) { const i = d * 24 + h; r2 += CR[i]; g2 += CG[i]; b2 += CB[i]; k++; }
+        const o = (y * W + x) * 4; P[o] = r2 / k; P[o + 1] = g2 / k; P[o + 2] = b2 / k; P[o + 3] = 255;
       }
       cv.dataset.pkDrawn = '1';
     }
@@ -159,7 +184,7 @@
         const fs = Math.max(11, Math.min(16, S / 40));
         for (let h = 0; h < 24; h += 3) { const main = h % 6 === 0; octx.font = `${main ? 800 : 600} ${(main ? fs + 2 : fs) * f}px Inter,system-ui,sans-serif`; octx.fillStyle = main ? t1 : t2; octx.fillText(h + ' h', LX0 - 6 * f, LY0 + (LY1 - LY0) * (h + 0.5) / 24); }
         octx.textAlign = 'center'; octx.textBaseline = 'top'; octx.font = `700 ${10 * f}px 'JetBrains Mono',monospace`;
-        for (let y = Y0; y <= dayDate(D, N - 1).getUTCFullYear(); y++) { const t = (Date.UTC(y, 6, 1) - D.d0) / 864e5; if (t > N) break; octx.fillStyle = t2; octx.fillText(y, LX0 + (LX1 - LX0) * Math.max(0, t) / N, LY1 + 8 * f); }
+        for (let y = Y0; y <= dayDate(D, N - 1).getUTCFullYear(); y++) { const t = (Date.UTC(y, 6, 1) - D.d0) / 864e5; if (t < VW0 || t > VW0 + VWN) continue; octx.fillStyle = t2; octx.fillText(y, LX0 + (LX1 - LX0) * (t - VW0) / VWN, LY1 + 8 * f); }
         return;
       }
       octx.textAlign = 'center'; octx.textBaseline = 'middle';
@@ -167,16 +192,22 @@
       const fs = FS, off = OFF;
       for (let h = 0; h < 24; h++) { const a = h / 24 * 2 * Math.PI, r = R1 + off, main = h % 6 === 0;
         octx.font = `${main ? 800 : 600} ${(main ? fs + 3 : fs) * f}px Inter,system-ui,sans-serif`; octx.fillStyle = main ? t1 : t2; octx.fillText(h + ' h', CX + Math.sin(a) * r, CY - Math.cos(a) * r); }
-      octx.font = `700 ${10 * f}px 'JetBrains Mono',monospace`;
-      const yl = dayDate(D, N - 1).getUTCFullYear(), span = yl - Y0;
-      for (let y = Y0 + 1; y <= yl; y++) {
-        const t = (Date.UTC(y, 0, 1) - D.d0) / 864e5; if (t > p * N) break; const r = rOfT(t);
-        octx.strokeStyle = light() ? 'rgba(31,45,61,.25)' : 'rgba(232,237,245,.18)'; octx.lineWidth = f; octx.setLineDash([2 * f, 4 * f]); octx.beginPath(); octx.arc(CX, CY, r, 0, 2 * Math.PI); octx.stroke(); octx.setLineDash([]);
-        // labels fanned out along the night side, so they never sit on top of each other
-        const a = -Math.PI * (0.05 + 0.9 * (y - Y0) / Math.max(1, span)) * 0.5 - Math.PI * 0.05, x = CX + Math.sin(a) * r, yy = CY - Math.cos(a) * r;
-        octx.fillStyle = light() ? 'rgba(255,255,255,.85)' : 'rgba(15,20,25,.85)'; octx.fillRect(x - 17 * f, yy - 7 * f, 34 * f, 14 * f); octx.fillStyle = t2; octx.fillText(y, x, yy);
+      // spokes every 3 hours, the four main ones stronger, to follow an hour across the years
+      for (let h = 0; h < 24; h += 3) { const a = h / 24 * 2 * Math.PI, main = h % 6 === 0;
+        octx.strokeStyle = light() ? `rgba(31,45,61,${main ? .35 : .18})` : `rgba(232,237,245,${main ? .28 : .13})`; octx.lineWidth = (main ? 1.4 : 1) * f;
+        octx.beginPath(); octx.moveTo(CX + Math.sin(a) * R0, CY - Math.cos(a) * R0); octx.lineTo(CX + Math.sin(a) * R1, CY - Math.cos(a) * R1); octx.stroke(); }
+      // each 1 January a solid ring, its year written on the 0 h axis (the ring's own top), on a small plate
+      octx.font = `700 ${Math.max(10, Math.min(13, S / 60)) * f}px 'JetBrains Mono',monospace`;
+      const y0w = dayDate(D, VW0).getUTCFullYear(), y1w = dayDate(D, Math.min(N - 1, VW0 + VWN - 1)).getUTCFullYear();
+      for (let y = y0w; y <= y1w + 1; y++) {
+        const t = (Date.UTC(y, 0, 1) - D.d0) / 864e5; if (t <= VW0 || t >= VW0 + VWN || t > VW0 + p * VWN) continue; const r = rOfT(t);
+        octx.strokeStyle = light() ? 'rgba(31,45,61,.45)' : 'rgba(232,237,245,.38)'; octx.lineWidth = 1.2 * f; octx.beginPath(); octx.arc(CX, CY, r, 0, 2 * Math.PI); octx.stroke();
       }
-      octx.fillStyle = t3; octx.fillText(String(Y0), CX, CY);
+      for (let y = y0w; y <= y1w; y++) {   // the year in the middle of its band, on the 0 h spoke
+        const ta = Math.max(VW0, (Date.UTC(y, 0, 1) - D.d0) / 864e5), tb = Math.min(VW0 + VWN, (Date.UTC(y + 1, 0, 1) - D.d0) / 864e5); if (tb <= ta || ta > VW0 + p * VWN) continue;
+        const r = rOfT((ta + tb) / 2), yy = CY - r, w = 40 * f, hh = 16 * f;
+        octx.fillStyle = light() ? 'rgba(255,255,255,.9)' : 'rgba(15,20,25,.88)'; octx.fillRect(CX - w / 2, yy - hh / 2, w, hh); octx.fillStyle = t1; octx.fillText(String(y), CX, yy);
+      }
     }
     // figures follow the reveal
     let NEG, RMIN, RMAX;
@@ -189,10 +220,12 @@
         k++; sm += v; if (v < 0) { c++; ns += v; } if (v < lo[0]) lo = [v, d, h]; if (v > hi[0]) hi = [v, d, h]; }
         NEG[d] = c; CNT[d] = k; SUM[d] = sm; NSUM[d] = ns; RMIN.push(lo); RMAX.push(hi); }
       if (F0 < 0) F0 = 0;
+      const dated = F.y.size || F.d0 >= 0 || F.d1 < 1e9 || F.ev.size;
+      if (dated && F1 >= F0) { VW0 = F0; VWN = F1 - F0 + 1; } else { VW0 = 0; VWN = N; }
     }
     function kpis(p) {
       // (the relief's first frame can come with a negative time)
-      const d = Math.max(0, Math.min(N - 1, Math.floor((p > 0 ? p : 0) * N))), lo = RMIN[d], hi = RMAX[d], set = (k, s) => { const e = host.querySelector(`[data-k="${k}"]`); if (e) e.textContent = s; };
+      const d = Math.max(0, Math.min(N - 1, VW0 + Math.floor((p > 0 ? p : 0) * VWN))), lo = RMIN[d], hi = RMAX[d], set = (k, s) => { const e = host.querySelector(`[data-k="${k}"]`); if (e) e.textContent = s; };
       const none = lo[0] === 1e9;
       set('neg', NEG[d].toLocaleString(T('fr-FR', 'en-GB')) + ' h'); set('negs', d < F0 ? '' : `${fmtD(D, F0)} → ${fmtD(D, Math.min(d, F1))}`);
       set('avg', CNT[d] ? fmtN(SUM[d] / CNT[d]) + ' €' : '–'); set('avgs', CNT[d] ? CNT[d].toLocaleString(T('fr-FR', 'en-GB')) + ' ' + T('heures', 'hours') : '');
@@ -205,10 +238,10 @@
       const W = cv.width; ctx.clearRect(0, 0, W, W); ctx.putImageData(img, 0, 0);
       if (p < 1) {
         ctx.save(); ctx.globalCompositeOperation = 'destination-in'; ctx.beginPath();
-        if (lin) ctx.rect(0, 0, LX0 + (LX1 - LX0) * p, W); else ctx.arc(CX, CY, rOfT(p * N), 0, 2 * Math.PI);
+        if (lin) ctx.rect(0, 0, LX0 + (LX1 - LX0) * p, W); else ctx.arc(CX, CY, rOfT(VW0 + p * VWN), 0, 2 * Math.PI);
         ctx.fill(); ctx.restore();
         ctx.strokeStyle = '#FFD23F'; ctx.lineWidth = 2 * DPR; ctx.beginPath();
-        if (lin) { const x = LX0 + (LX1 - LX0) * p; ctx.moveTo(x, LY0); ctx.lineTo(x, LY1); } else ctx.arc(CX, CY, rOfT(p * N), 0, 2 * Math.PI);
+        if (lin) { const x = LX0 + (LX1 - LX0) * p; ctx.moveTo(x, LY0); ctx.lineTo(x, LY1); } else ctx.arc(CX, CY, rOfT(VW0 + p * VWN), 0, 2 * Math.PI);
         ctx.stroke();
       }
       axes(p); kpis(p);
@@ -221,10 +254,10 @@
       if (!q || P0 < 1) { tip.style.opacity = 0; if (P0 >= 1) draw(1); return; }
       const [d, h] = q, v = val(d, h); draw(1);
       octx.strokeStyle = '#FFD23F'; octx.lineWidth = 2 * DPR; octx.beginPath();
-      if (lin) { const yy = LY0 + (LY1 - LY0) * (h + 0.5) / 24, xx = LX0 + (LX1 - LX0) * (d + 0.5) / N; octx.moveTo(LX0, yy); octx.lineTo(LX1, yy); octx.stroke(); octx.lineWidth = DPR; octx.beginPath(); octx.moveTo(xx, LY0); octx.lineTo(xx, LY1); octx.stroke(); }
+      if (lin) { const yy = LY0 + (LY1 - LY0) * (h + 0.5) / 24, xx = LX0 + (LX1 - LX0) * (d + 0.5 - VW0) / VWN; octx.moveTo(LX0, yy); octx.lineTo(LX1, yy); octx.stroke(); octx.lineWidth = DPR; octx.beginPath(); octx.moveTo(xx, LY0); octx.lineTo(xx, LY1); octx.stroke(); }
       else { const a = h / 24 * 2 * Math.PI; octx.moveTo(CX, CY); octx.lineTo(CX + Math.sin(a) * R1, CY - Math.cos(a) * R1); octx.stroke(); octx.lineWidth = DPR; octx.beginPath(); octx.arc(CX, CY, rOfT(d + 0.5), 0, 2 * Math.PI); octx.stroke(); }
       const s = D.sol[d * 24 + h], w = D.win[d * 24 + h];
-      tip.innerHTML = `${fmtD(D, d)} · ${String(h).padStart(2, '0')} h<b class="${v < 0 ? 'sp-cy' : v > 150 ? 'sp-rd' : v > 60 ? 'sp-am' : ''}">${fmtN(v)} €/MWh</b>${!isNaN(s) || !isNaN(w) ? `<small>${T('solaire', 'solar')} ${isNaN(s) ? '–' : fmtN(s / 1000)} GW · ${T('éolien', 'wind')} ${isNaN(w) ? '–' : fmtN(w / 1000)} GW</small>` : ''}`;
+      tip.innerHTML = `${fmtD(D, d)} · ${String(h).padStart(2, '0')} h<b class="${v < 0 ? 'sp-cy' : v > 150 ? 'sp-rd' : v > 60 ? 'sp-am' : ''}">${fmtN(v)} €/MWh</b>${!isNaN(s) || !isNaN(w) ? `<small>${T('solaire', 'solar')} ${isNaN(s) ? '–' : fmtN(s / 1000)} GW · ${T('éolien', 'wind')} ${isNaN(w) ? '–' : fmtN(w / 1000)} GW</small>` : ''}` + (() => { const mv = MAVG.get(DY[d] * 12 + DM[d]); return `<small>${T('moyenne du jour', 'day average')} ${fmtN(DAVG[d])} € · ${T('écart au mois', 'vs the month')} ${(DAVG[d] - mv >= 0 ? '+' : '')}${fmtN(DAVG[d] - mv)} €</small>`; })();
       const sb = stage.getBoundingClientRect(); let lx = e.clientX - sb.left + 14; if (lx > sb.width - 190) lx -= 210;
       tip.style.left = lx + 'px'; tip.style.top = (e.clientY - sb.top + 14) + 'px'; tip.style.opacity = 1;
     });
@@ -246,7 +279,7 @@
       const A = 48, rows = N, n = rows * (A + 1), pos = new Float32Array(n * 3), colr = new Float32Array(n * 3), SP = new Float32Array(n * 3), LP = new Float32Array(n * 3), VV = new Float32Array(n), HH = new Uint8Array(n), YY = new Float32Array(n), idx = new Uint32Array((rows - 1) * A * 6);
       const hOf = v => Math.sign(v) * Math.log1p(Math.abs(v) / 40) * 0.09;
       const vAt = (d, a) => { const hf = a / A * 24 - 0.5, h0 = Math.floor(hf), f = hf - h0; const g = h => { let dd = d, hh = h; if (hh < 0) { hh += 24; dd--; } if (hh > 23) { hh -= 24; dd++; } dd = Math.max(0, Math.min(N - 1, dd)); return val(dd, hh); }; return g(h0) * (1 - f) + g(h0 + 1) * f; };
-      for (let d = 0; d < rows; d++) { const r = 0.12 + 0.88 * Math.sqrt((d + 0.5) / N); for (let a = 0; a <= A; a++) { const j = d * (A + 1) + a, i = j * 3, th = a / A * 2 * Math.PI, v = vAt(d, a % A);
+      for (let d = 0; d < rows; d++) { const r = 0.12 + 0.88 * ((d + 0.5) / N); for (let a = 0; a <= A; a++) { const j = d * (A + 1) + a, i = j * 3, th = a / A * 2 * Math.PI, v = vAt(d, a % A);
         SP[i] = Math.sin(th) * r; SP[i + 2] = -Math.cos(th) * r; LP[i] = ((d + 0.5) / N - 0.5) * 2.6; LP[i + 2] = (a / A - 0.5) * 1.0; VV[j] = v; HH[j] = Math.floor((a % A) / A * 24); YY[j] = hOf(v); } }
       let k = 0; for (let d = 0; d < rows - 1; d++) for (let a = 0; a < A; a++) { const p = d * (A + 1) + a, q = p + A + 1; idx[k++] = p; idx[k++] = q; idx[k++] = p + 1; idx[k++] = p + 1; idx[k++] = q; idx[k++] = q + 1; }
       const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setAttribute('color', new THREE.BufferAttribute(colr, 3)); geo.setIndex(new THREE.BufferAttribute(idx, 1));
@@ -272,7 +305,7 @@
           C[j * 3] = c3.r; C[j * 3 + 1] = c3.g; C[j * 3 + 2] = c3.b; P[j * 3] = src[j * 3]; P[j * 3 + 2] = src[j * 3 + 2]; P[j * 3 + 1] = ok ? (F.pr.size === 1 && F.pr.has('neg') ? YY[j] * 4 : YY[j]) : YY[j] * 0.15; }
         geo.attributes.position.needsUpdate = true; geo.attributes.color.needsUpdate = true; geo.computeVertexNormals(); geo.computeBoundingSphere();
         dial.forEach(o => { o.visible = !lin; }); flat.forEach(o => { o.visible = lin; }); disc.visible = !lin;
-        recs.forEach(r => { const x = lin ? ((r.d + 0.5) / N - 0.5) * 2.6 : Math.sin((r.h + 0.5) / 24 * 2 * Math.PI) * (0.12 + 0.88 * Math.sqrt((r.d + 0.5) / N)), z = lin ? ((r.h + 0.5) / 24 - 0.5) : -Math.cos((r.h + 0.5) / 24 * 2 * Math.PI) * (0.12 + 0.88 * Math.sqrt((r.d + 0.5) / N));
+        recs.forEach(r => { const x = lin ? ((r.d + 0.5) / N - 0.5) * 2.6 : Math.sin((r.h + 0.5) / 24 * 2 * Math.PI) * (0.12 + 0.88 * ((r.d + 0.5) / N)), z = lin ? ((r.h + 0.5) / 24 - 0.5) : -Math.cos((r.h + 0.5) / 24 * 2 * Math.PI) * (0.12 + 0.88 * ((r.d + 0.5) / N));
           r.line.geometry.setFromPoints([new THREE.Vector3(x, r.y, z), new THREE.Vector3(x, r.y + r.up, z)]); r.s.position.set(x, r.y + r.up * 1.35, z); });
       }
       // orbit: drag to turn, wheel or pinch to zoom
