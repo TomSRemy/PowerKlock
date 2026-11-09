@@ -115,13 +115,17 @@
       octx.font = `600 ${11 * f}px Inter,system-ui,sans-serif`;
       if (lin) {
         octx.textAlign = 'right'; octx.textBaseline = 'middle';
-        for (let h = 0; h <= 24; h += 3) { octx.fillStyle = h % 6 ? t3 : t1; octx.fillText(h + ' h', LX0 - 6 * f, LY0 + (LY1 - LY0) * h / 24); }
+        const fs = Math.max(11, Math.min(16, S / 40));
+        for (let h = 0; h <= 24; h += 3) { const main = h % 6 === 0; octx.font = `${main ? 800 : 600} ${(main ? fs + 2 : fs) * f}px Inter,system-ui,sans-serif`; octx.fillStyle = main ? t1 : t2; octx.fillText(h + ' h', LX0 - 6 * f, LY0 + (LY1 - LY0) * h / 24); }
         octx.textAlign = 'center'; octx.textBaseline = 'top'; octx.font = `700 ${10 * f}px 'JetBrains Mono',monospace`;
         for (let y = Y0; y <= dayDate(D, N - 1).getUTCFullYear(); y++) { const t = (Date.UTC(y, 6, 1) - D.d0) / 864e5; if (t > N) break; octx.fillStyle = t2; octx.fillText(y, LX0 + (LX1 - LX0) * Math.max(0, t) / N, LY1 + 8 * f); }
         return;
       }
       octx.textAlign = 'center'; octx.textBaseline = 'middle';
-      for (let h = 0; h < 24; h++) { const a = h / 24 * 2 * Math.PI, r = R1 + 15 * f; octx.fillStyle = h % 6 ? t3 : t1; octx.fillText(h + ' h', CX + Math.sin(a) * r, CY - Math.cos(a) * r); }
+      // the hours scale with the dial: 0, 6, 12 and 18 h larger and bright, the others readable but quieter
+      const fs = Math.max(11, Math.min(18, S / 36)), off = Math.min(26 * f, S * f * 0.05);
+      for (let h = 0; h < 24; h++) { const a = h / 24 * 2 * Math.PI, r = R1 + off, main = h % 6 === 0;
+        octx.font = `${main ? 800 : 600} ${(main ? fs + 3 : fs) * f}px Inter,system-ui,sans-serif`; octx.fillStyle = main ? t1 : t2; octx.fillText(h + ' h', CX + Math.sin(a) * r, CY - Math.cos(a) * r); }
       octx.font = `700 ${10 * f}px 'JetBrains Mono',monospace`;
       const yl = dayDate(D, N - 1).getUTCFullYear(), span = yl - Y0;
       for (let y = Y0 + 1; y <= yl; y++) {
@@ -135,15 +139,21 @@
     }
     // figures follow the reveal
     let NEG, RMIN, RMAX;
+    // the figures count only the hours of the selection (all, negative hours, the 2022 crisis, midday vs evening, the year)
+    let F0 = 0, F1 = 0;
     function prep() {
-      NEG = new Int32Array(N); RMIN = []; RMAX = []; let c = 0, lo = [1e9, 0, 0], hi = [-1e9, 0, 0];
-      for (let d = 0; d < N; d++) { for (let h = 0; h < 24; h++) { const v = val(d, h); if (v < 0) c++; if (v < lo[0]) lo = [v, d, h]; if (v > hi[0]) hi = [v, d, h]; } NEG[d] = c; RMIN.push(lo); RMAX.push(hi); }
+      NEG = new Int32Array(N); RMIN = []; RMAX = []; let c = 0, lo = [1e9, 0, 0], hi = [-1e9, 0, 0]; F0 = -1;
+      for (let d = 0; d < N; d++) { for (let h = 0; h < 24; h++) { const v = val(d, h); if (isNaN(v) || !keep(d, h, v)) continue; if (F0 < 0) F0 = d; F1 = d;
+        if (v < 0) c++; if (v < lo[0]) lo = [v, d, h]; if (v > hi[0]) hi = [v, d, h]; } NEG[d] = c; RMIN.push(lo); RMAX.push(hi); }
+      if (F0 < 0) F0 = 0;
     }
     function kpis(p) {
       const d = Math.min(N - 1, Math.floor(p * N)), lo = RMIN[d], hi = RMAX[d], set = (k, s) => { const e = host.querySelector(`[data-k="${k}"]`); if (e) e.textContent = s; };
-      set('neg', NEG[d].toLocaleString(T('fr-FR', 'en-GB')) + ' h'); set('negs', `${fmtD(D, 0)} → ${fmtD(D, d)}`);
-      set('min', fmtN(lo[0]) + ' €'); set('mins', `${fmtD(D, lo[1])} · ${String(lo[2]).padStart(2, '0')} h`);
-      set('max', fmtN(hi[0]) + ' €'); set('maxs', `${fmtD(D, hi[1])} · ${String(hi[2]).padStart(2, '0')} h`);
+      const none = lo[0] === 1e9, lab = host.querySelector('[data-f].on'), sel = filt === 'all' ? '' : (lab ? lab.textContent.trim() + ' · ' : '');
+      set('neg', NEG[d].toLocaleString(T('fr-FR', 'en-GB')) + ' h'); set('negs', sel + (d < F0 ? '–' : `${fmtD(D, F0)} → ${fmtD(D, Math.min(d, F1))}`));
+      set('min', none ? '–' : fmtN(lo[0]) + ' €'); set('mins', none ? '' : `${fmtD(D, lo[1])} · ${String(lo[2]).padStart(2, '0')} h`);
+      const noHi = none || filt === 'neg';   // among negative hours a « record high » would only be the one closest to zero
+      set('max', noHi ? '–' : fmtN(hi[0]) + ' €'); set('maxs', noHi ? '' : `${fmtD(D, hi[1])} · ${String(hi[2]).padStart(2, '0')} h`);
     }
     function draw(p) {
       const W = cv.width; ctx.clearRect(0, 0, W, W); ctx.putImageData(img, 0, 0);
@@ -247,7 +257,7 @@
 
     // ── controls ──
     host.querySelectorAll('[data-f]').forEach(b => b.addEventListener('click', () => {
-      host.querySelectorAll('[data-f]').forEach(x => x.classList.toggle('on', x === b)); filt = b.dataset.f; build(); draw(P0); if (R3) R3.layout();
+      host.querySelectorAll('[data-f]').forEach(x => x.classList.toggle('on', x === b)); filt = b.dataset.f; prep(); build(); draw(P0); if (R3) R3.layout();
     }));
     host.querySelector('[data-a="replay"]').addEventListener('click', () => { if (on3 && R3) R3.grow(); else play(); });
     host.querySelector('[data-a="lin"]').addEventListener('click', e => {
