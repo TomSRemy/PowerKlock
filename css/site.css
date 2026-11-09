@@ -3784,6 +3784,24 @@ html body .pm-o-l, html body .pkf-t-l, html body .mrn2-tc { white-space: normal;
 .sp-dates { display: flex; gap: 6px; align-items: center; } .sp-dates span { color: var(--tx3); }
 .sp-dates input { flex: 1 1 0; width: 0; min-width: 0; font: 500 12px Inter, sans-serif; color: var(--text); background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 5px 8px; }
 @container (max-width: 760px) { .sp-f, .sp-sel { grid-column: 1 / -1; } }
+/* wide screens: a larger dial, centred, and a wider panel in two columns (figures, then filters) so it is no taller than the dial */
+@container (min-width: 1100px) {
+  .sp-grid { grid-template-columns: minmax(0, 1fr) minmax(460px, 620px); align-items: center; gap: 28px; }
+  .sp-stage { max-width: min(100%, 860px); }
+  .sp-side { grid-template-columns: 1fr 1fr; column-gap: 20px; row-gap: 12px; }
+  .sp-side > .sp-sel, .sp-side > .sp-f, .sp-side > .sp-btns, .sp-side > .sp-leg, .sp-side > .sp-note { grid-column: 1 / -1; }
+  .sp-f { grid-template-columns: 1fr 1fr; column-gap: 20px; align-items: start; }
+  .sp-f > .sp-fh { grid-column: 1 / -1; }
+}
+/* middle widths: the panel goes under the dial, figures in three columns, filters in two */
+@container (min-width: 761px) and (max-width: 1099px) {
+  .sp-grid { grid-template-columns: 1fr; }
+  .sp-side { grid-template-columns: repeat(3, 1fr); column-gap: 20px; }
+  .sp-side > .sp-sel, .sp-side > .sp-f, .sp-side > .sp-btns, .sp-side > .sp-leg, .sp-side > .sp-note { grid-column: 1 / -1; }
+  .sp-f { grid-template-columns: 1fr 1fr; column-gap: 20px; align-items: start; }
+  .sp-f > .sp-fh { grid-column: 1 / -1; }
+}
+
 
 /* La Spirale in full screen: the dial takes the height of the window, the side panel stays beside it (under it on a phone) */
 .sp-wrap.sp-full { position: fixed; inset: 0; z-index: 100000; background: var(--bg); padding: max(16px, env(safe-area-inset-top)) 16px 16px; overflow: auto; }
