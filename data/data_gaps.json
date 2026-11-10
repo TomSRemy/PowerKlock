@@ -1,19 +1,44 @@
 {
-"updated": "2026-11-10T12:57:11+00:00",
+"updated": "2026-11-10T21:06:35+00:00",
 "storage": {
-"data_mb": 211.4
+"data_mb": 211.5
 },
 "open": [
+{
+"id": "pricecheck:2026-10-18:LT",
+"dataset": "pricecheck",
+"what": "2026-10-18: LT day-ahead 98.98 €/MWh here, 101.78 at Energy-Charts",
+"repair": "auto: asked again to ENTSO-E",
+"since": "2026-11-10T21:06:35+00:00",
+"lastSeen": "2026-11-10T21:06:35+00:00"
+},
+{
+"id": "pricecheck:2026-11-07:LV",
+"dataset": "pricecheck",
+"what": "2026-11-07: LV day-ahead 287.84 €/MWh here, 310.86 at Energy-Charts",
+"repair": "auto: asked again to ENTSO-E",
+"since": "2026-11-10T21:06:35+00:00",
+"lastSeen": "2026-11-10T21:06:35+00:00"
+},
+{
+"id": "prices:2026-11-11",
+"dataset": "prices",
+"what": "2026-11-11: no day-ahead price for ES, CH",
+"repair": "auto: retried every 20-30 min, then the history repair",
+"since": "2026-11-10T21:06:35+00:00",
+"lastSeen": "2026-11-10T21:06:35+00:00"
+}
+],
+"resolved": [
 {
 "id": "activation:2026-11-08",
 "dataset": "activation",
 "what": "2026-11-08: no mFRR activation price",
 "repair": "auto: the daily job refetches 14 days",
 "since": "2026-11-10T02:54:15+00:00",
-"lastSeen": "2026-11-10T12:57:11+00:00"
-}
-],
-"resolved": [
+"lastSeen": "2026-11-10T12:57:11+00:00",
+"resolvedAt": "2026-11-10T21:06:35+00:00"
+},
 {
 "id": "prices:2026-11-09",
 "dataset": "prices",
@@ -2700,15 +2725,6 @@
 "id": "pricecheck:2021-12-01:BG",
 "dataset": "pricecheck",
 "what": "2021-12-01: BG day-ahead 389.1 €/MWh here, 198.92 at Energy-Charts",
-"repair": "auto: asked again to ENTSO-E (last 30 days)",
-"since": "2026-10-24T12:42:39+00:00",
-"lastSeen": "2026-10-24T15:13:25+00:00",
-"resolvedAt": "2026-10-24T17:34:21+00:00"
-},
-{
-"id": "pricecheck:2021-12-02:BG",
-"dataset": "pricecheck",
-"what": "2021-12-02: BG day-ahead 473.89 €/MWh here, 242.3 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T12:42:39+00:00",
 "lastSeen": "2026-10-24T15:13:25+00:00",
