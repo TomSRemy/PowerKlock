@@ -1,9 +1,18 @@
 {
-"updated": "2026-11-09T19:13:33+00:00",
+"updated": "2026-11-10T02:54:16+00:00",
 "storage": {
-"data_mb": 211.3
+"data_mb": 211.4
 },
-"open": [],
+"open": [
+{
+"id": "activation:2026-11-08",
+"dataset": "activation",
+"what": "2026-11-08: no mFRR activation price",
+"repair": "auto: the daily job refetches 14 days",
+"since": "2026-11-10T02:54:15+00:00",
+"lastSeen": "2026-11-10T02:54:16+00:00"
+}
+],
 "resolved": [
 {
 "id": "prices:2026-11-09",
