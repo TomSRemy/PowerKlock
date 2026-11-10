@@ -1,5 +1,5 @@
 {
-"updated": "2026-11-10T02:54:16+00:00",
+"updated": "2026-11-10T12:57:11+00:00",
 "storage": {
 "data_mb": 211.4
 },
@@ -10,7 +10,7 @@
 "what": "2026-11-08: no mFRR activation price",
 "repair": "auto: the daily job refetches 14 days",
 "since": "2026-11-10T02:54:15+00:00",
-"lastSeen": "2026-11-10T02:54:16+00:00"
+"lastSeen": "2026-11-10T12:57:11+00:00"
 }
 ],
 "resolved": [
