@@ -1,6 +1,6 @@
 {
  "name": "PowerKlock data API",
- "updated": "2026-11-11T14:43:59Z",
+ "updated": "2026-11-11T18:52:09Z",
  "usage": "Plain HTTPS GET, JSON, no key. Cite the source of each dataset. Times are Paris delivery days unless stated.",
  "datasets": [
   {
@@ -121,7 +121,7 @@
    "content": "Weekly stored energy (MWh) since 2015 for FR, CH, ES, PT, AT, IT, NO, SE, FI.",
    "refresh": "weekly",
    "source": "ENTSO-E Transparency Platform",
-   "sizeKB": 125
+   "sizeKB": 126
   },
   {
    "url": "https://tomsremy.github.io/PowerKlock/data/history/capacity.json",
