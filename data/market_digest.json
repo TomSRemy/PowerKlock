@@ -1,51 +1,51 @@
 {
- "updated": "2026-11-10T21:52:09+00:00",
- "asof": "2026-11-10",
+ "updated": "2026-11-11T14:37:05+00:00",
+ "asof": "2026-11-11",
  "notes": 2,
  "engine": "proxy",
  "context": [
   {
    "topic": "France",
    "topic_en": "France",
-   "text": "La disponibilité nucléaire en France est en hausse, avec une production de 46692,5 MW, soit une augmentation de 3,6% en 7 jours. Cela pousse les prix à la baisse. La météo prévoit des températures plus fraîches à partir du 21 novembre, ce qui pourrait augmenter la consommation d'électricité.",
-   "text_en": "France's nuclear availability is increasing, with production at 46692.5 MW, a 3.6% increase in 7 days. This pushes prices down. The weather forecast predicts cooler temperatures from November 21, which could increase electricity consumption.",
+   "text": "La disponibilité nucléaire en France est en légère hausse, à 46692,5 MW, ce qui pousse les prix à la baisse. La consommation électrique reste soutenue en raison de la météo fraîche.",
+   "text_en": "Nuclear availability in France is slightly increasing, at 46692.5 MW, which is pushing prices down. Electricity consumption remains high due to cool weather.",
    "tone": "down"
   },
   {
    "topic": "Golfe",
    "topic_en": "Gulf",
-   "text": "Les tensions géopolitiques dans le Golfe sont en baisse, ce qui réduit le risque de perturbation de la production et des exportations de pétrole. Cela pousse les prix à la baisse.",
-   "text_en": "Geopolitical tensions in the Gulf are decreasing, reducing the risk of disruption to oil production and exports. This pushes prices down.",
+   "text": "Les tensions géopolitiques au Moyen-Orient sont en légère baisse, ce qui réduit le risque premium et pousse les prix du pétrole à la baisse.",
+   "text_en": "Geopolitical tensions in the Middle East are slightly decreasing, which reduces the risk premium and pushes oil prices down.",
    "tone": "down"
   },
   {
-   "topic": "Norvège",
-   "topic_en": "Norway",
-   "text": "Les flux de gaz norvégiens sont légèrement réduits en raison d'arrêts non planifiés. Cela pousse les prix à la hausse.",
-   "text_en": "Norwegian gas flows are slightly reduced due to unplanned outages. This pushes prices up.",
-   "tone": "up"
+   "topic": "Russie",
+   "topic_en": "Russia",
+   "text": "Les trilateral talks entre les États-Unis, la Russie et l'Ukraine pourraient avoir un impact sur les prix du gaz en Europe, mais pour l'instant, les marchés restent relativement tendus.",
+   "text_en": "Trilateral talks between the US, Russia, and Ukraine could have an impact on European gas prices, but for now, markets remain relatively tight.",
+   "tone": "flat"
   }
  ],
  "outlook": {
   "oil": {
    "tone": "down",
-   "text": "Les prix du pétrole devraient rester bas en raison de la réduction des tensions géopolitiques dans le Golfe.",
-   "text_en": "Oil prices are expected to remain low due to decreased geopolitical tensions in the Gulf."
+   "text": "Les prix du pétrole devraient rester sous pression en raison de la baisse des tensions géopolitiques au Moyen-Orient.",
+   "text_en": "Oil prices are expected to remain under pressure due to decreased geopolitical tensions in the Middle East."
   },
   "gas": {
    "tone": "down",
-   "text": "Les prix du gaz devraient rester bas en raison de la réduction des tensions géopolitiques et de la disponibilité de stock.",
-   "text_en": "Gas prices are expected to remain low due to decreased geopolitical tensions and stock availability."
+   "text": "Les prix du gaz en Europe devraient baisser en raison de la météo plus fraîche et de la réduction des tensions géopolitiques.",
+   "text_en": "European gas prices are expected to decrease due to cooler weather and reduced geopolitical tensions."
   },
   "power": {
    "tone": "flat",
-   "text": "Les prix de l'électricité devraient rester stables en raison de la disponibilité nucléaire et de la prévision météorologique.",
-   "text_en": "Power prices are expected to remain stable due to nuclear availability and weather forecasts."
+   "text": "Les prix de l'électricité en Europe devraient rester stables en raison de la balance entre la consommation et la production.",
+   "text_en": "European power prices are expected to remain stable due to the balance between consumption and production."
   },
   "carbon": {
    "tone": "flat",
-   "text": "Les prix du carbone devraient rester stables en raison de la faible variation de la demande.",
-   "text_en": "Carbon prices are expected to remain stable due to low demand variation."
+   "text": "Les prix du carbone devraient rester stables en raison de la faible volatilité des marchés.",
+   "text_en": "Carbon prices are expected to remain stable due to low market volatility."
   }
  }
 }
