@@ -1,9 +1,9 @@
 {
- "lastUpdate": "2026-11-10T22:26:26.536615+00:00",
+ "lastUpdate": "2026-11-11T14:36:21.900646+00:00",
  "spot": {
-  "value": 252.25,
+  "value": 206.54,
   "unit": "EUR/MWh",
-  "date": "2026-11-10"
+  "date": "2026-11-11"
  },
  "forwardCurve": [
   {
@@ -13,8 +13,8 @@
    "unit": "EUR/MWh",
    "value": 182.64,
    "date": "2026-11-09",
-   "varD1Pct": -3.66,
-   "varW1Pct": -6.99
+   "varD1Pct": -8.25,
+   "varW1Pct": -14.25
   },
   {
    "tenor": "M+2",
@@ -23,8 +23,8 @@
    "unit": "EUR/MWh",
    "value": 195.85,
    "date": "2026-11-09",
-   "varD1Pct": -2.91,
-   "varW1Pct": -9.05
+   "varD1Pct": -6.73,
+   "varW1Pct": -14.48
   },
   {
    "tenor": "M+3",
@@ -33,8 +33,8 @@
    "unit": "EUR/MWh",
    "value": 179.08,
    "date": "2026-11-09",
-   "varD1Pct": -3.49,
-   "varW1Pct": -12.54
+   "varD1Pct": -7.83,
+   "varW1Pct": -18.63
   },
   {
    "tenor": "Q+1",
@@ -43,8 +43,8 @@
    "unit": "EUR/MWh",
    "value": 168.52,
    "date": "2026-11-09",
-   "varD1Pct": -2.76,
-   "varW1Pct": -10.78
+   "varD1Pct": -6.63,
+   "varW1Pct": -17.96
   },
   {
    "tenor": "Q+2",
@@ -53,8 +53,8 @@
    "unit": "EUR/MWh",
    "value": 71.85,
    "date": "2026-11-09",
-   "varD1Pct": -2.18,
-   "varW1Pct": -6.91
+   "varD1Pct": -4.4,
+   "varW1Pct": -14.37
   },
   {
    "tenor": "Q+3",
@@ -63,8 +63,8 @@
    "unit": "EUR/MWh",
    "value": 91.15,
    "date": "2026-11-09",
-   "varD1Pct": -1.52,
-   "varW1Pct": -4.27
+   "varD1Pct": -2.74,
+   "varW1Pct": -8.07
   },
   {
    "tenor": "S+1",
@@ -73,8 +73,8 @@
    "unit": "EUR/MWh",
    "value": 81.5,
    "date": "2026-11-09",
-   "varD1Pct": -1.81,
-   "varW1Pct": -5.45
+   "varD1Pct": -3.48,
+   "varW1Pct": -10.96
   },
   {
    "tenor": "S+2",
@@ -83,8 +83,8 @@
    "unit": "EUR/MWh",
    "value": 109.72,
    "date": "2026-11-09",
-   "varD1Pct": -1.61,
-   "varW1Pct": -4.29
+   "varD1Pct": -2.65,
+   "varW1Pct": -8.74
   },
   {
    "tenor": "Y+1",
@@ -93,8 +93,8 @@
    "unit": "EUR/MWh",
    "value": 110.83,
    "date": "2026-11-09",
-   "varD1Pct": -2.17,
-   "varW1Pct": -7.35
+   "varD1Pct": -4.47,
+   "varW1Pct": -13.52
   },
   {
    "tenor": "Y+2",
@@ -103,8 +103,8 @@
    "unit": "EUR/MWh",
    "value": 62.99,
    "date": "2026-11-09",
-   "varD1Pct": -1.99,
-   "varW1Pct": -9.14
+   "varD1Pct": -3.43,
+   "varW1Pct": -11.21
   },
   {
    "tenor": "Y+3",
@@ -113,8 +113,8 @@
    "unit": "EUR/MWh",
    "value": 58.04,
    "date": "2026-11-09",
-   "varD1Pct": -1.69,
-   "varW1Pct": -6.05
+   "varD1Pct": -1.84,
+   "varW1Pct": -7.83
   }
  ],
  "forwardCurveDate": "2026-11-09",
@@ -133,18 +133,18 @@
  "generationMixDate": "2026-11-09",
  "marketInsightsHtml": null,
  "marketInsights": {
-  "gas": "<p>A relatively bearish day for the European gas markets yesterday following on from the trend of last week. Much of the bearishness still continues with the geopolitical headlines coming out surrounding the conflict in the Middle East.</p>\n<p>At the time of writing this morning the front month NBP Dec-26 contract is trading at 203p/therm whilst the TTF FM is at &euro;81.50/MWh.</p>\n<p>News came out yesterday with the plans of JD Vance heading to Qatar for further talks whilst last night Trump spoke on the positive contact he has had with the PM of Qatar also stating that there was momentum heading towards the end of the conflict. Following on from the mid term elections in the US last week, an announcement from the legislature in the US is looking to impeach the US Secretary of War, Pete Hegseth, for some actions they deem unlawful including the actions in Iran.</p>\n<p>The latest weather runs have added some colder weather runs into the mix from the 21st of November having been quite mild on the weekends runs. Wind speeds still seem to be looking above seasonal from mid month.</p>\n<p>The trilateral talks involving the US, Russia and Ukraine are set to begin in Abu Dhabi today with Trump remaining bullish on the meeting, the areas in the east of Ukraine still remain a key talking points for any peace talks.</p>",
-  "power": "<p>European power markets tracked the gas markets and continued to tick downwards yesterday. At the time of writing the front month DE baseload contract is trading at &euro;190.50/MWh with the UK Baseload FM contract trading at &pound;168/MWh.</p>\n<p>German DA prices still remain high having been high on Monday with cooler cold and still days in NW Europe. The current price for DA in Germany is at &euro;308/MWh, around &euro;118 premium to the front month contract. German DA power price hit their highest prices since 2022 this week with the cooler temperatures and low winds.</p>\n<p>The most recent weather forecasts have brough some cooler weather runs into the forecast but wind speeds look to still be heading above seasonal normal mid month which should provide some good renewable generation to the supply mix.</p>\n<p>EUA prices saw a slight recovery yesterday having opened at below &euro;87 and closing at &euro;87.56 at the end of the day &ndash; prices this morning have seen a 20 cent increase on last nights close at the time of writing.</p>"
+  "gas": "<p>A bit of a rebound for the European gas markets yesterday after testing &euro;80/MWh on the front month TTF Dec-26 contract in early trading. After that low of the day the market saw relatively consistent trading towards the upside closing near the &euro;85/MWh mark in the afternoon.</p>\n<p>Some of this bounce in the market could be attributed to seeing such a strong sell off in the past few trading days along with some movement on the geopolitical front, additionally, some cooler weather runs did enter the forecast for the back half of November.</p>\n<p>On the geopolitical front, the trilateral talks are underway in Abu Dhabi with the US, Ukraine and Russia all having representatives, as well as the EU and NATO. There remains headline risk on the back of these talks which market participants will be tracking today.</p>\n<p>&nbsp;Talks between the US and Iran in Qatar have been called into some question with representatives of Iran saying there are no talks underway whilst Trump downplayed the need for further strikes with negotiations go well. Confusion surrounding peace/ceasefire talks in the middle east continue the theme already set this year with signs of negotiations and then denials. &nbsp;</p>\n<p>At the time of writing the NBP Front month Dec-26 contract is trading at 215.85p/therm whilst the TTF equivalent contract is trading at &euro;86.50/MWh.</p>",
+  "power": "<p>Power markets continue to follow the moves in gas this week with an increase in prices backed by mainly the same points already made in the gas commentary above.</p>\n<p>DA pricing in German Baseload power has fallen significantly after the period of cold and calm weather, prices for Thursday at the time of writing trading at &euro;205/MWh having been &euro;300+ yesterday.</p>\n<p>Oil prices have increased along with the moves in European gas and power with the headlines in the Middle East &ndash; Brent trading at above $91/BLL at the time of writing. CPI numbers dropped in the US yesterday with numbers beating expectations causing fears of further interest rate hikes in the US.</p>"
  },
- "marketInsightsDate": "2026-11-10",
+ "marketInsightsDate": "2026-11-11",
  "countries": {
   "FR": {
    "label": "France",
    "currency": "EUR",
    "spot": {
-    "value": 252.25,
+    "value": 206.54,
     "unit": "EUR/MWh",
-    "date": "2026-11-10"
+    "date": "2026-11-11"
    },
    "forwardCurve": [
     {
@@ -154,8 +154,8 @@
      "unit": "EUR/MWh",
      "value": 182.64,
      "date": "2026-11-09",
-     "varD1Pct": -3.66,
-     "varW1Pct": -6.99
+     "varD1Pct": -8.25,
+     "varW1Pct": -14.25
     },
     {
      "tenor": "M+2",
@@ -164,8 +164,8 @@
      "unit": "EUR/MWh",
      "value": 195.85,
      "date": "2026-11-09",
-     "varD1Pct": -2.91,
-     "varW1Pct": -9.05
+     "varD1Pct": -6.73,
+     "varW1Pct": -14.48
     },
     {
      "tenor": "M+3",
@@ -174,8 +174,8 @@
      "unit": "EUR/MWh",
      "value": 179.08,
      "date": "2026-11-09",
-     "varD1Pct": -3.49,
-     "varW1Pct": -12.54
+     "varD1Pct": -7.83,
+     "varW1Pct": -18.63
     },
     {
      "tenor": "Q+1",
@@ -184,8 +184,8 @@
      "unit": "EUR/MWh",
      "value": 168.52,
      "date": "2026-11-09",
-     "varD1Pct": -2.76,
-     "varW1Pct": -10.78
+     "varD1Pct": -6.63,
+     "varW1Pct": -17.96
     },
     {
      "tenor": "Q+2",
@@ -194,8 +194,8 @@
      "unit": "EUR/MWh",
      "value": 71.85,
      "date": "2026-11-09",
-     "varD1Pct": -2.18,
-     "varW1Pct": -6.91
+     "varD1Pct": -4.4,
+     "varW1Pct": -14.37
     },
     {
      "tenor": "Q+3",
@@ -204,8 +204,8 @@
      "unit": "EUR/MWh",
      "value": 91.15,
      "date": "2026-11-09",
-     "varD1Pct": -1.52,
-     "varW1Pct": -4.27
+     "varD1Pct": -2.74,
+     "varW1Pct": -8.07
     },
     {
      "tenor": "S+1",
@@ -214,8 +214,8 @@
      "unit": "EUR/MWh",
      "value": 81.5,
      "date": "2026-11-09",
-     "varD1Pct": -1.81,
-     "varW1Pct": -5.45
+     "varD1Pct": -3.48,
+     "varW1Pct": -10.96
     },
     {
      "tenor": "S+2",
@@ -224,8 +224,8 @@
      "unit": "EUR/MWh",
      "value": 109.72,
      "date": "2026-11-09",
-     "varD1Pct": -1.61,
-     "varW1Pct": -4.29
+     "varD1Pct": -2.65,
+     "varW1Pct": -8.74
     },
     {
      "tenor": "Y+1",
@@ -234,8 +234,8 @@
      "unit": "EUR/MWh",
      "value": 110.83,
      "date": "2026-11-09",
-     "varD1Pct": -2.17,
-     "varW1Pct": -7.35
+     "varD1Pct": -4.47,
+     "varW1Pct": -13.52
     },
     {
      "tenor": "Y+2",
@@ -244,8 +244,8 @@
      "unit": "EUR/MWh",
      "value": 62.99,
      "date": "2026-11-09",
-     "varD1Pct": -1.99,
-     "varW1Pct": -9.14
+     "varD1Pct": -3.43,
+     "varW1Pct": -11.21
     },
     {
      "tenor": "Y+3",
@@ -254,8 +254,8 @@
      "unit": "EUR/MWh",
      "value": 58.04,
      "date": "2026-11-09",
-     "varD1Pct": -1.69,
-     "varW1Pct": -6.05
+     "varD1Pct": -1.84,
+     "varW1Pct": -7.83
     }
    ],
    "forwardCurveDate": "2026-11-09",
@@ -277,9 +277,9 @@
    "label": "United Kingdom",
    "currency": "GBP",
    "spot": {
-    "value": 221.38,
+    "value": 177.01,
     "unit": "GBP/MWh",
-    "date": "2026-11-10"
+    "date": "2026-11-11"
    },
    "forwardCurve": [
     {
@@ -289,8 +289,8 @@
      "unit": "GBP/MWh",
      "value": 167.48,
      "date": "2026-11-09",
-     "varD1Pct": -3.75,
-     "varW1Pct": -7.93
+     "varD1Pct": -7.64,
+     "varW1Pct": -14.95
     },
     {
      "tenor": "M+2",
@@ -299,8 +299,8 @@
      "unit": "GBP/MWh",
      "value": 179.39,
      "date": "2026-11-09",
-     "varD1Pct": -2.79,
-     "varW1Pct": -8.95
+     "varD1Pct": -6.4,
+     "varW1Pct": -15.13
     },
     {
      "tenor": "M+3",
@@ -309,8 +309,8 @@
      "unit": "GBP/MWh",
      "value": 174.69,
      "date": "2026-11-09",
-     "varD1Pct": -2.43,
-     "varW1Pct": -9.18
+     "varD1Pct": -6.61,
+     "varW1Pct": -15.58
     },
     {
      "tenor": "Q+1",
@@ -319,8 +319,8 @@
      "unit": "GBP/MWh",
      "value": 169.29,
      "date": "2026-11-09",
-     "varD1Pct": -2.12,
-     "varW1Pct": -9.36
+     "varD1Pct": -6.05,
+     "varW1Pct": -15.76
     },
     {
      "tenor": "Q+2",
@@ -329,8 +329,8 @@
      "unit": "GBP/MWh",
      "value": 123.62,
      "date": "2026-11-09",
-     "varD1Pct": -2.51,
-     "varW1Pct": -7.66
+     "varD1Pct": -3.75,
+     "varW1Pct": -13.28
     },
     {
      "tenor": "Q+3",
@@ -339,8 +339,8 @@
      "unit": "GBP/MWh",
      "value": 116.85,
      "date": "2026-11-09",
-     "varD1Pct": -2.08,
-     "varW1Pct": -7.05
+     "varD1Pct": -2.8,
+     "varW1Pct": -11.73
     },
     {
      "tenor": "S+1",
@@ -349,8 +349,8 @@
      "unit": "GBP/MWh",
      "value": 120.22,
      "date": "2026-11-09",
-     "varD1Pct": -2.3,
-     "varW1Pct": -7.36
+     "varD1Pct": -3.29,
+     "varW1Pct": -12.53
     },
     {
      "tenor": "S+2",
@@ -359,8 +359,8 @@
      "unit": "GBP/MWh",
      "value": 119.03,
      "date": "2026-11-09",
-     "varD1Pct": -1.61,
-     "varW1Pct": -7.56
+     "varD1Pct": -2.97,
+     "varW1Pct": -12.88
     },
     {
      "tenor": "Y+1",
@@ -369,8 +369,8 @@
      "unit": "GBP/MWh",
      "value": 131.62,
      "date": "2026-11-09",
-     "varD1Pct": -2.2,
-     "varW1Pct": -8.05
+     "varD1Pct": -4.15,
+     "varW1Pct": -13.42
     },
     {
      "tenor": "Y+2",
@@ -379,8 +379,8 @@
      "unit": "GBP/MWh",
      "value": 88.81,
      "date": "2026-11-09",
-     "varD1Pct": -1.22,
-     "varW1Pct": -6.96
+     "varD1Pct": -2.71,
+     "varW1Pct": -12.64
     },
     {
      "tenor": "Y+3",
@@ -389,31 +389,31 @@
      "unit": "GBP/MWh",
      "value": 72.88,
      "date": "2026-11-09",
-     "varD1Pct": -0.86,
-     "varW1Pct": -7.27
+     "varD1Pct": -2.7,
+     "varW1Pct": -10.14
     }
    ],
    "forwardCurveDate": "2026-11-09",
    "nuclearCapacity": null,
    "nuclearCapacityDate": null,
    "generationMix": {
-    "gas": 23.2,
-    "wind": 0.7,
-    "solar": 1.55,
+    "gas": 23.11,
+    "wind": 3.35,
+    "solar": 1.26,
     "nuclear": 5.13,
-    "hydro": 0.79,
+    "hydro": 0.52,
     "biomass": 3.25,
-    "other": 1.76
+    "other": 1.57
    },
-   "generationMixDate": "2026-11-09"
+   "generationMixDate": "2026-11-10"
   },
   "DE": {
    "label": "Germany",
    "currency": "EUR",
    "spot": {
-    "value": 316.65,
+    "value": 199.05,
     "unit": "EUR/MWh",
-    "date": "2026-11-10"
+    "date": "2026-11-11"
    },
    "forwardCurve": [
     {
@@ -423,8 +423,8 @@
      "unit": "EUR/MWh",
      "value": 190.48,
      "date": "2026-11-09",
-     "varD1Pct": -4.15,
-     "varW1Pct": -7.15
+     "varD1Pct": -8.43,
+     "varW1Pct": -14.6
     },
     {
      "tenor": "M+2",
@@ -433,8 +433,8 @@
      "unit": "EUR/MWh",
      "value": 203.38,
      "date": "2026-11-09",
-     "varD1Pct": -3.65,
-     "varW1Pct": -9.18
+     "varD1Pct": -7.36,
+     "varW1Pct": -15.26
     },
     {
      "tenor": "M+3",
@@ -443,8 +443,8 @@
      "unit": "EUR/MWh",
      "value": 192.45,
      "date": "2026-11-09",
-     "varD1Pct": -3.65,
-     "varW1Pct": -11.71
+     "varD1Pct": -7.72,
+     "varW1Pct": -17.91
     },
     {
      "tenor": "Q+1",
@@ -453,8 +453,8 @@
      "unit": "EUR/MWh",
      "value": 180.62,
      "date": "2026-11-09",
-     "varD1Pct": -3.41,
-     "varW1Pct": -11.15
+     "varD1Pct": -7.22,
+     "varW1Pct": -18.12
     },
     {
      "tenor": "Q+2",
@@ -463,8 +463,8 @@
      "unit": "EUR/MWh",
      "value": 117.61,
      "date": "2026-11-09",
-     "varD1Pct": -1.71,
-     "varW1Pct": -7.96
+     "varD1Pct": -3.94,
+     "varW1Pct": -12.7
     },
     {
      "tenor": "Q+3",
@@ -473,8 +473,8 @@
      "unit": "EUR/MWh",
      "value": 127.56,
      "date": "2026-11-09",
-     "varD1Pct": -1.25,
-     "varW1Pct": -6.54
+     "varD1Pct": -3.23,
+     "varW1Pct": -10.81
     },
     {
      "tenor": "S+1",
@@ -483,8 +483,8 @@
      "unit": "EUR/MWh",
      "value": 122.58,
      "date": "2026-11-09",
-     "varD1Pct": -1.47,
-     "varW1Pct": -7.23
+     "varD1Pct": -3.58,
+     "varW1Pct": -11.73
     },
     {
      "tenor": "S+2",
@@ -493,8 +493,8 @@
      "unit": "EUR/MWh",
      "value": 138.86,
      "date": "2026-11-09",
-     "varD1Pct": -1.9,
-     "varW1Pct": -6.73
+     "varD1Pct": -2.59,
+     "varW1Pct": -11.33
     },
     {
      "tenor": "Y+1",
@@ -503,8 +503,8 @@
      "unit": "EUR/MWh",
      "value": 141.54,
      "date": "2026-11-09",
-     "varD1Pct": -2.19,
-     "varW1Pct": -8.41
+     "varD1Pct": -4.48,
+     "varW1Pct": -13.84
     },
     {
      "tenor": "Y+2",
@@ -513,8 +513,8 @@
      "unit": "EUR/MWh",
      "value": 103.42,
      "date": "2026-11-09",
-     "varD1Pct": -1.54,
-     "varW1Pct": -8.17
+     "varD1Pct": -2.25,
+     "varW1Pct": -11.79
     },
     {
      "tenor": "Y+3",
@@ -523,8 +523,8 @@
      "unit": "EUR/MWh",
      "value": 90.03,
      "date": "2026-11-09",
-     "varD1Pct": -1.29,
-     "varW1Pct": -7.71
+     "varD1Pct": -1.75,
+     "varW1Pct": -10.13
     }
    ],
    "forwardCurveDate": "2026-11-09",
@@ -545,9 +545,9 @@
    "label": "Netherlands",
    "currency": "EUR",
    "spot": {
-    "value": 309.28,
+    "value": 200.91,
     "unit": "EUR/MWh",
-    "date": "2026-11-10"
+    "date": "2026-11-11"
    },
    "forwardCurve": [
     {
@@ -557,8 +557,8 @@
      "unit": "EUR/MWh",
      "value": 193.49,
      "date": "2026-11-09",
-     "varD1Pct": -4.07,
-     "varW1Pct": -7.01
+     "varD1Pct": -8.29,
+     "varW1Pct": -14.35
     },
     {
      "tenor": "M+2",
@@ -567,8 +567,8 @@
      "unit": "EUR/MWh",
      "value": 206.93,
      "date": "2026-11-09",
-     "varD1Pct": -3.87,
-     "varW1Pct": -10.52
+     "varD1Pct": -7.27,
+     "varW1Pct": -15.55
     },
     {
      "tenor": "M+3",
@@ -577,8 +577,8 @@
      "unit": "EUR/MWh",
      "value": 194.22,
      "date": "2026-11-09",
-     "varD1Pct": -3.43,
-     "varW1Pct": -10.71
+     "varD1Pct": -7.22,
+     "varW1Pct": -16.13
     },
     {
      "tenor": "Q+1",
@@ -587,8 +587,8 @@
      "unit": "EUR/MWh",
      "value": 181.35,
      "date": "2026-11-09",
-     "varD1Pct": -3.47,
-     "varW1Pct": -11.78
+     "varD1Pct": -6.88,
+     "varW1Pct": -17.74
     },
     {
      "tenor": "Q+2",
@@ -597,8 +597,8 @@
      "unit": "EUR/MWh",
      "value": 115.89,
      "date": "2026-11-09",
-     "varD1Pct": -1.85,
-     "varW1Pct": -9.19
+     "varD1Pct": -4.46,
+     "varW1Pct": -13.71
     },
     {
      "tenor": "Q+3",
@@ -607,8 +607,8 @@
      "unit": "EUR/MWh",
      "value": 123.89,
      "date": "2026-11-09",
-     "varD1Pct": -1.71,
-     "varW1Pct": -7.36
+     "varD1Pct": -4.62,
+     "varW1Pct": -11.01
     },
     {
      "tenor": "S+1",
@@ -617,8 +617,8 @@
      "unit": "EUR/MWh",
      "value": 119.91,
      "date": "2026-11-09",
-     "varD1Pct": -1.78,
-     "varW1Pct": -8.25
+     "varD1Pct": -4.55,
+     "varW1Pct": -12.33
     },
     {
      "tenor": "S+2",
@@ -627,8 +627,8 @@
      "unit": "EUR/MWh",
      "value": 138.02,
      "date": "2026-11-09",
-     "varD1Pct": -1.98,
-     "varW1Pct": -7.16
+     "varD1Pct": -3.11,
+     "varW1Pct": -12.73
     },
     {
      "tenor": "Y+1",
@@ -637,8 +637,8 @@
      "unit": "EUR/MWh",
      "value": 139.65,
      "date": "2026-11-09",
-     "varD1Pct": -2.38,
-     "varW1Pct": -9.35
+     "varD1Pct": -5.1,
+     "varW1Pct": -14.45
     },
     {
      "tenor": "Y+2",
@@ -647,8 +647,8 @@
      "unit": "EUR/MWh",
      "value": 101.5,
      "date": "2026-11-09",
-     "varD1Pct": -1.56,
-     "varW1Pct": -9
+     "varD1Pct": -1.54,
+     "varW1Pct": -12.62
     },
     {
      "tenor": "Y+3",
@@ -657,8 +657,8 @@
      "unit": "EUR/MWh",
      "value": 90.04,
      "date": "2026-11-09",
-     "varD1Pct": -1.06,
-     "varW1Pct": -6.92
+     "varD1Pct": -1.97,
+     "varW1Pct": -9.21
     }
    ],
    "forwardCurveDate": "2026-11-09",

@@ -1,0 +1,22 @@
+{
+ "date": "2026-11-11",
+ "countries": {
+  "FR": {
+   "spot": 206.54
+  },
+  "UK": {
+   "spot": 177.01
+  },
+  "DE": {
+   "spot": 199.05
+  },
+  "NL": {
+   "spot": 200.91
+  }
+ },
+ "marketInsightsHtml": null,
+ "marketInsights": {
+  "gas": "<p>A bit of a rebound for the European gas markets yesterday after testing &euro;80/MWh on the front month TTF Dec-26 contract in early trading. After that low of the day the market saw relatively consistent trading towards the upside closing near the &euro;85/MWh mark in the afternoon.</p>\n<p>Some of this bounce in the market could be attributed to seeing such a strong sell off in the past few trading days along with some movement on the geopolitical front, additionally, some cooler weather runs did enter the forecast for the back half of November.</p>\n<p>On the geopolitical front, the trilateral talks are underway in Abu Dhabi with the US, Ukraine and Russia all having representatives, as well as the EU and NATO. There remains headline risk on the back of these talks which market participants will be tracking today.</p>\n<p>&nbsp;Talks between the US and Iran in Qatar have been called into some question with representatives of Iran saying there are no talks underway whilst Trump downplayed the need for further strikes with negotiations go well. Confusion surrounding peace/ceasefire talks in the middle east continue the theme already set this year with signs of negotiations and then denials. &nbsp;</p>\n<p>At the time of writing the NBP Front month Dec-26 contract is trading at 215.85p/therm whilst the TTF equivalent contract is trading at &euro;86.50/MWh.</p>",
+  "power": "<p>Power markets continue to follow the moves in gas this week with an increase in prices backed by mainly the same points already made in the gas commentary above.</p>\n<p>DA pricing in German Baseload power has fallen significantly after the period of cold and calm weather, prices for Thursday at the time of writing trading at &euro;205/MWh having been &euro;300+ yesterday.</p>\n<p>Oil prices have increased along with the moves in European gas and power with the headlines in the Middle East &ndash; Brent trading at above $91/BLL at the time of writing. CPI numbers dropped in the US yesterday with numbers beating expectations causing fears of further interest rate hikes in the US.</p>"
+ }
+}
