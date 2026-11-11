@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-11T14:37:05+00:00",
+ "updated": "2026-11-11T22:52:41+00:00",
  "asof": "2026-11-11",
  "notes": 2,
  "engine": "proxy",
@@ -7,45 +7,45 @@
   {
    "topic": "France",
    "topic_en": "France",
-   "text": "La disponibilité nucléaire en France est en légère hausse, à 46692,5 MW, ce qui pousse les prix à la baisse. La consommation électrique reste soutenue en raison de la météo fraîche.",
-   "text_en": "Nuclear availability in France is slightly increasing, at 46692.5 MW, which is pushing prices down. Electricity consumption remains high due to cool weather.",
+   "text": "La disponibilité nucléaire en France est en hausse de 3,6% sur 7 jours, à 46692,5 MW, ce qui pousse les prix à la baisse.",
+   "text_en": "Nuclear availability in France is up 3.6% over 7 days, to 46692.5 MW, which pushes prices down.",
    "tone": "down"
   },
   {
    "topic": "Golfe",
    "topic_en": "Gulf",
-   "text": "Les tensions géopolitiques au Moyen-Orient sont en légère baisse, ce qui réduit le risque premium et pousse les prix du pétrole à la baisse.",
-   "text_en": "Geopolitical tensions in the Middle East are slightly decreasing, which reduces the risk premium and pushes oil prices down.",
+   "text": "Les tensions géopolitiques dans le Golfe sont en baisse, ce qui réduit le risque premium et fait baisser les prix du pétrole.",
+   "text_en": "Geopolitical tensions in the Gulf are decreasing, which reduces the risk premium and lowers oil prices.",
    "tone": "down"
   },
   {
-   "topic": "Russie",
-   "topic_en": "Russia",
-   "text": "Les trilateral talks entre les États-Unis, la Russie et l'Ukraine pourraient avoir un impact sur les prix du gaz en Europe, mais pour l'instant, les marchés restent relativement tendus.",
-   "text_en": "Trilateral talks between the US, Russia, and Ukraine could have an impact on European gas prices, but for now, markets remain relatively tight.",
-   "tone": "flat"
+   "topic": "Norvège",
+   "topic_en": "Norway",
+   "text": "Les flux gazeux norvégiens sont légèrement réduits en raison d'arrêts non planifiés, ce qui maintient la tension sur les marchés européens.",
+   "text_en": "Norwegian gas flows are slightly reduced due to unplanned outages, which keeps the tension on European markets.",
+   "tone": "up"
   }
  ],
  "outlook": {
   "oil": {
    "tone": "down",
-   "text": "Les prix du pétrole devraient rester sous pression en raison de la baisse des tensions géopolitiques au Moyen-Orient.",
-   "text_en": "Oil prices are expected to remain under pressure due to decreased geopolitical tensions in the Middle East."
+   "text": "Baisse attendue",
+   "text_en": "Decrease expected"
   },
   "gas": {
-   "tone": "down",
-   "text": "Les prix du gaz en Europe devraient baisser en raison de la météo plus fraîche et de la réduction des tensions géopolitiques.",
-   "text_en": "European gas prices are expected to decrease due to cooler weather and reduced geopolitical tensions."
+   "tone": "up",
+   "text": "Hausse attendue",
+   "text_en": "Increase expected"
   },
   "power": {
    "tone": "flat",
-   "text": "Les prix de l'électricité en Europe devraient rester stables en raison de la balance entre la consommation et la production.",
-   "text_en": "European power prices are expected to remain stable due to the balance between consumption and production."
+   "text": "Stabilité attendue",
+   "text_en": "Stability expected"
   },
   "carbon": {
    "tone": "flat",
-   "text": "Les prix du carbone devraient rester stables en raison de la faible volatilité des marchés.",
-   "text_en": "Carbon prices are expected to remain stable due to low market volatility."
+   "text": "Stabilité attendue",
+   "text_en": "Stability expected"
   }
  }
 }
