@@ -1,51 +1,51 @@
 {
- "updated": "2026-11-11T22:52:41+00:00",
- "asof": "2026-11-11",
+ "updated": "2026-11-12T15:28:45+00:00",
+ "asof": "2026-11-12",
  "notes": 2,
  "engine": "proxy",
  "context": [
   {
    "topic": "France",
    "topic_en": "France",
-   "text": "La disponibilité nucléaire en France est en hausse de 3,6% sur 7 jours, à 46692,5 MW, ce qui pousse les prix à la baisse.",
-   "text_en": "Nuclear availability in France is up 3.6% over 7 days, to 46692.5 MW, which pushes prices down.",
+   "text": "La disponibilité du nucléaire en France a augmenté de 3,6% sur la semaine écoulée, avec une puissance disponible de 46692,5 MW. Cela pousse les prix à la baisse.",
+   "text_en": "Nuclear availability in France has increased by 3.6% over the past week, with an available power of 46692.5 MW. This pushes prices down.",
    "tone": "down"
   },
   {
    "topic": "Golfe",
    "topic_en": "Gulf",
-   "text": "Les tensions géopolitiques dans le Golfe sont en baisse, ce qui réduit le risque premium et fait baisser les prix du pétrole.",
-   "text_en": "Geopolitical tensions in the Gulf are decreasing, which reduces the risk premium and lowers oil prices.",
+   "text": "Les perspectives de négociations entre les États-Unis et l'Iran ont réduit le risque géopolitique, contribuant à la baisse des prix du Brent. Cependant, la situation reste fragile.",
+   "text_en": "The prospects for negotiations between the United States and Iran have reduced the geopolitical risk, contributing to the fall in Brent prices. However, the situation remains fragile.",
    "tone": "down"
   },
   {
    "topic": "Norvège",
    "topic_en": "Norway",
-   "text": "Les flux gazeux norvégiens sont légèrement réduits en raison d'arrêts non planifiés, ce qui maintient la tension sur les marchés européens.",
-   "text_en": "Norwegian gas flows are slightly reduced due to unplanned outages, which keeps the tension on European markets.",
+   "text": "Les flux norvégiens ont légèrement diminué en raison d'arrêts non planifiés, ce qui maintient les marchés européens relativement tendus.",
+   "text_en": "Norwegian flows have slightly decreased due to unplanned outages, keeping European markets relatively tight.",
    "tone": "up"
   }
  ],
  "outlook": {
   "oil": {
    "tone": "down",
-   "text": "Baisse attendue",
-   "text_en": "Decrease expected"
+   "text": "Les prix du pétrole devraient continuer à baisser en raison de la réduction du risque géopolitique.",
+   "text_en": "Oil prices are expected to continue falling due to the reduction in geopolitical risk."
   },
   "gas": {
    "tone": "up",
-   "text": "Hausse attendue",
-   "text_en": "Increase expected"
+   "text": "Les marchés du gaz devraient rester tendus en raison de la demande soutenue et des flux norvégiens réduits.",
+   "text_en": "Gas markets are expected to remain tight due to sustained demand and reduced Norwegian flows."
   },
   "power": {
-   "tone": "flat",
-   "text": "Stabilité attendue",
-   "text_en": "Stability expected"
+   "tone": "down",
+   "text": "Les prix de l'électricité devraient baisser en raison de l'augmentation de la disponibilité du nucléaire en France.",
+   "text_en": "Power prices are expected to fall due to the increase in nuclear availability in France."
   },
   "carbon": {
    "tone": "flat",
-   "text": "Stabilité attendue",
-   "text_en": "Stability expected"
+   "text": "Les prix du carbone devraient rester stables en raison de l'absence de facteurs significatifs.",
+   "text_en": "Carbon prices are expected to remain stable due to the lack of significant factors."
   }
  }
 }
