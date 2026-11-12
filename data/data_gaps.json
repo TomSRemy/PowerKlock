@@ -1,5 +1,5 @@
 {
-"updated": "2026-11-11T18:09:06+00:00",
+"updated": "2026-11-12T00:58:48+00:00",
 "storage": {
 "data_mb": 211.6
 },
@@ -10,7 +10,7 @@
 "what": "2026-11-11: no day-ahead price for ES",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-11-10T21:06:35+00:00",
-"lastSeen": "2026-11-11T18:09:06+00:00"
+"lastSeen": "2026-11-12T00:58:48+00:00"
 },
 {
 "id": "prices:2026-11-12",
@@ -18,7 +18,7 @@
 "what": "2026-11-12: no day-ahead price for ES",
 "repair": "auto: retried every 20-30 min, then the history repair",
 "since": "2026-11-11T18:09:05+00:00",
-"lastSeen": "2026-11-11T18:09:06+00:00"
+"lastSeen": "2026-11-12T00:58:48+00:00"
 }
 ],
 "resolved": [
