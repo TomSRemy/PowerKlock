@@ -1,21 +1,11 @@
 {
-"run": "2026-11-10",
+"run": "2026-11-12",
 "log": [
 {
-"day": "2026-10-18",
-"zone": "LT",
-"result": "refetched",
-"was": 98.98,
-"now": 101.78,
-"second_source": 101.78
-},
-{
-"day": "2026-11-07",
-"zone": "LV",
-"result": "refetched",
-"was": 287.84,
-"now": 310.86,
-"second_source": 310.86
+"day": "2026-11-11",
+"zone": "ES",
+"result": "filled",
+"points": 96
 }
 ]
 }
