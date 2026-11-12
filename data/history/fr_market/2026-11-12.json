@@ -1,0 +1,26 @@
+{
+ "date": "2026-11-12",
+ "countries": {
+  "FR": {
+   "spot": 197.25,
+   "nuclearCapacity": {
+    "actualMW": 45579.79,
+    "forecastMW": 49950
+   }
+  },
+  "UK": {
+   "spot": 183
+  },
+  "DE": {
+   "spot": 161.74
+  },
+  "NL": {
+   "spot": 209.38
+  }
+ },
+ "marketInsightsHtml": "<p>La capacité nucléaire française reste inférieure à celle observée en décembre dernier, certains sites étant hors service, ce qui ajoute une certaine pression sur le mix d'approvisionnement.</p>",
+ "marketInsights": {
+  "gas": "<p>Yesterday saw a continuation of the move up in gas prices seen from Tuesday morning as weather forecast and geopolitical headlines acted as the most significant drivers.</p>\n<p>This morning, prices continue to rise with the front month TTF Dec-26 contract now trading around &euro;90 at the time of writing with the NBP equivalent at 225p/therm.</p>\n<p>After Iranian officials came out to deny the talks were ongoing with the US, further headlines came out yesterday regarding Iranian nuclear enrichment further entrenching their views on keeping the material. Headlines also spoke warning against any more US aggression with strikes on bases in the region as well as in Europe on the cards if strikes by the US continued. This all following the weekend where he downplayed the need for further strikes due to how the talks were progressing.</p>\n<p>Weather forecast have turned slightly more bullish yesterday and today with cooler and calm conditions being added to the mix. On Monday forecast showed that temperatures were expected to increase from the 16th of the month, this has now become slightly more choppy as the UK is expected to have cooler than seasonal temperatures whilst large parts of NW Europe are now closer to seasonal normal. The AIFS runs are showing some very cold weather into the back of the month.</p>",
+  "power": "<p>Power prices have lifted alongside the gas market yesterday, however in the UK the move in power has somewhat outpaced the gas moved with the Dec-26 contract for UK baseload trading at &pound;190/MWh this morning.</p>\n<p>The weather forecast have had much to do with the move up especially in the UK where the expectation for gas fired power generation has increased due to the low renewable output with calmer wind speeds and the cool temperatures.</p>\n<p>French nuclear capacity remains under that seen last December with some sites offline adding to some pressure in the supply mix.</p>\n<p>EUA prices are trading at almost &euro;90 at the time of writing as the moves this week have reversed much of the losses seen at the back end of last week and on Monday.</p>"
+ }
+}
