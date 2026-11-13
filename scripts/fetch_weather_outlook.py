@@ -39,6 +39,10 @@ FC = 'https://api.open-meteo.com/v1/forecast'
 PAST_DAYS = 14   # observed / actual days shown before the forecast
 NORMAL_YEARS = (2016, 2025)
 RECENT_DAYS = 400
+# A handful of countries × variables can need dozens of Open-Meteo calls (one per weather station):
+# a global budget keeps one stuck/slow call from eating the job's 40-minute timeout on its own, and
+# lets whatever is already computed be committed instead of lost when the process gets killed.
+DEADLINE = time.monotonic() + 26 * 60
 
 # country → name, price zone of the calibration data, point groups (name, lat, lon, weight)
 COUNTRIES = {
@@ -86,11 +90,13 @@ LABEL = {'temp': ('Temperature, population-weighted', '°C'), 'solar': ('Solar p
 VAR = {'temp': 'temperature_2m_mean', 'solar': 'shortwave_radiation_sum', 'precip': 'precipitation_sum'}
 
 
-def get(url, params, tries=6):
+def get(url, params, tries=4):
     q = url + '?' + urllib.parse.urlencode(params)
     for k in range(tries):
+        if time.monotonic() > DEADLINE:
+            raise RuntimeError('time budget exhausted')
         try:
-            with urllib.request.urlopen(urllib.request.Request(q, headers={'User-Agent': 'PowerKlock/1.0'}), timeout=240) as r:
+            with urllib.request.urlopen(urllib.request.Request(q, headers={'User-Agent': 'PowerKlock/1.0'}), timeout=60) as r:
                 data = json.load(r)
             time.sleep(2)
             return data
@@ -213,17 +219,24 @@ def refresh_cache(cache):
         for kind in ('temp', 'solar', 'wind', 'precip'):
             if kind not in conf:
                 continue
-            if kind not in c['normals']:
-                print(f'  {cc} {kind}: normals {NORMAL_YEARS[0]}–{NORMAL_YEARS[1]}')
-                d, v = archive_series(conf[kind], kind, f'{NORMAL_YEARS[0]}-01-01', f'{NORMAL_YEARS[1]}-12-31')
-                c['normals'][kind] = doy_normals(d, v)
+            if time.monotonic() > DEADLINE:
+                print('  time budget exhausted: stopping cache refresh for this run')
                 save_cache(cache)
-            rec = c['recent'].get(kind)
-            if kind in ('solar', 'wind') and (not rec or rec.get('end', '') < (today - timedelta(days=20)).isoformat()):
-                print(f'  {cc} {kind}: last {RECENT_DAYS} days')
-                d, v = archive_series(conf[kind], kind, (today - timedelta(days=RECENT_DAYS)).isoformat(), end)
-                c['recent'][kind] = {'end': end, 'days': d, 'values': [None if x is None else round(x, 4) for x in v]}
-                save_cache(cache)
+                return cache
+            try:
+                if kind not in c['normals']:
+                    print(f'  {cc} {kind}: normals {NORMAL_YEARS[0]}–{NORMAL_YEARS[1]}')
+                    d, v = archive_series(conf[kind], kind, f'{NORMAL_YEARS[0]}-01-01', f'{NORMAL_YEARS[1]}-12-31')
+                    c['normals'][kind] = doy_normals(d, v)
+                    save_cache(cache)
+                rec = c['recent'].get(kind)
+                if kind in ('solar', 'wind') and (not rec or rec.get('end', '') < (today - timedelta(days=20)).isoformat()):
+                    print(f'  {cc} {kind}: last {RECENT_DAYS} days')
+                    d, v = archive_series(conf[kind], kind, (today - timedelta(days=RECENT_DAYS)).isoformat(), end)
+                    c['recent'][kind] = {'end': end, 'days': d, 'values': [None if x is None else round(x, 4) for x in v]}
+                    save_cache(cache)
+            except Exception as e:
+                print(f'  {cc} {kind}: cache refresh failed ({str(e)[:160]}), will retry next run')
     save_cache(cache)
     return cache
 
@@ -328,39 +341,47 @@ def main():
         for kind in ('temp', 'wind', 'solar', 'precip'):
             if kind not in conf:
                 continue
-            scale = 1.0
             if kind in conf.get('no_fit', {}):
                 continue
-            if kind in ('solar', 'wind'):
-                t = (tg.get(cc) or {}).get(kind) or {}
-                k, n, r2 = fit(c['recent'][kind], t, 30 if (kind == 'solar' and cc == 'FR') else 365)
-                if k is None:
-                    print(f'  {cc} {kind}: {n} days of actual output, not enough to calibrate — skipped')
-                    entry['notes'][kind] = f'Only {n} days of actual {kind} output in the last year: not enough to calibrate.'
-                    continue
-                scale = k
-                entry['fit'][kind] = {'factor': round(k, 3), 'r2': r2, 'days': n, 'source': 'RTE' if cc == 'FR' else 'ENTSO-E'}
-            days, members = ensemble(conf[kind], kind)
-            # show the last PAST_DAYS days before the forecast, with actual values
-            first = date.fromisoformat(next(d for d, *v in zip(days, *members) if any(x is not None for x in v)))
-            lead = [(first - timedelta(days=i)).isoformat() for i in range(PAST_DAYS, 0, -1)]
-            members = [[None] * len(lead) + [x for d, x in zip(days, m) if d >= first.isoformat()] for m in members]
-            days = lead + [d for d in days if d >= first.isoformat()]
-            s = summarise(days, members, scale)
-            nm = c['normals'][kind]
-            s['normal'] = [round(nm[d[5:]] * scale, 2) if nm.get(d[5:]) is not None else None for d in days]
-            if kind in ('solar', 'wind'):
-                t = (tg.get(cc) or {}).get(kind) or {}
-                s['actual'] = [round(t[d], 1) if d in t else None for d in days]
-            else:
-                try:
-                    obs = observed(conf[kind], kind)
-                    today = date.today().isoformat()
-                    s['actual'] = [round(obs[d], 2) if d in obs and obs[d] is not None and d < today else None for d in days]
-                except Exception as e:
-                    print(f'  {cc} {kind}: observed values unavailable ({e})')
-            s.update({'days': days, 'unit': LABEL[kind][1], 'label': LABEL[kind][0]})
-            entry['series'][kind] = s
+            if time.monotonic() > DEADLINE:
+                print(f'  {cc} {kind}: skipped, time budget exhausted')
+                entry['notes'][kind] = 'Skipped this run (time budget exhausted): will refresh next run.'
+                continue
+            scale = 1.0
+            try:
+                if kind in ('solar', 'wind'):
+                    t = (tg.get(cc) or {}).get(kind) or {}
+                    k, n, r2 = fit(c['recent'][kind], t, 30 if (kind == 'solar' and cc == 'FR') else 365)
+                    if k is None:
+                        print(f'  {cc} {kind}: {n} days of actual output, not enough to calibrate — skipped')
+                        entry['notes'][kind] = f'Only {n} days of actual {kind} output in the last year: not enough to calibrate.'
+                        continue
+                    scale = k
+                    entry['fit'][kind] = {'factor': round(k, 3), 'r2': r2, 'days': n, 'source': 'RTE' if cc == 'FR' else 'ENTSO-E'}
+                days, members = ensemble(conf[kind], kind)
+                # show the last PAST_DAYS days before the forecast, with actual values
+                first = date.fromisoformat(next(d for d, *v in zip(days, *members) if any(x is not None for x in v)))
+                lead = [(first - timedelta(days=i)).isoformat() for i in range(PAST_DAYS, 0, -1)]
+                members = [[None] * len(lead) + [x for d, x in zip(days, m) if d >= first.isoformat()] for m in members]
+                days = lead + [d for d in days if d >= first.isoformat()]
+                s = summarise(days, members, scale)
+                nm = c['normals'][kind]
+                s['normal'] = [round(nm[d[5:]] * scale, 2) if nm.get(d[5:]) is not None else None for d in days]
+                if kind in ('solar', 'wind'):
+                    t = (tg.get(cc) or {}).get(kind) or {}
+                    s['actual'] = [round(t[d], 1) if d in t else None for d in days]
+                else:
+                    try:
+                        obs = observed(conf[kind], kind)
+                        today_s = date.today().isoformat()
+                        s['actual'] = [round(obs[d], 2) if d in obs and obs[d] is not None and d < today_s else None for d in days]
+                    except Exception as e:
+                        print(f'  {cc} {kind}: observed values unavailable ({e})')
+                s.update({'days': days, 'unit': LABEL[kind][1], 'label': LABEL[kind][0]})
+                entry['series'][kind] = s
+            except Exception as e:
+                print(f'  {cc} {kind}: failed this run ({str(e)[:160]})')
+                entry['notes'][kind] = f'Fetch failed this run; showing no data for {kind} today.'
         out['countries'][cc] = entry
         print(f'{cc}: ' + ', '.join(entry['series']) + ('  fit ' + json.dumps(entry['fit']) if entry['fit'] else ''))
     with open(OUT, 'w') as f:
