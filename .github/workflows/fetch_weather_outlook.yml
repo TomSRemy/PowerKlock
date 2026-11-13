@@ -32,6 +32,8 @@ jobs:
         with:
           python-version: '3.12'
       - name: Fetch (unless the outlook is already fresh)
+        env:
+          PYTHONUNBUFFERED: "1"   # so the log shows real progress instead of nothing until a 40-minute kill
         run: |
           AGE=$(python3 -c "import json,datetime as d;j=json.load(open('data/weather_outlook.json'));u=j.get('updated');print(int((d.datetime.now(d.timezone.utc)-d.datetime.fromisoformat(u.replace('Z','+00:00'))).total_seconds()/3600) if u else 999)" 2>/dev/null || echo 999)
           if [ "${{ github.event_name }}" = "schedule" ] && [ "$AGE" -lt 18 ]; then echo "outlook ${AGE} h old: nothing to do"; exit 0; fi
@@ -49,7 +51,7 @@ jobs:
           done
           exit 1
       - name: E-mail on failure
-        if: failure()
+        if: failure() || cancelled()
         env:
           GO_GMAIL_USER: ${{ secrets.GO_GMAIL_USER }}
           GO_GMAIL_APP_PASSWORD: ${{ secrets.GO_GMAIL_APP_PASSWORD }}
