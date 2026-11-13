@@ -1,0 +1,32 @@
+name: Data freshness watchdog
+
+# Independent of the fetch jobs and of Site tests (which data-only commits don't trigger): checks that
+# the data those jobs write is actually recent, so a job silently failing every run for days — as
+# fetch_weather_outlook.yml did in November 2026 when Open-Meteo's quota ran out — gets noticed within
+# hours, not weeks. scripts/check_data_freshness.py holds the watched files and their age limits.
+
+on:
+  schedule:
+    - cron: '20 */6 * * *'
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Check
+        run: python3 scripts/check_data_freshness.py
+      - name: E-mail on failure
+        if: failure()
+        env:
+          GO_GMAIL_USER: ${{ secrets.GO_GMAIL_USER }}
+          GO_GMAIL_APP_PASSWORD: ${{ secrets.GO_GMAIL_APP_PASSWORD }}
+          SUBJECT: 'PowerKlock · donnée périmée'
+          WORKFLOW: ${{ github.workflow }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: python3 scripts/notify_failure.py || true
