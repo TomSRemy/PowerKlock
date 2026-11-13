@@ -199,7 +199,7 @@
       const host = old ? 'https://archive-api.open-meteo.com/v1/archive' : 'https://api.open-meteo.com/v1/forecast';
       const url = host + '?latitude=' + pt[0] + '&longitude=' + pt[1] + '&hourly=temperature_2m,wind_speed_100m'
         + '&wind_speed_unit=ms&timezone=Europe%2FParis&start_date=' + startISO + '&end_date=' + endISO;
-      _wxCache.set(key, fetch(url).then(r => r.ok ? r.json() : null).then(j => {
+      _wxCache.set(key, fetch(url, { signal: AbortSignal.timeout(10000) }).then(r => r.ok ? r.json() : null).then(j => {
         if (!j || !j.hourly) return null;
         const byDay = {};
         j.hourly.time.forEach((t, i) => {

@@ -24,7 +24,8 @@ const WX = { var: 'temp', cache: new Map() };
 
 function _wxCoords(cc) { const c = WX_CITIES[cc]; return 'latitude=' + c.map(x => x[1]).join(',') + '&longitude=' + c.map(x => x[2]).join(','); }
 function _wxGet(url) {
-  if (!WX.cache.has(url)) WX.cache.set(url, fetch(url).then(r => r.ok ? r.json() : null).then(j => j == null ? null : (Array.isArray(j) ? j : [j])).catch(() => null));
+  // a timeout: Open-Meteo rate-limited or slow should fail fast (noDataMsg), not hang the page
+  if (!WX.cache.has(url)) WX.cache.set(url, fetch(url, { signal: AbortSignal.timeout(10000) }).then(r => r.ok ? r.json() : null).then(j => j == null ? null : (Array.isArray(j) ? j : [j])).catch(() => null));
   return WX.cache.get(url);
 }
 function _wxForecast(cc, pastDays) {
