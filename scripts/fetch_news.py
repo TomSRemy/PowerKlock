@@ -236,7 +236,19 @@ def read_cre(content):
     return out
 
 
-READERS = {"cre": read_cre}
+def read_cre_consultations(content):
+    """CRE consultations publiques listing (no RSS): title, link, status label and document date of each card."""
+    s = content.decode("utf-8", "ignore")
+    out = []
+    for url, title, status, when in re.findall(
+            r'data-document-url="([^"]+)".*?<h3[^>]*>\s*<a[^>]*>(.*?)</a>.*?<span class="label[^"]*">([^<]*)</span>.*?<time datetime="([^"]+)"',
+            s, re.S):
+        out.append({"title": clean(title, 220), "link": "https://www.cre.fr" + url if url.startswith("/") else url,
+                    "date": parse_date(when), "snippet": clean(status, 60)})
+    return out
+
+
+READERS = {"cre": read_cre, "cre_consultations": read_cre_consultations}
 
 
 def gdelt(q):
