@@ -1,5 +1,5 @@
 {
- "lastUpdate": "2026-11-13T17:18:33.764016+00:00",
+ "lastUpdate": "2026-11-13T17:46:20.615154+00:00",
  "spot": {
   "value": 207.98,
   "unit": "EUR/MWh",
@@ -319,10 +319,10 @@
      "contract": "UK Q1 27 base",
      "marketId": 189670,
      "unit": "GBP/MWh",
-     "value": 191.19,
+     "value": 191.2,
      "date": "2026-11-12",
      "varD1Pct": 9.91,
-     "varW1Pct": 8.41
+     "varW1Pct": 8.42
     },
     {
      "tenor": "Q+2",
@@ -392,7 +392,7 @@
      "value": 73.86,
      "date": "2026-11-12",
      "varD1Pct": 2.13,
-     "varW1Pct": -1.59
+     "varW1Pct": -1.58
     }
    ],
    "forwardCurveDate": "2026-11-12",
@@ -617,7 +617,7 @@
      "contract": "NL Sum2027 base",
      "marketId": 73871,
      "unit": "EUR/MWh",
-     "value": 131.39,
+     "value": 131.4,
      "date": "2026-11-12",
      "varD1Pct": 9.11,
      "varW1Pct": 7.45
