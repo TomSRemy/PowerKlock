@@ -1,51 +1,51 @@
 {
- "updated": "2026-11-12T22:21:07+00:00",
- "asof": "2026-11-12",
+ "updated": "2026-11-13T14:45:41+00:00",
+ "asof": "2026-11-13",
  "notes": 2,
  "engine": "proxy",
  "context": [
   {
    "topic": "France",
    "topic_en": "France",
-   "text": "La disponibilité nucléaire en France est en baisse, avec 45579,79 MW disponibles, soit une diminution de 2,4% en 7 jours. Cela pousse les prix à la hausse.",
-   "text_en": "French nuclear availability is down, with 45579.79 MW available, a 2.4% decrease in 7 days, pushing prices up.",
+   "text": "La production nucléaire française est en baisse, avec une disponibilité de 45579,79 MW, soit une diminution de 2,4% en 7 jours. Cela pousse les prix à la hausse. La consommation électrique reste élevée en raison de la météo fraîche.",
+   "text_en": "French nuclear production is down, with an availability of 45579.79 MW, a decrease of 2.4% in 7 days. This drives prices up. Electricity consumption remains high due to cool weather.",
    "tone": "up"
   },
   {
    "topic": "Golfe",
    "topic_en": "Gulf",
-   "text": "La production et les exportations de pétrole dans la région du Golfe augmentent, ce qui entraîne une baisse du prix du Brent à 92,76 $/b. Les risques géopolitiques persistent, mais l'amélioration de l'offre disponible a un impact plus important.",
-   "text_en": "Oil production and exports in the Gulf region are increasing, leading to a drop in Brent price to $92.76/b. Geopolitical risks remain, but the improvement in available supply has a greater impact.",
+   "text": "La production et les exportations de pétrole dans la région du Golfe augmentent, ce qui entraîne une baisse du prix du Brent à 92,76 $/b. Les risques géopolitiques restent, mais l'amélioration de l'offre disponible a actuellement un impact plus important.",
+   "text_en": "Oil production and exports in the Gulf region are increasing, leading to a fall in the Brent price to $92.76/b. Geopolitical risks remain, but the improvement in available supply is currently having a greater impact.",
    "tone": "down"
   },
   {
    "topic": "Norvège",
    "topic_en": "Norway",
-   "text": "Les approvisionnements en gaz norvégien ont diminué légèrement en raison de travaux de maintenance prolongés, mais devraient se rétablir bientôt. Les stocks de gaz en Europe restent inférieurs à ceux de l'année dernière, rendant les marchés plus vulnérables aux périodes de froid et aux perturbations d'approvisionnement.",
-   "text_en": "Norwegian gas supplies have decreased slightly due to prolonged maintenance work, but are expected to recover soon. European gas stocks remain below last year's figures, making markets more vulnerable to cold spells and supply disruptions.",
+   "text": "Les approvisionnements en gaz norvégiens ont diminué légèrement en raison de travaux de maintenance prolongés, mais devraient se rétablir rapidement. Les niveaux de stock européens restent inférieurs à ceux de l'an dernier, ce qui rend les marchés plus vulnérables aux périodes de froid, à la disponibilité du GNL et aux perturbations d'approvisionnement inattendues.",
+   "text_en": "Norwegian gas supplies have decreased slightly due to prolonged maintenance work, but are expected to recover shortly. European stock levels remain below last year's figures, making the markets more vulnerable to cold spells, LNG availability and any unexpected supply disruptions.",
    "tone": "flat"
   }
  ],
  "outlook": {
   "oil": {
    "tone": "down",
-   "text": "La baisse du prix du Brent devrait se poursuivre",
-   "text_en": "Brent price drop expected to continue"
+   "text": "Le prix du pétrole devrait continuer à baisser en raison de l'augmentation de la production et des exportations dans la région du Golfe.",
+   "text_en": "Oil price is expected to continue to fall due to increased production and exports in the Gulf region."
   },
   "gas": {
    "tone": "up",
-   "text": "Les prix du gaz devraient augmenter en raison des prévisions météorologiques plus fraîches",
-   "text_en": "Gas prices expected to rise due to cooler weather forecasts"
+   "text": "Les prix du gaz devraient augmenter en raison de la baisse des approvisionnements norvégiens et de la vulnérabilité aux périodes de froid.",
+   "text_en": "Gas prices are expected to rise due to decreased Norwegian supplies and vulnerability to cold spells."
   },
   "power": {
    "tone": "up",
-   "text": "Les prix de l'électricité devraient augmenter en raison de la baisse de la disponibilité nucléaire et des prévisions météorologiques",
-   "text_en": "Power prices expected to rise due to decreased nuclear availability and weather forecasts"
+   "text": "Les prix de l'électricité devraient augmenter en raison de la baisse de la production nucléaire française et de la consommation élevée due à la météo fraîche.",
+   "text_en": "Power prices are expected to rise due to decreased French nuclear production and high consumption due to cool weather."
   },
   "carbon": {
    "tone": "flat",
-   "text": "Les prix du carbone devraient rester stables",
-   "text_en": "Carbon prices expected to remain stable"
+   "text": "Les prix des quotas de carbone devraient rester stables en raison de l'absence de facteurs significatifs influençant la demande ou l'offre.",
+   "text_en": "Carbon prices are expected to remain stable due to the lack of significant factors influencing demand or supply."
   }
  }
 }
