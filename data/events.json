@@ -1,5 +1,5 @@
 {
- "updated": "2026-10-26",
+ "updated": "2026-11-13",
  "about": "Events that explain the French and European power markets, past and upcoming: regulation, market, gas and geopolitics, nuclear, grid, weather. Each date is checked against its source. kind: reg | marche | gaz | geo | nucleaire | reseau | meteo. importance 1-3: 3 = shown as an explanatory block on the charts first. short: the block text. tags: the charts it concerns.",
  "kinds": {
   "reg": [
@@ -1328,6 +1328,35 @@
    "source": [
     "Carbon Brief, 30 sept. 2026",
     "https://www.carbonbrief.org/analysis-wind-and-solar-save-uk-from-gas-imports-worth-5-9bn-during-hormuz-crisis"
+   ]
+  },
+  {
+   "id": "decret-2026-997",
+   "date": "2026-10-29",
+   "scope": "FR",
+   "theme": "enr",
+   "tags": [
+    "enr",
+    "neg",
+    "balancing"
+   ],
+   "title": [
+    "Décret n° 2026-997 : résiliation, prix négatifs et flexibilité des contrats de soutien",
+    "Decree 2026-997: termination, negative prices and flexibility for support contracts"
+   ],
+   "text": [
+    "Pour les installations en obligation d’achat et complément de rémunération : indemnité de résiliation anticipée selon une méthode fixée par le cahier des charges avec un plancher de 10 000 €/MW ; une compensation pour prix négatifs indépendante de la production remplace l’ancienne prime versée uniquement à l’arrêt ; les installations en OA peuvent désormais participer aux services réseau et au mécanisme d’ajustement, pris en compte dans le calcul du complément de rémunération.",
+    "For plants under the feed-in tariff and feed-in premium: early-termination compensation set by a method fixed in the contract specifications, with a 10,000 €/MW floor; a production-independent compensation for negative prices replaces the former premium paid only when curtailed; feed-in-tariff plants can now take part in grid services and the balancing mechanism, counted in the feed-in premium calculation."
+   ],
+   "source": [
+    "Gossement Avocats",
+    "https://www.gossement-avocats.com/blog/energies-renouvelables-le-decret-n2026-997-du-26-octobre-2026-reforme-les-indemnites-de-resiliation-des-contrats-de-soutien-le-traitement-des-prix-negatifs-et-la-participation-des-installatio/"
+   ],
+   "kind": "reg",
+   "importance": 2,
+   "short": [
+    "Décret 2026-997 : résiliation, prix négatifs, flex",
+    "Decree 2026-997: termination, negative prices, flex"
    ]
   },
   {
