@@ -214,6 +214,16 @@
         "power",
         "regulation"
       ]
+    },
+    {
+      "name": "Consultations publiques (ministère)",
+      "cls": "dgec",
+      "url": "https://www.consultations-publiques.developpement-durable.gouv.fr/spip.php?page=backend-actu",
+      "tags": [
+        "fr",
+        "regulation"
+      ],
+      "require": "électri|electricit|photovolta|solaire|éolien|eolien|offshore|nucléaire|nucleaire|\\bedf\\b|engie|totalenergies|\\brte\\b|\\bcre\\b|enedis|hydrogène|batterie|stockage|renouvelable|tarif|fournisseur|pompe à chaleur|\\bppa\\b|énergie|energie|réseau électrique|gaz"
     }
   ],
   "pages": [
@@ -222,6 +232,16 @@
       "cls": "cre",
       "reader": "cre",
       "url": "https://www.cre.fr/actualites/toute-lactualite.html",
+      "tags": [
+        "fr",
+        "regulation"
+      ]
+    },
+    {
+      "name": "CRE — Consultations publiques",
+      "cls": "cre",
+      "reader": "cre_consultations",
+      "url": "https://www.cre.fr/documents/consultations-publiques.html",
       "tags": [
         "fr",
         "regulation"
