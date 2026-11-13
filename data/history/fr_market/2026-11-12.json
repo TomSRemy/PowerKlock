@@ -5,17 +5,103 @@
    "spot": 197.25,
    "nuclearCapacity": {
     "actualMW": 45579.79,
-    "forecastMW": 49950
+    "forecastMW": 51260
+   },
+   "forwardCurve": {
+    "M+1": 213.06,
+    "M+2": 221.43,
+    "M+3": 206.19,
+    "Q+1": 192.14,
+    "Q+2": 79.97,
+    "Q+3": 96.8,
+    "S+1": 88.38,
+    "S+2": 114.8,
+    "Y+1": 121.61,
+    "Y+2": 66.09,
+    "Y+3": 60.04
+   },
+   "generationMix": {
+    "gas": 5.11,
+    "wind": 8.4,
+    "solar": 1.08,
+    "nuclear": 42.95,
+    "hydro": 3.24,
+    "other": 1.98
    }
   },
   "UK": {
-   "spot": 183
+   "spot": 183,
+   "forwardCurve": {
+    "M+1": 196.84,
+    "M+2": 205.01,
+    "M+3": 195.49,
+    "Q+1": 191.19,
+    "Q+2": 135.14,
+    "Q+3": 125.04,
+    "S+1": 130.06,
+    "S+2": 126.47,
+    "Y+1": 143.89,
+    "Y+2": 91.37,
+    "Y+3": 73.86
+   },
+   "generationMix": {
+    "gas": 9.42,
+    "wind": 13.03,
+    "solar": 3.87,
+    "nuclear": 5.13,
+    "hydro": 0.27,
+    "biomass": 3.09,
+    "other": 1.53
+   }
   },
   "DE": {
-   "spot": 161.74
+   "spot": 161.74,
+   "forwardCurve": {
+    "M+1": 222.1,
+    "M+2": 230.22,
+    "M+3": 218.82,
+    "Q+1": 204.94,
+    "Q+2": 125.27,
+    "Q+3": 133.77,
+    "S+1": 129.52,
+    "S+2": 144.78,
+    "Y+1": 152.68,
+    "Y+2": 107.17,
+    "Y+3": 92.11
+   },
+   "generationMix": {
+    "gas": 8.37,
+    "wind": 20,
+    "solar": 2.21,
+    "nuclear": 0,
+    "coal": 15.42,
+    "hydro": 0.17,
+    "other": 0.31
+   }
   },
   "NL": {
-   "spot": 209.38
+   "spot": 209.38,
+   "forwardCurve": {
+    "M+1": 223.61,
+    "M+2": 233.18,
+    "M+3": 222.45,
+    "Q+1": 206.7,
+    "Q+2": 127.64,
+    "Q+3": 135.11,
+    "S+1": 131.39,
+    "S+2": 144.18,
+    "Y+1": 153.34,
+    "Y+2": 106.51,
+    "Y+3": 92.34
+   },
+   "generationMix": {
+    "gas": 4.99,
+    "wind": 3.35,
+    "solar": 0.47,
+    "nuclear": 0.48,
+    "coal": 3.29,
+    "other": 0.25
+   }
   }
  },
  "marketInsightsHtml": "<p>La capacité nucléaire française reste inférieure à celle observée en décembre dernier, certains sites étant hors service, ce qui ajoute une certaine pression sur le mix d'approvisionnement.</p>",
