@@ -1,6 +1,6 @@
 {
  "name": "PowerKlock data API",
- "updated": "2026-11-14T13:55:27Z",
+ "updated": "2026-11-14T17:19:53Z",
  "usage": "Plain HTTPS GET, JSON, no key. Cite the source of each dataset. Times are Paris delivery days unless stated.",
  "datasets": [
   {
@@ -105,7 +105,7 @@
    "content": "Per day: price sums and counts, solar and wind output and revenue, for all hours and for hours with a price > 0 — aggregate any window into capture prices and rates.",
    "refresh": "daily",
    "source": "PowerKlock, from RTE and ENTSO-E",
-   "sizeKB": 483
+   "sizeKB": 484
   },
   {
    "url": "https://tomsremy.github.io/PowerKlock/data/cre_m0.json",
