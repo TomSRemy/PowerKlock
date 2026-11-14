@@ -1,0 +1,35 @@
+name: Refresh Instagram token
+
+# The Instagram long-lived token (META_ACCESS_TOKEN) expires after 60 days. This refreshes it every 45 days
+# and e-mails the new one (scripts/refresh_meta_token.py) — it is not written back to the secret
+# automatically, so update META_ACCESS_TOKEN by hand from that e-mail.
+
+on:
+  schedule:
+    - cron: '0 8 1,16 * *'   # the 1st and the 16th of each month: comfortably inside the 45-60 day window
+  workflow_dispatch:
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - run: pip install -q requests==2.33.1
+      - name: Refresh and e-mail
+        env:
+          META_ACCESS_TOKEN: ${{ secrets.META_ACCESS_TOKEN }}
+          GO_GMAIL_USER: ${{ secrets.GO_GMAIL_USER }}
+          GO_GMAIL_APP_PASSWORD: ${{ secrets.GO_GMAIL_APP_PASSWORD }}
+        run: python scripts/refresh_meta_token.py
+      - name: E-mail on failure
+        if: failure()
+        env:
+          GO_GMAIL_USER: ${{ secrets.GO_GMAIL_USER }}
+          GO_GMAIL_APP_PASSWORD: ${{ secrets.GO_GMAIL_APP_PASSWORD }}
+          WORKFLOW: ${{ github.workflow }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: python3 scripts/notify_failure.py || true
