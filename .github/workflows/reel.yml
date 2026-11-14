@@ -1,8 +1,9 @@
 name: Morning reel
 
-# The morning reel (reel.html) recorded to a vertical MP4 at 08:00 Paris (scripts/record_reel.py) and sent by e-mail
-# (scripts/send_reel.py, GO_GMAIL_* secrets) to be posted on Instagram. The video is also kept 30 days as a run
-# artifact. Nothing is committed: videos stay out of the repository.
+# The morning reel (reel.html) recorded to a vertical MP4 at 08:00 Paris (scripts/record_reel.py), posted to
+# Instagram (scripts/post_reel.py, UPLOAD_POST_* secrets, via upload-post.com) and sent by e-mail as a backup
+# (scripts/send_reel.py, GO_GMAIL_* secrets). The video is also kept 30 days as a run artifact. Nothing is
+# committed: videos stay out of the repository.
 
 on:
   schedule:
@@ -33,7 +34,7 @@ jobs:
       - name: Install Chromium
         if: steps.due.outputs.run == 'true'
         run: |
-          pip install playwright==1.48.0 imageio-ffmpeg
+          pip install playwright==1.48.0 imageio-ffmpeg requests==2.33.1
           python -m playwright install --with-deps chromium
       - name: Record
         if: steps.due.outputs.run == 'true'
@@ -51,6 +52,12 @@ jobs:
           GO_GMAIL_APP_PASSWORD: ${{ secrets.GO_GMAIL_APP_PASSWORD }}
           REEL_TO: ${{ secrets.REEL_TO }}
         run: python scripts/send_reel.py out/reel/*.mp4
+      - name: Post to Instagram
+        if: steps.due.outputs.run == 'true'
+        env:
+          UPLOAD_POST_API_KEY: ${{ secrets.UPLOAD_POST_API_KEY }}
+          UPLOAD_POST_USER: ${{ secrets.UPLOAD_POST_USER }}
+        run: python scripts/post_reel.py out/reel/*.mp4
       - name: E-mail on failure
         if: failure()
         env:
