@@ -1,0 +1,22 @@
+{
+ "date": "2026-11-14",
+ "countries": {
+  "FR": {
+   "spot": 99.19
+  },
+  "UK": {
+   "spot": 175
+  },
+  "DE": {
+   "spot": 139.7
+  },
+  "NL": {
+   "spot": 138.24
+  }
+ },
+ "marketInsightsHtml": null,
+ "marketInsights": {
+  "gas": "<p>A bullish start to the day in the gas markets with the TTF FM contract trading over &euro;95/MWh this morning with reports of another LNG vessel being struck by a mine in the Middle East. &nbsp;</p>\n<p>Trump posted yesterday tasking Vance to look at domestic issues, which seems like a turn away from the Iranian deal he was previously tasked with. In the same post Trump said that they don&rsquo;t need a deal with Iran which again is a change in rhetoric from last weekend. The conflict looks to have escalated once again this week after bearish headlines dominated last week.</p>\n<p>Weather forecasts continue to drive the market as well with cooler runs for NW Europe for November compared to Monday and wind generation sitting around seasonal normal compared to previous weather runs which showed strong wind generation.</p>\n<p>Much of a continuation yesterday in the trend we have seen since Tuesday morning.</p>",
+  "power": "<p>Power prices remain bullish, same as gas this week. As previously mentioned in this weeks reports with the current weather runs and lack of renewable generation the power pricing, especially in the UK, is somewhat outpacing the move in the gas markets. The lack of wind implies a good amount of power demand through gas fired generation hence prices rallying.</p>\n<p>Oil prices remain at a similar level to last nights close with the bullish events in the Middle East having driven prices up this week. Prices could somewhat be capped by the inflation data in the US this week with a new expectation of interest rate hikes now potentially on the horizon.</p>"
+ }
+}
