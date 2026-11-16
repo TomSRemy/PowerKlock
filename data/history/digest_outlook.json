@@ -100,5 +100,11 @@
 "gas": "up",
 "power": "up",
 "carbon": "flat"
+},
+"2026-11-16": {
+"oil": "down",
+"gas": "up",
+"power": "up",
+"carbon": "flat"
 }
 }

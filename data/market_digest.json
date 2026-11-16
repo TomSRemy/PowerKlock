@@ -1,51 +1,51 @@
 {
- "updated": "2026-11-13T22:02:50+00:00",
- "asof": "2026-11-13",
+ "updated": "2026-11-16T16:10:59+00:00",
+ "asof": "2026-11-16",
  "notes": 2,
  "engine": "proxy",
  "context": [
   {
    "topic": "France",
    "topic_en": "France",
-   "text": "La disponibilité nucléaire en France est en baisse, avec une disponibilité de 45579,79 MW, soit une diminution de 2,4% par rapport à la semaine précédente. Cela pousse les prix à la hausse. Le gouvernement a également lancé un plan pour accélérer la filière solaire thermique, ce qui pourrait avoir un impact à long terme sur les prix de l'électricité.",
-   "text_en": "Nuclear availability in France is decreasing, with a capacity of 45579.79 MW, a 2.4% decrease from the previous week. This drives prices up. The government has also launched a plan to accelerate the solar thermal industry, which could have a long-term impact on electricity prices.",
+   "text": "La disponibilité nucléaire en France est en baisse, avec une puissance disponible de 45579,79 MW, en recul de 2,4% sur 7 jours. Cela pousse les prix à la hausse.",
+   "text_en": "Nuclear availability in France is decreasing, with a available power of 45579.79 MW, down 2.4% over 7 days. This pushes prices up.",
    "tone": "up"
   },
   {
    "topic": "Golfe",
    "topic_en": "Gulf",
-   "text": "La production et les exportations de pétrole dans la région du Golfe augmentent, ce qui entraîne une baisse du prix du Brent. Cela a un impact négatif sur les prix de l'électricité.",
-   "text_en": "Oil production and exports in the Gulf region are increasing, leading to a decrease in Brent prices. This has a negative impact on electricity prices.",
+   "text": "La production et les exportations de pétrole dans la région du Golfe augmentent, ce qui entraîne une baisse du prix du Brent. Cela pousse les prix à la baisse.",
+   "text_en": "Oil production and exports in the Gulf region are increasing, leading to a fall in the Brent price. This pushes prices down.",
    "tone": "down"
   },
   {
    "topic": "Norvège",
    "topic_en": "Norway",
-   "text": "Les approvisionnements en gaz norvégiens ont diminué légèrement en raison de travaux de maintenance prolongés, mais devraient se rétablir bientôt. Cela pousse les prix à la hausse.",
-   "text_en": "Norwegian gas supplies have decreased slightly due to prolonged maintenance work, but are expected to recover soon. This drives prices up.",
+   "text": "Les approvisionnements en gaz norvégien ont légèrement diminué en raison de travaux de maintenance prolongés, mais devraient se rétablir rapidement. Cela pousse les prix à la hausse.",
+   "text_en": "Norwegian gas supplies have slightly decreased due to prolonged maintenance work, but are expected to recover soon. This pushes prices up.",
    "tone": "up"
   }
  ],
  "outlook": {
   "oil": {
    "tone": "down",
-   "text": "Le prix du pétrole devrait continuer à baisser en raison de l'augmentation de la production et des exportations dans la région du Golfe.",
-   "text_en": "Oil prices are expected to continue to decrease due to increased production and exports in the Gulf region."
+   "text": "Baisse attendue",
+   "text_en": "Expected decrease"
   },
   "gas": {
    "tone": "up",
-   "text": "Les prix du gaz devraient continuer à augmenter en raison de la baisse des approvisionnements norvégiens et de la hausse de la demande.",
-   "text_en": "Gas prices are expected to continue to increase due to decreased Norwegian supplies and increased demand."
+   "text": "Hausse attendue",
+   "text_en": "Expected increase"
   },
   "power": {
    "tone": "up",
-   "text": "Les prix de l'électricité devraient continuer à augmenter en raison de la baisse de la disponibilité nucléaire en France et de la hausse de la demande.",
-   "text_en": "Electricity prices are expected to continue to increase due to decreased nuclear availability in France and increased demand."
+   "text": "Hausse attendue",
+   "text_en": "Expected increase"
   },
   "carbon": {
    "tone": "flat",
-   "text": "Les prix du carbone devraient rester stables en raison de l'absence de facteurs significatifs pouvant les faire varier.",
-   "text_en": "Carbon prices are expected to remain stable due to the absence of significant factors that could cause them to fluctuate."
+   "text": "Stabilité attendue",
+   "text_en": "Expected stability"
   }
  }
 }
