@@ -72,6 +72,8 @@ KEYWORDS = {
     "carbon": r"\b(carbon|co2|ets|eua|emission|decarboni[sz]|net[- ]zero|climate)\b",
     "regulation": r"\b(regulat\w*|réglement\w*|directive|commission|acer|cre|tariff|tarif\w*|law|loi|décret|decree|arrêté|bill|consultation|policy|ministry|ministère|government|gouvernement|auction design|appel d'offres|tender|ppe|arenh|vnu|turpe|accise|capacity mechanism|mécanisme de capacité|cfd|complément de rémunération)\b",
     "markets": r"\b(price[sd]?|market[s]?|trading|futures|forward|auction|spot|day-ahead|ppa|contract[s]?)\b",
+    # reference reports: periodic studies, barometers, observatories, outlooks, residual mix
+    "report": r"\b(rapports?|reports?|baromètres?|barometers?|observatoires?|panorama|bilan (électrique|prévisionnel)|bulletin trimestriel|outlook|residual mix(es)?|mix résiduel|économie du système|[eé]clairage sur)\b",
     "power": r"\b(power|electricity|grid|solar|wind|nuclear|hydro|battery|batteries|renewable[s]?|tso)\b",
 }
 
@@ -438,7 +440,7 @@ def rte_news(now, days=14):
     works news (worksites, roads, archaeology, drills) are left out. One page read per item, for its title."""
     sm = requests.get("https://www.rte-france.com/sitemap.xml", headers=BROWSER_UA, timeout=30).text
     since = datetime.fromordinal(now.date().toordinal() - days).strftime("%Y-%m-%d")
-    keep = re.compile(r"marche|prix|bilan|barometre|consommation|production|hiver|ete-|ecowatt|nucleaire|interconnex|flexibilit|stockage|"
+    keep = re.compile(r"rapport|panorama|observatoire|marche|prix|bilan|barometre|consommation|production|hiver|ete-|ecowatt|nucleaire|interconnex|flexibilit|stockage|"
                       r"raccordement|previsionnel|futurs|analyse|equilibre|capacite|europe|record|export|negatif|tarif|investiss|obligataire|schema|surete", re.I)
     skip = re.compile(r"travaux|chantier|archeolog|pompier|plage|riverain|route|circulation|deviation|formation|recrut|carrieres|concertation|enquete", re.I)
     items = []

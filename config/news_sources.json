@@ -1,5 +1,5 @@
 {
-  "_help": "Sources of the News page (Intelligence › News), read by scripts/fetch_news.py every 3 hours. To add a source: add an entry to 'feeds' (any public RSS / Atom feed: name, url, tags among power, gas, carbon, regulation, markets, fr, assoc). To follow a subject across the press: add a phrase to 'searches' (Google News, last 7 days, titles and links only). Pages without a feed can only be added with a dedicated reader (see 'pages').",
+  "_help": "Sources of the News page (Intelligence › News), read by scripts/fetch_news.py every 3 hours. To add a source: add an entry to 'feeds' (any public RSS / Atom feed: name, url, tags among power, gas, carbon, regulation, markets, fr, assoc, report). To follow a subject across the press: add a phrase to 'searches' (Google News, last 7 days, titles and links only). Pages without a feed can only be added with a dedicated reader (see 'pages').",
   "feeds": [
     {
       "name": "Carbon Pulse",
@@ -589,6 +589,31 @@
         "regulation",
         "official"
       ]
+    },
+    {
+      "name": "CRE — Rapports et études",
+      "cls": "cre",
+      "reader": "cre",
+      "url": "https://www.cre.fr/documents/rapports-et-etudes.html",
+      "tags": [
+        "fr",
+        "regulation",
+        "official",
+        "report",
+        "markets"
+      ]
+    },
+    {
+      "name": "CRE — Appels d'offres",
+      "cls": "cre",
+      "reader": "cre",
+      "url": "https://www.cre.fr/documents/appels-doffres.html",
+      "tags": [
+        "fr",
+        "regulation",
+        "official",
+        "power"
+      ]
     }
   ],
   "searches": [
@@ -760,6 +785,55 @@
       "tags": [
         "fr",
         "markets"
+      ]
+    },
+    {
+      "q": "\"mix résiduel\" électricité",
+      "tags": [
+        "fr",
+        "report",
+        "markets"
+      ]
+    },
+    {
+      "q": "\"European Residual Mix\" AIB",
+      "tags": [
+        "report",
+        "markets"
+      ],
+      "lang": "en"
+    },
+    {
+      "q": "\"Panorama de l'électricité renouvelable\"",
+      "tags": [
+        "fr",
+        "report",
+        "power"
+      ]
+    },
+    {
+      "q": "baromètre Observ'ER électricité renouvelable",
+      "tags": [
+        "fr",
+        "report",
+        "power"
+      ]
+    },
+    {
+      "q": "\"tableau de bord\" photovoltaïque éolien trimestre SDES",
+      "tags": [
+        "fr",
+        "report",
+        "power"
+      ]
+    },
+    {
+      "q": "rapport CRE marchés de gros électricité",
+      "tags": [
+        "fr",
+        "report",
+        "markets",
+        "regulation"
       ]
     }
   ]

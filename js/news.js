@@ -286,7 +286,7 @@ function renderNewsSources() {
 
 // Add a source from the site: public.news_source (warehouse migration 012), read by
 // scripts/fetch_news.py at the next hourly run. Signed-in users only (RLS).
-const _NEWS_TAGS = ['power', 'gas', 'carbon', 'regulation', 'markets', 'fr', 'assoc'];
+const _NEWS_TAGS = ['power', 'gas', 'carbon', 'regulation', 'markets', 'fr', 'assoc', 'report'];
 async function renderNewsAdd() {
   const host = document.getElementById('news-add'); if (!host) return;
   const A = window.PKAccount;
