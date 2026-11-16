@@ -5,7 +5,16 @@
   // a bare shared widget (index.html?bare#solo=…, for an iframe on another site): transparent, its theme chosen by &theme=light|dark
   var pkQ = location.search, pkBare = /^#solo=/.test(location.hash) && /[?&]bare(=|&|$)/.test(pkQ), pkTh = (pkQ.match(/[?&]theme=(light|dark)/) || [])[1];
   if (pkBare) document.documentElement.classList.add('pk-bare');
-  if (pkBare && pkTh ? pkTh === 'light' : localStorage.getItem('pk-theme') === 'light') document.documentElement.setAttribute('data-theme', 'light');
+  // public page (js/gate.js): a visitor without an approved account sees Today › Expert only, dark. Shared dashboards
+  // (#solo=) and the local test server stay open; ?pkgate=1 turns the gate on locally.
+  var pkGate = !pkBare && !/^#solo=/.test(location.hash) && (!/^(localhost|127\.0\.0\.1|)$/.test(location.hostname) || /[?&]pkgate=1/.test(pkQ));
+  window.pkGateOn = pkGate;
+  var pkPublic = pkGate && localStorage.getItem('pk-approved') !== '1';
+  if (pkPublic) {
+    document.documentElement.classList.add('pk-public');
+    if (!/access_token=|error_description=|[?&]code=/.test(location.hash + pkQ) && !/^#today(\?|$)/.test(location.hash)) history.replaceState(null, '', location.pathname + pkQ + '#today?v=2');
+  }
+  if (!pkPublic && (pkBare && pkTh ? pkTh === 'light' : localStorage.getItem('pk-theme') === 'light')) document.documentElement.setAttribute('data-theme', 'light');
 } catch (_) {}</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -4917,6 +4926,34 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
       </div>
     </div>
 
+    <div class="page" id="page-games">
+      <div class="pr-tabs-sticky"><div class="pr-tabs-bar"><div class="pr-breadcrumb"><span class="pr-breadcrumb-parent pk-bc-static">Games</span><span class="pr-breadcrumb-sep">›</span><span class="pr-breadcrumb-current">All games</span></div></div></div>
+      <div class="hist-section hist-section-strong" id="hs-games">
+        <div class="hist-section-header" onclick="toggleStrongSection('hs-games')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="11" rx="5"/><path d="M7 11v3M5.5 12.5h3"/><circle cx="16" cy="11.5" r="1"/><circle cx="18" cy="14" r="1"/></svg>Games<span class="pk-hs-meta">Three small games made in the colours of the site, for a break</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-games">
+          <div class="pk-games">
+            <section class="chart-container fuel-card pk-game">
+              <div class="table-title">Sheep on the charts</div>
+              <p class="fuel-card-sub">Sheep fall onto the page you are on, walk on the charts and take the pipes; lightning and wind come and go. They leave by themselves after 3 minutes.</p>
+              <div class="pk-game-foot"><button type="button" class="pk-btn-primary" id="pk-game-sheep">Release the sheep</button><span class="pk-game-note">On every page, until you call them back</span></div>
+            </section>
+            <section class="chart-container fuel-card pk-game">
+              <div class="table-title">Klock Wars</div>
+              <p class="fuel-card-sub">Forward curve artillery: a shooter played on the grid, in the colours of PowerKlock.</p>
+              <div class="pk-game-foot"><a class="pk-btn-primary" href="js/klock-wars.html" target="_blank" rel="noopener">Play the game</a><span class="pk-game-note">Opens in a new tab</span></div>
+            </section>
+            <section class="chart-container fuel-card pk-game">
+              <div class="table-title">PowerKlock Volley</div>
+              <p class="fuel-card-sub">Volleyball against the computer or between two players.</p>
+              <div class="pk-game-foot"><a class="pk-btn-primary" href="js/powerklock-volley.html" target="_blank" rel="noopener">Play the game</a><span class="pk-game-note">Opens in a new tab</span></div>
+            </section>
+          </div>
+        </div>
+      </div>
+    </div>
     <div class="page" id="page-about">
       <div class="pr-tabs-sticky"><div class="pr-tabs-bar"><div class="pr-breadcrumb"><span class="pr-breadcrumb-parent pk-bc-static">General</span><span class="pr-breadcrumb-sep">›</span><span class="pr-breadcrumb-current">About</span></div></div></div>
       <div class="meth-wrap pk-about">
@@ -5588,6 +5625,8 @@ prix     = coût gaz × 1 / (1 + exp(−(a − b × (couverture − 100)))) × (
 <script src="js/notes.js"></script>
 <script src="js/visits.js"></script>
 <script src="js/dashboard.js"></script>
+<script src="js/gate.js"></script>
+<script src="js/games.js"></script>
 
 <!-- ═══ PRICES PAGE · NAVIGATION JS ═══ -->
 <script src="js/page-init.js"></script>
