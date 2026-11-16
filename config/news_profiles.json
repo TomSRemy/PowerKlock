@@ -1,5 +1,5 @@
 {
-  "_help": "Reading profiles of the morning newsletter (scripts/news_letter.py, Intelligence › News › Newsletter). weights: how much each news category counts for this reader (fetch_news.py tags); official: bonus of a text from the Journal officiel, EUR-Lex or the CRE; keywords: words that lift a story (title or extract, case-insensitive); order: the sections, top to bottom (markets = the price tiles, digest = the day's essentials, stories = 3 stories for this reader, top = the main articles); reader: who reads it, given to the AI that writes « Pour vous ».",
+  "_help": "Reading profiles of the morning newsletter (scripts/news_letter.py, Intelligence › News › Newsletter). weights: how much each news category counts for this reader (fetch_news.py tags); official: bonus of a text from the Journal officiel, EUR-Lex or the CRE; keywords: words that lift a story (title or extract, case-insensitive); order: the sections, top to bottom (markets = the price tiles, digest = the day's essentials, stories = 3 stories for this reader, top = the main articles); reader: who reads it, given to the AI that writes « Pour vous ». require_keyword: a story must contain one of the keywords (the legal profile: a story without a legal subject is left out).",
   "profiles": {
     "regulatory": {
       "name": [
@@ -90,7 +90,10 @@
         "directive",
         "règlement",
         "délibération",
-        "contrat"
+        "loi",
+        "projet de loi",
+        "Conseil constitutionnel",
+        "CRE"
       ],
       "order": [
         "official",
@@ -102,7 +105,8 @@
         "agenda",
         "markets",
         "post"
-      ]
+      ],
+      "require_keyword": true
     },
     "origination": {
       "name": [

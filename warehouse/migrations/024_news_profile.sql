@@ -1,8 +1,8 @@
 -- requires: auth, 017_team_access.sql, 021_news_personalize.sql, 022_account_access.sql
 -- ════════════════════════════════════════════════════════════════════
 -- PowerKlock · 024 · Each reader's newsletter profile
--- The reading profile (config/news_profiles.json: regulatory, legal,
--- origination, markets, commercial), words to leave out, and whether the morning newsletter is e-mailed: every
+-- The reading profiles, one or several (config/news_profiles.json:
+-- regulatory, legal, origination, markets, commercial), words to leave out, and whether the morning newsletter is e-mailed: every
 -- weekday, on Monday only, or never; to the account's address or to
 -- another one. Each reader reads and writes only their own row; the
 -- news admin reads all of them. scripts/morning_mail.py sends each
@@ -11,7 +11,8 @@
 -- ════════════════════════════════════════════════════════════════════
 create table if not exists public.news_profile (
   user_id    uuid primary key default auth.uid() references auth.users (id) on delete cascade,
-  profile    text not null default 'origination' check (profile in ('regulatory', 'legal', 'origination', 'markets', 'commercial')),
+  profiles   text[] not null default '{origination}'
+             check (cardinality(profiles) between 1 and 5 and profiles <@ array['regulatory', 'legal', 'origination', 'markets', 'commercial']),
   exclude    text[] not null default '{}' check (cardinality(exclude) <= 25),
   email_freq text not null default 'never' check (email_freq in ('daily', 'monday', 'never')),
   email_to   text check (email_to is null or (length(email_to) <= 200 and email_to ~ '^[^@\s]+@[^@\s]+\.[^@\s]+$')),
