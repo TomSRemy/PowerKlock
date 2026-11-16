@@ -130,9 +130,103 @@ def render(today, rows, lines, heading='Dans l’actualité'):
     return subject, text, html
 
 
+def esc(t):
+    return str(t or '').replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;')
+
+
+SEC = {'markets': 'Marchés en 30 secondes', 'stories': 'Les sujets du jour', 'official': 'Textes officiels', 'cons': 'Consultations : à vos réponses',
+       'pubs': 'Publications et rapports', 'agenda': 'Agenda', 'post': 'À lire : le post de la semaine'}
+
+
+def render_letter(today, E, pid):
+    """The newsletter (scripts/news_letter.py) for one reading profile, as an e-mail: inline styles and tables, which
+    every mail client shows the same way. Rising prices in red, falling in green, as on the site."""
+    ed = E['profiles'][pid]
+    f = 'font-family:Inter,Arial,sans-serif'
+    serif = 'font-family:Georgia,\'Times New Roman\',serif'
+    h2 = lambda t: f'<p style="{f};font-size:11px;font-weight:700;letter-spacing:1px;color:#5F738A;margin:0 0 10px;text-transform:uppercase">{t}</p>'  # noqa: E731
+    box = lambda inner: f'<tr><td style="padding:18px 28px;border-bottom:1px solid #E6ECF2">{inner}</td></tr>'  # noqa: E731
+    a = lambda u, t, st='': f'<a href="{esc(u)}" style="color:#13202E;text-decoration:none;{st}">{esc(t)}</a>'  # noqa: E731
+    short = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.']
+    ddm = lambda d: f'{int(str(d)[8:10])} {short[int(str(d)[5:7]) - 1]}'  # noqa: E731
+
+    def num(v, d=2):
+        return n(v, d)
+
+    def markets():
+        if not E.get('markets'):
+            return ''
+        tr = ''
+        for r in E['markets']:
+            c = r.get('chg') or 0
+            col = '#B8322D' if c > 0 else '#0E7A5F' if c < 0 else '#5F738A'
+            pct = '' if r.get('pct') is None else ('▲ +' if c > 0 else '▼ −' if c < 0 else '') + n(abs(r['pct']), 1) + ' %'
+            tr += (f'<tr><td style="{f};padding:7px 0;border-bottom:1px solid #F1F4F8;font-size:14px;color:#34485E">{esc(r["label"][0])}</td>'
+                   f'<td style="font-family:Menlo,Consolas,monospace;padding:7px 0;border-bottom:1px solid #F1F4F8;font-size:14px;text-align:right;white-space:nowrap">{num(r["value"])} {esc(r["unit"])}</td>'
+                   f'<td style="font-family:Menlo,Consolas,monospace;padding:7px 0 7px 12px;border-bottom:1px solid #F1F4F8;font-size:13px;text-align:right;white-space:nowrap;color:{col}">{pct}</td></tr>')
+        srcs = ', '.join(sorted({r.get('src') for r in E['markets'] if r.get('src')}))
+        return box(h2(SEC['markets']) + f'<table role="presentation" width="100%" style="border-collapse:collapse">{tr}</table>'
+                   f'<p style="{f};font-size:11px;color:#62758B;margin:8px 0 0">Sources : {esc(srcs)}. Variation sur la séance précédente.</p>')
+
+    def stories():
+        if not ed.get('stories'):
+            return ''
+        out = ''
+        for k, st in enumerate(ed['stories']):
+            out += (f'<p style="{serif};font-size:19px;line-height:1.35;font-weight:600;margin:{0 if k == 0 else 18}px 0 6px">{k + 1}. {a(st["link"], st["title"])}</p>'
+                    + (f'<p style="{f};font-size:15px;line-height:1.55;color:#34485E;margin:0 0 6px"><b style="color:#13202E">Ce qui s’est passé.</b> {esc(st["what"])}</p>' if st.get('what') else '')
+                    + (f'<p style="{f};font-size:15px;line-height:1.55;color:#34485E;margin:0 0 6px;background:#EEF8F5;padding:10px 12px;border-radius:8px"><b style="color:#0B7A62">Pour vous, {esc(ed["short"][0].lower())}.</b> {esc(st["for_you"])}</p>' if st.get('for_you') else '')
+                    + f'<p style="{f};font-size:12px;color:#62758B;margin:0">{esc(" · ".join(st["sources"][:4]))}</p>')
+        return box(h2(SEC['stories']) + out)
+
+    def ul(rows):
+        return f'<ul style="{f};margin:0;padding-left:18px;font-size:14px;line-height:1.5;color:#34485E">' + ''.join(f'<li style="margin:0 0 7px">{r}</li>' for r in rows) + '</ul>'
+
+    def cons():
+        if not E.get('cons'):
+            return ''
+        tr = ''
+        for c in E['cons']:
+            left = (date.fromisoformat(c['deadline']) - today).days if c.get('deadline') else None
+            j = '' if left is None else 'auj.' if left == 0 else f'J-{left}'
+            col = '#B8322D' if left is not None and left <= 7 else '#34485E'
+            tr += (f'<tr><td style="font-family:Menlo,Consolas,monospace;padding:6px 12px 6px 0;color:{col};font-weight:600;white-space:nowrap;vertical-align:top;font-size:13px">{j}</td>'
+                   f'<td style="{f};padding:6px 0;font-size:14px;line-height:1.4">{a(c["link"], c["title"])} <span style="color:#62758B;font-size:12px">· {esc(c["source"])}</span></td></tr>')
+        return box(h2(SEC['cons']) + f'<table role="presentation" width="100%" style="border-collapse:collapse">{tr}</table>')
+
+    secs = {
+        'markets': markets, 'stories': stories, 'cons': cons,
+        'official': lambda: box(h2(SEC['official']) + ul([f'{a(o["link"], o["title"])} <span style="color:#62758B;font-size:12px">· {esc(o["source"])}, {ddm(o["date"])}</span>' for o in E['official']])) if E.get('official') else '',
+        'pubs': lambda: box(h2(SEC['pubs']) + ul([f'{a(o["link"], o["title"])} <span style="color:#62758B;font-size:12px">· {esc(o["source"])}</span>' for o in E['pubs']])) if E.get('pubs') else '',
+        'agenda': lambda: box(h2(SEC['agenda']) + ul([f'<b>{ddm(e["date"])}</b> · {esc((e.get("title") or [""])[0])}' for e in E['agenda']])) if E.get('agenda') else '',
+        'post': lambda: box(h2(SEC['post']) + f'<p style="{f};font-size:14px;margin:0">{a(E["post"]["url"], (E["post"].get("author") or "LinkedIn") + (" · " + E["post"]["note"] if E["post"].get("note") else ""))}</p>') if E.get('post') else '',
+    }
+    body = ''.join(secs[k]() for k in ed.get('order') or secs if k in secs)
+    one = box(h2('En une phrase') + f'<p style="{serif};font-size:19px;line-height:1.45;margin:0;color:#13202E">{esc(ed["headline"])}</p>') if ed.get('headline') else ''
+    html = (f'<div style="background:#E9EEF3;padding:24px 12px"><table role="presentation" width="100%" style="max-width:680px;margin:0 auto;border-collapse:collapse;background:#FFFFFF;border:1px solid #D5DEE8;border-radius:12px">'
+            f'<tr><td style="background:#0a0e13;padding:22px 28px;border-radius:12px 12px 0 0">'
+            f'<p style="{f};margin:0;font-size:13px;color:#B8C9D9"><span style="font-weight:700;color:#14D3A9">PowerKlock</span> · {frday(today)}</p>'
+            f'<p style="{serif};margin:8px 0 4px;font-size:28px;font-weight:600;color:#FFFFFF">Le matin de l’énergie</p>'
+            f'<p style="{f};margin:0;font-size:13px;color:#B8C9D9">Édition <b style="color:#FFFFFF">{esc(ed["name"][0])}</b>{" · depuis vendredi" if E.get("monday") else ""}</p></td></tr>'
+            + one + body +
+            f'<tr><td style="padding:16px 28px;background:#F3F6F9;border-radius:0 0 12px 12px"><p style="{f};font-size:12px;color:#62758B;line-height:1.6;margin:0">'
+            f'Sujets choisis pour le profil {esc(ed["name"][0])} ; résumés rédigés automatiquement à partir des titres et extraits, chaque sujet renvoie à ses articles.<br>'
+            f'<a href="{SITE}#intel/news" style="color:#0B7A62">Voir en ligne et changer de profil</a></p></td></tr></table></div>')
+    text = f'PowerKlock · Le matin de l’énergie · {frday(today)} · édition {ed["name"][0]}\n\n' + (ed.get('headline') or '') + '\n\n' + \
+        '\n'.join(f'{r["label"][0]} : {n(r["value"])} {r["unit"]}' for r in E.get('markets') or []) + '\n\n' + \
+        '\n'.join(f'• {st["title"]}\n  {st.get("what") or ""}\n  {st["link"]}' for st in ed.get('stories') or []) + f'\n\n{SITE}#intel/news\n'
+    subject = f'PowerKlock · Le matin de l’énergie · {frday(today)}'
+    return subject, text, html
+
+
 def main():
     today, rows, lines, heading = build()
     subject, text, html = render(today, rows, lines, heading)
+    # the newsletter when today's edition exists (scripts/news_letter.py), for the profile MORNING_PROFILE (default: origination)
+    E = load('newsletter.json') or {}
+    pid = os.environ.get('MORNING_PROFILE') or 'origination'
+    if E.get('date') == today.isoformat() and pid in (E.get('profiles') or {}):
+        subject, text, html = render_letter(today, E, pid)
     to = [x.strip() for x in (os.environ.get('MORNING_TO') or '').split(',') if x.strip()]
     ready = all(os.environ.get(k) for k in ('SMTP_HOST', 'SMTP_USER', 'SMTP_PASS')) and to
     if os.environ.get('MORNING_DRY_RUN') == '1' or not ready:

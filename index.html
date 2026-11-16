@@ -2411,6 +2411,7 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
           <div class="tabs-nav" id="news-tabs" role="tablist">
             <button class="tab-btn active" data-nv="feed" type="button">The feed</button>
             <button class="tab-btn" data-nv="official" type="button">Official texts <span class="news-tab-n" id="news-tab-off-n"></span></button>
+            <button class="tab-btn" data-nv="letter" type="button">Newsletter</button>
           </div>
           <div class="pr-tabs-bar-filters"><span class="updated-badge" id="news-updated">Loading...</span></div>
         </div>
@@ -2495,6 +2496,9 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
         </div>
         <div class="hist-section-body" id="hs-body-news-src"><div id="news-add"></div><div id="news-sources"></div></div>
       </div>
+      </div>
+      <div class="news-view" id="news-v-letter" hidden>
+        <div class="nl-wrap" id="news-letter"><div class="fuel-note">Loading…</div></div>
       </div>
       <div class="news-view" id="news-v-official" hidden>
       <div class="hist-section hist-section-strong" id="hs-news-cons" hidden>
@@ -5075,6 +5079,7 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
           <a href="#meth-cb" class="meth-nav-link">Flows, imbalance, outages</a>
           <a href="#meth-eua" class="meth-nav-link">Carbon, fuels &amp; spreads</a>
           <a href="#meth-bess" class="meth-nav-link">Batteries (BESS)</a>
+          <a href="#meth-news" class="meth-nav-link">News and newsletter</a>
           <a href="#meth-general" class="meth-nav-link">General terms</a>
         </aside>
         <aside class="meth-nav pk-fr-only" translate="no">
@@ -5085,6 +5090,7 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
           <a href="#meth-cb-fr" class="meth-nav-link">Échanges, écarts, indisponibilités</a>
           <a href="#meth-eua-fr" class="meth-nav-link">Carbone, combustibles et spreads</a>
           <a href="#meth-bess-fr" class="meth-nav-link">Batteries (BESS)</a>
+          <a href="#meth-news-fr" class="meth-nav-link">Veille et newsletter</a>
           <a href="#meth-general-fr" class="meth-nav-link">Termes généraux</a>
         </aside>
         <article class="meth-body pk-en-only">
@@ -5251,6 +5257,15 @@ price    = gas cost × 1 / (1 + exp(−(a − b × (coverage − 100)))) × (1 �
             <p class="meth-p">FCR: French settlement price of each 4-hour block of the common European auction, from the daily results export of regelleistung.net (published since January 2026), € per MW per block; a day = the sum of its 6 blocks, annualised = mean of the days × 365. The French FCR need (MW) comes from the same file. aFRR: procured balancing capacity prices of France on the ENTSO-E Transparency Platform (A89), shown when France publishes them. Debt rate base: euro area AAA 10-year spot rate (ECB data API). Fetched every day by <code>scripts/fetch_reserves.py</code> → <code>data/history/reserves_fr.json</code>.</p>
             <h3 class="meth-h3">BOA pricer</h3>
             <p class="meth-p">Debt service = annuity, Debt × r(1+r)<sup>n</sup> ÷ ((1+r)<sup>n</sup> − 1) with Debt = CAPEX × LTV. DSCR = (developer payment − OPEX) ÷ debt service, tested every year against 1.20×. Floor adjusted = floor at COD × (1 − step-down)<sup>year</sup> × (1 − degradation)<sup>year</sup>. From the data, every day: day-ahead + intraday at COD = the 2 h perfect schedule net of wear over the last 12 months × Cal forward of the COD year ÷ mean of the published daily averages of those 12 months (spreads taken to move with the price level, a first-order rule); low and high scenarios at 0.85× and 1.12× of it. FCR = French FCR price of the last 12 months × the share of the power sold in FCR (input), falling to 4/9 of it by 2037. Debt rate = ECB 10-year rate + bank margin (input). aFRR, mFRR, capacity mechanism and the path to 2037 remain scenario inputs.</p>
+          </section>
+          <section id="meth-news" class="meth-section">
+            <h2 class="meth-h2">News and newsletter</h2>
+            <h3 class="meth-h3">Collection</h3>
+            <p class="meth-p">Every hour (<code>scripts/fetch_news.py</code> → <code>data/news.json</code>): RSS feeds of the trade press and associations, press searches (Google News: titles and links only), the Journal officiel (DILA open data), EUR-Lex, the CRE's pages, RTE's and EEX's publications. No article text is kept. Articles about the same event within 72 hours are grouped into one story with all its outlets.</p>
+            <h3 class="meth-h3">Ranking (The feed, most important)</h3>
+            <p class="meth-p">Each article gets a score: its strongest category (geopolitics 3, regulation 2, deals 2, new capacity 1.5, gas 1.5, markets 1, carbon 1, power 0.5) plus half of the others; +1 for an official text, −1.5 off topic; France +1.5, Europe +1; readers' votes adjust sources, categories and words (±3 at most). The list then takes 0.3 per day of age and 0.6 per article of the same outlet already placed above.</p>
+            <h3 class="meth-h3">Newsletter and reading profiles</h3>
+            <p class="meth-p">Every weekday at 7:00 (<code>scripts/news_letter.py</code> → <code>data/newsletter.json</code>), one edition per profile: regulatory, origination, market expert, sales. The 3 stories of the last 36 hours (84 on Monday) that score highest for the profile: categories weighted by the profile, +1.5 per profile keyword found (2 at most), France +1, more outlets (+0.5 × log₂), −0.3 per day; one event and one outlet once. « What happened » and « For you » are written by a free AI model from the titles and extracts only; a line that only repeats the title is dropped. Markets: France spot (ENTSO-E), Cal+1 France (EEX), PEG, TTF and EUA (PowerKlock), change on the previous session. Official texts, consultations (deadline within 14 days or opened in the last 3), publications and the agenda come from the same files as the site.</p>
           </section>
           <section id="meth-general" class="meth-section">
             <h2 class="meth-h2">General terms</h2>
@@ -5427,6 +5442,15 @@ prix     = coût gaz × 1 / (1 + exp(−(a − b × (couverture − 100)))) × (
             <p class="meth-p">FCR : prix de règlement français de chaque bloc de 4 heures de l’enchère européenne commune, d’après l’export quotidien des résultats de regelleistung.net (publié depuis janvier 2026), en € par MW et par bloc ; un jour = la somme de ses 6 blocs, annualisé = moyenne des jours × 365. Le besoin FCR de la France (MW) vient du même fichier. aFRR : prix de capacité d’équilibrage achetée par la France sur la plateforme de transparence ENTSO-E (A89), affichés quand la France les publie. Base du taux de la dette : taux au comptant 10 ans AAA de la zone euro (API de données de la BCE). Récupérés chaque jour par <code>scripts/fetch_reserves.py</code> → <code>data/history/reserves_fr.json</code>.</p>
             <h3 class="meth-h3">Pricer BOA</h3>
             <p class="meth-p">Service de la dette = annuité, Dette × r(1+r)<sup>n</sup> ÷ ((1+r)<sup>n</sup> − 1) avec Dette = CAPEX × LTV. DSCR = (paiement au développeur − OPEX) ÷ service de la dette, testé chaque année contre 1,20×. Floor ajusté = floor au COD × (1 − baisse annuelle)<sup>année</sup> × (1 − dégradation)<sup>année</sup>. D’après les données, chaque jour : day-ahead + intraday au COD = programme parfait 2 h net d’usure des 12 derniers mois × forward Cal de l’année du COD ÷ moyenne des moyennes journalières publiées de ces 12 mois (les spreads sont supposés suivre le niveau des prix, une règle au premier ordre) ; scénarios bas et haut à 0,85× et 1,12× de cette valeur. FCR = prix FCR français des 12 derniers mois × part de la puissance vendue en FCR (entrée), descendant à 4/9 de cette valeur en 2037. Taux de la dette = taux 10 ans BCE + marge bancaire (entrée). aFRR, mFRR, mécanisme de capacité et chemin jusqu’en 2037 restent des entrées de scénario.</p>
+          </section>
+          <section id="meth-news-fr" class="meth-section">
+            <h2 class="meth-h2">Veille et newsletter</h2>
+            <h3 class="meth-h3">Collecte</h3>
+            <p class="meth-p">Toutes les heures (<code>scripts/fetch_news.py</code> → <code>data/news.json</code>) : flux RSS de la presse spécialisée et des associations, recherches presse (Google News : titres et liens seulement), Journal officiel (open data de la DILA), EUR-Lex, pages de la CRE, publications de RTE et d’EEX. Aucun texte d’article n’est conservé. Les articles sur un même événement à moins de 72 heures d’écart forment un seul sujet, avec tous ses médias.</p>
+            <h3 class="meth-h3">Classement (Le fil, plus importants)</h3>
+            <p class="meth-p">Chaque article reçoit une note : sa catégorie la plus forte (géopolitique 3, régulation 2, transactions 2, nouvelles capacités 1,5, gaz 1,5, marchés 1, carbone 1, électricité 0,5) plus la moitié des autres ; +1 pour un texte officiel, −1,5 hors sujet ; France +1,5, Europe +1 ; les votes des lecteurs ajustent sources, catégories et mots (±3 au plus). La liste retire ensuite 0,3 par jour d’ancienneté et 0,6 par article du même média déjà placé au-dessus.</p>
+            <h3 class="meth-h3">Newsletter et profils de lecture</h3>
+            <p class="meth-p">Chaque matin de semaine à 7 h (<code>scripts/news_letter.py</code> → <code>data/newsletter.json</code>), une édition par profil : réglementaire, origination, expert marchés, commercial. Les 3 sujets des 36 dernières heures (84 le lundi) les mieux notés pour le profil : catégories pondérées par le profil, +1,5 par mot-clé du profil trouvé (2 au plus), France +1, plus de médias (+0,5 × log₂), −0,3 par jour ; un même événement et un même média une seule fois. « Ce qui s’est passé » et « Pour vous » sont rédigés par un modèle d’IA gratuit à partir des seuls titres et extraits ; une ligne qui ne fait que répéter le titre est retirée. Marchés : spot France (ENTSO-E), Cal+1 France (EEX), PEG, TTF et EUA (PowerKlock), variation sur la séance précédente. Textes officiels, consultations (date limite sous 14 jours ou ouvertes depuis moins de 3 jours), publications et agenda viennent des mêmes fichiers que le site.</p>
           </section>
           <section id="meth-general-fr" class="meth-section">
             <h2 class="meth-h2">Termes généraux</h2>

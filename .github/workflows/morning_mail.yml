@@ -20,16 +20,17 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
-      - name: News digest (the day's essentials; on Monday, the week before)
+      - name: News digest and newsletter (the day's essentials; on Monday, the week before)
         # scripts/news_digest.py: the site's AI proxy rewrites the top stories of data/news.json; written once a day
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}   # the posts the team voted for, in Monday's edition
         run: |
           pip install -q scikit-learn==1.6.1 "psycopg[binary]==3.3.2"
           python scripts/news_digest.py || echo "::warning::digest not written"
+          python scripts/news_letter.py || echo "::warning::newsletter not written"   # one edition per reading profile (config/news_profiles.json)
           git config user.name "PowerDesk Bot"
           git config user.email "bot@powerdesk.local"
-          git add data/news_digest.json 2>/dev/null || true
+          git add data/news_digest.json data/newsletter.json 2>/dev/null || true
           if git diff --staged --quiet; then echo "No new digest."; exit 0; fi
           git commit -q -m "data: news digest $(TZ=Europe/Paris date +%F)"
           for i in 1 2 3 4 5; do git pull -q --rebase -X theirs origin main && git push -q && exit 0; git rebase --abort 2>/dev/null || true; sleep 5; done
@@ -42,6 +43,7 @@ jobs:
           SMTP_PASS: ${{ secrets.SMTP_PASS }}
           ALERT_FROM: ${{ secrets.ALERT_FROM }}
           MORNING_TO: ${{ secrets.MORNING_TO }}
+          MORNING_PROFILE: ${{ vars.MORNING_PROFILE }}   # reading profile of the e-mail: regulatory, origination (default), markets, commercial
         run: |
           # one mail a day: the run whose UTC hour is 07:00 in Paris
           if [ "$(TZ=Europe/Paris date +%H)" != "07" ] && [ "${{ github.event_name }}" = "schedule" ]; then echo "Not 07:00 in Paris"; exit 0; fi
