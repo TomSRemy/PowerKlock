@@ -537,7 +537,7 @@ function _mrnTileList(k) {
   const ch1 = pts => pts.length > 1 && pts[pts.length - 2][1] ? (pts[pts.length - 1][1] / pts[pts.length - 2][1] - 1) * 100 : null;
   // « +1.2 % D-1 · +7.1 % 7 d », each in its colour
   const moves = (pts, inv) => { const c1 = ch1(pts), c7 = ch7(pts), cl = c => { const t = tone(c, inv); return t ? 'mrn-' + t : ''; };
-    return `<span class="mrn2-tc"><span class="${cl(c1)}">${_mS(c1, 1)} %</span> <span class="mrn3-dim">${_mT('J-1', 'D-1')}</span> · <span class="${cl(c7)}">${_mS(c7, 1)} %</span> <span class="mrn3-dim">${_mT('7 j', '7 d')}</span></span>`; };
+    return `<span class="mrn2-tc"><span class="mrn-nw"><span class="${cl(c1)}">${_mS(c1, 1)} %</span> <span class="mrn3-dim">${_mT('J-1', 'D-1')}</span></span> · <span class="mrn-nw"><span class="${cl(c7)}">${_mS(c7, 1)} %</span> <span class="mrn3-dim">${_mT('7 j', '7 d')}</span></span></span>`; };
   const tone = (c, inv) => c == null || Math.abs(c) < 0.5 ? '' : (c > 0) !== !!inv ? 'up' : 'down';
   const foot = (l, r) => `<span class="mrn3-tx"><span>${l}</span><span>${r}</span></span>`;
   const kv = (label, v) => `${label} <b>${v}</b>`;
@@ -579,11 +579,11 @@ function _mrnTileList(k) {
       : `<span class="mrn2-tv">${_mN(L.cov, 0)}<small>%</small></span><span class="mrn2-tc">${_mT('prix implicite', 'implied price')} <b>${_mN(L.fair, 1)} €</b></span>`;
     T.push(`<a class="mrn2-tile" data-tile="idx" href="#tools/compare" data-route="tools/compare" title="${_mT('Spot attendu sur 4 semaines d’après les fondamentaux : couverture de la consommation par le nucléaire, l’hydraulique, les renouvelables et les bioénergies (prévisions météo, nucléaire disponible), au coût du gaz du jour, avec une courbe ajustée sur 3 ans', 'Expected spot over 4 weeks from the fundamentals: demand covered by nuclear, hydro, renewables and bioenergy (weather outlook, nuclear available), at today’s gas cost, through a curve fitted on 3 years')}">` +
       cat(_mT('Indice PowerKlock', 'PowerKlock index'), A ? (_mrnLast(k.P('ttf')) || [])[0] : L.d, A ? _mT('Calculé avec les dernières cotations du gaz (TTF) et du CO₂, à cette date', 'Computed with the latest gas (TTF) and CO₂ settlements, of this date') : _mT('Dernier jour de production publié par RTE', 'Latest production day published by RTE'), A && sp7 ? tone(ci) : tone(-c)) + (A && sp7
-        ? `<span class="mrn3-th"><span class="mrn2-tn${tone(ci) ? ' mrn-' + tone(ci) : ''}">${_mT('Spot à 4 sem. vs 7 derniers jours', 'Spot in 4 wks vs last 7 days')}</span>${pill(null, ci, _mT('Spot attendu sur 4 semaines vs spot des 7 derniers jours', 'Expected spot over 4 weeks vs the last 7 days’ spot'))}</span>`
+        ? `<span class="mrn3-th"><span class="mrn2-tn${tone(ci) ? ' mrn-' + tone(ci) : ''}">${_mT('Spot à 4 sem.', 'Spot in 4 wks')}</span>${pill(null, ci, _mT('Spot attendu sur 4 semaines vs spot des 7 derniers jours', 'Expected spot over 4 weeks vs the last 7 days’ spot'))}</span>`
         : `<span class="mrn3-th"><span class="mrn2-tn${tone(-c) ? ' mrn-' + tone(-c) : ''}">${_mT('Couv. bas carbone', 'Low-carbon cover')}</span>${pill(null, c == null ? null : -c, _mT('Plus de couverture bas carbone : prix plus bas', 'More low-carbon cover: lower prices'))}</span>`) + main +
       // the sparkline's colour must agree with the name just above it (same rule as everywhere else: a
       // green name beside a neutral-coloured chart reads as a contradiction)
-      `${_mrnSpark(A ? A.days.slice(0, 28).map(x => x.fair) : since(pts, 60).map(p => p[1]), A && sp7 ? tone(ci) : tone(-c))}${foot(kv(_mT('couverture auj.', 'coverage today'), _mN(L.cov, 0) + ' %'), A ? _mT('4 sem.', '4 wks') : _mT('60 j', '60 d'))}</a>`); }
+      `${_mrnSpark(A ? A.days.slice(0, 28).map(x => x.fair) : since(pts, 60).map(p => p[1]), A && sp7 ? tone(ci) : tone(-c))}${foot(kv(_mT('couv. auj.', 'cover today'), _mN(L.cov, 0) + ' %'), A ? _mT('4 sem.', '4 wks') : _mT('60 j', '60 d'))}</a>`); }
   // Explain: one line under each tile (shown when the switch is on)
   return T.map(h => { const id = (h.match(/data-tile="(\w+)"/) || [])[1], x = id && MRN_EX[id]; return x ? h.replace(/<\/a>$/, `<span class="mrn-x">${_mT(x[0], x[1])}</span></a>`) : h; });
 }
@@ -1309,7 +1309,7 @@ document.addEventListener('click', e => {   // a tile opens its chart full size 
   .mrn3-fw{display:flex;gap:4px 12px;flex-wrap:wrap;font-size:12px;color:var(--text3);margin-top:3px} .mrn3-fw b{color:var(--text);font:600 13.5px 'JetBrains Mono',monospace}
   .mrn3-fw i{display:inline-block;width:10px;height:3px;border-radius:2px;margin-right:4px;vertical-align:middle} .mrn3-fw .mrn-up{color:var(--down)} .mrn3-fw .mrn-down{color:var(--up)}
   .mrn2-tile svg{height:40px}
-  .mrn3-tx{display:flex;justify-content:space-between;gap:6px;font-size:11px;color:var(--text3);margin-top:4px;white-space:nowrap} .mrn3-tx>span:first-child{overflow:hidden;text-overflow:ellipsis} .mrn3-tx b{color:var(--text2);font-weight:600;font-variant-numeric:tabular-nums}
+  .mrn-nw{white-space:nowrap} .mrn3-tx{display:flex;justify-content:space-between;gap:6px;font-size:11px;color:var(--text3);margin-top:4px;white-space:nowrap} .mrn3-tx>span:first-child{overflow:hidden;text-overflow:ellipsis} .mrn3-tx b{color:var(--text2);font-weight:600;font-variant-numeric:tabular-nums}
   .mrn3-dim{color:var(--text3)}
   .mrn3-th{display:flex;justify-content:space-between;align-items:flex-start;gap:6px;min-width:0} .mrn3-th .wk-chip{font-size:10px;flex:none} .mrn3-th .mrn2-tn{flex:1 1 auto;min-width:0}
   .mrn3-pair{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;align-items:stretch}   /* what moved, full width (its tiles in one row), then the news, full width */
