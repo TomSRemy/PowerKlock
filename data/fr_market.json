@@ -1,9 +1,9 @@
 {
- "lastUpdate": "2026-11-14T21:35:09.749451+00:00",
+ "lastUpdate": "2026-11-16T22:35:46.433608+00:00",
  "spot": {
-  "value": 99.19,
+  "value": 64.58,
   "unit": "EUR/MWh",
-  "date": "2026-11-14"
+  "date": "2026-11-16"
  },
  "forwardCurve": [
   {
@@ -119,33 +119,32 @@
  ],
  "forwardCurveDate": "2026-11-13",
  "nuclearCapacity": {
-  "actualMW": 45579.79,
-  "forecastMW": 51260
+  "forecastMW": 52150
  },
- "nuclearCapacityDate": "2026-11-12",
+ "nuclearCapacityDate": null,
  "generationMix": {
-  "gas": 5.11,
-  "wind": 8.4,
-  "solar": 1.08,
-  "nuclear": 42.95,
-  "hydro": 3.24,
-  "other": 1.98
+  "gas": null,
+  "wind": null,
+  "solar": null,
+  "nuclear": null,
+  "hydro": null,
+  "other": null
  },
- "generationMixDate": "2026-11-12",
+ "generationMixDate": null,
  "marketInsightsHtml": null,
  "marketInsights": {
-  "gas": "<p>A bullish start to the day in the gas markets with the TTF FM contract trading over &euro;95/MWh this morning with reports of another LNG vessel being struck by a mine in the Middle East. &nbsp;</p>\n<p>Trump posted yesterday tasking Vance to look at domestic issues, which seems like a turn away from the Iranian deal he was previously tasked with. In the same post Trump said that they don&rsquo;t need a deal with Iran which again is a change in rhetoric from last weekend. The conflict looks to have escalated once again this week after bearish headlines dominated last week.</p>\n<p>Weather forecasts continue to drive the market as well with cooler runs for NW Europe for November compared to Monday and wind generation sitting around seasonal normal compared to previous weather runs which showed strong wind generation.</p>\n<p>Much of a continuation yesterday in the trend we have seen since Tuesday morning.</p>",
-  "power": "<p>Power prices remain bullish, same as gas this week. As previously mentioned in this weeks reports with the current weather runs and lack of renewable generation the power pricing, especially in the UK, is somewhat outpacing the move in the gas markets. The lack of wind implies a good amount of power demand through gas fired generation hence prices rallying.</p>\n<p>Oil prices remain at a similar level to last nights close with the bullish events in the Middle East having driven prices up this week. Prices could somewhat be capped by the inflation data in the US this week with a new expectation of interest rate hikes now potentially on the horizon.</p>"
+  "gas": "<p>A bearish open to start the week following a strong trend upwards in price action from Tuesday morning last week. A the time of writing the TTF front month Dec-26 contract is trading at &euro;87.90/MWh whilst the NBP Dec-26 is trading at 219p/therm.</p>\n<p>On the geopolitical front, over the weekend Iran stuck an airbase in Bahrain with drones attacking a helicopter base and additionally a representative of Iran claimed the path to ending the conflict was open. From the US, following Trumps post claiming they don&rsquo;t need a deal with Iran, Trump looks to have refocused Vance on domestic issues.</p>\n<p>Following a meeting last week in Abu Dhabi with representatives from the US, Russia and Ukraine this weekend saw Ukraine launch attacks inside Russia with a bridge and Oil facilities as the target. On Thursday Trump is expected to meet Putin and Xi Jinping at a summit discussing nuclear arms and Iran. Market participants will follow any headlines that come out closely.</p>\n<p>Weather forecast last week were a significant driver of price action with cooler weather runs adding further bullishness. This morning, temperature forecast have revised upwards with many weather runs forecasting at or around seasonal normal levels for late November. The AIFS has turned a little bearish in the latest runs.</p>",
+  "power": "<p>Power prices have fallen as well this morning following the move in the gas markets.</p>\n<p>With geopolitical situation much quieter this weekend that what we have come to expect, much of the move can be attributed to the weather forecasts. As described in the gas commentary, temperatures are set to be around seasonal normal for the end of Nov in the latest runs. Wind speeds, especially in the UK, have taken a turn upwards expecting wind to climb to around seasonal normal level, dampening the expectation of last week where forecasts predicted a significant amount of power generation would have to come through gas fired generation.</p>\n<p>EUA prices have fallen alongside the rest of the European energy commodity moves this morning, trading now below &euro;88 having been over &euro;90 last week</p>"
  },
- "marketInsightsDate": "2026-11-14",
+ "marketInsightsDate": "2026-11-16",
  "countries": {
   "FR": {
    "label": "France",
    "currency": "EUR",
    "spot": {
-    "value": 99.19,
+    "value": 64.58,
     "unit": "EUR/MWh",
-    "date": "2026-11-14"
+    "date": "2026-11-16"
    },
    "forwardCurve": [
     {
@@ -261,27 +260,26 @@
    ],
    "forwardCurveDate": "2026-11-13",
    "nuclearCapacity": {
-    "actualMW": 45579.79,
-    "forecastMW": 51260
+    "forecastMW": 52150
    },
-   "nuclearCapacityDate": "2026-11-12",
+   "nuclearCapacityDate": null,
    "generationMix": {
-    "gas": 5.11,
-    "wind": 8.4,
-    "solar": 1.08,
-    "nuclear": 42.95,
-    "hydro": 3.24,
-    "other": 1.98
+    "gas": null,
+    "wind": null,
+    "solar": null,
+    "nuclear": null,
+    "hydro": null,
+    "other": null
    },
-   "generationMixDate": "2026-11-12"
+   "generationMixDate": null
   },
   "UK": {
    "label": "United Kingdom",
    "currency": "GBP",
    "spot": {
-    "value": 175,
+    "value": 173,
     "unit": "GBP/MWh",
-    "date": "2026-11-14"
+    "date": "2026-11-16"
    },
    "forwardCurve": [
     {
@@ -399,23 +397,23 @@
    "nuclearCapacity": null,
    "nuclearCapacityDate": null,
    "generationMix": {
-    "gas": 9.42,
-    "wind": 13.03,
-    "solar": 3.87,
+    "gas": 11.21,
+    "wind": 7.14,
+    "solar": 1.1,
     "nuclear": 5.13,
-    "hydro": 0.27,
-    "biomass": 3.09,
-    "other": 1.53
+    "hydro": 0.46,
+    "biomass": 2.5,
+    "other": 1.03
    },
-   "generationMixDate": "2026-11-12"
+   "generationMixDate": "2026-11-15"
   },
   "DE": {
    "label": "Germany",
    "currency": "EUR",
    "spot": {
-    "value": 139.7,
+    "value": 211.58,
     "unit": "EUR/MWh",
-    "date": "2026-11-14"
+    "date": "2026-11-16"
    },
    "forwardCurve": [
     {
@@ -533,23 +531,23 @@
    "nuclearCapacity": null,
    "nuclearCapacityDate": null,
    "generationMix": {
-    "gas": 8.37,
-    "wind": 20,
-    "solar": 2.21,
-    "nuclear": 0,
-    "coal": 15.42,
-    "hydro": 0.17,
-    "other": 0.31
+    "gas": null,
+    "wind": null,
+    "solar": null,
+    "nuclear": null,
+    "coal": null,
+    "hydro": null,
+    "other": null
    },
-   "generationMixDate": "2026-11-12"
+   "generationMixDate": null
   },
   "NL": {
    "label": "Netherlands",
    "currency": "EUR",
    "spot": {
-    "value": 138.24,
+    "value": 193.18,
     "unit": "EUR/MWh",
-    "date": "2026-11-14"
+    "date": "2026-11-16"
    },
    "forwardCurve": [
     {
@@ -667,14 +665,14 @@
    "nuclearCapacity": null,
    "nuclearCapacityDate": null,
    "generationMix": {
-    "gas": 4.99,
-    "wind": 3.35,
-    "solar": 0.47,
-    "nuclear": 0.48,
-    "coal": 3.29,
-    "other": 0.25
+    "gas": null,
+    "wind": null,
+    "solar": null,
+    "nuclear": null,
+    "coal": null,
+    "other": null
    },
-   "generationMixDate": "2026-11-12"
+   "generationMixDate": null
   }
  }
 }
