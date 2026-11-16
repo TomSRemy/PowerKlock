@@ -11,7 +11,7 @@ async function loadNews() {
     if (!r.ok) throw new Error(r.status);
     const j = await r.json();
     newsData = (j.items || []).map(i => Object.assign({}, i, { date: new Date(i.date) }))
-      .sort((a, b) => b.date - a.date);
+      .sort((a, b) => (b.impact || 0) - (a.impact || 0) || b.date - a.date);   // most relevant first, latest as tie-break
     const upd = j.updated ? new Date(j.updated).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' }) : '';
     window._newsSources = j.sources || null;
     const nSrc = j.sources ? j.sources.filter(s => s.kind !== 'search').length : new Set(newsData.map(n => n.source)).size;
@@ -100,6 +100,7 @@ async function renderNewsAdd() {
     const say = (t, c) => { msg.textContent = t; msg.className = 'news-add-msg ' + (c || ''); };
     if (!v) return say(k === 'feed' ? 'Enter the feed address.' : 'Enter the phrase to follow.', 'ko');
     if (k === 'feed' && !/^https?:\/\/\S+\.\S+/.test(v)) return say('The feed address must start with https://', 'ko');
+    if (k === 'search' && /^https?:\/\//i.test(v)) return say('A press search follows a phrase, not a web address — add this as an RSS feed instead, or type a phrase to follow.', 'ko');
     const row = { kind: k, name: name || (k === 'feed' ? v.replace(/^https?:\/\/(www\.)?/, '').split('/')[0] : v).slice(0, 80), tags };
     if (k === 'feed') row.url = v; else row.query = v.slice(0, 200);
     say('Adding…');
@@ -144,6 +145,8 @@ function renderNews(items) {
     const link = /^https?:\/\//.test(item.link || '') ? item.link : '#';
     const tagsHtml = (item.tags || []).map(t => `<span class="news-tag">${_newsIc(t)}${_newsEsc(t)}</span>`).join(' ');
     const mine = _newsMine(item, kw);
+    const also = (item.other_sources || []).length
+      ? `<div class="news-also">${_newsT('aussi rapporté par ', 'also reported by ')}${item.other_sources.map(o => _newsEsc(o.source)).join(', ')}</div>` : '';
     return `<a class="news-card${mine ? ' mine' : ''}" href="${_newsEsc(link)}" target="_blank" rel="noopener noreferrer">
       <div class="news-meta">
         <span class="news-source ${_newsEsc(item.cls)}">${_newsEsc(item.source)}</span>
@@ -152,6 +155,7 @@ function renderNews(items) {
       <div class="news-title">${mine ? '<span class="news-star">★</span>' : ''}${_newsEsc(item.title)}</div>
       <div class="news-snippet">${_newsEsc(item.snippet)}</div>
       <div>${tagsHtml}${item.query ? ` <span class="news-q">search: ${_newsEsc(item.query)}</span>` : ''}${(item.countries || []).length ? ` <span class="news-q">${_newsEsc(item.countries.join(' · '))}</span>` : ''}</div>
+      ${also}
       <div class="news-vote" data-link="${_newsEsc(item.link)}">${_newsVoteBtns(item.link)}</div>
     </a>`;
   }).join('');

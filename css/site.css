@@ -986,6 +986,7 @@
   .news-card.mine { border-color:rgba(251,191,36,.55); }
   .news-card .news-star { color:#FBBF24; margin-right:4px; }
   .news-q { font-size:10px; color:var(--text3); font-style:italic; }
+  .news-also { font-size:10px; color:var(--text3); margin-top:6px; }
   .news-src-t { width:100%; border-collapse:collapse; font-size:12px; }
   .news-src-t td, .news-src-t th { padding:6px 8px; border-bottom:1px solid var(--border); text-align:left; color:var(--text2); }
   .news-src-t th { font:600 10px 'Outfit',sans-serif; letter-spacing:.08em; text-transform:uppercase; color:var(--text3); }
