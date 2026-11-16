@@ -34,6 +34,97 @@ async function loadNews() {
   renderNews(newsData);
   renderNewsSources();
   renderNewsAdd();
+  _newsWireViews();
+  renderNewsConsMini();
+  renderNewsOfficial();
+  renderNewsCover();
+}
+
+// ── Two views (The feed / Official texts) and, in the feed, two displays (by story / all articles) and two orders ──
+let _newsMode = 'topics', _newsSort = 'important', _newsOffSrc = '';
+const _newsStore = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (_) {} return null; };
+function newsSetView(v) {
+  v = v === 'official' ? 'official' : 'feed';
+  document.querySelectorAll('#news-tabs .tab-btn').forEach(b => b.classList.toggle('active', b.dataset.nv === v));
+  const f = document.getElementById('news-v-feed'), o = document.getElementById('news-v-official');
+  if (f) f.hidden = v !== 'feed'; if (o) o.hidden = v !== 'official';
+  _newsStore('pk-news-view', v);
+}
+window.newsSetView = newsSetView;
+function _newsWireViews() {
+  const tabs = document.getElementById('news-tabs');
+  if (tabs && !tabs.dataset.wired) {
+    tabs.dataset.wired = '1';
+    tabs.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => newsSetView(b.dataset.nv)));
+    newsSetView(_newsStore('pk-news-view') || 'feed');
+    _newsMode = _newsStore('pk-news-mode') === 'list' ? 'list' : 'topics';
+    _newsSort = _newsStore('pk-news-sort') === 'recent' ? 'recent' : 'important';
+    const sync = () => {
+      document.querySelectorAll('[data-nm]').forEach(b => b.classList.toggle('active', b.dataset.nm === _newsMode));
+      document.querySelectorAll('[data-ns]').forEach(b => b.classList.toggle('active', b.dataset.ns === _newsSort));
+    };
+    document.querySelectorAll('[data-nm]').forEach(b => b.addEventListener('click', () => { _newsMode = b.dataset.nm; _newsStore('pk-news-mode', _newsMode); sync(); renderNews(newsData); }));
+    document.querySelectorAll('[data-ns]').forEach(b => b.addEventListener('click', () => { _newsSort = b.dataset.ns; _newsStore('pk-news-sort', _newsSort); sync(); renderNews(newsData); }));
+    sync();
+    const sb = document.getElementById('news-src-btn');
+    if (sb) sb.addEventListener('click', () => { const sec = document.getElementById('hs-news-src'); if (sec) { sec.classList.remove('collapsed'); const h = sec.querySelector('.hist-section-header'), bd = document.getElementById('hs-body-news-src'); if (h) h.classList.add('open'); if (bd) bd.classList.add('open'); sec.scrollIntoView({ behavior: 'smooth', block: 'start' }); } });
+    if (_newsMode !== 'topics' || _newsSort !== 'important') renderNews(newsData);
+  }
+}
+
+const _NEWS_TAG_L = { power: ['électricité', 'power'], gas: ['gaz', 'gas'], carbon: ['carbone', 'carbon'], regulation: ['régulation', 'regulation'], markets: ['marchés', 'markets'],
+  geopolitics: ['géopolitique', 'geopolitics'], deal: ['transactions', 'deals'], build: ['nouvelles capacités', 'new capacity'], assoc: ['associations', 'associations'], report: ['rapports', 'reports'] };
+const _newsTagL = t => _NEWS_TAG_L[t] ? _newsT(..._NEWS_TAG_L[t]) : t;
+const _newsDay = d => { const en = window.PKI18n && PKI18n.lang === 'en'; return new Date(d).toLocaleDateString(en ? 'en-GB' : 'fr-FR', { day: 'numeric', month: 'short', timeZone: 'Europe/Paris' }); };
+const _newsToday = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris' }).format(new Date());
+const _newsLeft = d => Math.round((new Date(d + 'T12:00:00Z') - new Date(_newsToday() + 'T12:00:00Z')) / 864e5);
+
+// the three nearest deadlines, beside the feed; the full list is in Official texts
+function renderNewsConsMini() {
+  const box = document.getElementById('news-side-cons'), host = document.getElementById('news-cons-mini'); if (!box || !host) return;
+  const today = _newsToday();
+  const open = ((_newsCons && _newsCons.items) || []).filter(c => c.deadline && c.deadline >= today).sort((a, b) => a.deadline.localeCompare(b.deadline));
+  if (!open.length) { box.hidden = true; return; }
+  box.hidden = false;
+  const th = k => { const t = _NEWS_CONS_THEMES[k || 'other'] || _NEWS_CONS_THEMES.other; return _newsT(t[0], t[1]); };
+  host.innerHTML = open.slice(0, 3).map(c => { const n = _newsLeft(c.deadline);
+    return `<a class="news-cmini" href="${_newsEsc(c.link)}" target="_blank" rel="noopener noreferrer"><span class="cons-due${n <= 7 ? ' soon' : ''}">${n === 0 ? _newsT('auj.', 'today') : 'J-' + n}</span><span><small>${_newsEsc(c.source.split(' · ')[0])} · ${th(c.theme)}</small>${_newsEsc(c.title)}</span></a>`; }).join('') +
+    `<button type="button" class="pk-btn-ghost news-side-more" id="news-cons-all">${_newsT('Toutes les consultations', 'All consultations')} (${open.length})</button>`;
+  document.getElementById('news-cons-all').addEventListener('click', () => { newsSetView('official'); const s = document.getElementById('hs-news-cons'); if (s) s.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+}
+
+// where an official text comes from: the Journal officiel, EUR-Lex or the CRE
+const _newsOffKind = i => /journal officiel/i.test(i.source) ? 'jo' : /eur-?lex|union europ|european union/i.test(i.source) ? 'eu' : /\bCRE\b/.test(i.source) || i.cls === 'cre' ? 'cre' : 'other';
+const _NEWS_OFF_K = { jo: ['Journal officiel', 'Official Journal (FR)'], eu: ['UE', 'EU'], cre: ['CRE', 'CRE'], other: ['Autre', 'Other'] };
+const _newsTextType = t => { const m = (t || '').match(/^(Décret|Arrêté|Ordonnance|Loi|Délibération|Décision|Avis|Règlement|Directive|Regulation|Directive|Decision)\b/i); return m ? m[1].charAt(0).toUpperCase() + m[1].slice(1).toLowerCase() : ''; };
+function renderNewsOfficial() {
+  const host = document.getElementById('news-off'), pub = document.getElementById('news-pub'); if (!host) return;
+  const month = Date.now() - 30 * 864e5;
+  const all = (newsData || []).filter(i => (i.tags || []).includes('official') && i.date >= month).sort((a, b) => b.date - a.date);
+  const n = document.getElementById('news-tab-off-n'); if (n) n.textContent = all.length ? all.length : '';
+  const cnt = {}; all.forEach(i => { const k = _newsOffKind(i); cnt[k] = (cnt[k] || 0) + 1; });
+  if (_newsOffSrc && !cnt[_newsOffSrc]) _newsOffSrc = '';
+  const keys = Object.keys(_NEWS_OFF_K).filter(k => cnt[k]);
+  const chips = keys.length > 1 ? `<div class="cons-chips">${[['', _newsT('Tous', 'All'), all.length]].concat(keys.map(k => [k, _newsT(..._NEWS_OFF_K[k]), cnt[k]])).map(([k, l, c]) => `<button type="button" class="filter-btn${k === _newsOffSrc ? ' active' : ''}" data-os="${k}">${l} <small>${c}</small></button>`).join('')}</div>` : '';
+  const rows = all.filter(i => !_newsOffSrc || _newsOffKind(i) === _newsOffSrc);
+  host.innerHTML = all.length ? chips + `<div class="news-off-wrap"><table class="news-off-t"><thead><tr><th>${_newsT('Date', 'Date')}</th><th>${_newsT('Source', 'Source')}</th><th>${_newsT('Type', 'Type')}</th><th>${_newsT('Texte', 'Text')}</th></tr></thead><tbody>${rows.map(i => `<tr><td class="news-off-d">${_newsDay(i.date)}</td><td>${_newsEsc(_newsT(..._NEWS_OFF_K[_newsOffKind(i)]))}</td><td>${_newsTextType(i.title) ? `<span class="news-tag">${_newsEsc(_newsTextType(i.title))}</span>` : ''}</td><td><a href="${_newsEsc(i.link)}" target="_blank" rel="noopener noreferrer">${_newsEsc(i.title)}</a></td></tr>`).join('')}</tbody></table></div>`
+    : `<div class="news-src-help">${_newsT('Aucun texte officiel sur l’énergie dans les 30 derniers jours collectés.', 'No energy text in the last 30 days collected.')}</div>`;
+  host.querySelectorAll('[data-os]').forEach(b => b.addEventListener('click', () => { _newsOffSrc = b.dataset.os; renderNewsOfficial(); }));
+  if (pub) {
+    const p = (newsData || []).filter(i => i.date >= month && !(i.tags || []).includes('official') && ((i.tags || []).includes('report') || /^(rte|eex)$/i.test(i.cls || '') || /^(RTE|EEX)\b/.test(i.source))).sort((a, b) => b.date - a.date).slice(0, 30);
+    pub.innerHTML = p.length ? `<ul class="news-pub">${p.map(i => `<li><span class="news-off-d">${_newsDay(i.date)}</span><a href="${_newsEsc(i.link)}" target="_blank" rel="noopener noreferrer">${_newsEsc(i.title)}</a><small>${_newsEsc(i.source)}</small></li>`).join('')}</ul>`
+      : `<div class="news-src-help">${_newsT('Aucune publication dans les 30 derniers jours collectés.', 'No publication in the last 30 days collected.')}</div>`;
+  }
+}
+
+// what the last run read, beside the feed
+function renderNewsCover() {
+  const host = document.getElementById('news-cover'); if (!host) return;
+  const s = window._newsSources || [], ko = s.filter(x => !x.ok).length;
+  const outlets = new Set((newsData || []).flatMap(i => [i.source].concat((i.other_sources || []).map(o => o.source)))).size;
+  const off = (newsData || []).filter(i => (i.tags || []).includes('official')).length;
+  host.innerHTML = `<b>${outlets}</b> ${_newsT('médias', 'outlets')} · <b>${off}</b> ${_newsT('textes officiels', 'official texts')}` +
+    (s.length ? `<br>${s.length} ${_newsT('sources lues', 'sources read')}${ko ? ` · <span class="ko">${ko} ${_newsT('en échec', 'failing')}</span>` : ''}` : '');
 }
 
 // Personal keywords: synced to the account (public.news_keyword) when signed in, else kept in this browser only
@@ -246,6 +337,7 @@ function renderNewsCons() {
   host.innerHTML = chips + (shown.length ? `<div class="cons-list">${shown.map(row).join('')}</div>` : `<div class="news-src-help">${_newsT('Aucune consultation ouverte en ce moment.', 'No consultation open right now.')}</div>`) +
     (closed.length ? `<details class="cons-closed"><summary>${_newsT('Récemment closes', 'Recently closed')} (${closed.length})</summary><div class="cons-list">${closed.map(row).join('')}</div></details>` : '');
   host.querySelectorAll('[data-ct]').forEach(b => b.addEventListener('click', () => { _newsConsTheme = b.dataset.ct; renderNewsCons(); }));
+  renderNewsConsMini();
 }
 
 function _newsKw() {
@@ -359,7 +451,11 @@ function renderNews(items) {
     (!q || (i.title + ' ' + i.snippet + ' ' + i.source).toLowerCase().includes(q)));
   // market movers: what moves prices or the renewable business, last 72 h, highest impact first (readers' votes count)
   if (newsFilter === 'movers') filtered = filtered.filter(i => (i.impact || 0) >= 3 && Date.now() - i.date < 72 * 3600e3).sort((a, b) => (b.impact || 0) - (a.impact || 0));
+  else if (_newsSort === 'recent') filtered = filtered.slice().sort((a, b) => b.date - a.date);
+  const cnt = document.getElementById('news-count');
+  if (cnt) cnt.textContent = items && items.length ? filtered.length + ' ' + (_newsMode === 'list' ? _newsT('articles', 'articles') : _newsT('sujets', 'stories')) : '';
   const grid = document.getElementById('news-grid');
+  if (grid) grid.classList.toggle('news-list', _newsMode === 'list');
   if (!items || !items.length) {
     grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1">No news available — data/news.json could not be loaded.</div>';
     return;
@@ -368,9 +464,20 @@ function renderNews(items) {
     grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">${frOnly && newsFilter === 'all' ? 'No French news at the last run.' : newsFilter === 'mine' && !kw.length ? 'Type your keywords above to follow your subjects.' : newsFilter === 'watch' ? 'No press-search results at the last run.' : 'No articles for this filter.'}</div>`;
     return;
   }
+  if (_newsMode === 'list') {
+    grid.innerHTML = filtered.map(item => {
+      const link = /^https?:\/\//.test(item.link || '') ? item.link : '#', mine = _newsMine(item, kw), more = (item.other_sources || []).length;
+      const t = new Date(item.date), recent = Date.now() - t < 864e5;
+      return `<a class="news-row${mine ? ' mine' : ''}" href="${_newsEsc(link)}" target="_blank" rel="noopener noreferrer"><span class="news-row-d">${recent ? t.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' }) : _newsDay(t)}</span>
+        <span class="news-row-b"><span class="news-row-t">${mine ? '<span class="news-star">★</span>' : ''}${(item.tags || []).includes('official') ? `<span class="news-off">${_newsT('Texte officiel', 'Official text')}</span>` : ''}${_newsEsc(item.title)}</span>
+        <small>${_newsEsc(item.source)}${more ? ` +${more}` : ''} · ${(item.tags || []).filter(x => !['official', 'fr', 'watch'].includes(x)).slice(0, 2).map(x => _newsEsc(_newsTagL(x))).join(' · ')}</small></span>
+        <span class="news-vote" data-link="${_newsEsc(item.link)}">${_newsVoteBtns(item.link)}</span></a>`;
+    }).join('');
+    return;
+  }
   grid.innerHTML = filtered.map(item => {
     const link = /^https?:\/\//.test(item.link || '') ? item.link : '#';
-    const tagsHtml = (item.tags || []).filter(t => t !== 'official').map(t => `<span class="news-tag">${_newsIc(t)}${_newsEsc(t)}</span>`).join(' ');
+    const tagsHtml = (item.tags || []).filter(t => t !== 'official').map(t => `<span class="news-tag">${_newsIc(t)}${_newsEsc(_newsTagL(t))}</span>`).join(' ');
     const mine = _newsMine(item, kw);
     const also = _newsCoverage(item);
     return `<a class="news-card${mine ? ' mine' : ''}" href="${_newsEsc(link)}" target="_blank" rel="noopener noreferrer">
@@ -439,7 +546,7 @@ document.addEventListener('click', e => {
 function filterNews(tag, btn) {
   newsFilter = tag;
   _newsSectionTags = null;
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.news-filters .filter-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   renderNews(newsData);
 }

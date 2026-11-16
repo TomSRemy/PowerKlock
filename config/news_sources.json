@@ -218,18 +218,9 @@
       ]
     },
     {
-      "name": "Modo Energy",
-      "cls": "modo",
-      "url": "https://modoenergy.com/research",
-      "tags": [
-        "power",
-        "markets"
-      ]
-    },
-    {
       "name": "Timera Energy",
       "cls": "timera",
-      "url": "https://timera-energy.com/feed/",
+      "url": "https://timera-energy.com/rss.xml",
       "tags": [
         "gas",
         "power",
@@ -244,17 +235,6 @@
         "fr",
         "regulation",
         "markets",
-        "assoc"
-      ]
-    },
-    {
-      "name": "France Renouvelables",
-      "cls": "francerenouv",
-      "url": "https://france-renouvelables.fr/feed/",
-      "tags": [
-        "fr",
-        "regulation",
-        "power",
         "assoc"
       ]
     },
@@ -299,49 +279,6 @@
         "fr",
         "regulation",
         "gas",
-        "assoc"
-      ]
-    },
-    {
-      "name": "France Gaz Renouvelables",
-      "cls": "fgr",
-      "url": "https://www.francegazrenouvelables.fr/",
-      "tags": [
-        "fr",
-        "regulation",
-        "gas",
-        "assoc"
-      ]
-    },
-    {
-      "name": "AMORCE",
-      "cls": "amorce",
-      "url": "https://amorce.asso.fr/",
-      "tags": [
-        "fr",
-        "regulation",
-        "assoc"
-      ]
-    },
-    {
-      "name": "CLER",
-      "cls": "cler",
-      "url": "https://cler.org/feed/",
-      "tags": [
-        "fr",
-        "regulation",
-        "power",
-        "assoc"
-      ]
-    },
-    {
-      "name": "Hespul",
-      "cls": "hespul",
-      "url": "https://www.hespul.org/feed/",
-      "tags": [
-        "fr",
-        "regulation",
-        "power",
         "assoc"
       ]
     },
@@ -400,38 +337,6 @@
       ]
     },
     {
-      "name": "France Agrivoltaïsme",
-      "cls": "agrivolt",
-      "url": "https://www.france-agrivoltaisme.fr/feed/",
-      "tags": [
-        "fr",
-        "regulation",
-        "power",
-        "assoc"
-      ]
-    },
-    {
-      "name": "Eurelectric",
-      "cls": "eurelectric",
-      "url": "https://www.eurelectric.org/feed/",
-      "tags": [
-        "regulation",
-        "power",
-        "markets",
-        "assoc"
-      ]
-    },
-    {
-      "name": "SolarPower Europe",
-      "cls": "spe",
-      "url": "https://www.solarpowereurope.org/",
-      "tags": [
-        "regulation",
-        "power",
-        "assoc"
-      ]
-    },
-    {
       "name": "smartEn",
       "cls": "smarten",
       "url": "https://smarten.eu/feed/",
@@ -469,16 +374,6 @@
       "tags": [
         "markets",
         "power",
-        "assoc"
-      ]
-    },
-    {
-      "name": "IFIEC Europe",
-      "cls": "ifiec",
-      "url": "https://www.ifieceurope.org/",
-      "tags": [
-        "regulation",
-        "markets",
         "assoc"
       ]
     },
@@ -802,6 +697,101 @@
         "power"
       ],
       "lang": "en"
+    },
+    {
+      "q": "\"France Gaz Renouvelables\"",
+      "tags": [
+        "fr",
+        "regulation",
+        "gas",
+        "assoc"
+      ],
+      "lang": "fr"
+    },
+    {
+      "q": "\"France Agrivoltaïsme\"",
+      "tags": [
+        "fr",
+        "regulation",
+        "power",
+        "assoc"
+      ],
+      "lang": "fr"
+    },
+    {
+      "q": "\"France Renouvelables\"",
+      "tags": [
+        "fr",
+        "regulation",
+        "power",
+        "assoc"
+      ],
+      "lang": "fr"
+    },
+    {
+      "q": "site:amorce.asso.fr",
+      "tags": [
+        "fr",
+        "regulation",
+        "assoc"
+      ],
+      "lang": "fr"
+    },
+    {
+      "q": "\"réseau CLER\"",
+      "tags": [
+        "fr",
+        "regulation",
+        "power",
+        "assoc"
+      ],
+      "lang": "fr"
+    },
+    {
+      "q": "site:eurelectric.org",
+      "tags": [
+        "regulation",
+        "power",
+        "markets",
+        "assoc"
+      ],
+      "lang": "en"
+    },
+    {
+      "q": "\"SolarPower Europe\"",
+      "tags": [
+        "regulation",
+        "power",
+        "assoc"
+      ],
+      "lang": "en"
+    },
+    {
+      "q": "\"IFIEC Europe\"",
+      "tags": [
+        "regulation",
+        "markets",
+        "assoc"
+      ],
+      "lang": "en"
+    },
+    {
+      "q": "site:modoenergy.com",
+      "tags": [
+        "power",
+        "markets"
+      ],
+      "lang": "en"
+    },
+    {
+      "q": "site:hespul.org",
+      "tags": [
+        "fr",
+        "regulation",
+        "power",
+        "assoc"
+      ],
+      "lang": "fr"
     }
   ]
 }

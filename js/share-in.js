@@ -26,7 +26,7 @@
       if (!f) return;
       f.value = url; f.dispatchEvent(new Event('change'));
       try { sessionStorage.removeItem(KEY); } catch (_) {}
-      const sec = document.getElementById('hs-news-posts'); if (sec) sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (window.newsSetView) newsSetView('feed'); const sec = document.getElementById('hs-news-posts'); if (sec) sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
       const msg = document.getElementById('news-post-msg'); if (msg) { msg.textContent = T('Post reçu : ajoutez une note si vous voulez, puis « Ajouter ».', 'Post received: add a note if you like, then “Add”.'); msg.className = 'news-add-msg ok'; }
       const note = document.getElementById('news-post-note'); if (note) setTimeout(() => note.focus(), 400);
     } finally { busy = false; }
