@@ -17,6 +17,7 @@ import json
 import re
 import os
 import smtplib
+import sys
 from datetime import date, datetime, timedelta
 from email.message import EmailMessage
 from zoneinfo import ZoneInfo
@@ -135,16 +136,37 @@ def esc(t):
     return str(t or '').replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;')
 
 
+# 7 O'Klock every weekday at 7:00; PowerBrunch on Monday late morning, larger, on the week before
+TITLE = {False: '7 O’Klock', True: 'PowerBrunch'}
+SUB = {False: 'Marchés, régulation, énergie : l’essentiel à 7 h', True: 'La semaine servie à point : ce qu’il fallait retenir, à lire au calme'}
 SEC = {'markets': 'Marchés en 30 secondes', 'digest': 'L’essentiel', 'top': 'Les articles principaux', 'stories': 'Les sujets du jour', 'official': 'Textes officiels', 'cons': 'Consultations : à vos réponses',
        'pubs': 'Publications et rapports', 'agenda': 'Agenda', 'post': 'À lire : le post de la semaine'}
 
 
-def render_letter(today, E, pid, mine=None, exclude=()):
+def tailor(E, pids, interests, france, n):
+    """a reader's own stories from every profile's (each already written by the AI): their profiles' stories first, then
+    +2 per ticked subject and +2 for France when they asked France first (−1.5 elsewhere); n stories, each once"""
+    pool, seen = [], set()
+    for p in list(pids) + [p for p in E['profiles'] if p not in pids]:
+        for k, st in enumerate(E['profiles'][p].get('stories') or []):
+            if st['link'] in seen:
+                continue
+            seen.add(st['link'])
+            tags = set(st.get('tags') or [])
+            sc = (3 if p in pids else 0) - 0.3 * k + 2 * len(tags & set(interests))
+            if france:
+                sc += 2 if 'fr' in tags else -1.5
+            pool.append((sc, dict(st, short=E['profiles'][p]['short'][0])))
+    return [st for _, st in sorted(pool, key=lambda x: -x[0])[:n]]
+
+
+def render_letter(today, E, pid, mine=None, exclude=(), interests=(), france=False):
     """The newsletter (scripts/news_letter.py) for one or several reading profiles, as an e-mail: inline styles and
     tables, which every mail client shows the same way. Rising prices in red, falling in green, as on the site.
     Several profiles: the stories of each, once each, in the order of the first profile's sections."""
     pids = [p for p in ([pid] if isinstance(pid, str) else pid) if p in E['profiles']] or [next(iter(E['profiles']))]
     ed = dict(E['profiles'][pids[0]])
+    wk = bool(E.get('weekly'))
     stories, seen = [], set()
     for p in pids:
         for st in E['profiles'][p].get('stories') or []:
@@ -152,6 +174,9 @@ def render_letter(today, E, pid, mine=None, exclude=()):
                 seen.add(st['link'])
                 stories.append(dict(st, short=E['profiles'][p]['short'][0]))
     ed['stories'] = stories
+    if interests or france:     # ticked subjects or France first: the reader's own choice among every profile's stories
+        ed['stories'] = tailor(E, pids, interests, france, len(stories) or (5 if E.get('weekly') else 3))
+        seen = {st['link'] for st in ed['stories']}
     if len(pids) > 1:
         ed['name'] = [' + '.join(E['profiles'][p]['name'][0] for p in pids)] * 2
     # an article shown once: the main articles leave out the stories and the essentials already in the e-mail
@@ -191,7 +216,7 @@ def render_letter(today, E, pid, mine=None, exclude=()):
         rows_ = ''.join('<tr>' + ''.join(cells[i:i + 3]) + ''.join('<td width="33%"></td>' for _ in range(3 - len(cells[i:i + 3]))) + '</tr>' for i in range(0, len(cells), 3))
         srcs = ', '.join(sorted({r.get('src') for r in rs if r.get('src')}))
         return box(h2(SEC['markets']) + f'<table role="presentation" width="100%" style="border-collapse:collapse;table-layout:fixed">{rows_}</table>'
-                   f'<p style="{f};font-size:11px;color:#62758B;margin:8px 0 0">Sources : {esc(srcs)}. Variation sur la séance précédente. Chaque tuile ouvre sa page sur le site.</p>')
+                   f'<p style="{f};font-size:11px;color:#62758B;margin:8px 0 0">Sources : {esc(srcs)}. {"Variation sur la semaine" if wk else "Variation sur la séance précédente"}. Chaque tuile ouvre sa page sur le site.</p>')
 
     def digest():
         d = E.get('digest') or {}
@@ -203,7 +228,7 @@ def render_letter(today, E, pid, mine=None, exclude=()):
     def top():
         if not E.get('top'):
             return ''
-        return box(h2(SEC['top']) + ul([f'{a(o["link"], o["title"])} <span style="color:#62758B;font-size:12px">· {esc(o["source"])}{" +" + str(o["n"] - 1) if (o.get("n") or 1) > 1 else ""}</span>' for o in E['top']]))
+        return box(h2('Les articles de la semaine' if wk else SEC['top']) + ul([f'{a(o["link"], o["title"])} <span style="color:#62758B;font-size:12px">· {esc(o["source"])}{" +" + str(o["n"] - 1) if (o.get("n") or 1) > 1 else ""}</span>' for o in E['top']]))
 
     def stories():
         if not ed.get('stories'):
@@ -214,7 +239,7 @@ def render_letter(today, E, pid, mine=None, exclude=()):
                     + (f'<p style="{f};font-size:15px;line-height:1.55;color:#34485E;margin:0 0 6px"><b style="color:#13202E">Ce qui s’est passé.</b> {esc(st["what"])}</p>' if st.get('what') else '')
                     + (f'<p style="{f};font-size:15px;line-height:1.55;color:#34485E;margin:0 0 6px;background:#EEF8F5;padding:10px 12px;border-radius:8px"><b style="color:#0B7A62">Pour vous, {esc((st.get("short") or ed["short"][0]).lower())}.</b> {esc(st["for_you"])}</p>' if st.get('for_you') else '')
                     + f'<p style="{f};font-size:12px;color:#62758B;margin:0">{esc(" · ".join(st["sources"][:4]))}</p>')
-        return box(h2(SEC['stories']) + out)
+        return box(h2('Les sujets de la semaine' if wk else SEC['stories']) + out)
 
     def ul(rows):
         return f'<ul style="{f};margin:0;padding-left:18px;font-size:14px;line-height:1.5;color:#34485E">' + ''.join(f'<li style="margin:0 0 7px">{r}</li>' for r in rows) + '</ul>'
@@ -236,7 +261,7 @@ def render_letter(today, E, pid, mine=None, exclude=()):
         'official': lambda: box(h2(SEC['official']) + ul([f'{a(o["link"], o["title"])} <span style="color:#62758B;font-size:12px">· {esc(o["source"])}, {ddm(o["date"])}</span>' for o in E['official']])) if E.get('official') else '',
         'pubs': lambda: box(h2(SEC['pubs']) + ul([f'{a(o["link"], o["title"])} <span style="color:#62758B;font-size:12px">· {esc(o["source"])}</span>' for o in E['pubs']])) if E.get('pubs') else '',
         'agenda': lambda: box(h2(SEC['agenda']) + ul([f'<b>{ddm(e["date"])}</b> · {esc((e.get("title") or [""])[0])}' for e in E['agenda']])) if E.get('agenda') else '',
-        'post': lambda: box(h2(SEC['post']) + f'<p style="{f};font-size:14px;margin:0">{a(E["post"]["url"], (E["post"].get("author") or "LinkedIn") + (" · " + E["post"]["note"] if E["post"].get("note") else ""))}</p>') if E.get('post') else '',
+        'post': lambda: box(h2('Les posts de la semaine' if wk else SEC['post']) + ul([a(p_["url"], (p_.get("author") or "LinkedIn") + (" · " + p_["note"] if p_.get("note") else "")) for p_ in (E.get('posts') or [E['post']])])) if E.get('post') else '',
     }
     # the articles of the last day that match the reader's own keywords (public.news_keyword), after the stories
     secs['mine'] = lambda: box(h2('Vos mots-clés') + ul([f'{a(o["link"], o["title"])} <span style="color:#62758B;font-size:12px">· {esc(o["source"])}</span>' for o in mine])) if mine else ''
@@ -247,21 +272,21 @@ def render_letter(today, E, pid, mine=None, exclude=()):
     html = (f'<div style="background:#E9EEF3;padding:16px 6px"><table role="presentation" width="100%" style="max-width:680px;margin:0 auto;border-collapse:collapse;table-layout:fixed;word-wrap:break-word;overflow-wrap:anywhere;background:#FFFFFF;border:1px solid #D5DEE8;border-radius:12px">'
             f'<tr><td style="background:#0a0e13;padding:22px 28px;border-radius:12px 12px 0 0">'
             f'<p style="{f};margin:0;font-size:13px;color:#B8C9D9"><span style="font-weight:700;color:#14D3A9">PowerKlock</span> · {frday(today)}</p>'
-            f'<p style="{serif};margin:8px 0 4px;font-size:30px;font-weight:600;color:#FFFFFF">7 O’Klock</p>'
-            f'<p style="{f};margin:0 0 4px;font-size:13px;color:#B8C9D9">Marchés, régulation, énergie : l’essentiel à 7 h</p>'
-            f'<p style="{f};margin:0;font-size:13px;color:#B8C9D9">Édition <b style="color:#FFFFFF">{esc(ed["name"][0])}</b>{" · depuis vendredi" if E.get("monday") else ""}</p></td></tr>'
+            f'<p style="{serif};margin:8px 0 4px;font-size:30px;font-weight:600;color:#FFFFFF">{TITLE[wk]}</p>'
+            f'<p style="{f};margin:0 0 4px;font-size:13px;color:#B8C9D9">{SUB[wk]}</p>'
+            f'<p style="{f};margin:0;font-size:13px;color:#B8C9D9">Édition <b style="color:#FFFFFF">{esc(ed["name"][0])}</b>{" · semaine du " + frday(today - timedelta(days=7)) if wk else " · depuis vendredi" if E.get("monday") else ""}</p></td></tr>'
             + one + body +
             f'<tr><td style="padding:16px 28px;background:#F3F6F9;border-radius:0 0 12px 12px"><p style="{f};font-size:12px;color:#62758B;line-height:1.6;margin:0">'
             f'Sujets choisis pour le profil {esc(ed["name"][0])} ; résumés rédigés automatiquement à partir des titres et extraits, chaque sujet renvoie à ses articles.<br>'
             f'<a href="{SITE}#intel/news" style="color:#0B7A62">Voir en ligne et changer de profil</a></p></td></tr></table></div>')
-    text = f'7 O’Klock · {frday(today)} · édition {ed["name"][0]}\n\n' + (ed.get('headline') or '') + '\n\n' + \
+    text = f'{TITLE[wk]} · {frday(today)} · édition {ed["name"][0]}\n\n' + (ed.get('headline') or '') + '\n\n' + \
         '\n'.join(f'{r["label"][0]} : {n(r["value"])} {r["unit"]}' for r in E.get('markets') or []) + '\n\n' + \
         '\n'.join(f'• {st["title"]}\n  {st.get("what") or ""}\n  {st["link"]}' for st in ed.get('stories') or []) + f'\n\n{SITE}#intel/news\n'
-    subject = f'7 O’Klock · {frday(today)}'
+    subject = f'{TITLE[wk]} · {frday(today)}' if not wk else f'PowerBrunch · la semaine du {frday(today - timedelta(days=7))}'
     return subject, text, html
 
 
-def readers(today):
+def readers(today, weekly=False):
     """The readers who chose to receive the newsletter (public.news_profile, warehouse migration 024): their address
     (the one they chose, else their account's), profile, words to leave out and own keywords. Daily on weekdays, or
     Monday only. Nothing without SUPABASE_DB_URL; the newsletter must not depend on the database."""
@@ -271,17 +296,18 @@ def readers(today):
     try:
         import psycopg
         with psycopg.connect(db, connect_timeout=15, prepare_threshold=None) as conn, conn.cursor() as cur:
-            cur.execute("""select coalesce(p.email_to, u.email), p.profiles, p.exclude, p.email_freq,
+            cur.execute("""select coalesce(p.email_to, u.email), p.profiles, p.exclude, p.daily, p.weekly, p.interests, p.france,
                                   coalesce((select array_agg(k.keyword) from public.news_keyword k where k.user_id = p.user_id), '{}')
                            from public.news_profile p join auth.users u on u.id = p.user_id
                            left join public.user_access a on a.user_id = p.user_id
-                           where p.email_freq <> 'never' and coalesce(a.status, 'approved') = 'approved'""")
+                           where (p.daily or p.weekly) and coalesce(a.status, 'approved') = 'approved'""")
             rows = cur.fetchall()
     except Exception as e:
         print('  readers not read:', str(e)[:160])
         return []
-    return [{'to': to, 'profiles': list(pr or []), 'exclude': list(ex or []), 'keywords': list(kw or [])} for to, pr, ex, fq, kw in rows
-            if to and (fq == 'daily' or (fq == 'monday' and today.weekday() == 0))]
+    return [{'to': to, 'profiles': list(pr or []), 'exclude': list(ex or []), 'keywords': list(kw or []), 'interests': list(it or []), 'france': bool(fr)}
+            for to, pr, ex, dy, wy, it, fr, kw in rows
+            if to and (wy if weekly else dy)]
 
 
 def mine_for(kw, exclude, monday):
@@ -329,7 +355,8 @@ def main():
     today, rows, lines, heading = build()
     subject, text, html = render(today, rows, lines, heading)
     # the newsletter when today's edition exists (scripts/news_letter.py), for the profile MORNING_PROFILE (default: origination)
-    E = load('newsletter.json') or {}
+    weekly = '--weekly' in sys.argv   # PowerBrunch (Monday late morning) instead of 7 O'Klock
+    E = load('newsletter_week.json' if weekly else 'newsletter.json') or {}
     has_letter = E.get('date') == today.isoformat() and bool(E.get('profiles'))
     pid = os.environ.get('MORNING_PROFILE') or 'origination'
     if has_letter and pid in E['profiles']:
@@ -337,11 +364,11 @@ def main():
     # each reader who chose it in the site gets the edition of their profile; the team list (MORNING_TO) the default one
     personal = []
     if has_letter:
-        for r in readers(today):
+        for r in readers(today, weekly):
             ps = [p for p in r['profiles'] if p in E['profiles']] or [pid]
             mine = [o for o in mine_for(r['keywords'], r['exclude'], today.weekday() == 0)
                     if all(o['link'] not in {st['link'] for st in E['profiles'][p].get('stories') or []} for p in ps)]
-            personal.append(([r['to']], *render_letter(today, E, ps, mine, r['exclude'])))
+            personal.append(([r['to']], *render_letter(today, E, ps, mine, r['exclude'], r['interests'], r['france'])))
     if os.environ.get('MORNING_PREVIEW') == '1':
         # a preview on demand (Actions › Morning e-mail › Run workflow › preview): every profile's edition to the admins only
         to = admins()

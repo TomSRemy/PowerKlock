@@ -2,8 +2,8 @@
 -- ════════════════════════════════════════════════════════════════════
 -- PowerKlock · 024 · Each reader's newsletter profile
 -- The reading profiles, one or several (config/news_profiles.json:
--- regulatory, legal, origination, markets, commercial), words to leave out, and whether the morning newsletter is e-mailed: every
--- weekday, on Monday only, or never; to the account's address or to
+-- regulatory, legal, origination, markets, commercial), words to leave out, and which newsletters are e-mailed (7 O'Klock
+-- every weekday, PowerBrunch on Monday); to the account's address or to
 -- another one. Each reader reads and writes only their own row; the
 -- news admin reads all of them. scripts/morning_mail.py sends each
 -- reader the edition of their profile (scripts/news_letter.py), with the
@@ -12,9 +12,13 @@
 create table if not exists public.news_profile (
   user_id    uuid primary key default auth.uid() references auth.users (id) on delete cascade,
   profiles   text[] not null default '{origination}'
-             check (cardinality(profiles) between 1 and 5 and profiles <@ array['regulatory', 'legal', 'origination', 'markets', 'commercial']),
+             check (cardinality(profiles) between 1 and 6 and profiles <@ array['regulatory', 'legal', 'supplier', 'origination', 'markets', 'commercial']),
   exclude    text[] not null default '{}' check (cardinality(exclude) <= 25),
-  email_freq text not null default 'never' check (email_freq in ('daily', 'monday', 'never')),
+  interests  text[] not null default '{}'      -- ticked subjects: they lift a story in this reader's e-mail
+             check (interests <@ array['renewables', 'markets', 'regulation', 'gas', 'carbon', 'deal', 'build', 'geopolitics', 'report', 'assoc']),
+  france     boolean not null default false,   -- France first: stories about France ahead, the rest pushed down
+  daily      boolean not null default false,   -- 7 O'Klock by e-mail, every weekday at 7:00
+  weekly     boolean not null default false,   -- PowerBrunch by e-mail, Monday late morning: the week before
   email_to   text check (email_to is null or (length(email_to) <= 200 and email_to ~ '^[^@\s]+@[^@\s]+\.[^@\s]+$')),
   updated_at timestamptz not null default now()
 );

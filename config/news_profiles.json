@@ -1,5 +1,5 @@
 {
-  "_help": "Reading profiles of the morning newsletter (scripts/news_letter.py, Intelligence › News › Newsletter). weights: how much each news category counts for this reader (fetch_news.py tags); official: bonus of a text from the Journal officiel, EUR-Lex or the CRE; keywords: words that lift a story (title or extract, case-insensitive); order: the sections, top to bottom (markets = the price tiles, digest = the day's essentials, stories = 3 stories for this reader, top = the main articles); reader: who reads it, given to the AI that writes « Pour vous ». require_keyword: a story must contain one of the keywords (the legal profile: a story without a legal subject is left out).",
+  "_help": "Reading profiles of the morning newsletter (scripts/news_letter.py, Intelligence › News › Newsletter). weights: how much each news category counts for this reader (fetch_news.py tags); official: bonus of a text from the Journal officiel, EUR-Lex or the CRE; keywords: words that lift a story (title or extract, case-insensitive); order: the sections, top to bottom (markets = the price tiles, digest = the day's essentials, stories = 3 stories for this reader, top = the main articles); reader: who reads it, given to the AI that writes « Pour vous ». require_keyword: a story must contain one of the keywords (the legal profile: a story without a legal subject is left out). france: points for a story about France; foreign: points taken off a story elsewhere.",
   "profiles": {
     "regulatory": {
       "name": [
@@ -49,7 +49,8 @@
         "markets",
         "agenda",
         "post"
-      ]
+      ],
+      "france": 2
     },
     "legal": {
       "name": [
@@ -106,7 +107,65 @@
         "markets",
         "post"
       ],
-      "require_keyword": true
+      "require_keyword": true,
+      "france": 2
+    },
+    "supplier": {
+      "name": [
+        "Fournisseur et agrégateur",
+        "Supplier and aggregator"
+      ],
+      "short": [
+        "Fournisseur-agrégateur",
+        "Supplier-aggregator"
+      ],
+      "reader": "un responsable chez un fournisseur d'électricité et agrégateur de production renouvelable en France : il achète l'électricité de producteurs (PPA, obligation d'achat, complément de rémunération, garanties d'origine), la vend à des clients et gère les prix de marché, les prix négatifs et les règles du marché français",
+      "weights": {
+        "renewables": 3,
+        "markets": 3,
+        "regulation": 2,
+        "power": 1.5,
+        "deal": 1.5,
+        "build": 1.5,
+        "gas": 1,
+        "carbon": 1,
+        "report": 1,
+        "assoc": 1,
+        "geopolitics": 0.3
+      },
+      "official": 2,
+      "france": 3,
+      "foreign": 1.5,
+      "keywords": [
+        "PPA",
+        "agrégation",
+        "agrégateur",
+        "garanties d'origine",
+        "obligation d'achat",
+        "complément de rémunération",
+        "prix négatifs",
+        "capture",
+        "fournisseur",
+        "TURPE",
+        "ARENH",
+        "VNU",
+        "mécanisme de capacité",
+        "EPEX",
+        "CRE",
+        "RTE",
+        "appel d'offres"
+      ],
+      "order": [
+        "markets",
+        "digest",
+        "stories",
+        "top",
+        "cons",
+        "official",
+        "pubs",
+        "agenda",
+        "post"
+      ]
     },
     "origination": {
       "name": [
@@ -156,7 +215,8 @@
         "pubs",
         "agenda",
         "post"
-      ]
+      ],
+      "france": 1.5
     },
     "markets": {
       "name": [
@@ -257,7 +317,8 @@
         "pubs",
         "agenda",
         "post"
-      ]
+      ],
+      "france": 2
     }
   }
 }
