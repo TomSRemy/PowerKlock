@@ -73,7 +73,9 @@ KEYWORDS = {
     "regulation": r"\b(regulat\w*|réglement\w*|directive|commission|acer|cre|tariff|tarif\w*|law|loi|décret|decree|arrêté|bill|consultation|policy|ministry|ministère|government|gouvernement|auction design|appel d'offres|tender|ppe|arenh|vnu|turpe|accise|capacity mechanism|mécanisme de capacité|cfd|complément de rémunération)\b",
     "markets": r"\b(price[sd]?|market[s]?|trading|futures|forward|auction|spot|day-ahead|ppa|contract[s]?)\b",
     # reference reports: periodic studies, barometers, observatories, outlooks, residual mix
-    "report": r"\b(rapports?|reports?|baromètres?|barometers?|observatoires?|panorama|bilan (électrique|prévisionnel)|bulletin trimestriel|outlook|residual mix(es)?|mix résiduel|économie du système|[eé]clairage sur)\b",
+    # a published report, not any article with « report » in it (« -report » wire titles, « reported »): a report noun with
+    # a publishing word or a publisher, or the named reference series
+    "report": r"\b((publie|publient|publishes?|published|releases?|annual|annuel|nouveau|new|latest|dernier) (un |une |son |sa |its |a |the )?(rapport|report|étude|study)|(rapport|report|étude) (annuel|annual|de la CRE|de RTE|de l.ADEME|of the IEA|de l.AIE)|baromètres?|barometers?|observatoires?|panorama|bilan (électrique|prévisionnel)|bulletin trimestriel|(energy|electricity|gas) outlook|residual mix(es)?|mix résiduel|économie du système|[eé]clairage sur)\b",
     "power": r"\b(power|electricity|grid|solar|wind|nuclear|hydro|battery|batteries|renewable[s]?|tso)\b",
 }
 

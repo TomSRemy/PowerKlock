@@ -2407,9 +2407,15 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
       <div class="pr-tabs-sticky">
         <div class="pr-tabs-bar">
           <div class="pr-breadcrumb"><span class="pr-breadcrumb-parent pk-bc-static">Intelligence</span><span class="pr-breadcrumb-sep">›</span><span class="pr-breadcrumb-current">News</span></div>
+          <div class="pr-tabs-separator"></div>
+          <div class="tabs-nav" id="news-tabs" role="tablist">
+            <button class="tab-btn active" data-nv="feed" type="button">The feed</button>
+            <button class="tab-btn" data-nv="official" type="button">Official texts <span class="news-tab-n" id="news-tab-off-n"></span></button>
+          </div>
           <div class="pr-tabs-bar-filters"><span class="updated-badge" id="news-updated">Loading...</span></div>
         </div>
       </div>
+      <div class="news-view" id="news-v-feed">
       <div class="hist-section hist-section-strong" id="hs-news-digest" hidden>
         <div class="hist-section-header open" onclick="toggleStrongSection('hs-news-digest')">
           <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h10M4 18h7"/></svg><span id="news-digest-t">The essentials</span><span class="pk-hs-meta" id="news-digest-m"></span></div>
@@ -2417,26 +2423,19 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
         </div>
         <div class="hist-section-body open" id="hs-body-news-digest"><div id="news-digest"></div></div>
       </div>
-      <div class="hist-section hist-section-strong" id="hs-news-cons" hidden>
-        <div class="hist-section-header open" onclick="toggleStrongSection('hs-news-cons')">
-          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4M8 14h3"/></svg>Open consultations<span class="pk-hs-meta">CRE, RTE and ministry (energy and climate) · deadline to reply</span></div>
-          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-        </div>
-        <div class="hist-section-body open" id="hs-body-news-cons"><div id="news-cons"></div></div>
-      </div>
-      <div class="hist-section hist-section-strong" id="hs-news-posts" hidden>
-        <div class="hist-section-header open" onclick="toggleStrongSection('hs-news-posts')">
-          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 11v5M8 8v.01M12 16v-5M12 13a2 2 0 0 1 4 0v3"/></svg>Posts to read<span class="pk-hs-meta">LinkedIn posts shared by the team · the most useful go into Monday's digest</span></div>
-          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-        </div>
-        <div class="hist-section-body open" id="hs-body-news-posts"><div id="news-posts"></div></div>
-      </div>
+      <div class="news-layout">
+        <div class="news-main">
       <div class="hist-section hist-section-strong" id="hs-news-0">
         <div class="hist-section-header open" onclick="toggleStrongSection('hs-news-0')">
-          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="9" y1="4" x2="9" y2="20"/></svg>News<span class="pk-hs-meta">European energy press · carbon, power, gas, renewables, nuclear · refreshed every hour</span></div>
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="9" y1="4" x2="9" y2="20"/></svg>News<span class="pk-hs-meta">European energy press, official texts, associations · refreshed every hour</span></div>
           <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
         <div class="hist-section-body open" id="hs-body-news-0">
+      <div class="news-modes">
+        <div class="news-seg" role="group" aria-label="Display"><button type="button" class="filter-btn active" data-nm="topics">By story</button><button type="button" class="filter-btn" data-nm="list">All articles</button></div>
+        <div class="news-seg" role="group" aria-label="Order" id="news-sort"><button type="button" class="filter-btn active" data-ns="important">Most important</button><button type="button" class="filter-btn" data-ns="recent">Most recent</button></div>
+        <span class="news-count" id="news-count"></span>
+      </div>
 <div class="news-filters">
         <button class="filter-btn active" data-tag="all" onclick="filterNews('all', this)">All</button>
         <button class="filter-btn" data-tag="movers" onclick="filterNews('movers', this)" title="What moves prices or the renewable business, last 72 h, highest impact first; your votes (useful / not useful) teach it"><svg class="nic" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>Market movers</button>
@@ -2458,13 +2457,36 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
           <select id="news-cty" class="fuel-select" onchange="renderNews(newsData)" aria-label="Country"><option value="">All countries</option></select>
         </span>
         <input type="search" id="news-search" class="fuel-select" placeholder="Search headlines…" oninput="renderNews(newsData)" style="min-width:200px">
-        <button type="button" class="pk-btn-ghost" id="news-add-btn" title="Add an RSS feed or a press search for everyone">＋ Add a source</button>
       </div>
-      <div class="news-mine"><label for="news-kw">★ My keywords</label><input type="text" id="news-kw" class="fuel-select" placeholder="e.g. PPA, prix négatifs, CRE, batteries — comma separated"><label class="news-kw-team" id="news-kw-team-wrap" title="Boost these keywords for every team member, not just you" style="display:none"><input type="checkbox" id="news-kw-team"> share with team</label><span class="news-mine-n" id="news-kw-n"></span></div>
 <div class="news-grid" id="news-grid">
         <div class="empty-state" style="grid-column:1/-1"><span class="spinner"></span> Loading news feeds...</div>
       </div>
         </div>
+      </div>
+        </div>
+        <aside class="news-aside">
+          <div class="news-side" id="news-side-cons" hidden>
+            <div class="news-side-t"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>Consultations closing soon</div>
+            <div id="news-cons-mini"></div>
+          </div>
+      <div class="hist-section hist-section-strong" id="hs-news-posts" hidden>
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-news-posts')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 11v5M8 8v.01M12 16v-5M12 13a2 2 0 0 1 4 0v3"/></svg>Posts to read<span class="pk-hs-meta">LinkedIn posts shared by the team · the most useful go into Monday's digest</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-news-posts"><div id="news-posts"></div></div>
+      </div>
+          <div class="news-side">
+            <div class="news-side-t"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15 9 22 9 16.5 13.5 18.5 21 12 16.5 5.5 21 7.5 13.5 2 9 9 9"/></svg>My keywords</div>
+      <div class="news-mine"><label for="news-kw">★ My keywords</label><input type="text" id="news-kw" class="fuel-select" placeholder="e.g. PPA, prix négatifs, CRE, batteries — comma separated"><label class="news-kw-team" id="news-kw-team-wrap" title="Boost these keywords for every team member, not just you" style="display:none"><input type="checkbox" id="news-kw-team"> share with team</label><span class="news-mine-n" id="news-kw-n"></span></div>
+          </div>
+          <div class="news-side">
+            <div class="news-side-t"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11a9 9 0 0 1 9 9"/><path d="M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1"/></svg>Coverage</div>
+            <div class="news-cover" id="news-cover"></div>
+            <div class="news-side-links"><button type="button" class="pk-btn-ghost" id="news-src-btn">Source status</button>
+            <button type="button" class="pk-btn-ghost" id="news-add-btn" title="Add an RSS feed or a press search for everyone">＋ Add a source</button></div>
+          </div>
+        </aside>
       </div>
       <div class="hist-section hist-section-strong" id="hs-news-src">
         <div class="hist-section-header" onclick="toggleStrongSection('hs-news-src')">
@@ -2472,6 +2494,30 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
           <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
         <div class="hist-section-body" id="hs-body-news-src"><div id="news-add"></div><div id="news-sources"></div></div>
+      </div>
+      </div>
+      <div class="news-view" id="news-v-official" hidden>
+      <div class="hist-section hist-section-strong" id="hs-news-cons" hidden>
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-news-cons')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4M8 14h3"/></svg>Open consultations<span class="pk-hs-meta">CRE, RTE and ministry (energy and climate) · deadline to reply</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-news-cons"><div id="news-cons"></div></div>
+      </div>
+      <div class="hist-section hist-section-strong" id="hs-news-off">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-news-off')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Published texts<span class="pk-hs-meta">Journal officiel, EUR-Lex, CRE · last 30 days</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-news-off"><div id="news-off"></div></div>
+      </div>
+      <div class="hist-section hist-section-strong" id="hs-news-pub">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-news-pub')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5"/><path d="M9 17v-3M12 17v-5M15 17v-2"/></svg>Publications and reports<span class="pk-hs-meta">RTE, EEX, CRE studies, reference reports · last 30 days</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-news-pub"><div id="news-pub"></div></div>
+      </div>
       </div>
     </div>
 
