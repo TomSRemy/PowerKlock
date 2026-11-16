@@ -309,6 +309,21 @@ def send(mails):
             srv.send_message(msg)
 
 
+def admins():
+    """the admins' addresses (public.news_admin): a preview goes to them only"""
+    db = os.environ.get('SUPABASE_DB_URL')
+    if not db:
+        return []
+    try:
+        import psycopg
+        with psycopg.connect(db, connect_timeout=15, prepare_threshold=None) as conn, conn.cursor() as cur:
+            cur.execute('select email from public.news_admin')
+            return [r[0] for r in cur.fetchall() if r[0]]
+    except Exception as e:
+        print('  admins not read:', str(e)[:160])
+        return []
+
+
 def main():
     today, rows, lines, heading = build()
     subject, text, html = render(today, rows, lines, heading)
@@ -326,6 +341,18 @@ def main():
             mine = [o for o in mine_for(r['keywords'], r['exclude'], today.weekday() == 0)
                     if all(o['link'] not in {st['link'] for st in E['profiles'][p].get('stories') or []} for p in ps)]
             personal.append(([r['to']], *render_letter(today, E, ps, mine, r['exclude'])))
+    if os.environ.get('MORNING_PREVIEW') == '1':
+        # a preview on demand (Actions › Morning e-mail › Run workflow › preview): every profile's edition to the admins only
+        to = admins()
+        ps = list((E.get('profiles') or {}))
+        if not has_letter or not to:
+            print('preview not sent:', 'no edition today' if not has_letter else 'no admin address')
+            return 0
+        mails = [(to, f'[Aperçu] {s}', t, h) for s, t, h in [render_letter(today, E, ps)]]
+        if all(os.environ.get(k) for k in ('SMTP_HOST', 'SMTP_USER', 'SMTP_PASS')):
+            send(mails)
+            print('preview sent to', len(to), 'admin(s)')
+        return 0
     seen = {m[0][0].lower() for m in personal}
     to = [x.strip() for x in (os.environ.get('MORNING_TO') or '').split(',') if x.strip() and x.strip().lower() not in seen]
     mails = ([(to, subject, text, html)] if to else []) + personal
