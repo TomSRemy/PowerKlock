@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
-# The same checks as the "Site tests" workflow, which gates "Publish": if one fails here, the site would not be
-# published. Run before every push (the pre-push hook in .githooks does it):  git config core.hooksPath .githooks
+# The fast checks of the "Site tests" workflow (about 2 minutes): lint, JS syntax, calculations, site logic, same
+# figures everywhere. The browser smoke test of every page (about 10 minutes) runs in "Site tests", which blocks
+# "Publish" if it fails; add --full to run it here too. Run before every push (the pre-push hook in .githooks does it):
+#   git config core.hooksPath .githooks
 # Data-only pushes (data/ alone) and the discussion branch (docs/discussion/ alone) skip the browser tests.
 set -eo pipefail   # a failing test fails the script even when its output is piped
 cd "$(git rev-parse --show-toplevel)"
@@ -20,6 +22,6 @@ echo "▸ Calculations";       python3 tests/test_calculations.py >/dev/null && 
 if [ -n "$changed" ] && ! echo "$changed" | grep -qvE '^(data/|docs/discussion/)'; then echo "data or discussion only: browser tests skipped"; exit 0; fi
 echo "▸ Site logic";         python3 tests/test_site_logic.py | tail -1 && python3 tests/test_ppa_frozen.py | tail -1
 echo "▸ Same figures everywhere, page weight"; python3 tests/test_consistency.py | tail -1
-echo "▸ Smoke tests (about 10 minutes)"; python3 tests/smoke.py | tail -3
+if [ "$1" = "--full" ]; then echo "▸ Smoke tests (about 10 minutes)"; python3 tests/smoke.py | tail -3; else echo "▸ Smoke tests: left to Site tests (scripts/check_before_push.sh --full to run them here)"; fi
 echo "$sig" > "$stamp"
-echo "✓ all the checks of Site tests pass: safe to push"
+echo "✓ fast checks pass: safe to push (Site tests runs the smoke test)"

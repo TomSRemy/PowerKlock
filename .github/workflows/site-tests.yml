@@ -4,7 +4,7 @@ name: Site tests
 # tests/test_prices_dst.py), the site logic value by value (tests/test_site_logic.py), then every page,
 # fullscreen button and dashboard widget in a browser, in English and in French (tests/smoke.py).
 # Data-only commits from the fetch bots do not trigger it. The publish workflow runs the same tests before
-# the site branch moves (.github/workflows/publish.yml).
+# the site branch moves (.github/workflows/publish.yml), unless the same code already passed here.
 
 on:
   pull_request:
