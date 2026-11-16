@@ -56,11 +56,26 @@ jobs:
           # compare every top-level entry except data/ (trees are compared by hash, no history needed)
           A=$(git ls-tree HEAD | grep -v -P '\tdata$'); B=$(git ls-tree origin/site | grep -v -P '\tdata$')
           if [ "$A" = "$B" ]; then echo "code=no" >> "$GITHUB_OUTPUT"; else echo "code=yes" >> "$GITHUB_OUTPUT"; fi
-      - uses: actions/setup-python@v6
+      - name: Same code already tested?
+        # a merge usually publishes exactly the code that just passed Site tests on its branch (data/ aside):
+        # then the ~12 minutes of tests are not run a second time
         if: steps.diff.outputs.code == 'yes'
+        id: tested
+        run: |
+          want=$(git ls-tree HEAD | awk -F'\t' '{split($1, a, " "); print $2 " " a[3]}' | grep -v '^data ' | sort)
+          for sha in $(gh run list -R "${{ github.repository }}" --workflow site-tests.yml --status success --limit 40 --json headSha --jq '.[].headSha' | sort -u); do
+            tree=$(gh api "repos/${{ github.repository }}/commits/$sha" --jq .commit.tree.sha 2>/dev/null) || continue
+            got=$(gh api "repos/${{ github.repository }}/git/trees/$tree" --jq '.tree[] | "\(.path) \(.sha)"' 2>/dev/null | grep -v '^data ' | sort)
+            if [ -n "$got" ] && [ "$got" = "$want" ]; then
+              echo "tested=yes" >> "$GITHUB_OUTPUT"; echo "::notice::same code as $sha, which passed Site tests: tests not run again"; exit 0
+            fi
+          done
+          echo "tested=no" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-python@v6
+        if: steps.diff.outputs.code == 'yes' && steps.tested.outputs.tested != 'yes'
         with: { python-version: '3.12' }
       - name: Tests (code changed)
-        if: steps.diff.outputs.code == 'yes'
+        if: steps.diff.outputs.code == 'yes' && steps.tested.outputs.tested != 'yes'
         run: |
           pip install -q playwright==1.48.0 requests==2.33.1 ruff==0.17.2
           python -m playwright install --with-deps chromium
