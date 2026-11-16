@@ -16,7 +16,8 @@ async function loadNews() {
     if (!r.ok) throw new Error(r.status);
     const j = await r.json();
     newsData = (j.items || []).map(i => Object.assign({}, i, { date: new Date(i.date) }))
-      .sort((a, b) => (b.impact || 0) - (a.impact || 0) || b.date - a.date);   // most relevant first, latest as tie-break
+      .sort((a, b) => (b.impact || 0) - (a.impact || 0) || b.date - a.date);
+    newsData = _newsRank(newsData);
     const upd = j.updated ? new Date(j.updated).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' }) : '';
     window._newsSources = j.sources || null;
     const nSrc = j.sources ? j.sources.filter(s => s.kind !== 'search').length : new Set(newsData.map(n => n.source)).size;
@@ -118,6 +119,19 @@ async function _newsSaveKw(value, team) {
   renderNews(newsData);
 }
 
+// most relevant first, but a fresh article beats an old one and one outlet cannot fill the top of the list:
+// impact, minus 0.3 per day of age, minus 0.6 for each article of the same outlet already placed above
+function _newsRank(items) {
+  const now = Date.now(), left = items.slice(), out = [], seen = {};
+  const score = i => (i.impact || 0) - 0.3 * (now - i.date) / 864e5 - 0.6 * (seen[i.source] || 0);
+  while (left.length) {
+    let k = 0, best = -Infinity;
+    for (let j = 0; j < left.length; j++) { const v = score(left[j]); if (v > best) { best = v; k = j; } }
+    const it = left.splice(k, 1)[0]; seen[it.source] = (seen[it.source] || 0) + 1; out.push(it);
+  }
+  return out;
+}
+
 function _newsKw() {
   if (_newsKwRemote) return _newsKwRemote.map(r => r.keyword.toLowerCase());
   try { return (localStorage.getItem('pk-news-kw') || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean); } catch (_) { return []; }
@@ -147,7 +161,7 @@ function renderNewsSources() {
   const host = document.getElementById('news-sources'); if (!host) return;
   const src = window._newsSources;
   const edit = 'https://github.com/TomSRemy/PowerKlock/edit/main/config/news_sources.json';
-  const rows = src ? src.map(s => `<tr><td>${_newsEsc(s.kind === 'search' ? 'search: ' + s.name : s.name)}${s.added ? ' <span class="news-q">added from the site</span>' : ''}</td><td>${s.kind === 'feed' ? 'RSS feed' : s.kind === 'page' ? 'web page' : 'press search (GDELT)'}</td><td class="${s.ok ? 'ok' : 'ko'}">${s.ok ? s.n + ' articles' : 'failed: ' + _newsEsc(s.error || '')}</td></tr>`).join('') : '';
+  const rows = src ? src.map(s => `<tr><td>${_newsEsc(s.kind === 'search' ? 'search: ' + s.name : s.name)}${s.added ? ' <span class="news-q">added from the site</span>' : ''}</td><td>${s.kind === 'feed' ? 'RSS feed' : s.kind === 'page' ? 'web page' : s.kind === 'official' ? 'official texts (open data)' : 'press search (Google News)'}</td><td class="${s.ok ? 'ok' : 'ko'}">${s.ok ? s.n + ' articles' : 'failed: ' + _newsEsc(s.error || '')}</td></tr>`).join('') : '';
   host.innerHTML = (src ? `<div style="overflow-x:auto"><table class="news-src-t"><thead><tr><th>Source</th><th>Read as</th><th>Last run</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<div class="news-src-help">The source list appears after the next news run.</div>') +
     `<div class="news-src-help"><b>Add a source for everyone</b>: use the form above (signed in). The sources of the team list stay in <a href="${edit}" target="_blank" rel="noopener">config/news_sources.json</a> on GitHub.<br>
     <b>Follow subjects for yourself</b>: type them in ★ My keywords above; matching articles are starred and listed under ★ My keywords (kept in this browser only).<br>
