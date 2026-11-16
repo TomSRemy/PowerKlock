@@ -41,7 +41,7 @@ import psycopg
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DAILY = os.path.join(ROOT, 'data', 'history', 'daily')
 PARIS = ZoneInfo('Europe/Paris')
-SITE = 'https://tomsremy.github.io/PowerKlock/'
+SITE = 'https://powerklock.com/'
 
 
 def day_file(d):
