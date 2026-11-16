@@ -44,10 +44,12 @@ async function loadNews() {
 let _newsMode = 'topics', _newsSort = 'important', _newsOffSrc = '';
 const _newsStore = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (_) {} return null; };
 function newsSetView(v) {
-  v = v === 'official' ? 'official' : 'feed';
+  v = ['official', 'letter'].includes(v) ? v : 'feed';
   document.querySelectorAll('#news-tabs .tab-btn').forEach(b => b.classList.toggle('active', b.dataset.nv === v));
   const f = document.getElementById('news-v-feed'), o = document.getElementById('news-v-official');
   if (f) f.hidden = v !== 'feed'; if (o) o.hidden = v !== 'official';
+  const l = document.getElementById('news-v-letter'); if (l) l.hidden = v !== 'letter';
+  if (v === 'letter') renderNewsLetter();
   _newsStore('pk-news-view', v);
 }
 window.newsSetView = newsSetView;
@@ -115,6 +117,52 @@ function renderNewsOfficial() {
     pub.innerHTML = p.length ? `<ul class="news-pub">${p.map(i => `<li><span class="news-off-d">${_newsDay(i.date)}</span><a href="${_newsEsc(i.link)}" target="_blank" rel="noopener noreferrer">${_newsEsc(i.title)}</a><small>${_newsEsc(i.source)}</small></li>`).join('')}</ul>`
       : `<div class="news-src-help">${_newsT('Aucune publication dans les 30 derniers jours collectés.', 'No publication in the last 30 days collected.')}</div>`;
   }
+}
+
+// ── Newsletter (data/newsletter.json, scripts/news_letter.py): one edition per reading profile (config/news_profiles.json),
+// the profile chosen here is kept in this browser; the morning e-mail sends the same edition ──
+let _nlData;
+const _NL_SEC = { markets: ['Marchés en 30 secondes', 'Markets in 30 seconds'], stories: ['Les sujets du jour', 'Today’s stories'], official: ['Textes officiels', 'Official texts'],
+  cons: ['Consultations : à vos réponses', 'Consultations: time to reply'], pubs: ['Publications et rapports', 'Publications and reports'], agenda: ['Agenda', 'Agenda'], post: ['À lire : le post de la semaine', 'Worth reading: post of the week'] };
+async function renderNewsLetter() {
+  const host = document.getElementById('news-letter'); if (!host) return;
+  if (_nlData === undefined) {
+    const get = async u => { try { const r = await fetch(u + '?t=' + Date.now()); return r.ok ? await r.json() : null; } catch (_) { return null; } };
+    _nlData = await get(DATA_BASE + 'newsletter.json');
+  }
+  const E = _nlData, P = (E && E.profiles) || {};
+  if (!E || !E.profiles || !Object.keys(P).length) { host.innerHTML = `<div class="news-src-help">${_newsT('La première édition paraît demain à 7 h.', 'The first edition comes out tomorrow at 7:00.')}</div>`; return; }
+  const en = window.PKI18n && PKI18n.lang === 'en', L = a => Array.isArray(a) ? (en ? a[1] : a[0]) : (a || '');
+  let pid = _newsStore('pk-nl-profile'); if (!P[pid] || !E.profiles[pid]) pid = P.origination && E.profiles.origination ? 'origination' : Object.keys(E.profiles)[0];
+  const prof = P[pid], ed = E.profiles[pid] || { stories: [] };
+  const day = new Date(E.date + 'T12:00:00Z').toLocaleDateString(en ? 'en-GB' : 'fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+  const num = (v, d = 2) => v == null ? '–' : v.toLocaleString(en ? 'en-GB' : 'fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d });
+  const a = (u, t) => `<a href="${_newsEsc(u)}" target="_blank" rel="noopener noreferrer">${_newsEsc(t)}</a>`;
+  const ddm = d => new Date(String(d).slice(0, 10) + 'T12:00:00Z').toLocaleDateString(en ? 'en-GB' : 'fr-FR', { day: 'numeric', month: 'short', timeZone: 'UTC' });
+  const sec = {
+    markets: () => (E.markets || []).length ? `<table class="nl-mk"><tbody>${E.markets.map(r => { const up = (r.chg || 0) > 0, dn = (r.chg || 0) < 0;
+      return `<tr><td>${_newsEsc(L(r.label))}</td><td class="nl-num">${num(r.value)} ${_newsEsc(r.unit)}</td><td class="nl-num ${up ? 'up' : dn ? 'dn' : ''}">${r.pct == null ? '' : (up ? '▲ +' : dn ? '▼ −' : '') + num(Math.abs(r.pct), 1) + ' %'}</td></tr>`; }).join('')}</tbody></table>
+      <div class="nl-src">${_newsT('Sources', 'Sources')} : ${[...new Set(E.markets.map(r => r.src).filter(Boolean))].join(', ')}. ${_newsT('Variation sur la séance précédente.', 'Change on the previous session.')}</div>` : '',
+    stories: () => ed.stories.length ? ed.stories.map((s, k) => `<article class="nl-story"><h3>${k + 1}. ${a(s.link, s.title)}</h3>
+      ${(en ? s.what_en : s.what) || s.what ? `<p><b>${_newsT('Ce qui s’est passé.', 'What happened.')}</b> ${_newsEsc((en && s.what_en) || s.what)}</p>` : ''}
+      ${s.for_you ? `<p class="nl-for"><b>${_newsT('Pour vous', 'For you')}, ${_newsEsc(L(prof.short).toLowerCase())}.</b> ${_newsEsc((en && s.for_you_en) || s.for_you)}</p>` : ''}
+      <div class="nl-src">${s.sources.slice(0, 4).map(_newsEsc).join(' · ')}${s.sources.length > 4 ? ' +' + (s.sources.length - 4) : ''}</div></article>`).join('') : '',
+    official: () => (E.official || []).length ? `<ul class="nl-ul">${E.official.map(o => `<li>${a(o.link, o.title)} <span class="nl-src">· ${_newsEsc(o.source)}, ${ddm(o.date)}</span></li>`).join('')}</ul>` : '',
+    cons: () => (E.cons || []).length ? `<table class="nl-cons"><tbody>${E.cons.map(c => { const n = c.deadline ? _newsLeft(c.deadline) : null;
+      return `<tr><td class="nl-num ${n != null && n <= 7 ? 'dn' : ''}">${n == null ? '' : n === 0 ? _newsT('auj.', 'today') : 'J-' + n}</td><td>${a(c.link, c.title)} <span class="nl-src">· ${_newsEsc(c.source)}</span></td></tr>`; }).join('')}</tbody></table>` : '',
+    pubs: () => (E.pubs || []).length ? `<ul class="nl-ul">${E.pubs.map(o => `<li>${a(o.link, o.title)} <span class="nl-src">· ${_newsEsc(o.source)}</span></li>`).join('')}</ul>` : '',
+    agenda: () => (E.agenda || []).length ? `<ul class="nl-ul">${E.agenda.map(e => `<li><b>${ddm(e.date)}</b> · ${_newsEsc(L(e.title))}</li>`).join('')}</ul>` : '',
+    post: () => E.post ? `<p>${a(E.post.url, (E.post.author || 'LinkedIn') + (E.post.note ? ' · ' + E.post.note : ''))}</p>` : '',
+  };
+  const body = (prof.order || Object.keys(sec)).map(k => { const h = sec[k] ? sec[k]() : ''; return h ? `<section class="nl-sec"><h2>${_newsT(..._NL_SEC[k])}</h2>${h}</section>` : ''; }).join('');
+  const head = (en && ed.headline_en) || ed.headline;
+  host.innerHTML = `<div class="nl-profiles" role="group" aria-label="${_newsT('Profil', 'Profile')}">${Object.keys(P).filter(k => E.profiles[k]).map(k => `<button type="button" class="filter-btn${k === pid ? ' active' : ''}" data-nlp="${k}">${_newsEsc(L(P[k].name))}</button>`).join('')}</div>
+    <div class="nl-paper"><header class="nl-head"><div><span translate="no" class="nl-brand">PowerKlock</span><span>${_newsEsc(day)}</span></div>
+      <h1>${_newsT('Le matin de l’énergie', 'The energy morning')}</h1><div>${_newsT('Édition', 'Edition')} <b>${_newsEsc(L(prof.name))}</b>${E.monday ? ' · ' + _newsT('depuis vendredi', 'since Friday') : ''}</div></header>
+      ${head ? `<section class="nl-sec nl-one"><h2>${_newsT('En une phrase', 'In one sentence')}</h2><p>${_newsEsc(head)}</p></section>` : ''}
+      ${body}
+      <footer class="nl-foot">${_newsT('Sujets choisis selon le profil ; résumés rédigés automatiquement à partir des titres et extraits, chaque sujet renvoie à ses articles. Le même contenu part par e-mail chaque matin de semaine à 7 h.', 'Stories chosen for the profile; summaries written automatically from the titles and extracts, each story links to its articles. The same content goes out by e-mail every weekday at 7:00.')}</footer></div>`;
+  host.querySelectorAll('[data-nlp]').forEach(b => b.addEventListener('click', () => { _newsStore('pk-nl-profile', b.dataset.nlp); renderNewsLetter(); }));
 }
 
 // what the last run read, beside the feed
