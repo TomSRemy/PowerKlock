@@ -1,5 +1,5 @@
 {
-  "_help": "Sources of the News page (Intelligence › News), read by scripts/fetch_news.py every 3 hours. To add a source: add an entry to 'feeds' (any public RSS / Atom feed: name, url, tags among power, gas, carbon, regulation, markets, fr). To follow a subject across the press: add a phrase to 'searches' (Google News, last 7 days, titles and links only). Pages without a feed can only be added with a dedicated reader (see 'pages').",
+  "_help": "Sources of the News page (Intelligence › News), read by scripts/fetch_news.py every 3 hours. To add a source: add an entry to 'feeds' (any public RSS / Atom feed: name, url, tags among power, gas, carbon, regulation, markets, fr, assoc, report). To follow a subject across the press: add a phrase to 'searches' (Google News, last 7 days, titles and links only). Pages without a feed can only be added with a dedicated reader (see 'pages').",
   "feeds": [
     {
       "name": "Carbon Pulse",
@@ -133,7 +133,8 @@
       "url": "https://www.syndicat-energies-renouvelables.fr/feed/",
       "tags": [
         "fr",
-        "power"
+        "power",
+        "assoc"
       ]
     },
     {
@@ -142,7 +143,8 @@
       "url": "https://ufe-electricite.fr/feed/",
       "tags": [
         "fr",
-        "power"
+        "power",
+        "assoc"
       ]
     },
     {
@@ -150,7 +152,8 @@
       "cls": "windeurope",
       "url": "https://windeurope.org/feed/",
       "tags": [
-        "power"
+        "power",
+        "assoc"
       ]
     },
     {
@@ -214,16 +217,6 @@
         "power",
         "regulation"
       ]
-    },
-    {
-      "name": "Consultations publiques (ministère)",
-      "cls": "dgec",
-      "url": "https://www.consultations-publiques.developpement-durable.gouv.fr/spip.php?page=backend-actu",
-      "tags": [
-        "fr",
-        "regulation"
-      ],
-      "require": "électri|electricit|photovolta|solaire|éolien|eolien|offshore|nucléaire|nucleaire|\\bedf\\b|engie|totalenergies|\\brte\\b|\\bcre\\b|enedis|hydrogène|batterie|stockage|renouvelable|tarif|fournisseur|pompe à chaleur|\\bppa\\b|énergie|energie|réseau électrique|gaz"
     },
     {
       "name": "Bruegel",
@@ -317,6 +310,252 @@
         "markets",
         "regulation"
       ]
+    },
+    {
+      "name": "ANODE",
+      "cls": "anode",
+      "url": "https://www.anode-asso.fr/feed/",
+      "tags": [
+        "fr",
+        "regulation",
+        "markets",
+        "assoc"
+      ]
+    },
+    {
+      "name": "France Renouvelables",
+      "cls": "francerenouv",
+      "url": "https://france-renouvelables.fr/feed/",
+      "tags": [
+        "fr",
+        "regulation",
+        "power",
+        "assoc"
+      ]
+    },
+    {
+      "name": "Enerplan",
+      "cls": "enerplan",
+      "url": "https://www.enerplan.asso.fr/feed",
+      "tags": [
+        "fr",
+        "regulation",
+        "power",
+        "assoc"
+      ]
+    },
+    {
+      "name": "AFIEG",
+      "cls": "afieg",
+      "url": "https://www.afieg.fr/",
+      "tags": [
+        "fr",
+        "regulation",
+        "markets",
+        "assoc"
+      ]
+    },
+    {
+      "name": "UNIDEN",
+      "cls": "uniden",
+      "url": "https://www.uniden.fr/",
+      "tags": [
+        "fr",
+        "regulation",
+        "markets",
+        "assoc"
+      ]
+    },
+    {
+      "name": "France Hydrogène",
+      "cls": "frh2",
+      "url": "https://www.france-hydrogene.org/feed/",
+      "tags": [
+        "fr",
+        "regulation",
+        "gas",
+        "assoc"
+      ]
+    },
+    {
+      "name": "France Gaz Renouvelables",
+      "cls": "fgr",
+      "url": "https://www.francegazrenouvelables.fr/",
+      "tags": [
+        "fr",
+        "regulation",
+        "gas",
+        "assoc"
+      ]
+    },
+    {
+      "name": "AMORCE",
+      "cls": "amorce",
+      "url": "https://amorce.asso.fr/",
+      "tags": [
+        "fr",
+        "regulation",
+        "assoc"
+      ]
+    },
+    {
+      "name": "CLER",
+      "cls": "cler",
+      "url": "https://cler.org/feed/",
+      "tags": [
+        "fr",
+        "regulation",
+        "power",
+        "assoc"
+      ]
+    },
+    {
+      "name": "Hespul",
+      "cls": "hespul",
+      "url": "https://www.hespul.org/feed/",
+      "tags": [
+        "fr",
+        "regulation",
+        "power",
+        "assoc"
+      ]
+    },
+    {
+      "name": "Énergie Partagée",
+      "cls": "enpartagee",
+      "url": "https://energie-partagee.org/feed/",
+      "tags": [
+        "fr",
+        "regulation",
+        "power",
+        "assoc"
+      ]
+    },
+    {
+      "name": "négaWatt",
+      "cls": "negawatt",
+      "url": "https://www.negawatt.org/",
+      "tags": [
+        "fr",
+        "regulation",
+        "assoc"
+      ]
+    },
+    {
+      "name": "FNCCR",
+      "cls": "fnccr",
+      "url": "https://www.fnccr.asso.fr/feed/",
+      "tags": [
+        "fr",
+        "regulation",
+        "power",
+        "assoc"
+      ]
+    },
+    {
+      "name": "Observ'ER",
+      "cls": "observer",
+      "url": "https://www.energies-renouvelables.org/",
+      "tags": [
+        "fr",
+        "regulation",
+        "power",
+        "assoc"
+      ]
+    },
+    {
+      "name": "GIMELEC",
+      "cls": "gimelec",
+      "url": "https://www.gimelec.fr/feed/",
+      "tags": [
+        "fr",
+        "regulation",
+        "power",
+        "assoc"
+      ]
+    },
+    {
+      "name": "France Agrivoltaïsme",
+      "cls": "agrivolt",
+      "url": "https://www.france-agrivoltaisme.fr/feed/",
+      "tags": [
+        "fr",
+        "regulation",
+        "power",
+        "assoc"
+      ]
+    },
+    {
+      "name": "Eurelectric",
+      "cls": "eurelectric",
+      "url": "https://www.eurelectric.org/feed/",
+      "tags": [
+        "regulation",
+        "power",
+        "markets",
+        "assoc"
+      ]
+    },
+    {
+      "name": "SolarPower Europe",
+      "cls": "spe",
+      "url": "https://www.solarpowereurope.org/",
+      "tags": [
+        "regulation",
+        "power",
+        "assoc"
+      ]
+    },
+    {
+      "name": "smartEn",
+      "cls": "smarten",
+      "url": "https://smarten.eu/feed/",
+      "tags": [
+        "regulation",
+        "power",
+        "markets",
+        "assoc"
+      ]
+    },
+    {
+      "name": "EASE (storage)",
+      "cls": "ease",
+      "url": "https://ease-storage.eu/feed/",
+      "tags": [
+        "regulation",
+        "power",
+        "assoc"
+      ]
+    },
+    {
+      "name": "Hydrogen Europe",
+      "cls": "h2europe",
+      "url": "https://hydrogeneurope.eu/feed/",
+      "tags": [
+        "regulation",
+        "gas",
+        "assoc"
+      ]
+    },
+    {
+      "name": "RE-Source Platform",
+      "cls": "resource",
+      "url": "https://resource-platform.eu/feed/",
+      "tags": [
+        "markets",
+        "power",
+        "assoc"
+      ]
+    },
+    {
+      "name": "IFIEC Europe",
+      "cls": "ifiec",
+      "url": "https://www.ifieceurope.org/",
+      "tags": [
+        "regulation",
+        "markets",
+        "assoc"
+      ]
     }
   ],
   "pages": [
@@ -349,6 +588,31 @@
         "fr",
         "regulation",
         "official"
+      ]
+    },
+    {
+      "name": "CRE — Rapports et études",
+      "cls": "cre",
+      "reader": "cre",
+      "url": "https://www.cre.fr/documents/rapports-et-etudes.html",
+      "tags": [
+        "fr",
+        "regulation",
+        "official",
+        "report",
+        "markets"
+      ]
+    },
+    {
+      "name": "CRE — Appels d'offres",
+      "cls": "cre",
+      "reader": "cre",
+      "url": "https://www.cre.fr/documents/appels-doffres.html",
+      "tags": [
+        "fr",
+        "regulation",
+        "official",
+        "power"
       ]
     }
   ],
@@ -445,6 +709,132 @@
         "markets"
       ],
       "lang": "en"
+    },
+    {
+      "q": "RTE \"consultation publique\"",
+      "tags": [
+        "fr",
+        "regulation",
+        "power"
+      ]
+    },
+    {
+      "q": "RTE concertation électricité",
+      "tags": [
+        "fr",
+        "regulation",
+        "power"
+      ]
+    },
+    {
+      "q": "\"Plateforme Verte\" énergie",
+      "tags": [
+        "fr",
+        "regulation",
+        "assoc"
+      ]
+    },
+    {
+      "q": "ANODE fournisseurs électricité",
+      "tags": [
+        "fr",
+        "regulation",
+        "assoc"
+      ]
+    },
+    {
+      "q": "AFIEG producteurs indépendants",
+      "tags": [
+        "fr",
+        "regulation",
+        "assoc"
+      ]
+    },
+    {
+      "q": "\"Stockage Énergie France\"",
+      "tags": [
+        "fr",
+        "regulation",
+        "assoc"
+      ]
+    },
+    {
+      "q": "UNIDEN électro-intensifs",
+      "tags": [
+        "fr",
+        "regulation",
+        "assoc"
+      ]
+    },
+    {
+      "q": "\"garanties d'origine\" électricité",
+      "tags": [
+        "fr",
+        "markets"
+      ]
+    },
+    {
+      "q": "\"guarantees of origin\" market",
+      "tags": [
+        "markets"
+      ],
+      "lang": "en"
+    },
+    {
+      "q": "EEX enchères garanties d'origine",
+      "tags": [
+        "fr",
+        "markets"
+      ]
+    },
+    {
+      "q": "\"mix résiduel\" électricité",
+      "tags": [
+        "fr",
+        "report",
+        "markets"
+      ]
+    },
+    {
+      "q": "\"European Residual Mix\" AIB",
+      "tags": [
+        "report",
+        "markets"
+      ],
+      "lang": "en"
+    },
+    {
+      "q": "\"Panorama de l'électricité renouvelable\"",
+      "tags": [
+        "fr",
+        "report",
+        "power"
+      ]
+    },
+    {
+      "q": "baromètre Observ'ER électricité renouvelable",
+      "tags": [
+        "fr",
+        "report",
+        "power"
+      ]
+    },
+    {
+      "q": "\"tableau de bord\" photovoltaïque éolien trimestre SDES",
+      "tags": [
+        "fr",
+        "report",
+        "power"
+      ]
+    },
+    {
+      "q": "rapport CRE marchés de gros électricité",
+      "tags": [
+        "fr",
+        "report",
+        "markets",
+        "regulation"
+      ]
     }
   ]
 }

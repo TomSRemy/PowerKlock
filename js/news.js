@@ -10,7 +10,7 @@ async function loadNews() {
     window._newsAcctWired = true;
     PKAccount.onChange(async () => { await _newsLoadPersonal(); _newsApplyConfig(); _newsRefreshKwUI(); renderNewsPosts(); renderNews(newsData); });
   }
-  await Promise.all([_newsLoadSections(), _newsLoadPersonal(), _newsLoadDigest()]);
+  await Promise.all([_newsLoadSections(), _newsLoadPersonal(), _newsLoadDigest(), _newsLoadCons()]);
   try {
     const r = await fetch(DATA_BASE + 'news.json?t=' + Date.now());
     if (!r.ok) throw new Error(r.status);
@@ -29,6 +29,7 @@ async function loadNews() {
   _newsWireKw();
   _newsApplyConfig();
   renderNewsDigest();
+  renderNewsCons();
   renderNewsPosts();
   renderNews(newsData);
   renderNewsSources();
@@ -214,6 +215,39 @@ async function renderNewsPosts() {
   host.querySelectorAll('[data-pdel]').forEach(b => b.addEventListener('click', async () => { await cl.from('news_post').delete().eq('id', b.dataset.pdel); renderNewsPosts(); }));
 }
 
+// ── Open consultations (data/consultations.json, scripts/fetch_news.py): the deadline to reply, the nearest first ──
+let _newsCons = null, _newsConsTheme = '';
+const _NEWS_CONS_THEMES = { cee: ['Efficacité énergétique', 'Energy efficiency'], tariffs: ['Tarifs', 'Tariffs'], grid: ['Réseau et raccordement', 'Grid and connection'],
+  market: ['Marché et sécurité d’approvisionnement', 'Market and security of supply'], renewables: ['Renouvelables et appels d’offres', 'Renewables and tenders'], gas: ['Gaz', 'Gas'], other: ['Autres', 'Other'] };
+async function _newsLoadCons() {
+  try { const r = await fetch(DATA_BASE + 'consultations.json?t=' + Date.now()); _newsCons = r.ok ? await r.json() : null; } catch (_) { _newsCons = null; }
+}
+function renderNewsCons() {
+  const sec = document.getElementById('hs-news-cons'), host = document.getElementById('news-cons'); if (!sec || !host) return;
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris' }).format(new Date());
+  const all = (_newsCons && _newsCons.items) || [], open = all.filter(c => !c.deadline || c.deadline >= today);
+  if (!all.length) { sec.hidden = true; return; }
+  sec.hidden = false;
+  const en = window.PKI18n && PKI18n.lang === 'en';
+  const fmt = d => new Date(d + 'T12:00:00Z').toLocaleDateString(en ? 'en-GB' : 'fr-FR', { day: 'numeric', month: 'short', timeZone: 'UTC' });
+  const left = d => Math.round((new Date(d + 'T12:00:00Z') - new Date(today + 'T12:00:00Z')) / 864e5);
+  const due = c => { if (!c.deadline) return `<span class="cons-due">${_newsT('date limite non indiquée', 'no deadline given')}</span>`;
+    const n = left(c.deadline);
+    return `<span class="cons-due${n <= 7 ? ' soon' : ''}"><b>${fmt(c.deadline)}</b>${n === 0 ? _newsT('dernier jour', 'last day') : 'J-' + n}</span>`; };
+  const th = k => { const t = _NEWS_CONS_THEMES[k || 'other'] || _NEWS_CONS_THEMES.other; return _newsT(t[0], t[1]); };
+  const row = c => `<a class="cons-row" href="${_newsEsc(c.link)}" target="_blank" rel="noopener noreferrer">${due(c)}<span class="cons-t">${_newsEsc(c.title)}<small><span class="cons-th">${th(c.theme)}</span> · ${_newsEsc(c.source)} · ${_newsT('ouverte le ', 'opened ')}${fmt(c.opened)}</small></span></a>`;
+  const counts = {}; all.forEach(c => { if (!c.deadline || c.deadline >= today) counts[c.theme || 'other'] = (counts[c.theme || 'other'] || 0) + 1; });
+  const keys = Object.keys(_NEWS_CONS_THEMES).filter(k => counts[k]);
+  if (_newsConsTheme && !counts[_newsConsTheme]) _newsConsTheme = '';
+  const pick = c => !_newsConsTheme || (c.theme || 'other') === _newsConsTheme;
+  const chips = keys.length > 1 ? `<div class="cons-chips">${[['', _newsT('Tous', 'All'), open.length]].concat(keys.map(k => [k, th(k), counts[k]])).map(([k, l, n]) => `<button type="button" class="filter-btn${k === _newsConsTheme ? ' active' : ''}" data-ct="${k}">${l} <small>${n}</small></button>`).join('')}</div>` : '';
+  const shown = open.filter(pick);
+  const closed = all.filter(c => c.deadline && c.deadline < today && pick(c)).slice(-8).reverse();
+  host.innerHTML = chips + (shown.length ? `<div class="cons-list">${shown.map(row).join('')}</div>` : `<div class="news-src-help">${_newsT('Aucune consultation ouverte en ce moment.', 'No consultation open right now.')}</div>`) +
+    (closed.length ? `<details class="cons-closed"><summary>${_newsT('Récemment closes', 'Recently closed')} (${closed.length})</summary><div class="cons-list">${closed.map(row).join('')}</div></details>` : '');
+  host.querySelectorAll('[data-ct]').forEach(b => b.addEventListener('click', () => { _newsConsTheme = b.dataset.ct; renderNewsCons(); }));
+}
+
 function _newsKw() {
   if (_newsKwRemote) return _newsKwRemote.map(r => r.keyword.toLowerCase());
   try { return (localStorage.getItem('pk-news-kw') || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean); } catch (_) { return []; }
@@ -252,7 +286,7 @@ function renderNewsSources() {
 
 // Add a source from the site: public.news_source (warehouse migration 012), read by
 // scripts/fetch_news.py at the next hourly run. Signed-in users only (RLS).
-const _NEWS_TAGS = ['power', 'gas', 'carbon', 'regulation', 'markets', 'fr'];
+const _NEWS_TAGS = ['power', 'gas', 'carbon', 'regulation', 'markets', 'fr', 'assoc', 'report'];
 async function renderNewsAdd() {
   const host = document.getElementById('news-add'); if (!host) return;
   const A = window.PKAccount;
@@ -280,7 +314,7 @@ async function renderNewsAdd() {
       <input type="text" id="news-add-val" class="fuel-select" maxlength="300" placeholder="Feed address, https://…/feed">
       <button type="button" class="pk-btn-primary" id="news-add-go">＋ Add</button><span></span>
     </div>
-    <div class="news-add-tags">Topics: ${_NEWS_TAGS.map(t => `<label><input type="checkbox" value="${t}"> ${t === 'fr' ? 'France' : t}</label>`).join('')}</div>
+    <div class="news-add-tags">Topics: ${_NEWS_TAGS.map(t => `<label><input type="checkbox" value="${t}"> ${t === 'fr' ? 'France' : t === 'assoc' ? 'associations' : t}</label>`).join('')}</div>
     <div class="news-add-msg" id="news-add-msg">Read at the next hourly news run. A feed is any public RSS / Atom address; a press search follows a phrase across the world press (put an exact phrase in quotes).</div>
     ${rows.length ? `<div style="overflow-x:auto"><table class="news-src-t"><thead><tr><th>Added from the site</th><th>Read as</th><th>Last run</th><th></th></tr></thead><tbody>${rows.map(r => `<tr><td>${_newsEsc(r.name)}<div class="news-q">${_newsEsc(r.kind === 'feed' ? r.url : r.query)}</div></td><td>${r.kind === 'feed' ? 'RSS feed' : 'press search'}</td><td>${status(r)}</td><td>${r.user_id === A.user.id ? `<button type="button" class="pk-btn-ghost" data-del="${r.id}">✕ Remove</button>` : ''}</td></tr>`).join('')}</tbody></table></div>` : ''}
   </div>`;

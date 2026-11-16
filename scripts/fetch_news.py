@@ -72,6 +72,8 @@ KEYWORDS = {
     "carbon": r"\b(carbon|co2|ets|eua|emission|decarboni[sz]|net[- ]zero|climate)\b",
     "regulation": r"\b(regulat\w*|réglement\w*|directive|commission|acer|cre|tariff|tarif\w*|law|loi|décret|decree|arrêté|bill|consultation|policy|ministry|ministère|government|gouvernement|auction design|appel d'offres|tender|ppe|arenh|vnu|turpe|accise|capacity mechanism|mécanisme de capacité|cfd|complément de rémunération)\b",
     "markets": r"\b(price[sd]?|market[s]?|trading|futures|forward|auction|spot|day-ahead|ppa|contract[s]?)\b",
+    # reference reports: periodic studies, barometers, observatories, outlooks, residual mix
+    "report": r"\b(rapports?|reports?|baromètres?|barometers?|observatoires?|panorama|bilan (électrique|prévisionnel)|bulletin trimestriel|outlook|residual mix(es)?|mix résiduel|économie du système|[eé]clairage sur)\b",
     "power": r"\b(power|electricity|grid|solar|wind|nuclear|hydro|battery|batteries|renewable[s]?|tso)\b",
 }
 
@@ -337,6 +339,141 @@ SELECT DISTINCT ?celex ?date ?en ?fr WHERE {{
     return items
 
 
+CONSULT = Path("data/consultations.json")
+MIN_ENERGY = "https://www.consultations-publiques.developpement-durable.gouv.fr/"
+
+
+# theme of a consultation from its title, the first that matches (energy savings first: their titles also say « tarif »)
+CONS_THEMES = [
+    ("cee", r"certificats? d.économies d.énergie|\bCEE\b|fiches? d.opérations? standardisées?|bonification|audit énergétique|précarité énergétique|programme PRO-"),
+    ("tariffs", r"TURPE|ATR[DT]|\btarifs?\b|TRVE|péréquation|\bFPE\b|CRCP|dotation|prestations annexes"),
+    ("grid", r"raccordement|ligne électrique|poste électrique|liaison|réseau public|\bRP[DT]\b|accès au réseau|SDDR|interconnexion|gestionnaires? de réseau|contrat d.accès|schéma décennal"),
+    ("market", r"capacité|équilibre|réserves?|marché|enchères?|ARENH|nucléaire|hydroélectri|flexibilit|effacement|stockage"),
+    ("renewables", r"appel d.offres|\bAO\b|\bPPE\d?\b|photovolta|éolien|biométhane|biogaz|hydrogène|complément de rémunération|garanties d.origine|renouvelable"),
+    ("gas", r"\bgaz\b|GRTgaz|Teréga|NaTran|GRDF|méthane"),
+]
+
+
+def cons_theme(title):
+    for key, rx in CONS_THEMES:
+        if re.search(rx, title, re.I):
+            return key
+    return "other"
+
+
+FR_MONTHS = {"janvier": 1, "février": 2, "fevrier": 2, "mars": 3, "avril": 4, "mai": 5, "juin": 6, "juillet": 7, "août": 8, "aout": 8,
+             "septembre": 9, "octobre": 10, "novembre": 11, "décembre": 12, "decembre": 12}
+FR_DATE = r"(\d{1,2})(?:er)?\s+(" + "|".join(FR_MONTHS) + r")(?:\s+(\d{4}))?"
+
+
+def rte_consultations(now, days=75):
+    """RTE's public consultations and concertations (grid projects, offshore connections, regional schemes): the site's
+    sitemap gives each page and its last change; the page gives the end date, from its title (« du 17 août au 28
+    septembre ») or else the first « jusqu'au … » of its text. Results and reviews of past concertations are left out."""
+    sm = requests.get("https://www.rte-france.com/sitemap.xml", headers=BROWSER_UA, timeout=30).text
+    since = datetime.fromordinal(now.date().toordinal() - days).strftime("%Y-%m-%d")
+    out = []
+    for loc, lastmod in re.findall(r"<loc>([^<]+)</loc><lastmod>([^<]+)</lastmod>", sm):
+        slug = loc.rsplit("/", 1)[-1]
+        if lastmod[:10] < since or not re.search(r"concertation|consultation|enquete-publique|participez|contribution", slug) \
+                or re.search(r"bilan|avis|resultat|instance|reunion|carrieres|garant|/formulaire-concertation/", loc):   # forms repeat the news page
+            continue
+        page = html.unescape(requests.get(loc, headers=BROWSER_UA, timeout=30).text)
+        title = re.sub(r"\s*\|\s*RTE\s*$", "", clean((re.findall(r"<title>(.*?)</title>", page, re.S) or [""])[0]))
+        text = clean(re.sub(r"<script.*?</script>|<style.*?</style>", " ", page, flags=re.S))
+
+        def iso(m, year=None):
+            return f"{m.group(3) or year or now.year}-{FR_MONTHS[m.group(2).lower()]:02d}-{int(m.group(1)):02d}"
+        m = (re.search(r"\bau\s+" + FR_DATE, title, re.I) or re.search(r"\bdu\s+" + FR_DATE + r"\s+au\s+" + FR_DATE, text, re.I)
+             or re.search(r"(?:jusqu.au|avant le|prendra fin le|se termine le)\s+(?:\w+\s+)?" + FR_DATE, text, re.I))
+        if m and m.re.pattern.startswith("\\bdu"):     # « du 1er octobre au 22 novembre 2026 »: the end date is the second
+            m = re.search(FR_DATE + r"\s*$", m.group(0), re.I)
+        out.append({"source": "RTE", "title": clean(title, 260), "link": loc, "opened": lastmod[:10], "deadline": iso(m) if m else None})
+    return out
+
+
+def consultations(now):
+    """Public consultations with their deadline: the CRE (listing, then the deadline written on each open consultation's
+    page) and the ministry's « Énergies et climat » consultations (period on the listing, two pages). Both sites have no
+    feed with the dates; their listings are official pages republished in the same form."""
+    out, errors = [], []
+    try:
+        s = requests.get("https://www.cre.fr/documents/consultations-publiques.html", headers=BROWSER_UA, timeout=30).text
+        for url, title, status, when in re.findall(r'data-document-url="([^"]+)".*?<h3[^>]*>\s*<a[^>]*>(.*?)</a>.*?<span class="label[^"]*">([^<]*)</span>.*?<time datetime="([^"]+)"', s, re.S):
+            if "cours" not in status.lower():
+                continue
+            link = "https://www.cre.fr" + url if url.startswith("/") else url
+            page = html.unescape(requests.get(link, headers=BROWSER_UA, timeout=30).text)
+            m = re.search(r"Date limite de dépôt des réponses\W*(?:<[^>]+>\W*)*(\d{2})/(\d{2})/(\d{4})", page)
+            out.append({"source": "CRE", "title": clean(title, 260), "link": link, "opened": (parse_date(when) or now).date().isoformat(),
+                        "deadline": f"{m.group(3)}-{m.group(2)}-{m.group(1)}" if m else None})
+    except Exception as e:
+        errors.append("CRE: " + str(e)[:100])
+    try:
+        for start in (0, 8):
+            s = html.unescape(requests.get(MIN_ENERGY + "energies-et-climat-r4.html" + (f"?debut_listearticles={start}" if start else ""), headers=BROWSER_UA, timeout=30).text)
+            for url, title, a, b in re.findall(r'<a href="([^"]+a\d+\.html)" class="fr-card__link">(.*?)</a>.*?Consultation du (\d{2}/\d{2}/\d{4}) au (\d{2}/\d{2}/\d{4})', s, re.S):
+                iso = lambda d: "-".join(reversed(d.split("/")))
+                out.append({"source": "Ministère · Énergies et climat", "title": clean(title, 260), "link": urljoin(MIN_ENERGY, url),
+                            "opened": iso(a), "deadline": iso(b)})
+    except Exception as e:
+        errors.append("ministry: " + str(e)[:100])
+    try:
+        out += rte_consultations(now)
+    except Exception as e:
+        errors.append("RTE: " + str(e)[:100])
+    today = now.astimezone(timezone.utc).date().isoformat()
+    seen, keep = set(), []
+    for c in out:
+        if c["link"] in seen:
+            continue
+        seen.add(c["link"])
+        c["open"] = c["deadline"] >= today if c["deadline"] else c["opened"] >= datetime.fromordinal(now.date().toordinal() - 45).strftime("%Y-%m-%d")
+        c["theme"] = cons_theme(c["title"])
+        keep.append(c)
+    keep.sort(key=lambda c: (not c["open"], c["deadline"] or "9999"))
+    return keep, errors
+
+
+def rte_news(now, days=14):
+    """RTE's national publications (reports, market and grid analyses, press releases) from its dated sitemap; local
+    works news (worksites, roads, archaeology, drills) are left out. One page read per item, for its title."""
+    sm = requests.get("https://www.rte-france.com/sitemap.xml", headers=BROWSER_UA, timeout=30).text
+    since = datetime.fromordinal(now.date().toordinal() - days).strftime("%Y-%m-%d")
+    keep = re.compile(r"rapport|panorama|observatoire|marche|prix|bilan|barometre|consommation|production|hiver|ete-|ecowatt|nucleaire|interconnex|flexibilit|stockage|"
+                      r"raccordement|previsionnel|futurs|analyse|equilibre|capacite|europe|record|export|negatif|tarif|investiss|obligataire|schema|surete", re.I)
+    skip = re.compile(r"travaux|chantier|archeolog|pompier|plage|riverain|route|circulation|deviation|formation|recrut|carrieres|concertation|enquete", re.I)
+    items = []
+    for loc, lastmod in re.findall(r"<loc>([^<]+)</loc><lastmod>([^<]+)</lastmod>", sm):
+        path = loc.replace("https://www.rte-france.com", "")
+        if lastmod[:10] < since or not path.startswith(("/actualites/", "/donnees-publications/")) or skip.search(path) \
+                or not (path.startswith("/donnees-publications/") or keep.search(path)):
+            continue
+        page = requests.get(loc, headers=BROWSER_UA, timeout=30).text
+        title = re.sub(r"\s*\|\s*RTE\s*$", "", clean(html.unescape((re.findall(r"<title>(.*?)</title>", page, re.S) or [""])[0])))
+        desc = clean(html.unescape((re.findall(r'<meta name="description" content="([^"]*)"', page) or [""])[0]), 240)
+        if title:
+            items.append({"title": clean(title, 220), "link": loc, "date": parse_date(lastmod.replace("Z", ":00+00:00")), "snippet": desc})
+    return items
+
+
+def eex_news(now):
+    """EEX newsroom (press releases and customer information on power, gas, guarantees of origin, ETS): the data alerts
+    and technical notices of the exchange are left out."""
+    s = html.unescape(requests.get("https://www.eex.com/en/newsroom/news", headers=BROWSER_UA, timeout=30).text)
+    items = []
+    for d, title, href in re.findall(r'<time itemprop="datePublished" datetime="([^"]+)">.*?<a title="([^"]+)" href="([^"]+)"', s, re.S):
+        if re.search(r"data alert|data amendment|reminder|T7|C7|datasource|maintenance|trading calendar|holiday", title, re.I):
+            continue
+        if not re.search(r"press release|guarantee|origin|\bGOs?\b|auction|french|france|power|electricity|gas|ETS|emission|PPA|capacity|renewable|volumes", title, re.I):
+            continue
+        items.append({"title": clean(title, 220), "link": urljoin("https://www.eex.com", href), "date": parse_date(d + "T12:00:00+00:00"), "snippet": ""})
+    return items
+
+
+PUBLISHERS = {"rte": ("RTE", "rte", rte_news, ["fr", "power", "markets"]), "eex": ("EEX", "eex", eex_news, ["markets"])}
+
+
 OFFICIAL = {"jorf": ("Journal officiel", jorf, ["fr", "regulation", "official"]), "eurlex": ("EUR-Lex", eurlex, ["regulation", "official"])}
 
 
@@ -436,6 +573,12 @@ def main():
             status.append({"name": s["q"], "kind": "search", "ok": True, "n": n, "added": bool(s.get("added"))})
         except Exception as e:
             status.append({"name": s["q"], "kind": "search", "ok": False, "error": str(e)[:120], "added": bool(s.get("added"))})
+    for key, (name, cls, fn, tags) in PUBLISHERS.items():
+        try:
+            n = add_items(out, fn(now), {"name": name, "cls": cls, "tags": tags}, now, 20)
+            status.append({"name": name, "kind": "page", "ok": True, "n": n})
+        except Exception as e:
+            status.append({"name": name, "kind": "page", "ok": False, "error": str(e)[:120]})
     for key, (name, fn, tags) in OFFICIAL.items():
         try:
             n = add_items(out, fn(), {"name": name, "cls": "official", "tags": tags}, now, 30, {"official": True})
@@ -451,6 +594,10 @@ def main():
     out = cluster_stories(out)
     out.sort(key=lambda i: i["date"], reverse=True)
     OUT.parent.mkdir(parents=True, exist_ok=True)
+    cons, errs = consultations(now)
+    if cons:   # keep the previous file when both sites failed
+        CONSULT.write_text(json.dumps({"updated": now.isoformat(timespec="seconds"), "items": cons, "errors": errs}, ensure_ascii=False, separators=(",", ":")))
+    print(f"  consultations: {sum(c['open'] for c in cons)} open, {len(cons)} listed" + (f" · {errs}" if errs else ""))
     OUT.write_text(json.dumps({"updated": now.isoformat(timespec="seconds"), "items": out[:MAX_ITEMS], "sources": status},
                               ensure_ascii=False, separators=(",", ":")))
     print(f"Wrote {OUT}: {min(len(out), MAX_ITEMS)} items")
