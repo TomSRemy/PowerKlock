@@ -966,21 +966,25 @@
   }
 
   // ── Account UI ───────────────────────────────────────────────────
+  // Rendered twice: in the topbar (#pk-account, always visible) and inside My Dashboard (#pkd-account, with the
+  // "saved in this browser" note since that page is where layouts live). Both call the same sign-in modal.
   function renderAccount() {
-    const el = document.getElementById('pkd-account');
-    if (!el) return;
     const A = window.PKAccount;
-    if (!A || !A.configured) {
-      el.innerHTML = '<span class="pkd-acc-note" title="Layouts are kept in this browser until accounts are enabled">Saved in this browser</span>';
-      return;
-    }
-    if (A.user) {
-      el.innerHTML = `<span class="pkd-sync" id="pkd-sync"></span><button type="button" class="pk-btn-ghost pkd-acc" id="pkd-acc-btn" title="Signed in · click to sign out">${esc(A.user.email || 'Account')}</button>`;
-      el.querySelector('#pkd-acc-btn').addEventListener('click', openAccount);
-    } else {
-      el.innerHTML = '<span class="pkd-acc-note">Saved in this browser</span><button type="button" class="pk-btn-ghost pkd-acc" id="pkd-acc-btn">Sign in</button>';
-      el.querySelector('#pkd-acc-btn').addEventListener('click', openAccount);
-    }
+    ['pk-account', 'pkd-account'].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const note = id === 'pkd-account';
+      if (!A || !A.configured) {
+        el.innerHTML = note ? '<span class="pkd-acc-note" title="Layouts are kept in this browser until accounts are enabled">Saved in this browser</span>' : '';
+        return;
+      }
+      if (A.user) {
+        el.innerHTML = `${note ? '<span class="pkd-sync" id="pkd-sync"></span>' : ''}<button type="button" class="pk-btn-ghost pkd-acc" id="${id}-btn" title="Signed in · click to sign out">${esc(A.user.email || 'Account')}</button>`;
+      } else {
+        el.innerHTML = `${note ? '<span class="pkd-acc-note">Saved in this browser</span>' : ''}<button type="button" class="pk-btn-ghost pkd-acc" id="${id}-btn">Sign in</button>`;
+      }
+      el.querySelector(`#${id}-btn`).addEventListener('click', openAccount);
+    });
   }
 
   function openAccount() {
@@ -1319,7 +1323,7 @@
     b.items.push(Object.assign({ i: uid(), t: 'w', wid, w: w.size.w * FINE, h: w.size.h * FINE }, p ? { p } : {}));
     toast('Added to “' + b.name + '”'); save(); if (isOpen()) render();
   }
-  window.PKDash = { init, open, refresh, has, toggleWidget, addWidget, addCard, addSection, addNote, TEMPLATES, boards, soloLink };
+  window.PKDash = { init, open, refresh, has, toggleWidget, addWidget, addCard, addSection, addNote, TEMPLATES, boards, soloLink, openAccount };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
 })();

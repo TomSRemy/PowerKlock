@@ -188,7 +188,7 @@
     document.body.appendChild(bg);
     document.addEventListener('keydown', escClose);
     const $ = s => bg.querySelector(s);
-    const si = $('#pk-al-signin'); if (si) si.addEventListener('click', e => { e.preventDefault(); close(); if (typeof window.switchDashboard === 'function') window.switchDashboard('mydash'); setTimeout(() => { const b = document.getElementById('pkd-acc-btn'); if (b) b.click(); }, 400); });
+    const si = $('#pk-al-signin'); if (si) si.addEventListener('click', e => { e.preventDefault(); close(); if (window.PKDash && PKDash.openAccount) PKDash.openAccount(); });
     const sync = () => {
       const k = $('#pk-al-kind').value;
       $('#pk-al-help').textContent = KINDS[k].help + (k.startsWith('pp') ? ' PP data need the RTE account to be connected.' : '');
