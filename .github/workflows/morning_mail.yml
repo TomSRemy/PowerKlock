@@ -8,6 +8,11 @@ on:
     - cron: '0 5 * * 1-5'    # 05:00 UTC = 07:00 Paris in winter (06:00 UTC in summer, after the morning data)
     - cron: '0 6 * * 1-5'
   workflow_dispatch:
+    inputs:
+      preview:
+        description: 'Preview: write today’s edition now and send every profile to the admins only (nothing committed)'
+        type: boolean
+        default: false
 
 jobs:
   mail:
@@ -26,8 +31,10 @@ jobs:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}   # the posts the team voted for, in Monday's edition
         run: |
           pip install -q scikit-learn==1.6.1 "psycopg[binary]==3.3.2"
-          python scripts/news_digest.py || echo "::warning::digest not written"
-          python scripts/news_letter.py || echo "::warning::newsletter not written"   # one edition per reading profile (config/news_profiles.json)
+          F=""; if [ "${{ inputs.preview }}" = "true" ]; then F="--force"; fi
+          python scripts/news_digest.py $F || echo "::warning::digest not written"
+          python scripts/news_letter.py $F || echo "::warning::newsletter not written"   # one edition per reading profile (config/news_profiles.json)
+          if [ "${{ inputs.preview }}" = "true" ]; then echo "Preview: nothing committed."; exit 0; fi
           git config user.name "PowerDesk Bot"
           git config user.email "bot@powerdesk.local"
           git add data/news_digest.json data/newsletter.json 2>/dev/null || true
@@ -45,6 +52,7 @@ jobs:
           MORNING_TO: ${{ secrets.MORNING_TO }}
           MORNING_PROFILE: ${{ vars.MORNING_PROFILE }}   # profile of the team list's e-mail: regulatory, legal, origination (default), markets, commercial
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}   # readers who chose the newsletter in the site (public.news_profile) get their own edition
+          MORNING_PREVIEW: ${{ inputs.preview && '1' || '' }}
         run: |
           # one mail a day: the run whose UTC hour is 07:00 in Paris
           if [ "$(TZ=Europe/Paris date +%H)" != "07" ] && [ "${{ github.event_name }}" = "schedule" ]; then echo "Not 07:00 in Paris"; exit 0; fi
