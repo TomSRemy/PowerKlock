@@ -134,7 +134,7 @@ def esc(t):
     return str(t or '').replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;')
 
 
-SEC = {'markets': 'Marchés en 30 secondes', 'stories': 'Les sujets du jour', 'official': 'Textes officiels', 'cons': 'Consultations : à vos réponses',
+SEC = {'markets': 'Marchés en 30 secondes', 'digest': 'L’essentiel', 'top': 'Les articles principaux', 'stories': 'Les sujets du jour', 'official': 'Textes officiels', 'cons': 'Consultations : à vos réponses',
        'pubs': 'Publications et rapports', 'agenda': 'Agenda', 'post': 'À lire : le post de la semaine'}
 
 
@@ -145,7 +145,7 @@ def render_letter(today, E, pid):
     f = 'font-family:Inter,Arial,sans-serif'
     serif = 'font-family:Georgia,\'Times New Roman\',serif'
     h2 = lambda t: f'<p style="{f};font-size:11px;font-weight:700;letter-spacing:1px;color:#5F738A;margin:0 0 10px;text-transform:uppercase">{t}</p>'  # noqa: E731
-    box = lambda inner: f'<tr><td style="padding:18px 28px;border-bottom:1px solid #E6ECF2">{inner}</td></tr>'  # noqa: E731
+    box = lambda inner: f'<tr><td style="padding:18px 20px;border-bottom:1px solid #E6ECF2">{inner}</td></tr>'  # noqa: E731
     a = lambda u, t, st='': f'<a href="{esc(u)}" style="color:#13202E;text-decoration:none;{st}">{esc(t)}</a>'  # noqa: E731
     short = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.']
     ddm = lambda d: f'{int(str(d)[8:10])} {short[int(str(d)[5:7]) - 1]}'  # noqa: E731
@@ -154,19 +154,35 @@ def render_letter(today, E, pid):
         return n(v, d)
 
     def markets():
-        if not E.get('markets'):
+        # the price tiles, three per row; each opens its page of the site
+        rs = E.get('markets') or []
+        if not rs:
             return ''
-        tr = ''
-        for r in E['markets']:
+        cells = []
+        for r in rs:
             c = r.get('chg') or 0
             col = '#B8322D' if c > 0 else '#0E7A5F' if c < 0 else '#5F738A'
             pct = '' if r.get('pct') is None else ('▲ +' if c > 0 else '▼ −' if c < 0 else '') + n(abs(r['pct']), 1) + ' %'
-            tr += (f'<tr><td style="{f};padding:7px 0;border-bottom:1px solid #F1F4F8;font-size:14px;color:#34485E">{esc(r["label"][0])}</td>'
-                   f'<td style="font-family:Menlo,Consolas,monospace;padding:7px 0;border-bottom:1px solid #F1F4F8;font-size:14px;text-align:right;white-space:nowrap">{num(r["value"])} {esc(r["unit"])}</td>'
-                   f'<td style="font-family:Menlo,Consolas,monospace;padding:7px 0 7px 12px;border-bottom:1px solid #F1F4F8;font-size:13px;text-align:right;white-space:nowrap;color:{col}">{pct}</td></tr>')
-        srcs = ', '.join(sorted({r.get('src') for r in E['markets'] if r.get('src')}))
-        return box(h2(SEC['markets']) + f'<table role="presentation" width="100%" style="border-collapse:collapse">{tr}</table>'
-                   f'<p style="{f};font-size:11px;color:#62758B;margin:8px 0 0">Sources : {esc(srcs)}. Variation sur la séance précédente.</p>')
+            cells.append(f'<td width="33%" style="padding:3px;vertical-align:top"><a href="{SITE}#{esc(r.get("page") or "today")}" style="display:block;text-decoration:none;border:1px solid #D5DEE8;border-radius:10px;padding:9px 10px;background:#F7F9FB">'
+                         f'<span style="{f};display:block;font-size:12px;color:#5F738A">{esc(r["label"][0])}</span>'
+                         f'<span style="font-family:Menlo,Consolas,monospace;display:block;font-size:17px;font-weight:700;color:#13202E;margin:4px 0 2px">{num(r["value"])}</span>'
+                         f'<span style="{f};font-size:11px;color:#62758B">{esc(r["unit"])}</span> <span style="font-family:Menlo,Consolas,monospace;font-size:12px;color:{col};white-space:nowrap">{pct}</span></a></td>')
+        rows_ = ''.join('<tr>' + ''.join(cells[i:i + 3]) + ''.join('<td width="33%"></td>' for _ in range(3 - len(cells[i:i + 3]))) + '</tr>' for i in range(0, len(cells), 3))
+        srcs = ', '.join(sorted({r.get('src') for r in rs if r.get('src')}))
+        return box(h2(SEC['markets']) + f'<table role="presentation" width="100%" style="border-collapse:collapse;table-layout:fixed">{rows_}</table>'
+                   f'<p style="{f};font-size:11px;color:#62758B;margin:8px 0 0">Sources : {esc(srcs)}. Variation sur la séance précédente. Chaque tuile ouvre sa page sur le site.</p>')
+
+    def digest():
+        d = E.get('digest') or {}
+        if not d.get('items'):
+            return ''
+        li = ''.join(f'<li style="margin:0 0 8px">{esc(x.get("text") or x.get("title"))} <a href="{esc(x.get("link") or SITE)}" style="color:#0B7A62;text-decoration:none;font-size:12px;white-space:nowrap">{esc(" · ".join((x.get("sources") or [])[:2]))} ↗</a></li>' for x in d['items'])
+        return box(h2('La semaine en 5 sujets' if d.get('weekly') else SEC['digest']) + f'<ol style="{f};margin:0;padding-left:20px;font-size:15px;line-height:1.5;color:#13202E">{li}</ol>')
+
+    def top():
+        if not E.get('top'):
+            return ''
+        return box(h2(SEC['top']) + ul([f'{a(o["link"], o["title"])} <span style="color:#62758B;font-size:12px">· {esc(o["source"])}{" +" + str(o["n"] - 1) if (o.get("n") or 1) > 1 else ""}</span>' for o in E['top']]))
 
     def stories():
         if not ed.get('stories'):
@@ -195,7 +211,7 @@ def render_letter(today, E, pid):
         return box(h2(SEC['cons']) + f'<table role="presentation" width="100%" style="border-collapse:collapse">{tr}</table>')
 
     secs = {
-        'markets': markets, 'stories': stories, 'cons': cons,
+        'markets': markets, 'digest': digest, 'top': top, 'stories': stories, 'cons': cons,
         'official': lambda: box(h2(SEC['official']) + ul([f'{a(o["link"], o["title"])} <span style="color:#62758B;font-size:12px">· {esc(o["source"])}, {ddm(o["date"])}</span>' for o in E['official']])) if E.get('official') else '',
         'pubs': lambda: box(h2(SEC['pubs']) + ul([f'{a(o["link"], o["title"])} <span style="color:#62758B;font-size:12px">· {esc(o["source"])}</span>' for o in E['pubs']])) if E.get('pubs') else '',
         'agenda': lambda: box(h2(SEC['agenda']) + ul([f'<b>{ddm(e["date"])}</b> · {esc((e.get("title") or [""])[0])}' for e in E['agenda']])) if E.get('agenda') else '',
@@ -203,7 +219,7 @@ def render_letter(today, E, pid):
     }
     body = ''.join(secs[k]() for k in ed.get('order') or secs if k in secs)
     one = box(h2('En une phrase') + f'<p style="{serif};font-size:19px;line-height:1.45;margin:0;color:#13202E">{esc(ed["headline"])}</p>') if ed.get('headline') else ''
-    html = (f'<div style="background:#E9EEF3;padding:24px 12px"><table role="presentation" width="100%" style="max-width:680px;margin:0 auto;border-collapse:collapse;background:#FFFFFF;border:1px solid #D5DEE8;border-radius:12px">'
+    html = (f'<div style="background:#E9EEF3;padding:16px 6px"><table role="presentation" width="100%" style="max-width:680px;margin:0 auto;border-collapse:collapse;table-layout:fixed;word-wrap:break-word;overflow-wrap:anywhere;background:#FFFFFF;border:1px solid #D5DEE8;border-radius:12px">'
             f'<tr><td style="background:#0a0e13;padding:22px 28px;border-radius:12px 12px 0 0">'
             f'<p style="{f};margin:0;font-size:13px;color:#B8C9D9"><span style="font-weight:700;color:#14D3A9">PowerKlock</span> · {frday(today)}</p>'
             f'<p style="{serif};margin:8px 0 4px;font-size:28px;font-weight:600;color:#FFFFFF">Le matin de l’énergie</p>'

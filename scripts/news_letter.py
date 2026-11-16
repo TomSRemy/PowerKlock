@@ -117,8 +117,8 @@ def clip(s, n):
 def markets(today):
     rows = []
 
-    def row(fr, en, value, unit, chg=None, pct=None, src=""):
-        rows.append({"label": [fr, en], "value": round(value, 2), "unit": unit,
+    def row(fr, en, value, unit, chg=None, pct=None, src="", page="markets/spot"):
+        rows.append({"label": [fr, en], "value": round(value, 2), "unit": unit, "page": page,
                      "chg": None if chg is None else round(chg, 2), "pct": None if pct is None else round(pct, 1), "src": src})
     t, tm = spot(today), spot(today + timedelta(days=1))
     if tm and t:
@@ -132,13 +132,13 @@ def markets(today):
     if cy:
         a, b = last_two(list(zip(cy["dates"], cy["values"])))
         if a:
-            row(f"Cal {y1[2:]} France", f"Cal {y1[2:]} France", a[1], "€/MWh", a[1] - b[1], (a[1] / b[1] - 1) * 100 if b[1] else None, "EEX")
+            row(f"Cal {y1[2:]} France", f"Cal {y1[2:]} France", a[1], "€/MWh", a[1] - b[1], (a[1] / b[1] - 1) * 100 if b[1] else None, "EEX", "markets/forwards")
     cs = (dload("history", "commodities_series.json") or {}).get("series") or (dload("commodities.json") or {}).get("series") or {}
     for k, fr, en, u in (("peg", "Gaz PEG", "PEG gas", "€/MWh"), ("ttf", "Gaz TTF", "TTF gas", "€/MWh"), ("eua", "CO₂ EUA", "CO₂ EUA", "€/t")):
         if k in cs:
             a, b = last_two(cs[k]["points"])
             if a:
-                row(fr, en, a[1], u, a[1] - b[1], (a[1] / b[1] - 1) * 100 if b[1] else None, "PowerKlock")
+                row(fr, en, a[1], u, a[1] - b[1], (a[1] / b[1] - 1) * 100 if b[1] else None, "PowerKlock", "markets/fuels")
     return rows
 
 
@@ -172,12 +172,28 @@ def main():
     agenda = sorted([{"date": e["date"], "title": e.get("title"), "text": e.get("text"), "kind": e.get("kind")} for e in events
                      if t <= (e.get("date") or "") <= iso(today + timedelta(days=14))], key=lambda e: e["date"])[:5]
     posts = top_posts(now - timedelta(days=7))[:1]
+    # the day's essentials (scripts/news_digest.py, run just before): today's, or on Monday the week before
+    dg = load(os.path.join(ROOT, "data", "news_digest.json"), {}) or {}
+    week = iso(today - timedelta(days=today.weekday()))
+    de = dg.get("weekly") if monday and (dg.get("weekly") or {}).get("week") == week else dg.get("daily") if (dg.get("daily") or {}).get("date") == t else None
+    digest = {"weekly": de is dg.get("weekly"), "items": [{k: x.get(k) for k in ("text", "text_en", "title", "link", "sources")} for x in (de or {}).get("items") or []]} if de else None
+    # the main articles: the highest impact of the last 24 hours (72 on Monday), one per outlet, one per event
+    top, srcs = [], set()
+    for i in sorted([i for i in items if (age_h(i, now) or 1e9) <= (72 if monday else 24) and "official" not in (i.get("tags") or [])], key=lambda i: -(i.get("impact") or 0)):
+        if i["source"] in srcs or any(similar(i["title"], o["title"]) for o in top):
+            continue
+        top.append(i)
+        srcs.add(i["source"])
+        if len(top) == 6:
+            break
     edition = {"date": t, "updated": now.isoformat(timespec="seconds"), "engine": "proxy" if use_ai else "none", "monday": monday,
                "markets": markets(today),
                "official": [{"title": i["title"], "link": i["link"], "source": i["source"], "date": i["date"]} for i in official],
                "pubs": [{"title": i["title"], "link": i["link"], "source": i["source"], "date": i["date"]} for i in pubs],
                "cons": [{k: c.get(k) for k in ("title", "link", "source", "deadline", "opened", "theme")} for c in cs],
-               "agenda": agenda, "post": posts[0] if posts else None, "profiles": {}}
+               "agenda": agenda, "post": posts[0] if posts else None, "digest": digest,
+               "top": [{"title": i["title"], "link": i["link"], "source": i["source"], "date": i["date"], "n": 1 + len(i.get("other_sources") or [])} for i in top],
+               "profiles": {}}
     for pid, prof in profiles.items():
         stories = pick(items, prof, now, hours)
         gen = {}
