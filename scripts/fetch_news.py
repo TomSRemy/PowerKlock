@@ -8,6 +8,7 @@ them again before rendering. Only http(s) links are kept.
 """
 import html
 import json
+import math
 import os
 import re
 import sys
@@ -253,7 +254,7 @@ READERS = {"cre": read_cre, "cre_consultations": read_cre_consultations}
 
 def gdelt(q):
     """World press search (GDELT DOC API, last 7 days)."""
-    for wait in (0, 12, 30):          # GDELT throttles to one request every 5 s per address
+    for wait in (0, 15, 35):          # GDELT throttles hard; back off more than its stated 5 s per address
         time.sleep(wait)
         r = requests.get(GDELT, params={"query": q, "mode": "artlist", "format": "json", "maxrecords": 25, "timespan": "7d", "sort": "datedesc"},
                          headers=UA, timeout=30)
@@ -303,6 +304,48 @@ def add_items(out, items, src, now, limit, extra=None):
     return kept
 
 
+def cluster_stories(out):
+    """Group records that cover the same story across sources (similar title, published within 48 h):
+    keep the most relevant one, list the rest under other_sources so one card can show "+N sources"
+    instead of near-duplicate cards for the same wire story."""
+    sig = [set(words(r["title"])) for r in out]
+    dates = [datetime.fromisoformat(r["date"]) for r in out]
+    used = [False] * len(out)
+    groups = []
+    for i in range(len(out)):
+        if used[i]:
+            continue
+        g = [i]
+        used[i] = True
+        if sig[i]:
+            for j in range(i + 1, len(out)):
+                if used[j] or not sig[j] or out[j]["source"] == out[i]["source"]:
+                    continue
+                if abs((dates[j] - dates[i]).total_seconds()) > 48 * 3600:
+                    continue
+                inter = sig[i] & sig[j]
+                if len(inter) < 3:
+                    continue
+                if len(inter) / len(sig[i] | sig[j]) >= 0.45:
+                    g.append(j)
+                    used[j] = True
+        groups.append(g)
+    merged = []
+    for g in groups:
+        if len(g) == 1:
+            merged.append(out[g[0]])
+            continue
+        recs = [out[k] for k in g]
+        primary = max(recs, key=lambda r: (r["impact"], r["date"]))
+        others = [r for r in recs if r is not primary]
+        primary["tags"] = list(dict.fromkeys(primary["tags"] + [t for r in others for t in r["tags"]]))
+        primary["countries"] = list(dict.fromkeys(primary["countries"] + [c for r in others for c in r["countries"]]))
+        primary["impact"] = round(primary["impact"] + 0.4 * math.log2(len(recs)), 2)   # covered by several outlets: a bit more relevant
+        primary["other_sources"] = [{"source": r["source"], "link": r["link"], "cls": r.get("cls", "")} for r in others]
+        merged.append(primary)
+    return merged
+
+
 def main():
     now = datetime.now(timezone.utc)
     cfg = load_config()
@@ -317,9 +360,14 @@ def main():
             status.append({"name": src["name"], "kind": "page" if src.get("reader") else "feed", "url": src["url"], "ok": True, "n": n, "added": bool(src.get("added"))})
         except Exception as e:
             status.append({"name": src["name"], "kind": "page" if src.get("reader") else "feed", "url": src["url"], "ok": False, "error": str(e)[:120], "added": bool(src.get("added"))})
-    for k, s in enumerate(cfg.get("searches", [])):
-        if k:
-            time.sleep(6)               # GDELT: one request every 5 seconds
+    called = False
+    for s in cfg.get("searches", []):
+        if re.match(r"^https?://", s["q"]):   # a press search follows a phrase, not a web address (add those as an RSS feed instead)
+            status.append({"name": s["q"], "kind": "search", "ok": False, "error": "not a search phrase (looks like a web address)", "added": bool(s.get("added"))})
+            continue
+        if called:
+            time.sleep(11)               # GDELT throttles hard; space calls out to avoid 429s
+        called = True
         try:
             n = add_items(out, gdelt(s["q"]), {"name": "Search", "cls": "search", "tags": s.get("tags", []) + ["watch"]}, now, PER_SEARCH, {"query": s["q"]})
             status.append({"name": s["q"], "kind": "search", "ok": True, "n": n, "added": bool(s.get("added"))})
@@ -331,6 +379,7 @@ def main():
         sys.exit("No news fetched — keeping the previous file.")
     for rec in out:
         rec["impact"] = impact(rec, prefs)
+    out = cluster_stories(out)
     out.sort(key=lambda i: i["date"], reverse=True)
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps({"updated": now.isoformat(timespec="seconds"), "items": out[:MAX_ITEMS], "sources": status},
