@@ -740,6 +740,27 @@
         "regulation",
         "assoc"
       ]
+    },
+    {
+      "q": "\"garanties d'origine\" électricité",
+      "tags": [
+        "fr",
+        "markets"
+      ]
+    },
+    {
+      "q": "\"guarantees of origin\" market",
+      "tags": [
+        "markets"
+      ],
+      "lang": "en"
+    },
+    {
+      "q": "EEX enchères garanties d'origine",
+      "tags": [
+        "fr",
+        "markets"
+      ]
     }
   ]
 }
