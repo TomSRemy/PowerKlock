@@ -10,7 +10,7 @@ async function loadNews() {
     window._newsAcctWired = true;
     PKAccount.onChange(async () => { await _newsLoadPersonal(); _newsApplyConfig(); _newsRefreshKwUI(); renderNewsPosts(); renderNews(newsData); });
   }
-  await Promise.all([_newsLoadSections(), _newsLoadPersonal(), _newsLoadDigest()]);
+  await Promise.all([_newsLoadSections(), _newsLoadPersonal(), _newsLoadDigest(), _newsLoadCons()]);
   try {
     const r = await fetch(DATA_BASE + 'news.json?t=' + Date.now());
     if (!r.ok) throw new Error(r.status);
@@ -29,6 +29,7 @@ async function loadNews() {
   _newsWireKw();
   _newsApplyConfig();
   renderNewsDigest();
+  renderNewsCons();
   renderNewsPosts();
   renderNews(newsData);
   renderNewsSources();
@@ -212,6 +213,29 @@ async function renderNewsPosts() {
     renderNewsPosts();
   });
   host.querySelectorAll('[data-pdel]').forEach(b => b.addEventListener('click', async () => { await cl.from('news_post').delete().eq('id', b.dataset.pdel); renderNewsPosts(); }));
+}
+
+// ── Open consultations (data/consultations.json, scripts/fetch_news.py): the deadline to reply, the nearest first ──
+let _newsCons = null;
+async function _newsLoadCons() {
+  try { const r = await fetch(DATA_BASE + 'consultations.json?t=' + Date.now()); _newsCons = r.ok ? await r.json() : null; } catch (_) { _newsCons = null; }
+}
+function renderNewsCons() {
+  const sec = document.getElementById('hs-news-cons'), host = document.getElementById('news-cons'); if (!sec || !host) return;
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris' }).format(new Date());
+  const all = (_newsCons && _newsCons.items) || [], open = all.filter(c => !c.deadline || c.deadline >= today);
+  if (!all.length) { sec.hidden = true; return; }
+  sec.hidden = false;
+  const en = window.PKI18n && PKI18n.lang === 'en';
+  const fmt = d => new Date(d + 'T12:00:00Z').toLocaleDateString(en ? 'en-GB' : 'fr-FR', { day: 'numeric', month: 'short', timeZone: 'UTC' });
+  const left = d => Math.round((new Date(d + 'T12:00:00Z') - new Date(today + 'T12:00:00Z')) / 864e5);
+  const due = c => { if (!c.deadline) return `<span class="cons-due">${_newsT('date limite non indiquée', 'no deadline given')}</span>`;
+    const n = left(c.deadline);
+    return `<span class="cons-due${n <= 7 ? ' soon' : ''}"><b>${fmt(c.deadline)}</b>${n === 0 ? _newsT('dernier jour', 'last day') : 'J-' + n}</span>`; };
+  const row = c => `<a class="cons-row" href="${_newsEsc(c.link)}" target="_blank" rel="noopener noreferrer">${due(c)}<span class="cons-t">${_newsEsc(c.title)}<small>${_newsEsc(c.source)} · ${_newsT('ouverte le ', 'opened ')}${fmt(c.opened)}</small></span></a>`;
+  const closed = all.filter(c => c.deadline && c.deadline < today).slice(-8).reverse();
+  host.innerHTML = (open.length ? `<div class="cons-list">${open.map(row).join('')}</div>` : `<div class="news-src-help">${_newsT('Aucune consultation ouverte en ce moment.', 'No consultation open right now.')}</div>`) +
+    (closed.length ? `<details class="cons-closed"><summary>${_newsT('Récemment closes', 'Recently closed')} (${closed.length})</summary><div class="cons-list">${closed.map(row).join('')}</div></details>` : '');
 }
 
 function _newsKw() {
