@@ -337,6 +337,48 @@ SELECT DISTINCT ?celex ?date ?en ?fr WHERE {{
     return items
 
 
+CONSULT = Path("data/consultations.json")
+MIN_ENERGY = "https://www.consultations-publiques.developpement-durable.gouv.fr/"
+
+
+def consultations(now):
+    """Public consultations with their deadline: the CRE (listing, then the deadline written on each open consultation's
+    page) and the ministry's « Énergies et climat » consultations (period on the listing, two pages). Both sites have no
+    feed with the dates; their listings are official pages republished in the same form."""
+    out, errors = [], []
+    try:
+        s = requests.get("https://www.cre.fr/documents/consultations-publiques.html", headers=BROWSER_UA, timeout=30).text
+        for url, title, status, when in re.findall(r'data-document-url="([^"]+)".*?<h3[^>]*>\s*<a[^>]*>(.*?)</a>.*?<span class="label[^"]*">([^<]*)</span>.*?<time datetime="([^"]+)"', s, re.S):
+            if "cours" not in status.lower():
+                continue
+            link = "https://www.cre.fr" + url if url.startswith("/") else url
+            page = html.unescape(requests.get(link, headers=BROWSER_UA, timeout=30).text)
+            m = re.search(r"Date limite de dépôt des réponses\W*(?:<[^>]+>\W*)*(\d{2})/(\d{2})/(\d{4})", page)
+            out.append({"source": "CRE", "title": clean(title, 260), "link": link, "opened": (parse_date(when) or now).date().isoformat(),
+                        "deadline": f"{m.group(3)}-{m.group(2)}-{m.group(1)}" if m else None})
+    except Exception as e:
+        errors.append("CRE: " + str(e)[:100])
+    try:
+        for start in (0, 8):
+            s = html.unescape(requests.get(MIN_ENERGY + "energies-et-climat-r4.html" + (f"?debut_listearticles={start}" if start else ""), headers=BROWSER_UA, timeout=30).text)
+            for url, title, a, b in re.findall(r'<a href="([^"]+a\d+\.html)" class="fr-card__link">(.*?)</a>.*?Consultation du (\d{2}/\d{2}/\d{4}) au (\d{2}/\d{2}/\d{4})', s, re.S):
+                iso = lambda d: "-".join(reversed(d.split("/")))
+                out.append({"source": "Ministère · Énergies et climat", "title": clean(title, 260), "link": urljoin(MIN_ENERGY, url),
+                            "opened": iso(a), "deadline": iso(b)})
+    except Exception as e:
+        errors.append("ministry: " + str(e)[:100])
+    today = now.astimezone(timezone.utc).date().isoformat()
+    seen, keep = set(), []
+    for c in out:
+        if c["link"] in seen:
+            continue
+        seen.add(c["link"])
+        c["open"] = c["deadline"] is None or c["deadline"] >= today
+        keep.append(c)
+    keep.sort(key=lambda c: (not c["open"], c["deadline"] or "9999"))
+    return keep, errors
+
+
 OFFICIAL = {"jorf": ("Journal officiel", jorf, ["fr", "regulation", "official"]), "eurlex": ("EUR-Lex", eurlex, ["regulation", "official"])}
 
 
@@ -451,6 +493,10 @@ def main():
     out = cluster_stories(out)
     out.sort(key=lambda i: i["date"], reverse=True)
     OUT.parent.mkdir(parents=True, exist_ok=True)
+    cons, errs = consultations(now)
+    if cons:   # keep the previous file when both sites failed
+        CONSULT.write_text(json.dumps({"updated": now.isoformat(timespec="seconds"), "items": cons, "errors": errs}, ensure_ascii=False, separators=(",", ":")))
+    print(f"  consultations: {sum(c['open'] for c in cons)} open, {len(cons)} listed" + (f" · {errs}" if errs else ""))
     OUT.write_text(json.dumps({"updated": now.isoformat(timespec="seconds"), "items": out[:MAX_ITEMS], "sources": status},
                               ensure_ascii=False, separators=(",", ":")))
     print(f"Wrote {OUT}: {min(len(out), MAX_ITEMS)} items")

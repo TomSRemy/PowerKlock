@@ -216,16 +216,6 @@
       ]
     },
     {
-      "name": "Consultations publiques (ministère)",
-      "cls": "dgec",
-      "url": "https://www.consultations-publiques.developpement-durable.gouv.fr/spip.php?page=backend-actu",
-      "tags": [
-        "fr",
-        "regulation"
-      ],
-      "require": "électri|electricit|photovolta|solaire|éolien|eolien|offshore|nucléaire|nucleaire|\\bedf\\b|engie|totalenergies|\\brte\\b|\\bcre\\b|enedis|hydrogène|batterie|stockage|renouvelable|tarif|fournisseur|pompe à chaleur|\\bppa\\b|énergie|energie|réseau électrique|gaz"
-    },
-    {
       "name": "Bruegel",
       "cls": "bruegel",
       "url": "https://www.bruegel.org/rss?type=all",

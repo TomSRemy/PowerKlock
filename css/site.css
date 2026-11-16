@@ -4133,3 +4133,17 @@ html:not(.pk-public) #pk-gate { display: none; }
 .news-post-how summary { cursor: pointer; color: var(--accent); font-size: 12px; }
 .news-post-how p { margin: 6px 0 0; line-height: 1.5; }
 .news-post-bm { text-decoration: none; cursor: grab; margin-left: 4px; }
+
+/* ── News: open consultations with their deadline ── */
+.cons-list { display: flex; flex-direction: column; }
+.cons-row { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 14px; align-items: start; padding: 10px 0; border-bottom: 1px solid var(--border); text-decoration: none; color: var(--text); }
+.cons-row:last-child { border-bottom: 0; }
+.cons-row:hover .cons-t { color: var(--accent); }
+.cons-due { display: flex; flex-direction: column; font: 600 11px 'JetBrains Mono', monospace; color: var(--text3); }
+.cons-due b { font-size: 15px; color: var(--text); font-weight: 600; }
+.cons-due.soon, .cons-due.soon b { color: var(--down); }
+.cons-t { font-size: 13.5px; line-height: 1.45; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.cons-t small { font-size: 11.5px; color: var(--text3); }
+.cons-closed { margin-top: 10px; font-size: 12.5px; color: var(--text2); }
+.cons-closed summary { cursor: pointer; color: var(--text3); }
+.cons-closed .cons-row { opacity: .75; }
