@@ -32,6 +32,9 @@ from news_digest import PARIS, PROXY, sid, similar, top_posts   # noqa: E402
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, "data", "newsletter.json")
 PROFILES = os.path.join(ROOT, "config", "news_profiles.json")
+MODEL = "@cf/qwen/qwen3-30b-a3b-fp8"
+MIN_SCORE = 3.0     # a story below this is off the reader's subjects (e.g. an offshore-wind contract for a lawyer)
+EMPTY = re.compile(r"(?i)(aucune information|pas d.information|non (précisé|indiqué|disponible)|sans (détail|précision)s? supplémentaire)")
 
 SYSTEM = """Tu écris la newsletter du matin de PowerKlock pour ce lecteur : {reader}.
 Tu reçois les sujets du jour (id, titre, médias, extrait) et les textes officiels récents.
@@ -61,6 +64,11 @@ def age_h(i, now):
         return None
 
 
+def kw_hits(i, prof):
+    text = (i.get("title", "") + " " + (i.get("snippet") or "")).lower()
+    return sum(1 for k in prof.get("keywords", []) if re.search(r"\b" + re.escape(k.lower()) + r"\b", text))
+
+
 def score(i, prof, now):
     """how much a story matters to this reader: categories weighted by the profile (the strongest in full, the others at
     half), the profile's keywords, France first, more outlets, fresher"""
@@ -69,8 +77,7 @@ def score(i, prof, now):
     s = (ws[0] + 0.5 * sum(ws[1:])) if ws else 0.0
     if "official" in tags:
         s += prof.get("official", 1)
-    text = (i.get("title", "") + " " + (i.get("snippet") or "")).lower()
-    s += 1.5 * min(2, sum(1 for k in prof.get("keywords", []) if re.search(r"\b" + re.escape(k.lower()) + r"\b", text)))
+    s += 1.5 * min(2, kw_hits(i, prof))
     s += 1.0 if ("fr" in tags or "FR" in (i.get("countries") or [])) else 0
     s += 0.5 * math.log2(1 + len(i.get("other_sources") or []))
     s -= 0.3 * (age_h(i, now) or 0) / 24
@@ -82,6 +89,10 @@ def pick(items, prof, now, hours, n=3):
     cands.sort(key=lambda i: -score(i, prof, now))
     out, seen_src = [], set()
     for i in cands:
+        if score(i, prof, now) < MIN_SCORE:
+            break                                       # nothing else that matters to this reader: fewer stories, not filler
+        if prof.get("require_keyword") and not kw_hits(i, prof):
+            continue
         if i["source"] in seen_src or any(similar(i["title"], o["title"]) for o in out):
             continue
         out.append(i)
@@ -95,8 +106,11 @@ def ask(prof, stories, official):
     payload = {"sujets": [{"id": sid(i), "titre": i["title"], "medias": [i["source"]] + [o["source"] for o in i.get("other_sources") or []],
                            "extrait": (i.get("snippet") or "")[:320]} for i in stories],
                "textes_officiels": [o["title"] for o in official[:5]]}
-    msg = {"max_tokens": 1800, "system": SYSTEM.format(reader=prof["reader"]),
+    msg = {"max_tokens": 2000, "system": SYSTEM.format(reader=prof["reader"]),
            "messages": [{"role": "user", "content": json.dumps(payload, ensure_ascii=False)}]}
+    # a model of the proxy's list (Worker powerklock-ai). Qwen3 30B wrote the most useful « Pour vous » in a comparison
+    # of the free models on the same stories (16 Nov. 2026); NEWS_MODEL overrides it
+    msg["model"] = os.environ.get("NEWS_MODEL") or MODEL
     req = urllib.request.Request(PROXY, data=json.dumps(msg).encode(), headers={"Content-Type": "application/json", "User-Agent": "PowerKlock-newsletter"})
     r = json.load(urllib.request.urlopen(req, timeout=150))
     parts = [b.get("text") for b in r.get("content", []) if b.get("type") == "text"]
@@ -209,12 +223,14 @@ def main():
             what = g.get("what") or i.get("snippet")
             if what and similar(what, i["title"]) and i.get("snippet") and not similar(i["snippet"], i["title"]):
                 what = i["snippet"]                     # the model only repeated the title: the outlet's own extract says more
+            if what and EMPTY.search(what):
+                what = None                             # the model saying it has nothing to say
             if what and similar(what, i["title"]):
                 what = None                             # nothing beyond the title (press searches give titles only)
             out.append({"id": sid(i), "title": i["title"], "link": i["link"], "tags": i.get("tags") or [],
                         "sources": [i["source"]] + [o["source"] for o in i.get("other_sources") or []],
                         "what": clip(what, 360) or None, "what_en": (clip(g.get("what_en"), 360) or None) if what and what == g.get("what") else None,
-                        "for_you": clip(g.get("for_you"), 260) or None, "for_you_en": clip(g.get("for_you_en"), 260) or None})
+                        "for_you": (clip(g.get("for_you"), 260) or None) if not EMPTY.search(g.get("for_you") or "") else None, "for_you_en": clip(g.get("for_you_en"), 260) or None})
         edition["profiles"][pid] = {"name": prof["name"], "short": prof["short"], "order": prof["order"], "headline": clip(gen.get("headline"), 300) or None, "headline_en": clip(gen.get("headline_en"), 300) or None,
                                     "stories": out, "ai": bool(by)}
         print(f"{pid}: {len(out)} stories, AI text for {len(by)}")

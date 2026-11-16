@@ -140,9 +140,23 @@ SEC = {'markets': 'Marchés en 30 secondes', 'digest': 'L’essentiel', 'top': '
 
 
 def render_letter(today, E, pid, mine=None, exclude=()):
-    """The newsletter (scripts/news_letter.py) for one reading profile, as an e-mail: inline styles and tables, which
-    every mail client shows the same way. Rising prices in red, falling in green, as on the site."""
-    ed = dict(E['profiles'][pid])
+    """The newsletter (scripts/news_letter.py) for one or several reading profiles, as an e-mail: inline styles and
+    tables, which every mail client shows the same way. Rising prices in red, falling in green, as on the site.
+    Several profiles: the stories of each, once each, in the order of the first profile's sections."""
+    pids = [p for p in ([pid] if isinstance(pid, str) else pid) if p in E['profiles']] or [next(iter(E['profiles']))]
+    ed = dict(E['profiles'][pids[0]])
+    stories, seen = [], set()
+    for p in pids:
+        for st in E['profiles'][p].get('stories') or []:
+            if st['link'] not in seen:
+                seen.add(st['link'])
+                stories.append(dict(st, short=E['profiles'][p]['short'][0]))
+    ed['stories'] = stories
+    if len(pids) > 1:
+        ed['name'] = [' + '.join(E['profiles'][p]['name'][0] for p in pids)] * 2
+    # an article shown once: the main articles leave out the stories and the essentials already in the e-mail
+    shown = seen | {x.get('link') for x in ((E.get('digest') or {}).get('items') or [])}
+    E = dict(E, top=[o for o in E.get('top') or [] if o['link'] not in shown])
     # a reader's words to leave out (public.news_profile.exclude): stories and articles that contain one are dropped
     if exclude:
         rx = re.compile('|'.join(r'\b' + re.escape(w) + r'\b' for w in exclude), re.I)
@@ -198,7 +212,7 @@ def render_letter(today, E, pid, mine=None, exclude=()):
         for k, st in enumerate(ed['stories']):
             out += (f'<p style="{serif};font-size:19px;line-height:1.35;font-weight:600;margin:{0 if k == 0 else 18}px 0 6px">{k + 1}. {a(st["link"], st["title"])}</p>'
                     + (f'<p style="{f};font-size:15px;line-height:1.55;color:#34485E;margin:0 0 6px"><b style="color:#13202E">Ce qui s’est passé.</b> {esc(st["what"])}</p>' if st.get('what') else '')
-                    + (f'<p style="{f};font-size:15px;line-height:1.55;color:#34485E;margin:0 0 6px;background:#EEF8F5;padding:10px 12px;border-radius:8px"><b style="color:#0B7A62">Pour vous, {esc(ed["short"][0].lower())}.</b> {esc(st["for_you"])}</p>' if st.get('for_you') else '')
+                    + (f'<p style="{f};font-size:15px;line-height:1.55;color:#34485E;margin:0 0 6px;background:#EEF8F5;padding:10px 12px;border-radius:8px"><b style="color:#0B7A62">Pour vous, {esc((st.get("short") or ed["short"][0]).lower())}.</b> {esc(st["for_you"])}</p>' if st.get('for_you') else '')
                     + f'<p style="{f};font-size:12px;color:#62758B;margin:0">{esc(" · ".join(st["sources"][:4]))}</p>')
         return box(h2(SEC['stories']) + out)
 
@@ -256,7 +270,7 @@ def readers(today):
     try:
         import psycopg
         with psycopg.connect(db, connect_timeout=15, prepare_threshold=None) as conn, conn.cursor() as cur:
-            cur.execute("""select coalesce(p.email_to, u.email), p.profile, p.exclude, p.email_freq,
+            cur.execute("""select coalesce(p.email_to, u.email), p.profiles, p.exclude, p.email_freq,
                                   coalesce((select array_agg(k.keyword) from public.news_keyword k where k.user_id = p.user_id), '{}')
                            from public.news_profile p join auth.users u on u.id = p.user_id
                            left join public.user_access a on a.user_id = p.user_id
@@ -265,7 +279,7 @@ def readers(today):
     except Exception as e:
         print('  readers not read:', str(e)[:160])
         return []
-    return [{'to': to, 'profile': pr, 'exclude': list(ex or []), 'keywords': list(kw or [])} for to, pr, ex, fq, kw in rows
+    return [{'to': to, 'profiles': list(pr or []), 'exclude': list(ex or []), 'keywords': list(kw or [])} for to, pr, ex, fq, kw in rows
             if to and (fq == 'daily' or (fq == 'monday' and today.weekday() == 0))]
 
 
@@ -308,8 +322,10 @@ def main():
     personal = []
     if has_letter:
         for r in readers(today):
-            p = r['profile'] if r['profile'] in E['profiles'] else pid
-            personal.append(([r['to']], *render_letter(today, E, p, mine_for(r['keywords'], r['exclude'], today.weekday() == 0), r['exclude'])))
+            ps = [p for p in r['profiles'] if p in E['profiles']] or [pid]
+            mine = [o for o in mine_for(r['keywords'], r['exclude'], today.weekday() == 0)
+                    if all(o['link'] not in {st['link'] for st in E['profiles'][p].get('stories') or []} for p in ps)]
+            personal.append(([r['to']], *render_letter(today, E, ps, mine, r['exclude'])))
     seen = {m[0][0].lower() for m in personal}
     to = [x.strip() for x in (os.environ.get('MORNING_TO') or '').split(',') if x.strip() and x.strip().lower() not in seen]
     mails = ([(to, subject, text, html)] if to else []) + personal
