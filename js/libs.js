@@ -14582,6 +14582,49 @@ if (window.Chart && Chart.defaults) {
   if (Chart.defaults.transitions && Chart.defaults.transitions.active) Chart.defaults.transitions.active.animation.duration = 0;
 }
 
+// Legend markers take the shape of their series (owner decision, 16 Nov. 2026): a line is a short stroke
+// (dashed when the line is), bars and filled areas a square, scatter points a dot. Stock Chart.js draws a
+// square for every series, and charts that asked for pointStyle 'line' drew a stroke for their bars too.
+// Charts that build their own legend items (generateLabels, e.g. doughnuts) or keep usePointStyle: false
+// are left as they are.
+(function () {
+  const L = window.Chart && Chart.defaults && Chart.defaults.plugins && Chart.defaults.plugins.legend;
+  if (!L || !L.labels || L.labels.__pkShape) return;
+  const stock = L.labels.generateLabels;
+  const first = v => (Array.isArray(v) ? v[0] : v);
+  L.labels.usePointStyle = true;
+  L.labels.generateLabels = function (chart) {
+    const items = stock.call(this, chart);
+    items.forEach(it => {
+      const i = it.datasetIndex;
+      if (i == null) return;
+      const ds = chart.data.datasets[i] || {};
+      const type = ds.type || chart.getDatasetMeta(i).type || chart.config.type;
+      const filled = ds.fill != null && ds.fill !== false;
+      if ((type === 'line' || type === 'radar') && ds.showLine !== false && !filled) {
+        const c = first(ds.borderColor) || it.strokeStyle;
+        it.pointStyle = 'line';
+        it.strokeStyle = c;
+        it.fillStyle = c;
+        it.lineWidth = Math.max(2, Math.min(3, Number(first(ds.borderWidth)) || 2));
+        it.lineDash = Array.isArray(ds.borderDash) ? ds.borderDash : [];
+      } else if (type === 'scatter' || type === 'bubble' || (type === 'line' && ds.showLine === false)) {
+        it.pointStyle = 'circle';
+        it.lineDash = [];
+      } else {
+        const c = first(ds.backgroundColor) || it.fillStyle;
+        it.pointStyle = 'rect';
+        it.fillStyle = c;
+        it.strokeStyle = first(ds.borderColor) || c;
+        it.lineWidth = 1;
+        it.lineDash = [];
+      }
+    });
+    return items;
+  };
+  L.labels.__pkShape = true;
+})();
+
 // ════════════════════════════════════════════════════════════════════
 // pkHoverReadout — site-wide hover redesign (concept "B" from the hover
 // mockup): a vertical crosshair follows the cursor, and the values at that
