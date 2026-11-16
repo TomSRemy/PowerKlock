@@ -1,6 +1,7 @@
 name: Fetch Energy News
 
-# Public RSS/Atom feeds, the CRE news page and press searches (GDELT)
+# Public RSS/Atom feeds, the CRE news and deliberation pages, press searches (Google News RSS) and official texts
+# (Journal officiel open data, EUR-Lex)
 # listed in config/news_sources.json → data/news.json (scripts/fetch_news.py).
 # Server-side so the site needs no CORS proxy.
 
@@ -30,7 +31,7 @@ jobs:
         with:
           python-version: '3.11'
       - name: Install dependencies
-        run: pip install requests==2.33.1 "psycopg[binary]==3.3.2"
+        run: pip install requests==2.33.1 "psycopg[binary]==3.3.2" scikit-learn==1.6.1
       - name: Fetch news feeds
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}   # optional: sources added from the site
@@ -39,7 +40,7 @@ jobs:
         run: |
           git config user.name "PowerDesk Bot"
           git config user.email "bot@powerdesk.local"
-          git add data/news.json data/news_prefs.json 2>/dev/null || git add data/news.json
+          git add data/news.json data/consultations.json; git add data/news_prefs.json 2>/dev/null || true
           if git diff --staged --quiet; then
             echo "No news changes — skipping commit."
             exit 0

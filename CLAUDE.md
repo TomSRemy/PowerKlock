@@ -5,9 +5,11 @@ Actions jobs that write JSON into `data/`. These rules come from the owner; foll
 
 ## Before pushing
 - **Run `scripts/check_before_push.sh`** before every push (or once per clone `git config core.hooksPath .githooks`:
-  the pre-push hook runs it). It runs exactly the "Site tests" checks (lint, JS syntax, calculations, site logic,
-  same figures everywhere and page weight, smoke test of every page in French and English). "Publish" only deploys
-  when they pass: a red Site tests means nothing reaches the live site. The smoke test takes about 10 minutes; run it.
+  the pre-push hook runs it). It runs the fast "Site tests" checks in about 2 minutes (lint, JS syntax, calculations,
+  site logic, same figures everywhere and page weight). The smoke test of every page in French and English (about
+  10 minutes) runs in "Site tests"; add `--full` to run it locally too, for a change that touches many pages.
+  "Publish" only deploys code that passed Site tests: a red Site tests means nothing reaches the live site. When the
+  merged code is the same as a branch that already passed, Publish does not run the tests a second time.
 - After pushing, check that the commit's "Site tests" and "Publish" runs are green.
 - Never skip, disable or loosen a test to get green: find the cause.
 
@@ -21,7 +23,9 @@ Actions jobs that write JSON into `data/`. These rules come from the owner; foll
 ## Data
 - **Only useful sources that update automatically**: APIs, open-data portals (ODRÉ, ENTSO-E, RTE Data Portal,
   Energy-Charts, CRE open data, EEX…), or official files republished in the same form every year (parsed by a job
-  each year). No scraping of static pages, one-off reports or sites without a machine-readable source.
+  each year). Official pages republished in the same form (CRE, ministry consultations…) may be read when they have
+  no feed. Never sites whose terms forbid automated collection (LinkedIn, paywalled press): titles and links only,
+  never an article's text. Free only: no paid API.
 - Every figure shown is traceable: the source is named under the chart, and Methodology describes the calculation.
 - Dates are **delivery days in Paris time** (`data/history/daily/<D>.json` = prices for delivery day D). A 25-hour
   day keeps 96 quarter-hours in its series: use the published daily average (`avg`), never the mean of the series.
@@ -48,3 +52,4 @@ Actions jobs that write JSON into `data/`. These rules come from the owner; foll
 - A question asking for information gets an answer, not a site change.
 - Site notes (the "Note" button) arrive in `data/site_notes.json`; answer each in `config/note_replies.json`.
 - Commit messages say what changed for the reader of the site, in plain words.
+- Group small changes into one push: each push to the site costs a test run of about 12 minutes.

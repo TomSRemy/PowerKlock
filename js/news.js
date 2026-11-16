@@ -6,12 +6,18 @@
 async function loadNews() {
   window._newsLoaded = true;
   const badge = document.getElementById('news-updated');
+  if (!window._newsAcctWired && window.PKAccount && PKAccount.configured) {
+    window._newsAcctWired = true;
+    PKAccount.onChange(async () => { await _newsLoadPersonal(); _newsApplyConfig(); _newsRefreshKwUI(); renderNewsPosts(); renderNews(newsData); });
+  }
+  await Promise.all([_newsLoadSections(), _newsLoadPersonal(), _newsLoadDigest(), _newsLoadCons()]);
   try {
     const r = await fetch(DATA_BASE + 'news.json?t=' + Date.now());
     if (!r.ok) throw new Error(r.status);
     const j = await r.json();
     newsData = (j.items || []).map(i => Object.assign({}, i, { date: new Date(i.date) }))
-      .sort((a, b) => b.date - a.date);
+      .sort((a, b) => (b.impact || 0) - (a.impact || 0) || b.date - a.date);
+    newsData = _newsRank(newsData);
     const upd = j.updated ? new Date(j.updated).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' }) : '';
     window._newsSources = j.sources || null;
     const nSrc = j.sources ? j.sources.filter(s => s.kind !== 'search').length : new Set(newsData.map(n => n.source)).size;
@@ -21,13 +27,231 @@ async function loadNews() {
     if (badge) badge.textContent = 'News feed unavailable';
   }
   _newsWireKw();
+  _newsApplyConfig();
+  renderNewsDigest();
+  renderNewsCons();
+  renderNewsPosts();
   renderNews(newsData);
   renderNewsSources();
   renderNewsAdd();
 }
 
-// Personal keywords: kept in this browser, matching articles get a star
-function _newsKw() { try { return (localStorage.getItem('pk-news-kw') || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean); } catch (_) { return []; } }
+// Personal keywords: synced to the account (public.news_keyword) when signed in, else kept in this browser only
+let _newsCfg = null;           // { visible_sections, show_add_source, show_advanced } from public.news_user_config, or null = unrestricted
+let _newsSectionDefs = null;   // [{slug, name, tags}] from public.news_section (admin-curated presets)
+let _newsKwRemote = null;      // [{keyword, team, mine}] when signed in, else null (localStorage fallback)
+let _newsSectionTags = null;   // tags of the curated section tab currently active, if any
+
+async function _newsLoadSections() {
+  const A = window.PKAccount;
+  if (!A || !A.configured) return;
+  try {
+    await A.ready();
+    const { data } = await A.client().from('news_section').select('slug, name, tags').order('sort');
+    _newsSectionDefs = data || [];
+  } catch (e) { console.warn('[news] sections not read:', e); }
+}
+
+async function _newsLoadPersonal() {
+  const A = window.PKAccount;
+  if (!A || !A.configured) { _newsCfg = null; _newsKwRemote = null; return; }
+  await A.ready();
+  if (!A.user) { _newsCfg = null; _newsKwRemote = null; return; }
+  const cl = A.client();
+  try {
+    const [cfgR, kwR] = await Promise.all([
+      cl.from('news_user_config').select('visible_sections, show_add_source, show_advanced').eq('user_id', A.user.id).maybeSingle(),
+      cl.from('news_keyword').select('keyword, team, user_id'),
+    ]);
+    _newsCfg = (cfgR && cfgR.data) || null;
+    _newsKwRemote = ((kwR && kwR.data) || []).map(r => ({ keyword: r.keyword, team: !!r.team, mine: r.user_id === A.user.id }));
+  } catch (e) { console.warn('[news] personal config not read:', e); _newsCfg = null; _newsKwRemote = null; }
+}
+
+// Show only what the admin allowed this person (public.news_user_config): filter buttons, curated section tabs,
+// the add-source panel, the country/source/France-focus controls. No row for this user = everything, as before.
+function _newsApplyConfig() {
+  const cfg = _newsCfg, host = document.querySelector('.news-filters');
+  if (host) {
+    host.querySelectorAll('.filter-btn[data-tag]').forEach(b => {
+      b.style.display = (!cfg || !cfg.visible_sections || cfg.visible_sections.includes(b.dataset.tag)) ? '' : 'none';
+    });
+    host.querySelectorAll('.news-section-btn').forEach(b => b.remove());
+    const adv = document.getElementById('news-advanced');
+    if (cfg && cfg.visible_sections) {
+      (_newsSectionDefs || []).filter(s => cfg.visible_sections.includes(s.slug)).forEach(s => {
+        const b = document.createElement('button');
+        b.type = 'button'; b.className = 'filter-btn news-section-btn'; b.textContent = s.name;
+        b.addEventListener('click', () => {
+          newsFilter = 'section'; _newsSectionTags = s.tags || [];
+          host.querySelectorAll('.filter-btn').forEach(x => x.classList.remove('active'));
+          b.classList.add('active');
+          renderNews(newsData);
+        });
+        host.insertBefore(b, adv);
+      });
+    }
+  }
+  const addBtn = document.getElementById('news-add-btn'); if (addBtn) addBtn.style.display = (cfg && cfg.show_add_source === false) ? 'none' : '';
+  const srcSec = document.getElementById('hs-news-src'); if (srcSec) srcSec.style.display = (cfg && cfg.show_add_source === false) ? 'none' : '';
+  const adv = document.getElementById('news-advanced'); if (adv) adv.style.display = (cfg && cfg.show_advanced === false) ? 'none' : '';
+  const teamWrap = document.getElementById('news-kw-team-wrap');
+  if (teamWrap) teamWrap.style.display = (window.PKAccount && PKAccount.user) ? '' : 'none';
+}
+
+function _newsRefreshKwUI() {
+  const inp = document.getElementById('news-kw');
+  if (inp) inp.value = _newsKwRemote ? _newsKwRemote.filter(r => r.mine).map(r => r.keyword).join(', ') : _newsKw().join(', ');
+  const teamCb = document.getElementById('news-kw-team');
+  if (teamCb) teamCb.checked = _newsKwRemote ? _newsKwRemote.some(r => r.mine && r.team) : false;
+}
+
+async function _newsSaveKw(value, team) {
+  const A = window.PKAccount;
+  const list = [...new Set(value.split(',').map(s => s.trim()).filter(Boolean))].slice(0, 25);
+  if (!A || !A.configured || !A.user) { try { localStorage.setItem('pk-news-kw', value); } catch (_) {} renderNews(newsData); return; }
+  const cl = A.client();
+  const mineBefore = (_newsKwRemote || []).filter(r => r.mine).map(r => r.keyword);
+  const toRemove = mineBefore.filter(k => !list.includes(k));
+  try {
+    if (toRemove.length) await cl.from('news_keyword').delete().eq('user_id', A.user.id).in('keyword', toRemove);
+    if (list.length) await cl.from('news_keyword').upsert(list.map(k => ({ user_id: A.user.id, keyword: k.slice(0, 60), team: !!team })), { onConflict: 'user_id,keyword' });
+  } catch (e) { console.warn('[news] keyword not saved:', e); }
+  await _newsLoadPersonal();
+  _newsRefreshKwUI();
+  renderNews(newsData);
+}
+
+// most relevant first, but a fresh article beats an old one and one outlet cannot fill the top of the list:
+// impact, minus 0.3 per day of age, minus 0.6 for each article of the same outlet already placed above
+function _newsRank(items) {
+  const now = Date.now(), left = items.slice(), out = [], seen = {};
+  const score = i => (i.impact || 0) - 0.3 * (now - i.date) / 864e5 - 0.6 * (seen[i.source] || 0);
+  while (left.length) {
+    let k = 0, best = -Infinity;
+    for (let j = 0; j < left.length; j++) { const v = score(left[j]); if (v > best) { best = v; k = j; } }
+    const it = left.splice(k, 1)[0]; seen[it.source] = (seen[it.source] || 0) + 1; out.push(it);
+  }
+  return out;
+}
+
+// ── The essentials: data/news_digest.json (scripts/news_digest.py): one line per story, written by the site's AI proxy from the
+// collected articles only; every line links to its story. On Monday, the week before in 5 stories next to today's.
+let _newsDigest = null, _newsDigestView = null;
+async function _newsLoadDigest() {
+  try { const r = await fetch(DATA_BASE + 'news_digest.json?t=' + Date.now()); _newsDigest = r.ok ? await r.json() : null; } catch (_) { _newsDigest = null; }
+}
+function renderNewsDigest() {
+  const sec = document.getElementById('hs-news-digest'), host = document.getElementById('news-digest'); if (!sec || !host) return;
+  const D = _newsDigest || {}, today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris' }).format(new Date());
+  const monday = (() => { const d = new Date(today + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() - (d.getUTCDay() + 6) % 7); return d.toISOString().slice(0, 10); })();
+  const daily = D.daily && D.daily.date >= (() => { const d = new Date(today + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() - 3); return d.toISOString().slice(0, 10); })() ? D.daily : null;
+  const weekly = D.weekly && D.weekly.week === monday ? D.weekly : null;
+  if (!daily && !weekly) { sec.hidden = true; return; }
+  sec.hidden = false;
+  const view = _newsDigestView || (weekly && (!daily || new Date().getDay() === 1) ? 'weekly' : 'daily'), E = view === 'weekly' ? weekly : daily;
+  const en = window.PKI18n && PKI18n.lang === 'en';
+  document.getElementById('news-digest-t').textContent = view === 'weekly' ? _newsT('La semaine en 5 sujets', 'The week in 5 stories') : _newsT('L’essentiel', 'The essentials');
+  const day = s => new Date(s + 'T12:00:00Z').toLocaleDateString(en ? 'en-GB' : 'fr-FR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
+  document.getElementById('news-digest-m').textContent = view === 'weekly' ? _newsT('semaine du ', 'week of ') + day((() => { const d = new Date(E.week + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() - 7); return d.toISOString().slice(0, 10); })()) : day(E.date);
+  const tabs = daily && weekly ? `<div class="news-dg-tabs">${[['daily', _newsT('Aujourd’hui', 'Today')], ['weekly', _newsT('La semaine', 'The week')]].map(([k, l]) => `<button type="button" class="filter-btn${k === view ? ' active' : ''}" data-dg="${k}">${l}</button>`).join('')}</div>` : '';
+  const posts = view === 'weekly' && (E.posts || []).length ? `<div class="news-dg-posts"><b>${_newsT('Les posts les plus utiles de la semaine', 'The most useful posts of the week')}</b>${E.posts.map(p => `<a href="${_newsEsc(p.url)}" target="_blank" rel="noopener noreferrer">${_newsEsc(p.author || 'LinkedIn')}${p.note ? ' · ' + _newsEsc(p.note) : ''}</a>`).join('')}</div>` : '';
+  host.innerHTML = tabs + `<ol class="news-dg">${E.items.map(l => `<li><span>${_newsEsc(en && l.text_en ? l.text_en : l.text)}</span> <a href="${_newsEsc(l.link)}" target="_blank" rel="noopener noreferrer" class="news-dg-src">${_newsEsc(l.sources.slice(0, 3).join(' · '))}${l.sources.length > 3 ? ' +' + (l.sources.length - 3) : ''} ↗</a></li>`).join('')}</ol>` + posts +
+    `<div class="news-dg-note">${_newsT('Résumé automatique, rédigé par une IA à partir des seuls articles collectés : chaque ligne renvoie à sa source.', 'Automatic summary, written by an AI from the collected articles only: each line links to its source.')}</div>`;
+  host.querySelectorAll('[data-dg]').forEach(b => b.addEventListener('click', () => { _newsDigestView = b.dataset.dg; renderNewsDigest(); }));
+}
+
+// who covers a story: official texts, specialised press (the feeds), general press (press searches), as a bar and a count
+function _newsCoverage(item) {
+  const all = [{ source: item.source, cls: item.cls, official: (item.tags || []).includes('official'), search: !!item.query }].concat(item.other_sources || []);
+  if (all.length < 2) return '';
+  const kind = o => o.official || o.cls === 'official' || o.cls === 'cre' ? 'off' : o.cls === 'search' || o.search ? 'gen' : 'spe';
+  const n = { off: 0, spe: 0, gen: 0 }; all.forEach(o => n[kind(o)]++);
+  const bar = ['off', 'spe', 'gen'].filter(k => n[k]).map(k => `<i class="cv-${k}" style="width:${(n[k] / all.length * 100).toFixed(0)}%"></i>`).join('');
+  const lbl = { off: _newsT('officiel', 'official'), spe: _newsT('presse spécialisée', 'trade press'), gen: _newsT('presse générale', 'general press') };
+  return `<div class="news-cov" title="${['off', 'spe', 'gen'].filter(k => n[k]).map(k => n[k] + ' ' + lbl[k]).join(' · ')}"><span class="news-covbar">${bar}</span><b>${all.length} ${_newsT('sources', 'sources')}</b> <span>${all.slice(1).map(o => _newsEsc(o.source)).join(' · ')}</span></div>`;
+}
+
+// ── Posts to read: LinkedIn posts pasted by the team (public.news_post, warehouse migration 023). Only the link, the
+// author and a note are kept; votes go to public.news_vote like the articles' and pick the week's best for Monday's digest.
+let _newsPosts = [];
+const _newsAuthorOf = url => { const m = url.match(/linkedin\.com\/(?:posts|in)\/([a-z0-9-]+?)(?:-[0-9a-z]*\d[0-9a-z]*)?(?:_|\/|$)/i);
+  return m ? m[1].split('-').filter(w => !/\d/.test(w)).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : ''; };
+async function renderNewsPosts() {
+  const sec = document.getElementById('hs-news-posts'), host = document.getElementById('news-posts'); if (!sec || !host) return;
+  const A = window.PKAccount;
+  if (!A || !A.configured) { sec.hidden = true; return; }
+  await A.ready();
+  if (!A.user) { sec.hidden = true; return; }
+  const cl = A.client();
+  const { data, error } = await cl.from('news_post').select('id, url, author, note, added_by, created_at').order('created_at', { ascending: false }).limit(40);
+  if (error) { sec.hidden = true; return; }
+  sec.hidden = false; _newsPosts = data || [];
+  const ago = d => formatTimeAgo(new Date(d));
+  host.innerHTML = `<div class="news-post-add">
+      <input type="url" id="news-post-url" class="fuel-select" maxlength="600" placeholder="${_newsT('Lien du post LinkedIn (Partager › Copier le lien)', 'LinkedIn post link (Share › Copy link)')}">
+      <input type="text" id="news-post-author" class="fuel-select" maxlength="80" placeholder="${_newsT('Auteur', 'Author')}">
+      <input type="text" id="news-post-note" class="fuel-select" maxlength="200" placeholder="${_newsT('Pourquoi le lire, en une ligne', 'Why read it, in one line')}">
+      <button type="button" class="pk-btn-primary" id="news-post-go">${_newsT('＋ Ajouter', '＋ Add')}</button></div>
+    <div class="news-add-msg" id="news-post-msg"></div>
+    <details class="news-post-how"><summary>${_newsT('Envoyer un post directement depuis LinkedIn', 'Send a post straight from LinkedIn')}</summary>
+      <p><b>Android</b> · ${_newsT('dans Chrome, menu ⋮ › « Installer l’application » sur powerklock.com. Ensuite, sur un post LinkedIn : Partager › Envoyer via… › PowerKlock.', 'in Chrome, menu ⋮ › “Install app” on powerklock.com. Then on a LinkedIn post: Share › Send via… › PowerKlock.')}</p>
+      <p><b>iPhone</b> · ${_newsT('un raccourci « Envoyer à PowerKlock » dans l’app Raccourcis (Partager › Envoyer à PowerKlock) : il ouvre powerklock.com/?share= suivi du lien du post.', 'a “Send to PowerKlock” shortcut in the Shortcuts app (Share › Send to PowerKlock): it opens powerklock.com/?share= followed by the post link.')}</p>
+      <p><b>${_newsT('Ordinateur', 'Computer')}</b> · ${_newsT('glissez ce bouton dans la barre de favoris, puis cliquez dessus sur un post LinkedIn ouvert :', 'drag this button to the bookmarks bar, then click it on an open LinkedIn post:')} <a class="pk-btn-ghost news-post-bm" href="javascript:location.href='https://powerklock.com/?share='+encodeURIComponent(location.href)">→ PowerKlock</a></p>
+    </details>
+    <div class="news-posts">${_newsPosts.length ? _newsPosts.map(p => `<div class="news-post">
+      <a href="${_newsEsc(p.url)}" target="_blank" rel="noopener noreferrer"><b>${_newsEsc(p.author || 'LinkedIn')}</b>${p.note ? `<span>${_newsEsc(p.note)}</span>` : ''}</a>
+      <div class="news-post-f"><span class="news-time">${ago(p.created_at)}</span><div class="news-vote" data-link="${_newsEsc(p.url)}">${_newsVoteBtns(p.url)}</div>${p.added_by === A.user.id ? `<button type="button" class="pk-btn-ghost" data-pdel="${p.id}">✕</button>` : ''}</div></div>`).join('')
+      : `<div class="news-src-help">${_newsT('Aucun post pour l’instant : collez le lien d’un post LinkedIn qui vaut la lecture.', 'No post yet: paste the link of a LinkedIn post worth reading.')}</div>`}</div>`;
+  const url = document.getElementById('news-post-url'), au = document.getElementById('news-post-author'), msg = document.getElementById('news-post-msg');
+  url.addEventListener('change', () => { if (!au.value) au.value = _newsAuthorOf(url.value.trim()); });
+  document.getElementById('news-post-go').addEventListener('click', async () => {
+    const u = url.value.trim().split('?')[0];
+    if (!/^https:\/\/([a-z]+\.)?linkedin\.com\//i.test(u)) { msg.textContent = _newsT('Collez un lien linkedin.com.', 'Paste a linkedin.com link.'); msg.className = 'news-add-msg ko'; return; }
+    const { error: e } = await cl.from('news_post').insert({ url: u, author: au.value.trim() || _newsAuthorOf(u) || null, note: document.getElementById('news-post-note').value.trim() || null });
+    if (e) { msg.textContent = (/duplicate|unique/i.test(e.message) ? _newsT('Ce post est déjà dans la liste.', 'This post is already listed.') : _newsT('Non ajouté : ', 'Not added: ') + e.message); msg.className = 'news-add-msg ko'; return; }
+    renderNewsPosts();
+  });
+  host.querySelectorAll('[data-pdel]').forEach(b => b.addEventListener('click', async () => { await cl.from('news_post').delete().eq('id', b.dataset.pdel); renderNewsPosts(); }));
+}
+
+// ── Open consultations (data/consultations.json, scripts/fetch_news.py): the deadline to reply, the nearest first ──
+let _newsCons = null, _newsConsTheme = '';
+const _NEWS_CONS_THEMES = { cee: ['Efficacité énergétique', 'Energy efficiency'], tariffs: ['Tarifs', 'Tariffs'], grid: ['Réseau et raccordement', 'Grid and connection'],
+  market: ['Marché et sécurité d’approvisionnement', 'Market and security of supply'], renewables: ['Renouvelables et appels d’offres', 'Renewables and tenders'], gas: ['Gaz', 'Gas'], other: ['Autres', 'Other'] };
+async function _newsLoadCons() {
+  try { const r = await fetch(DATA_BASE + 'consultations.json?t=' + Date.now()); _newsCons = r.ok ? await r.json() : null; } catch (_) { _newsCons = null; }
+}
+function renderNewsCons() {
+  const sec = document.getElementById('hs-news-cons'), host = document.getElementById('news-cons'); if (!sec || !host) return;
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris' }).format(new Date());
+  const all = (_newsCons && _newsCons.items) || [], open = all.filter(c => !c.deadline || c.deadline >= today);
+  if (!all.length) { sec.hidden = true; return; }
+  sec.hidden = false;
+  const en = window.PKI18n && PKI18n.lang === 'en';
+  const fmt = d => new Date(d + 'T12:00:00Z').toLocaleDateString(en ? 'en-GB' : 'fr-FR', { day: 'numeric', month: 'short', timeZone: 'UTC' });
+  const left = d => Math.round((new Date(d + 'T12:00:00Z') - new Date(today + 'T12:00:00Z')) / 864e5);
+  const due = c => { if (!c.deadline) return `<span class="cons-due">${_newsT('date limite non indiquée', 'no deadline given')}</span>`;
+    const n = left(c.deadline);
+    return `<span class="cons-due${n <= 7 ? ' soon' : ''}"><b>${fmt(c.deadline)}</b>${n === 0 ? _newsT('dernier jour', 'last day') : 'J-' + n}</span>`; };
+  const th = k => { const t = _NEWS_CONS_THEMES[k || 'other'] || _NEWS_CONS_THEMES.other; return _newsT(t[0], t[1]); };
+  const row = c => `<a class="cons-row" href="${_newsEsc(c.link)}" target="_blank" rel="noopener noreferrer">${due(c)}<span class="cons-t">${_newsEsc(c.title)}<small><span class="cons-th">${th(c.theme)}</span> · ${_newsEsc(c.source)} · ${_newsT('ouverte le ', 'opened ')}${fmt(c.opened)}</small></span></a>`;
+  const counts = {}; all.forEach(c => { if (!c.deadline || c.deadline >= today) counts[c.theme || 'other'] = (counts[c.theme || 'other'] || 0) + 1; });
+  const keys = Object.keys(_NEWS_CONS_THEMES).filter(k => counts[k]);
+  if (_newsConsTheme && !counts[_newsConsTheme]) _newsConsTheme = '';
+  const pick = c => !_newsConsTheme || (c.theme || 'other') === _newsConsTheme;
+  const chips = keys.length > 1 ? `<div class="cons-chips">${[['', _newsT('Tous', 'All'), open.length]].concat(keys.map(k => [k, th(k), counts[k]])).map(([k, l, n]) => `<button type="button" class="filter-btn${k === _newsConsTheme ? ' active' : ''}" data-ct="${k}">${l} <small>${n}</small></button>`).join('')}</div>` : '';
+  const shown = open.filter(pick);
+  const closed = all.filter(c => c.deadline && c.deadline < today && pick(c)).slice(-8).reverse();
+  host.innerHTML = chips + (shown.length ? `<div class="cons-list">${shown.map(row).join('')}</div>` : `<div class="news-src-help">${_newsT('Aucune consultation ouverte en ce moment.', 'No consultation open right now.')}</div>`) +
+    (closed.length ? `<details class="cons-closed"><summary>${_newsT('Récemment closes', 'Recently closed')} (${closed.length})</summary><div class="cons-list">${closed.map(row).join('')}</div></details>` : '');
+  host.querySelectorAll('[data-ct]').forEach(b => b.addEventListener('click', () => { _newsConsTheme = b.dataset.ct; renderNewsCons(); }));
+}
+
+function _newsKw() {
+  if (_newsKwRemote) return _newsKwRemote.map(r => r.keyword.toLowerCase());
+  try { return (localStorage.getItem('pk-news-kw') || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean); } catch (_) { return []; }
+}
 function _newsMine(i, kw) { if (!kw.length) return false; const t = (i.title + ' ' + i.snippet).toLowerCase(); return kw.some(k => t.includes(k)); }
 // France focus: French sources (tag fr) and articles about France; kept in this browser
 const _NEWS_FR = /\b(France|French|Fran[cç]ais\w*|fran[cç]ais\w*|hexagone|Paris|EDF|Engie|TotalEnergies|Flamanville|Bugey|Gravelines|ARENH|Enedis|Elengy|Ademe|ADEME|PPE ?3?|PPE3)\b|\b(RTE|CRE|DGEC)\b/;
@@ -43,15 +267,17 @@ function _newsWireKw() {
     const f = document.getElementById('news-add-name'); if (f) setTimeout(() => f.focus(), 350); }); }
   const inp = document.getElementById('news-kw'); if (!inp || inp.dataset.wired) return;
   inp.dataset.wired = '1';
-  inp.value = _newsKw().join(', ');
-  inp.addEventListener('change', () => { try { localStorage.setItem('pk-news-kw', inp.value); } catch (_) {} renderNews(newsData); });
+  const teamCb = document.getElementById('news-kw-team');
+  _newsRefreshKwUI();
+  inp.addEventListener('change', () => _newsSaveKw(inp.value, teamCb && teamCb.checked));
+  if (teamCb) teamCb.addEventListener('change', () => _newsSaveKw(inp.value, teamCb.checked));
 }
 
 function renderNewsSources() {
   const host = document.getElementById('news-sources'); if (!host) return;
   const src = window._newsSources;
   const edit = 'https://github.com/TomSRemy/PowerKlock/edit/main/config/news_sources.json';
-  const rows = src ? src.map(s => `<tr><td>${_newsEsc(s.kind === 'search' ? 'search: ' + s.name : s.name)}${s.added ? ' <span class="news-q">added from the site</span>' : ''}</td><td>${s.kind === 'feed' ? 'RSS feed' : s.kind === 'page' ? 'web page' : 'press search (GDELT)'}</td><td class="${s.ok ? 'ok' : 'ko'}">${s.ok ? s.n + ' articles' : 'failed: ' + _newsEsc(s.error || '')}</td></tr>`).join('') : '';
+  const rows = src ? src.map(s => `<tr><td>${_newsEsc(s.kind === 'search' ? 'search: ' + s.name : s.name)}${s.added ? ' <span class="news-q">added from the site</span>' : ''}</td><td>${s.kind === 'feed' ? 'RSS feed' : s.kind === 'page' ? 'web page' : s.kind === 'official' ? 'official texts (open data)' : 'press search (Google News)'}</td><td class="${s.ok ? 'ok' : 'ko'}">${s.ok ? s.n + ' articles' : 'failed: ' + _newsEsc(s.error || '')}</td></tr>`).join('') : '';
   host.innerHTML = (src ? `<div style="overflow-x:auto"><table class="news-src-t"><thead><tr><th>Source</th><th>Read as</th><th>Last run</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<div class="news-src-help">The source list appears after the next news run.</div>') +
     `<div class="news-src-help"><b>Add a source for everyone</b>: use the form above (signed in). The sources of the team list stay in <a href="${edit}" target="_blank" rel="noopener">config/news_sources.json</a> on GitHub.<br>
     <b>Follow subjects for yourself</b>: type them in ★ My keywords above; matching articles are starred and listed under ★ My keywords (kept in this browser only).<br>
@@ -60,7 +286,7 @@ function renderNewsSources() {
 
 // Add a source from the site: public.news_source (warehouse migration 012), read by
 // scripts/fetch_news.py at the next hourly run. Signed-in users only (RLS).
-const _NEWS_TAGS = ['power', 'gas', 'carbon', 'regulation', 'markets', 'fr'];
+const _NEWS_TAGS = ['power', 'gas', 'carbon', 'regulation', 'markets', 'fr', 'assoc', 'report'];
 async function renderNewsAdd() {
   const host = document.getElementById('news-add'); if (!host) return;
   const A = window.PKAccount;
@@ -71,7 +297,7 @@ async function renderNewsAdd() {
   if (!A.user) {
     host.innerHTML = `<div class="news-add">${head}<div class="news-add-msg"><a href="#" id="news-add-signin">Sign in</a> to add an RSS / Atom feed or a press search: it is read at the next hourly news run, for everyone.</div></div>`;
     const si = document.getElementById('news-add-signin');
-    if (si) si.addEventListener('click', e => { e.preventDefault(); if (typeof window.switchDashboard === 'function') window.switchDashboard('mydash'); setTimeout(() => { const b = document.getElementById('pkd-acc-btn'); if (b) b.click(); }, 400); });
+    if (si) si.addEventListener('click', e => { e.preventDefault(); if (window.PKDash && PKDash.openAccount) PKDash.openAccount(); });
     return;
   }
   const cl = A.client();
@@ -88,7 +314,7 @@ async function renderNewsAdd() {
       <input type="text" id="news-add-val" class="fuel-select" maxlength="300" placeholder="Feed address, https://…/feed">
       <button type="button" class="pk-btn-primary" id="news-add-go">＋ Add</button><span></span>
     </div>
-    <div class="news-add-tags">Topics: ${_NEWS_TAGS.map(t => `<label><input type="checkbox" value="${t}"> ${t === 'fr' ? 'France' : t}</label>`).join('')}</div>
+    <div class="news-add-tags">Topics: ${_NEWS_TAGS.map(t => `<label><input type="checkbox" value="${t}"> ${t === 'fr' ? 'France' : t === 'assoc' ? 'associations' : t}</label>`).join('')}</div>
     <div class="news-add-msg" id="news-add-msg">Read at the next hourly news run. A feed is any public RSS / Atom address; a press search follows a phrase across the world press (put an exact phrase in quotes).</div>
     ${rows.length ? `<div style="overflow-x:auto"><table class="news-src-t"><thead><tr><th>Added from the site</th><th>Read as</th><th>Last run</th><th></th></tr></thead><tbody>${rows.map(r => `<tr><td>${_newsEsc(r.name)}<div class="news-q">${_newsEsc(r.kind === 'feed' ? r.url : r.query)}</div></td><td>${r.kind === 'feed' ? 'RSS feed' : 'press search'}</td><td>${status(r)}</td><td>${r.user_id === A.user.id ? `<button type="button" class="pk-btn-ghost" data-del="${r.id}">✕ Remove</button>` : ''}</td></tr>`).join('')}</tbody></table></div>` : ''}
   </div>`;
@@ -100,6 +326,7 @@ async function renderNewsAdd() {
     const say = (t, c) => { msg.textContent = t; msg.className = 'news-add-msg ' + (c || ''); };
     if (!v) return say(k === 'feed' ? 'Enter the feed address.' : 'Enter the phrase to follow.', 'ko');
     if (k === 'feed' && !/^https?:\/\/\S+\.\S+/.test(v)) return say('The feed address must start with https://', 'ko');
+    if (k === 'search' && /^https?:\/\//i.test(v)) return say('A press search follows a phrase, not a web address — add this as an RSS feed instead, or type a phrase to follow.', 'ko');
     const row = { kind: k, name: name || (k === 'feed' ? v.replace(/^https?:\/\/(www\.)?/, '').split('/')[0] : v).slice(0, 80), tags };
     if (k === 'feed') row.url = v; else row.query = v.slice(0, 200);
     say('Adding…');
@@ -126,7 +353,8 @@ function renderNews(items) {
   _newsFillSelects(items || []);
   const src = (document.getElementById('news-src') || {}).value || '', cty = (document.getElementById('news-cty') || {}).value || '';
   let filtered = (items || []).filter(i => (!frOnly || _newsIsFr(i)) &&
-    (newsFilter === 'all' || newsFilter === 'movers' || (newsFilter === 'mine' ? _newsMine(i, kw) : (i.tags || []).includes(newsFilter))) &&
+    (newsFilter === 'all' || newsFilter === 'movers' || (newsFilter === 'mine' ? _newsMine(i, kw) :
+      newsFilter === 'section' ? (i.tags || []).some(t => (_newsSectionTags || []).includes(t)) : (i.tags || []).includes(newsFilter))) &&
     (!src || i.source === src) && (!cty || (i.countries || []).includes(cty) || (cty === 'FR' && _newsIsFr(i))) &&   // France: same rule as the France focus
     (!q || (i.title + ' ' + i.snippet + ' ' + i.source).toLowerCase().includes(q)));
   // market movers: what moves prices or the renewable business, last 72 h, highest impact first (readers' votes count)
@@ -142,16 +370,18 @@ function renderNews(items) {
   }
   grid.innerHTML = filtered.map(item => {
     const link = /^https?:\/\//.test(item.link || '') ? item.link : '#';
-    const tagsHtml = (item.tags || []).map(t => `<span class="news-tag">${_newsIc(t)}${_newsEsc(t)}</span>`).join(' ');
+    const tagsHtml = (item.tags || []).filter(t => t !== 'official').map(t => `<span class="news-tag">${_newsIc(t)}${_newsEsc(t)}</span>`).join(' ');
     const mine = _newsMine(item, kw);
+    const also = _newsCoverage(item);
     return `<a class="news-card${mine ? ' mine' : ''}" href="${_newsEsc(link)}" target="_blank" rel="noopener noreferrer">
       <div class="news-meta">
         <span class="news-source ${_newsEsc(item.cls)}">${_newsEsc(item.source)}</span>
         <span class="news-time" title="${_newsEsc(item.date.toLocaleString('en-GB', { timeZone: 'Europe/Paris' }))}">${formatTimeAgo(item.date)}</span>
       </div>
-      <div class="news-title">${mine ? '<span class="news-star">★</span>' : ''}${_newsEsc(item.title)}</div>
+      <div class="news-title">${mine ? '<span class="news-star">★</span>' : ''}${(item.tags || []).includes('official') ? `<span class="news-off">${_newsT('Texte officiel', 'Official text')}</span>` : ''}${_newsEsc(item.title)}</div>
       <div class="news-snippet">${_newsEsc(item.snippet)}</div>
       <div>${tagsHtml}${item.query ? ` <span class="news-q">search: ${_newsEsc(item.query)}</span>` : ''}${(item.countries || []).length ? ` <span class="news-q">${_newsEsc(item.countries.join(' · '))}</span>` : ''}</div>
+      ${also}
       <div class="news-vote" data-link="${_newsEsc(item.link)}">${_newsVoteBtns(item.link)}</div>
     </a>`;
   }).join('');
@@ -186,7 +416,7 @@ async function _newsVote(link, vote, box) {
   // the article: from the News page's list, else from news.json (Today and the dashboards vote before the News page is opened)
   let item = (typeof newsData !== 'undefined' && newsData || []).find(i => i.link === link);
   if (!item) { const j = await (_newsAllP || (_newsAllP = fetch(DATA_BASE + 'news.json').then(r => r.ok ? r.json() : null).catch(() => null))); item = ((j && j.items) || []).find(i => i.link === link); }
-  if (!item) item = { title: link, source: '', tags: [] };
+  if (!item) { const p = _newsPosts.find(x => x.url === link); item = p ? { title: (p.author || 'LinkedIn') + (p.note ? ' · ' + p.note : ''), source: 'LinkedIn', tags: ['post'] } : { title: link, source: '', tags: [] }; }
   const cl = window.PKAccount && window.PKAccount.user && window.PKAccount.client && window.PKAccount.client();
   if (!cl) { box.insertAdjacentHTML('beforeend', `<span class="nv-msg">${_newsT('connectez-vous pour voter', 'sign in to vote')}</span>`); setTimeout(() => { const m = box.querySelector('.nv-msg'); if (m) m.remove(); }, 2500); return; }
   const prev = _newsVotes[link] || 0, v = prev === vote ? 0 : vote;
@@ -208,6 +438,7 @@ document.addEventListener('click', e => {
 
 function filterNews(tag, btn) {
   newsFilter = tag;
+  _newsSectionTags = null;
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   renderNews(newsData);

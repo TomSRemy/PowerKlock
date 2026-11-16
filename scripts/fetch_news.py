@@ -8,6 +8,7 @@ them again before rendering. Only http(s) links are kept.
 """
 import html
 import json
+import math
 import os
 import re
 import sys
@@ -26,8 +27,14 @@ MAX_ITEMS = 220
 UA = {"User-Agent": "Mozilla/5.0 (PowerKlock news fetcher; +https://github.com/TomSRemy/PowerKlock)"}
 
 CONFIG = Path("config/news_sources.json")
-GDELT = "https://api.gdeltproject.org/api/v2/doc/doc"
+GNEWS = "https://news.google.com/rss/search"
 PER_SEARCH = 8
+DILA_JORF = "https://echanges.dila.gouv.fr/OPENDATA/JORF/"
+EU_SPARQL = "https://publications.europa.eu/webapi/rdf/sparql"
+# energy texts in the Journal officiel (title or ministry) and in EUR-Lex (English title)
+JO_KEEP = re.compile(r"électricit|énergie|énergétique|\bCRE\b|commission de régulation|gaz naturel|biométhane|nucléaire|renouvelable|photovolta|éolien|hydroélectri|stockage d'énergie|réseau public de (transport|distribution)|tarif d'achat|complément de rémunération|capacité|hydrogène|carburant|chaleur renouvelable", re.I)
+JO_SKIP = re.compile(r"index nationaux du bâtiment|indice des prix|nomination|délégation de signature|avis de vacance|liste des emplois|tableau d'avancement|admission à la retraite|concours", re.I)
+EU_KEEP = r"electricit|energy|natural gas|gas (market|storage|supply)|renewable|hydrogen (?!peroxide)|nuclear|ACER|emission allowance|emissions trading|allowances surrendered|greenhouse gas|fuels"
 
 
 def load_config():
@@ -65,6 +72,8 @@ KEYWORDS = {
     "carbon": r"\b(carbon|co2|ets|eua|emission|decarboni[sz]|net[- ]zero|climate)\b",
     "regulation": r"\b(regulat\w*|réglement\w*|directive|commission|acer|cre|tariff|tarif\w*|law|loi|décret|decree|arrêté|bill|consultation|policy|ministry|ministère|government|gouvernement|auction design|appel d'offres|tender|ppe|arenh|vnu|turpe|accise|capacity mechanism|mécanisme de capacité|cfd|complément de rémunération)\b",
     "markets": r"\b(price[sd]?|market[s]?|trading|futures|forward|auction|spot|day-ahead|ppa|contract[s]?)\b",
+    # reference reports: periodic studies, barometers, observatories, outlooks, residual mix
+    "report": r"\b(rapports?|reports?|baromètres?|barometers?|observatoires?|panorama|bilan (électrique|prévisionnel)|bulletin trimestriel|outlook|residual mix(es)?|mix résiduel|économie du système|[eé]clairage sur)\b",
     "power": r"\b(power|electricity|grid|solar|wind|nuclear|hydro|battery|batteries|renewable[s]?|tso)\b",
 }
 
@@ -130,7 +139,9 @@ def impact(rec, prefs):
     tags = rec["tags"]
     ws = sorted((CAT_W[t] for t in tags if t in CAT_W), reverse=True)
     s = (ws[0] + 0.5 * sum(ws[1:])) if ws else 0.0          # the strongest category, the others at half weight
-    if not any(t in tags for t in ("power", "gas", "carbon", "markets", "geopolitics")):
+    if "official" in tags:
+        s += 1.0                                   # an energy text in the Journal officiel, EUR-Lex or from the CRE: on topic by construction
+    elif not any(t in tags for t in ("power", "gas", "carbon", "markets", "geopolitics")):
         s -= 1.5                                   # off-topic for an energy market reader
     cs = rec.get("countries", [])
     s += 1.5 if "FR" in cs else 1.0 if any(c in cs for c in ("EU", "DE", "BE", "ES", "NL", "IT", "UK")) else (0 if "geopolitics" in tags else -1.0)   # the European market first
@@ -251,27 +262,219 @@ def read_cre_consultations(content):
 READERS = {"cre": read_cre, "cre_consultations": read_cre_consultations}
 
 
-def gdelt(q):
-    """World press search (GDELT DOC API, last 7 days)."""
-    for wait in (0, 12, 30):          # GDELT throttles to one request every 5 s per address
-        time.sleep(wait)
-        r = requests.get(GDELT, params={"query": q, "mode": "artlist", "format": "json", "maxrecords": 25, "timespan": "7d", "sort": "datedesc"},
-                         headers=UA, timeout=30)
-        if r.status_code != 429:
-            break
+def gnews(q, lang="fr"):
+    """Press search over the last 7 days (Google News RSS: titles and links only, no article text is kept)."""
+    loc = {"fr": dict(hl="fr", gl="FR", ceid="FR:fr"), "en": dict(hl="en-GB", gl="GB", ceid="GB:en")}[lang]
+    r = requests.get(GNEWS, params=dict(q=q + " when:7d", **loc), headers=UA, timeout=25)
     r.raise_for_status()
-    if not r.text.strip().startswith("{"):
-        raise ValueError(r.text.strip()[:80])
     items = []
-    for a in r.json().get("articles", []):
-        d = a.get("seendate", "")
-        try:
-            dt = datetime.strptime(d, "%Y%m%dT%H%M%SZ").replace(tzinfo=timezone.utc)
-        except ValueError:
-            continue
-        items.append({"title": clean(a.get("title"), 220), "link": a.get("url", ""), "date": dt, "snippet": "",
-                      "domain": a.get("domain") or urlparse(a.get("url", "")).netloc})
+    for el in ET.fromstring(r.content).iter("item"):
+        src = el.find("source")
+        name = (src.text or "").strip() if src is not None else ""
+        if name.startswith("http"):   # some outlets have no name in the feed: their site instead
+            name = urlparse(name).netloc.removeprefix("www.")
+        title = clean(el.findtext("title"), 300)
+        if name and title.endswith(" - " + name):      # Google appends " - Outlet" to every title
+            title = title[: -len(name) - 3]
+        items.append({"title": clean(title, 220), "link": (el.findtext("link") or "").strip(), "date": parse_date(el.findtext("pubDate")),
+                      "snippet": "", "domain": name or "Google News"})
     return items
+
+
+def jorf(days=7):
+    """Energy texts of the Journal officiel (DILA open data, Licence Ouverte): the daily archives of the last days."""
+    import io
+    import tarfile
+    listing = requests.get(DILA_JORF, headers=UA, timeout=30).text
+    since = (datetime.now(timezone.utc).date().toordinal() - days)
+    names = [n for n in sorted(set(re.findall(r'href="(JORF_(\d{8})-\d+\.tar\.gz)"', listing)))
+             if datetime.strptime(n[1], "%Y%m%d").date().toordinal() >= since]
+    items, seen = [], set()
+    for name, _ in names:
+        r = requests.get(DILA_JORF + name, headers=UA, timeout=60)
+        r.raise_for_status()
+        with tarfile.open(fileobj=io.BytesIO(r.content), mode="r:gz") as tar:
+            for m in tar.getmembers():
+                if not (m.isfile() and "/texte/version/" in m.name and m.name.endswith(".xml")):
+                    continue
+                root = ET.fromstring(tar.extractfile(m).read())
+                tid = root.findtext(".//ID") or ""
+                title = clean(text_of(root.find(".//TITREFULL")), 400)
+                ministry = clean(root.findtext(".//MINISTERE"))
+                published = parse_date(root.findtext(".//DATE_PUBLI"))
+                if (not tid.startswith("JORFTEXT") or tid in seen or not published or published.date().toordinal() < since
+                        or JO_SKIP.search(title) or not JO_KEEP.search(title)):   # the title: the ministry of the economy also signs everything else
+                    continue
+                seen.add(tid)
+                nature = (root.findtext(".//NATURE") or "").capitalize()
+                items.append({"title": clean(title, 220), "link": "https://www.legifrance.gouv.fr/jorf/id/" + tid,
+                              "date": published,
+                              "snippet": " · ".join(x for x in (nature, ministry, clean(root.findtext(".//ORIGINE_PUBLI"))) if x)})
+    return items
+
+
+def eurlex(days=30):
+    """EU acts on energy published in the last days (EUR-Lex / Cellar SPARQL, free reuse): French title when there is one."""
+    since = datetime.fromordinal(datetime.now(timezone.utc).date().toordinal() - days).strftime("%Y-%m-%d")
+    q = f"""PREFIX cdm: <http://publications.europa.eu/ontology/cdm#>
+SELECT DISTINCT ?celex ?date ?en ?fr WHERE {{
+  ?work cdm:resource_legal_id_celex ?celex ; cdm:work_date_document ?date .
+  ?e cdm:expression_belongs_to_work ?work ; cdm:expression_title ?en ;
+     cdm:expression_uses_language <http://publications.europa.eu/resource/authority/language/ENG> .
+  OPTIONAL {{ ?f cdm:expression_belongs_to_work ?work ; cdm:expression_title ?fr ;
+     cdm:expression_uses_language <http://publications.europa.eu/resource/authority/language/FRA> . }}
+  FILTER(?date >= "{since}"^^xsd:date) FILTER(REGEX(?celex, "^3")) FILTER(REGEX(?en, "{EU_KEEP}", "i")) FILTER(!REGEX(?en, "biocid|plant protection|food|feed additive|harmonised standards|statement of revenue|Joint Committee|corrigendum|correcting certain language|excise duty|safeguard measure|2024/573|fluorinated", "i"))
+}} ORDER BY DESC(?date) LIMIT 40"""
+    r = requests.get(EU_SPARQL, params={"query": q}, headers=dict(UA, Accept="application/sparql-results+json"), timeout=60)
+    r.raise_for_status()
+    items, seen = [], set()
+    for b in r.json()["results"]["bindings"]:
+        celex = b["celex"]["value"]
+        if celex in seen:
+            continue
+        seen.add(celex)
+        title = (b.get("fr") or b["en"])["value"]
+        items.append({"title": clean(title, 220), "link": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:" + celex,
+                      "date": parse_date(b["date"]["value"] + "T12:00:00+00:00"), "snippet": "CELEX " + celex})
+    return items
+
+
+CONSULT = Path("data/consultations.json")
+MIN_ENERGY = "https://www.consultations-publiques.developpement-durable.gouv.fr/"
+
+
+# theme of a consultation from its title, the first that matches (energy savings first: their titles also say « tarif »)
+CONS_THEMES = [
+    ("cee", r"certificats? d.économies d.énergie|\bCEE\b|fiches? d.opérations? standardisées?|bonification|audit énergétique|précarité énergétique|programme PRO-"),
+    ("tariffs", r"TURPE|ATR[DT]|\btarifs?\b|TRVE|péréquation|\bFPE\b|CRCP|dotation|prestations annexes"),
+    ("grid", r"raccordement|ligne électrique|poste électrique|liaison|réseau public|\bRP[DT]\b|accès au réseau|SDDR|interconnexion|gestionnaires? de réseau|contrat d.accès|schéma décennal"),
+    ("market", r"capacité|équilibre|réserves?|marché|enchères?|ARENH|nucléaire|hydroélectri|flexibilit|effacement|stockage"),
+    ("renewables", r"appel d.offres|\bAO\b|\bPPE\d?\b|photovolta|éolien|biométhane|biogaz|hydrogène|complément de rémunération|garanties d.origine|renouvelable"),
+    ("gas", r"\bgaz\b|GRTgaz|Teréga|NaTran|GRDF|méthane"),
+]
+
+
+def cons_theme(title):
+    for key, rx in CONS_THEMES:
+        if re.search(rx, title, re.I):
+            return key
+    return "other"
+
+
+FR_MONTHS = {"janvier": 1, "février": 2, "fevrier": 2, "mars": 3, "avril": 4, "mai": 5, "juin": 6, "juillet": 7, "août": 8, "aout": 8,
+             "septembre": 9, "octobre": 10, "novembre": 11, "décembre": 12, "decembre": 12}
+FR_DATE = r"(\d{1,2})(?:er)?\s+(" + "|".join(FR_MONTHS) + r")(?:\s+(\d{4}))?"
+
+
+def rte_consultations(now, days=75):
+    """RTE's public consultations and concertations (grid projects, offshore connections, regional schemes): the site's
+    sitemap gives each page and its last change; the page gives the end date, from its title (« du 17 août au 28
+    septembre ») or else the first « jusqu'au … » of its text. Results and reviews of past concertations are left out."""
+    sm = requests.get("https://www.rte-france.com/sitemap.xml", headers=BROWSER_UA, timeout=30).text
+    since = datetime.fromordinal(now.date().toordinal() - days).strftime("%Y-%m-%d")
+    out = []
+    for loc, lastmod in re.findall(r"<loc>([^<]+)</loc><lastmod>([^<]+)</lastmod>", sm):
+        slug = loc.rsplit("/", 1)[-1]
+        if lastmod[:10] < since or not re.search(r"concertation|consultation|enquete-publique|participez|contribution", slug) \
+                or re.search(r"bilan|avis|resultat|instance|reunion|carrieres|garant|/formulaire-concertation/", loc):   # forms repeat the news page
+            continue
+        page = html.unescape(requests.get(loc, headers=BROWSER_UA, timeout=30).text)
+        title = re.sub(r"\s*\|\s*RTE\s*$", "", clean((re.findall(r"<title>(.*?)</title>", page, re.S) or [""])[0]))
+        text = clean(re.sub(r"<script.*?</script>|<style.*?</style>", " ", page, flags=re.S))
+
+        def iso(m, year=None):
+            return f"{m.group(3) or year or now.year}-{FR_MONTHS[m.group(2).lower()]:02d}-{int(m.group(1)):02d}"
+        m = (re.search(r"\bau\s+" + FR_DATE, title, re.I) or re.search(r"\bdu\s+" + FR_DATE + r"\s+au\s+" + FR_DATE, text, re.I)
+             or re.search(r"(?:jusqu.au|avant le|prendra fin le|se termine le)\s+(?:\w+\s+)?" + FR_DATE, text, re.I))
+        if m and m.re.pattern.startswith("\\bdu"):     # « du 1er octobre au 22 novembre 2026 »: the end date is the second
+            m = re.search(FR_DATE + r"\s*$", m.group(0), re.I)
+        out.append({"source": "RTE", "title": clean(title, 260), "link": loc, "opened": lastmod[:10], "deadline": iso(m) if m else None})
+    return out
+
+
+def consultations(now):
+    """Public consultations with their deadline: the CRE (listing, then the deadline written on each open consultation's
+    page) and the ministry's « Énergies et climat » consultations (period on the listing, two pages). Both sites have no
+    feed with the dates; their listings are official pages republished in the same form."""
+    out, errors = [], []
+    try:
+        s = requests.get("https://www.cre.fr/documents/consultations-publiques.html", headers=BROWSER_UA, timeout=30).text
+        for url, title, status, when in re.findall(r'data-document-url="([^"]+)".*?<h3[^>]*>\s*<a[^>]*>(.*?)</a>.*?<span class="label[^"]*">([^<]*)</span>.*?<time datetime="([^"]+)"', s, re.S):
+            if "cours" not in status.lower():
+                continue
+            link = "https://www.cre.fr" + url if url.startswith("/") else url
+            page = html.unescape(requests.get(link, headers=BROWSER_UA, timeout=30).text)
+            m = re.search(r"Date limite de dépôt des réponses\W*(?:<[^>]+>\W*)*(\d{2})/(\d{2})/(\d{4})", page)
+            out.append({"source": "CRE", "title": clean(title, 260), "link": link, "opened": (parse_date(when) or now).date().isoformat(),
+                        "deadline": f"{m.group(3)}-{m.group(2)}-{m.group(1)}" if m else None})
+    except Exception as e:
+        errors.append("CRE: " + str(e)[:100])
+    try:
+        for start in (0, 8):
+            s = html.unescape(requests.get(MIN_ENERGY + "energies-et-climat-r4.html" + (f"?debut_listearticles={start}" if start else ""), headers=BROWSER_UA, timeout=30).text)
+            for url, title, a, b in re.findall(r'<a href="([^"]+a\d+\.html)" class="fr-card__link">(.*?)</a>.*?Consultation du (\d{2}/\d{2}/\d{4}) au (\d{2}/\d{2}/\d{4})', s, re.S):
+                iso = lambda d: "-".join(reversed(d.split("/")))
+                out.append({"source": "Ministère · Énergies et climat", "title": clean(title, 260), "link": urljoin(MIN_ENERGY, url),
+                            "opened": iso(a), "deadline": iso(b)})
+    except Exception as e:
+        errors.append("ministry: " + str(e)[:100])
+    try:
+        out += rte_consultations(now)
+    except Exception as e:
+        errors.append("RTE: " + str(e)[:100])
+    today = now.astimezone(timezone.utc).date().isoformat()
+    seen, keep = set(), []
+    for c in out:
+        if c["link"] in seen:
+            continue
+        seen.add(c["link"])
+        c["open"] = c["deadline"] >= today if c["deadline"] else c["opened"] >= datetime.fromordinal(now.date().toordinal() - 45).strftime("%Y-%m-%d")
+        c["theme"] = cons_theme(c["title"])
+        keep.append(c)
+    keep.sort(key=lambda c: (not c["open"], c["deadline"] or "9999"))
+    return keep, errors
+
+
+def rte_news(now, days=14):
+    """RTE's national publications (reports, market and grid analyses, press releases) from its dated sitemap; local
+    works news (worksites, roads, archaeology, drills) are left out. One page read per item, for its title."""
+    sm = requests.get("https://www.rte-france.com/sitemap.xml", headers=BROWSER_UA, timeout=30).text
+    since = datetime.fromordinal(now.date().toordinal() - days).strftime("%Y-%m-%d")
+    keep = re.compile(r"rapport|panorama|observatoire|marche|prix|bilan|barometre|consommation|production|hiver|ete-|ecowatt|nucleaire|interconnex|flexibilit|stockage|"
+                      r"raccordement|previsionnel|futurs|analyse|equilibre|capacite|europe|record|export|negatif|tarif|investiss|obligataire|schema|surete", re.I)
+    skip = re.compile(r"travaux|chantier|archeolog|pompier|plage|riverain|route|circulation|deviation|formation|recrut|carrieres|concertation|enquete", re.I)
+    items = []
+    for loc, lastmod in re.findall(r"<loc>([^<]+)</loc><lastmod>([^<]+)</lastmod>", sm):
+        path = loc.replace("https://www.rte-france.com", "")
+        if lastmod[:10] < since or not path.startswith(("/actualites/", "/donnees-publications/")) or skip.search(path) \
+                or not (path.startswith("/donnees-publications/") or keep.search(path)):
+            continue
+        page = requests.get(loc, headers=BROWSER_UA, timeout=30).text
+        title = re.sub(r"\s*\|\s*RTE\s*$", "", clean(html.unescape((re.findall(r"<title>(.*?)</title>", page, re.S) or [""])[0])))
+        desc = clean(html.unescape((re.findall(r'<meta name="description" content="([^"]*)"', page) or [""])[0]), 240)
+        if title:
+            items.append({"title": clean(title, 220), "link": loc, "date": parse_date(lastmod.replace("Z", ":00+00:00")), "snippet": desc})
+    return items
+
+
+def eex_news(now):
+    """EEX newsroom (press releases and customer information on power, gas, guarantees of origin, ETS): the data alerts
+    and technical notices of the exchange are left out."""
+    s = html.unescape(requests.get("https://www.eex.com/en/newsroom/news", headers=BROWSER_UA, timeout=30).text)
+    items = []
+    for d, title, href in re.findall(r'<time itemprop="datePublished" datetime="([^"]+)">.*?<a title="([^"]+)" href="([^"]+)"', s, re.S):
+        if re.search(r"data alert|data amendment|reminder|T7|C7|datasource|maintenance|trading calendar|holiday", title, re.I):
+            continue
+        if not re.search(r"press release|guarantee|origin|\bGOs?\b|auction|french|france|power|electricity|gas|ETS|emission|PPA|capacity|renewable|volumes", title, re.I):
+            continue
+        items.append({"title": clean(title, 220), "link": urljoin("https://www.eex.com", href), "date": parse_date(d + "T12:00:00+00:00"), "snippet": ""})
+    return items
+
+
+PUBLISHERS = {"rte": ("RTE", "rte", rte_news, ["fr", "power", "markets"]), "eex": ("EEX", "eex", eex_news, ["markets"])}
+
+
+OFFICIAL = {"jorf": ("Journal officiel", jorf, ["fr", "regulation", "official"]), "eurlex": ("EUR-Lex", eurlex, ["regulation", "official"])}
 
 
 def add_items(out, items, src, now, limit, extra=None):
@@ -303,6 +506,49 @@ def add_items(out, items, src, now, limit, extra=None):
     return kept
 
 
+def cluster_stories(out, threshold=0.42):
+    """Group records that cover the same story across outlets (published within 72 h of each other): titles compared by
+    character 4–5-grams (TF-IDF cosine), which also pairs a French and an English title about the same event. The most
+    relevant record stays, the others go under other_sources, so one card shows "+N sources" instead of near-duplicates."""
+    import unicodedata
+    from sklearn.feature_extraction.text import TfidfVectorizer
+    from sklearn.metrics.pairwise import cosine_similarity
+    if len(out) < 2:
+        return out
+    norm = [unicodedata.normalize("NFKD", r["title"].lower()).encode("ascii", "ignore").decode() for r in out]
+    sim = cosine_similarity(TfidfVectorizer(analyzer="char_wb", ngram_range=(4, 5), sublinear_tf=True).fit_transform(norm))
+    dates = [datetime.fromisoformat(r["date"]) for r in out]
+    parent = list(range(len(out)))
+
+    def root(a):
+        while parent[a] != a:
+            parent[a] = parent[parent[a]]
+            a = parent[a]
+        return a
+    for a in range(len(out)):
+        for b in range(a + 1, len(out)):
+            if sim[a, b] >= threshold and out[a]["source"] != out[b]["source"] and abs((dates[a] - dates[b]).total_seconds()) <= 72 * 3600:
+                parent[root(b)] = root(a)
+    groups = {}
+    for k in range(len(out)):
+        groups.setdefault(root(k), []).append(k)
+    groups = list(groups.values())
+    merged = []
+    for g in groups:
+        if len(g) == 1:
+            merged.append(out[g[0]])
+            continue
+        recs = [out[k] for k in g]
+        primary = max(recs, key=lambda r: (r["impact"], r["date"]))
+        others = [r for r in recs if r is not primary]
+        primary["tags"] = list(dict.fromkeys(primary["tags"] + [t for r in others for t in r["tags"]]))
+        primary["countries"] = list(dict.fromkeys(primary["countries"] + [c for r in others for c in r["countries"]]))
+        primary["impact"] = round(primary["impact"] + 0.4 * math.log2(len(recs)), 2)   # covered by several outlets: a bit more relevant
+        primary["other_sources"] = [{"source": r["source"], "link": r["link"], "cls": r.get("cls", "")} for r in others]
+        merged.append(primary)
+    return merged
+
+
 def main():
     now = datetime.now(timezone.utc)
     cfg = load_config()
@@ -317,22 +563,41 @@ def main():
             status.append({"name": src["name"], "kind": "page" if src.get("reader") else "feed", "url": src["url"], "ok": True, "n": n, "added": bool(src.get("added"))})
         except Exception as e:
             status.append({"name": src["name"], "kind": "page" if src.get("reader") else "feed", "url": src["url"], "ok": False, "error": str(e)[:120], "added": bool(src.get("added"))})
-    for k, s in enumerate(cfg.get("searches", [])):
-        if k:
-            time.sleep(6)               # GDELT: one request every 5 seconds
+    for s in cfg.get("searches", []):
+        if re.match(r"^https?://", s["q"]):   # a press search follows a phrase, not a web address (add those as an RSS feed instead)
+            status.append({"name": s["q"], "kind": "search", "ok": False, "error": "not a search phrase (looks like a web address)", "added": bool(s.get("added"))})
+            continue
+        time.sleep(1.5)
         try:
-            n = add_items(out, gdelt(s["q"]), {"name": "Search", "cls": "search", "tags": s.get("tags", []) + ["watch"]}, now, PER_SEARCH, {"query": s["q"]})
+            n = add_items(out, gnews(s["q"], s.get("lang", "fr")), {"name": "Search", "cls": "search", "tags": s.get("tags", []) + ["watch"]}, now, PER_SEARCH, {"query": s["q"]})
             status.append({"name": s["q"], "kind": "search", "ok": True, "n": n, "added": bool(s.get("added"))})
         except Exception as e:
             status.append({"name": s["q"], "kind": "search", "ok": False, "error": str(e)[:120], "added": bool(s.get("added"))})
+    for key, (name, cls, fn, tags) in PUBLISHERS.items():
+        try:
+            n = add_items(out, fn(now), {"name": name, "cls": cls, "tags": tags}, now, 20)
+            status.append({"name": name, "kind": "page", "ok": True, "n": n})
+        except Exception as e:
+            status.append({"name": name, "kind": "page", "ok": False, "error": str(e)[:120]})
+    for key, (name, fn, tags) in OFFICIAL.items():
+        try:
+            n = add_items(out, fn(), {"name": name, "cls": "official", "tags": tags}, now, 30, {"official": True})
+            status.append({"name": name, "kind": "official", "ok": True, "n": n})
+        except Exception as e:
+            status.append({"name": name, "kind": "official", "ok": False, "error": str(e)[:120]})
     for st in status:
         print(f"  {st['kind']:6s} {st['name'][:40]:40s} " + (f"{st['n']} items" if st["ok"] else "ERROR " + st["error"]))
     if not out:
         sys.exit("No news fetched — keeping the previous file.")
     for rec in out:
         rec["impact"] = impact(rec, prefs)
+    out = cluster_stories(out)
     out.sort(key=lambda i: i["date"], reverse=True)
     OUT.parent.mkdir(parents=True, exist_ok=True)
+    cons, errs = consultations(now)
+    if cons:   # keep the previous file when both sites failed
+        CONSULT.write_text(json.dumps({"updated": now.isoformat(timespec="seconds"), "items": cons, "errors": errs}, ensure_ascii=False, separators=(",", ":")))
+    print(f"  consultations: {sum(c['open'] for c in cons)} open, {len(cons)} listed" + (f" · {errs}" if errs else ""))
     OUT.write_text(json.dumps({"updated": now.isoformat(timespec="seconds"), "items": out[:MAX_ITEMS], "sources": status},
                               ensure_ascii=False, separators=(",", ":")))
     print(f"Wrote {OUT}: {min(len(out), MAX_ITEMS)} items")

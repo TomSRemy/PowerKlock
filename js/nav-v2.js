@@ -25,6 +25,7 @@
     replay: svg('<circle cx="12" cy="12" r="9"/><path d="M10 8.5v7l6-3.5z"/>'),
     compare: svg('<path d="M3 20h18"/><path d="M4 16l5-6 4 3 7-8"/><path d="M4 12l5 2 4-5 7 3" stroke-dasharray="2 2"/>'),
     today: svg('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>'),
+    games: svg('<rect x="2" y="7" width="20" height="11" rx="5"/><path d="M7 11v3M5.5 12.5h3"/><circle cx="16" cy="11.5" r="1"/><circle cx="18" cy="14" r="1"/>'),
     dashboards: svg('<rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/>'),
     forward: svg('<path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/>'),
     m0: svg('<path d="M4 19h16"/><path d="M4 15l5-5 4 3 7-7"/><circle cx="20" cy="6" r="1.5"/>'),
@@ -87,6 +88,7 @@
     'api': { page: 'api' },
     'methodology': { page: 'methodology' },
     'about': { page: 'about' },
+    'games': { page: 'games' },
   };
 
   // the menu: [section, [[route, label, icon, group bar?]]]
@@ -129,6 +131,7 @@
       ['intel/news', 'News', 'news'],
       ['intel/regulation', 'Events and changes', 'news'],
     ]],
+    ['Games', [['games', 'All games', 'games']]],   // the former hidden easter eggs (sheep, Klock Wars, Volley), js/games.js
   ];
   const FOOT = [['status', 'Data status'], ['api', 'API'], ['methodology', 'Methodology'], ['about', 'About']];
 

@@ -22,7 +22,7 @@ from zoneinfo import ZoneInfo
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 D = os.path.join(ROOT, 'data')
-SITE = 'https://powerklock.powerklock-tool.workers.dev/'
+SITE = 'https://powerklock.com/'
 PARIS = ZoneInfo('Europe/Paris')
 DAYS = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche']
 MONTHS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre']
@@ -96,13 +96,25 @@ def build():
         for tch, name in (('solar', 'PPA solaire'), ('wind', 'PPA éolien')):
             if last.get(tch):
                 rows.append((name + ' (benchmark)', f'{n(last[tch]["ppa"], 2)} €/MWh', (s(last[tch]['ppa'] - prev[tch]['ppa'], 2) + ' € sur 7 jours') if prev and prev.get(tch) else ''))
-    news = sorted([i for i in ((load('news.json') or {}).get('items') or []) if (i.get('impact') or 0) >= 3], key=lambda i: -(i.get('impact') or 0))[:3]
-    for i in news:
-        lines.append((i.get('title') or '', i.get('link') or SITE, i.get('source') or ''))
-    return today, rows, lines
+    # the day's essentials from scripts/news_digest.py (on Monday, the week before); else the three most relevant articles
+    dg = load('news_digest.json') or {}
+    ed = dg.get('weekly') if today.weekday() == 0 and (dg.get('weekly') or {}).get('week') == (today - timedelta(days=today.weekday())).isoformat() else None
+    heading = 'La semaine en 5 sujets' if ed else 'L’essentiel'
+    ed = ed or (dg.get('daily') if (dg.get('daily') or {}).get('date') == today.isoformat() else None)
+    if ed:
+        for x in ed.get('items') or []:
+            lines.append((x.get('text') or x.get('title') or '', x.get('link') or SITE, ' · '.join((x.get('sources') or [])[:2])))
+        for p in ed.get('posts') or []:
+            lines.append(('LinkedIn · ' + (p.get('author') or '') + (' : ' + p['note'] if p.get('note') else ''), p.get('url') or SITE, 'post'))
+    else:
+        heading = 'Dans l’actualité'
+        news = sorted([i for i in ((load('news.json') or {}).get('items') or []) if (i.get('impact') or 0) >= 3], key=lambda i: -(i.get('impact') or 0))[:3]
+        for i in news:
+            lines.append((i.get('title') or '', i.get('link') or SITE, i.get('source') or ''))
+    return today, rows, lines, heading
 
 
-def render(today, rows, lines):
+def render(today, rows, lines, heading='Dans l’actualité'):
     subject = f'PowerKlock · {frday(today)}' + (f' · spot {rows[0][1]}' if rows else '')
     text = '\n'.join(f'{a} : {b}  {c}' for a, b, c in rows) + '\n\n' + '\n'.join(f'• {t} ({src}) {u}' for t, u, src in lines) + f'\n\n{SITE}#today\n'
     tr = ''.join(f'<tr><td style="padding:7px 10px;color:#5F738A">{a}</td><td style="padding:7px 10px;font-weight:700;color:#13202E;white-space:nowrap">{b}</td>'
@@ -112,15 +124,15 @@ def render(today, rows, lines):
             f'<p style="font-size:20px;font-weight:700;margin:0 0 2px">Power<span style="color:#0E9E7E">.Klock</span></p>'
             f'<p style="color:#5F738A;margin:0 0 14px">Le point du matin · {frday(today)}</p>'
             f'<table style="border-collapse:collapse;width:100%;font-size:14px;border-top:1px solid #E6ECF2">{tr}</table>'
-            + (f'<p style="font-weight:600;margin:18px 0 6px">Dans l’actualité</p><ul style="padding-left:18px;margin:0">{li}</ul>' if li else '')
+            + (f'<p style="font-weight:600;margin:18px 0 6px">{heading}</p><ul style="padding-left:18px;margin:0">{li}</ul>' if li else '')
             + f'<p style="margin:20px 0 0"><a href="{SITE}#today" style="background:#0E9E7E;color:#fff;padding:9px 16px;border-radius:8px;text-decoration:none;font-weight:600">Ouvrir Aujourd’hui</a></p>'
             f'<p style="color:#8DA3BA;font-size:11px;margin:18px 0 0">Sources : ENTSO-E, RTE, données de marché, PowerKlock. Prix forward = dernière cotation.</p></div>')
     return subject, text, html
 
 
 def main():
-    today, rows, lines = build()
-    subject, text, html = render(today, rows, lines)
+    today, rows, lines, heading = build()
+    subject, text, html = render(today, rows, lines, heading)
     to = [x.strip() for x in (os.environ.get('MORNING_TO') or '').split(',') if x.strip()]
     ready = all(os.environ.get(k) for k in ('SMTP_HOST', 'SMTP_USER', 'SMTP_PASS')) and to
     if os.environ.get('MORNING_DRY_RUN') == '1' or not ready:

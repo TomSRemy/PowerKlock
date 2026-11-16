@@ -41,7 +41,7 @@ import psycopg
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DAILY = os.path.join(ROOT, 'data', 'history', 'daily')
 PARIS = ZoneInfo('Europe/Paris')
-SITE = 'https://tomsremy.github.io/PowerKlock/'
+SITE = 'https://powerklock.com/'
 
 
 def day_file(d):
@@ -231,7 +231,9 @@ def main():
             if not cur.fetchone()[0]:
                 print('public.alert_rule does not exist yet (run the warehouse sync once).')
                 return 0
-            cur.execute("""select r.id, r.user_id, r.kind, r.zones, r.min_hours, r.threshold, r.email, u.email
+            cur.execute("select exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'alert_rule' and column_name = 'email_to')")
+            to = 'coalesce(r.email_to, u.email)' if cur.fetchone()[0] else 'u.email'   # migration 022: a rule can name its own address
+            cur.execute(f"""select r.id, r.user_id, r.kind, r.zones, r.min_hours, r.threshold, r.email, {to}
                            from public.alert_rule r join auth.users u on u.id = r.user_id where r.active""")
             cols = ['id', 'user_id', 'kind', 'zones', 'min_hours', 'threshold', 'want_email', 'address']
             rules = [dict(zip(cols, row)) for row in cur.fetchall()]
