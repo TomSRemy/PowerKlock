@@ -1,0 +1,14 @@
+name: Probe feeds (temporary)
+on:
+  push:
+    branches: [claude/brave-dijkstra-0b04zg]
+    paths: [scripts/probe_feeds.py, .github/workflows/probe_feeds.yml]
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with: {python-version: '3.12'}
+      - run: pip install -q requests && python scripts/probe_feeds.py
