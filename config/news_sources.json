@@ -224,6 +224,99 @@
         "regulation"
       ],
       "require": "électri|electricit|photovolta|solaire|éolien|eolien|offshore|nucléaire|nucleaire|\\bedf\\b|engie|totalenergies|\\brte\\b|\\bcre\\b|enedis|hydrogène|batterie|stockage|renouvelable|tarif|fournisseur|pompe à chaleur|\\bppa\\b|énergie|energie|réseau électrique|gaz"
+    },
+    {
+      "name": "Bruegel",
+      "cls": "bruegel",
+      "url": "https://www.bruegel.org/rss?type=all",
+      "tags": [
+        "regulation",
+        "markets"
+      ],
+      "require": "energ|électri|electric|gas|power|carbon|climat|ets|grid|renewable"
+    },
+    {
+      "name": "Michael Liebreich",
+      "cls": "liebreich",
+      "url": "https://mliebreich.substack.com/feed",
+      "tags": [
+        "power"
+      ]
+    },
+    {
+      "name": "Energy Flux",
+      "cls": "energyflux",
+      "url": "https://www.energyflux.news/rss/",
+      "tags": [
+        "gas",
+        "markets"
+      ]
+    },
+    {
+      "name": "Modo Energy",
+      "cls": "modo",
+      "url": "https://modoenergy.com/research",
+      "tags": [
+        "power",
+        "markets"
+      ]
+    },
+    {
+      "name": "Oxford Institute for Energy Studies",
+      "cls": "oies",
+      "url": "https://www.oxfordenergy.org/feed/",
+      "tags": [
+        "gas",
+        "power",
+        "regulation"
+      ]
+    },
+    {
+      "name": "Ember",
+      "cls": "ember",
+      "url": "https://ember-energy.org/insights/",
+      "tags": [
+        "power",
+        "carbon"
+      ]
+    },
+    {
+      "name": "Agora Energiewende",
+      "cls": "agora",
+      "url": "https://www.agora-energiewende.org/news-events",
+      "tags": [
+        "power",
+        "regulation"
+      ]
+    },
+    {
+      "name": "Electricity Maps",
+      "cls": "elecmaps",
+      "url": "https://www.electricitymaps.com/blog",
+      "tags": [
+        "power",
+        "carbon"
+      ]
+    },
+    {
+      "name": "Timera Energy",
+      "cls": "timera",
+      "url": "https://timera-energy.com/feed/",
+      "tags": [
+        "gas",
+        "power",
+        "markets"
+      ]
+    },
+    {
+      "name": "Neon (Lion Hirth)",
+      "cls": "neon",
+      "url": "https://old.neon-energie.de/en/feed/",
+      "tags": [
+        "power",
+        "markets",
+        "regulation"
+      ]
     }
   ],
   "pages": [

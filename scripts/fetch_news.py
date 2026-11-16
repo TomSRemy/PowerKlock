@@ -369,32 +369,33 @@ def add_items(out, items, src, now, limit, extra=None):
     return kept
 
 
-def cluster_stories(out):
-    """Group records that cover the same story across sources (similar title, published within 48 h):
-    keep the most relevant one, list the rest under other_sources so one card can show "+N sources"
-    instead of near-duplicate cards for the same wire story."""
-    sig = [set(words(r["title"])) for r in out]
+def cluster_stories(out, threshold=0.42):
+    """Group records that cover the same story across outlets (published within 72 h of each other): titles compared by
+    character 4–5-grams (TF-IDF cosine), which also pairs a French and an English title about the same event. The most
+    relevant record stays, the others go under other_sources, so one card shows "+N sources" instead of near-duplicates."""
+    import unicodedata
+    from sklearn.feature_extraction.text import TfidfVectorizer
+    from sklearn.metrics.pairwise import cosine_similarity
+    if len(out) < 2:
+        return out
+    norm = [unicodedata.normalize("NFKD", r["title"].lower()).encode("ascii", "ignore").decode() for r in out]
+    sim = cosine_similarity(TfidfVectorizer(analyzer="char_wb", ngram_range=(4, 5), sublinear_tf=True).fit_transform(norm))
     dates = [datetime.fromisoformat(r["date"]) for r in out]
-    used = [False] * len(out)
-    groups = []
-    for i in range(len(out)):
-        if used[i]:
-            continue
-        g = [i]
-        used[i] = True
-        if sig[i]:
-            for j in range(i + 1, len(out)):
-                if used[j] or not sig[j] or out[j]["source"] == out[i]["source"]:
-                    continue
-                if abs((dates[j] - dates[i]).total_seconds()) > 48 * 3600:
-                    continue
-                inter = sig[i] & sig[j]
-                if len(inter) < 3:
-                    continue
-                if len(inter) / len(sig[i] | sig[j]) >= 0.45:
-                    g.append(j)
-                    used[j] = True
-        groups.append(g)
+    parent = list(range(len(out)))
+
+    def root(a):
+        while parent[a] != a:
+            parent[a] = parent[parent[a]]
+            a = parent[a]
+        return a
+    for a in range(len(out)):
+        for b in range(a + 1, len(out)):
+            if sim[a, b] >= threshold and out[a]["source"] != out[b]["source"] and abs((dates[a] - dates[b]).total_seconds()) <= 72 * 3600:
+                parent[root(b)] = root(a)
+    groups = {}
+    for k in range(len(out)):
+        groups.setdefault(root(k), []).append(k)
+    groups = list(groups.values())
     merged = []
     for g in groups:
         if len(g) == 1:
