@@ -8,15 +8,16 @@ async function loadNews() {
   const badge = document.getElementById('news-updated');
   if (!window._newsAcctWired && window.PKAccount && PKAccount.configured) {
     window._newsAcctWired = true;
-    PKAccount.onChange(async () => { await _newsLoadPersonal(); _newsApplyConfig(); _newsRefreshKwUI(); renderNews(newsData); });
+    PKAccount.onChange(async () => { await _newsLoadPersonal(); _newsApplyConfig(); _newsRefreshKwUI(); renderNewsPosts(); renderNews(newsData); });
   }
-  await Promise.all([_newsLoadSections(), _newsLoadPersonal()]);
+  await Promise.all([_newsLoadSections(), _newsLoadPersonal(), _newsLoadDigest()]);
   try {
     const r = await fetch(DATA_BASE + 'news.json?t=' + Date.now());
     if (!r.ok) throw new Error(r.status);
     const j = await r.json();
     newsData = (j.items || []).map(i => Object.assign({}, i, { date: new Date(i.date) }))
-      .sort((a, b) => (b.impact || 0) - (a.impact || 0) || b.date - a.date);   // most relevant first, latest as tie-break
+      .sort((a, b) => (b.impact || 0) - (a.impact || 0) || b.date - a.date);
+    newsData = _newsRank(newsData);
     const upd = j.updated ? new Date(j.updated).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' }) : '';
     window._newsSources = j.sources || null;
     const nSrc = j.sources ? j.sources.filter(s => s.kind !== 'search').length : new Set(newsData.map(n => n.source)).size;
@@ -27,6 +28,8 @@ async function loadNews() {
   }
   _newsWireKw();
   _newsApplyConfig();
+  renderNewsDigest();
+  renderNewsPosts();
   renderNews(newsData);
   renderNewsSources();
   renderNewsAdd();
@@ -118,6 +121,99 @@ async function _newsSaveKw(value, team) {
   renderNews(newsData);
 }
 
+// most relevant first, but a fresh article beats an old one and one outlet cannot fill the top of the list:
+// impact, minus 0.3 per day of age, minus 0.6 for each article of the same outlet already placed above
+function _newsRank(items) {
+  const now = Date.now(), left = items.slice(), out = [], seen = {};
+  const score = i => (i.impact || 0) - 0.3 * (now - i.date) / 864e5 - 0.6 * (seen[i.source] || 0);
+  while (left.length) {
+    let k = 0, best = -Infinity;
+    for (let j = 0; j < left.length; j++) { const v = score(left[j]); if (v > best) { best = v; k = j; } }
+    const it = left.splice(k, 1)[0]; seen[it.source] = (seen[it.source] || 0) + 1; out.push(it);
+  }
+  return out;
+}
+
+// ── The essentials: data/news_digest.json (scripts/news_digest.py): one line per story, written by the site's AI proxy from the
+// collected articles only; every line links to its story. On Monday, the week before in 5 stories next to today's.
+let _newsDigest = null, _newsDigestView = null;
+async function _newsLoadDigest() {
+  try { const r = await fetch(DATA_BASE + 'news_digest.json?t=' + Date.now()); _newsDigest = r.ok ? await r.json() : null; } catch (_) { _newsDigest = null; }
+}
+function renderNewsDigest() {
+  const sec = document.getElementById('hs-news-digest'), host = document.getElementById('news-digest'); if (!sec || !host) return;
+  const D = _newsDigest || {}, today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris' }).format(new Date());
+  const monday = (() => { const d = new Date(today + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() - (d.getUTCDay() + 6) % 7); return d.toISOString().slice(0, 10); })();
+  const daily = D.daily && D.daily.date >= (() => { const d = new Date(today + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() - 3); return d.toISOString().slice(0, 10); })() ? D.daily : null;
+  const weekly = D.weekly && D.weekly.week === monday ? D.weekly : null;
+  if (!daily && !weekly) { sec.hidden = true; return; }
+  sec.hidden = false;
+  const view = _newsDigestView || (weekly && (!daily || new Date().getDay() === 1) ? 'weekly' : 'daily'), E = view === 'weekly' ? weekly : daily;
+  const en = window.PKI18n && PKI18n.lang === 'en';
+  document.getElementById('news-digest-t').textContent = view === 'weekly' ? _newsT('La semaine en 5 sujets', 'The week in 5 stories') : _newsT('L’essentiel', 'The essentials');
+  const day = s => new Date(s + 'T12:00:00Z').toLocaleDateString(en ? 'en-GB' : 'fr-FR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
+  document.getElementById('news-digest-m').textContent = view === 'weekly' ? _newsT('semaine du ', 'week of ') + day((() => { const d = new Date(E.week + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() - 7); return d.toISOString().slice(0, 10); })()) : day(E.date);
+  const tabs = daily && weekly ? `<div class="news-dg-tabs">${[['daily', _newsT('Aujourd’hui', 'Today')], ['weekly', _newsT('La semaine', 'The week')]].map(([k, l]) => `<button type="button" class="filter-btn${k === view ? ' active' : ''}" data-dg="${k}">${l}</button>`).join('')}</div>` : '';
+  const posts = view === 'weekly' && (E.posts || []).length ? `<div class="news-dg-posts"><b>${_newsT('Les posts les plus utiles de la semaine', 'The most useful posts of the week')}</b>${E.posts.map(p => `<a href="${_newsEsc(p.url)}" target="_blank" rel="noopener noreferrer">${_newsEsc(p.author || 'LinkedIn')}${p.note ? ' · ' + _newsEsc(p.note) : ''}</a>`).join('')}</div>` : '';
+  host.innerHTML = tabs + `<ol class="news-dg">${E.items.map(l => `<li><span>${_newsEsc(en && l.text_en ? l.text_en : l.text)}</span> <a href="${_newsEsc(l.link)}" target="_blank" rel="noopener noreferrer" class="news-dg-src">${_newsEsc(l.sources.slice(0, 3).join(' · '))}${l.sources.length > 3 ? ' +' + (l.sources.length - 3) : ''} ↗</a></li>`).join('')}</ol>` + posts +
+    `<div class="news-dg-note">${_newsT('Résumé automatique, rédigé par une IA à partir des seuls articles collectés : chaque ligne renvoie à sa source.', 'Automatic summary, written by an AI from the collected articles only: each line links to its source.')}</div>`;
+  host.querySelectorAll('[data-dg]').forEach(b => b.addEventListener('click', () => { _newsDigestView = b.dataset.dg; renderNewsDigest(); }));
+}
+
+// who covers a story: official texts, specialised press (the feeds), general press (press searches), as a bar and a count
+function _newsCoverage(item) {
+  const all = [{ source: item.source, cls: item.cls, official: (item.tags || []).includes('official'), search: !!item.query }].concat(item.other_sources || []);
+  if (all.length < 2) return '';
+  const kind = o => o.official || o.cls === 'official' || o.cls === 'cre' ? 'off' : o.cls === 'search' || o.search ? 'gen' : 'spe';
+  const n = { off: 0, spe: 0, gen: 0 }; all.forEach(o => n[kind(o)]++);
+  const bar = ['off', 'spe', 'gen'].filter(k => n[k]).map(k => `<i class="cv-${k}" style="width:${(n[k] / all.length * 100).toFixed(0)}%"></i>`).join('');
+  const lbl = { off: _newsT('officiel', 'official'), spe: _newsT('presse spécialisée', 'trade press'), gen: _newsT('presse générale', 'general press') };
+  return `<div class="news-cov" title="${['off', 'spe', 'gen'].filter(k => n[k]).map(k => n[k] + ' ' + lbl[k]).join(' · ')}"><span class="news-covbar">${bar}</span><b>${all.length} ${_newsT('sources', 'sources')}</b> <span>${all.slice(1).map(o => _newsEsc(o.source)).join(' · ')}</span></div>`;
+}
+
+// ── Posts to read: LinkedIn posts pasted by the team (public.news_post, warehouse migration 023). Only the link, the
+// author and a note are kept; votes go to public.news_vote like the articles' and pick the week's best for Monday's digest.
+let _newsPosts = [];
+const _newsAuthorOf = url => { const m = url.match(/linkedin\.com\/(?:posts|in)\/([a-z0-9-]+?)(?:-[0-9a-z]*\d[0-9a-z]*)?(?:_|\/|$)/i);
+  return m ? m[1].split('-').filter(w => !/\d/.test(w)).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : ''; };
+async function renderNewsPosts() {
+  const sec = document.getElementById('hs-news-posts'), host = document.getElementById('news-posts'); if (!sec || !host) return;
+  const A = window.PKAccount;
+  if (!A || !A.configured) { sec.hidden = true; return; }
+  await A.ready();
+  if (!A.user) { sec.hidden = true; return; }
+  const cl = A.client();
+  const { data, error } = await cl.from('news_post').select('id, url, author, note, added_by, created_at').order('created_at', { ascending: false }).limit(40);
+  if (error) { sec.hidden = true; return; }
+  sec.hidden = false; _newsPosts = data || [];
+  const ago = d => formatTimeAgo(new Date(d));
+  host.innerHTML = `<div class="news-post-add">
+      <input type="url" id="news-post-url" class="fuel-select" maxlength="600" placeholder="${_newsT('Lien du post LinkedIn (Partager › Copier le lien)', 'LinkedIn post link (Share › Copy link)')}">
+      <input type="text" id="news-post-author" class="fuel-select" maxlength="80" placeholder="${_newsT('Auteur', 'Author')}">
+      <input type="text" id="news-post-note" class="fuel-select" maxlength="200" placeholder="${_newsT('Pourquoi le lire, en une ligne', 'Why read it, in one line')}">
+      <button type="button" class="pk-btn-primary" id="news-post-go">${_newsT('＋ Ajouter', '＋ Add')}</button></div>
+    <div class="news-add-msg" id="news-post-msg"></div>
+    <details class="news-post-how"><summary>${_newsT('Envoyer un post directement depuis LinkedIn', 'Send a post straight from LinkedIn')}</summary>
+      <p><b>Android</b> · ${_newsT('dans Chrome, menu ⋮ › « Installer l’application » sur powerklock.com. Ensuite, sur un post LinkedIn : Partager › Envoyer via… › PowerKlock.', 'in Chrome, menu ⋮ › “Install app” on powerklock.com. Then on a LinkedIn post: Share › Send via… › PowerKlock.')}</p>
+      <p><b>iPhone</b> · ${_newsT('un raccourci « Envoyer à PowerKlock » dans l’app Raccourcis (Partager › Envoyer à PowerKlock) : il ouvre powerklock.com/?share= suivi du lien du post.', 'a “Send to PowerKlock” shortcut in the Shortcuts app (Share › Send to PowerKlock): it opens powerklock.com/?share= followed by the post link.')}</p>
+      <p><b>${_newsT('Ordinateur', 'Computer')}</b> · ${_newsT('glissez ce bouton dans la barre de favoris, puis cliquez dessus sur un post LinkedIn ouvert :', 'drag this button to the bookmarks bar, then click it on an open LinkedIn post:')} <a class="pk-btn-ghost news-post-bm" href="javascript:location.href='https://powerklock.com/?share='+encodeURIComponent(location.href)">→ PowerKlock</a></p>
+    </details>
+    <div class="news-posts">${_newsPosts.length ? _newsPosts.map(p => `<div class="news-post">
+      <a href="${_newsEsc(p.url)}" target="_blank" rel="noopener noreferrer"><b>${_newsEsc(p.author || 'LinkedIn')}</b>${p.note ? `<span>${_newsEsc(p.note)}</span>` : ''}</a>
+      <div class="news-post-f"><span class="news-time">${ago(p.created_at)}</span><div class="news-vote" data-link="${_newsEsc(p.url)}">${_newsVoteBtns(p.url)}</div>${p.added_by === A.user.id ? `<button type="button" class="pk-btn-ghost" data-pdel="${p.id}">✕</button>` : ''}</div></div>`).join('')
+      : `<div class="news-src-help">${_newsT('Aucun post pour l’instant : collez le lien d’un post LinkedIn qui vaut la lecture.', 'No post yet: paste the link of a LinkedIn post worth reading.')}</div>`}</div>`;
+  const url = document.getElementById('news-post-url'), au = document.getElementById('news-post-author'), msg = document.getElementById('news-post-msg');
+  url.addEventListener('change', () => { if (!au.value) au.value = _newsAuthorOf(url.value.trim()); });
+  document.getElementById('news-post-go').addEventListener('click', async () => {
+    const u = url.value.trim().split('?')[0];
+    if (!/^https:\/\/([a-z]+\.)?linkedin\.com\//i.test(u)) { msg.textContent = _newsT('Collez un lien linkedin.com.', 'Paste a linkedin.com link.'); msg.className = 'news-add-msg ko'; return; }
+    const { error: e } = await cl.from('news_post').insert({ url: u, author: au.value.trim() || _newsAuthorOf(u) || null, note: document.getElementById('news-post-note').value.trim() || null });
+    if (e) { msg.textContent = (/duplicate|unique/i.test(e.message) ? _newsT('Ce post est déjà dans la liste.', 'This post is already listed.') : _newsT('Non ajouté : ', 'Not added: ') + e.message); msg.className = 'news-add-msg ko'; return; }
+    renderNewsPosts();
+  });
+  host.querySelectorAll('[data-pdel]').forEach(b => b.addEventListener('click', async () => { await cl.from('news_post').delete().eq('id', b.dataset.pdel); renderNewsPosts(); }));
+}
+
 function _newsKw() {
   if (_newsKwRemote) return _newsKwRemote.map(r => r.keyword.toLowerCase());
   try { return (localStorage.getItem('pk-news-kw') || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean); } catch (_) { return []; }
@@ -147,7 +243,7 @@ function renderNewsSources() {
   const host = document.getElementById('news-sources'); if (!host) return;
   const src = window._newsSources;
   const edit = 'https://github.com/TomSRemy/PowerKlock/edit/main/config/news_sources.json';
-  const rows = src ? src.map(s => `<tr><td>${_newsEsc(s.kind === 'search' ? 'search: ' + s.name : s.name)}${s.added ? ' <span class="news-q">added from the site</span>' : ''}</td><td>${s.kind === 'feed' ? 'RSS feed' : s.kind === 'page' ? 'web page' : 'press search (GDELT)'}</td><td class="${s.ok ? 'ok' : 'ko'}">${s.ok ? s.n + ' articles' : 'failed: ' + _newsEsc(s.error || '')}</td></tr>`).join('') : '';
+  const rows = src ? src.map(s => `<tr><td>${_newsEsc(s.kind === 'search' ? 'search: ' + s.name : s.name)}${s.added ? ' <span class="news-q">added from the site</span>' : ''}</td><td>${s.kind === 'feed' ? 'RSS feed' : s.kind === 'page' ? 'web page' : s.kind === 'official' ? 'official texts (open data)' : 'press search (Google News)'}</td><td class="${s.ok ? 'ok' : 'ko'}">${s.ok ? s.n + ' articles' : 'failed: ' + _newsEsc(s.error || '')}</td></tr>`).join('') : '';
   host.innerHTML = (src ? `<div style="overflow-x:auto"><table class="news-src-t"><thead><tr><th>Source</th><th>Read as</th><th>Last run</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<div class="news-src-help">The source list appears after the next news run.</div>') +
     `<div class="news-src-help"><b>Add a source for everyone</b>: use the form above (signed in). The sources of the team list stay in <a href="${edit}" target="_blank" rel="noopener">config/news_sources.json</a> on GitHub.<br>
     <b>Follow subjects for yourself</b>: type them in ★ My keywords above; matching articles are starred and listed under ★ My keywords (kept in this browser only).<br>
@@ -240,16 +336,15 @@ function renderNews(items) {
   }
   grid.innerHTML = filtered.map(item => {
     const link = /^https?:\/\//.test(item.link || '') ? item.link : '#';
-    const tagsHtml = (item.tags || []).map(t => `<span class="news-tag">${_newsIc(t)}${_newsEsc(t)}</span>`).join(' ');
+    const tagsHtml = (item.tags || []).filter(t => t !== 'official').map(t => `<span class="news-tag">${_newsIc(t)}${_newsEsc(t)}</span>`).join(' ');
     const mine = _newsMine(item, kw);
-    const also = (item.other_sources || []).length
-      ? `<div class="news-also">${_newsT('aussi rapporté par ', 'also reported by ')}${item.other_sources.map(o => _newsEsc(o.source)).join(', ')}</div>` : '';
+    const also = _newsCoverage(item);
     return `<a class="news-card${mine ? ' mine' : ''}" href="${_newsEsc(link)}" target="_blank" rel="noopener noreferrer">
       <div class="news-meta">
         <span class="news-source ${_newsEsc(item.cls)}">${_newsEsc(item.source)}</span>
         <span class="news-time" title="${_newsEsc(item.date.toLocaleString('en-GB', { timeZone: 'Europe/Paris' }))}">${formatTimeAgo(item.date)}</span>
       </div>
-      <div class="news-title">${mine ? '<span class="news-star">★</span>' : ''}${_newsEsc(item.title)}</div>
+      <div class="news-title">${mine ? '<span class="news-star">★</span>' : ''}${(item.tags || []).includes('official') ? `<span class="news-off">${_newsT('Texte officiel', 'Official text')}</span>` : ''}${_newsEsc(item.title)}</div>
       <div class="news-snippet">${_newsEsc(item.snippet)}</div>
       <div>${tagsHtml}${item.query ? ` <span class="news-q">search: ${_newsEsc(item.query)}</span>` : ''}${(item.countries || []).length ? ` <span class="news-q">${_newsEsc(item.countries.join(' · '))}</span>` : ''}</div>
       ${also}
@@ -287,7 +382,7 @@ async function _newsVote(link, vote, box) {
   // the article: from the News page's list, else from news.json (Today and the dashboards vote before the News page is opened)
   let item = (typeof newsData !== 'undefined' && newsData || []).find(i => i.link === link);
   if (!item) { const j = await (_newsAllP || (_newsAllP = fetch(DATA_BASE + 'news.json').then(r => r.ok ? r.json() : null).catch(() => null))); item = ((j && j.items) || []).find(i => i.link === link); }
-  if (!item) item = { title: link, source: '', tags: [] };
+  if (!item) { const p = _newsPosts.find(x => x.url === link); item = p ? { title: (p.author || 'LinkedIn') + (p.note ? ' · ' + p.note : ''), source: 'LinkedIn', tags: ['post'] } : { title: link, source: '', tags: [] }; }
   const cl = window.PKAccount && window.PKAccount.user && window.PKAccount.client && window.PKAccount.client();
   if (!cl) { box.insertAdjacentHTML('beforeend', `<span class="nv-msg">${_newsT('connectez-vous pour voter', 'sign in to vote')}</span>`); setTimeout(() => { const m = box.querySelector('.nv-msg'); if (m) m.remove(); }, 2500); return; }
   const prev = _newsVotes[link] || 0, v = prev === vote ? 0 : vote;

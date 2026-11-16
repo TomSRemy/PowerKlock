@@ -988,7 +988,6 @@
   .news-card.mine { border-color:rgba(251,191,36,.55); }
   .news-card .news-star { color:#FBBF24; margin-right:4px; }
   .news-q { font-size:10px; color:var(--text3); font-style:italic; }
-  .news-also { font-size:10px; color:var(--text3); margin-top:6px; }
   .news-src-t { width:100%; border-collapse:collapse; font-size:12px; }
   .news-src-t td, .news-src-t th { padding:6px 8px; border-bottom:1px solid var(--border); text-align:left; color:var(--text2); }
   .news-src-t th { font:600 10px 'Outfit',sans-serif; letter-spacing:.08em; text-transform:uppercase; color:var(--text3); }
@@ -4095,3 +4094,42 @@ html:not(.pk-public) #pk-gate { display: none; }
 .pk-game-foot .pk-btn-primary { text-decoration: none; }
 .pk-game-note { font-size: 11.5px; color: var(--text3); }
 @media (max-width: 900px) { .pk-games { grid-template-columns: minmax(0, 1fr); } }
+
+/* ── News: the essentials (data/news_digest.json) and who covers each story ── */
+.news-dg-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+.news-dg { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 9px; }
+.news-dg li { font-size: 14px; line-height: 1.5; color: var(--text); padding-left: 2px; }
+.news-dg li::marker { color: var(--accent); font: 600 12px 'JetBrains Mono', monospace; }
+.news-dg-src { font-size: 11.5px; color: var(--text3); text-decoration: none; white-space: nowrap; }
+.news-dg-src:hover { color: var(--accent); }
+.news-dg-posts { margin-top: 12px; display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
+.news-dg-posts b { font: 600 10px 'Outfit', sans-serif; letter-spacing: .08em; text-transform: uppercase; color: var(--text3); }
+.news-dg-posts a { color: var(--text2); text-decoration: none; }
+.news-dg-posts a:hover { color: var(--accent); }
+.news-dg-note { margin-top: 12px; font-size: 11px; color: var(--text3); }
+.news-off { display: inline-block; font: 600 9.5px 'Inter', sans-serif; letter-spacing: .04em; text-transform: uppercase; color: var(--warn); background: var(--warn-dim, rgba(238,155,0,.12)); border-radius: 3px; padding: 1px 5px; margin-right: 6px; vertical-align: 1px; }
+.news-cov { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; font-size: 11px; color: var(--text3); min-width: 0; }
+.news-cov b { color: var(--text2); font: 600 11px 'JetBrains Mono', monospace; white-space: nowrap; }
+.news-covbar { display: inline-flex; width: 64px; height: 5px; border-radius: 3px; overflow: hidden; background: var(--bg3); flex: none; }
+.news-covbar i { display: block; height: 100%; }
+.news-covbar .cv-off { background: var(--warn); }
+.news-covbar .cv-spe { background: var(--accent); }
+.news-covbar .cv-gen { background: #5CB2F5; }
+
+/* ── News: posts to read (LinkedIn links pasted by the team) ── */
+.news-post-add { display: flex; gap: 8px; flex-wrap: wrap; }
+.news-post-add #news-post-url { flex: 2 1 260px; min-width: 0; }
+.news-post-add #news-post-author { flex: 1 1 140px; min-width: 0; }
+.news-post-add #news-post-note { flex: 2 1 220px; min-width: 0; }
+.news-posts { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; margin-top: 10px; }
+.news-post { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.news-post a { text-decoration: none; color: var(--text); display: flex; flex-direction: column; gap: 2px; }
+.news-post a b { font-size: 13px; }
+.news-post a span { font-size: 12.5px; color: var(--text2); }
+.news-post a:hover b { color: var(--accent); }
+.news-post-f { display: flex; align-items: center; gap: 8px; margin-top: auto; }
+.news-post-f .news-vote { margin: 0; }
+.news-post-how { margin-top: 8px; font-size: 12.5px; color: var(--text2); }
+.news-post-how summary { cursor: pointer; color: var(--accent); font-size: 12px; }
+.news-post-how p { margin: 6px 0 0; line-height: 1.5; }
+.news-post-bm { text-decoration: none; cursor: grab; margin-left: 4px; }

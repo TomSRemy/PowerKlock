@@ -1,5 +1,5 @@
 {
-  "_help": "Sources of the News page (Intelligence › News), read by scripts/fetch_news.py every 3 hours. To add a source: add an entry to 'feeds' (any public RSS / Atom feed: name, url, tags among power, gas, carbon, regulation, markets, fr). To follow a subject across the press: add a phrase to 'searches' (GDELT, world press, a few days back). Pages without a feed can only be added with a dedicated reader (see 'pages').",
+  "_help": "Sources of the News page (Intelligence › News), read by scripts/fetch_news.py every 3 hours. To add a source: add an entry to 'feeds' (any public RSS / Atom feed: name, url, tags among power, gas, carbon, regulation, markets, fr). To follow a subject across the press: add a phrase to 'searches' (Google News, last 7 days, titles and links only). Pages without a feed can only be added with a dedicated reader (see 'pages').",
   "feeds": [
     {
       "name": "Carbon Pulse",
@@ -224,6 +224,99 @@
         "regulation"
       ],
       "require": "électri|electricit|photovolta|solaire|éolien|eolien|offshore|nucléaire|nucleaire|\\bedf\\b|engie|totalenergies|\\brte\\b|\\bcre\\b|enedis|hydrogène|batterie|stockage|renouvelable|tarif|fournisseur|pompe à chaleur|\\bppa\\b|énergie|energie|réseau électrique|gaz"
+    },
+    {
+      "name": "Bruegel",
+      "cls": "bruegel",
+      "url": "https://www.bruegel.org/rss?type=all",
+      "tags": [
+        "regulation",
+        "markets"
+      ],
+      "require": "energ|électri|electric|gas|power|carbon|climat|ets|grid|renewable"
+    },
+    {
+      "name": "Michael Liebreich",
+      "cls": "liebreich",
+      "url": "https://mliebreich.substack.com/feed",
+      "tags": [
+        "power"
+      ]
+    },
+    {
+      "name": "Energy Flux",
+      "cls": "energyflux",
+      "url": "https://www.energyflux.news/rss/",
+      "tags": [
+        "gas",
+        "markets"
+      ]
+    },
+    {
+      "name": "Modo Energy",
+      "cls": "modo",
+      "url": "https://modoenergy.com/research",
+      "tags": [
+        "power",
+        "markets"
+      ]
+    },
+    {
+      "name": "Oxford Institute for Energy Studies",
+      "cls": "oies",
+      "url": "https://www.oxfordenergy.org/feed/",
+      "tags": [
+        "gas",
+        "power",
+        "regulation"
+      ]
+    },
+    {
+      "name": "Ember",
+      "cls": "ember",
+      "url": "https://ember-energy.org/insights/",
+      "tags": [
+        "power",
+        "carbon"
+      ]
+    },
+    {
+      "name": "Agora Energiewende",
+      "cls": "agora",
+      "url": "https://www.agora-energiewende.org/news-events",
+      "tags": [
+        "power",
+        "regulation"
+      ]
+    },
+    {
+      "name": "Electricity Maps",
+      "cls": "elecmaps",
+      "url": "https://www.electricitymaps.com/blog",
+      "tags": [
+        "power",
+        "carbon"
+      ]
+    },
+    {
+      "name": "Timera Energy",
+      "cls": "timera",
+      "url": "https://timera-energy.com/feed/",
+      "tags": [
+        "gas",
+        "power",
+        "markets"
+      ]
+    },
+    {
+      "name": "Neon (Lion Hirth)",
+      "cls": "neon",
+      "url": "https://old.neon-energie.de/en/feed/",
+      "tags": [
+        "power",
+        "markets",
+        "regulation"
+      ]
     }
   ],
   "pages": [
@@ -246,6 +339,17 @@
         "fr",
         "regulation"
       ]
+    },
+    {
+      "name": "CRE — Délibérations",
+      "cls": "cre",
+      "reader": "cre",
+      "url": "https://www.cre.fr/documents/deliberations.html",
+      "tags": [
+        "fr",
+        "regulation",
+        "official"
+      ]
     }
   ],
   "searches": [
@@ -254,7 +358,8 @@
       "tags": [
         "markets",
         "fr"
-      ]
+      ],
+      "lang": "en"
     },
     {
       "q": "PPA électricité",
@@ -290,6 +395,56 @@
         "fr",
         "markets"
       ]
+    },
+    {
+      "q": "TURPE",
+      "tags": [
+        "fr",
+        "regulation"
+      ]
+    },
+    {
+      "q": "\"mécanisme de capacité\"",
+      "tags": [
+        "fr",
+        "regulation",
+        "markets"
+      ]
+    },
+    {
+      "q": "PPE3 électricité",
+      "tags": [
+        "fr",
+        "regulation"
+      ]
+    },
+    {
+      "q": "stockage batteries électricité France",
+      "tags": [
+        "fr",
+        "power"
+      ]
+    },
+    {
+      "q": "raccordement réseau électrique",
+      "tags": [
+        "fr",
+        "power"
+      ]
+    },
+    {
+      "q": "ARENH nucléaire prix",
+      "tags": [
+        "fr",
+        "markets"
+      ]
+    },
+    {
+      "q": "\"power purchase agreement\" Europe",
+      "tags": [
+        "markets"
+      ],
+      "lang": "en"
     }
   ]
 }
