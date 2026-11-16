@@ -4129,3 +4129,7 @@ html:not(.pk-public) #pk-gate { display: none; }
 .news-post a:hover b { color: var(--accent); }
 .news-post-f { display: flex; align-items: center; gap: 8px; margin-top: auto; }
 .news-post-f .news-vote { margin: 0; }
+.news-post-how { margin-top: 8px; font-size: 12.5px; color: var(--text2); }
+.news-post-how summary { cursor: pointer; color: var(--accent); font-size: 12px; }
+.news-post-how p { margin: 6px 0 0; line-height: 1.5; }
+.news-post-bm { text-decoration: none; cursor: grab; margin-left: 4px; }

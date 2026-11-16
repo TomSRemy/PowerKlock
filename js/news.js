@@ -193,6 +193,11 @@ async function renderNewsPosts() {
       <input type="text" id="news-post-note" class="fuel-select" maxlength="200" placeholder="${_newsT('Pourquoi le lire, en une ligne', 'Why read it, in one line')}">
       <button type="button" class="pk-btn-primary" id="news-post-go">${_newsT('＋ Ajouter', '＋ Add')}</button></div>
     <div class="news-add-msg" id="news-post-msg"></div>
+    <details class="news-post-how"><summary>${_newsT('Envoyer un post directement depuis LinkedIn', 'Send a post straight from LinkedIn')}</summary>
+      <p><b>Android</b> · ${_newsT('dans Chrome, menu ⋮ › « Installer l’application » sur powerklock.com. Ensuite, sur un post LinkedIn : Partager › Envoyer via… › PowerKlock.', 'in Chrome, menu ⋮ › “Install app” on powerklock.com. Then on a LinkedIn post: Share › Send via… › PowerKlock.')}</p>
+      <p><b>iPhone</b> · ${_newsT('un raccourci « Envoyer à PowerKlock » dans l’app Raccourcis (Partager › Envoyer à PowerKlock) : il ouvre powerklock.com/?share= suivi du lien du post.', 'a “Send to PowerKlock” shortcut in the Shortcuts app (Share › Send to PowerKlock): it opens powerklock.com/?share= followed by the post link.')}</p>
+      <p><b>${_newsT('Ordinateur', 'Computer')}</b> · ${_newsT('glissez ce bouton dans la barre de favoris, puis cliquez dessus sur un post LinkedIn ouvert :', 'drag this button to the bookmarks bar, then click it on an open LinkedIn post:')} <a class="pk-btn-ghost news-post-bm" href="javascript:location.href='https://powerklock.com/?share='+encodeURIComponent(location.href)">→ PowerKlock</a></p>
+    </details>
     <div class="news-posts">${_newsPosts.length ? _newsPosts.map(p => `<div class="news-post">
       <a href="${_newsEsc(p.url)}" target="_blank" rel="noopener noreferrer"><b>${_newsEsc(p.author || 'LinkedIn')}</b>${p.note ? `<span>${_newsEsc(p.note)}</span>` : ''}</a>
       <div class="news-post-f"><span class="news-time">${ago(p.created_at)}</span><div class="news-vote" data-link="${_newsEsc(p.url)}">${_newsVoteBtns(p.url)}</div>${p.added_by === A.user.id ? `<button type="button" class="pk-btn-ghost" data-pdel="${p.id}">✕</button>` : ''}</div></div>`).join('')
