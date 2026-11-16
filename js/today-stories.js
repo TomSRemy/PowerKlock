@@ -401,7 +401,6 @@
   .pk-st-c:hover .pk-st-in{color:#F4B740}.pk-st-c:focus-visible{outline:none}.pk-st-c:focus-visible .pk-st-ring{box-shadow:0 0 0 2px #7FC8F8}
   .pk-st-l{display:block;max-width:76px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   html.pk-stv-open,html.pk-stv-open body{overflow:hidden}
-  html.pk-stv-open .es-hotspot,html.pk-stv-open .es-gamespot,html.pk-stv-open .es-volleyspot{display:none!important}
   .pk-stv{position:fixed;inset:0;z-index:10050;background:rgba(3,6,10,.86);display:flex;align-items:center;justify-content:center;gap:18px}
   .pk-stv[hidden]{display:none}
   .pk-stv-stage{position:relative;height:min(92vh,860px);aspect-ratio:9/16;max-width:100vw;background:linear-gradient(180deg,#121b26,#0b1016 70%);border:1px solid #243140;border-radius:16px;overflow:hidden;padding:12px 16px 16px;box-sizing:border-box;display:flex;flex-direction:column;color:#E6EDF3;touch-action:none;user-select:none;-webkit-user-select:none;transform-origin:center;backface-visibility:hidden}
