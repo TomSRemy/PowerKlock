@@ -19,7 +19,7 @@ from zoneinfo import ZoneInfo
 import requests
 
 PARIS = ZoneInfo('Europe/Paris')
-BASES = [sys.argv[1]] if len(sys.argv) > 1 else ['https://powerklock.powerklock-tool.workers.dev/', 'https://tomsremy.github.io/PowerKlock/']
+BASES = [sys.argv[1]] if len(sys.argv) > 1 else ['https://powerklock.com/', 'https://tomsremy.github.io/PowerKlock/']
 STATE = os.environ.get('MONITOR_STATE', 'monitor_state.json')
 now = datetime.now(timezone.utc)
 paris = now.astimezone(PARIS)

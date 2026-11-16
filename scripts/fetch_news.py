@@ -27,8 +27,14 @@ MAX_ITEMS = 220
 UA = {"User-Agent": "Mozilla/5.0 (PowerKlock news fetcher; +https://github.com/TomSRemy/PowerKlock)"}
 
 CONFIG = Path("config/news_sources.json")
-GDELT = "https://api.gdeltproject.org/api/v2/doc/doc"
+GNEWS = "https://news.google.com/rss/search"
 PER_SEARCH = 8
+DILA_JORF = "https://echanges.dila.gouv.fr/OPENDATA/JORF/"
+EU_SPARQL = "https://publications.europa.eu/webapi/rdf/sparql"
+# energy texts in the Journal officiel (title or ministry) and in EUR-Lex (English title)
+JO_KEEP = re.compile(r"électricit|énergie|énergétique|\bCRE\b|commission de régulation|gaz naturel|biométhane|nucléaire|renouvelable|photovolta|éolien|hydroélectri|stockage d'énergie|réseau public de (transport|distribution)|tarif d'achat|complément de rémunération|capacité|hydrogène|carburant|chaleur renouvelable", re.I)
+JO_SKIP = re.compile(r"index nationaux du bâtiment|indice des prix|nomination|délégation de signature|avis de vacance|liste des emplois|tableau d'avancement|admission à la retraite|concours", re.I)
+EU_KEEP = r"electricit|energy|natural gas|gas (market|storage|supply)|renewable|hydrogen (?!peroxide)|nuclear|ACER|emission allowance|emissions trading|allowances surrendered|greenhouse gas|fuels"
 
 
 def load_config():
@@ -131,7 +137,9 @@ def impact(rec, prefs):
     tags = rec["tags"]
     ws = sorted((CAT_W[t] for t in tags if t in CAT_W), reverse=True)
     s = (ws[0] + 0.5 * sum(ws[1:])) if ws else 0.0          # the strongest category, the others at half weight
-    if not any(t in tags for t in ("power", "gas", "carbon", "markets", "geopolitics")):
+    if "official" in tags:
+        s += 1.0                                   # an energy text in the Journal officiel, EUR-Lex or from the CRE: on topic by construction
+    elif not any(t in tags for t in ("power", "gas", "carbon", "markets", "geopolitics")):
         s -= 1.5                                   # off-topic for an energy market reader
     cs = rec.get("countries", [])
     s += 1.5 if "FR" in cs else 1.0 if any(c in cs for c in ("EU", "DE", "BE", "ES", "NL", "IT", "UK")) else (0 if "geopolitics" in tags else -1.0)   # the European market first
@@ -252,27 +260,84 @@ def read_cre_consultations(content):
 READERS = {"cre": read_cre, "cre_consultations": read_cre_consultations}
 
 
-def gdelt(q):
-    """World press search (GDELT DOC API, last 7 days)."""
-    for wait in (0, 15, 35):          # GDELT throttles hard; back off more than its stated 5 s per address
-        time.sleep(wait)
-        r = requests.get(GDELT, params={"query": q, "mode": "artlist", "format": "json", "maxrecords": 25, "timespan": "7d", "sort": "datedesc"},
-                         headers=UA, timeout=30)
-        if r.status_code != 429:
-            break
+def gnews(q, lang="fr"):
+    """Press search over the last 7 days (Google News RSS: titles and links only, no article text is kept)."""
+    loc = {"fr": dict(hl="fr", gl="FR", ceid="FR:fr"), "en": dict(hl="en-GB", gl="GB", ceid="GB:en")}[lang]
+    r = requests.get(GNEWS, params=dict(q=q + " when:7d", **loc), headers=UA, timeout=25)
     r.raise_for_status()
-    if not r.text.strip().startswith("{"):
-        raise ValueError(r.text.strip()[:80])
     items = []
-    for a in r.json().get("articles", []):
-        d = a.get("seendate", "")
-        try:
-            dt = datetime.strptime(d, "%Y%m%dT%H%M%SZ").replace(tzinfo=timezone.utc)
-        except ValueError:
-            continue
-        items.append({"title": clean(a.get("title"), 220), "link": a.get("url", ""), "date": dt, "snippet": "",
-                      "domain": a.get("domain") or urlparse(a.get("url", "")).netloc})
+    for el in ET.fromstring(r.content).iter("item"):
+        src = el.find("source")
+        name = (src.text or "").strip() if src is not None else ""
+        if name.startswith("http"):   # some outlets have no name in the feed: their site instead
+            name = urlparse(name).netloc.removeprefix("www.")
+        title = clean(el.findtext("title"), 300)
+        if name and title.endswith(" - " + name):      # Google appends " - Outlet" to every title
+            title = title[: -len(name) - 3]
+        items.append({"title": clean(title, 220), "link": (el.findtext("link") or "").strip(), "date": parse_date(el.findtext("pubDate")),
+                      "snippet": "", "domain": name or "Google News"})
     return items
+
+
+def jorf(days=7):
+    """Energy texts of the Journal officiel (DILA open data, Licence Ouverte): the daily archives of the last days."""
+    import io
+    import tarfile
+    listing = requests.get(DILA_JORF, headers=UA, timeout=30).text
+    since = (datetime.now(timezone.utc).date().toordinal() - days)
+    names = [n for n in sorted(set(re.findall(r'href="(JORF_(\d{8})-\d+\.tar\.gz)"', listing)))
+             if datetime.strptime(n[1], "%Y%m%d").date().toordinal() >= since]
+    items, seen = [], set()
+    for name, _ in names:
+        r = requests.get(DILA_JORF + name, headers=UA, timeout=60)
+        r.raise_for_status()
+        with tarfile.open(fileobj=io.BytesIO(r.content), mode="r:gz") as tar:
+            for m in tar.getmembers():
+                if not (m.isfile() and "/texte/version/" in m.name and m.name.endswith(".xml")):
+                    continue
+                root = ET.fromstring(tar.extractfile(m).read())
+                tid = root.findtext(".//ID") or ""
+                title = clean(text_of(root.find(".//TITREFULL")), 400)
+                ministry = clean(root.findtext(".//MINISTERE"))
+                published = parse_date(root.findtext(".//DATE_PUBLI"))
+                if (not tid.startswith("JORFTEXT") or tid in seen or not published or published.date().toordinal() < since
+                        or JO_SKIP.search(title) or not JO_KEEP.search(title)):   # the title: the ministry of the economy also signs everything else
+                    continue
+                seen.add(tid)
+                nature = (root.findtext(".//NATURE") or "").capitalize()
+                items.append({"title": clean(title, 220), "link": "https://www.legifrance.gouv.fr/jorf/id/" + tid,
+                              "date": published,
+                              "snippet": " · ".join(x for x in (nature, ministry, clean(root.findtext(".//ORIGINE_PUBLI"))) if x)})
+    return items
+
+
+def eurlex(days=30):
+    """EU acts on energy published in the last days (EUR-Lex / Cellar SPARQL, free reuse): French title when there is one."""
+    since = datetime.fromordinal(datetime.now(timezone.utc).date().toordinal() - days).strftime("%Y-%m-%d")
+    q = f"""PREFIX cdm: <http://publications.europa.eu/ontology/cdm#>
+SELECT DISTINCT ?celex ?date ?en ?fr WHERE {{
+  ?work cdm:resource_legal_id_celex ?celex ; cdm:work_date_document ?date .
+  ?e cdm:expression_belongs_to_work ?work ; cdm:expression_title ?en ;
+     cdm:expression_uses_language <http://publications.europa.eu/resource/authority/language/ENG> .
+  OPTIONAL {{ ?f cdm:expression_belongs_to_work ?work ; cdm:expression_title ?fr ;
+     cdm:expression_uses_language <http://publications.europa.eu/resource/authority/language/FRA> . }}
+  FILTER(?date >= "{since}"^^xsd:date) FILTER(REGEX(?celex, "^3")) FILTER(REGEX(?en, "{EU_KEEP}", "i")) FILTER(!REGEX(?en, "biocid|plant protection|food|feed additive|harmonised standards|statement of revenue|Joint Committee|corrigendum|correcting certain language|excise duty|safeguard measure|2024/573|fluorinated", "i"))
+}} ORDER BY DESC(?date) LIMIT 40"""
+    r = requests.get(EU_SPARQL, params={"query": q}, headers=dict(UA, Accept="application/sparql-results+json"), timeout=60)
+    r.raise_for_status()
+    items, seen = [], set()
+    for b in r.json()["results"]["bindings"]:
+        celex = b["celex"]["value"]
+        if celex in seen:
+            continue
+        seen.add(celex)
+        title = (b.get("fr") or b["en"])["value"]
+        items.append({"title": clean(title, 220), "link": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:" + celex,
+                      "date": parse_date(b["date"]["value"] + "T12:00:00+00:00"), "snippet": "CELEX " + celex})
+    return items
+
+
+OFFICIAL = {"jorf": ("Journal officiel", jorf, ["fr", "regulation", "official"]), "eurlex": ("EUR-Lex", eurlex, ["regulation", "official"])}
 
 
 def add_items(out, items, src, now, limit, extra=None):
@@ -304,32 +369,33 @@ def add_items(out, items, src, now, limit, extra=None):
     return kept
 
 
-def cluster_stories(out):
-    """Group records that cover the same story across sources (similar title, published within 48 h):
-    keep the most relevant one, list the rest under other_sources so one card can show "+N sources"
-    instead of near-duplicate cards for the same wire story."""
-    sig = [set(words(r["title"])) for r in out]
+def cluster_stories(out, threshold=0.42):
+    """Group records that cover the same story across outlets (published within 72 h of each other): titles compared by
+    character 4–5-grams (TF-IDF cosine), which also pairs a French and an English title about the same event. The most
+    relevant record stays, the others go under other_sources, so one card shows "+N sources" instead of near-duplicates."""
+    import unicodedata
+    from sklearn.feature_extraction.text import TfidfVectorizer
+    from sklearn.metrics.pairwise import cosine_similarity
+    if len(out) < 2:
+        return out
+    norm = [unicodedata.normalize("NFKD", r["title"].lower()).encode("ascii", "ignore").decode() for r in out]
+    sim = cosine_similarity(TfidfVectorizer(analyzer="char_wb", ngram_range=(4, 5), sublinear_tf=True).fit_transform(norm))
     dates = [datetime.fromisoformat(r["date"]) for r in out]
-    used = [False] * len(out)
-    groups = []
-    for i in range(len(out)):
-        if used[i]:
-            continue
-        g = [i]
-        used[i] = True
-        if sig[i]:
-            for j in range(i + 1, len(out)):
-                if used[j] or not sig[j] or out[j]["source"] == out[i]["source"]:
-                    continue
-                if abs((dates[j] - dates[i]).total_seconds()) > 48 * 3600:
-                    continue
-                inter = sig[i] & sig[j]
-                if len(inter) < 3:
-                    continue
-                if len(inter) / len(sig[i] | sig[j]) >= 0.45:
-                    g.append(j)
-                    used[j] = True
-        groups.append(g)
+    parent = list(range(len(out)))
+
+    def root(a):
+        while parent[a] != a:
+            parent[a] = parent[parent[a]]
+            a = parent[a]
+        return a
+    for a in range(len(out)):
+        for b in range(a + 1, len(out)):
+            if sim[a, b] >= threshold and out[a]["source"] != out[b]["source"] and abs((dates[a] - dates[b]).total_seconds()) <= 72 * 3600:
+                parent[root(b)] = root(a)
+    groups = {}
+    for k in range(len(out)):
+        groups.setdefault(root(k), []).append(k)
+    groups = list(groups.values())
     merged = []
     for g in groups:
         if len(g) == 1:
@@ -360,19 +426,22 @@ def main():
             status.append({"name": src["name"], "kind": "page" if src.get("reader") else "feed", "url": src["url"], "ok": True, "n": n, "added": bool(src.get("added"))})
         except Exception as e:
             status.append({"name": src["name"], "kind": "page" if src.get("reader") else "feed", "url": src["url"], "ok": False, "error": str(e)[:120], "added": bool(src.get("added"))})
-    called = False
     for s in cfg.get("searches", []):
         if re.match(r"^https?://", s["q"]):   # a press search follows a phrase, not a web address (add those as an RSS feed instead)
             status.append({"name": s["q"], "kind": "search", "ok": False, "error": "not a search phrase (looks like a web address)", "added": bool(s.get("added"))})
             continue
-        if called:
-            time.sleep(11)               # GDELT throttles hard; space calls out to avoid 429s
-        called = True
+        time.sleep(1.5)
         try:
-            n = add_items(out, gdelt(s["q"]), {"name": "Search", "cls": "search", "tags": s.get("tags", []) + ["watch"]}, now, PER_SEARCH, {"query": s["q"]})
+            n = add_items(out, gnews(s["q"], s.get("lang", "fr")), {"name": "Search", "cls": "search", "tags": s.get("tags", []) + ["watch"]}, now, PER_SEARCH, {"query": s["q"]})
             status.append({"name": s["q"], "kind": "search", "ok": True, "n": n, "added": bool(s.get("added"))})
         except Exception as e:
             status.append({"name": s["q"], "kind": "search", "ok": False, "error": str(e)[:120], "added": bool(s.get("added"))})
+    for key, (name, fn, tags) in OFFICIAL.items():
+        try:
+            n = add_items(out, fn(), {"name": name, "cls": "official", "tags": tags}, now, 30, {"official": True})
+            status.append({"name": name, "kind": "official", "ok": True, "n": n})
+        except Exception as e:
+            status.append({"name": name, "kind": "official", "ok": False, "error": str(e)[:120]})
     for st in status:
         print(f"  {st['kind']:6s} {st['name'][:40]:40s} " + (f"{st['n']} items" if st["ok"] else "ERROR " + st["error"]))
     if not out:
