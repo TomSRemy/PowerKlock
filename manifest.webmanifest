@@ -1,0 +1,19 @@
+{
+  "name": "PowerKlock",
+  "short_name": "PowerKlock",
+  "description": "Marchés de l'électricité en France et en Europe",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0a0e13",
+  "theme_color": "#0a0e13",
+  "icons": [
+    { "src": "assets/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ],
+  "share_target": {
+    "action": "/",
+    "method": "GET",
+    "params": { "title": "share_title", "text": "share_text", "url": "share_url" }
+  }
+}
