@@ -286,7 +286,7 @@ function renderNewsSources() {
 
 // Add a source from the site: public.news_source (warehouse migration 012), read by
 // scripts/fetch_news.py at the next hourly run. Signed-in users only (RLS).
-const _NEWS_TAGS = ['power', 'gas', 'carbon', 'regulation', 'markets', 'fr'];
+const _NEWS_TAGS = ['power', 'gas', 'carbon', 'regulation', 'markets', 'fr', 'assoc'];
 async function renderNewsAdd() {
   const host = document.getElementById('news-add'); if (!host) return;
   const A = window.PKAccount;
@@ -314,7 +314,7 @@ async function renderNewsAdd() {
       <input type="text" id="news-add-val" class="fuel-select" maxlength="300" placeholder="Feed address, https://…/feed">
       <button type="button" class="pk-btn-primary" id="news-add-go">＋ Add</button><span></span>
     </div>
-    <div class="news-add-tags">Topics: ${_NEWS_TAGS.map(t => `<label><input type="checkbox" value="${t}"> ${t === 'fr' ? 'France' : t}</label>`).join('')}</div>
+    <div class="news-add-tags">Topics: ${_NEWS_TAGS.map(t => `<label><input type="checkbox" value="${t}"> ${t === 'fr' ? 'France' : t === 'assoc' ? 'associations' : t}</label>`).join('')}</div>
     <div class="news-add-msg" id="news-add-msg">Read at the next hourly news run. A feed is any public RSS / Atom address; a press search follows a phrase across the world press (put an exact phrase in quotes).</div>
     ${rows.length ? `<div style="overflow-x:auto"><table class="news-src-t"><thead><tr><th>Added from the site</th><th>Read as</th><th>Last run</th><th></th></tr></thead><tbody>${rows.map(r => `<tr><td>${_newsEsc(r.name)}<div class="news-q">${_newsEsc(r.kind === 'feed' ? r.url : r.query)}</div></td><td>${r.kind === 'feed' ? 'RSS feed' : 'press search'}</td><td>${status(r)}</td><td>${r.user_id === A.user.id ? `<button type="button" class="pk-btn-ghost" data-del="${r.id}">✕ Remove</button>` : ''}</td></tr>`).join('')}</tbody></table></div>` : ''}
   </div>`;
