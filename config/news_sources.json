@@ -481,6 +481,16 @@
         "markets",
         "assoc"
       ]
+    },
+    {
+      "name": "Watts Else",
+      "cls": "wattselse",
+      "url": "https://wattselse.com/veille/feed.xml",
+      "tags": [
+        "fr",
+        "power",
+        "regulation"
+      ]
     }
   ],
   "pages": [
