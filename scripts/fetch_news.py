@@ -341,6 +341,24 @@ CONSULT = Path("data/consultations.json")
 MIN_ENERGY = "https://www.consultations-publiques.developpement-durable.gouv.fr/"
 
 
+# theme of a consultation from its title, the first that matches (energy savings first: their titles also say « tarif »)
+CONS_THEMES = [
+    ("cee", r"certificats? d.économies d.énergie|\bCEE\b|fiches? d.opérations? standardisées?|bonification|audit énergétique|précarité énergétique|programme PRO-"),
+    ("tariffs", r"TURPE|ATR[DT]|\btarifs?\b|TRVE|péréquation|\bFPE\b|CRCP|dotation|prestations annexes"),
+    ("grid", r"raccordement|réseau public|\bRP[DT]\b|accès au réseau|SDDR|interconnexion|gestionnaires? de réseau|contrat d.accès|schéma décennal"),
+    ("market", r"capacité|équilibre|réserves?|marché|enchères?|ARENH|nucléaire|hydroélectri|flexibilit|effacement|stockage"),
+    ("renewables", r"appel d.offres|\bAO\b|\bPPE\d?\b|photovolta|éolien|biométhane|biogaz|hydrogène|complément de rémunération|garanties d.origine|renouvelable"),
+    ("gas", r"\bgaz\b|GRTgaz|Teréga|NaTran|GRDF|méthane"),
+]
+
+
+def cons_theme(title):
+    for key, rx in CONS_THEMES:
+        if re.search(rx, title, re.I):
+            return key
+    return "other"
+
+
 def consultations(now):
     """Public consultations with their deadline: the CRE (listing, then the deadline written on each open consultation's
     page) and the ministry's « Énergies et climat » consultations (period on the listing, two pages). Both sites have no
@@ -374,6 +392,7 @@ def consultations(now):
             continue
         seen.add(c["link"])
         c["open"] = c["deadline"] is None or c["deadline"] >= today
+        c["theme"] = cons_theme(c["title"])
         keep.append(c)
     keep.sort(key=lambda c: (not c["open"], c["deadline"] or "9999"))
     return keep, errors

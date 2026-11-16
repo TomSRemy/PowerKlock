@@ -4147,3 +4147,6 @@ html:not(.pk-public) #pk-gate { display: none; }
 .cons-closed { margin-top: 10px; font-size: 12.5px; color: var(--text2); }
 .cons-closed summary { cursor: pointer; color: var(--text3); }
 .cons-closed .cons-row { opacity: .75; }
+.cons-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+.cons-chips small { font: 500 10px 'JetBrains Mono', monospace; opacity: .7; margin-left: 2px; }
+.cons-th { color: var(--accent); }

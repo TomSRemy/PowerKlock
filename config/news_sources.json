@@ -435,6 +435,22 @@
         "markets"
       ],
       "lang": "en"
+    },
+    {
+      "q": "RTE \"consultation publique\"",
+      "tags": [
+        "fr",
+        "regulation",
+        "power"
+      ]
+    },
+    {
+      "q": "RTE concertation électricité",
+      "tags": [
+        "fr",
+        "regulation",
+        "power"
+      ]
     }
   ]
 }
