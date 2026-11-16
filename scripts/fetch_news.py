@@ -345,7 +345,7 @@ MIN_ENERGY = "https://www.consultations-publiques.developpement-durable.gouv.fr/
 CONS_THEMES = [
     ("cee", r"certificats? d.économies d.énergie|\bCEE\b|fiches? d.opérations? standardisées?|bonification|audit énergétique|précarité énergétique|programme PRO-"),
     ("tariffs", r"TURPE|ATR[DT]|\btarifs?\b|TRVE|péréquation|\bFPE\b|CRCP|dotation|prestations annexes"),
-    ("grid", r"raccordement|réseau public|\bRP[DT]\b|accès au réseau|SDDR|interconnexion|gestionnaires? de réseau|contrat d.accès|schéma décennal"),
+    ("grid", r"raccordement|ligne électrique|poste électrique|liaison|réseau public|\bRP[DT]\b|accès au réseau|SDDR|interconnexion|gestionnaires? de réseau|contrat d.accès|schéma décennal"),
     ("market", r"capacité|équilibre|réserves?|marché|enchères?|ARENH|nucléaire|hydroélectri|flexibilit|effacement|stockage"),
     ("renewables", r"appel d.offres|\bAO\b|\bPPE\d?\b|photovolta|éolien|biométhane|biogaz|hydrogène|complément de rémunération|garanties d.origine|renouvelable"),
     ("gas", r"\bgaz\b|GRTgaz|Teréga|NaTran|GRDF|méthane"),
@@ -357,6 +357,37 @@ def cons_theme(title):
         if re.search(rx, title, re.I):
             return key
     return "other"
+
+
+FR_MONTHS = {"janvier": 1, "février": 2, "fevrier": 2, "mars": 3, "avril": 4, "mai": 5, "juin": 6, "juillet": 7, "août": 8, "aout": 8,
+             "septembre": 9, "octobre": 10, "novembre": 11, "décembre": 12, "decembre": 12}
+FR_DATE = r"(\d{1,2})(?:er)?\s+(" + "|".join(FR_MONTHS) + r")(?:\s+(\d{4}))?"
+
+
+def rte_consultations(now, days=75):
+    """RTE's public consultations and concertations (grid projects, offshore connections, regional schemes): the site's
+    sitemap gives each page and its last change; the page gives the end date, from its title (« du 17 août au 28
+    septembre ») or else the first « jusqu'au … » of its text. Results and reviews of past concertations are left out."""
+    sm = requests.get("https://www.rte-france.com/sitemap.xml", headers=BROWSER_UA, timeout=30).text
+    since = datetime.fromordinal(now.date().toordinal() - days).strftime("%Y-%m-%d")
+    out = []
+    for loc, lastmod in re.findall(r"<loc>([^<]+)</loc><lastmod>([^<]+)</lastmod>", sm):
+        slug = loc.rsplit("/", 1)[-1]
+        if lastmod[:10] < since or not re.search(r"concertation|consultation|enquete-publique|participez|contribution", slug) \
+                or re.search(r"bilan|avis|resultat|instance|reunion|carrieres|garant|/formulaire-concertation/", loc):   # forms repeat the news page
+            continue
+        page = html.unescape(requests.get(loc, headers=BROWSER_UA, timeout=30).text)
+        title = re.sub(r"\s*\|\s*RTE\s*$", "", clean((re.findall(r"<title>(.*?)</title>", page, re.S) or [""])[0]))
+        text = clean(re.sub(r"<script.*?</script>|<style.*?</style>", " ", page, flags=re.S))
+
+        def iso(m, year=None):
+            return f"{m.group(3) or year or now.year}-{FR_MONTHS[m.group(2).lower()]:02d}-{int(m.group(1)):02d}"
+        m = (re.search(r"\bau\s+" + FR_DATE, title, re.I) or re.search(r"\bdu\s+" + FR_DATE + r"\s+au\s+" + FR_DATE, text, re.I)
+             or re.search(r"(?:jusqu.au|avant le|prendra fin le|se termine le)\s+(?:\w+\s+)?" + FR_DATE, text, re.I))
+        if m and m.re.pattern.startswith("\\bdu"):     # « du 1er octobre au 22 novembre 2026 »: the end date is the second
+            m = re.search(FR_DATE + r"\s*$", m.group(0), re.I)
+        out.append({"source": "RTE", "title": clean(title, 260), "link": loc, "opened": lastmod[:10], "deadline": iso(m) if m else None})
+    return out
 
 
 def consultations(now):
@@ -385,13 +416,17 @@ def consultations(now):
                             "opened": iso(a), "deadline": iso(b)})
     except Exception as e:
         errors.append("ministry: " + str(e)[:100])
+    try:
+        out += rte_consultations(now)
+    except Exception as e:
+        errors.append("RTE: " + str(e)[:100])
     today = now.astimezone(timezone.utc).date().isoformat()
     seen, keep = set(), []
     for c in out:
         if c["link"] in seen:
             continue
         seen.add(c["link"])
-        c["open"] = c["deadline"] is None or c["deadline"] >= today
+        c["open"] = c["deadline"] >= today if c["deadline"] else c["opened"] >= datetime.fromordinal(now.date().toordinal() - 45).strftime("%Y-%m-%d")
         c["theme"] = cons_theme(c["title"])
         keep.append(c)
     keep.sort(key=lambda c: (not c["open"], c["deadline"] or "9999"))
