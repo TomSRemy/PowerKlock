@@ -122,7 +122,7 @@ function renderNewsOfficial() {
 // ── Newsletter (data/newsletter.json, scripts/news_letter.py): one edition per reading profile (config/news_profiles.json),
 // the profile chosen here is kept in this browser; the morning e-mail sends the same edition ──
 let _nlData;
-const _NL_SEC = { markets: ['Marchés en 30 secondes', 'Markets in 30 seconds'], stories: ['Les sujets du jour', 'Today’s stories'], official: ['Textes officiels', 'Official texts'],
+const _NL_SEC = { markets: ['Marchés en 30 secondes', 'Markets in 30 seconds'], digest: ['L’essentiel', 'The essentials'], top: ['Les articles principaux', 'Main articles'], stories: ['Les sujets du jour', 'Today’s stories'], official: ['Textes officiels', 'Official texts'],
   cons: ['Consultations : à vos réponses', 'Consultations: time to reply'], pubs: ['Publications et rapports', 'Publications and reports'], agenda: ['Agenda', 'Agenda'], post: ['À lire : le post de la semaine', 'Worth reading: post of the week'] };
 async function renderNewsLetter() {
   const host = document.getElementById('news-letter'); if (!host) return;
@@ -140,9 +140,11 @@ async function renderNewsLetter() {
   const a = (u, t) => `<a href="${_newsEsc(u)}" target="_blank" rel="noopener noreferrer">${_newsEsc(t)}</a>`;
   const ddm = d => new Date(String(d).slice(0, 10) + 'T12:00:00Z').toLocaleDateString(en ? 'en-GB' : 'fr-FR', { day: 'numeric', month: 'short', timeZone: 'UTC' });
   const sec = {
-    markets: () => (E.markets || []).length ? `<table class="nl-mk"><tbody>${E.markets.map(r => { const up = (r.chg || 0) > 0, dn = (r.chg || 0) < 0;
-      return `<tr><td>${_newsEsc(L(r.label))}</td><td class="nl-num">${num(r.value)} ${_newsEsc(r.unit)}</td><td class="nl-num ${up ? 'up' : dn ? 'dn' : ''}">${r.pct == null ? '' : (up ? '▲ +' : dn ? '▼ −' : '') + num(Math.abs(r.pct), 1) + ' %'}</td></tr>`; }).join('')}</tbody></table>
+    markets: () => (E.markets || []).length ? `<div class="nl-tiles">${E.markets.map(r => { const up = (r.chg || 0) > 0, dn = (r.chg || 0) < 0;
+      return `<a class="nl-tile" href="#${_newsEsc(r.page || 'today')}"><span>${_newsEsc(L(r.label))}</span><b>${num(r.value)}</b><small>${_newsEsc(r.unit)} <i class="${up ? 'up' : dn ? 'dn' : ''}">${r.pct == null ? '' : (up ? '▲ +' : dn ? '▼ −' : '') + num(Math.abs(r.pct), 1) + ' %'}</i></small></a>`; }).join('')}</div>
       <div class="nl-src">${_newsT('Sources', 'Sources')} : ${[...new Set(E.markets.map(r => r.src).filter(Boolean))].join(', ')}. ${_newsT('Variation sur la séance précédente.', 'Change on the previous session.')}</div>` : '',
+    digest: () => E.digest && (E.digest.items || []).length ? `<ol class="nl-dg">${E.digest.items.map(x => `<li>${_newsEsc((en && x.text_en) || x.text || x.title)} <a href="${_newsEsc(x.link)}" target="_blank" rel="noopener noreferrer">${_newsEsc((x.sources || []).slice(0, 2).join(' · '))} ↗</a></li>`).join('')}</ol>` : '',
+    top: () => (E.top || []).length ? `<ul class="nl-ul">${E.top.map(o => `<li>${a(o.link, o.title)} <span class="nl-src">· ${_newsEsc(o.source)}${o.n > 1 ? ' +' + (o.n - 1) : ''}</span></li>`).join('')}</ul>` : '',
     stories: () => ed.stories.length ? ed.stories.map((s, k) => `<article class="nl-story"><h3>${k + 1}. ${a(s.link, s.title)}</h3>
       ${(en ? s.what_en : s.what) || s.what ? `<p><b>${_newsT('Ce qui s’est passé.', 'What happened.')}</b> ${_newsEsc((en && s.what_en) || s.what)}</p>` : ''}
       ${s.for_you ? `<p class="nl-for"><b>${_newsT('Pour vous', 'For you')}, ${_newsEsc(L(prof.short).toLowerCase())}.</b> ${_newsEsc((en && s.for_you_en) || s.for_you)}</p>` : ''}
@@ -154,7 +156,8 @@ async function renderNewsLetter() {
     agenda: () => (E.agenda || []).length ? `<ul class="nl-ul">${E.agenda.map(e => `<li><b>${ddm(e.date)}</b> · ${_newsEsc(L(e.title))}</li>`).join('')}</ul>` : '',
     post: () => E.post ? `<p>${a(E.post.url, (E.post.author || 'LinkedIn') + (E.post.note ? ' · ' + E.post.note : ''))}</p>` : '',
   };
-  const body = (prof.order || Object.keys(sec)).map(k => { const h = sec[k] ? sec[k]() : ''; return h ? `<section class="nl-sec"><h2>${_newsT(..._NL_SEC[k])}</h2>${h}</section>` : ''; }).join('');
+  const title = k => k === 'digest' && E.digest && E.digest.weekly ? _newsT('La semaine en 5 sujets', 'The week in 5 stories') : _newsT(..._NL_SEC[k]);
+  const body = (prof.order || Object.keys(sec)).map(k => { const h = sec[k] ? sec[k]() : ''; return h ? `<section class="nl-sec"><h2>${title(k)}</h2>${h}</section>` : ''; }).join('');
   const head = (en && ed.headline_en) || ed.headline;
   host.innerHTML = `<div class="nl-profiles" role="group" aria-label="${_newsT('Profil', 'Profile')}">${Object.keys(P).filter(k => E.profiles[k]).map(k => `<button type="button" class="filter-btn${k === pid ? ' active' : ''}" data-nlp="${k}">${_newsEsc(L(P[k].name))}</button>`).join('')}</div>
     <div class="nl-paper"><header class="nl-head"><div><span translate="no" class="nl-brand">PowerKlock</span><span>${_newsEsc(day)}</span></div>
