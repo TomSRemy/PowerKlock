@@ -216,7 +216,9 @@ async function renderNewsPosts() {
 }
 
 // ── Open consultations (data/consultations.json, scripts/fetch_news.py): the deadline to reply, the nearest first ──
-let _newsCons = null;
+let _newsCons = null, _newsConsTheme = '';
+const _NEWS_CONS_THEMES = { cee: ['Efficacité énergétique', 'Energy efficiency'], tariffs: ['Tarifs', 'Tariffs'], grid: ['Réseau et raccordement', 'Grid and connection'],
+  market: ['Marché et sécurité d’approvisionnement', 'Market and security of supply'], renewables: ['Renouvelables et appels d’offres', 'Renewables and tenders'], gas: ['Gaz', 'Gas'], other: ['Autres', 'Other'] };
 async function _newsLoadCons() {
   try { const r = await fetch(DATA_BASE + 'consultations.json?t=' + Date.now()); _newsCons = r.ok ? await r.json() : null; } catch (_) { _newsCons = null; }
 }
@@ -232,10 +234,18 @@ function renderNewsCons() {
   const due = c => { if (!c.deadline) return `<span class="cons-due">${_newsT('date limite non indiquée', 'no deadline given')}</span>`;
     const n = left(c.deadline);
     return `<span class="cons-due${n <= 7 ? ' soon' : ''}"><b>${fmt(c.deadline)}</b>${n === 0 ? _newsT('dernier jour', 'last day') : 'J-' + n}</span>`; };
-  const row = c => `<a class="cons-row" href="${_newsEsc(c.link)}" target="_blank" rel="noopener noreferrer">${due(c)}<span class="cons-t">${_newsEsc(c.title)}<small>${_newsEsc(c.source)} · ${_newsT('ouverte le ', 'opened ')}${fmt(c.opened)}</small></span></a>`;
-  const closed = all.filter(c => c.deadline && c.deadline < today).slice(-8).reverse();
-  host.innerHTML = (open.length ? `<div class="cons-list">${open.map(row).join('')}</div>` : `<div class="news-src-help">${_newsT('Aucune consultation ouverte en ce moment.', 'No consultation open right now.')}</div>`) +
+  const th = k => { const t = _NEWS_CONS_THEMES[k || 'other'] || _NEWS_CONS_THEMES.other; return _newsT(t[0], t[1]); };
+  const row = c => `<a class="cons-row" href="${_newsEsc(c.link)}" target="_blank" rel="noopener noreferrer">${due(c)}<span class="cons-t">${_newsEsc(c.title)}<small><span class="cons-th">${th(c.theme)}</span> · ${_newsEsc(c.source)} · ${_newsT('ouverte le ', 'opened ')}${fmt(c.opened)}</small></span></a>`;
+  const counts = {}; all.forEach(c => { if (!c.deadline || c.deadline >= today) counts[c.theme || 'other'] = (counts[c.theme || 'other'] || 0) + 1; });
+  const keys = Object.keys(_NEWS_CONS_THEMES).filter(k => counts[k]);
+  if (_newsConsTheme && !counts[_newsConsTheme]) _newsConsTheme = '';
+  const pick = c => !_newsConsTheme || (c.theme || 'other') === _newsConsTheme;
+  const chips = keys.length > 1 ? `<div class="cons-chips">${[['', _newsT('Tous', 'All'), open.length]].concat(keys.map(k => [k, th(k), counts[k]])).map(([k, l, n]) => `<button type="button" class="filter-btn${k === _newsConsTheme ? ' active' : ''}" data-ct="${k}">${l} <small>${n}</small></button>`).join('')}</div>` : '';
+  const shown = open.filter(pick);
+  const closed = all.filter(c => c.deadline && c.deadline < today && pick(c)).slice(-8).reverse();
+  host.innerHTML = chips + (shown.length ? `<div class="cons-list">${shown.map(row).join('')}</div>` : `<div class="news-src-help">${_newsT('Aucune consultation ouverte en ce moment.', 'No consultation open right now.')}</div>`) +
     (closed.length ? `<details class="cons-closed"><summary>${_newsT('Récemment closes', 'Recently closed')} (${closed.length})</summary><div class="cons-list">${closed.map(row).join('')}</div></details>` : '');
+  host.querySelectorAll('[data-ct]').forEach(b => b.addEventListener('click', () => { _newsConsTheme = b.dataset.ct; renderNewsCons(); }));
 }
 
 function _newsKw() {
