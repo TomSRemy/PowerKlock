@@ -8,7 +8,7 @@ async function loadNews() {
   const badge = document.getElementById('news-updated');
   if (!window._newsAcctWired && window.PKAccount && PKAccount.configured) {
     window._newsAcctWired = true;
-    PKAccount.onChange(async () => { await _newsLoadPersonal(); _newsApplyConfig(); _newsRefreshKwUI(); renderNews(newsData); });
+    PKAccount.onChange(async () => { await _newsLoadPersonal(); _newsApplyConfig(); _newsRefreshKwUI(); renderNewsPosts(); renderNews(newsData); });
   }
   await Promise.all([_newsLoadSections(), _newsLoadPersonal(), _newsLoadDigest()]);
   try {
@@ -29,6 +29,7 @@ async function loadNews() {
   _newsWireKw();
   _newsApplyConfig();
   renderNewsDigest();
+  renderNewsPosts();
   renderNews(newsData);
   renderNewsSources();
   renderNewsAdd();
@@ -168,6 +169,44 @@ function _newsCoverage(item) {
   const bar = ['off', 'spe', 'gen'].filter(k => n[k]).map(k => `<i class="cv-${k}" style="width:${(n[k] / all.length * 100).toFixed(0)}%"></i>`).join('');
   const lbl = { off: _newsT('officiel', 'official'), spe: _newsT('presse spécialisée', 'trade press'), gen: _newsT('presse générale', 'general press') };
   return `<div class="news-cov" title="${['off', 'spe', 'gen'].filter(k => n[k]).map(k => n[k] + ' ' + lbl[k]).join(' · ')}"><span class="news-covbar">${bar}</span><b>${all.length} ${_newsT('sources', 'sources')}</b> <span>${all.slice(1).map(o => _newsEsc(o.source)).join(' · ')}</span></div>`;
+}
+
+// ── Posts to read: LinkedIn posts pasted by the team (public.news_post, warehouse migration 023). Only the link, the
+// author and a note are kept; votes go to public.news_vote like the articles' and pick the week's best for Monday's digest.
+let _newsPosts = [];
+const _newsAuthorOf = url => { const m = url.match(/linkedin\.com\/(?:posts|in)\/([a-z0-9-]+?)(?:-[0-9a-z]*\d[0-9a-z]*)?(?:_|\/|$)/i);
+  return m ? m[1].split('-').filter(w => !/\d/.test(w)).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : ''; };
+async function renderNewsPosts() {
+  const sec = document.getElementById('hs-news-posts'), host = document.getElementById('news-posts'); if (!sec || !host) return;
+  const A = window.PKAccount;
+  if (!A || !A.configured) { sec.hidden = true; return; }
+  await A.ready();
+  if (!A.user) { sec.hidden = true; return; }
+  const cl = A.client();
+  const { data, error } = await cl.from('news_post').select('id, url, author, note, added_by, created_at').order('created_at', { ascending: false }).limit(40);
+  if (error) { sec.hidden = true; return; }
+  sec.hidden = false; _newsPosts = data || [];
+  const ago = d => formatTimeAgo(new Date(d));
+  host.innerHTML = `<div class="news-post-add">
+      <input type="url" id="news-post-url" class="fuel-select" maxlength="600" placeholder="${_newsT('Lien du post LinkedIn (Partager › Copier le lien)', 'LinkedIn post link (Share › Copy link)')}">
+      <input type="text" id="news-post-author" class="fuel-select" maxlength="80" placeholder="${_newsT('Auteur', 'Author')}">
+      <input type="text" id="news-post-note" class="fuel-select" maxlength="200" placeholder="${_newsT('Pourquoi le lire, en une ligne', 'Why read it, in one line')}">
+      <button type="button" class="pk-btn-primary" id="news-post-go">${_newsT('＋ Ajouter', '＋ Add')}</button></div>
+    <div class="news-add-msg" id="news-post-msg"></div>
+    <div class="news-posts">${_newsPosts.length ? _newsPosts.map(p => `<div class="news-post">
+      <a href="${_newsEsc(p.url)}" target="_blank" rel="noopener noreferrer"><b>${_newsEsc(p.author || 'LinkedIn')}</b>${p.note ? `<span>${_newsEsc(p.note)}</span>` : ''}</a>
+      <div class="news-post-f"><span class="news-time">${ago(p.created_at)}</span><div class="news-vote" data-link="${_newsEsc(p.url)}">${_newsVoteBtns(p.url)}</div>${p.added_by === A.user.id ? `<button type="button" class="pk-btn-ghost" data-pdel="${p.id}">✕</button>` : ''}</div></div>`).join('')
+      : `<div class="news-src-help">${_newsT('Aucun post pour l’instant : collez le lien d’un post LinkedIn qui vaut la lecture.', 'No post yet: paste the link of a LinkedIn post worth reading.')}</div>`}</div>`;
+  const url = document.getElementById('news-post-url'), au = document.getElementById('news-post-author'), msg = document.getElementById('news-post-msg');
+  url.addEventListener('change', () => { if (!au.value) au.value = _newsAuthorOf(url.value.trim()); });
+  document.getElementById('news-post-go').addEventListener('click', async () => {
+    const u = url.value.trim().split('?')[0];
+    if (!/^https:\/\/([a-z]+\.)?linkedin\.com\//i.test(u)) { msg.textContent = _newsT('Collez un lien linkedin.com.', 'Paste a linkedin.com link.'); msg.className = 'news-add-msg ko'; return; }
+    const { error: e } = await cl.from('news_post').insert({ url: u, author: au.value.trim() || _newsAuthorOf(u) || null, note: document.getElementById('news-post-note').value.trim() || null });
+    if (e) { msg.textContent = (/duplicate|unique/i.test(e.message) ? _newsT('Ce post est déjà dans la liste.', 'This post is already listed.') : _newsT('Non ajouté : ', 'Not added: ') + e.message); msg.className = 'news-add-msg ko'; return; }
+    renderNewsPosts();
+  });
+  host.querySelectorAll('[data-pdel]').forEach(b => b.addEventListener('click', async () => { await cl.from('news_post').delete().eq('id', b.dataset.pdel); renderNewsPosts(); }));
 }
 
 function _newsKw() {
@@ -338,7 +377,7 @@ async function _newsVote(link, vote, box) {
   // the article: from the News page's list, else from news.json (Today and the dashboards vote before the News page is opened)
   let item = (typeof newsData !== 'undefined' && newsData || []).find(i => i.link === link);
   if (!item) { const j = await (_newsAllP || (_newsAllP = fetch(DATA_BASE + 'news.json').then(r => r.ok ? r.json() : null).catch(() => null))); item = ((j && j.items) || []).find(i => i.link === link); }
-  if (!item) item = { title: link, source: '', tags: [] };
+  if (!item) { const p = _newsPosts.find(x => x.url === link); item = p ? { title: (p.author || 'LinkedIn') + (p.note ? ' · ' + p.note : ''), source: 'LinkedIn', tags: ['post'] } : { title: link, source: '', tags: [] }; }
   const cl = window.PKAccount && window.PKAccount.user && window.PKAccount.client && window.PKAccount.client();
   if (!cl) { box.insertAdjacentHTML('beforeend', `<span class="nv-msg">${_newsT('connectez-vous pour voter', 'sign in to vote')}</span>`); setTimeout(() => { const m = box.querySelector('.nv-msg'); if (m) m.remove(); }, 2500); return; }
   const prev = _newsVotes[link] || 0, v = prev === vote ? 0 : vote;

@@ -28,7 +28,7 @@
 <meta property="og:site_name" content="PowerKlock">
 <meta property="og:title" content="PowerKlock · marchés européens de l'énergie">
 <meta property="og:description" content="Prix spot et forwards, production, renouvelables, outils de pricing PPA et M0. Données vérifiées par une deuxième source.">
-<meta property="og:image" content="https://powerklock.powerklock-tool.workers.dev/assets/og-image.png">
+<meta property="og:image" content="https://powerklock.com/assets/og-image.png">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16.png">
@@ -2415,6 +2415,13 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
           <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
         <div class="hist-section-body open" id="hs-body-news-digest"><div id="news-digest"></div></div>
+      </div>
+      <div class="hist-section hist-section-strong" id="hs-news-posts" hidden>
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-news-posts')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 11v5M8 8v.01M12 16v-5M12 13a2 2 0 0 1 4 0v3"/></svg>Posts to read<span class="pk-hs-meta">LinkedIn posts shared by the team · the most useful go into Monday's digest</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-news-posts"><div id="news-posts"></div></div>
       </div>
       <div class="hist-section hist-section-strong" id="hs-news-0">
         <div class="hist-section-header open" onclick="toggleStrongSection('hs-news-0')">
