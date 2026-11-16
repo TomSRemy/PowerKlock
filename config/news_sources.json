@@ -1,5 +1,5 @@
 {
-  "_help": "Sources of the News page (Intelligence › News), read by scripts/fetch_news.py every 3 hours. To add a source: add an entry to 'feeds' (any public RSS / Atom feed: name, url, tags among power, gas, carbon, regulation, markets, fr). To follow a subject across the press: add a phrase to 'searches' (GDELT, world press, a few days back). Pages without a feed can only be added with a dedicated reader (see 'pages').",
+  "_help": "Sources of the News page (Intelligence › News), read by scripts/fetch_news.py every 3 hours. To add a source: add an entry to 'feeds' (any public RSS / Atom feed: name, url, tags among power, gas, carbon, regulation, markets, fr). To follow a subject across the press: add a phrase to 'searches' (Google News, last 7 days, titles and links only). Pages without a feed can only be added with a dedicated reader (see 'pages').",
   "feeds": [
     {
       "name": "Carbon Pulse",
@@ -246,6 +246,17 @@
         "fr",
         "regulation"
       ]
+    },
+    {
+      "name": "CRE — Délibérations",
+      "cls": "cre",
+      "reader": "cre",
+      "url": "https://www.cre.fr/documents/deliberations.html",
+      "tags": [
+        "fr",
+        "regulation",
+        "official"
+      ]
     }
   ],
   "searches": [
@@ -254,7 +265,8 @@
       "tags": [
         "markets",
         "fr"
-      ]
+      ],
+      "lang": "en"
     },
     {
       "q": "PPA électricité",
@@ -290,6 +302,56 @@
         "fr",
         "markets"
       ]
+    },
+    {
+      "q": "TURPE",
+      "tags": [
+        "fr",
+        "regulation"
+      ]
+    },
+    {
+      "q": "\"mécanisme de capacité\"",
+      "tags": [
+        "fr",
+        "regulation",
+        "markets"
+      ]
+    },
+    {
+      "q": "PPE3 électricité",
+      "tags": [
+        "fr",
+        "regulation"
+      ]
+    },
+    {
+      "q": "stockage batteries électricité France",
+      "tags": [
+        "fr",
+        "power"
+      ]
+    },
+    {
+      "q": "raccordement réseau électrique",
+      "tags": [
+        "fr",
+        "power"
+      ]
+    },
+    {
+      "q": "ARENH nucléaire prix",
+      "tags": [
+        "fr",
+        "markets"
+      ]
+    },
+    {
+      "q": "\"power purchase agreement\" Europe",
+      "tags": [
+        "markets"
+      ],
+      "lang": "en"
     }
   ]
 }

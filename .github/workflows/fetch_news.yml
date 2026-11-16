@@ -1,6 +1,7 @@
 name: Fetch Energy News
 
-# Public RSS/Atom feeds, the CRE news page and press searches (GDELT)
+# Public RSS/Atom feeds, the CRE news and deliberation pages, press searches (Google News RSS) and official texts
+# (Journal officiel open data, EUR-Lex)
 # listed in config/news_sources.json → data/news.json (scripts/fetch_news.py).
 # Server-side so the site needs no CORS proxy.
 
