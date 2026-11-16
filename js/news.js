@@ -10,7 +10,7 @@ async function loadNews() {
     window._newsAcctWired = true;
     PKAccount.onChange(async () => { await _newsLoadPersonal(); _newsApplyConfig(); _newsRefreshKwUI(); renderNews(newsData); });
   }
-  await Promise.all([_newsLoadSections(), _newsLoadPersonal()]);
+  await Promise.all([_newsLoadSections(), _newsLoadPersonal(), _newsLoadDigest()]);
   try {
     const r = await fetch(DATA_BASE + 'news.json?t=' + Date.now());
     if (!r.ok) throw new Error(r.status);
@@ -28,6 +28,7 @@ async function loadNews() {
   }
   _newsWireKw();
   _newsApplyConfig();
+  renderNewsDigest();
   renderNews(newsData);
   renderNewsSources();
   renderNewsAdd();
@@ -130,6 +131,43 @@ function _newsRank(items) {
     const it = left.splice(k, 1)[0]; seen[it.source] = (seen[it.source] || 0) + 1; out.push(it);
   }
   return out;
+}
+
+// ── The essentials: data/news_digest.json (scripts/news_digest.py): one line per story, written by the site's AI proxy from the
+// collected articles only; every line links to its story. On Monday, the week before in 5 stories next to today's.
+let _newsDigest = null, _newsDigestView = null;
+async function _newsLoadDigest() {
+  try { const r = await fetch(DATA_BASE + 'news_digest.json?t=' + Date.now()); _newsDigest = r.ok ? await r.json() : null; } catch (_) { _newsDigest = null; }
+}
+function renderNewsDigest() {
+  const sec = document.getElementById('hs-news-digest'), host = document.getElementById('news-digest'); if (!sec || !host) return;
+  const D = _newsDigest || {}, today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris' }).format(new Date());
+  const monday = (() => { const d = new Date(today + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() - (d.getUTCDay() + 6) % 7); return d.toISOString().slice(0, 10); })();
+  const daily = D.daily && D.daily.date >= (() => { const d = new Date(today + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() - 3); return d.toISOString().slice(0, 10); })() ? D.daily : null;
+  const weekly = D.weekly && D.weekly.week === monday ? D.weekly : null;
+  if (!daily && !weekly) { sec.hidden = true; return; }
+  sec.hidden = false;
+  const view = _newsDigestView || (weekly && (!daily || new Date().getDay() === 1) ? 'weekly' : 'daily'), E = view === 'weekly' ? weekly : daily;
+  const en = window.PKI18n && PKI18n.lang === 'en';
+  document.getElementById('news-digest-t').textContent = view === 'weekly' ? _newsT('La semaine en 5 sujets', 'The week in 5 stories') : _newsT('L’essentiel', 'The essentials');
+  const day = s => new Date(s + 'T12:00:00Z').toLocaleDateString(en ? 'en-GB' : 'fr-FR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
+  document.getElementById('news-digest-m').textContent = view === 'weekly' ? _newsT('semaine du ', 'week of ') + day((() => { const d = new Date(E.week + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() - 7); return d.toISOString().slice(0, 10); })()) : day(E.date);
+  const tabs = daily && weekly ? `<div class="news-dg-tabs">${[['daily', _newsT('Aujourd’hui', 'Today')], ['weekly', _newsT('La semaine', 'The week')]].map(([k, l]) => `<button type="button" class="filter-btn${k === view ? ' active' : ''}" data-dg="${k}">${l}</button>`).join('')}</div>` : '';
+  const posts = view === 'weekly' && (E.posts || []).length ? `<div class="news-dg-posts"><b>${_newsT('Les posts les plus utiles de la semaine', 'The most useful posts of the week')}</b>${E.posts.map(p => `<a href="${_newsEsc(p.url)}" target="_blank" rel="noopener noreferrer">${_newsEsc(p.author || 'LinkedIn')}${p.note ? ' · ' + _newsEsc(p.note) : ''}</a>`).join('')}</div>` : '';
+  host.innerHTML = tabs + `<ol class="news-dg">${E.items.map(l => `<li><span>${_newsEsc(en && l.text_en ? l.text_en : l.text)}</span> <a href="${_newsEsc(l.link)}" target="_blank" rel="noopener noreferrer" class="news-dg-src">${_newsEsc(l.sources.slice(0, 3).join(' · '))}${l.sources.length > 3 ? ' +' + (l.sources.length - 3) : ''} ↗</a></li>`).join('')}</ol>` + posts +
+    `<div class="news-dg-note">${_newsT('Résumé automatique, rédigé par une IA à partir des seuls articles collectés : chaque ligne renvoie à sa source.', 'Automatic summary, written by an AI from the collected articles only: each line links to its source.')}</div>`;
+  host.querySelectorAll('[data-dg]').forEach(b => b.addEventListener('click', () => { _newsDigestView = b.dataset.dg; renderNewsDigest(); }));
+}
+
+// who covers a story: official texts, specialised press (the feeds), general press (press searches), as a bar and a count
+function _newsCoverage(item) {
+  const all = [{ source: item.source, cls: item.cls, official: (item.tags || []).includes('official'), search: !!item.query }].concat(item.other_sources || []);
+  if (all.length < 2) return '';
+  const kind = o => o.official || o.cls === 'official' || o.cls === 'cre' ? 'off' : o.cls === 'search' || o.search ? 'gen' : 'spe';
+  const n = { off: 0, spe: 0, gen: 0 }; all.forEach(o => n[kind(o)]++);
+  const bar = ['off', 'spe', 'gen'].filter(k => n[k]).map(k => `<i class="cv-${k}" style="width:${(n[k] / all.length * 100).toFixed(0)}%"></i>`).join('');
+  const lbl = { off: _newsT('officiel', 'official'), spe: _newsT('presse spécialisée', 'trade press'), gen: _newsT('presse générale', 'general press') };
+  return `<div class="news-cov" title="${['off', 'spe', 'gen'].filter(k => n[k]).map(k => n[k] + ' ' + lbl[k]).join(' · ')}"><span class="news-covbar">${bar}</span><b>${all.length} ${_newsT('sources', 'sources')}</b> <span>${all.slice(1).map(o => _newsEsc(o.source)).join(' · ')}</span></div>`;
 }
 
 function _newsKw() {
@@ -254,16 +292,15 @@ function renderNews(items) {
   }
   grid.innerHTML = filtered.map(item => {
     const link = /^https?:\/\//.test(item.link || '') ? item.link : '#';
-    const tagsHtml = (item.tags || []).map(t => `<span class="news-tag">${_newsIc(t)}${_newsEsc(t)}</span>`).join(' ');
+    const tagsHtml = (item.tags || []).filter(t => t !== 'official').map(t => `<span class="news-tag">${_newsIc(t)}${_newsEsc(t)}</span>`).join(' ');
     const mine = _newsMine(item, kw);
-    const also = (item.other_sources || []).length
-      ? `<div class="news-also">${_newsT('aussi rapporté par ', 'also reported by ')}${item.other_sources.map(o => _newsEsc(o.source)).join(', ')}</div>` : '';
+    const also = _newsCoverage(item);
     return `<a class="news-card${mine ? ' mine' : ''}" href="${_newsEsc(link)}" target="_blank" rel="noopener noreferrer">
       <div class="news-meta">
         <span class="news-source ${_newsEsc(item.cls)}">${_newsEsc(item.source)}</span>
         <span class="news-time" title="${_newsEsc(item.date.toLocaleString('en-GB', { timeZone: 'Europe/Paris' }))}">${formatTimeAgo(item.date)}</span>
       </div>
-      <div class="news-title">${mine ? '<span class="news-star">★</span>' : ''}${_newsEsc(item.title)}</div>
+      <div class="news-title">${mine ? '<span class="news-star">★</span>' : ''}${(item.tags || []).includes('official') ? `<span class="news-off">${_newsT('Texte officiel', 'Official text')}</span>` : ''}${_newsEsc(item.title)}</div>
       <div class="news-snippet">${_newsEsc(item.snippet)}</div>
       <div>${tagsHtml}${item.query ? ` <span class="news-q">search: ${_newsEsc(item.query)}</span>` : ''}${(item.countries || []).length ? ` <span class="news-q">${_newsEsc(item.countries.join(' · '))}</span>` : ''}</div>
       ${also}
