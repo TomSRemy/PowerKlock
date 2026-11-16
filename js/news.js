@@ -6,6 +6,11 @@
 async function loadNews() {
   window._newsLoaded = true;
   const badge = document.getElementById('news-updated');
+  if (!window._newsAcctWired && window.PKAccount && PKAccount.configured) {
+    window._newsAcctWired = true;
+    PKAccount.onChange(async () => { await _newsLoadPersonal(); _newsApplyConfig(); _newsRefreshKwUI(); renderNews(newsData); });
+  }
+  await Promise.all([_newsLoadSections(), _newsLoadPersonal()]);
   try {
     const r = await fetch(DATA_BASE + 'news.json?t=' + Date.now());
     if (!r.ok) throw new Error(r.status);
@@ -21,13 +26,102 @@ async function loadNews() {
     if (badge) badge.textContent = 'News feed unavailable';
   }
   _newsWireKw();
+  _newsApplyConfig();
   renderNews(newsData);
   renderNewsSources();
   renderNewsAdd();
 }
 
-// Personal keywords: kept in this browser, matching articles get a star
-function _newsKw() { try { return (localStorage.getItem('pk-news-kw') || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean); } catch (_) { return []; } }
+// Personal keywords: synced to the account (public.news_keyword) when signed in, else kept in this browser only
+let _newsCfg = null;           // { visible_sections, show_add_source, show_advanced } from public.news_user_config, or null = unrestricted
+let _newsSectionDefs = null;   // [{slug, name, tags}] from public.news_section (admin-curated presets)
+let _newsKwRemote = null;      // [{keyword, team, mine}] when signed in, else null (localStorage fallback)
+let _newsSectionTags = null;   // tags of the curated section tab currently active, if any
+
+async function _newsLoadSections() {
+  const A = window.PKAccount;
+  if (!A || !A.configured) return;
+  try {
+    await A.ready();
+    const { data } = await A.client().from('news_section').select('slug, name, tags').order('sort');
+    _newsSectionDefs = data || [];
+  } catch (e) { console.warn('[news] sections not read:', e); }
+}
+
+async function _newsLoadPersonal() {
+  const A = window.PKAccount;
+  if (!A || !A.configured) { _newsCfg = null; _newsKwRemote = null; return; }
+  await A.ready();
+  if (!A.user) { _newsCfg = null; _newsKwRemote = null; return; }
+  const cl = A.client();
+  try {
+    const [cfgR, kwR] = await Promise.all([
+      cl.from('news_user_config').select('visible_sections, show_add_source, show_advanced').eq('user_id', A.user.id).maybeSingle(),
+      cl.from('news_keyword').select('keyword, team, user_id'),
+    ]);
+    _newsCfg = (cfgR && cfgR.data) || null;
+    _newsKwRemote = ((kwR && kwR.data) || []).map(r => ({ keyword: r.keyword, team: !!r.team, mine: r.user_id === A.user.id }));
+  } catch (e) { console.warn('[news] personal config not read:', e); _newsCfg = null; _newsKwRemote = null; }
+}
+
+// Show only what the admin allowed this person (public.news_user_config): filter buttons, curated section tabs,
+// the add-source panel, the country/source/France-focus controls. No row for this user = everything, as before.
+function _newsApplyConfig() {
+  const cfg = _newsCfg, host = document.querySelector('.news-filters');
+  if (host) {
+    host.querySelectorAll('.filter-btn[data-tag]').forEach(b => {
+      b.style.display = (!cfg || !cfg.visible_sections || cfg.visible_sections.includes(b.dataset.tag)) ? '' : 'none';
+    });
+    host.querySelectorAll('.news-section-btn').forEach(b => b.remove());
+    const adv = document.getElementById('news-advanced');
+    if (cfg && cfg.visible_sections) {
+      (_newsSectionDefs || []).filter(s => cfg.visible_sections.includes(s.slug)).forEach(s => {
+        const b = document.createElement('button');
+        b.type = 'button'; b.className = 'filter-btn news-section-btn'; b.textContent = s.name;
+        b.addEventListener('click', () => {
+          newsFilter = 'section'; _newsSectionTags = s.tags || [];
+          host.querySelectorAll('.filter-btn').forEach(x => x.classList.remove('active'));
+          b.classList.add('active');
+          renderNews(newsData);
+        });
+        host.insertBefore(b, adv);
+      });
+    }
+  }
+  const addBtn = document.getElementById('news-add-btn'); if (addBtn) addBtn.style.display = (cfg && cfg.show_add_source === false) ? 'none' : '';
+  const srcSec = document.getElementById('hs-news-src'); if (srcSec) srcSec.style.display = (cfg && cfg.show_add_source === false) ? 'none' : '';
+  const adv = document.getElementById('news-advanced'); if (adv) adv.style.display = (cfg && cfg.show_advanced === false) ? 'none' : '';
+  const teamWrap = document.getElementById('news-kw-team-wrap');
+  if (teamWrap) teamWrap.style.display = (window.PKAccount && PKAccount.user) ? '' : 'none';
+}
+
+function _newsRefreshKwUI() {
+  const inp = document.getElementById('news-kw');
+  if (inp) inp.value = _newsKwRemote ? _newsKwRemote.filter(r => r.mine).map(r => r.keyword).join(', ') : _newsKw().join(', ');
+  const teamCb = document.getElementById('news-kw-team');
+  if (teamCb) teamCb.checked = _newsKwRemote ? _newsKwRemote.some(r => r.mine && r.team) : false;
+}
+
+async function _newsSaveKw(value, team) {
+  const A = window.PKAccount;
+  const list = [...new Set(value.split(',').map(s => s.trim()).filter(Boolean))].slice(0, 25);
+  if (!A || !A.configured || !A.user) { try { localStorage.setItem('pk-news-kw', value); } catch (_) {} renderNews(newsData); return; }
+  const cl = A.client();
+  const mineBefore = (_newsKwRemote || []).filter(r => r.mine).map(r => r.keyword);
+  const toRemove = mineBefore.filter(k => !list.includes(k));
+  try {
+    if (toRemove.length) await cl.from('news_keyword').delete().eq('user_id', A.user.id).in('keyword', toRemove);
+    if (list.length) await cl.from('news_keyword').upsert(list.map(k => ({ user_id: A.user.id, keyword: k.slice(0, 60), team: !!team })), { onConflict: 'user_id,keyword' });
+  } catch (e) { console.warn('[news] keyword not saved:', e); }
+  await _newsLoadPersonal();
+  _newsRefreshKwUI();
+  renderNews(newsData);
+}
+
+function _newsKw() {
+  if (_newsKwRemote) return _newsKwRemote.map(r => r.keyword.toLowerCase());
+  try { return (localStorage.getItem('pk-news-kw') || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean); } catch (_) { return []; }
+}
 function _newsMine(i, kw) { if (!kw.length) return false; const t = (i.title + ' ' + i.snippet).toLowerCase(); return kw.some(k => t.includes(k)); }
 // France focus: French sources (tag fr) and articles about France; kept in this browser
 const _NEWS_FR = /\b(France|French|Fran[cç]ais\w*|fran[cç]ais\w*|hexagone|Paris|EDF|Engie|TotalEnergies|Flamanville|Bugey|Gravelines|ARENH|Enedis|Elengy|Ademe|ADEME|PPE ?3?|PPE3)\b|\b(RTE|CRE|DGEC)\b/;
@@ -43,8 +137,10 @@ function _newsWireKw() {
     const f = document.getElementById('news-add-name'); if (f) setTimeout(() => f.focus(), 350); }); }
   const inp = document.getElementById('news-kw'); if (!inp || inp.dataset.wired) return;
   inp.dataset.wired = '1';
-  inp.value = _newsKw().join(', ');
-  inp.addEventListener('change', () => { try { localStorage.setItem('pk-news-kw', inp.value); } catch (_) {} renderNews(newsData); });
+  const teamCb = document.getElementById('news-kw-team');
+  _newsRefreshKwUI();
+  inp.addEventListener('change', () => _newsSaveKw(inp.value, teamCb && teamCb.checked));
+  if (teamCb) teamCb.addEventListener('change', () => _newsSaveKw(inp.value, teamCb.checked));
 }
 
 function renderNewsSources() {
@@ -71,7 +167,7 @@ async function renderNewsAdd() {
   if (!A.user) {
     host.innerHTML = `<div class="news-add">${head}<div class="news-add-msg"><a href="#" id="news-add-signin">Sign in</a> to add an RSS / Atom feed or a press search: it is read at the next hourly news run, for everyone.</div></div>`;
     const si = document.getElementById('news-add-signin');
-    if (si) si.addEventListener('click', e => { e.preventDefault(); if (typeof window.switchDashboard === 'function') window.switchDashboard('mydash'); setTimeout(() => { const b = document.getElementById('pkd-acc-btn'); if (b) b.click(); }, 400); });
+    if (si) si.addEventListener('click', e => { e.preventDefault(); if (window.PKDash && PKDash.openAccount) PKDash.openAccount(); });
     return;
   }
   const cl = A.client();
@@ -127,7 +223,8 @@ function renderNews(items) {
   _newsFillSelects(items || []);
   const src = (document.getElementById('news-src') || {}).value || '', cty = (document.getElementById('news-cty') || {}).value || '';
   let filtered = (items || []).filter(i => (!frOnly || _newsIsFr(i)) &&
-    (newsFilter === 'all' || newsFilter === 'movers' || (newsFilter === 'mine' ? _newsMine(i, kw) : (i.tags || []).includes(newsFilter))) &&
+    (newsFilter === 'all' || newsFilter === 'movers' || (newsFilter === 'mine' ? _newsMine(i, kw) :
+      newsFilter === 'section' ? (i.tags || []).some(t => (_newsSectionTags || []).includes(t)) : (i.tags || []).includes(newsFilter))) &&
     (!src || i.source === src) && (!cty || (i.countries || []).includes(cty) || (cty === 'FR' && _newsIsFr(i))) &&   // France: same rule as the France focus
     (!q || (i.title + ' ' + i.snippet + ' ' + i.source).toLowerCase().includes(q)));
   // market movers: what moves prices or the renewable business, last 72 h, highest impact first (readers' votes count)
@@ -212,6 +309,7 @@ document.addEventListener('click', e => {
 
 function filterNews(tag, btn) {
   newsFilter = tag;
+  _newsSectionTags = null;
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   renderNews(newsData);

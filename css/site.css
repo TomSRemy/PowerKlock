@@ -919,6 +919,7 @@
   .chart-svg { width: 100%; height: 100%; }
 
   /* ── NEWS ── */
+  .news-advanced { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
   .news-filters {
     display: flex;
     gap: 8px;
@@ -983,6 +984,7 @@
   .news-mine label { font:600 10px 'Outfit',sans-serif; letter-spacing:.08em; text-transform:uppercase; color:var(--text3); }
   .news-mine input { flex:1; min-width:220px; }
   .news-mine-n { font-size:11px; color:var(--text3); }
+  .news-kw-team { display:flex; align-items:center; gap:4px; font:400 11px 'Inter',sans-serif !important; text-transform:none !important; letter-spacing:normal !important; color:var(--text3); flex:none !important; min-width:0 !important; white-space:nowrap; }
   .news-card.mine { border-color:rgba(251,191,36,.55); }
   .news-card .news-star { color:#FBBF24; margin-right:4px; }
   .news-q { font-size:10px; color:var(--text3); font-style:italic; }
@@ -2550,6 +2552,7 @@
     .live-badge { font-size: 9px; padding: 3px 6px; }
     .live-badge svg { display: none; }
     .clock { font-size: 10px; }
+    .topbar-right .pkd-acc { max-width: 90px; font-size: 10px; }
 
     /* Burger button (only visible on mobile, injected by JS) */
     .mobile-burger {
