@@ -1,6 +1,6 @@
 /* eSheep — easter egg overlay for PowerKlock
-   Trigger: invisible 24x24 hotspot, bottom-left corner of viewport.
-   Click toggles the overlay on/off. When on:
+   Trigger: the Games page (js/games.js) calls window.eSheepToggle().
+   It toggles the overlay on/off. When on:
      - 2 floating dots (spawn + wind) appear bottom-right
      - Sheep spawn from the top, fall, walk on platforms, use Mario pipes
      - Lightning strikes random sheep, wind blows them away
@@ -18,7 +18,7 @@
   let DECOR = [], PLATS = [], PIPES = [], SKY_PIPES = [];
   let decorOn = false;
   let lightTimer = null, windTimer = null, autoWindTimer = null, rafId = null;
-  let hotspot = null, dotsBar = null, btnSpawn = null, btnWind = null;
+  let dotsBar = null, btnSpawn = null, btnWind = null;
 
   // ── CONSTANTS ──
   const LIFE = 3 * 60 * 1000;
@@ -31,7 +31,6 @@
   const Z_FX    = 9994;     // lightning, wind streaks
   const Z_DOTS  = 9996;     // control dots
   const Z_FLOAT = 9997;     // floating texts
-  const Z_HOT   = 2147483647; // hotspot — max int, always on top
 
   // PowerKlock has a fixed ticker (top, ~28px) + topbar (~50px). We avoid them.
   function topMargin() {
@@ -55,9 +54,6 @@
 .es-sflash{position:fixed;inset:0;z-index:${Z_FX};pointer-events:none;background:rgba(255,255,120,.22);animation:esSfOut .4s ease forwards}
 .es-wstreak{position:fixed;height:2px;pointer-events:none;z-index:${Z_FX};border-radius:1px;background:linear-gradient(90deg,transparent,rgba(160,220,255,.7),transparent);animation:esWL linear forwards}
 .es-burning{animation:esBurn .8s ease forwards;pointer-events:none}
-.es-hotspot{position:fixed!important;left:168px!important;top:calc(var(--ticker-h, 36px) + 18px)!important;bottom:auto!important;width:8px!important;height:8px!important;z-index:2147483647!important;cursor:pointer!important;border-radius:50%!important;background:rgba(180,190,200,.25)!important;border:none!important;box-shadow:none!important;transition:background .2s ease,transform .2s ease!important;pointer-events:auto!important;display:block!important;visibility:visible!important;opacity:1!important}
-.es-hotspot:hover{background:rgba(180,190,200,.6)!important;transform:scale(1.4)!important}
-@media (max-width:768px){.es-hotspot{left:98px!important;top:calc(var(--ticker-h, 0px) + 24px)!important;width:10px!important;height:10px!important}}
 .es-dotsbar{position:fixed;left:220px;top:calc(var(--ticker-h, 36px) + 12px);display:flex;gap:10px;align-items:center;background:rgba(13,21,32,.85);border:1px solid #1e2d3d;border-radius:14px;padding:6px 10px;z-index:${Z_DOTS};backdrop-filter:blur(4px);font-family:monospace}
 @media (max-width:768px){.es-dotsbar{left:16px;top:auto;bottom:calc(16px + env(safe-area-inset-bottom, 0px))}}
 .es-dot{width:10px;height:10px;border-radius:50%;background:#1e2d3d;cursor:pointer;transition:background .15s}
@@ -1294,64 +1290,7 @@
 
   function toggle() { if (active) deactivate(); else activate(); }
 
-  // ── HOTSPOT (visible trigger, bottom-left of main area) ──
-  function buildHotspot() {
-    // Ensure hotspot styles are loaded even when overlay is inactive
-    injectHotspotStyles();
-    hotspot = document.createElement('div');
-    hotspot.className = 'es-hotspot';
-    hotspot.setAttribute('aria-hidden', 'true');   // hidden easter egg: kept out of screen readers (an aria-label on a plain div is not allowed)
-    hotspot.addEventListener('click', e => { e.stopPropagation(); toggle(); });
-    document.body.appendChild(hotspot);
-    // Sibling dot next to the eSheep hotspot: launches the Klock Wars game in a new tab
-    const gamespot = document.createElement('div');
-    gamespot.className = 'es-gamespot';
-    gamespot.title = 'Klock Wars';
-    gamespot.setAttribute('aria-hidden', 'true');   // hidden easter egg: kept out of screen readers (an aria-label on a plain div is not allowed)
-    gamespot.addEventListener('click', e => { e.stopPropagation(); window.open('js/klock-wars.html', '_blank'); });
-    document.body.appendChild(gamespot);
-    // Sibling dot: launches PowerKlock Volley in a new tab
-    const volleyspot = document.createElement('div');
-    volleyspot.className = 'es-volleyspot';
-    volleyspot.title = 'PowerKlock Volley';
-    volleyspot.setAttribute('aria-hidden', 'true');   // hidden easter egg: kept out of screen readers (an aria-label on a plain div is not allowed)
-    volleyspot.addEventListener('click', e => { e.stopPropagation(); window.open('js/powerklock-volley.html', '_blank'); });
-    document.body.appendChild(volleyspot);
-    // Re-append periodically to ensure it stays last child of body (= on top of stacking context)
-    keepOnTopInterval = setInterval(() => {
-      if (hotspot && hotspot.parentNode === document.body && document.body.lastElementChild !== hotspot) {
-        document.body.appendChild(hotspot);
-      }
-    }, 2000);
-  }
-
-  let keepOnTopInterval = null;
-
-  // Lightweight standalone CSS for the hotspot only (loaded permanently, not stripped on deactivate)
-  const HOTSPOT_STYLE_ID = 'esheep-hotspot-styles';
-  function injectHotspotStyles() {
-    if (document.getElementById(HOTSPOT_STYLE_ID)) return;
-    const s = document.createElement('style');
-    s.id = HOTSPOT_STYLE_ID;
-    s.textContent = `
-.es-hotspot{position:fixed!important;left:168px!important;top:calc(var(--ticker-h, 36px) + 18px)!important;bottom:auto!important;width:8px!important;height:8px!important;z-index:2147483647!important;cursor:pointer!important;border-radius:50%!important;background:rgba(180,190,200,.25)!important;border:none!important;box-shadow:none!important;transition:background .2s ease,transform .2s ease!important;pointer-events:auto!important;display:block!important;visibility:visible!important;opacity:1!important}
-.es-hotspot:hover{background:rgba(180,190,200,.6)!important;transform:scale(1.4)!important}
-.es-gamespot{position:fixed!important;left:184px!important;top:calc(var(--ticker-h, 36px) + 18px)!important;bottom:auto!important;width:8px!important;height:8px!important;z-index:2147483646!important;cursor:pointer!important;border-radius:50%!important;background:rgba(180,190,200,.25)!important;border:none!important;box-shadow:none!important;transition:background .2s ease,transform .2s ease!important;pointer-events:auto!important;display:block!important;visibility:visible!important;opacity:1!important}
-.es-gamespot:hover{background:rgba(20,211,169,.7)!important;transform:scale(1.4)!important}
-.es-volleyspot{position:fixed!important;left:200px!important;top:calc(var(--ticker-h, 36px) + 18px)!important;bottom:auto!important;width:8px!important;height:8px!important;z-index:2147483645!important;cursor:pointer!important;border-radius:50%!important;background:rgba(180,190,200,.25)!important;border:none!important;box-shadow:none!important;transition:background .2s ease,transform .2s ease!important;pointer-events:auto!important;display:block!important;visibility:visible!important;opacity:1!important}
-.es-volleyspot:hover{background:rgba(237,105,101,.8)!important;transform:scale(1.4)!important}
-@media (max-width:768px){.es-hotspot,.es-gamespot,.es-volleyspot{top:calc(var(--ticker-h, 0px) + 24px)!important;width:10px!important;height:10px!important}.es-hotspot{left:98px!important}.es-gamespot{left:116px!important}.es-volleyspot{left:134px!important}}
-`;
-    document.head.appendChild(s);
-  }
-
-  // Install on DOM ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', buildHotspot);
-  } else {
-    buildHotspot();
-  }
-
   // Public API
   window.eSheepToggle = toggle;
+  window.eSheepActive = () => active;
 })();

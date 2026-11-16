@@ -159,7 +159,7 @@
     const k = KINDS[r.kind] || { label: r.kind };
     const zs = r.kind === 'pp1' || r.kind === 'pp2' || r.kind === 'fwd_fr' || r.kind === 'ppa_move' ? 'France' : r.kind === 'corr_break' ? 'Watched pairs' : (r.zones || []).map(z => flagOf(z) + ' ' + z).join(', ');
     const cond = r.kind === 'neg_price' ? ` · ≥ ${r.min_hours || 1} h` : r.kind.startsWith('base_') ? ` · ${r.threshold} €/MWh` : r.kind === 'fwd_fr' || r.kind === 'ppa_move' ? ` · ±${r.threshold} €/MWh` : r.kind === 'corr_break' ? ` · gap ≥ ${r.threshold}` : '';
-    return `<div><b>${esc(k.label)}</b>${cond}</div><span>${esc(zs)}</span>`;
+    return `<div><b>${esc(k.label)}</b>${cond}</div><span>${esc(zs)}${r.email_to ? ' · → ' + esc(r.email_to) : ''}</span>`;
   }
   async function open() {
     close();
@@ -181,6 +181,7 @@
         <div id="pk-al-zones-wrap"><div class="pk-al-lbl">Zones</div><div class="pk-al-zones" id="pk-al-zones">${zoneList().map(z => `<label class="pk-al-z"><input type="checkbox" value="${z.code}"${z.code === 'FR' ? ' checked' : ''}><span>${z.flag} ${esc(z.name)}</span></label>`).join('')}</div></div>
         <label class="pkd-field" id="pk-al-hours-wrap"><span>Minimum negative hours</span><input id="pk-al-hours" type="number" min="0.25" step="0.25" value="1"></label>
         <label class="pkd-field" id="pk-al-thr-wrap"><span>Price (€/MWh)</span><input id="pk-al-thr" type="number" step="1" value="150"></label>
+        ${signed ? `<label class="pkd-field"><span>Send the e-mails to</span><input id="pk-al-to" type="email" autocomplete="email" placeholder="${esc(A.user.email || '')}"></label><div class="pk-al-help">Leave empty to receive them at your own address.</div>` : ''}
         <div class="pkd-msg" id="pk-al-msg" role="status"></div>
         <div class="pkd-form-foot"><button type="button" class="pk-btn-ghost" data-close>Close</button><button type="button" class="pk-btn-primary" id="pk-al-add">Add alert</button></div>
       </div></div>`;
@@ -222,7 +223,10 @@
       const zones = k.startsWith('pp') || k === 'fwd_fr' || k === 'ppa_move' || k === 'corr_break' ? ['FR'] : Array.from(bg.querySelectorAll('#pk-al-zones input:checked')).map(i => i.value);
       if (!zones.length) { msg.textContent = 'Choose at least one zone.'; return; }
       const r = { kind: k, zones, min_hours: k === 'neg_price' ? +$('#pk-al-hours').value || 1 : null, threshold: k.startsWith('base_') || k === 'fwd_fr' || k === 'ppa_move' || k === 'corr_break' ? +$('#pk-al-thr').value : null, email: true, active: true };
-      try { await addRule(r); msg.textContent = 'Alert added' + (cloud ? ': you will get an e-mail when it triggers.' : ' (this browser only).'); await evaluate(); drawRules(); drawHits(); }
+      const to = (($('#pk-al-to') || {}).value || '').trim().toLowerCase();
+      if (to && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)) { msg.textContent = 'Enter a valid e-mail address, or leave the field empty.'; return; }
+      if (to && to !== (A.user.email || '').toLowerCase()) r.email_to = to;
+      try { await addRule(r); msg.textContent = !cloud ? 'Alert added (this browser only).' : r.email_to ? ((!window.PKI18n || PKI18n.lang !== 'en') ? 'Alerte ajoutée : un e-mail partira vers ' + r.email_to + ' quand elle se déclenchera.' : 'Alert added: an e-mail will go to ' + r.email_to + ' when it triggers.') : 'Alert added: you will get an e-mail when it triggers.'; await evaluate(); drawRules(); drawHits(); }
       catch (e) { msg.textContent = 'Could not save: ' + (e.message || e); }
     });
   }
