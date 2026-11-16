@@ -15,7 +15,7 @@ import sys
 import time
 from urllib.parse import urljoin, urlparse
 import xml.etree.ElementTree as ET
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
 from pathlib import Path
 
@@ -23,7 +23,7 @@ import requests
 
 OUT = Path("data/news.json")
 PER_SOURCE = 15
-MAX_ITEMS = 220
+MAX_ITEMS = 300
 UA = {"User-Agent": "Mozilla/5.0 (PowerKlock news fetcher; +https://github.com/TomSRemy/PowerKlock)"}
 
 CONFIG = Path("config/news_sources.json")
@@ -265,7 +265,11 @@ READERS = {"cre": read_cre, "cre_consultations": read_cre_consultations}
 def gnews(q, lang="fr"):
     """Press search over the last 7 days (Google News RSS: titles and links only, no article text is kept)."""
     loc = {"fr": dict(hl="fr", gl="FR", ceid="FR:fr"), "en": dict(hl="en-GB", gl="GB", ceid="GB:en")}[lang]
-    r = requests.get(GNEWS, params=dict(q=q + " when:7d", **loc), headers=UA, timeout=25)
+    for wait in (0, 20, 45):     # Google throttles bursts: wait and try again
+        time.sleep(wait)
+        r = requests.get(GNEWS, params=dict(q=q + " when:7d", **loc), headers=UA, timeout=25)
+        if r.status_code != 429:
+            break
     r.raise_for_status()
     items = []
     for el in ET.fromstring(r.content).iter("item"):
@@ -567,7 +571,7 @@ def main():
         if re.match(r"^https?://", s["q"]):   # a press search follows a phrase, not a web address (add those as an RSS feed instead)
             status.append({"name": s["q"], "kind": "search", "ok": False, "error": "not a search phrase (looks like a web address)", "added": bool(s.get("added"))})
             continue
-        time.sleep(1.5)
+        time.sleep(3)
         try:
             n = add_items(out, gnews(s["q"], s.get("lang", "fr")), {"name": "Search", "cls": "search", "tags": s.get("tags", []) + ["watch"]}, now, PER_SEARCH, {"query": s["q"]})
             status.append({"name": s["q"], "kind": "search", "ok": True, "n": n, "added": bool(s.get("added"))})
@@ -598,9 +602,15 @@ def main():
     if cons:   # keep the previous file when both sites failed
         CONSULT.write_text(json.dumps({"updated": now.isoformat(timespec="seconds"), "items": cons, "errors": errs}, ensure_ascii=False, separators=(",", ":")))
     print(f"  consultations: {sum(c['open'] for c in cons)} open, {len(cons)} listed" + (f" · {errs}" if errs else ""))
-    OUT.write_text(json.dumps({"updated": now.isoformat(timespec="seconds"), "items": out[:MAX_ITEMS], "sources": status},
+    # the newest articles, but official texts and reports of the last 30 days always stay: with many outlets, a Journal
+    # officiel text of a few days back would otherwise fall out of the file
+    month = (now - timedelta(days=30)).isoformat(timespec="seconds")
+    keep = [r for r in out if r["date"] >= month and ({"official", "report"} & set(r["tags"]))]
+    rest = [r for r in out if r not in keep][: max(0, MAX_ITEMS - len(keep))]
+    items = sorted(keep + rest, key=lambda i: i["date"], reverse=True)
+    OUT.write_text(json.dumps({"updated": now.isoformat(timespec="seconds"), "items": items, "sources": status},
                               ensure_ascii=False, separators=(",", ":")))
-    print(f"Wrote {OUT}: {min(len(out), MAX_ITEMS)} items")
+    print(f"Wrote {OUT}: {len(items)} items ({len(keep)} official texts and reports kept)")
 
 
 if __name__ == "__main__":
