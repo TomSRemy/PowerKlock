@@ -433,6 +433,45 @@ def consultations(now):
     return keep, errors
 
 
+def rte_news(now, days=14):
+    """RTE's national publications (reports, market and grid analyses, press releases) from its dated sitemap; local
+    works news (worksites, roads, archaeology, drills) are left out. One page read per item, for its title."""
+    sm = requests.get("https://www.rte-france.com/sitemap.xml", headers=BROWSER_UA, timeout=30).text
+    since = datetime.fromordinal(now.date().toordinal() - days).strftime("%Y-%m-%d")
+    keep = re.compile(r"marche|prix|bilan|barometre|consommation|production|hiver|ete-|ecowatt|nucleaire|interconnex|flexibilit|stockage|"
+                      r"raccordement|previsionnel|futurs|analyse|equilibre|capacite|europe|record|export|negatif|tarif|investiss|obligataire|schema|surete", re.I)
+    skip = re.compile(r"travaux|chantier|archeolog|pompier|plage|riverain|route|circulation|deviation|formation|recrut|carrieres|concertation|enquete", re.I)
+    items = []
+    for loc, lastmod in re.findall(r"<loc>([^<]+)</loc><lastmod>([^<]+)</lastmod>", sm):
+        path = loc.replace("https://www.rte-france.com", "")
+        if lastmod[:10] < since or not path.startswith(("/actualites/", "/donnees-publications/")) or skip.search(path) \
+                or not (path.startswith("/donnees-publications/") or keep.search(path)):
+            continue
+        page = requests.get(loc, headers=BROWSER_UA, timeout=30).text
+        title = re.sub(r"\s*\|\s*RTE\s*$", "", clean(html.unescape((re.findall(r"<title>(.*?)</title>", page, re.S) or [""])[0])))
+        desc = clean(html.unescape((re.findall(r'<meta name="description" content="([^"]*)"', page) or [""])[0]), 240)
+        if title:
+            items.append({"title": clean(title, 220), "link": loc, "date": parse_date(lastmod.replace("Z", ":00+00:00")), "snippet": desc})
+    return items
+
+
+def eex_news(now):
+    """EEX newsroom (press releases and customer information on power, gas, guarantees of origin, ETS): the data alerts
+    and technical notices of the exchange are left out."""
+    s = html.unescape(requests.get("https://www.eex.com/en/newsroom/news", headers=BROWSER_UA, timeout=30).text)
+    items = []
+    for d, title, href in re.findall(r'<time itemprop="datePublished" datetime="([^"]+)">.*?<a title="([^"]+)" href="([^"]+)"', s, re.S):
+        if re.search(r"data alert|data amendment|reminder|T7|C7|datasource|maintenance|trading calendar|holiday", title, re.I):
+            continue
+        if not re.search(r"press release|guarantee|origin|\bGOs?\b|auction|french|france|power|electricity|gas|ETS|emission|PPA|capacity|renewable|volumes", title, re.I):
+            continue
+        items.append({"title": clean(title, 220), "link": urljoin("https://www.eex.com", href), "date": parse_date(d + "T12:00:00+00:00"), "snippet": ""})
+    return items
+
+
+PUBLISHERS = {"rte": ("RTE", "rte", rte_news, ["fr", "power", "markets"]), "eex": ("EEX", "eex", eex_news, ["markets"])}
+
+
 OFFICIAL = {"jorf": ("Journal officiel", jorf, ["fr", "regulation", "official"]), "eurlex": ("EUR-Lex", eurlex, ["regulation", "official"])}
 
 
@@ -532,6 +571,12 @@ def main():
             status.append({"name": s["q"], "kind": "search", "ok": True, "n": n, "added": bool(s.get("added"))})
         except Exception as e:
             status.append({"name": s["q"], "kind": "search", "ok": False, "error": str(e)[:120], "added": bool(s.get("added"))})
+    for key, (name, cls, fn, tags) in PUBLISHERS.items():
+        try:
+            n = add_items(out, fn(now), {"name": name, "cls": cls, "tags": tags}, now, 20)
+            status.append({"name": name, "kind": "page", "ok": True, "n": n})
+        except Exception as e:
+            status.append({"name": name, "kind": "page", "ok": False, "error": str(e)[:120]})
     for key, (name, fn, tags) in OFFICIAL.items():
         try:
             n = add_items(out, fn(), {"name": name, "cls": "official", "tags": tags}, now, 30, {"official": True})
