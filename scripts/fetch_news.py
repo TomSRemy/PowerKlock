@@ -76,7 +76,9 @@ KEYWORDS = {
     # a published report, not any article with « report » in it (« -report » wire titles, « reported »): a report noun with
     # a publishing word or a publisher, or the named reference series
     "report": r"\b((publie|publient|publishes?|published|releases?|annual|annuel|nouveau|new|latest|dernier) (un |une |son |sa |its |a |the )?(rapport|report|étude|study)|(rapport|report|étude) (annuel|annual|de la CRE|de RTE|de l.ADEME|of the IEA|de l.AIE)|baromètres?|barometers?|observatoires?|panorama|bilan (électrique|prévisionnel)|bulletin trimestriel|(energy|electricity|gas) outlook|residual mix(es)?|mix résiduel|économie du système|[eé]clairage sur)\b",
-    "power": r"\b(power|electricity|grid|solar|wind|nuclear|hydro|battery|batteries|renewable[s]?|tso)\b",
+    "power": r"\b(power|electricity|grid|solar|wind|nuclear|hydro|battery|batteries|renewable[s]?|tso|électricité|électrique\w*|réseau|nucléaire|centrale\w*|batterie\w*)\b",
+    # renewables: production, support schemes, PPAs, guarantees of origin, storage beside them (English and French)
+    "renewables": r"\b(renewable\w*|renouvelable\w*|enr|solar|solaire\w*|photovolta\w*|pv|wind\w*|éolien\w*|offshore wind|agrivolta\w*|biométhane|biogas|biogaz|méthanisation|hydrogène vert|green hydrogen|hydroélectri\w*|ppas?|garanties? d.origine|guarantees? of origin|complément de rémunération|obligation d.achat|appel d.offres (cre|ppe\w*)|repowering|autoconsommation|self-consumption|agrégat\w*|aggregat\w*|capture (price|rate)|prix de capture|cannibali\w*)\b",
 }
 
 
@@ -92,7 +94,7 @@ COUNTRIES = {
     "EU": r"\b(eu|europe\w*|européen\w*|brussels|bruxelles|acer|entso-e|commission)\b",
 }
 # how much a category moves prices or the renewable business; readers' votes add to it (data/news_prefs.json)
-CAT_W = {"geopolitics": 3.0, "regulation": 2.0, "deal": 2.0, "build": 1.5, "gas": 1.5, "markets": 1.0, "carbon": 1.0, "power": 0.5}
+CAT_W = {"geopolitics": 3.0, "regulation": 2.0, "deal": 2.0, "build": 1.5, "gas": 1.5, "renewables": 1.5, "markets": 1.0, "carbon": 1.0, "power": 0.5}
 PREFS = Path(__file__).resolve().parent.parent / "data" / "news_prefs.json"
 STOP = set("the a an of to in on for and with at by from is are was were be as its it this that new over after into more than les des une un du de la le et en au aux pour par sur dans avec est sont qui que plus son ses leur".split())
 

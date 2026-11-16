@@ -23,14 +23,15 @@ import os
 import re
 import sys
 import urllib.request
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from morning_mail import last_two, load as dload, spot   # noqa: E402
+from morning_mail import load as dload, spot   # noqa: E402
 from news_digest import PARIS, PROXY, sid, similar, top_posts   # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-OUT = os.path.join(ROOT, "data", "newsletter.json")
+OUT = os.path.join(ROOT, "data", "newsletter.json")             # 7 O'Klock, every weekday at 7:00
+OUT_WEEK = os.path.join(ROOT, "data", "newsletter_week.json")   # PowerBrunch, Monday late morning: the week before
 PROFILES = os.path.join(ROOT, "config", "news_profiles.json")
 MODEL = "@cf/qwen/qwen3-30b-a3b-fp8"
 MIN_SCORE = 3.0     # a story below this is off the reader's subjects (e.g. an offshore-wind contract for a lawyer)
@@ -78,7 +79,8 @@ def score(i, prof, now):
     if "official" in tags:
         s += prof.get("official", 1)
     s += 1.5 * min(2, kw_hits(i, prof))
-    s += 1.0 if ("fr" in tags or "FR" in (i.get("countries") or [])) else 0
+    fr = "fr" in tags or "FR" in (i.get("countries") or [])
+    s += prof.get("france", 1.0) if fr else -prof.get("foreign", 0.0)     # France first, as much as the profile asks
     s += 0.5 * math.log2(1 + len(i.get("other_sources") or []))
     s -= 0.3 * (age_h(i, now) or 0) / 24
     return s
@@ -128,41 +130,69 @@ def clip(s, n):
     return s if len(s) <= n else s[:n].rsplit(" ", 1)[0] + "…"
 
 
-def markets(today):
+def back(points, days):
+    """the last point, and the one `days` before it (1: the previous session; 7: a week before)"""
+    p = [x for x in points if x[1] is not None]
+    if len(p) < 2:
+        return None, None
+    if days <= 1:
+        return p[-1], p[-2]
+    lim = (date.fromisoformat(str(p[-1][0])[:10]) - timedelta(days=days)).isoformat()
+    old = [x for x in p if str(x[0])[:10] <= lim]
+    return p[-1], (old[-1] if old else p[0])
+
+
+def markets(today, days=1):
+    """six tiles: France spot (tomorrow once published, else today), Cal+1 France, PEG, TTF, EUA, solar PPA benchmark;
+    change on the previous session, or over the week for the PowerBrunch"""
     rows = []
 
-    def row(fr, en, value, unit, chg=None, pct=None, src="", page="markets/spot"):
-        rows.append({"label": [fr, en], "value": round(value, 2), "unit": unit, "page": page,
-                     "chg": None if chg is None else round(chg, 2), "pct": None if pct is None else round(pct, 1), "src": src})
-    t, tm = spot(today), spot(today + timedelta(days=1))
-    if tm and t:
-        row("Spot France demain", "France spot tomorrow", tm["base"], "€/MWh", tm["base"] - t["base"], (tm["base"] / t["base"] - 1) * 100 if t["base"] else None, "ENTSO-E")
-    if t:
-        y = spot(today - timedelta(days=1))
-        row("Spot France aujourd'hui", "France spot today", t["base"], "€/MWh", t["base"] - y["base"] if y else None, (t["base"] / y["base"] - 1) * 100 if y and y["base"] else None, "ENTSO-E")
+    def row(fr, en, value, unit, ref=None, src="", page="markets/spot"):
+        rows.append({"label": [fr, en], "value": round(value, 2), "unit": unit, "page": page, "src": src,
+                     "chg": None if ref is None else round(value - ref, 2), "pct": None if not ref else round((value / ref - 1) * 100, 1)})
+    if days > 1:
+        sp = [(d.isoformat(), (spot(d) or {}).get("base")) for d in (today - timedelta(days=k) for k in range(14, -1, -1))]
+        sp = [x for x in sp if x[1] is not None]
+        if len(sp) >= 8:
+            last7 = sum(v for _, v in sp[-7:]) / 7
+            prev7 = sum(v for _, v in sp[-14:-7]) / len(sp[-14:-7])
+            row("Spot France, moyenne 7 j", "France spot, 7-day average", last7, "€/MWh", prev7, "ENTSO-E")
+    else:
+        t, tm = spot(today), spot(today + timedelta(days=1))
+        if tm and t:
+            row("Spot France demain", "France spot tomorrow", tm["base"], "€/MWh", t["base"], "ENTSO-E")
+        elif t:
+            y = spot(today - timedelta(days=1))
+            row("Spot France aujourd'hui", "France spot today", t["base"], "€/MWh", y["base"] if y else None, "ENTSO-E")
     ch = dload("history", "fr_market_calchain.json") or {}
     y1 = str(today.year + 1)
     cy = ((ch.get("FR") or {}).get("years") or {}).get(y1)
     if cy:
-        a, b = last_two(list(zip(cy["dates"], cy["values"])))
+        a, b = back(list(zip(cy["dates"], cy["values"])), days)
         if a:
-            row(f"Cal {y1[2:]} France", f"Cal {y1[2:]} France", a[1], "€/MWh", a[1] - b[1], (a[1] / b[1] - 1) * 100 if b[1] else None, "EEX", "markets/forwards")
+            row(f"Cal {y1[2:]} France", f"Cal {y1[2:]} France", a[1], "€/MWh", b[1], "EEX", "markets/forwards")
     cs = (dload("history", "commodities_series.json") or {}).get("series") or (dload("commodities.json") or {}).get("series") or {}
     for k, fr, en, u in (("peg", "Gaz PEG", "PEG gas", "€/MWh"), ("ttf", "Gaz TTF", "TTF gas", "€/MWh"), ("eua", "CO₂ EUA", "CO₂ EUA", "€/t")):
         if k in cs:
-            a, b = last_two(cs[k]["points"])
+            a, b = back(cs[k]["points"], days)
             if a:
-                row(fr, en, a[1], u, a[1] - b[1], (a[1] / b[1] - 1) * 100 if b[1] else None, "SEFE", "markets/fuels")
+                row(fr, en, a[1], u, b[1], "SEFE", "markets/fuels")
+    bm = (dload("history", "ppa_benchmark.json") or {}).get("days") or {}
+    pts = [(d, (bm[d].get("solar") or {}).get("ppa")) for d in sorted(bm)]
+    a, b = back(pts, max(days, 7))     # the benchmark moves slowly: its change over a week
+    if a:
+        row("PPA solaire France", "France solar PPA", a[1], "€/MWh", b[1], "PowerKlock", "tools/ppa")
     return rows
 
 
 def main():
-    force, use_ai = "--force" in sys.argv, "--no-ai" not in sys.argv
+    force, use_ai, weekly = "--force" in sys.argv, "--no-ai" not in sys.argv, "--weekly" in sys.argv
+    out_path = OUT_WEEK if weekly else OUT
     now = datetime.now(timezone.utc)
     today = now.astimezone(PARIS).date()
-    old = load(OUT, {}) or {}
-    if today.weekday() >= 5 and not force:
-        print("weekend: no edition")
+    old = load(out_path, {}) or {}
+    if (today.weekday() >= 5 or (weekly and today.weekday() != 0)) and not force:
+        print("no edition today")
         return 0
     if old.get("date") == today.isoformat() and not force:
         print("today's edition exists")
@@ -172,44 +202,46 @@ def main():
     cons = (load(os.path.join(ROOT, "data", "consultations.json"), {}) or {}).get("items") or []
     events = (load(os.path.join(ROOT, "data", "events.json"), {}) or {}).get("items") or []
     monday = today.weekday() == 0
-    hours = 84 if monday else 36
-    days = 4 if monday else 2
+    # 7 O'Klock: the last 36 hours (84 on Monday); PowerBrunch: the week before, larger
+    hours = 7 * 24 + 12 if weekly else 84 if monday else 36
+    days = 7 if weekly else 4 if monday else 2
+    ahead = 21 if weekly else 14
     iso = lambda d: d.isoformat()   # noqa: E731
     recent = [i for i in items if (age_h(i, now) or 1e9) <= days * 24 + 12]
-    official = sorted([i for i in recent if "official" in (i.get("tags") or [])], key=lambda i: i["date"], reverse=True)[:6]
+    official = sorted([i for i in recent if "official" in (i.get("tags") or [])], key=lambda i: i["date"], reverse=True)[:12 if weekly else 6]
     pubs = sorted([i for i in recent if "official" not in (i.get("tags") or []) and ("report" in (i.get("tags") or []) or re.match(r"^(RTE|EEX)\b", i.get("source", "")))],
-                  key=lambda i: i["date"], reverse=True)[:5]
+                  key=lambda i: i["date"], reverse=True)[:10 if weekly else 5]
     t = iso(today)
-    c_soon = [c for c in cons if c.get("deadline") and t <= c["deadline"] <= iso(today + timedelta(days=14))]
-    c_new = [c for c in cons if c.get("opened") and c["opened"] >= iso(today - timedelta(days=3)) and (not c.get("deadline") or c["deadline"] >= t)]
-    cs = sorted({c["link"]: c for c in c_soon + c_new}.values(), key=lambda c: c.get("deadline") or "9999")[:6]
+    c_soon = [c for c in cons if c.get("deadline") and t <= c["deadline"] <= iso(today + timedelta(days=ahead))]
+    c_new = [c for c in cons if c.get("opened") and c["opened"] >= iso(today - timedelta(days=days)) and (not c.get("deadline") or c["deadline"] >= t)]
+    cs = sorted({c["link"]: c for c in c_soon + c_new}.values(), key=lambda c: c.get("deadline") or "9999")[:10 if weekly else 6]
     agenda = sorted([{"date": e["date"], "title": e.get("title"), "text": e.get("text"), "kind": e.get("kind")} for e in events
-                     if t <= (e.get("date") or "") <= iso(today + timedelta(days=14))], key=lambda e: e["date"])[:5]
-    posts = top_posts(now - timedelta(days=7))[:1]
+                     if t <= (e.get("date") or "") <= iso(today + timedelta(days=ahead))], key=lambda e: e["date"])[:8 if weekly else 5]
+    posts = top_posts(now - timedelta(days=7))
     # the day's essentials (scripts/news_digest.py, run just before): today's, or on Monday the week before
     dg = load(os.path.join(ROOT, "data", "news_digest.json"), {}) or {}
     week = iso(today - timedelta(days=today.weekday()))
-    de = dg.get("weekly") if monday and (dg.get("weekly") or {}).get("week") == week else dg.get("daily") if (dg.get("daily") or {}).get("date") == t else None
+    de = (dg.get("weekly") if (dg.get("weekly") or {}).get("week") == week else None) if weekly else dg.get("daily") if (dg.get("daily") or {}).get("date") == t else None
     digest = {"weekly": de is dg.get("weekly"), "items": [{k: x.get(k) for k in ("text", "text_en", "title", "link", "sources")} for x in (de or {}).get("items") or []]} if de else None
     # the main articles: the highest impact of the last 24 hours (72 on Monday), one per outlet, one per event
     top, srcs = [], set()
-    for i in sorted([i for i in items if (age_h(i, now) or 1e9) <= (72 if monday else 24) and "official" not in (i.get("tags") or [])], key=lambda i: -(i.get("impact") or 0)):
+    for i in sorted([i for i in items if (age_h(i, now) or 1e9) <= (7 * 24 if weekly else 72 if monday else 24) and "official" not in (i.get("tags") or [])], key=lambda i: -(i.get("impact") or 0)):
         if i["source"] in srcs or any(similar(i["title"], o["title"]) for o in top):
             continue
         top.append(i)
         srcs.add(i["source"])
-        if len(top) == 6:
+        if len(top) == (12 if weekly else 6):
             break
     edition = {"date": t, "updated": now.isoformat(timespec="seconds"), "engine": "proxy" if use_ai else "none", "monday": monday,
-               "markets": markets(today),
+               "weekly": weekly, "markets": markets(today, 7 if weekly else 1),
                "official": [{"title": i["title"], "link": i["link"], "source": i["source"], "date": i["date"]} for i in official],
                "pubs": [{"title": i["title"], "link": i["link"], "source": i["source"], "date": i["date"]} for i in pubs],
                "cons": [{k: c.get(k) for k in ("title", "link", "source", "deadline", "opened", "theme")} for c in cs],
-               "agenda": agenda, "post": posts[0] if posts else None, "digest": digest,
+               "agenda": agenda, "post": posts[0] if posts else None, "posts": posts if weekly else [], "digest": digest,
                "top": [{"title": i["title"], "link": i["link"], "source": i["source"], "date": i["date"], "n": 1 + len(i.get("other_sources") or [])} for i in top],
                "profiles": {}}
     for pid, prof in profiles.items():
-        stories = pick(items, prof, now, hours)
+        stories = pick(items, prof, now, hours, 5 if weekly else 3)
         gen = {}
         if use_ai and stories:
             try:
@@ -227,14 +259,14 @@ def main():
                 what = None                             # the model saying it has nothing to say
             if what and similar(what, i["title"]):
                 what = None                             # nothing beyond the title (press searches give titles only)
-            out.append({"id": sid(i), "title": i["title"], "link": i["link"], "tags": i.get("tags") or [],
+            out.append({"id": sid(i), "title": i["title"], "link": i["link"], "tags": (i.get("tags") or []) + (["fr"] if "FR" in (i.get("countries") or []) and "fr" not in (i.get("tags") or []) else []),
                         "sources": [i["source"]] + [o["source"] for o in i.get("other_sources") or []],
                         "what": clip(what, 360) or None, "what_en": (clip(g.get("what_en"), 360) or None) if what and what == g.get("what") else None,
                         "for_you": (clip(g.get("for_you"), 260) or None) if not EMPTY.search(g.get("for_you") or "") else None, "for_you_en": clip(g.get("for_you_en"), 260) or None})
         edition["profiles"][pid] = {"name": prof["name"], "short": prof["short"], "order": prof["order"], "headline": clip(gen.get("headline"), 300) or None, "headline_en": clip(gen.get("headline_en"), 300) or None,
                                     "stories": out, "ai": bool(by)}
         print(f"{pid}: {len(out)} stories, AI text for {len(by)}")
-    with open(OUT, "w") as f:
+    with open(out_path, "w") as f:
         json.dump(edition, f, ensure_ascii=False, indent=1)
     return 0
 
