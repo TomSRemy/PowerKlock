@@ -43,7 +43,8 @@ jobs:
           SMTP_PASS: ${{ secrets.SMTP_PASS }}
           ALERT_FROM: ${{ secrets.ALERT_FROM }}
           MORNING_TO: ${{ secrets.MORNING_TO }}
-          MORNING_PROFILE: ${{ vars.MORNING_PROFILE }}   # reading profile of the e-mail: regulatory, origination (default), markets, commercial
+          MORNING_PROFILE: ${{ vars.MORNING_PROFILE }}   # profile of the team list's e-mail: regulatory, legal, origination (default), markets, commercial
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}   # readers who chose the newsletter in the site (public.news_profile) get their own edition
         run: |
           # one mail a day: the run whose UTC hour is 07:00 in Paris
           if [ "$(TZ=Europe/Paris date +%H)" != "07" ] && [ "${{ github.event_name }}" = "schedule" ]; then echo "Not 07:00 in Paris"; exit 0; fi

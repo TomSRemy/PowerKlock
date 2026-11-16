@@ -14,6 +14,7 @@ Environment (GitHub secrets)
     python scripts/morning_mail.py
 """
 import json
+import re
 import os
 import smtplib
 from datetime import date, datetime, timedelta
@@ -138,10 +139,16 @@ SEC = {'markets': 'Marchés en 30 secondes', 'digest': 'L’essentiel', 'top': '
        'pubs': 'Publications et rapports', 'agenda': 'Agenda', 'post': 'À lire : le post de la semaine'}
 
 
-def render_letter(today, E, pid):
+def render_letter(today, E, pid, mine=None, exclude=()):
     """The newsletter (scripts/news_letter.py) for one reading profile, as an e-mail: inline styles and tables, which
     every mail client shows the same way. Rising prices in red, falling in green, as on the site."""
-    ed = E['profiles'][pid]
+    ed = dict(E['profiles'][pid])
+    # a reader's words to leave out (public.news_profile.exclude): stories and articles that contain one are dropped
+    if exclude:
+        rx = re.compile('|'.join(r'\b' + re.escape(w) + r'\b' for w in exclude), re.I)
+        keep = lambda o: not rx.search(o.get('title') or '')  # noqa: E731
+        ed['stories'] = [st for st in ed.get('stories') or [] if keep(st)]
+        E = dict(E, top=[o for o in E.get('top') or [] if keep(o)], pubs=[o for o in E.get('pubs') or [] if keep(o)])
     f = 'font-family:Inter,Arial,sans-serif'
     serif = 'font-family:Georgia,\'Times New Roman\',serif'
     h2 = lambda t: f'<p style="{f};font-size:11px;font-weight:700;letter-spacing:1px;color:#5F738A;margin:0 0 10px;text-transform:uppercase">{t}</p>'  # noqa: E731
@@ -217,7 +224,11 @@ def render_letter(today, E, pid):
         'agenda': lambda: box(h2(SEC['agenda']) + ul([f'<b>{ddm(e["date"])}</b> · {esc((e.get("title") or [""])[0])}' for e in E['agenda']])) if E.get('agenda') else '',
         'post': lambda: box(h2(SEC['post']) + f'<p style="{f};font-size:14px;margin:0">{a(E["post"]["url"], (E["post"].get("author") or "LinkedIn") + (" · " + E["post"]["note"] if E["post"].get("note") else ""))}</p>') if E.get('post') else '',
     }
-    body = ''.join(secs[k]() for k in ed.get('order') or secs if k in secs)
+    # the articles of the last day that match the reader's own keywords (public.news_keyword), after the stories
+    secs['mine'] = lambda: box(h2('Vos mots-clés') + ul([f'{a(o["link"], o["title"])} <span style="color:#62758B;font-size:12px">· {esc(o["source"])}</span>' for o in mine])) if mine else ''
+    order = list(ed.get('order') or secs)
+    order.insert(order.index('stories') + 1 if 'stories' in order else len(order), 'mine')
+    body = ''.join(secs[k]() for k in order if k in secs)
     one = box(h2('En une phrase') + f'<p style="{serif};font-size:19px;line-height:1.45;margin:0;color:#13202E">{esc(ed["headline"])}</p>') if ed.get('headline') else ''
     html = (f'<div style="background:#E9EEF3;padding:16px 6px"><table role="presentation" width="100%" style="max-width:680px;margin:0 auto;border-collapse:collapse;table-layout:fixed;word-wrap:break-word;overflow-wrap:anywhere;background:#FFFFFF;border:1px solid #D5DEE8;border-radius:12px">'
             f'<tr><td style="background:#0a0e13;padding:22px 28px;border-radius:12px 12px 0 0">'
@@ -235,30 +246,80 @@ def render_letter(today, E, pid):
     return subject, text, html
 
 
+def readers(today):
+    """The readers who chose to receive the newsletter (public.news_profile, warehouse migration 024): their address
+    (the one they chose, else their account's), profile, words to leave out and own keywords. Daily on weekdays, or
+    Monday only. Nothing without SUPABASE_DB_URL; the newsletter must not depend on the database."""
+    db = os.environ.get('SUPABASE_DB_URL')
+    if not db:
+        return []
+    try:
+        import psycopg
+        with psycopg.connect(db, connect_timeout=15, prepare_threshold=None) as conn, conn.cursor() as cur:
+            cur.execute("""select coalesce(p.email_to, u.email), p.profile, p.exclude, p.email_freq,
+                                  coalesce((select array_agg(k.keyword) from public.news_keyword k where k.user_id = p.user_id), '{}')
+                           from public.news_profile p join auth.users u on u.id = p.user_id
+                           left join public.user_access a on a.user_id = p.user_id
+                           where p.email_freq <> 'never' and coalesce(a.status, 'approved') = 'approved'""")
+            rows = cur.fetchall()
+    except Exception as e:
+        print('  readers not read:', str(e)[:160])
+        return []
+    return [{'to': to, 'profile': pr, 'exclude': list(ex or []), 'keywords': list(kw or [])} for to, pr, ex, fq, kw in rows
+            if to and (fq == 'daily' or (fq == 'monday' and today.weekday() == 0))]
+
+
+def mine_for(kw, exclude, monday):
+    """the articles of the last 24 hours (72 on Monday) whose title or extract contains one of the reader's keywords"""
+    if not kw:
+        return []
+    items = (load('news.json') or {}).get('items') or []
+    since = (datetime.now(PARIS) - timedelta(hours=72 if monday else 24)).isoformat()
+    has = lambda i, ws: any(re.search(r'\b' + re.escape(w.lower()) + r'\b', (i.get('title', '') + ' ' + (i.get('snippet') or '')).lower()) for w in ws)  # noqa: E731
+    out = [i for i in items if (i.get('date') or '') >= since and has(i, kw) and not has(i, exclude)]
+    return sorted(out, key=lambda i: -(i.get('impact') or 0))[:6]
+
+
+def send(mails):
+    """mails: [(to list, subject, text, html)], one SMTP session"""
+    with smtplib.SMTP(os.environ['SMTP_HOST'], int(os.environ.get('SMTP_PORT') or 587), timeout=60) as srv:
+        srv.starttls()
+        srv.login(os.environ['SMTP_USER'], os.environ['SMTP_PASS'])
+        for to, subject, text, html in mails:
+            msg = EmailMessage()
+            msg['Subject'] = subject
+            msg['From'] = os.environ.get('ALERT_FROM') or os.environ['SMTP_USER']
+            msg['To'] = ', '.join(to)
+            msg.set_content(text)
+            msg.add_alternative(html, subtype='html')
+            srv.send_message(msg)
+
+
 def main():
     today, rows, lines, heading = build()
     subject, text, html = render(today, rows, lines, heading)
     # the newsletter when today's edition exists (scripts/news_letter.py), for the profile MORNING_PROFILE (default: origination)
     E = load('newsletter.json') or {}
+    has_letter = E.get('date') == today.isoformat() and bool(E.get('profiles'))
     pid = os.environ.get('MORNING_PROFILE') or 'origination'
-    if E.get('date') == today.isoformat() and pid in (E.get('profiles') or {}):
+    if has_letter and pid in E['profiles']:
         subject, text, html = render_letter(today, E, pid)
-    to = [x.strip() for x in (os.environ.get('MORNING_TO') or '').split(',') if x.strip()]
-    ready = all(os.environ.get(k) for k in ('SMTP_HOST', 'SMTP_USER', 'SMTP_PASS')) and to
+    # each reader who chose it in the site gets the edition of their profile; the team list (MORNING_TO) the default one
+    personal = []
+    if has_letter:
+        for r in readers(today):
+            p = r['profile'] if r['profile'] in E['profiles'] else pid
+            personal.append(([r['to']], *render_letter(today, E, p, mine_for(r['keywords'], r['exclude'], today.weekday() == 0), r['exclude'])))
+    seen = {m[0][0].lower() for m in personal}
+    to = [x.strip() for x in (os.environ.get('MORNING_TO') or '').split(',') if x.strip() and x.strip().lower() not in seen]
+    mails = ([(to, subject, text, html)] if to else []) + personal
+    ready = all(os.environ.get(k) for k in ('SMTP_HOST', 'SMTP_USER', 'SMTP_PASS')) and mails
     if os.environ.get('MORNING_DRY_RUN') == '1' or not ready:
-        print(subject + '\n\n' + text + ('' if ready else '\n(not sent: SMTP_* or MORNING_TO missing)'))
+        print(subject + '\n\n' + text + ('' if ready else '\n(not sent: SMTP_* or recipients missing)'))
+        print(f'{len(personal)} personal edition(s) prepared')
         return 0
-    msg = EmailMessage()
-    msg['Subject'] = subject
-    msg['From'] = os.environ.get('ALERT_FROM') or os.environ['SMTP_USER']
-    msg['To'] = ', '.join(to)
-    msg.set_content(text)
-    msg.add_alternative(html, subtype='html')
-    with smtplib.SMTP(os.environ['SMTP_HOST'], int(os.environ.get('SMTP_PORT') or 587), timeout=60) as srv:
-        srv.starttls()
-        srv.login(os.environ['SMTP_USER'], os.environ['SMTP_PASS'])
-        srv.send_message(msg)
-    print('sent to', len(to), 'recipient(s)')
+    send(mails)
+    print('sent:', len(to), 'on the team list,', len(personal), 'personal edition(s)')
     return 0
 
 

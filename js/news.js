@@ -8,7 +8,7 @@ async function loadNews() {
   const badge = document.getElementById('news-updated');
   if (!window._newsAcctWired && window.PKAccount && PKAccount.configured) {
     window._newsAcctWired = true;
-    PKAccount.onChange(async () => { await _newsLoadPersonal(); _newsApplyConfig(); _newsRefreshKwUI(); renderNewsPosts(); renderNews(newsData); });
+    PKAccount.onChange(async () => { await _newsLoadPersonal(); _newsApplyConfig(); _newsRefreshKwUI(); renderNewsPosts(); renderNews(newsData); if (_nlData !== undefined) { await _nlLoadMe(); renderNewsLetter(); } });
   }
   await Promise.all([_newsLoadSections(), _newsLoadPersonal(), _newsLoadDigest(), _newsLoadCons()]);
   try {
@@ -121,19 +121,34 @@ function renderNewsOfficial() {
 
 // ── Newsletter (data/newsletter.json, scripts/news_letter.py): one edition per reading profile (config/news_profiles.json),
 // the profile chosen here is kept in this browser; the morning e-mail sends the same edition ──
-let _nlData;
+let _nlData, _nlMe;   // _nlMe: this reader's row of public.news_profile (warehouse migration 024), when signed in
+async function _nlLoadMe() {
+  const A = window.PKAccount; _nlMe = null;
+  if (!A || !A.configured) return;
+  try { await A.ready(); if (!A.user) return;
+    const { data } = await A.client().from('news_profile').select('profile, exclude, email_freq, email_to').eq('user_id', A.user.id).maybeSingle();
+    _nlMe = data || { profile: null, exclude: [], email_freq: 'never', email_to: null };
+  } catch (e) { console.warn('[news] profile not read:', e); }
+}
+async function _nlSave(patch, msgEl) {
+  const A = window.PKAccount; if (!A || !A.user) return;
+  const row = Object.assign({ profile: 'origination', exclude: [], email_freq: 'never', email_to: null }, _nlMe || {}, patch, { user_id: A.user.id, updated_at: new Date().toISOString() });
+  const { error } = await A.client().from('news_profile').upsert(row, { onConflict: 'user_id' });
+  if (msgEl) { msgEl.textContent = error ? _newsT('Non enregistré : ', 'Not saved: ') + error.message : _newsT('Enregistré.', 'Saved.'); msgEl.className = 'news-add-msg ' + (error ? 'ko' : 'ok'); }
+  if (!error) _nlMe = row;
+}
 const _NL_SEC = { markets: ['Marchés en 30 secondes', 'Markets in 30 seconds'], digest: ['L’essentiel', 'The essentials'], top: ['Les articles principaux', 'Main articles'], stories: ['Les sujets du jour', 'Today’s stories'], official: ['Textes officiels', 'Official texts'],
   cons: ['Consultations : à vos réponses', 'Consultations: time to reply'], pubs: ['Publications et rapports', 'Publications and reports'], agenda: ['Agenda', 'Agenda'], post: ['À lire : le post de la semaine', 'Worth reading: post of the week'] };
 async function renderNewsLetter() {
   const host = document.getElementById('news-letter'); if (!host) return;
   if (_nlData === undefined) {
     const get = async u => { try { const r = await fetch(u + '?t=' + Date.now()); return r.ok ? await r.json() : null; } catch (_) { return null; } };
-    _nlData = await get(DATA_BASE + 'newsletter.json');
+    [_nlData] = await Promise.all([get(DATA_BASE + 'newsletter.json'), _nlLoadMe()]);
   }
   const E = _nlData, P = (E && E.profiles) || {};
   if (!E || !E.profiles || !Object.keys(P).length) { host.innerHTML = `<div class="news-src-help">${_newsT('La première édition paraît demain à 7 h.', 'The first edition comes out tomorrow at 7:00.')}</div>`; return; }
   const en = window.PKI18n && PKI18n.lang === 'en', L = a => Array.isArray(a) ? (en ? a[1] : a[0]) : (a || '');
-  let pid = _newsStore('pk-nl-profile'); if (!P[pid] || !E.profiles[pid]) pid = P.origination && E.profiles.origination ? 'origination' : Object.keys(E.profiles)[0];
+  let pid = (_nlMe && _nlMe.profile) || _newsStore('pk-nl-profile'); if (!P[pid] || !E.profiles[pid]) pid = P.origination && E.profiles.origination ? 'origination' : Object.keys(E.profiles)[0];
   const prof = P[pid], ed = E.profiles[pid] || { stories: [] };
   const day = new Date(E.date + 'T12:00:00Z').toLocaleDateString(en ? 'en-GB' : 'fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
   const num = (v, d = 2) => v == null ? '–' : v.toLocaleString(en ? 'en-GB' : 'fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d });
@@ -165,7 +180,26 @@ async function renderNewsLetter() {
       ${head ? `<section class="nl-sec nl-one"><h2>${_newsT('En une phrase', 'In one sentence')}</h2><p>${_newsEsc(head)}</p></section>` : ''}
       ${body}
       <footer class="nl-foot">${_newsT('Sujets choisis selon le profil ; résumés rédigés automatiquement à partir des titres et extraits, chaque sujet renvoie à ses articles. Le même contenu part par e-mail chaque matin de semaine à 7 h.', 'Stories chosen for the profile; summaries written automatically from the titles and extracts, each story links to its articles. The same content goes out by e-mail every weekday at 7:00.')}</footer></div>`;
-  host.querySelectorAll('[data-nlp]').forEach(b => b.addEventListener('click', () => { _newsStore('pk-nl-profile', b.dataset.nlp); renderNewsLetter(); }));
+  const A = window.PKAccount, me = _nlMe;
+  host.insertAdjacentHTML('beforeend', `<div class="news-side nl-me"><div class="news-side-t">${_newsT('Ma newsletter par e-mail', 'My newsletter by e-mail')}</div>` + (A && A.user && me ? `
+    <div class="nl-me-row" role="radiogroup">${[['daily', _newsT('Chaque matin de semaine, 7 h', 'Every weekday at 7:00')], ['monday', _newsT('Le lundi seulement (la semaine écoulée)', 'Monday only (the week before)')], ['never', _newsT('Jamais, sur le site uniquement', 'Never, on the site only')]].map(([k, l]) => `<label><input type="radio" name="nl-freq" value="${k}"${(me.email_freq || 'never') === k ? ' checked' : ''}> ${l}</label>`).join('')}</div>
+    <label class="nl-me-f">${_newsT('Adresse (vide = celle du compte)', 'Address (empty = the account’s)')}<input type="email" id="nl-to" class="fuel-select" maxlength="200" value="${_newsEsc(me.email_to || '')}" placeholder="${_newsEsc(A.user.email || '')}"></label>
+    <label class="nl-me-f">${_newsT('Mots à écarter, séparés par des virgules', 'Words to leave out, comma separated')}<input type="text" id="nl-ex" class="fuel-select" maxlength="400" value="${_newsEsc((me.exclude || []).join(', '))}" placeholder="${_newsT('ex. pétrole, crypto', 'e.g. oil, crypto')}"></label>
+    <div class="nl-me-help">${_newsT('Profil : celui choisi ci-dessus. Vos mots-clés (Le fil › Mes mots-clés) ajoutent une rubrique « Vos mots-clés » à votre e-mail.', 'Profile: the one chosen above. Your keywords (The feed › My keywords) add a “Your keywords” section to your e-mail.')}</div>
+    <div class="nl-me-row"><button type="button" class="pk-btn-primary" id="nl-save">${_newsT('Enregistrer', 'Save')}</button><span class="news-add-msg" id="nl-msg"></span></div>`
+    : `<div class="nl-me-help">${_newsT('Connectez-vous pour recevoir chaque matin l’édition de votre profil, à l’adresse de votre choix.', 'Sign in to receive your profile’s edition every morning, at the address of your choice.')} <a href="#" id="nl-signin">${_newsT('Se connecter', 'Sign in')}</a></div>`) + `</div>`);
+  const si = document.getElementById('nl-signin'); if (si) si.addEventListener('click', e => { e.preventDefault(); if (window.PKDash && PKDash.openAccount) PKDash.openAccount(); });
+  const sv = document.getElementById('nl-save');
+  if (sv) sv.addEventListener('click', () => {
+    const freq = (host.querySelector('input[name="nl-freq"]:checked') || {}).value || 'never', to = document.getElementById('nl-to').value.trim(), msg = document.getElementById('nl-msg');
+    if (to && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)) { msg.textContent = _newsT('Adresse e-mail non valide.', 'Invalid e-mail address.'); msg.className = 'news-add-msg ko'; return; }
+    _nlSave({ profile: pid, email_freq: freq, email_to: to || null, exclude: [...new Set(document.getElementById('nl-ex').value.split(',').map(x => x.trim()).filter(Boolean))].slice(0, 25) }, msg);
+  });
+  host.querySelectorAll('[data-nlp]').forEach(b => b.addEventListener('click', async () => {
+    _newsStore('pk-nl-profile', b.dataset.nlp);
+    if (_nlMe && window.PKAccount && PKAccount.user) await _nlSave({ profile: b.dataset.nlp });   // signed in: the e-mail follows the profile shown
+    renderNewsLetter();
+  }));
 }
 
 // what the last run read, beside the feed
