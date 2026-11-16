@@ -209,34 +209,6 @@
       ]
     },
     {
-      "name": "Watts Else",
-      "cls": "wattselse",
-      "url": "https://wattselse.com/veille/feed.xml",
-      "tags": [
-        "fr",
-        "power",
-        "regulation"
-      ]
-    },
-    {
-      "name": "Bruegel",
-      "cls": "bruegel",
-      "url": "https://www.bruegel.org/rss?type=all",
-      "tags": [
-        "regulation",
-        "markets"
-      ],
-      "require": "energ|électri|electric|gas|power|carbon|climat|ets|grid|renewable"
-    },
-    {
-      "name": "Michael Liebreich",
-      "cls": "liebreich",
-      "url": "https://mliebreich.substack.com/feed",
-      "tags": [
-        "power"
-      ]
-    },
-    {
       "name": "Energy Flux",
       "cls": "energyflux",
       "url": "https://www.energyflux.news/rss/",
@@ -255,43 +227,6 @@
       ]
     },
     {
-      "name": "Oxford Institute for Energy Studies",
-      "cls": "oies",
-      "url": "https://www.oxfordenergy.org/feed/",
-      "tags": [
-        "gas",
-        "power",
-        "regulation"
-      ]
-    },
-    {
-      "name": "Ember",
-      "cls": "ember",
-      "url": "https://ember-energy.org/insights/",
-      "tags": [
-        "power",
-        "carbon"
-      ]
-    },
-    {
-      "name": "Agora Energiewende",
-      "cls": "agora",
-      "url": "https://www.agora-energiewende.org/news-events",
-      "tags": [
-        "power",
-        "regulation"
-      ]
-    },
-    {
-      "name": "Electricity Maps",
-      "cls": "elecmaps",
-      "url": "https://www.electricitymaps.com/blog",
-      "tags": [
-        "power",
-        "carbon"
-      ]
-    },
-    {
       "name": "Timera Energy",
       "cls": "timera",
       "url": "https://timera-energy.com/feed/",
@@ -299,16 +234,6 @@
         "gas",
         "power",
         "markets"
-      ]
-    },
-    {
-      "name": "Neon (Lion Hirth)",
-      "cls": "neon",
-      "url": "https://old.neon-energie.de/en/feed/",
-      "tags": [
-        "power",
-        "markets",
-        "regulation"
       ]
     },
     {
@@ -835,6 +760,38 @@
         "markets",
         "regulation"
       ]
+    },
+    {
+      "q": "site:ember-energy.org",
+      "tags": [
+        "power",
+        "carbon"
+      ],
+      "lang": "en"
+    },
+    {
+      "q": "site:electricitymaps.com",
+      "tags": [
+        "power",
+        "carbon"
+      ],
+      "lang": "en"
+    },
+    {
+      "q": "site:oxfordenergy.org",
+      "tags": [
+        "gas",
+        "power",
+        "regulation"
+      ],
+      "lang": "en"
+    },
+    {
+      "q": "site:mliebreich.substack.com",
+      "tags": [
+        "power"
+      ],
+      "lang": "en"
     }
   ]
 }
