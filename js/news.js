@@ -177,7 +177,7 @@ async function renderNewsLetter() {
   const head = (en && ed.headline_en) || ed.headline;
   host.innerHTML = `<div class="nl-profiles" role="group" aria-label="${_newsT('Profil', 'Profile')}">${Object.keys(P).filter(k => E.profiles[k]).map(k => `<button type="button" class="filter-btn${k === pid ? ' active' : ''}" data-nlp="${k}">${_newsEsc(L(P[k].name))}</button>`).join('')}</div>
     <div class="nl-paper"><header class="nl-head"><div><span translate="no" class="nl-brand">PowerKlock</span><span>${_newsEsc(day)}</span></div>
-      <h1>${_newsT('Le matin de l’énergie', 'The energy morning')}</h1><div>${_newsT('Édition', 'Edition')} <b>${_newsEsc(L(prof.name))}</b>${E.monday ? ' · ' + _newsT('depuis vendredi', 'since Friday') : ''}</div></header>
+      <h1 translate="no">7 O’Klock</h1><div>${_newsT('Marchés, régulation, énergie : l’essentiel à 7 h', 'Markets, regulation, energy: what matters at 7:00')}</div><div>${_newsT('Édition', 'Edition')} <b>${_newsEsc(L(prof.name))}</b>${E.monday ? ' · ' + _newsT('depuis vendredi', 'since Friday') : ''}</div></header>
       ${head ? `<section class="nl-sec nl-one"><h2>${_newsT('En une phrase', 'In one sentence')}</h2><p>${_newsEsc(head)}</p></section>` : ''}
       ${body}
       <footer class="nl-foot">${_newsT('Sujets choisis selon le profil ; résumés rédigés automatiquement à partir des titres et extraits, chaque sujet renvoie à ses articles. Le même contenu part par e-mail chaque matin de semaine à 7 h.', 'Stories chosen for the profile; summaries written automatically from the titles and extracts, each story links to its articles. The same content goes out by e-mail every weekday at 7:00.')}</footer></div>`;

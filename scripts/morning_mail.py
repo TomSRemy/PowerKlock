@@ -247,16 +247,17 @@ def render_letter(today, E, pid, mine=None, exclude=()):
     html = (f'<div style="background:#E9EEF3;padding:16px 6px"><table role="presentation" width="100%" style="max-width:680px;margin:0 auto;border-collapse:collapse;table-layout:fixed;word-wrap:break-word;overflow-wrap:anywhere;background:#FFFFFF;border:1px solid #D5DEE8;border-radius:12px">'
             f'<tr><td style="background:#0a0e13;padding:22px 28px;border-radius:12px 12px 0 0">'
             f'<p style="{f};margin:0;font-size:13px;color:#B8C9D9"><span style="font-weight:700;color:#14D3A9">PowerKlock</span> · {frday(today)}</p>'
-            f'<p style="{serif};margin:8px 0 4px;font-size:28px;font-weight:600;color:#FFFFFF">Le matin de l’énergie</p>'
+            f'<p style="{serif};margin:8px 0 4px;font-size:30px;font-weight:600;color:#FFFFFF">7 O’Klock</p>'
+            f'<p style="{f};margin:0 0 4px;font-size:13px;color:#B8C9D9">Marchés, régulation, énergie : l’essentiel à 7 h</p>'
             f'<p style="{f};margin:0;font-size:13px;color:#B8C9D9">Édition <b style="color:#FFFFFF">{esc(ed["name"][0])}</b>{" · depuis vendredi" if E.get("monday") else ""}</p></td></tr>'
             + one + body +
             f'<tr><td style="padding:16px 28px;background:#F3F6F9;border-radius:0 0 12px 12px"><p style="{f};font-size:12px;color:#62758B;line-height:1.6;margin:0">'
             f'Sujets choisis pour le profil {esc(ed["name"][0])} ; résumés rédigés automatiquement à partir des titres et extraits, chaque sujet renvoie à ses articles.<br>'
             f'<a href="{SITE}#intel/news" style="color:#0B7A62">Voir en ligne et changer de profil</a></p></td></tr></table></div>')
-    text = f'PowerKlock · Le matin de l’énergie · {frday(today)} · édition {ed["name"][0]}\n\n' + (ed.get('headline') or '') + '\n\n' + \
+    text = f'7 O’Klock · {frday(today)} · édition {ed["name"][0]}\n\n' + (ed.get('headline') or '') + '\n\n' + \
         '\n'.join(f'{r["label"][0]} : {n(r["value"])} {r["unit"]}' for r in E.get('markets') or []) + '\n\n' + \
         '\n'.join(f'• {st["title"]}\n  {st.get("what") or ""}\n  {st["link"]}' for st in ed.get('stories') or []) + f'\n\n{SITE}#intel/news\n'
-    subject = f'PowerKlock · Le matin de l’énergie · {frday(today)}'
+    subject = f'7 O’Klock · {frday(today)}'
     return subject, text, html
 
 
@@ -352,6 +353,8 @@ def main():
         if all(os.environ.get(k) for k in ('SMTP_HOST', 'SMTP_USER', 'SMTP_PASS')):
             send(mails)
             print('preview sent to', len(to), 'admin(s)')
+        else:
+            print('::warning::preview not sent: the SMTP_HOST, SMTP_USER and SMTP_PASS secrets are not set')
         return 0
     seen = {m[0][0].lower() for m in personal}
     to = [x.strip() for x in (os.environ.get('MORNING_TO') or '').split(',') if x.strip() and x.strip().lower() not in seen]
@@ -359,6 +362,8 @@ def main():
     ready = all(os.environ.get(k) for k in ('SMTP_HOST', 'SMTP_USER', 'SMTP_PASS')) and mails
     if os.environ.get('MORNING_DRY_RUN') == '1' or not ready:
         print(subject + '\n\n' + text + ('' if ready else '\n(not sent: SMTP_* or recipients missing)'))
+        if not all(os.environ.get(k) for k in ('SMTP_HOST', 'SMTP_USER', 'SMTP_PASS')):
+            print('::warning::nothing sent: the SMTP_HOST, SMTP_USER and SMTP_PASS secrets are not set')
         print(f'{len(personal)} personal edition(s) prepared')
         return 0
     send(mails)
