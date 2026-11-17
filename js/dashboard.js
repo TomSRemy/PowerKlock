@@ -1064,19 +1064,30 @@
   // Accounts, for the admin (public.news_admin): approve a new account, refuse it, close or reopen one
   // (public.user_access, warehouse migration 022: the admin may read and update every row). Closing keeps the account's
   // data; it only takes the site and the newsletter away.
+  const SECS = [['dashboards', 'My dashboards'], ['markets', 'Markets'], ['renewables', 'Renewables'], ['power-system', 'Power system'], ['tools', 'Tools'], ['intelligence', 'Intelligence'], ['games', 'Games']];
   async function adminAccounts(host) {
     const A = window.PKAccount, cl = A.client && A.client();
     if (!host || !cl) return;
     const { data: isAdmin } = await cl.rpc('is_news_admin');
     if (!isAdmin) return;
     const draw = async () => {
-      const { data, error } = await cl.from('user_access').select('user_id, email, status, requested_at').order('requested_at', { ascending: false });
+      let { data, error } = await cl.from('user_access').select('user_id, email, status, requested_at, sections').order('requested_at', { ascending: false });
+      if (error && /sections/.test(error.message)) ({ data, error } = await cl.from('user_access').select('user_id, email, status, requested_at').order('requested_at', { ascending: false }));
       if (error) { host.innerHTML = `<p class="pkd-p">Accounts not read: ${esc(error.message)}</p>`; return; }
       const lab = { pending: 'Waiting', approved: 'Approved', refused: 'Closed' };
       const btn = (r, to, txt, cls) => `<button type="button" class="${cls}" data-u="${r.user_id}" data-s="${to}">${txt}</button>`;
       host.innerHTML = `<div class="pkd-acc"><div class="pkd-acc-t">Accounts (admin) · ${data.filter(r => r.status === 'pending').length} waiting</div>` +
         data.map(r => `<div class="pkd-acc-r"><span class="pkd-acc-e">${esc(r.email || '')}<small>${lab[r.status] || r.status} · ${esc(String(r.requested_at || '').slice(0, 10))}</small></span>
-          <span class="pkd-acc-b">${r.status !== 'approved' ? btn(r, 'approved', 'Approve', 'pk-btn-primary') : ''}${r.status === 'pending' ? btn(r, 'refused', 'Refuse', 'pk-btn-ghost') : ''}${r.status === 'approved' && r.user_id !== A.user.id ? btn(r, 'refused', 'Close', 'pk-btn-ghost') : ''}</span></div>`).join('') + '</div>';
+          <span class="pkd-acc-b">${r.status !== 'approved' ? btn(r, 'approved', 'Approve', 'pk-btn-primary') : ''}${r.status === 'pending' ? btn(r, 'refused', 'Refuse', 'pk-btn-ghost') : ''}${r.status === 'approved' && r.user_id !== A.user.id ? btn(r, 'refused', 'Close', 'pk-btn-ghost') : ''}</span></div>` +
+          (r.status === 'approved' && r.user_id !== A.user.id && 'sections' in r ? `<details class="pkd-acc-s"><summary>Access: ${r.sections ? r.sections.length + ' of ' + SECS.length + ' sections' : 'whole site'}</summary>
+            <div>${SECS.map(([k, l]) => `<label><input type="checkbox" data-sec="${k}" data-uid="${r.user_id}"${!r.sections || r.sections.includes(k) ? ' checked' : ''}> ${l}</label>`).join('')}</div>
+            <small>Today is always shown. Untick a section to hide it from this account.</small></details>` : '')).join('') + '</div>';
+      host.querySelectorAll('[data-sec]').forEach(cb => cb.addEventListener('change', async () => {
+        const boxes = [...host.querySelectorAll('[data-uid="' + cb.dataset.uid + '"]')], on = boxes.filter(x => x.checked).map(x => x.dataset.sec);
+        const { error: e } = await cl.from('user_access').update({ sections: on.length === SECS.length ? null : on }).eq('user_id', cb.dataset.uid);
+        if (e) { toast('Not saved: ' + e.message); cb.checked = !cb.checked; return; }
+        toast('Access saved');
+      }));
       host.querySelectorAll('[data-u]').forEach(b => b.addEventListener('click', async () => {
         b.disabled = true;
         const { error: e } = await cl.from('user_access').update({ status: b.dataset.s, decided_at: new Date().toISOString() }).eq('user_id', b.dataset.u);
