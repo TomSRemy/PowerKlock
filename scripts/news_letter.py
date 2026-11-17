@@ -160,29 +160,46 @@ def go_y1():
 
 
 def markets(today, days=1):
-    """six tiles, French first: France spot (tomorrow once published, else today), Cal+1 France, PEG, EUA, guarantees of
-    origin (next year), hours at 0 € or below (tomorrow, or forecast); change on the previous session, or over the week
-    for the PowerBrunch"""
+    """the price tiles, French first (chosen by the owner, 17 Nov. 2026): France spot today and tomorrow (published at
+    about 13:00, before that PowerKlock's forecast), peak minus base, hours at 0 € or below, Cal+1 France, PEG,
+    guarantees of origin for next year. Change on the day before (the spot), on the previous session (Cal, PEG), on the
+    previous quote (GO). PowerBrunch: the week's averages and totals against the week before; no « tomorrow »."""
     rows = []
 
-    def row(fr, en, value, unit, ref=None, src="", page="markets/spot", hours=False):
-        # hours at 0 € or below: the change in hours, and more of them means lower prices (green, as falling prices)
-        rows.append({"label": [fr, en], "value": round(value, 1 if hours else 2), "unit": unit, "page": page, "src": src, "hours": hours,
-                     "chg": None if ref is None else round(value - ref, 2), "pct": None if (not ref or hours) else round((value / ref - 1) * 100, 1)})
+    def row(fr, en, value, unit, ref=None, src="", page="markets/spot", show="pct"):
+        # show: pct = change in %; abs = change in the unit (a spread); h = change in hours (more hours at 0 € or below
+        # is lower prices, shown green like a fall)
+        rows.append({"label": [fr, en], "value": round(value, 1 if show == "h" else 2), "unit": unit, "page": page, "src": src,
+                     "show": show, "hours": show == "h", "chg": None if ref is None else round(value - ref, 2),
+                     "pct": None if (not ref or show != "pct") else round((value / ref - 1) * 100, 1)})
+    sp = {k: spot(today - timedelta(days=k)) for k in range(-1, 14)}   # -1 = tomorrow
     if days > 1:
-        sp = [(d.isoformat(), (spot(d) or {}).get("base")) for d in (today - timedelta(days=k) for k in range(14, -1, -1))]
-        sp = [x for x in sp if x[1] is not None]
-        if len(sp) >= 8:
-            last7 = sum(v for _, v in sp[-7:]) / 7
-            prev7 = sum(v for _, v in sp[-14:-7]) / len(sp[-14:-7])
-            row("Spot France, moyenne 7 j", "France spot, 7-day average", last7, "€/MWh", prev7, "ENTSO-E")
+        w = [sp[k] for k in range(0, 7) if sp.get(k)]
+        p = [sp[k] for k in range(7, 14) if sp.get(k)]
+        if len(w) == 7:
+            avg = lambda xs, f: sum(f(x) for x in xs) / len(xs)  # noqa: E731
+            row("Spot France, moyenne 7 j", "France spot, 7-day average", avg(w, lambda x: x["base"]), "€/MWh", avg(p, lambda x: x["base"]) if p else None, "ENTSO-E")
+            row("Pointe − base, moyenne 7 j", "Peak − base, 7-day average", avg(w, lambda x: x["peak"] - x["base"]), "€/MWh", avg(p, lambda x: x["peak"] - x["base"]) if p else None, "ENTSO-E", show="abs")
+            row("Heures ≤ 0 €, 7 jours", "Hours ≤ 0 €, 7 days", sum(x["neg"] for x in w), "h", sum(x["neg"] for x in p) if len(p) == 7 else None, "ENTSO-E", "markets/spot/negative", show="h")
     else:
-        t, tm = spot(today), spot(today + timedelta(days=1))
-        if tm and t:
-            row("Spot France demain", "France spot tomorrow", tm["base"], "€/MWh", t["base"], "ENTSO-E")
-        elif t:
-            y = spot(today - timedelta(days=1))
+        t, y, tm = sp.get(0), sp.get(1), sp.get(-1)
+        fc = ((dload("neg_forecast.json") or {}).get("days") or {}).get((today + timedelta(days=1)).isoformat()) or {}
+        if t:
             row("Spot France aujourd'hui", "France spot today", t["base"], "€/MWh", y["base"] if y else None, "ENTSO-E")
+        if tm:
+            row("Spot France demain", "France spot tomorrow", tm["base"], "€/MWh", t["base"] if t else None, "ENTSO-E")
+        else:
+            pv = [x for x in (fc.get("price") or []) if x is not None]
+            if pv:
+                row("Spot demain (prévision)", "Spot tomorrow (forecast)", sum(pv) / len(pv), "€/MWh", t["base"] if t else None, "PowerKlock")
+        if t:
+            row("Pointe − base aujourd'hui", "Peak − base today", t["peak"] - t["base"], "€/MWh", (y["peak"] - y["base"]) if y else None, "ENTSO-E", show="abs")
+        if tm:
+            row("Heures ≤ 0 € demain", "Hours ≤ 0 € tomorrow", tm["neg"], "h", t["neg"] if t else None, "ENTSO-E", "markets/spot/negative", show="h")
+        elif fc.get("expected_hours") is not None:
+            row("Heures ≤ 0 € demain (prévision)", "Hours ≤ 0 € tomorrow (forecast)", fc["expected_hours"], "h", t["neg"] if t else None, "PowerKlock", "markets/spot/negative", show="h")
+        elif t:
+            row("Heures ≤ 0 € aujourd'hui", "Hours ≤ 0 € today", t["neg"], "h", y["neg"] if y else None, "ENTSO-E", "markets/spot/negative", show="h")
     ch = dload("history", "fr_market_calchain.json") or {}
     y1 = str(today.year + 1)
     cy = ((ch.get("FR") or {}).get("years") or {}).get(y1)
@@ -191,29 +208,13 @@ def markets(today, days=1):
         if a:
             row(f"Cal {y1[2:]} France", f"Cal {y1[2:]} France", a[1], "€/MWh", b[1], "EEX", "markets/forwards")
     cs = (dload("history", "commodities_series.json") or {}).get("series") or (dload("commodities.json") or {}).get("series") or {}
-    for k, fr, en, u in (("peg", "Gaz PEG", "PEG gas", "€/MWh"), ("eua", "CO₂ EUA", "CO₂ EUA", "€/t")):
-        if k in cs:
-            a, b = back(cs[k]["points"], days)
-            if a:
-                row(fr, en, a[1], u, b[1], "SEFE", "markets/fuels")
+    if "peg" in cs:
+        a, b = back(cs["peg"]["points"], days)
+        if a:
+            row("Gaz PEG", "PEG gas", a[1], "€/MWh", b[1], "SEFE", "markets/fuels")
     go = go_y1()
     if go:
         row("Garanties d'origine " + go[2], "Guarantees of origin " + go[2], go[0], "€/MWh", go[1], "Commerg", "markets/go")
-    if days > 1:     # hours at 0 € or below: the week, against the week before
-        hs = [(spot(today - timedelta(days=k)) or {}).get("neg") for k in range(13, -1, -1)]
-        if all(h is not None for h in hs[-7:]):
-            prev = [h for h in hs[:7] if h is not None]
-            row("Heures ≤ 0 €, 7 jours", "Hours ≤ 0 €, 7 days", sum(hs[-7:]), "h", sum(prev) if len(prev) == 7 else None, "ENTSO-E", "markets/spot/negative", hours=True)
-    else:            # tomorrow's, published at about 13:00; before, PowerKlock's forecast
-        tm, t = spot(today + timedelta(days=1)), spot(today)
-        fc = ((dload("neg_forecast.json") or {}).get("days") or {}).get((today + timedelta(days=1)).isoformat()) or {}
-        if tm:
-            row("Heures ≤ 0 € demain", "Hours ≤ 0 € tomorrow", tm["neg"], "h", t["neg"] if t else None, "ENTSO-E", "markets/spot/negative", hours=True)
-        elif fc.get("expected_hours") is not None:
-            row("Heures ≤ 0 € demain (prévision)", "Hours ≤ 0 € tomorrow (forecast)", fc["expected_hours"], "h", t["neg"] if t else None, "PowerKlock", "markets/spot/negative", hours=True)
-        elif t:
-            y = spot(today - timedelta(days=1))
-            row("Heures ≤ 0 € aujourd'hui", "Hours ≤ 0 € today", t["neg"], "h", y["neg"] if y else None, "ENTSO-E", "markets/spot/negative", hours=True)
     return rows
 
 
