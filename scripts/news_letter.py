@@ -27,7 +27,7 @@ from datetime import date, datetime, timedelta, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from morning_mail import load as dload, spot   # noqa: E402
-from news_digest import PARIS, PROXY, sid, similar, top_posts   # noqa: E402
+from news_digest import PARIS, PROXY, energy, focus, sid, similar, top_posts   # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, "data", "newsletter.json")             # 7 O'Klock, every weekday at 7:00
@@ -87,7 +87,7 @@ def score(i, prof, now):
 
 
 def pick(items, prof, now, hours, n=3):
-    cands = [i for i in items if (age_h(i, now) or 1e9) <= hours and "official" not in (i.get("tags") or [])]   # texts have their own section
+    cands = [i for i in items if (age_h(i, now) or 1e9) <= hours and "official" not in (i.get("tags") or []) and energy(i)]   # texts have their own section
     cands.sort(key=lambda i: -score(i, prof, now))
     out, seen_src = [], set()
     for i in cands:
@@ -280,7 +280,8 @@ def main():
     digest = {"weekly": de is dg.get("weekly"), "items": [{k: x.get(k) for k in ("text", "text_en", "title", "link", "sources")} for x in (de or {}).get("items") or []]} if de else None
     # the main articles: the highest impact of the last 24 hours (72 on Monday), one per outlet, one per event
     top, srcs = [], set()
-    for i in sorted([i for i in items if (age_h(i, now) or 1e9) <= (7 * 24 if weekly else 72 if monday else 24) and "official" not in (i.get("tags") or [])], key=lambda i: -(i.get("impact") or 0)):
+    for i in sorted([i for i in items if (age_h(i, now) or 1e9) <= (7 * 24 if weekly else 72 if monday else 24) and "official" not in (i.get("tags") or []) and energy(i)],
+                    key=lambda i: -((i.get("impact") or 0) + focus(i))):
         if i["source"] in srcs or any(similar(i["title"], o["title"]) for o in top):
             continue
         top.append(i)
@@ -289,20 +290,22 @@ def main():
             break
     edition = {"date": t, "updated": now.isoformat(timespec="seconds"), "engine": "proxy" if use_ai else "none", "monday": monday,
                "weekly": weekly, "markets": markets(today, 7 if weekly else 1),
-               "official": [{"title": i["title"], "link": i["link"], "source": i["source"], "date": i["date"]} for i in official],
-               "pubs": [{"title": i["title"], "link": i["link"], "source": i["source"], "date": i["date"]} for i in pubs],
+               "official": [{"title": i["title"], "link": i["link"], "source": i["source"], "date": i["date"], "tags": i.get("tags") or []} for i in official],
+               "pubs": [{"title": i["title"], "link": i["link"], "source": i["source"], "date": i["date"], "tags": i.get("tags") or []} for i in pubs],
                "cons": [{k: c.get(k) for k in ("title", "link", "source", "deadline", "opened", "theme")} for c in cs],
                "agenda": agenda, "post": posts[0] if posts else None, "posts": posts if weekly else [], "digest": digest,
-               "top": [{"title": i["title"], "link": i["link"], "source": i["source"], "date": i["date"], "n": 1 + len(i.get("other_sources") or [])} for i in top],
+               "top": [{"title": i["title"], "link": i["link"], "source": i["source"], "date": i["date"], "n": 1 + len(i.get("other_sources") or []), "tags": i.get("tags") or []} for i in top],
                "profiles": {}}
     for pid, prof in profiles.items():
         stories = pick(items, prof, now, hours, 5 if weekly else 3)
         gen = {}
         if use_ai and stories:
-            try:
-                gen = ask(prof, stories, official)
-            except Exception as e:      # the edition still goes out, with the extracts
-                print(f"{pid}: AI text not written ({str(e)[:160]})")
+            for attempt in (1, 2):      # the free model sometimes answers without JSON: once more
+                try:
+                    gen = ask(prof, stories, official)
+                    break
+                except Exception as e:  # the edition still goes out, with the extracts
+                    print(f"{pid}: AI text not written, attempt {attempt} ({str(e)[:160]})")
         by = {str(x.get("id")): x for x in (gen.get("items") or []) if isinstance(x, dict)}
         out = []
         for i in stories:
