@@ -10,3 +10,6 @@
   Cache-Control: no-cache
 /assets/*.json
   Cache-Control: no-cache
+/data/agenda.ics
+  Content-Type: text/calendar; charset=utf-8
+  Cache-Control: max-age=3600

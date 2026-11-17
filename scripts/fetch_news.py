@@ -15,7 +15,7 @@ import sys
 import time
 from urllib.parse import urljoin, urlparse
 import xml.etree.ElementTree as ET
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
 from pathlib import Path
 
@@ -23,7 +23,7 @@ import requests
 
 OUT = Path("data/news.json")
 PER_SOURCE = 15
-MAX_ITEMS = 220
+MAX_ITEMS = 300
 UA = {"User-Agent": "Mozilla/5.0 (PowerKlock news fetcher; +https://github.com/TomSRemy/PowerKlock)"}
 
 CONFIG = Path("config/news_sources.json")
@@ -73,8 +73,12 @@ KEYWORDS = {
     "regulation": r"\b(regulat\w*|réglement\w*|directive|commission|acer|cre|tariff|tarif\w*|law|loi|décret|decree|arrêté|bill|consultation|policy|ministry|ministère|government|gouvernement|auction design|appel d'offres|tender|ppe|arenh|vnu|turpe|accise|capacity mechanism|mécanisme de capacité|cfd|complément de rémunération)\b",
     "markets": r"\b(price[sd]?|market[s]?|trading|futures|forward|auction|spot|day-ahead|ppa|contract[s]?)\b",
     # reference reports: periodic studies, barometers, observatories, outlooks, residual mix
-    "report": r"\b(rapports?|reports?|baromètres?|barometers?|observatoires?|panorama|bilan (électrique|prévisionnel)|bulletin trimestriel|outlook|residual mix(es)?|mix résiduel|économie du système|[eé]clairage sur)\b",
-    "power": r"\b(power|electricity|grid|solar|wind|nuclear|hydro|battery|batteries|renewable[s]?|tso)\b",
+    # a published report, not any article with « report » in it (« -report » wire titles, « reported »): a report noun with
+    # a publishing word or a publisher, or the named reference series
+    "report": r"\b((publie|publient|publishes?|published|releases?|annual|annuel|nouveau|new|latest|dernier) (un |une |son |sa |its |a |the )?(rapport|report|étude|study)|(rapport|report|étude) (annuel|annual|de la CRE|de RTE|de l.ADEME|of the IEA|de l.AIE)|baromètres?|barometers?|observatoires?|panorama|bilan (électrique|prévisionnel)|bulletin trimestriel|(energy|electricity|gas) outlook|residual mix(es)?|mix résiduel|économie du système|[eé]clairage sur)\b",
+    "power": r"\b(power|electricity|grid|solar|wind|nuclear|hydro|battery|batteries|renewable[s]?|tso|électricité|électrique\w*|réseau|nucléaire|centrale\w*|batterie\w*)\b",
+    # renewables: production, support schemes, PPAs, guarantees of origin, storage beside them (English and French)
+    "renewables": r"\b(renewable\w*|renouvelable\w*|enr|solar|solaire\w*|photovolta\w*|pv|wind\w*|éolien\w*|offshore wind|agrivolta\w*|biométhane|biogas|biogaz|méthanisation|hydrogène vert|green hydrogen|hydroélectri\w*|ppas?|garanties? d.origine|guarantees? of origin|complément de rémunération|obligation d.achat|appel d.offres (cre|ppe\w*)|repowering|autoconsommation|self-consumption|agrégat\w*|aggregat\w*|capture (price|rate)|prix de capture|cannibali\w*)\b",
 }
 
 
@@ -90,7 +94,7 @@ COUNTRIES = {
     "EU": r"\b(eu|europe\w*|européen\w*|brussels|bruxelles|acer|entso-e|commission)\b",
 }
 # how much a category moves prices or the renewable business; readers' votes add to it (data/news_prefs.json)
-CAT_W = {"geopolitics": 3.0, "regulation": 2.0, "deal": 2.0, "build": 1.5, "gas": 1.5, "markets": 1.0, "carbon": 1.0, "power": 0.5}
+CAT_W = {"geopolitics": 3.0, "regulation": 2.0, "deal": 2.0, "build": 1.5, "gas": 1.5, "renewables": 1.5, "markets": 1.0, "carbon": 1.0, "power": 0.5}
 PREFS = Path(__file__).resolve().parent.parent / "data" / "news_prefs.json"
 STOP = set("the a an of to in on for and with at by from is are was were be as its it this that new over after into more than les des une un du de la le et en au aux pour par sur dans avec est sont qui que plus son ses leur".split())
 
@@ -265,7 +269,11 @@ READERS = {"cre": read_cre, "cre_consultations": read_cre_consultations}
 def gnews(q, lang="fr"):
     """Press search over the last 7 days (Google News RSS: titles and links only, no article text is kept)."""
     loc = {"fr": dict(hl="fr", gl="FR", ceid="FR:fr"), "en": dict(hl="en-GB", gl="GB", ceid="GB:en")}[lang]
-    r = requests.get(GNEWS, params=dict(q=q + " when:7d", **loc), headers=UA, timeout=25)
+    for wait in (0, 20, 45):     # Google throttles bursts: wait and try again
+        time.sleep(wait)
+        r = requests.get(GNEWS, params=dict(q=q + " when:7d", **loc), headers=UA, timeout=25)
+        if r.status_code != 429:
+            break
     r.raise_for_status()
     items = []
     for el in ET.fromstring(r.content).iter("item"):
@@ -567,7 +575,7 @@ def main():
         if re.match(r"^https?://", s["q"]):   # a press search follows a phrase, not a web address (add those as an RSS feed instead)
             status.append({"name": s["q"], "kind": "search", "ok": False, "error": "not a search phrase (looks like a web address)", "added": bool(s.get("added"))})
             continue
-        time.sleep(1.5)
+        time.sleep(3)
         try:
             n = add_items(out, gnews(s["q"], s.get("lang", "fr")), {"name": "Search", "cls": "search", "tags": s.get("tags", []) + ["watch"]}, now, PER_SEARCH, {"query": s["q"]})
             status.append({"name": s["q"], "kind": "search", "ok": True, "n": n, "added": bool(s.get("added"))})
@@ -598,9 +606,15 @@ def main():
     if cons:   # keep the previous file when both sites failed
         CONSULT.write_text(json.dumps({"updated": now.isoformat(timespec="seconds"), "items": cons, "errors": errs}, ensure_ascii=False, separators=(",", ":")))
     print(f"  consultations: {sum(c['open'] for c in cons)} open, {len(cons)} listed" + (f" · {errs}" if errs else ""))
-    OUT.write_text(json.dumps({"updated": now.isoformat(timespec="seconds"), "items": out[:MAX_ITEMS], "sources": status},
+    # the newest articles, but official texts and reports of the last 30 days always stay: with many outlets, a Journal
+    # officiel text of a few days back would otherwise fall out of the file
+    month = (now - timedelta(days=30)).isoformat(timespec="seconds")
+    keep = [r for r in out if r["date"] >= month and ({"official", "report"} & set(r["tags"]))]
+    rest = [r for r in out if r not in keep][: max(0, MAX_ITEMS - len(keep))]
+    items = sorted(keep + rest, key=lambda i: i["date"], reverse=True)
+    OUT.write_text(json.dumps({"updated": now.isoformat(timespec="seconds"), "items": items, "sources": status},
                               ensure_ascii=False, separators=(",", ":")))
-    print(f"Wrote {OUT}: {min(len(out), MAX_ITEMS)} items")
+    print(f"Wrote {OUT}: {len(items)} items ({len(keep)} official texts and reports kept)")
 
 
 if __name__ == "__main__":

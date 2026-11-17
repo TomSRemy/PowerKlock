@@ -1,0 +1,324 @@
+{
+  "_help": "Reading profiles of the morning newsletter (scripts/news_letter.py, Intelligence › News › Newsletter). weights: how much each news category counts for this reader (fetch_news.py tags); official: bonus of a text from the Journal officiel, EUR-Lex or the CRE; keywords: words that lift a story (title or extract, case-insensitive); order: the sections, top to bottom (markets = the price tiles, digest = the day's essentials, stories = 3 stories for this reader, top = the main articles); reader: who reads it, given to the AI that writes « Pour vous ». require_keyword: a story must contain one of the keywords (the legal profile: a story without a legal subject is left out). france: points for a story about France; foreign: points taken off a story elsewhere.",
+  "profiles": {
+    "regulatory": {
+      "name": [
+        "Réglementaire et affaires publiques",
+        "Regulatory and public affairs"
+      ],
+      "short": [
+        "Réglementaire",
+        "Regulatory"
+      ],
+      "reader": "un juriste ou un responsable des affaires publiques d'un acteur de l'électricité : il suit les textes, les consultations, les décisions de la CRE et les positions des fédérations, et doit savoir quoi faire (répondre, alerter, analyser)",
+      "weights": {
+        "regulation": 3,
+        "assoc": 1.5,
+        "report": 1.5,
+        "power": 1,
+        "gas": 1,
+        "carbon": 1,
+        "markets": 0.5,
+        "deal": 0.3,
+        "build": 0.3,
+        "geopolitics": 0.5
+      },
+      "official": 3,
+      "keywords": [
+        "CRE",
+        "consultation",
+        "délibération",
+        "décret",
+        "arrêté",
+        "projet de loi",
+        "PPE",
+        "TURPE",
+        "directive",
+        "règlement",
+        "Conseil d'État",
+        "Commission européenne",
+        "ordonnance"
+      ],
+      "order": [
+        "digest",
+        "official",
+        "cons",
+        "stories",
+        "top",
+        "pubs",
+        "markets",
+        "agenda",
+        "post"
+      ],
+      "france": 2
+    },
+    "legal": {
+      "name": [
+        "Juriste",
+        "Legal"
+      ],
+      "short": [
+        "Juriste",
+        "Legal"
+      ],
+      "reader": "un juriste ou un avocat en droit de l'énergie : il suit les textes publiés et en projet, les décisions du Conseil d'État, de la CJUE, de la CRE et du CoRDiS, les recours et les contentieux, et ce qui change pour les contrats",
+      "weights": {
+        "regulation": 3,
+        "assoc": 1,
+        "report": 1,
+        "power": 1,
+        "gas": 1,
+        "carbon": 1,
+        "deal": 1,
+        "markets": 0.3,
+        "build": 0.3,
+        "geopolitics": 0.3
+      },
+      "official": 3.5,
+      "keywords": [
+        "Conseil d'État",
+        "CJUE",
+        "Cour de justice",
+        "recours",
+        "annulation",
+        "contentieux",
+        "jurisprudence",
+        "CoRDiS",
+        "sanction",
+        "décret",
+        "arrêté",
+        "ordonnance",
+        "directive",
+        "règlement",
+        "délibération",
+        "loi",
+        "projet de loi",
+        "Conseil constitutionnel",
+        "CRE"
+      ],
+      "order": [
+        "official",
+        "cons",
+        "digest",
+        "stories",
+        "top",
+        "pubs",
+        "agenda",
+        "markets",
+        "post"
+      ],
+      "require_keyword": true,
+      "france": 2
+    },
+    "supplier": {
+      "name": [
+        "Fournisseur et agrégateur",
+        "Supplier and aggregator"
+      ],
+      "short": [
+        "Fournisseur-agrégateur",
+        "Supplier-aggregator"
+      ],
+      "reader": "un responsable chez un fournisseur d'électricité et agrégateur de production renouvelable en France : il achète l'électricité de producteurs (PPA, obligation d'achat, complément de rémunération, garanties d'origine), la vend à des clients et gère les prix de marché, les prix négatifs et les règles du marché français",
+      "weights": {
+        "renewables": 3,
+        "markets": 3,
+        "regulation": 2,
+        "power": 1.5,
+        "deal": 1.5,
+        "build": 1.5,
+        "gas": 1,
+        "carbon": 1,
+        "report": 1,
+        "assoc": 1,
+        "geopolitics": 0.3
+      },
+      "official": 2,
+      "france": 3,
+      "foreign": 1.5,
+      "keywords": [
+        "PPA",
+        "agrégation",
+        "agrégateur",
+        "garanties d'origine",
+        "obligation d'achat",
+        "complément de rémunération",
+        "prix négatifs",
+        "capture",
+        "fournisseur",
+        "TURPE",
+        "ARENH",
+        "VNU",
+        "mécanisme de capacité",
+        "EPEX",
+        "CRE",
+        "RTE",
+        "appel d'offres"
+      ],
+      "order": [
+        "markets",
+        "digest",
+        "stories",
+        "top",
+        "cons",
+        "official",
+        "pubs",
+        "agenda",
+        "post"
+      ]
+    },
+    "origination": {
+      "name": [
+        "Origination",
+        "Origination"
+      ],
+      "short": [
+        "Origination",
+        "Origination"
+      ],
+      "reader": "un originateur qui structure et vend des PPA, de l'agrégation, des garanties d'origine et du stockage à des producteurs et des industriels : il cherche ce qui change la valeur des contrats, les appels d'offres et les signaux de prix",
+      "weights": {
+        "deal": 3,
+        "build": 2,
+        "markets": 2,
+        "power": 1.5,
+        "regulation": 1.5,
+        "report": 1,
+        "carbon": 1,
+        "gas": 0.8,
+        "assoc": 0.8,
+        "geopolitics": 0.5
+      },
+      "official": 1.5,
+      "keywords": [
+        "PPA",
+        "garantie d'origine",
+        "garanties d'origine",
+        "appel d'offres",
+        "capture",
+        "prix négatifs",
+        "stockage",
+        "batterie",
+        "BESS",
+        "agrégat",
+        "complément de rémunération",
+        "autoconsommation",
+        "contrat"
+      ],
+      "order": [
+        "markets",
+        "digest",
+        "stories",
+        "top",
+        "cons",
+        "official",
+        "pubs",
+        "agenda",
+        "post"
+      ],
+      "france": 1.5
+    },
+    "markets": {
+      "name": [
+        "Expert marchés",
+        "Market expert"
+      ],
+      "short": [
+        "Marchés",
+        "Markets"
+      ],
+      "reader": "un analyste ou un trader des marchés de l'électricité, du gaz et du carbone en Europe : il veut les causes des mouvements de prix, l'offre et la demande, le nucléaire, les interconnexions",
+      "weights": {
+        "markets": 3,
+        "gas": 2,
+        "power": 2,
+        "carbon": 2,
+        "geopolitics": 2,
+        "regulation": 1,
+        "build": 1,
+        "report": 1,
+        "deal": 0.5,
+        "assoc": 0.3
+      },
+      "official": 0.5,
+      "keywords": [
+        "nucléaire",
+        "disponibilité",
+        "forward",
+        "Cal",
+        "spread",
+        "interconnexion",
+        "EPEX",
+        "EEX",
+        "TTF",
+        "PEG",
+        "EUA",
+        "stockage de gaz",
+        "GNL",
+        "prix spot"
+      ],
+      "order": [
+        "markets",
+        "digest",
+        "stories",
+        "top",
+        "pubs",
+        "official",
+        "cons",
+        "agenda",
+        "post"
+      ]
+    },
+    "commercial": {
+      "name": [
+        "Commercial",
+        "Sales"
+      ],
+      "short": [
+        "Commercial",
+        "Sales"
+      ],
+      "reader": "un commercial qui vend de l'électricité et du gaz à des entreprises et des collectivités : il veut ce qui change pour ses clients (prix, tarifs, taxes, obligations) et une phrase qu'il peut reprendre en rendez-vous",
+      "weights": {
+        "regulation": 2,
+        "power": 1.5,
+        "gas": 1.5,
+        "markets": 1.5,
+        "deal": 1,
+        "geopolitics": 1,
+        "carbon": 0.5,
+        "build": 0.5,
+        "assoc": 0.5,
+        "report": 0.5
+      },
+      "official": 1,
+      "keywords": [
+        "tarif",
+        "TRV",
+        "TURPE",
+        "accise",
+        "prix repère",
+        "facture",
+        "fournisseur",
+        "offre",
+        "client",
+        "consommateur",
+        "entreprises",
+        "collectivités",
+        "CEE"
+      ],
+      "order": [
+        "markets",
+        "digest",
+        "stories",
+        "top",
+        "official",
+        "cons",
+        "pubs",
+        "agenda",
+        "post"
+      ],
+      "france": 2
+    }
+  }
+}

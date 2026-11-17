@@ -1,18 +1,33 @@
 name: Morning e-mail
 
-# Today's quick look by e-mail, weekdays 07:00 Paris (scripts/morning_mail.py).
-# Needs the SMTP_* secrets (as the alerts) and MORNING_TO (recipients, comma-separated); without them it only prints.
+# The newsletters by e-mail (scripts/news_letter.py writes them, scripts/morning_mail.py sends them):
+#   7 O'Klock    every weekday at 07:00 Paris: the last 36 hours (84 on Monday)
+#   PowerBrunch  Monday at 10:00 Paris: the week before, larger
+# Each reader who chose it in the site (public.news_profile) gets their own edition; MORNING_TO (comma-separated) the
+# default one (MORNING_PROFILE). Needs the SMTP_* secrets (as the alerts); without them it only prints.
 
 on:
   schedule:
     - cron: '0 5 * * 1-5'    # 05:00 UTC = 07:00 Paris in winter (06:00 UTC in summer, after the morning data)
     - cron: '0 6 * * 1-5'
+    - cron: '0 8 * * 1'      # PowerBrunch: 10:00 Paris in summer
+    - cron: '0 9 * * 1'      # PowerBrunch: 10:00 Paris in winter
   workflow_dispatch:
+    inputs:
+      edition:
+        description: 'Edition'
+        type: choice
+        options: ['7 O''Klock', 'PowerBrunch']
+        default: '7 O''Klock'
+      preview:
+        description: 'Preview: write the edition now and send every profile to the admins only (nothing committed)'
+        type: boolean
+        default: false
 
 jobs:
   mail:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     permissions:
       contents: write
     steps:
@@ -20,29 +35,47 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
-      - name: News digest (the day's essentials; on Monday, the week before)
-        # scripts/news_digest.py: the site's AI proxy rewrites the top stories of data/news.json; written once a day
+      - name: Which edition
+        id: ed
+        run: |
+          H=$(TZ=Europe/Paris date +%H)
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            if [ "$H" = "07" ]; then echo "mode=daily" >> "$GITHUB_OUTPUT"
+            elif [ "$H" = "10" ]; then echo "mode=weekly" >> "$GITHUB_OUTPUT"
+            else echo "mode=none" >> "$GITHUB_OUTPUT"; echo "Not 07:00 or 10:00 in Paris"; fi
+          elif [ "${{ inputs.edition }}" = "PowerBrunch" ]; then echo "mode=weekly" >> "$GITHUB_OUTPUT"
+          else echo "mode=daily" >> "$GITHUB_OUTPUT"; fi
+      - name: Write the edition (digest, then one newsletter per reading profile)
+        if: steps.ed.outputs.mode != 'none'
+        # scripts/news_digest.py: the essentials (daily, and the week on Monday); scripts/news_letter.py: the newsletter
         env:
-          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}   # the posts the team voted for, in Monday's edition
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}   # the posts the team voted for
         run: |
           pip install -q scikit-learn==1.6.1 "psycopg[binary]==3.3.2"
-          python scripts/news_digest.py || echo "::warning::digest not written"
+          F=""; if [ "${{ inputs.preview }}" = "true" ]; then F="--force"; fi
+          W=""; if [ "${{ steps.ed.outputs.mode }}" = "weekly" ]; then W="--weekly"; fi
+          python scripts/news_digest.py $F || echo "::warning::digest not written"
+          python scripts/news_letter.py $F $W || echo "::warning::newsletter not written"
+          if [ "${{ inputs.preview }}" = "true" ]; then echo "Preview: nothing committed."; exit 0; fi
           git config user.name "PowerDesk Bot"
           git config user.email "bot@powerdesk.local"
-          git add data/news_digest.json 2>/dev/null || true
-          if git diff --staged --quiet; then echo "No new digest."; exit 0; fi
-          git commit -q -m "data: news digest $(TZ=Europe/Paris date +%F)"
+          git add data/news_digest.json data/newsletter.json data/newsletter_week.json 2>/dev/null || true
+          if git diff --staged --quiet; then echo "No new edition."; exit 0; fi
+          git commit -q -m "data: newsletter $(TZ=Europe/Paris date +%F)"
           for i in 1 2 3 4 5; do git pull -q --rebase -X theirs origin main && git push -q && exit 0; git rebase --abort 2>/dev/null || true; sleep 5; done
-          echo "::warning::digest not pushed"
+          echo "::warning::edition not pushed"
       - name: Send
+        if: steps.ed.outputs.mode != 'none'
         env:
-          SMTP_HOST: ${{ secrets.SMTP_HOST }}
-          SMTP_PORT: ${{ secrets.SMTP_PORT }}
-          SMTP_USER: ${{ secrets.SMTP_USER }}
-          SMTP_PASS: ${{ secrets.SMTP_PASS }}
-          ALERT_FROM: ${{ secrets.ALERT_FROM }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST || 'smtp.gmail.com' }}   # else the Gmail account already used for the GO prices and failure mails
+          SMTP_PORT: ${{ secrets.SMTP_PORT || '587' }}
+          SMTP_USER: ${{ secrets.SMTP_USER || secrets.GO_GMAIL_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS || secrets.GO_GMAIL_APP_PASSWORD }}
+          ALERT_FROM: ${{ secrets.ALERT_FROM || secrets.GO_GMAIL_USER }}
           MORNING_TO: ${{ secrets.MORNING_TO }}
+          MORNING_PROFILE: ${{ vars.MORNING_PROFILE }}   # profile of the team list's e-mail: regulatory, legal, supplier, origination (default), markets, commercial
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}   # readers who chose a newsletter in the site (public.news_profile) get their own edition
+          MORNING_PREVIEW: ${{ inputs.preview && '1' || '' }}
         run: |
-          # one mail a day: the run whose UTC hour is 07:00 in Paris
-          if [ "$(TZ=Europe/Paris date +%H)" != "07" ] && [ "${{ github.event_name }}" = "schedule" ]; then echo "Not 07:00 in Paris"; exit 0; fi
-          python scripts/morning_mail.py
+          W=""; if [ "${{ steps.ed.outputs.mode }}" = "weekly" ]; then W="--weekly"; fi
+          python scripts/morning_mail.py $W
