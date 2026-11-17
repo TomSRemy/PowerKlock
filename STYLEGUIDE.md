@@ -51,7 +51,7 @@ Trois gabarits suffisent :
 | Hauteur | 280 px (paire côte à côte) ou 320 px (pleine largeur) ; 360 px pour les profils horaires ; rien sous 180 px |
 | Graduations | 10 px, `#7A93AB` (`var(--text3)`), police JetBrains Mono |
 | Grille | `rgba(26,45,63,.5)`, sans traits de graduation (`GRID` de `js/libs.js`) |
-| Légende | en bas, cases de 10 px, 10 px de texte ; aucune légende pour une seule série |
+| Légende | en bas, 10 px de texte ; aucune légende pour une seule série. Le repère reprend la forme de la série : trait pour une courbe (pointillé si la courbe l'est), case pour des barres ou une aire, rond pour des points (règle commune dans `js/libs.js`) |
 | Trait | 1,5 px (2 px pour la série principale), `tension: 0`, `pointRadius: 0` sauf marqueurs voulus |
 | Zoom | rectangle à la souris (`ZOOM_CFG`), bouton « ↺ Annuler le zoom » et double-clic pour revenir (`js/zoom-reset.js`) |
 | Survol | lecture `pkHoverReadout` (ligne verticale et encadré), valeurs avec leur unité, au format de la langue |
