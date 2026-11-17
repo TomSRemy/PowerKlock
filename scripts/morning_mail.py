@@ -211,6 +211,8 @@ def render_letter(today, E, pid, mine=None, exclude=(), interests=(), france=Fal
             col = '#5F738A' if not c else '#B8322D' if up else '#0E7A5F'
             if r.get('hours'):
                 pct = '' if r.get('chg') is None else ('▲ +' if c > 0 else '▼ −' if c < 0 else '= ') + n(abs(c), 0) + ' h'
+            elif r.get('show') == 'abs':
+                pct = '' if r.get('chg') is None else ('▲ +' if c > 0 else '▼ −' if c < 0 else '= ') + n(abs(c), 1) + ' €'
             else:
                 pct = '' if r.get('pct') is None else ('▲ +' if c > 0 else '▼ −' if c < 0 else '') + n(abs(r['pct']), 1) + ' %'
             cells.append(f'<td width="33%" style="padding:3px;vertical-align:top"><a href="{SITE}#{esc(r.get("page") or "today")}" style="display:block;text-decoration:none;border:1px solid #D5DEE8;border-radius:10px;padding:9px 10px;background:#F7F9FB">'
