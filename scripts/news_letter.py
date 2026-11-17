@@ -161,7 +161,7 @@ def go_y1():
 
 def markets(today, days=1):
     """the price tiles, French first (chosen by the owner, 17 Nov. 2026): France spot today and tomorrow (published at
-    about 13:00, before that PowerKlock's forecast), peak minus base, hours at 0 € or below, Cal+1 France, PEG,
+    about 13:00, before that PowerKlock's forecast), hours at 0 € or below, Cal+1 France, PEG,
     guarantees of origin for next year. Change on the day before (the spot), on the previous session (Cal, PEG), on the
     previous quote (GO). PowerBrunch: the week's averages and totals against the week before; no « tomorrow »."""
     rows = []
@@ -179,7 +179,6 @@ def markets(today, days=1):
         if len(w) == 7:
             avg = lambda xs, f: sum(f(x) for x in xs) / len(xs)  # noqa: E731
             row("Spot France, moyenne 7 j", "France spot, 7-day average", avg(w, lambda x: x["base"]), "€/MWh", avg(p, lambda x: x["base"]) if p else None, "ENTSO-E")
-            row("Pointe − base, moyenne 7 j", "Peak − base, 7-day average", avg(w, lambda x: x["peak"] - x["base"]), "€/MWh", avg(p, lambda x: x["peak"] - x["base"]) if p else None, "ENTSO-E", show="abs")
             row("Heures ≤ 0 €, 7 jours", "Hours ≤ 0 €, 7 days", sum(x["neg"] for x in w), "h", sum(x["neg"] for x in p) if len(p) == 7 else None, "ENTSO-E", "markets/spot/negative", show="h")
     else:
         t, y, tm = sp.get(0), sp.get(1), sp.get(-1)
@@ -192,8 +191,6 @@ def markets(today, days=1):
             pv = [x for x in (fc.get("price") or []) if x is not None]
             if pv:
                 row("Spot demain (prévision)", "Spot tomorrow (forecast)", sum(pv) / len(pv), "€/MWh", t["base"] if t else None, "PowerKlock")
-        if t:
-            row("Pointe − base aujourd'hui", "Peak − base today", t["peak"] - t["base"], "€/MWh", (y["peak"] - y["base"]) if y else None, "ENTSO-E", show="abs")
         if tm:
             row("Heures ≤ 0 € demain", "Hours ≤ 0 € tomorrow", tm["neg"], "h", t["neg"] if t else None, "ENTSO-E", "markets/spot/negative", show="h")
         elif fc.get("expected_hours") is not None:
