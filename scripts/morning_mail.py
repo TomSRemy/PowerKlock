@@ -270,7 +270,7 @@ def render_letter(today, E, pid, mine=None, exclude=(), interests=(), france=Fal
                     f'<td style="{serif};font-size:19px;line-height:1.35;font-weight:600;padding:0 10px 0 0;vertical-align:top">{k + 1}. {a(st["link"], st["title"])}</td>'
                     f'<td style="text-align:right;vertical-align:top;width:1%;white-space:nowrap;padding-top:3px">{theme_pill(st.get("tags"))}</td></tr></table>'
                     + (f'<p style="{f};font-size:15px;line-height:1.55;color:#34485E;margin:0 0 6px"><b style="color:#13202E">Ce qui s’est passé.</b> {esc(st["what"])}</p>' if st.get('what') else '')
-                    + (f'<p style="{f};font-size:15px;line-height:1.55;color:#34485E;margin:0 0 6px;background:#EEF8F5;padding:10px 12px;border-radius:8px"><b style="color:#0B7A62">{esc(st.get("short") or ed["short"][0])} ·</b> {esc(st["for_you"])}</p>' if st.get('for_you') else '')
+                    + (f'<p style="{f};font-size:15px;line-height:1.55;color:#34485E;margin:0 0 6px;background:#EEF8F5;padding:10px 12px;border-radius:8px"><b style="color:#0B7A62">À retenir ·</b> {esc(st["for_you"])}</p>' if st.get('for_you') else '')
                     + f'<p style="{f};font-size:12px;color:#62758B;margin:0">{esc(" · ".join(st["sources"][:4]))}</p>')
         return box(h2('Les sujets de la semaine' if wk else SEC['stories']) + out)
 
