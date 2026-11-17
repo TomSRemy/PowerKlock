@@ -4150,3 +4150,12 @@ html:not(.pk-public) #pk-gate { display: none; }
 .cons-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
 .cons-chips small { font: 500 10px 'JetBrains Mono', monospace; opacity: .7; margin-left: 2px; }
 .cons-th { color: var(--accent); }
+
+/* Beta switch (js/beta.js): off by default; the owner compares the new page layout with the current one */
+.pk-beta-btn { width: auto; padding: 0 9px; font-size: 11px; font-weight: 600; letter-spacing: .02em; }
+.pk-beta-btn.on { color: var(--accent); border-color: var(--accent); background: rgba(20, 211, 169, .1); }
+.pk-beta-note { margin: 0 0 14px; padding: 8px 14px; border: 1px solid rgba(20, 211, 169, .35); border-left: 3px solid var(--accent); border-radius: 8px; background: rgba(20, 211, 169, .06); color: var(--text2); font-size: 12px; }
+.pk-beta-note b { color: var(--accent); }
+.pk-beta .pk-beta-read { margin: 0 0 14px; }
+.pr-breadcrumb-parent-beta { color: var(--text2); font-family: 'JetBrains Mono', monospace; }
+.pk-beta tr.zone-row.pk-beta-hl > td { background: rgba(20, 211, 169, .07); }
