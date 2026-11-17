@@ -207,11 +207,15 @@ def render_letter(today, E, pid, mine=None, exclude=(), interests=(), france=Fal
         cells = []
         for r in rs:
             c = r.get('chg') or 0
-            col = '#B8322D' if c > 0 else '#0E7A5F' if c < 0 else '#5F738A'
-            pct = '' if r.get('pct') is None else ('▲ +' if c > 0 else '▼ −' if c < 0 else '') + n(abs(r['pct']), 1) + ' %'
+            up = c < 0 if r.get('hours') else c > 0      # more hours at 0 € or below: lower prices, in green
+            col = '#5F738A' if not c else '#B8322D' if up else '#0E7A5F'
+            if r.get('hours'):
+                pct = '' if r.get('chg') is None else ('▲ +' if c > 0 else '▼ −' if c < 0 else '= ') + n(abs(c), 0) + ' h'
+            else:
+                pct = '' if r.get('pct') is None else ('▲ +' if c > 0 else '▼ −' if c < 0 else '') + n(abs(r['pct']), 1) + ' %'
             cells.append(f'<td width="33%" style="padding:3px;vertical-align:top"><a href="{SITE}#{esc(r.get("page") or "today")}" style="display:block;text-decoration:none;border:1px solid #D5DEE8;border-radius:10px;padding:9px 10px;background:#F7F9FB">'
                          f'<span style="{f};display:block;font-size:12px;color:#5F738A">{esc(r["label"][0])}</span>'
-                         f'<span style="font-family:Menlo,Consolas,monospace;display:block;font-size:17px;font-weight:700;color:#13202E;margin:4px 0 2px">{num(r["value"])}</span>'
+                         f'<span style="font-family:Menlo,Consolas,monospace;display:block;font-size:17px;font-weight:700;color:#13202E;margin:4px 0 2px">{num(r["value"], 0 if r.get("hours") and float(r["value"]).is_integer() else 1 if r.get("hours") else 2)}</span>'
                          f'<span style="{f};font-size:11px;color:#62758B">{esc(r["unit"])}</span> <span style="font-family:Menlo,Consolas,monospace;font-size:12px;color:{col};white-space:nowrap">{pct}</span></a></td>')
         rows_ = ''.join('<tr>' + ''.join(cells[i:i + 3]) + ''.join('<td width="33%"></td>' for _ in range(3 - len(cells[i:i + 3]))) + '</tr>' for i in range(0, len(cells), 3))
         srcs = ', '.join(sorted({r.get('src') for r in rs if r.get('src')}))

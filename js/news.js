@@ -158,8 +158,9 @@ async function renderNewsLetter() {
   const a = (u, t) => `<a href="${_newsEsc(u)}" target="_blank" rel="noopener noreferrer">${_newsEsc(t)}</a>`;
   const ddm = d => new Date(String(d).slice(0, 10) + 'T12:00:00Z').toLocaleDateString(en ? 'en-GB' : 'fr-FR', { day: 'numeric', month: 'short', timeZone: 'UTC' });
   const sec = {
-    markets: () => (E.markets || []).length ? `<div class="nl-tiles">${E.markets.map(r => { const up = (r.chg || 0) > 0, dn = (r.chg || 0) < 0;
-      return `<a class="nl-tile" href="#${_newsEsc(r.page || 'today')}"><span>${_newsEsc(L(r.label))}</span><b>${num(r.value)}</b><small>${_newsEsc(r.unit)} <i class="${up ? 'up' : dn ? 'dn' : ''}">${r.pct == null ? '' : (up ? '▲ +' : dn ? '▼ −' : '') + num(Math.abs(r.pct), 1) + ' %'}</i></small></a>`; }).join('')}</div>
+    markets: () => (E.markets || []).length ? `<div class="nl-tiles">${E.markets.map(r => { const c = r.chg || 0, up = c > 0, dn = c < 0, red = r.hours ? dn : up, green = r.hours ? up : dn;   // more hours at 0 € or below: lower prices, in green
+      const ch = r.hours ? (r.chg == null ? '' : (up ? '▲ +' : dn ? '▼ −' : '= ') + num(Math.abs(c), 0) + ' h') : r.pct == null ? '' : (up ? '▲ +' : dn ? '▼ −' : '') + num(Math.abs(r.pct), 1) + ' %';
+      return `<a class="nl-tile" href="#${_newsEsc(r.page || 'today')}"><span>${_newsEsc(L(r.label))}</span><b>${num(r.value, r.hours ? (Number.isInteger(r.value) ? 0 : 1) : 2)}</b><small>${_newsEsc(r.unit)} <i class="${red ? 'up' : green ? 'dn' : ''}">${ch}</i></small></a>`; }).join('')}</div>
       <div class="nl-src">${_newsT('Sources', 'Sources')} : ${[...new Set(E.markets.map(r => r.src).filter(Boolean))].join(', ')}. ${E.weekly ? _newsT('Variation sur la semaine.', 'Change over the week.') : _newsT('Variation sur la séance précédente.', 'Change on the previous session.')}</div>` : '',
     digest: () => E.digest && (E.digest.items || []).length ? `<ol class="nl-dg">${E.digest.items.map(x => `<li>${_newsEsc((en && x.text_en) || x.text || x.title)} <a href="${_newsEsc(x.link)}" target="_blank" rel="noopener noreferrer">${_newsEsc((x.sources || []).slice(0, 2).join(' · '))} ↗</a></li>`).join('')}</ol>` : '',
     top: () => { const shown = new Set(ed.stories.map(x => x.link).concat(((E.digest || {}).items || []).map(x => x.link))), T = (E.top || []).filter(o => !shown.has(o.link));
