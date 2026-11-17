@@ -4271,3 +4271,10 @@ span.nl-src { margin: 0; }
 .pkd-code .pkd-field { flex: 1 1 160px; }
 .pkd-pw { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; margin: 6px 0; }
 .pkd-pw .pkd-field { flex: 1 1 220px; }
+.pkd-link { background: none; border: 0; padding: 0; color: var(--accent); font: inherit; font-size: 12.5px; cursor: pointer; text-align: left; }
+.pkd-acc { margin-top: 14px; border-top: 1px solid var(--border); padding-top: 10px; display: flex; flex-direction: column; gap: 6px; max-height: 260px; overflow-y: auto; }
+.pkd-acc-t { font-size: 12px; font-weight: 600; color: var(--text2); }
+.pkd-acc-r { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 13px; padding: 4px 0; }
+.pkd-acc-e { display: flex; flex-direction: column; min-width: 0; overflow-wrap: anywhere; }
+.pkd-acc-e small { color: var(--text3); font-size: 11px; }
+.pkd-acc-b { display: flex; gap: 6px; flex: none; }
