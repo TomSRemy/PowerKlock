@@ -67,11 +67,11 @@ jobs:
       - name: Send
         if: steps.ed.outputs.mode != 'none'
         env:
-          SMTP_HOST: ${{ secrets.SMTP_HOST }}
-          SMTP_PORT: ${{ secrets.SMTP_PORT }}
-          SMTP_USER: ${{ secrets.SMTP_USER }}
-          SMTP_PASS: ${{ secrets.SMTP_PASS }}
-          ALERT_FROM: ${{ secrets.ALERT_FROM }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST || 'smtp.gmail.com' }}   # else the Gmail account already used for the GO prices and failure mails
+          SMTP_PORT: ${{ secrets.SMTP_PORT || '587' }}
+          SMTP_USER: ${{ secrets.SMTP_USER || secrets.GO_GMAIL_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS || secrets.GO_GMAIL_APP_PASSWORD }}
+          ALERT_FROM: ${{ secrets.ALERT_FROM || secrets.GO_GMAIL_USER }}
           MORNING_TO: ${{ secrets.MORNING_TO }}
           MORNING_PROFILE: ${{ vars.MORNING_PROFILE }}   # profile of the team list's e-mail: regulatory, legal, supplier, origination (default), markets, commercial
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}   # readers who chose a newsletter in the site (public.news_profile) get their own edition
