@@ -18,7 +18,7 @@ create table if not exists public.news_profile (
              check (interests <@ array['renewables', 'markets', 'regulation', 'gas', 'carbon', 'deal', 'build', 'geopolitics', 'report', 'assoc']),
   france     boolean not null default false,   -- France first: stories about France ahead, the rest pushed down
   daily      boolean not null default false,   -- 7 O'Klock by e-mail, every weekday at 7:00
-  weekly     boolean not null default false,   -- PowerBrunch by e-mail, Monday late morning: the week before
+  weekly     boolean not null default false,   -- PowerBrunch by e-mail, Monday at 10:00: the week before
   email_to   text check (email_to is null or (length(email_to) <= 200 and email_to ~ '^[^@\s]+@[^@\s]+\.[^@\s]+$')),
   updated_at timestamptz not null default now()
 );

@@ -136,7 +136,7 @@ def esc(t):
     return str(t or '').replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;')
 
 
-# 7 O'Klock every weekday at 7:00; PowerBrunch on Monday late morning, larger, on the week before
+# 7 O'Klock every weekday at 7:00; PowerBrunch on Monday at 10:00, larger, on the week before
 TITLE = {False: '7 O’Klock', True: 'PowerBrunch'}
 SUB = {False: 'Marchés, régulation, énergie : l’essentiel à 7 h', True: 'La semaine servie à point : ce qu’il fallait retenir, à lire au calme'}
 SEC = {'markets': 'Marchés en 30 secondes', 'digest': 'L’essentiel', 'top': 'Les articles principaux', 'stories': 'Les sujets du jour', 'official': 'Textes officiels', 'cons': 'Consultations : à vos réponses',
@@ -355,7 +355,7 @@ def main():
     today, rows, lines, heading = build()
     subject, text, html = render(today, rows, lines, heading)
     # the newsletter when today's edition exists (scripts/news_letter.py), for the profile MORNING_PROFILE (default: origination)
-    weekly = '--weekly' in sys.argv   # PowerBrunch (Monday late morning) instead of 7 O'Klock
+    weekly = '--weekly' in sys.argv   # PowerBrunch (Monday at 10:00) instead of 7 O'Klock
     E = load('newsletter_week.json' if weekly else 'newsletter.json') or {}
     has_letter = E.get('date') == today.isoformat() and bool(E.get('profiles'))
     pid = os.environ.get('MORNING_PROFILE') or 'origination'
