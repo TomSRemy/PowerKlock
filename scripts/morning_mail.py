@@ -218,7 +218,8 @@ def render_letter(today, E, pid, mine=None, exclude=(), interests=(), france=Fal
             cells.append(f'<td width="33%" style="padding:3px;vertical-align:top"><a href="{SITE}#{esc(r.get("page") or "today")}" style="display:block;text-decoration:none;border:1px solid #D5DEE8;border-radius:10px;padding:9px 10px;background:#F7F9FB">'
                          f'<span style="{f};display:block;font-size:12px;color:#5F738A">{esc(r["label"][0])}</span>'
                          f'<span style="font-family:Menlo,Consolas,monospace;display:block;font-size:17px;font-weight:700;color:#13202E;margin:4px 0 2px">{num(r["value"], 0 if r.get("hours") and float(r["value"]).is_integer() else 1 if r.get("hours") else 2)}</span>'
-                         f'<span style="{f};font-size:11px;color:#62758B">{esc(r["unit"])}</span> <span style="font-family:Menlo,Consolas,monospace;font-size:12px;color:{col};white-space:nowrap">{pct}</span></a></td>')
+                         f'<span style="{f};font-size:11px;color:#62758B">{esc(r["unit"])}</span> <span style="font-family:Menlo,Consolas,monospace;font-size:12px;color:{col};white-space:nowrap">{pct}</span>'
+                         + (f'<span style="{f};display:block;font-size:11px;color:#34485E;margin-top:4px">{esc(r["sub"][0])}</span>' if r.get('sub') else '') + '</a></td>')
         rows_ = ''.join('<tr>' + ''.join(cells[i:i + 3]) + ''.join('<td width="33%"></td>' for _ in range(3 - len(cells[i:i + 3]))) + '</tr>' for i in range(0, len(cells), 3))
         srcs = ', '.join(sorted({r.get('src') for r in rs if r.get('src')}))
         return box(h2(SEC['markets']) + f'<table role="presentation" width="100%" style="border-collapse:collapse;table-layout:fixed">{rows_}</table>'
