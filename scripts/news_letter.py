@@ -217,21 +217,25 @@ def markets(today, days=1):
         if a:
             row(f"Cal {y1[2:]} France", f"Cal {y1[2:]} France", a[1], "€/MWh", b[1], "EEX", "markets/forwards")
     cs = (dload("history", "commodities_series.json") or {}).get("series") or (dload("commodities.json") or {}).get("series") or {}
-    if "peg" in cs and days == 1:
+    if "peg" in cs:
         a, b = back(cs["peg"]["points"], days)
         if a:
             row("Gaz PEG", "PEG gas", a[1], "€/MWh", b[1], "PowerKlock", "markets/fuels")
     if days > 1:
+        # one tile per technology: the PPA benchmark (change over the week), and under it the CRE's latest M0
         bm = (dload("history", "ppa_benchmark.json") or {}).get("days") or {}
-        for tech, fr, en in (("solar", "PPA solaire France", "France solar PPA"), ("wind", "PPA éolien France", "France wind PPA")):
+        off = (dload("cre_m0.json") or {}).get("official") or {}
+        for tech, fr, en in (("solar", "Solaire", "Solar"), ("wind", "Éolien", "Wind")):
             a, b = back([(d, (bm[d].get(tech) or {}).get("ppa")) for d in sorted(bm)], 7)
-            if a:
-                row(fr, en, a[1], "€/MWh", b[1], "PowerKlock", "tools/ppa")
-        m0 = (((dload("cre_m0.json") or {}).get("official") or {}).get("solar") or {})
-        ks = sorted(m0)
-        if ks:
-            mo = ks[-1]
-            row(f"M0 solaire {MOIS[int(mo[5:]) - 1]} (CRE)", f"Solar M0 {mo} (CRE)", m0[mo], "€/MWh", m0[ks[-2]] if len(ks) > 1 else None, "CRE", "renewables/m0")
+            if not a:
+                continue
+            row(f"{fr} · PPA France", f"{en} · France PPA", a[1], "€/MWh", b[1], "PowerKlock", "tools/ppa")
+            m0 = off.get(tech) or {}
+            ks = sorted(m0)
+            if ks:
+                mo = ks[-1]
+                rows[-1]["sub"] = [f"M0 {MOIS[int(mo[5:]) - 1]} (CRE) : {m0[mo]:.2f} €".replace(".", ","), f"M0 {mo} (CRE): €{m0[mo]:.2f}"]
+                rows[-1]["src"] = "PowerKlock, CRE"
     go = go_y1()
     if go:
         row("Garanties d'origine " + go[2], "Guarantees of origin " + go[2], go[0], "€/MWh", go[1], "Commerg", "markets/go")
