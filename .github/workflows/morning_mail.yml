@@ -2,7 +2,7 @@ name: Morning e-mail
 
 # The newsletters by e-mail (scripts/news_letter.py writes them, scripts/morning_mail.py sends them):
 #   7 O'Klock    every weekday at 07:00 Paris: the last 36 hours (84 on Monday)
-#   PowerBrunch  Monday at 11:00 Paris: the week before, larger
+#   PowerBrunch  Monday at 10:00 Paris: the week before, larger
 # Each reader who chose it in the site (public.news_profile) gets their own edition; MORNING_TO (comma-separated) the
 # default one (MORNING_PROFILE). Needs the SMTP_* secrets (as the alerts); without them it only prints.
 
@@ -10,8 +10,8 @@ on:
   schedule:
     - cron: '0 5 * * 1-5'    # 05:00 UTC = 07:00 Paris in winter (06:00 UTC in summer, after the morning data)
     - cron: '0 6 * * 1-5'
-    - cron: '0 9 * * 1'      # PowerBrunch: 11:00 Paris in summer
-    - cron: '0 10 * * 1'     # PowerBrunch: 11:00 Paris in winter
+    - cron: '0 8 * * 1'      # PowerBrunch: 10:00 Paris in summer
+    - cron: '0 9 * * 1'      # PowerBrunch: 10:00 Paris in winter
   workflow_dispatch:
     inputs:
       edition:
@@ -41,8 +41,8 @@ jobs:
           H=$(TZ=Europe/Paris date +%H)
           if [ "${{ github.event_name }}" = "schedule" ]; then
             if [ "$H" = "07" ]; then echo "mode=daily" >> "$GITHUB_OUTPUT"
-            elif [ "$H" = "11" ]; then echo "mode=weekly" >> "$GITHUB_OUTPUT"
-            else echo "mode=none" >> "$GITHUB_OUTPUT"; echo "Not 07:00 or 11:00 in Paris"; fi
+            elif [ "$H" = "10" ]; then echo "mode=weekly" >> "$GITHUB_OUTPUT"
+            else echo "mode=none" >> "$GITHUB_OUTPUT"; echo "Not 07:00 or 10:00 in Paris"; fi
           elif [ "${{ inputs.edition }}" = "PowerBrunch" ]; then echo "mode=weekly" >> "$GITHUB_OUTPUT"
           else echo "mode=daily" >> "$GITHUB_OUTPUT"; fi
       - name: Write the edition (digest, then one newsletter per reading profile)
