@@ -177,7 +177,7 @@ async function renderNewsLetter() {
       return T.length ? `<ul class="nl-ul">${T.map(o => `<li><span>${a(o.link, o.title)} <span class="nl-src">· ${_newsEsc(o.source)}${o.n > 1 ? ' +' + (o.n - 1) : ''}</span></span>${_nlPill(o.tags)}</li>`).join('')}</ul>` : ''; },
     stories: () => ed.stories.length ? ed.stories.map((s, k) => `<article class="nl-story"><div class="nl-st-h"><h3>${k + 1}. ${a(s.link, s.title)}</h3>${_nlPill(s.tags)}</div>
       ${(en ? s.what_en : s.what) || s.what ? `<p><b>${_newsT('Ce qui s’est passé.', 'What happened.')}</b> ${_newsEsc((en && s.what_en) || s.what)}</p>` : ''}
-      ${s.for_you ? `<p class="nl-for"><b>${_newsEsc(L(prof.short))} ·</b> ${_newsEsc((en && s.for_you_en) || s.for_you)}</p>` : ''}
+      ${s.for_you ? `<p class="nl-for"><b>${_newsT('À retenir', 'Takeaway')} ·</b> ${_newsEsc((en && s.for_you_en) || s.for_you)}</p>` : ''}
       <div class="nl-src">${s.sources.slice(0, 4).map(_newsEsc).join(' · ')}${s.sources.length > 4 ? ' +' + (s.sources.length - 4) : ''}</div></article>`).join('') : '',
     official: () => (E.official || []).length ? `<ul class="nl-ul">${E.official.map(o => `<li><span>${a(o.link, o.title)} <span class="nl-src">· ${_newsEsc(o.source)}, ${ddm(o.date)}</span></span>${_nlPill(o.tags, true)}</li>`).join('')}</ul>` : '',
     cons: () => (E.cons || []).length ? `<table class="nl-cons"><tbody>${E.cons.map(c => { const n = c.deadline ? _newsLeft(c.deadline) : null;
