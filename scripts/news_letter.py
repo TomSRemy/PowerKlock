@@ -159,11 +159,26 @@ def go_y1():
     return mid(rows[-1]), (mid(prev[-1]) if prev else None), rows[-1]["year"]
 
 
+MOIS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"]
+
+
+def month_avg(first, last):
+    """mean of the published daily averages (data/history/daily/<D>.json, FR avg) from first to last, the days present"""
+    v, d = [], first
+    while d <= last:
+        a = (((dload("history", "daily", d.isoformat() + ".json") or {}).get("zones") or {}).get("FR") or {}).get("avg")
+        if a is not None:
+            v.append(a)
+        d += timedelta(days=1)
+    return sum(v) / len(v) if v else None
+
+
 def markets(today, days=1):
     """the six price tiles, French first (chosen by the owner, 17 Nov. 2026): France spot today, peak minus base, hours at
     0 € or below tomorrow (published at about 13:00, before that PowerKlock's forecast), Cal+1 France, PEG,
     guarantees of origin for next year. Change on the day before (the spot), on the previous session (Cal, PEG), on the
-    previous quote (GO). PowerBrunch: the week's averages and totals against the week before."""
+    previous quote (GO). PowerBrunch: France spot of the month so far (against last month), Cal+1 France, solar and wind
+    PPA benchmarks (over the week), the CRE's latest solar M0 (against the month before), guarantees of origin."""
     rows = []
 
     def row(fr, en, value, unit, ref=None, src="", page="markets/spot", show="pct"):
@@ -174,13 +189,13 @@ def markets(today, days=1):
                      "pct": None if (not ref or show != "pct") else round((value / ref - 1) * 100, 1)})
     sp = {k: spot(today - timedelta(days=k)) for k in range(-1, 14)}   # -1 = tomorrow
     if days > 1:
-        w = [sp[k] for k in range(0, 7) if sp.get(k)]
-        p = [sp[k] for k in range(7, 14) if sp.get(k)]
-        if len(w) == 7:
-            avg = lambda xs, f: sum(f(x) for x in xs) / len(xs)  # noqa: E731
-            row("Spot France, moyenne 7 j", "France spot, 7-day average", avg(w, lambda x: x["base"]), "€/MWh", avg(p, lambda x: x["base"]) if p else None, "ENTSO-E")
-            row("Pointe − base, moyenne 7 j", "Peak − base, 7-day average", avg(w, lambda x: x["peak"] - x["base"]), "€/MWh", avg(p, lambda x: x["peak"] - x["base"]) if p else None, "ENTSO-E", show="abs")
-            row("Heures ≤ 0 €, 7 jours", "Hours ≤ 0 €, 7 days", sum(x["neg"] for x in w), "h", sum(x["neg"] for x in p) if len(p) == 7 else None, "ENTSO-E", "markets/spot/negative", show="h")
+        # PowerBrunch (chosen by the owner, 17 Nov. 2026): spot of the month so far, Cal+1, solar and wind PPAs, the
+        # CRE's latest solar M0, guarantees of origin
+        cur = month_avg(today.replace(day=1), today)
+        prev_end = today.replace(day=1) - timedelta(days=1)
+        prv = month_avg(prev_end.replace(day=1), prev_end)
+        if cur:
+            row(f"Spot France, moyenne {MOIS[today.month - 1]}", f"France spot, {today:%B} average", cur, "€/MWh", prv, "ENTSO-E", "markets/spot/overview")
     else:
         t, y, tm = sp.get(0), sp.get(1), sp.get(-1)
         fc = ((dload("neg_forecast.json") or {}).get("days") or {}).get((today + timedelta(days=1)).isoformat()) or {}
@@ -202,10 +217,21 @@ def markets(today, days=1):
         if a:
             row(f"Cal {y1[2:]} France", f"Cal {y1[2:]} France", a[1], "€/MWh", b[1], "EEX", "markets/forwards")
     cs = (dload("history", "commodities_series.json") or {}).get("series") or (dload("commodities.json") or {}).get("series") or {}
-    if "peg" in cs:
+    if "peg" in cs and days == 1:
         a, b = back(cs["peg"]["points"], days)
         if a:
             row("Gaz PEG", "PEG gas", a[1], "€/MWh", b[1], "SEFE", "markets/fuels")
+    if days > 1:
+        bm = (dload("history", "ppa_benchmark.json") or {}).get("days") or {}
+        for tech, fr, en in (("solar", "PPA solaire France", "France solar PPA"), ("wind", "PPA éolien France", "France wind PPA")):
+            a, b = back([(d, (bm[d].get(tech) or {}).get("ppa")) for d in sorted(bm)], 7)
+            if a:
+                row(fr, en, a[1], "€/MWh", b[1], "PowerKlock", "tools/ppa")
+        m0 = (((dload("cre_m0.json") or {}).get("official") or {}).get("solar") or {})
+        ks = sorted(m0)
+        if ks:
+            mo = ks[-1]
+            row(f"M0 solaire {MOIS[int(mo[5:]) - 1]} (CRE)", f"Solar M0 {mo} (CRE)", m0[mo], "€/MWh", m0[ks[-2]] if len(ks) > 1 else None, "CRE", "renewables/m0")
     go = go_y1()
     if go:
         row("Garanties d'origine " + go[2], "Guarantees of origin " + go[2], go[0], "€/MWh", go[1], "Commerg", "markets/go")
