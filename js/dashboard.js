@@ -987,8 +987,9 @@
     });
   }
 
-  function openAccount() {
+  function openAccount(hint) {
     const A = window.PKAccount;
+    if (typeof hint !== 'string') hint = '';
     if (A.user) {
       modal(`
         <div class="pkd-modal-head"><div><div class="pkd-modal-title">Account</div><div class="pkd-modal-sub">${esc(A.user.email || '')}</div></div>
@@ -997,7 +998,8 @@
           <form id="pkd-pw-form" class="pkd-pw"><label class="pkd-field"><span>Password (optional): sign in with it next time, no e-mail needed</span>
             <input id="pkd-pw" type="password" minlength="8" autocomplete="new-password" placeholder="8 characters or more"></label>
             <button type="submit" class="pk-btn-ghost">Set password</button></form>
-          <div class="pkd-msg" id="pkd-pw-msg" role="status"></div>
+          <div class="pkd-msg" id="pkd-pw-msg" role="status">${hint ? esc(hint) : ''}</div>
+          <div id="pkd-admin"></div>
           <div class="pkd-form-foot"><button type="button" class="pk-btn-ghost" data-close>Close</button><button type="button" class="pk-btn-primary" id="pkd-out">Sign out</button></div></div>`, root => {
         root.querySelector('#pkd-out').addEventListener('click', () => { A.signOut().then(() => { closeModal(); renderAccount(); toast('Signed out'); }); });
         root.querySelector('#pkd-pw-form').addEventListener('submit', ev => {
@@ -1007,6 +1009,8 @@
           A.setPassword(pw).then(() => { msg.textContent = 'Password set: next time, sign in with your e-mail and this password.'; root.querySelector('#pkd-pw').value = ''; })
             .catch(e => { msg.textContent = 'Not saved: ' + (e.message || e); });
         });
+        if (hint) setTimeout(() => root.querySelector('#pkd-pw').focus(), 30);
+        adminAccounts(root.querySelector('#pkd-admin'));
       });
       return;
     }
@@ -1017,6 +1021,7 @@
       <form class="pkd-form" id="pkd-in-form">
         <label class="pkd-field"><span>E-mail</span><input id="pkd-in-email" type="email" required autocomplete="email" placeholder="you@company.com"></label>
         <label class="pkd-field"><span>Password (if you set one)</span><input id="pkd-in-pw" type="password" autocomplete="current-password" placeholder="leave empty to receive a code by e-mail"></label>
+        <button type="button" class="pkd-link" id="pkd-forgot">Forgot your password? Receive a code by e-mail</button>
         <div class="pkd-msg" id="pkd-in-msg" role="status"></div>
         <div class="pkd-code" id="pkd-code" hidden><label class="pkd-field"><span>Code received by e-mail</span>
           <input id="pkd-in-code" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="123456"></label>
@@ -1041,14 +1046,45 @@
           setTimeout(() => root.querySelector('#pkd-in-code').focus(), 30);
         }).catch(e => { msg.textContent = 'Could not send the e-mail: ' + (e.message || e); go.disabled = false; });
       });
+      root.querySelector('#pkd-forgot').addEventListener('click', () => {
+        root.querySelector('#pkd-in-pw').value = '';
+        if (!root.querySelector('#pkd-in-email').value.trim()) { msg.textContent = 'Type your e-mail first.'; root.querySelector('#pkd-in-email').focus(); return; }
+        root.querySelector('#pkd-in-form').requestSubmit();
+      });
       root.querySelector('#pkd-code-go').addEventListener('click', () => {
         const email = root.querySelector('#pkd-in-email').value.trim(), code = root.querySelector('#pkd-in-code').value.trim();
         if (!code) return;
         msg.textContent = 'Checking…';
-        A.verifyCode(email, code).then(done).catch(e => { msg.textContent = 'Code not accepted: ' + (e.message || e); });
+        A.verifyCode(email, code).then(() => { closeModal(); renderAccount(); openAccount('Signed in. Choose a password now: next time, no code needed.'); }).catch(e => { msg.textContent = 'Code not accepted: ' + (e.message || e); });
       });
       setTimeout(() => root.querySelector('#pkd-in-email').focus(), 30);
     });
+  }
+
+  // Accounts, for the admin (public.news_admin): approve a new account, refuse it, close or reopen one
+  // (public.user_access, warehouse migration 022: the admin may read and update every row). Closing keeps the account's
+  // data; it only takes the site and the newsletter away.
+  async function adminAccounts(host) {
+    const A = window.PKAccount, cl = A.client && A.client();
+    if (!host || !cl) return;
+    const { data: isAdmin } = await cl.rpc('is_news_admin');
+    if (!isAdmin) return;
+    const draw = async () => {
+      const { data, error } = await cl.from('user_access').select('user_id, email, status, requested_at').order('requested_at', { ascending: false });
+      if (error) { host.innerHTML = `<p class="pkd-p">Accounts not read: ${esc(error.message)}</p>`; return; }
+      const lab = { pending: 'Waiting', approved: 'Approved', refused: 'Closed' };
+      const btn = (r, to, txt, cls) => `<button type="button" class="${cls}" data-u="${r.user_id}" data-s="${to}">${txt}</button>`;
+      host.innerHTML = `<div class="pkd-acc"><div class="pkd-acc-t">Accounts (admin) · ${data.filter(r => r.status === 'pending').length} waiting</div>` +
+        data.map(r => `<div class="pkd-acc-r"><span class="pkd-acc-e">${esc(r.email || '')}<small>${lab[r.status] || r.status} · ${esc(String(r.requested_at || '').slice(0, 10))}</small></span>
+          <span class="pkd-acc-b">${r.status !== 'approved' ? btn(r, 'approved', 'Approve', 'pk-btn-primary') : ''}${r.status === 'pending' ? btn(r, 'refused', 'Refuse', 'pk-btn-ghost') : ''}${r.status === 'approved' && r.user_id !== A.user.id ? btn(r, 'refused', 'Close', 'pk-btn-ghost') : ''}</span></div>`).join('') + '</div>';
+      host.querySelectorAll('[data-u]').forEach(b => b.addEventListener('click', async () => {
+        b.disabled = true;
+        const { error: e } = await cl.from('user_access').update({ status: b.dataset.s, decided_at: new Date().toISOString() }).eq('user_id', b.dataset.u);
+        if (e) { toast('Not saved: ' + e.message); b.disabled = false; return; }
+        draw();
+      }));
+    };
+    draw();
   }
 
   // ── Modal shell ──────────────────────────────────────────────────
