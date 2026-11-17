@@ -49,14 +49,38 @@
     if (was) { try { if (localStorage.getItem('pk-theme') === 'light') H.setAttribute('data-theme', 'light'); } catch (_) {} }
   }
 
+  // the menu sections the admin chose for this account (public.user_access.sections, migration 026; null = all):
+  // the others leave the menu, and their addresses lead back to Today
+  let allowed = null;
+  const routeOk = () => {
+    if (!allowed) return true;
+    const r = location.hash.replace(/^#/, '').split('?')[0];
+    if (!r || /^(today|solo=)/.test(r)) return true;
+    if (/^dashboards/.test(r)) return allowed.includes('dashboards');
+    const a = document.querySelector('#sidebar [data-route="' + r.replace(/"/g, '') + '"]'), sec = a && a.closest('.sidebar-section[id^="sec-"]');
+    return !sec || allowed.includes(sec.id.slice(4));
+  };
+  function limit(sections) {
+    allowed = Array.isArray(sections) ? sections : null;
+    document.querySelectorAll('#sidebar .sidebar-section[id^="sec-"]').forEach(sec => {
+      const off = allowed && !allowed.includes(sec.id.slice(4));
+      sec.style.display = off ? 'none' : '';
+      const d = sec.previousElementSibling; if (d && d.classList.contains('sidebar-divider')) d.style.display = off ? 'none' : '';
+    });
+    document.querySelectorAll('#sidebar [data-route="dashboards"]').forEach(a => { a.style.display = allowed && !allowed.includes('dashboards') ? 'none' : ''; });
+    if (!routeOk()) location.replace(location.pathname + location.search + HOME);
+  }
+  window.addEventListener('hashchange', () => { if (state === 'open' && !routeOk()) location.replace(location.pathname + location.search + HOME); });
+
   async function check() {
     const A = window.PKAccount;
     if (!A || !A.configured) return open(false);
     const u = await A.ready();
     if (!u) return lock('guest');
-    const { data, error } = await A.client().from('user_access').select('status').eq('user_id', u.id).maybeSingle();
+    let { data, error } = await A.client().from('user_access').select('status, sections').eq('user_id', u.id).maybeSingle();
+    if (error && /sections/.test(error.message)) ({ data, error } = await A.client().from('user_access').select('status').eq('user_id', u.id).maybeSingle());   // before migration 026
     if (error) { console.warn('[gate] access not read:', error.message); return open(false); }   // never lock the owner out on a database hiccup
-    if (data && data.status === 'approved') return open(true);
+    if (data && data.status === 'approved') { open(true); return limit(data.sections); }
     lock('pending');
   }
 
