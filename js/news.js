@@ -122,7 +122,7 @@ function renderNewsOfficial() {
 // ── Newsletter (data/newsletter.json, scripts/news_letter.py): one edition per reading profile (config/news_profiles.json),
 // the profile chosen here is kept in this browser; the morning e-mail sends the same edition ──
 let _nlData, _nlWeek, _nlEd = 'daily', _nlMe;
-const _NL_INTERESTS = [['renewables', 'Renouvelables, PPA, garanties d’origine', 'Renewables, PPAs, guarantees of origin'], ['markets', 'Marchés et prix', 'Markets and prices'],
+const _NL_INTERESTS = [['power', 'Électricité : prix, réseau, nucléaire', 'Electricity: prices, grid, nuclear'], ['renewables', 'Renouvelables, PPA, garanties d’origine', 'Renewables, PPAs, guarantees of origin'], ['markets', 'Marchés et prix', 'Markets and prices'],
   ['regulation', 'Régulation', 'Regulation'], ['gas', 'Gaz', 'Gas'], ['carbon', 'Carbone', 'Carbon'], ['deal', 'Transactions', 'Deals'], ['build', 'Nouvelles capacités', 'New capacity'],
   ['geopolitics', 'Géopolitique', 'Geopolitics'], ['report', 'Rapports', 'Reports'], ['assoc', 'Associations', 'Associations']];   // _nlMe: this reader's row of public.news_profile (warehouse migration 024), when signed in
 async function _nlLoadMe() {
