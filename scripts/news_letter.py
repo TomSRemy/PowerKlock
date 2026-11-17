@@ -142,14 +142,33 @@ def back(points, days):
     return p[-1], (old[-1] if old else p[0])
 
 
+def go_y1():
+    """guarantees of origin, renewable, next calendar year: the latest weekly broker quote (data/go_prices.csv, the
+    site's Markets › Guarantees of origin), mid of bid and ask, and the quote before it"""
+    import csv
+    try:
+        with open(os.path.join(ROOT, "data", "go_prices.csv")) as f:
+            rows = [r for r in csv.DictReader(f) if r.get("term", "").replace(" ", "") == "Y+1" and r.get("bid")]
+    except OSError:
+        return None
+    rows.sort(key=lambda r: r["mail_date"])
+    mid = lambda r: (float(r["bid"]) + float(r["ask"])) / 2 if r.get("ask") else float(r["bid"])  # noqa: E731
+    if not rows:
+        return None
+    prev = [r for r in rows if r["mail_date"] < rows[-1]["mail_date"]]
+    return mid(rows[-1]), (mid(prev[-1]) if prev else None), rows[-1]["year"]
+
+
 def markets(today, days=1):
-    """six tiles: France spot (tomorrow once published, else today), Cal+1 France, PEG, TTF, EUA, solar PPA benchmark;
-    change on the previous session, or over the week for the PowerBrunch"""
+    """six tiles, French first: France spot (tomorrow once published, else today), Cal+1 France, PEG, EUA, guarantees of
+    origin (next year), hours at 0 € or below (tomorrow, or forecast); change on the previous session, or over the week
+    for the PowerBrunch"""
     rows = []
 
-    def row(fr, en, value, unit, ref=None, src="", page="markets/spot"):
-        rows.append({"label": [fr, en], "value": round(value, 2), "unit": unit, "page": page, "src": src,
-                     "chg": None if ref is None else round(value - ref, 2), "pct": None if not ref else round((value / ref - 1) * 100, 1)})
+    def row(fr, en, value, unit, ref=None, src="", page="markets/spot", hours=False):
+        # hours at 0 € or below: the change in hours, and more of them means lower prices (green, as falling prices)
+        rows.append({"label": [fr, en], "value": round(value, 1 if hours else 2), "unit": unit, "page": page, "src": src, "hours": hours,
+                     "chg": None if ref is None else round(value - ref, 2), "pct": None if (not ref or hours) else round((value / ref - 1) * 100, 1)})
     if days > 1:
         sp = [(d.isoformat(), (spot(d) or {}).get("base")) for d in (today - timedelta(days=k) for k in range(14, -1, -1))]
         sp = [x for x in sp if x[1] is not None]
@@ -172,16 +191,29 @@ def markets(today, days=1):
         if a:
             row(f"Cal {y1[2:]} France", f"Cal {y1[2:]} France", a[1], "€/MWh", b[1], "EEX", "markets/forwards")
     cs = (dload("history", "commodities_series.json") or {}).get("series") or (dload("commodities.json") or {}).get("series") or {}
-    for k, fr, en, u in (("peg", "Gaz PEG", "PEG gas", "€/MWh"), ("ttf", "Gaz TTF", "TTF gas", "€/MWh"), ("eua", "CO₂ EUA", "CO₂ EUA", "€/t")):
+    for k, fr, en, u in (("peg", "Gaz PEG", "PEG gas", "€/MWh"), ("eua", "CO₂ EUA", "CO₂ EUA", "€/t")):
         if k in cs:
             a, b = back(cs[k]["points"], days)
             if a:
                 row(fr, en, a[1], u, b[1], "PowerKlock", "markets/fuels")
-    bm = (dload("history", "ppa_benchmark.json") or {}).get("days") or {}
-    pts = [(d, (bm[d].get("solar") or {}).get("ppa")) for d in sorted(bm)]
-    a, b = back(pts, max(days, 7))     # the benchmark moves slowly: its change over a week
-    if a:
-        row("PPA solaire France", "France solar PPA", a[1], "€/MWh", b[1], "PowerKlock", "tools/ppa")
+    go = go_y1()
+    if go:
+        row("Garanties d'origine " + go[2], "Guarantees of origin " + go[2], go[0], "€/MWh", go[1], "Commerg", "markets/go")
+    if days > 1:     # hours at 0 € or below: the week, against the week before
+        hs = [(spot(today - timedelta(days=k)) or {}).get("neg") for k in range(13, -1, -1)]
+        if all(h is not None for h in hs[-7:]):
+            prev = [h for h in hs[:7] if h is not None]
+            row("Heures ≤ 0 €, 7 jours", "Hours ≤ 0 €, 7 days", sum(hs[-7:]), "h", sum(prev) if len(prev) == 7 else None, "ENTSO-E", "markets/spot/negative", hours=True)
+    else:            # tomorrow's, published at about 13:00; before, PowerKlock's forecast
+        tm, t = spot(today + timedelta(days=1)), spot(today)
+        fc = ((dload("neg_forecast.json") or {}).get("days") or {}).get((today + timedelta(days=1)).isoformat()) or {}
+        if tm:
+            row("Heures ≤ 0 € demain", "Hours ≤ 0 € tomorrow", tm["neg"], "h", t["neg"] if t else None, "ENTSO-E", "markets/spot/negative", hours=True)
+        elif fc.get("expected_hours") is not None:
+            row("Heures ≤ 0 € demain (prévision)", "Hours ≤ 0 € tomorrow (forecast)", fc["expected_hours"], "h", t["neg"] if t else None, "PowerKlock", "markets/spot/negative", hours=True)
+        elif t:
+            y = spot(today - timedelta(days=1))
+            row("Heures ≤ 0 € aujourd'hui", "Hours ≤ 0 € today", t["neg"], "h", y["neg"] if y else None, "ENTSO-E", "markets/spot/negative", hours=True)
     return rows
 
 
