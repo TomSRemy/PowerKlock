@@ -222,16 +222,14 @@ def main():
     for name, template in CURVES.items():
         print(f"Fetching {name.upper()} forward curve...")
         try:
-            rows = fetch_curve(h, template, use_contract_label=(name == "eua"))
-            # an empty or truncated answer (at night the cockpit returns few or no settlements) is a failure too:
-            # it used to replace the curve (17 Nov. 2026: EUA 3 contracts -> 0, TTF -> 1, chart empty on the site)
+            out["curves"][name] = fetch_curve(h, template, use_contract_label=(name == "eua"))
             try:
-                known = len((json.loads(OUT_HIST.read_text()).get("curves") or {}).get(name) or [])
+                before = len((json.loads(OUT_HIST.read_text()).get("curves") or {}).get(name) or [])
             except Exception:
-                known = 0
-            if not rows or len(rows) < known // 2:
-                raise RuntimeError(f"{len(rows)} contract(s) returned, {known} published")
-            out["curves"][name] = rows
+                before = 0
+            if len(out["curves"][name]) < max(1, before // 2):
+                # the feed answered with a strip cut short (17 Nov. 2026: no EUA contract, one TTF): treat it as not returned
+                raise ValueError(f"{len(out['curves'][name])} contract(s) against {before} before")
         except Exception as e:
             # a curve the feed did not return this time keeps its last published version (each row carries its
             # own settlement date, so the page shows how old it is) rather than vanishing from the site

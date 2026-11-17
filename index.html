@@ -2407,9 +2407,16 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
       <div class="pr-tabs-sticky">
         <div class="pr-tabs-bar">
           <div class="pr-breadcrumb"><span class="pr-breadcrumb-parent pk-bc-static">Intelligence</span><span class="pr-breadcrumb-sep">›</span><span class="pr-breadcrumb-current">News</span></div>
+          <div class="pr-tabs-separator"></div>
+          <div class="tabs-nav" id="news-tabs" role="tablist">
+            <button class="tab-btn active" data-nv="feed" type="button">The feed</button>
+            <button class="tab-btn" data-nv="official" type="button">Official texts <span class="news-tab-n" id="news-tab-off-n"></span></button>
+            <button class="tab-btn" data-nv="letter" type="button">Newsletter</button>
+          </div>
           <div class="pr-tabs-bar-filters"><span class="updated-badge" id="news-updated">Loading...</span></div>
         </div>
       </div>
+      <div class="news-view" id="news-v-feed">
       <div class="hist-section hist-section-strong" id="hs-news-digest" hidden>
         <div class="hist-section-header open" onclick="toggleStrongSection('hs-news-digest')">
           <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h10M4 18h7"/></svg><span id="news-digest-t">The essentials</span><span class="pk-hs-meta" id="news-digest-m"></span></div>
@@ -2417,26 +2424,19 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
         </div>
         <div class="hist-section-body open" id="hs-body-news-digest"><div id="news-digest"></div></div>
       </div>
-      <div class="hist-section hist-section-strong" id="hs-news-cons" hidden>
-        <div class="hist-section-header open" onclick="toggleStrongSection('hs-news-cons')">
-          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4M8 14h3"/></svg>Open consultations<span class="pk-hs-meta">CRE, RTE and ministry (energy and climate) · deadline to reply</span></div>
-          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-        </div>
-        <div class="hist-section-body open" id="hs-body-news-cons"><div id="news-cons"></div></div>
-      </div>
-      <div class="hist-section hist-section-strong" id="hs-news-posts" hidden>
-        <div class="hist-section-header open" onclick="toggleStrongSection('hs-news-posts')">
-          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 11v5M8 8v.01M12 16v-5M12 13a2 2 0 0 1 4 0v3"/></svg>Posts to read<span class="pk-hs-meta">LinkedIn posts shared by the team · the most useful go into Monday's digest</span></div>
-          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-        </div>
-        <div class="hist-section-body open" id="hs-body-news-posts"><div id="news-posts"></div></div>
-      </div>
+      <div class="news-layout">
+        <div class="news-main">
       <div class="hist-section hist-section-strong" id="hs-news-0">
         <div class="hist-section-header open" onclick="toggleStrongSection('hs-news-0')">
-          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="9" y1="4" x2="9" y2="20"/></svg>News<span class="pk-hs-meta">European energy press · carbon, power, gas, renewables, nuclear · refreshed every hour</span></div>
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="9" y1="4" x2="9" y2="20"/></svg>News<span class="pk-hs-meta">European energy press, official texts, associations · refreshed every hour</span></div>
           <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
         <div class="hist-section-body open" id="hs-body-news-0">
+      <div class="news-modes">
+        <div class="news-seg" role="group" aria-label="Display"><button type="button" class="filter-btn active" data-nm="topics">By story</button><button type="button" class="filter-btn" data-nm="list">All articles</button></div>
+        <div class="news-seg" role="group" aria-label="Order" id="news-sort"><button type="button" class="filter-btn active" data-ns="important">Most important</button><button type="button" class="filter-btn" data-ns="recent">Most recent</button></div>
+        <span class="news-count" id="news-count"></span>
+      </div>
 <div class="news-filters">
         <button class="filter-btn active" data-tag="all" onclick="filterNews('all', this)">All</button>
         <button class="filter-btn" data-tag="movers" onclick="filterNews('movers', this)" title="What moves prices or the renewable business, last 72 h, highest impact first; your votes (useful / not useful) teach it"><svg class="nic" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>Market movers</button>
@@ -2458,13 +2458,36 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
           <select id="news-cty" class="fuel-select" onchange="renderNews(newsData)" aria-label="Country"><option value="">All countries</option></select>
         </span>
         <input type="search" id="news-search" class="fuel-select" placeholder="Search headlines…" oninput="renderNews(newsData)" style="min-width:200px">
-        <button type="button" class="pk-btn-ghost" id="news-add-btn" title="Add an RSS feed or a press search for everyone">＋ Add a source</button>
       </div>
-      <div class="news-mine"><label for="news-kw">★ My keywords</label><input type="text" id="news-kw" class="fuel-select" placeholder="e.g. PPA, prix négatifs, CRE, batteries — comma separated"><label class="news-kw-team" id="news-kw-team-wrap" title="Boost these keywords for every team member, not just you" style="display:none"><input type="checkbox" id="news-kw-team"> share with team</label><span class="news-mine-n" id="news-kw-n"></span></div>
 <div class="news-grid" id="news-grid">
         <div class="empty-state" style="grid-column:1/-1"><span class="spinner"></span> Loading news feeds...</div>
       </div>
         </div>
+      </div>
+        </div>
+        <aside class="news-aside">
+          <div class="news-side" id="news-side-cons" hidden>
+            <div class="news-side-t"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>Consultations closing soon</div>
+            <div id="news-cons-mini"></div>
+          </div>
+      <div class="hist-section hist-section-strong" id="hs-news-posts" hidden>
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-news-posts')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 11v5M8 8v.01M12 16v-5M12 13a2 2 0 0 1 4 0v3"/></svg>Posts to read<span class="pk-hs-meta">LinkedIn posts shared by the team · the most useful go into Monday's digest</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-news-posts"><div id="news-posts"></div></div>
+      </div>
+          <div class="news-side">
+            <div class="news-side-t"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15 9 22 9 16.5 13.5 18.5 21 12 16.5 5.5 21 7.5 13.5 2 9 9 9"/></svg>My keywords</div>
+      <div class="news-mine"><label for="news-kw">★ My keywords</label><input type="text" id="news-kw" class="fuel-select" placeholder="e.g. PPA, prix négatifs, CRE, batteries — comma separated"><label class="news-kw-team" id="news-kw-team-wrap" title="Boost these keywords for every team member, not just you" style="display:none"><input type="checkbox" id="news-kw-team"> share with team</label><span class="news-mine-n" id="news-kw-n"></span></div>
+          </div>
+          <div class="news-side">
+            <div class="news-side-t"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11a9 9 0 0 1 9 9"/><path d="M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1"/></svg>Coverage</div>
+            <div class="news-cover" id="news-cover"></div>
+            <div class="news-side-links"><button type="button" class="pk-btn-ghost" id="news-src-btn">Source status</button>
+            <button type="button" class="pk-btn-ghost" id="news-add-btn" title="Add an RSS feed or a press search for everyone">＋ Add a source</button></div>
+          </div>
+        </aside>
       </div>
       <div class="hist-section hist-section-strong" id="hs-news-src">
         <div class="hist-section-header" onclick="toggleStrongSection('hs-news-src')">
@@ -2472,6 +2495,33 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
           <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
         <div class="hist-section-body" id="hs-body-news-src"><div id="news-add"></div><div id="news-sources"></div></div>
+      </div>
+      </div>
+      <div class="news-view" id="news-v-letter" hidden>
+        <div class="nl-wrap" id="news-letter"><div class="fuel-note">Loading…</div></div>
+      </div>
+      <div class="news-view" id="news-v-official" hidden>
+      <div class="hist-section hist-section-strong" id="hs-news-cons" hidden>
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-news-cons')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4M8 14h3"/></svg>Open consultations<span class="pk-hs-meta">CRE, RTE and ministry (energy and climate) · deadline to reply</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-news-cons"><div id="news-cons"></div></div>
+      </div>
+      <div class="hist-section hist-section-strong" id="hs-news-off">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-news-off')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Published texts<span class="pk-hs-meta">Journal officiel, EUR-Lex, CRE · last 30 days</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-news-off"><div id="news-off"></div></div>
+      </div>
+      <div class="hist-section hist-section-strong" id="hs-news-pub">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-news-pub')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5"/><path d="M9 17v-3M12 17v-5M15 17v-2"/></svg>Publications and reports<span class="pk-hs-meta">RTE, EEX, CRE studies, reference reports · last 30 days</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-news-pub"><div id="news-pub"></div></div>
+      </div>
       </div>
     </div>
 
@@ -5029,6 +5079,7 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
           <a href="#meth-cb" class="meth-nav-link">Flows, imbalance, outages</a>
           <a href="#meth-eua" class="meth-nav-link">Carbon, fuels &amp; spreads</a>
           <a href="#meth-bess" class="meth-nav-link">Batteries (BESS)</a>
+          <a href="#meth-news" class="meth-nav-link">News and newsletter</a>
           <a href="#meth-general" class="meth-nav-link">General terms</a>
         </aside>
         <aside class="meth-nav pk-fr-only" translate="no">
@@ -5039,6 +5090,7 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
           <a href="#meth-cb-fr" class="meth-nav-link">Échanges, écarts, indisponibilités</a>
           <a href="#meth-eua-fr" class="meth-nav-link">Carbone, combustibles et spreads</a>
           <a href="#meth-bess-fr" class="meth-nav-link">Batteries (BESS)</a>
+          <a href="#meth-news-fr" class="meth-nav-link">Veille et newsletter</a>
           <a href="#meth-general-fr" class="meth-nav-link">Termes généraux</a>
         </aside>
         <article class="meth-body pk-en-only">
@@ -5205,6 +5257,15 @@ price    = gas cost × 1 / (1 + exp(−(a − b × (coverage − 100)))) × (1 �
             <p class="meth-p">FCR: French settlement price of each 4-hour block of the common European auction, from the daily results export of regelleistung.net (published since January 2026), € per MW per block; a day = the sum of its 6 blocks, annualised = mean of the days × 365. The French FCR need (MW) comes from the same file. aFRR: procured balancing capacity prices of France on the ENTSO-E Transparency Platform (A89), shown when France publishes them. Debt rate base: euro area AAA 10-year spot rate (ECB data API). Fetched every day by <code>scripts/fetch_reserves.py</code> → <code>data/history/reserves_fr.json</code>.</p>
             <h3 class="meth-h3">BOA pricer</h3>
             <p class="meth-p">Debt service = annuity, Debt × r(1+r)<sup>n</sup> ÷ ((1+r)<sup>n</sup> − 1) with Debt = CAPEX × LTV. DSCR = (developer payment − OPEX) ÷ debt service, tested every year against 1.20×. Floor adjusted = floor at COD × (1 − step-down)<sup>year</sup> × (1 − degradation)<sup>year</sup>. From the data, every day: day-ahead + intraday at COD = the 2 h perfect schedule net of wear over the last 12 months × Cal forward of the COD year ÷ mean of the published daily averages of those 12 months (spreads taken to move with the price level, a first-order rule); low and high scenarios at 0.85× and 1.12× of it. FCR = French FCR price of the last 12 months × the share of the power sold in FCR (input), falling to 4/9 of it by 2037. Debt rate = ECB 10-year rate + bank margin (input). aFRR, mFRR, capacity mechanism and the path to 2037 remain scenario inputs.</p>
+          </section>
+          <section id="meth-news" class="meth-section">
+            <h2 class="meth-h2">News and newsletter</h2>
+            <h3 class="meth-h3">Collection</h3>
+            <p class="meth-p">Every hour (<code>scripts/fetch_news.py</code> → <code>data/news.json</code>): RSS feeds of the trade press and associations, press searches (Google News: titles and links only), the Journal officiel (DILA open data), EUR-Lex, the CRE's pages, RTE's and EEX's publications. No article text is kept. Articles about the same event within 72 hours are grouped into one story with all its outlets.</p>
+            <h3 class="meth-h3">Ranking (The feed, most important)</h3>
+            <p class="meth-p">Each article gets a score: its strongest category (geopolitics 3, regulation 2, deals 2, new capacity 1.5, gas 1.5, renewables 1.5, markets 1, carbon 1, power 0.5) plus half of the others; +1 for an official text, −1.5 off topic; France +1.5, Europe +1; readers' votes adjust sources, categories and words (±3 at most). The list then takes 0.3 per day of age and 0.6 per article of the same outlet already placed above.</p>
+            <h3 class="meth-h3">Newsletter and reading profiles</h3>
+            <p class="meth-p"><b>7 O’Klock</b> every weekday at 7:00 (<code>scripts/news_letter.py</code> → <code>data/newsletter.json</code>) and <b>PowerBrunch</b> on Monday at 10:00, on the week before (<code>data/newsletter_week.json</code>: 5 stories per profile, the week’s articles, prices over the week). One edition per profile: regulatory, legal, supplier and aggregator, origination, market expert, sales. A profile can put France first (points for a story about France, points off elsewhere). A reader’s ticked subjects and « France first » choose, among every profile’s stories, the ones of their own e-mail (+2 per ticked subject, +2 France / −1.5 elsewhere). Price tiles (each opens its page), the day’s essentials and the main articles (highest score of the last 24 hours, one per outlet) are the same for every profile. The 3 stories of the last 36 hours (84 on Monday) that score highest for the profile: categories weighted by the profile, +1.5 per profile keyword found (2 at most), France +1, more outlets (+0.5 × log₂), −0.3 per day; one event and one outlet once. « What happened » and « For you » are written by a free AI model from the titles and extracts only; a line that only repeats the title is dropped. Markets, six tiles chosen for a French supplier: France spot today (ENTSO-E), peak minus base, hours at 0 € or below tomorrow (published at about 13:00, before that the PowerKlock forecast), Cal+1 France (EEX), PEG (PowerKlock), guarantees of origin for next year (weekly broker quote, mid of bid and ask). Change on the day before, the previous session or the previous quote; the spread changes in €, the hours in hours. PowerBrunch, six tiles for the structuring of contracts: France spot average of the month so far (published daily averages, against last month), Cal+1 France, PEG and guarantees of origin over the week; one tile for solar and one for wind: the PPA benchmark (PowerKlock, Tools › PPA) over the week, and under it the forecast M0 of next month (PowerKlock: the CRE’s method applied to the month’s forward price, Renewables › M0). Official texts, consultations (deadline within 14 days or opened in the last 3), publications and the agenda come from the same files as the site.</p>
           </section>
           <section id="meth-general" class="meth-section">
             <h2 class="meth-h2">General terms</h2>
@@ -5381,6 +5442,15 @@ prix     = coût gaz × 1 / (1 + exp(−(a − b × (couverture − 100)))) × (
             <p class="meth-p">FCR : prix de règlement français de chaque bloc de 4 heures de l’enchère européenne commune, d’après l’export quotidien des résultats de regelleistung.net (publié depuis janvier 2026), en € par MW et par bloc ; un jour = la somme de ses 6 blocs, annualisé = moyenne des jours × 365. Le besoin FCR de la France (MW) vient du même fichier. aFRR : prix de capacité d’équilibrage achetée par la France sur la plateforme de transparence ENTSO-E (A89), affichés quand la France les publie. Base du taux de la dette : taux au comptant 10 ans AAA de la zone euro (API de données de la BCE). Récupérés chaque jour par <code>scripts/fetch_reserves.py</code> → <code>data/history/reserves_fr.json</code>.</p>
             <h3 class="meth-h3">Pricer BOA</h3>
             <p class="meth-p">Service de la dette = annuité, Dette × r(1+r)<sup>n</sup> ÷ ((1+r)<sup>n</sup> − 1) avec Dette = CAPEX × LTV. DSCR = (paiement au développeur − OPEX) ÷ service de la dette, testé chaque année contre 1,20×. Floor ajusté = floor au COD × (1 − baisse annuelle)<sup>année</sup> × (1 − dégradation)<sup>année</sup>. D’après les données, chaque jour : day-ahead + intraday au COD = programme parfait 2 h net d’usure des 12 derniers mois × forward Cal de l’année du COD ÷ moyenne des moyennes journalières publiées de ces 12 mois (les spreads sont supposés suivre le niveau des prix, une règle au premier ordre) ; scénarios bas et haut à 0,85× et 1,12× de cette valeur. FCR = prix FCR français des 12 derniers mois × part de la puissance vendue en FCR (entrée), descendant à 4/9 de cette valeur en 2037. Taux de la dette = taux 10 ans BCE + marge bancaire (entrée). aFRR, mFRR, mécanisme de capacité et chemin jusqu’en 2037 restent des entrées de scénario.</p>
+          </section>
+          <section id="meth-news-fr" class="meth-section">
+            <h2 class="meth-h2">Veille et newsletter</h2>
+            <h3 class="meth-h3">Collecte</h3>
+            <p class="meth-p">Toutes les heures (<code>scripts/fetch_news.py</code> → <code>data/news.json</code>) : flux RSS de la presse spécialisée et des associations, recherches presse (Google News : titres et liens seulement), Journal officiel (open data de la DILA), EUR-Lex, pages de la CRE, publications de RTE et d’EEX. Aucun texte d’article n’est conservé. Les articles sur un même événement à moins de 72 heures d’écart forment un seul sujet, avec tous ses médias.</p>
+            <h3 class="meth-h3">Classement (Le fil, plus importants)</h3>
+            <p class="meth-p">Chaque article reçoit une note : sa catégorie la plus forte (géopolitique 3, régulation 2, transactions 2, nouvelles capacités 1,5, gaz 1,5, renouvelables 1,5, marchés 1, carbone 1, électricité 0,5) plus la moitié des autres ; +1 pour un texte officiel, −1,5 hors sujet ; France +1,5, Europe +1 ; les votes des lecteurs ajustent sources, catégories et mots (±3 au plus). La liste retire ensuite 0,3 par jour d’ancienneté et 0,6 par article du même média déjà placé au-dessus.</p>
+            <h3 class="meth-h3">Newsletter et profils de lecture</h3>
+            <p class="meth-p"><b>7 O’Klock</b> chaque matin de semaine à 7 h (<code>scripts/news_letter.py</code> → <code>data/newsletter.json</code>) et <b>PowerBrunch</b> le lundi à 10 h, sur la semaine écoulée (<code>data/newsletter_week.json</code> : 5 sujets par profil, les articles de la semaine, les prix sur la semaine). Une édition par profil : réglementaire, juriste, fournisseur et agrégateur, origination, expert marchés, commercial. Un profil peut mettre la France d’abord (des points pour un sujet français, des points en moins ailleurs). Les sujets cochés par un lecteur et « Surtout la France » choisissent, parmi les sujets de tous les profils, ceux de son propre e-mail (+2 par sujet coché, +2 France / −1,5 ailleurs). Les tuiles de prix (chacune ouvre sa page), l’essentiel du jour et les articles principaux (meilleure note des 24 dernières heures, un par média) sont communs à tous les profils. Les 3 sujets des 36 dernières heures (84 le lundi) les mieux notés pour le profil : catégories pondérées par le profil, +1,5 par mot-clé du profil trouvé (2 au plus), France +1, plus de médias (+0,5 × log₂), −0,3 par jour ; un même événement et un même média une seule fois. « Ce qui s’est passé » et « Pour vous » sont rédigés par un modèle d’IA gratuit à partir des seuls titres et extraits ; une ligne qui ne fait que répéter le titre est retirée. Marchés, six tuiles choisies pour un fournisseur français : spot France aujourd’hui (ENTSO-E), pointe moins base, heures à 0 € ou moins demain (publiées vers 13 h, avant cela la prévision PowerKlock), Cal+1 France (EEX), PEG (PowerKlock), garanties d’origine de l’année prochaine (cotation hebdomadaire de courtier, milieu de l’offre et de la demande). Variation sur la veille, la séance ou la cotation précédente ; l’écart varie en €, les heures en heures. PowerBrunch, six tuiles pour la structuration des contrats : moyenne du spot France depuis le début du mois (moyennes journalières publiées, contre le mois dernier), Cal+1 France, PEG et garanties d’origine sur la semaine ; une tuile solaire et une tuile éolien : le benchmark PPA (PowerKlock, Outils › PPA) sur la semaine, et dessous le M0 prévu du mois prochain (PowerKlock : la méthode de la CRE appliquée au prix à terme du mois, Renouvelables › M0). Textes officiels, consultations (date limite sous 14 jours ou ouvertes depuis moins de 3 jours), publications et agenda viennent des mêmes fichiers que le site.</p>
           </section>
           <section id="meth-general-fr" class="meth-section">
             <h2 class="meth-h2">Termes généraux</h2>
