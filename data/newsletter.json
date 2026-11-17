@@ -1,0 +1,498 @@
+{
+ "date": "2026-11-16",
+ "updated": "2026-11-16T22:58:03+00:00",
+ "engine": "proxy",
+ "monday": true,
+ "markets": [
+  {
+   "label": [
+    "Spot France demain",
+    "France spot tomorrow"
+   ],
+   "value": 64.58,
+   "unit": "€/MWh",
+   "chg": -121.8,
+   "pct": -65.3,
+   "src": "ENTSO-E"
+  },
+  {
+   "label": [
+    "Spot France aujourd'hui",
+    "France spot today"
+   ],
+   "value": 186.38,
+   "unit": "€/MWh",
+   "chg": 87.19,
+   "pct": 87.9,
+   "src": "ENTSO-E"
+  },
+  {
+   "label": [
+    "Cal 27 France",
+    "Cal 27 France"
+   ],
+   "value": 113.43,
+   "unit": "€/MWh",
+   "chg": -5.06,
+   "pct": -4.3,
+   "src": "EEX"
+  },
+  {
+   "label": [
+    "Gaz PEG",
+    "PEG gas"
+   ],
+   "value": 82.29,
+   "unit": "€/MWh",
+   "chg": -6.68,
+   "pct": -7.5,
+   "src": "SEFE"
+  },
+  {
+   "label": [
+    "Gaz TTF",
+    "TTF gas"
+   ],
+   "value": 83.8,
+   "unit": "€/MWh",
+   "chg": -6.82,
+   "pct": -7.5,
+   "src": "SEFE"
+  },
+  {
+   "label": [
+    "CO₂ EUA",
+    "CO₂ EUA"
+   ],
+   "value": 88.15,
+   "unit": "€/t",
+   "chg": -2.23,
+   "pct": -2.5,
+   "src": "SEFE"
+  }
+ ],
+ "official": [
+  {
+   "title": "Décret du 13 novembre 2026 portant diverses dispositions relatives à la sécurisation du financement des charges nucléaires",
+   "link": "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000055088721",
+   "source": "Journal officiel",
+   "date": "2026-11-15T00:00:00+00:00"
+  },
+  {
+   "title": "Arrêté du 2 novembre 2026 pris en application de l'article D. 361-7-6 du code de l'énergie relatif aux critères techniques et économiques utilisés afin de garantir la pertinence des investissements inscrits dans les…",
+   "link": "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000055088743",
+   "source": "Journal officiel",
+   "date": "2026-11-15T00:00:00+00:00"
+  },
+  {
+   "title": "Arrêté du 12 novembre 2026 modifiant l'article 5-1 de l'arrêté du 29 décembre 2014 relatif aux modalités d'application du dispositif des certificats d'économies d'énergie, relatif à la bonification des opérations…",
+   "link": "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000055087500",
+   "source": "Journal officiel",
+   "date": "2026-11-14T00:00:00+00:00"
+  },
+  {
+   "title": "Arrêté du 13 novembre 2026 modifiant l'arrêté du 6 novembre 2026 prévoyant des bonifications particulières pour les opérations relatives aux offres intégrées sélectionnées dans le cadre de l'appel à candidatures «…",
+   "link": "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000055087516",
+   "source": "Journal officiel",
+   "date": "2026-11-14T00:00:00+00:00"
+  },
+  {
+   "title": "Arrêté du 2 novembre 2026 portant création du programme PRO-INNO-88 dans le cadre du dispositif des certificats d'économies d'énergie",
+   "link": "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000055081256",
+   "source": "Journal officiel",
+   "date": "2026-11-13T00:00:00+00:00"
+  }
+ ],
+ "pubs": [
+  {
+   "title": "Fewer major Canadian companies disclosing net zero goals -report",
+   "link": "https://carbon-pulse.com/572099/",
+   "source": "Carbon Pulse",
+   "date": "2026-11-16T20:11:44+00:00"
+  },
+  {
+   "title": "Euro Markets: EUAs drop 1% amid steeper energy losses as market weighs weather, reform talks",
+   "link": "https://carbon-pulse.com/571658/",
+   "source": "Carbon Pulse",
+   "date": "2026-11-16T17:20:17+00:00"
+  },
+  {
+   "title": "Prix du gaz : à quel niveau le marché rouvre ce lundi 16 novembre, le point complet sur le PEG",
+   "link": "https://news.google.com/rss/articles/CBMibEFVX3lxTFBkTXE5R3hVaXlfelJMbndkV080M3FXSElsSWRFVDI3X2FhMFM0VFlLc1JqU3pva2lxLTF0U2Nia2c2U1JoLVJhM0R1bHVpT201QWN0OXA5WS03blNRU2c2TGpDckk3Ml8zOWV6dg?oc=5",
+   "source": "Selectra",
+   "date": "2026-11-15T23:48:28+00:00"
+  },
+  {
+   "title": "Les Français, trop fauchés pour s’hyper-électrifier ?",
+   "link": "https://www.revolution-energetique.com/actus/les-francais-trop-fauches-pour-shyper-electrifier/",
+   "source": "Révolution Énergétique",
+   "date": "2026-11-13T15:25:05+00:00"
+  },
+  {
+   "title": "Le prix du gaz décroche de 3,8% : l'effet trompeur qui va faire grimper votre facture cet hiver",
+   "link": "https://news.google.com/rss/articles/CBMiwgFBVV95cUxQMnludnRfSUR5NlhMZUUtTWlwMkJLZnlFa0pTc2ZNMTNWUlZqb2RjVDNWR0EzdDlxeVpjNnpxSVdha3BXT2ZJdDVtTjg2aTNIT1NVVmlGTVJjWnRBWHdIRG9vRWUycmtNSU9yTlZSSzd2Qm9PaFB0TE9feWhrQUU2LTZUNE9STVg1T21ZTTh4Q2I5d1Q1SU5FeUNPSTFpUUNkSWZSMloySWVfenNlSldFYW40STRXaWJWSTM1U0lBc3RPQQ?oc=5",
+   "source": "Bourse Inside",
+   "date": "2026-11-13T11:07:06+00:00"
+  }
+ ],
+ "cons": [
+  {
+   "title": "Projet d’arrêté supprimant la fiche d’opération standardisée BAR-TH-159 « Pompe à chaleur hybride individuelle » du dispositif des certificats d’économies d’énergie",
+   "link": "https://www.consultations-publiques.developpement-durable.gouv.fr/projet-d-arrete-supprimant-la-fiche-d-operation-a3473.html",
+   "source": "Ministère · Énergies et climat",
+   "deadline": "2026-11-16",
+   "opened": "2026-10-26",
+   "theme": "cee"
+  },
+  {
+   "title": "Niveau de dotation de Electricité de Mayotte (EDM) au titre du fonds de péréquation de l’électricité (FPE) pour les années 2027 à 2029 et cadre de régulation associé",
+   "link": "https://www.cre.fr/documents/consultations-publiques/niveau-de-dotation-de-electricite-de-mayotte-edm-au-titre-du-fonds-de-perequation-de-lelectricite-fpe-pour-les-annees-2027-a-2029-et-cadre-de-regulation-associe.html",
+   "source": "CRE",
+   "deadline": "2026-11-18",
+   "opened": "2026-10-15",
+   "theme": "tariffs"
+  },
+  {
+   "title": "Création d'une ligne électrique entre Eguzon et Marmagne : RTE invite le public à s'exprimer sur le projet",
+   "link": "https://www.rte-france.com/actualites/2026-09-29-cp-eguzon-marmagne-concertation",
+   "source": "RTE",
+   "deadline": "2026-11-22",
+   "opened": "2026-09-30",
+   "theme": "grid"
+  },
+  {
+   "title": "Projet d’arrêté relatif au plan d’action établi sur la base des recommandations découlant de l’audit énergétique ou sur la base du système de management de l’énergie",
+   "link": "https://www.consultations-publiques.developpement-durable.gouv.fr/projet-d-arrete-relatif-au-plan-d-action-etabli-a3483.html",
+   "source": "Ministère · Énergies et climat",
+   "deadline": "2026-11-25",
+   "opened": "2026-11-03",
+   "theme": "cee"
+  },
+  {
+   "title": "Projet d’arrêté portant modification des bonifications associées aux fiches d’opérations standardisées portant les références BAR-TH-171 et BAR-TH-172 du dispositif des certificats d’économies d’énergie",
+   "link": "https://www.consultations-publiques.developpement-durable.gouv.fr/projet-d-arrete-portant-modification-des-a3490.html",
+   "source": "Ministère · Énergies et climat",
+   "deadline": "2026-12-05",
+   "opened": "2026-11-13",
+   "theme": "cee"
+  }
+ ],
+ "agenda": [],
+ "post": null,
+ "profiles": {
+  "regulatory": {
+   "name": [
+    "Réglementaire et affaires publiques",
+    "Regulatory and public affairs"
+   ],
+   "short": [
+    "Réglementaire",
+    "Regulatory"
+   ],
+   "order": [
+    "official",
+    "cons",
+    "stories",
+    "pubs",
+    "markets",
+    "agenda",
+    "post"
+   ],
+   "headline": "Négociations sur passoires thermiques, règles PPE3 et soutien public",
+   "headline_en": "Negotiations on thermal sieves, PPE3 rules and public support",
+   "stories": [
+    {
+     "id": "assoiresthermiques438764",
+     "title": "Ultimes négociations parlementaires sur les passoires thermiques",
+     "link": "https://www.greenunivers.com/2026/11/ultimes-negociations-parlementaires-sur-les-passoires-thermiques-438764/",
+     "tags": [
+      "fr",
+      "power",
+      "regulation"
+     ],
+     "sources": [
+      "GreenUnivers"
+     ],
+     "what": null,
+     "what_en": null,
+     "for_you": "Suivre l'évolution du projet de loi",
+     "for_you_en": "Follow the evolution of the bill"
+    },
+    {
+     "id": "rlappeldoffresppe3neutre",
+     "title": "Électricité : la CRE soutient de nouvelles règles pour l’appel d’offres PPE3 Neutre",
+     "link": "https://wattselse.com/veille/article/4543/electricite-la-cre-soutient-de-nouvelles-regles-pour-lappel-doffres-ppe3-neutre",
+     "tags": [
+      "fr",
+      "power",
+      "regulation"
+     ],
+     "sources": [
+      "Watts Else"
+     ],
+     "what": "La référence de prix retenue dans le complément de rémunération détermine qui absorbe le risque de cannibalisation des recettes renouvelables lors des heures de production simultanée, et donc l’intérêt ou non à adosser du stockage aux…",
+     "what_en": null,
+     "for_you": "Analyser les règles pour l'appel d'offres",
+     "for_you_en": "Analyze the rules for the call for tenders"
+    },
+    {
+     "id": "tq1q1mllxctjmcu1vbenroc5",
+     "title": "La Cour des comptes s'inquiète d'un soutien public \"potentiellement massif\" pour tenir les objectifs de la PPE 3",
+     "link": "https://news.google.com/rss/articles/CBMi3wFBVV95cUxPakh1V0YtQjJMV05VZEtPSDlNMWhNTWxFUEJlMUM0ZXJLb0xjN3JPWko5QWZWX045T0pQckpxdjBGV3ppZ0ZnYmdNSXVCSjN3QVREaHlwVzNPWGF2bDBtUXFNUUVaNFJVUVg5dUZBemxqV3ZjU3dqY3Z3VlU1SkJKTHl0Yk11Q2dEMVV1VnpJUUxEaHhNTGJyT3lIZm9hWDc2QWk2ZjBCaVh4QmZWUjMtaFZTQ3l4bVp5RWRUYXJ6OUVmVUZ3N3BrVjdRMDNRNTNtQ1Q1MllXcTJMcU1VbENR?oc=5",
+     "tags": [
+      "fr",
+      "regulation",
+      "watch"
+     ],
+     "sources": [
+      "AEF info"
+     ],
+     "what": null,
+     "what_en": null,
+     "for_you": null,
+     "for_you_en": null
+    }
+   ],
+   "ai": true
+  },
+  "origination": {
+   "name": [
+    "Origination",
+    "Origination"
+   ],
+   "short": [
+    "Origination",
+    "Origination"
+   ],
+   "order": [
+    "markets",
+    "stories",
+    "cons",
+    "official",
+    "pubs",
+    "agenda",
+    "post"
+   ],
+   "headline": "Nouvelles règles pour l'appel d'offres PPE3 Neutre",
+   "headline_en": "New rules for PPE3 Neutre call for tenders",
+   "stories": [
+    {
+     "id": "rlappeldoffresppe3neutre",
+     "title": "Électricité : la CRE soutient de nouvelles règles pour l’appel d’offres PPE3 Neutre",
+     "link": "https://wattselse.com/veille/article/4543/electricite-la-cre-soutient-de-nouvelles-regles-pour-lappel-doffres-ppe3-neutre",
+     "tags": [
+      "fr",
+      "power",
+      "regulation"
+     ],
+     "sources": [
+      "Watts Else"
+     ],
+     "what": "La référence de prix retenue dans le complément de rémunération détermine qui absorbe le risque de cannibalisation des recettes renouvelables lors des heures de production simultanée, et donc l’intérêt ou non à adosser du stockage aux…",
+     "what_en": null,
+     "for_you": "Impact sur les contrats et les recettes renouvelables",
+     "for_you_en": "Impact on contracts and renewable revenues"
+    },
+    {
+     "id": "rqm9wodlsmthymlhotw1noc5",
+     "title": "AirTrunk and European Energy ink 1GW+ renewables deal",
+     "link": "https://news.google.com/rss/articles/CBMiggFBVV95cUxOLVpjQ21XRENuS3hFUklFaGZMOHFtSG5UTkktSzRwQ01nSGJTaDZvc19DOG1pQUQ3N3BFa1ppQk55eUJuNkpxdnZoaGt3Q3hXQ01mek03U19vZzVoX0M2aUZjeEVuR2ViZTZCU2EzRFBPQ2FRQm9wODlsMThyMlhOTW1n?oc=5",
+     "tags": [
+      "markets",
+      "watch",
+      "deal",
+      "power"
+     ],
+     "sources": [
+      "Energy Source & Distribution",
+      "pv magazine Australia"
+     ],
+     "what": null,
+     "what_en": null,
+     "for_you": null,
+     "for_you_en": null
+    },
+    {
+     "id": "iquemaissansargent438790",
+     "title": "Un plan pour le solaire thermique mais sans argent",
+     "link": "https://www.greenunivers.com/2026/11/un-plan-pour-le-solaire-thermique-mais-sans-argent-438790/",
+     "tags": [
+      "fr",
+      "power",
+      "deal"
+     ],
+     "sources": [
+      "GreenUnivers"
+     ],
+     "what": null,
+     "what_en": null,
+     "for_you": null,
+     "for_you_en": null
+    }
+   ],
+   "ai": true
+  },
+  "markets": {
+   "name": [
+    "Expert marchés",
+    "Market expert"
+   ],
+   "short": [
+    "Marchés",
+    "Markets"
+   ],
+   "order": [
+    "markets",
+    "stories",
+    "pubs",
+    "official",
+    "cons",
+    "agenda",
+    "post"
+   ],
+   "headline": "Prix énergétiques sous tension",
+   "headline_en": "Energy prices under tension",
+   "stories": [
+    {
+     "id": "iquenizhnekamskneftekhim",
+     "title": "Ukraine : frappes de drones sur l’usine pétrochimique Nizhnekamskneftekhim",
+     "link": "https://wattselse.com/veille/article/4528/ukraine-frappes-de-drones-sur-lusine-petrochimique-nizhnekamskneftekhim",
+     "tags": [
+      "fr",
+      "power",
+      "regulation",
+      "geopolitics",
+      "markets"
+     ],
+     "sources": [
+      "Watts Else"
+     ],
+     "what": "Le site est un nœud d’offre de polymères et de carburants russes : un arrêt prolongé ne pèse pas seulement sur le bilan de Sibur, mais transfère la tension vers les prix spot du polypropylène et du polyéthylène et vers les acheteurs…",
+     "what_en": null,
+     "for_you": "Impact sur les prix du polypropylène et polyéthylène",
+     "for_you_en": "Impact on polypropylene and polyethylene prices"
+    },
+    {
+     "id": "2c2tgpdckk3ml8zowv6dgoc5",
+     "title": "Prix du gaz : à quel niveau le marché rouvre ce lundi 16 novembre, le point complet sur le PEG",
+     "link": "https://news.google.com/rss/articles/CBMibEFVX3lxTFBkTXE5R3hVaXlfelJMbndkV080M3FXSElsSWRFVDI3X2FhMFM0VFlLc1JqU3pva2lxLTF0U2Nia2c2U1JoLVJhM0R1bHVpT201QWN0OXA5WS03blNRU2c2TGpDckk3Ml8zOWV6dg?oc=5",
+     "tags": [
+      "fr",
+      "report",
+      "markets",
+      "regulation",
+      "watch",
+      "gas"
+     ],
+     "sources": [
+      "Selectra"
+     ],
+     "what": null,
+     "what_en": null,
+     "for_you": null,
+     "for_you_en": null
+    },
+    {
+     "id": "ttpscarbonpulsecom571658",
+     "title": "Euro Markets: EUAs drop 1% amid steeper energy losses as market weighs weather, reform talks",
+     "link": "https://carbon-pulse.com/571658/",
+     "tags": [
+      "carbon",
+      "geopolitics",
+      "markets",
+      "report"
+     ],
+     "sources": [
+      "Carbon Pulse"
+     ],
+     "what": "EUAs baissent de 1% ce lundi",
+     "what_en": "EUAs drop 1% on Monday",
+     "for_you": "Influence sur les prix du carbone",
+     "for_you_en": "Influence on carbon prices"
+    }
+   ],
+   "ai": true
+  },
+  "commercial": {
+   "name": [
+    "Commercial",
+    "Sales"
+   ],
+   "short": [
+    "Commercial",
+    "Sales"
+   ],
+   "order": [
+    "markets",
+    "stories",
+    "official",
+    "cons",
+    "pubs",
+    "agenda",
+    "post"
+   ],
+   "headline": "Frappes sur usine, prix du gaz, décrets énergie",
+   "headline_en": "Plant strikes, gas prices, energy decrees",
+   "stories": [
+    {
+     "id": "iquenizhnekamskneftekhim",
+     "title": "Ukraine : frappes de drones sur l’usine pétrochimique Nizhnekamskneftekhim",
+     "link": "https://wattselse.com/veille/article/4528/ukraine-frappes-de-drones-sur-lusine-petrochimique-nizhnekamskneftekhim",
+     "tags": [
+      "fr",
+      "power",
+      "regulation",
+      "geopolitics",
+      "markets"
+     ],
+     "sources": [
+      "Watts Else"
+     ],
+     "what": "Le site est un nœud d’offre de polymères et de carburants russes : un arrêt prolongé ne pèse pas seulement sur le bilan de Sibur, mais transfère la tension vers les prix spot du polypropylène et du polyéthylène et vers les acheteurs…",
+     "what_en": null,
+     "for_you": "Prix du polypropylène et polyéthylène en tension",
+     "for_you_en": "Tension on polypropylene and polyethylene prices"
+    },
+    {
+     "id": "j0mmfba0doylhhm0e0aesoc5",
+     "title": "Tarif Tempo EDF : votre samedi ne sera jamais rouge, mais attention à ce mois où aucun jour blanc n'a été vu depuis 2021",
+     "link": "https://news.google.com/rss/articles/CBMi5AFBVV95cUxNZEN1U1BIT19GQnEteERvTFV6OXFHRVVydzBqNWtOS1JMcUdwTUtWSG8yTjhIOFQ4RlJhX3JGdVdBUzZnelRtUlhNYlpYWGNIRUFJU2JaM1VVUTNmSG95MjdOYlRCOUJlQkxyWjFOSXdXV29jSmVuRzBPSXdsVUhESWg3amM5bWV2a21iRE9SaFVmODU2eXR2SzJHQWN1WEUxTEtacU1HS0RkRG82QU5hblZ5VjRCRjJBMmctbjEzeF9oaVBZUkZoX1AzbE9nUloyMjlkaDJ0MmFBa0dOYlhHM0E0aEs?oc=5",
+     "tags": [
+      "fr",
+      "power",
+      "watch",
+      "regulation"
+     ],
+     "sources": [
+      "Bourse Inside"
+     ],
+     "what": null,
+     "what_en": null,
+     "for_you": null,
+     "for_you_en": null
+    },
+    {
+     "id": "2c2tgpdckk3ml8zowv6dgoc5",
+     "title": "Prix du gaz : à quel niveau le marché rouvre ce lundi 16 novembre, le point complet sur le PEG",
+     "link": "https://news.google.com/rss/articles/CBMibEFVX3lxTFBkTXE5R3hVaXlfelJMbndkV080M3FXSElsSWRFVDI3X2FhMFM0VFlLc1JqU3pva2lxLTF0U2Nia2c2U1JoLVJhM0R1bHVpT201QWN0OXA5WS03blNRU2c2TGpDckk3Ml8zOWV6dg?oc=5",
+     "tags": [
+      "fr",
+      "report",
+      "markets",
+      "regulation",
+      "watch",
+      "gas"
+     ],
+     "sources": [
+      "Selectra"
+     ],
+     "what": null,
+     "what_en": null,
+     "for_you": "Suivi du PEG",
+     "for_you_en": "Monitoring PEG"
+    }
+   ],
+   "ai": true
+  }
+ }
+}
