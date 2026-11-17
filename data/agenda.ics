@@ -1,0 +1,351 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//PowerKlock//Agenda//FR
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:PowerKlock · énergie
+X-WR-TIMEZONE:Europe/Paris
+REFRESH-INTERVAL;VALUE=DURATION:PT6H
+X-PUBLISHED-TTL:PT6H
+BEGIN:VEVENT
+UID:cons-0576d932f5763b19@powerklock.com
+DTSTAMP:20261117T084601Z
+DTSTART;VALUE=DATE:20261118
+DTEND;VALUE=DATE:20261119
+SUMMARY:Fin de consultation · CRE · Niveau de dotation de Electricité de
+  Mayotte (EDM) au titre du fonds de péréquation de l’électricité (FP
+ E) pour les anné
+DESCRIPTION:Niveau de dotation de Electricité de Mayotte (EDM) au titre du
+  fonds de péréquation de l’électricité (FPE) pour les années 2027 
+ à 2029 et cadre de régulation associé\nDate limite de réponse. Source 
+ : CRE\nhttps://www.cre.fr/documents/consultations-publiques/niveau-de-dota
+ tion-de-electricite-de-mayotte-edm-au-titre-du-fonds-de-perequation-de-lel
+ ectricite-fpe-pour-les-annees-2027-a-2029-et-cadre-de-regulation-associe.h
+ tml
+URL:https://www.cre.fr/documents/consultations-publiques/niveau-de-dotation
+ -de-electricite-de-mayotte-edm-au-titre-du-fonds-de-perequation-de-lelectr
+ icite-fpe-pour-les-annees-2027-a-2029-et-cadre-de-regulation-associe.html
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:cons-37af0577ea96bd23@powerklock.com
+DTSTAMP:20261117T084601Z
+DTSTART;VALUE=DATE:20261125
+DTEND;VALUE=DATE:20261126
+SUMMARY:Fin de consultation · Ministère · Énergies et climat · Projet 
+ d’arrêté relatif au plan d’action établi sur la base des recommanda
+ tions découlant de l’audit énergétique ou sur 
+DESCRIPTION:Projet d’arrêté relatif au plan d’action établi sur la b
+ ase des recommandations découlant de l’audit énergétique ou sur la ba
+ se du système de management de l’énergie\nDate limite de réponse. Sou
+ rce : Ministère · Énergies et climat\nhttps://www.consultations-publiqu
+ es.developpement-durable.gouv.fr/projet-d-arrete-relatif-au-plan-d-action-
+ etabli-a3483.html
+URL:https://www.consultations-publiques.developpement-durable.gouv.fr/proje
+ t-d-arrete-relatif-au-plan-d-action-etabli-a3483.html
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:cons-7557c4e0e82fe9e1@powerklock.com
+DTSTAMP:20261117T084601Z
+DTSTART;VALUE=DATE:20261201
+DTEND;VALUE=DATE:20261202
+SUMMARY:Fin de consultation · Ministère · Énergies et climat · Projet 
+ d’arrêté portant la création de la fiche d’opération standardisée
+  IND-UT-142\, du référentiel de contrôle et de la
+DESCRIPTION:Projet d’arrêté portant la création de la fiche d’opéra
+ tion standardisée IND-UT-142\, du référentiel de contrôle et de la bon
+ ification associés\nDate limite de réponse. Source : Ministère · Éner
+ gies et climat\nhttps://www.consultations-publiques.developpement-durable.
+ gouv.fr/projet-d-arrete-portant-la-creation-de-la-fiche-d-a3487.html
+URL:https://www.consultations-publiques.developpement-durable.gouv.fr/proje
+ t-d-arrete-portant-la-creation-de-la-fiche-d-a3487.html
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:cons-9f9d427373c71589@powerklock.com
+DTSTAMP:20261117T084601Z
+DTSTART;VALUE=DATE:20261205
+DTEND;VALUE=DATE:20261206
+SUMMARY:Fin de consultation · Ministère · Énergies et climat · Projet 
+ d’arrêté portant modification des bonifications associées aux fiches 
+ d’opérations standardisées portant les référ
+DESCRIPTION:Projet d’arrêté portant modification des bonifications asso
+ ciées aux fiches d’opérations standardisées portant les références 
+ BAR-TH-171 et BAR-TH-172 du dispositif des certificats d’économies d’
+ énergie\nDate limite de réponse. Source : Ministère · Énergies et cli
+ mat\nhttps://www.consultations-publiques.developpement-durable.gouv.fr/pro
+ jet-d-arrete-portant-modification-des-a3490.html
+URL:https://www.consultations-publiques.developpement-durable.gouv.fr/proje
+ t-d-arrete-portant-modification-des-a3490.html
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:cons-5a9d64c30194b427@powerklock.com
+DTSTAMP:20261117T084601Z
+DTSTART;VALUE=DATE:20261021
+DTEND;VALUE=DATE:20261022
+SUMMARY:Fin de consultation · Ministère · Énergies et climat · Projet 
+ d’arrêté portant création du programme PRO-INNO-88 dans le cadre du d
+ ispositif des certificats d’économies d’éner
+DESCRIPTION:Projet d’arrêté portant création du programme PRO-INNO-88 
+ dans le cadre du dispositif des certificats d’économies d’énergie\nD
+ ate limite de réponse. Source : Ministère · Énergies et climat\nhttps:
+ //www.consultations-publiques.developpement-durable.gouv.fr/projet-d-arret
+ e-portant-creation-du-programme-pro-a3435.html
+URL:https://www.consultations-publiques.developpement-durable.gouv.fr/proje
+ t-d-arrete-portant-creation-du-programme-pro-a3435.html
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:cons-5741693c1bbc9b7d@powerklock.com
+DTSTAMP:20261117T084601Z
+DTSTART;VALUE=DATE:20261023
+DTEND;VALUE=DATE:20261024
+SUMMARY:Fin de consultation · Ministère · Énergies et climat · Projet 
+ d’arrêté modifiant la définition de la précarité énergétique dans
+  le cadre du dispositif des certificats d’économ
+DESCRIPTION:Projet d’arrêté modifiant la définition de la précarité 
+ énergétique dans le cadre du dispositif des certificats d’économies d
+ ’énergie et adaptant les bonifications des secteurs résidentiel et du 
+ transport\nDate limite de réponse. Source : Ministère · Énergies et cl
+ imat\nhttps://www.consultations-publiques.developpement-durable.gouv.fr/pr
+ ojet-d-arrete-modifiant-la-definition-de-la-a3438.html
+URL:https://www.consultations-publiques.developpement-durable.gouv.fr/proje
+ t-d-arrete-modifiant-la-definition-de-la-a3438.html
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:cons-27eff20cc40b77d6@powerklock.com
+DTSTAMP:20261117T084601Z
+DTSTART;VALUE=DATE:20261023
+DTEND;VALUE=DATE:20261024
+SUMMARY:Fin de consultation · Ministère · Énergies et climat · Projet 
+ d’arrêté prévoyant des bonifications particulières pour les opérati
+ ons relatives aux offres intégrées sélectionné
+DESCRIPTION:Projet d’arrêté prévoyant des bonifications particulières
+  pour les opérations relatives aux offres intégrées sélectionnées dan
+ s le cadre de l’appel à candidatures « Offres intégrées pompes à ch
+ aleur » de l’agence de l’environnement et de la maîtrise de…\nDate
+  limite de réponse. Source : Ministère · Énergies et climat\nhttps://w
+ ww.consultations-publiques.developpement-durable.gouv.fr/projet-d-arrete-p
+ revoyant-des-bonifications-a3437.html
+URL:https://www.consultations-publiques.developpement-durable.gouv.fr/proje
+ t-d-arrete-prevoyant-des-bonifications-a3437.html
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:cons-38e720743965ec45@powerklock.com
+DTSTAMP:20261117T084601Z
+DTSTART;VALUE=DATE:20261028
+DTEND;VALUE=DATE:20261029
+SUMMARY:Fin de consultation · Ministère · Énergies et climat · Projet 
+ d’arrêté portant modification de fiches d’opérations standardisées
+  du dispositif des certificats d’économies d’én
+DESCRIPTION:Projet d’arrêté portant modification de fiches d’opérati
+ ons standardisées du dispositif des certificats d’économies d’énerg
+ ie\nDate limite de réponse. Source : Ministère · Énergies et climat\nh
+ ttps://www.consultations-publiques.developpement-durable.gouv.fr/projet-d-
+ arrete-portant-modification-de-fiches-d-a3446.html
+URL:https://www.consultations-publiques.developpement-durable.gouv.fr/proje
+ t-d-arrete-portant-modification-de-fiches-d-a3446.html
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:cons-83ec6b7c1a77344e@powerklock.com
+DTSTAMP:20261117T084601Z
+DTSTART;VALUE=DATE:20261104
+DTEND;VALUE=DATE:20261105
+SUMMARY:Fin de consultation · Ministère · Énergies et climat · Projet 
+ d’arrêté relatif à l’intégration des véhicules légers répondant
+  à la norme Euro 7 dans la nomenclature Crit’Air
+DESCRIPTION:Projet d’arrêté relatif à l’intégration des véhicules 
+ légers répondant à la norme Euro 7 dans la nomenclature Crit’Air\nDat
+ e limite de réponse. Source : Ministère · Énergies et climat\nhttps://
+ www.consultations-publiques.developpement-durable.gouv.fr/projet-d-arrete-
+ relatif-a-l-integration-des-a3453.html
+URL:https://www.consultations-publiques.developpement-durable.gouv.fr/proje
+ t-d-arrete-relatif-a-l-integration-des-a3453.html
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:cons-951f62c43f7f5ad7@powerklock.com
+DTSTAMP:20261117T084601Z
+DTSTART;VALUE=DATE:20261107
+DTEND;VALUE=DATE:20261108
+SUMMARY:Fin de consultation · Ministère · Énergies et climat · Méthod
+ e Label bas carbone « Enrichissement de régénérations naturelles vuln
+ érables »
+DESCRIPTION:Méthode Label bas carbone « Enrichissement de régénération
+ s naturelles vulnérables »\nDate limite de réponse. Source : Ministère
+  · Énergies et climat\nhttps://www.consultations-publiques.developpement
+ -durable.gouv.fr/methode-label-bas-carbone-enrichissement-de-a3463.html
+URL:https://www.consultations-publiques.developpement-durable.gouv.fr/metho
+ de-label-bas-carbone-enrichissement-de-a3463.html
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:cons-2114f462657fdf8a@powerklock.com
+DTSTAMP:20261117T084601Z
+DTSTART;VALUE=DATE:20261107
+DTEND;VALUE=DATE:20261108
+SUMMARY:Fin de consultation · Ministère · Énergies et climat · Projet 
+ d’arrêté modifiant l’article 5-1 de l’arrêté du 29 décembre 201
+ 4 relatif aux modalités d’application du dispositi
+DESCRIPTION:Projet d’arrêté modifiant l’article 5-1 de l’arrêté d
+ u 29 décembre 2014 relatif aux modalités d’application du dispositif d
+ es certificats d’économies d’énergie\, relatif à la bonification de
+ s opérations spécifiques industrielles entrant dans le champ…\nDate li
+ mite de réponse. Source : Ministère · Énergies et climat\nhttps://www.
+ consultations-publiques.developpement-durable.gouv.fr/projet-d-arrete-modi
+ fiant-l-article-5-1-de-l-a3459.html
+URL:https://www.consultations-publiques.developpement-durable.gouv.fr/proje
+ t-d-arrete-modifiant-l-article-5-1-de-l-a3459.html
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:cons-675108acfa7563e9@powerklock.com
+DTSTAMP:20261117T084601Z
+DTSTART;VALUE=DATE:20261113
+DTEND;VALUE=DATE:20261114
+SUMMARY:Fin de consultation · Ministère · Énergies et climat · Arrêt
+ é modifiant les critères d’éligibilité des bonifications associés a
+ ux fiches d’opérations standardisées TRA-EQ-128 
+DESCRIPTION:Arrêté modifiant les critères d’éligibilité des bonifica
+ tions associés aux fiches d’opérations standardisées TRA-EQ-128 et TR
+ A-EQ-129\nDate limite de réponse. Source : Ministère · Énergies et cli
+ mat\nhttps://www.consultations-publiques.developpement-durable.gouv.fr/arr
+ ete-modifiant-les-criteres-d-eligibilite-des-a3472.html
+URL:https://www.consultations-publiques.developpement-durable.gouv.fr/arret
+ e-modifiant-les-criteres-d-eligibilite-des-a3472.html
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:cons-0c44af30ac7228e5@powerklock.com
+DTSTAMP:20261117T084601Z
+DTSTART;VALUE=DATE:20261116
+DTEND;VALUE=DATE:20261117
+SUMMARY:Fin de consultation · Ministère · Énergies et climat · Projet 
+ d’arrêté supprimant la fiche d’opération standardisée BAR-TH-159 
+ « Pompe à chaleur hybride individuelle » du disp
+DESCRIPTION:Projet d’arrêté supprimant la fiche d’opération standard
+ isée BAR-TH-159 « Pompe à chaleur hybride individuelle » du dispositif
+  des certificats d’économies d’énergie\nDate limite de réponse. Sou
+ rce : Ministère · Énergies et climat\nhttps://www.consultations-publiqu
+ es.developpement-durable.gouv.fr/projet-d-arrete-supprimant-la-fiche-d-ope
+ ration-a3473.html
+URL:https://www.consultations-publiques.developpement-durable.gouv.fr/proje
+ t-d-arrete-supprimant-la-fiche-d-operation-a3473.html
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:ev-decret-2026-997@powerklock.com
+DTSTAMP:20261117T084601Z
+DTSTART;VALUE=DATE:20261029
+DTEND;VALUE=DATE:20261030
+SUMMARY:Décret n° 2026-997 : résiliation\, prix négatifs et flexibilit
+ é des contrats de soutien
+DESCRIPTION:Pour les installations en obligation d’achat et complément d
+ e rémunération : indemnité de résiliation anticipée selon une méthod
+ e fixée par le cahier des charges avec un plancher de 10 000 €/MW \; un
+ e compensation pour prix négatifs indépendante de la production remplace
+  l’ancienne prime versée uniquement à l’arrêt \; les installations 
+ en OA peuvent désormais participer aux services réseau et au mécanisme 
+ d’ajustement\, pris en compte dans le calcul du complément de rémunér
+ ation.\nSource : Gossement Avocats\nhttps://www.gossement-avocats.com/blog
+ /energies-renouvelables-le-decret-n2026-997-du-26-octobre-2026-reforme-les
+ -indemnites-de-resiliation-des-contrats-de-soutien-le-traitement-des-prix-
+ negatifs-et-la-participation-des-installatio/\nhttps://powerklock.com/#int
+ el/regulation
+URL:https://www.gossement-avocats.com/blog/energies-renouvelables-le-decret
+ -n2026-997-du-26-octobre-2026-reforme-les-indemnites-de-resiliation-des-co
+ ntrats-de-soutien-le-traitement-des-prix-negatifs-et-la-participation-des-
+ installatio/
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:ev-capa-new@powerklock.com
+DTSTAMP:20261117T084601Z
+DTSTART;VALUE=DATE:20261101
+DTEND;VALUE=DATE:20261102
+SUMMARY:Nouveau mécanisme de capacité : RTE acheteur unique
+DESCRIPTION:Décret du 18 mars 2026 : enchères centralisées organisées p
+ ar RTE\, première période de livraison l’hiver 2026-2027.\nSource : El
+ my\nhttps://branche.elmy.fr/marche/aides-dispositifs/reforme-mecanisme-cap
+ acite-2026/\nhttps://powerklock.com/#intel/regulation
+URL:https://branche.elmy.fr/marche/aides-dispositifs/reforme-mecanisme-capa
+ cite-2026/
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:ev-neg-5mw@powerklock.com
+DTSTAMP:20261117T084601Z
+DTSTART;VALUE=DATE:20261201
+DTEND;VALUE=DATE:20261202
+SUMMARY:Arrêt aux prix négatifs dès 5 MW
+DESCRIPTION:Solaire et éolien terrestre sous obligation d’achat ou compl
+ ément de rémunération (avant : 10 MW).\nSource : Les Énergies renouvel
+ ables\nhttps://www.les-energies-renouvelables.eu/article/actualites/reglem
+ entations/prix-negatifs-de-lelectricite-ce-qui-change-des-decembre-2026-po
+ ur-le-solaire-et-leolien-1401/\nhttps://powerklock.com/#intel/regulation
+URL:https://www.les-energies-renouvelables.eu/article/actualites/reglementa
+ tions/prix-negatifs-de-lelectricite-ce-qui-change-des-decembre-2026-pour-l
+ e-solaire-et-leolien-1401/
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:ev-cbam-cert@powerklock.com
+DTSTAMP:20261117T084601Z
+DTSTART;VALUE=DATE:20270201
+DTEND;VALUE=DATE:20270202
+SUMMARY:Vente des certificats CBAM
+DESCRIPTION:Les importateurs achètent les certificats couvrant leurs impor
+ tations de 2026.\nSource : Commission européenne\nhttps://link.europa.eu/
+ 4CdngF\nhttps://powerklock.com/#intel/regulation
+URL:https://link.europa.eu/4CdngF
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:ev-neg-1mw-apply@powerklock.com
+DTSTAMP:20261117T084601Z
+DTSTART;VALUE=DATE:20270301
+DTEND;VALUE=DATE:20270302
+SUMMARY:Arrêt aux prix négatifs dès 1 MW
+DESCRIPTION:Seuil final pour le solaire et l’éolien terrestre sous contr
+ at public.\nSource : Les Énergies renouvelables\nhttps://www.les-energies
+ -renouvelables.eu/article/actualites/reglementations/prix-negatifs-de-lele
+ ctricite-ce-qui-change-des-decembre-2026-pour-le-solaire-et-leolien-1401/\
+ nhttps://powerklock.com/#intel/regulation
+URL:https://www.les-energies-renouvelables.eu/article/actualites/reglementa
+ tions/prix-negatifs-de-lelectricite-ce-qui-change-des-decembre-2026-pour-l
+ e-solaire-et-leolien-1401/
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:ev-cfd-2way@powerklock.com
+DTSTAMP:20261117T084601Z
+DTSTART;VALUE=DATE:20270717
+DTEND;VALUE=DATE:20270718
+SUMMARY:Contrats pour différence bidirectionnels obligatoires
+DESCRIPTION:Tout nouveau soutien public à l’éolien\, au solaire\, à la
+  géothermie\, à l’hydraulique au fil de l’eau et au nucléaire prend
+  la forme d’un CfD bidirectionnel.\nSource : EUR-Lex\nhttps://eur-lex.eu
+ ropa.eu/eli/reg/2024/1747/oj/eng\nhttps://powerklock.com/#intel/regulation
+URL:https://eur-lex.europa.eu/eli/reg/2024/1747/oj/eng
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+UID:ev-ets2@powerklock.com
+DTSTAMP:20261117T084601Z
+DTSTART;VALUE=DATE:20280101
+DTEND;VALUE=DATE:20280102
+SUMMARY:Démarrage de l’ETS2 (bâtiments\, transport)
+DESCRIPTION:Prix du carbone sur les carburants et le chauffage \; les ench
+ ères de quotas commencent dès 2027.\nSource : ICAP\nhttps://icapcarbonac
+ tion.com/en/news/eu-officially-adopts-2040-climate-target-postpones-ets-2-
+ one-year\nhttps://powerklock.com/#intel/regulation
+URL:https://icapcarbonaction.com/en/news/eu-officially-adopts-2040-climate-
+ target-postpones-ets-2-one-year
+TRANSP:TRANSPARENT
+END:VEVENT
+END:VCALENDAR

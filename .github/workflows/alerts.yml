@@ -43,21 +43,21 @@ jobs:
         if: steps.secret.outputs.ok == 'true'
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
-          SMTP_HOST: ${{ secrets.SMTP_HOST }}
-          SMTP_PORT: ${{ secrets.SMTP_PORT }}
-          SMTP_USER: ${{ secrets.SMTP_USER }}
-          SMTP_PASS: ${{ secrets.SMTP_PASS }}
-          ALERT_FROM: ${{ secrets.ALERT_FROM }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST || 'smtp.gmail.com' }}   # else the Gmail account already used for the GO prices and failure mails
+          SMTP_PORT: ${{ secrets.SMTP_PORT || '587' }}
+          SMTP_USER: ${{ secrets.SMTP_USER || secrets.GO_GMAIL_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS || secrets.GO_GMAIL_APP_PASSWORD }}
+          ALERT_FROM: ${{ secrets.ALERT_FROM || secrets.GO_GMAIL_USER }}
         run: python scripts/alerts.py
       - name: New accounts to approve
         if: steps.secret.outputs.ok == 'true'
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
-          SMTP_HOST: ${{ secrets.SMTP_HOST }}
-          SMTP_PORT: ${{ secrets.SMTP_PORT }}
-          SMTP_USER: ${{ secrets.SMTP_USER }}
-          SMTP_PASS: ${{ secrets.SMTP_PASS }}
-          ALERT_FROM: ${{ secrets.ALERT_FROM }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST || 'smtp.gmail.com' }}   # else the Gmail account already used for the GO prices and failure mails
+          SMTP_PORT: ${{ secrets.SMTP_PORT || '587' }}
+          SMTP_USER: ${{ secrets.SMTP_USER || secrets.GO_GMAIL_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS || secrets.GO_GMAIL_APP_PASSWORD }}
+          ALERT_FROM: ${{ secrets.ALERT_FROM || secrets.GO_GMAIL_USER }}
         run: python scripts/notify_signups.py
 
       - name: E-mail on failure
