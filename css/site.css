@@ -4267,3 +4267,7 @@ span.nl-src { margin: 0; }
 .nl-st-h { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
 .nl-st-h .nl-pill { margin-top: 3px; }
 .nl-cons td.nl-pc { text-align: right; width: 1%; white-space: nowrap; padding-left: 10px !important; }
+.pkd-code { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; }
+.pkd-code .pkd-field { flex: 1 1 160px; }
+.pkd-pw { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; margin: 6px 0; }
+.pkd-pw .pkd-field { flex: 1 1 220px; }
