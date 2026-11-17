@@ -223,6 +223,13 @@ def main():
         print(f"Fetching {name.upper()} forward curve...")
         try:
             out["curves"][name] = fetch_curve(h, template, use_contract_label=(name == "eua"))
+            try:
+                before = len((json.loads(OUT_HIST.read_text()).get("curves") or {}).get(name) or [])
+            except Exception:
+                before = 0
+            if len(out["curves"][name]) < max(1, before // 2):
+                # the feed answered with a strip cut short (17 Nov. 2026: no EUA contract, one TTF): treat it as not returned
+                raise ValueError(f"{len(out['curves'][name])} contract(s) against {before} before")
         except Exception as e:
             # a curve the feed did not return this time keeps its last published version (each row carries its
             # own settlement date, so the page shows how old it is) rather than vanishing from the site
