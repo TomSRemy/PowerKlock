@@ -4249,3 +4249,21 @@ span.nl-src { margin: 0; }
 .nl-me-help a { color: var(--accent); }
 .nl-ics p { margin: 6px 0; font-size: 12.5px; color: var(--text2); line-height: 1.5; } .nl-ics code { font-size: 12px; word-break: break-all; }
 .nl-tile .nl-sub { color: var(--text2); margin-top: 2px; }
+/* newsletter: tiles in the dark header, every tile the same height; a subject pill at the right of each article */
+.nl-head .nl-tiles { margin-top: 12px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.nl-head .nl-tile { background: #151c24; border-color: #243447; color: #B8C9D9; min-height: 88px; }
+.nl-head .nl-tile b { color: #FFFFFF; }
+.nl-head .nl-tile small { color: #7A93AB; }
+.nl-head .nl-tile i.up { color: #ED6965; }
+.nl-head .nl-tile i.dn { color: #14D3A9; }
+.nl-head .nl-tile .nl-sub { color: #B8C9D9; }
+.nl-head .nl-src { color: #7A93AB; }
+.nl-head .nl-tiles:has(.nl-sub) .nl-tile { min-height: 108px; }
+@media (max-width: 560px) { .nl-head .nl-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.nl-pill { display: inline-block; flex: none; font-size: 11px; font-weight: 600; line-height: 1; padding: 4px 8px; border-radius: 999px; background: var(--bg4); color: var(--text2); white-space: nowrap; }
+.nl-p-renewables { color: #14D3A9; } .nl-p-gas { color: #E8A33D; } .nl-p-regulation { color: #ED6965; } .nl-p-deal { color: #A78BFA; }
+.nl-p-markets, .nl-p-build { color: #6CB4F5; } .nl-p-power { color: #14D3A9; }
+.nl-ul li { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
+.nl-st-h { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
+.nl-st-h .nl-pill { margin-top: 3px; }
+.nl-cons td.nl-pc { text-align: right; width: 1%; white-space: nowrap; padding-left: 10px !important; }

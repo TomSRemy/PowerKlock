@@ -160,6 +160,28 @@ def tailor(E, pids, interests, france, n):
     return [st for _, st in sorted(pool, key=lambda x: -x[0])[:n]]
 
 
+# the subject of an article, shown in a pill at its right: the most specific of its categories (scripts/fetch_news.py)
+THEMES = [('renewables', 'Renouvelables', '#E3F4EC', '#0B6B4F'), ('gas', 'Gaz', '#FCEFE0', '#9A5B12'), ('carbon', 'Carbone', '#ECEFF3', '#3F5468'),
+          ('deal', 'Transactions', '#EEE9F8', '#5B3FA0'), ('build', 'Projets', '#E6F0FA', '#1F5C99'), ('regulation', 'Régulation', '#FDECEC', '#A23B36'),
+          ('markets', 'Marchés', '#E6F0FA', '#1F5C99'), ('power', 'Électricité', '#E8F6F3', '#0B7A62'), ('geopolitics', 'Géopolitique', '#F3EEE6', '#6B5530')]
+CONS_T = {'cee': 'Efficacité énergétique', 'tariffs': 'Tarifs', 'grid': 'Réseau', 'market': 'Marché', 'renewables': 'Renouvelables', 'gas': 'Gaz', 'other': 'Autre'}
+
+
+def pill(label, bg='#ECEFF3', fg='#3F5468'):
+    return (f'<span style="font-family:Inter,Arial,sans-serif;display:inline-block;font-size:11px;font-weight:600;line-height:1;'
+            f'padding:4px 8px;border-radius:999px;background:{bg};color:{fg};white-space:nowrap">{esc(label)}</span>') if label else ''
+
+
+def theme_pill(tags, official=False):
+    tags = tags or []
+    if official:    # a text: its energy, else regulation (« financement » in a decree is not a deal)
+        tags = [t for t in tags if t in ('renewables', 'gas', 'carbon')] or ['regulation']
+    for k, lab, bg, fg in THEMES:
+        if k in tags:
+            return pill(lab, bg, fg)
+    return ''
+
+
 def render_letter(today, E, pid, mine=None, exclude=(), interests=(), france=False):
     """The newsletter (scripts/news_letter.py) for one or several reading profiles, as an e-mail: inline styles and
     tables, which every mail client shows the same way. Rising prices in red, falling in green, as on the site.
@@ -205,25 +227,27 @@ def render_letter(today, E, pid, mine=None, exclude=(), interests=(), france=Fal
         if not rs:
             return ''
         cells = []
+        tile_h = 112 if any(r.get('sub') for r in rs) else 92       # every tile the same height
         for r in rs:
             c = r.get('chg') or 0
             up = c < 0 if r.get('hours') else c > 0      # more hours at 0 € or below: lower prices, in green
             col = '#5F738A' if not c else '#B8322D' if up else '#0E7A5F'
             if r.get('hours'):
-                pct = '' if r.get('chg') is None else ('▲ +' if c > 0 else '▼ −' if c < 0 else '= ') + n(abs(c), 0) + ' h'
+                pct = '' if r.get('chg') is None else 'stable' if not c else ('▲ +' if c > 0 else '▼ −') + n(abs(c), 0) + ' h'
             elif r.get('show') == 'abs':
                 pct = '' if r.get('chg') is None else ('▲ +' if c > 0 else '▼ −' if c < 0 else '= ') + n(abs(c), 1) + ' €'
             else:
                 pct = '' if r.get('pct') is None else ('▲ +' if c > 0 else '▼ −' if c < 0 else '') + n(abs(r['pct']), 1) + ' %'
-            cells.append(f'<td width="33%" style="padding:3px;vertical-align:top"><a href="{SITE}#{esc(r.get("page") or "today")}" style="display:block;text-decoration:none;border:1px solid #D5DEE8;border-radius:10px;padding:9px 10px;background:#F7F9FB">'
-                         f'<span style="{f};display:block;font-size:12px;color:#5F738A">{esc(r["label"][0])}</span>'
-                         f'<span style="font-family:Menlo,Consolas,monospace;display:block;font-size:17px;font-weight:700;color:#13202E;margin:4px 0 2px">{num(r["value"], 0 if r.get("hours") and float(r["value"]).is_integer() else 1 if r.get("hours") else 2)}</span>'
-                         f'<span style="{f};font-size:11px;color:#62758B">{esc(r["unit"])}</span> <span style="font-family:Menlo,Consolas,monospace;font-size:12px;color:{col};white-space:nowrap">{pct}</span>'
-                         + (f'<span style="{f};display:block;font-size:11px;color:#34485E;margin-top:4px">{esc(r["sub"][0])}</span>' if r.get('sub') else '') + '</a></td>')
+            col = '#7A93AB' if not c else '#ED6965' if up else '#14D3A9'      # the site's dark colours
+            cells.append(f'<td width="33%" style="padding:3px;vertical-align:top"><a href="{SITE}#{esc(r.get("page") or "today")}" style="display:block;box-sizing:border-box;height:{tile_h}px;overflow:hidden;text-decoration:none;border:1px solid #243447;border-radius:10px;padding:9px 10px;background:#151c24">'
+                         f'<span style="{f};display:block;font-size:11.5px;line-height:1.25;color:#B8C9D9;height:29px;overflow:hidden">{esc(r["label"][0])}</span>'
+                         f'<span style="font-family:Menlo,Consolas,monospace;display:block;font-size:18px;font-weight:700;color:#FFFFFF;margin:3px 0 2px">{num(r["value"], 0 if r.get("hours") and float(r["value"]).is_integer() else 1 if r.get("hours") else 2)}</span>'
+                         f'<span style="{f};font-size:11px;color:#7A93AB">{esc(r["unit"])}</span> <span style="font-family:Menlo,Consolas,monospace;font-size:12px;color:{col};white-space:nowrap">{pct}</span>'
+                         + (f'<span style="{f};display:block;font-size:11px;color:#B8C9D9;margin-top:4px">{esc(r["sub"][0])}</span>' if r.get('sub') else '') + '</a></td>')
         rows_ = ''.join('<tr>' + ''.join(cells[i:i + 3]) + ''.join('<td width="33%"></td>' for _ in range(3 - len(cells[i:i + 3]))) + '</tr>' for i in range(0, len(cells), 3))
         srcs = ', '.join(sorted({r.get('src') for r in rs if r.get('src')}))
-        return box(h2(SEC['markets']) + f'<table role="presentation" width="100%" style="border-collapse:collapse;table-layout:fixed">{rows_}</table>'
-                   f'<p style="{f};font-size:11px;color:#62758B;margin:8px 0 0">Sources : {esc(srcs)}. {"Variation sur la semaine" if wk else "Variation sur la séance précédente"}. Chaque tuile ouvre sa page sur le site.</p>')
+        return (f'<table role="presentation" width="100%" style="border-collapse:collapse;table-layout:fixed;margin-top:16px">{rows_}</table>'
+                f'<p style="{f};font-size:11px;color:#7A93AB;margin:8px 0 0">Sources : {esc(srcs)}. {"Variation sur la semaine" if wk else "Variation sur la séance précédente"}. Chaque tuile ouvre sa page sur le site.</p>')
 
     def digest():
         d = E.get('digest') or {}
@@ -235,21 +259,29 @@ def render_letter(today, E, pid, mine=None, exclude=(), interests=(), france=Fal
     def top():
         if not E.get('top'):
             return ''
-        return box(h2('Les articles de la semaine' if wk else SEC['top']) + ul([f'{a(o["link"], o["title"])} <span style="color:#62758B;font-size:12px">· {esc(o["source"])}{" +" + str(o["n"] - 1) if (o.get("n") or 1) > 1 else ""}</span>' for o in E['top']]))
+        return box(h2('Les articles de la semaine' if wk else SEC['top']) + ul([(f'{a(o["link"], o["title"])} <span style="color:#62758B;font-size:12px">· {esc(o["source"])}{" +" + str(o["n"] - 1) if (o.get("n") or 1) > 1 else ""}</span>', theme_pill(o.get('tags'))) for o in E['top']]))
 
     def stories():
         if not ed.get('stories'):
             return ''
         out = ''
         for k, st in enumerate(ed['stories']):
-            out += (f'<p style="{serif};font-size:19px;line-height:1.35;font-weight:600;margin:{0 if k == 0 else 18}px 0 6px">{k + 1}. {a(st["link"], st["title"])}</p>'
+            out += (f'<table role="presentation" width="100%" style="border-collapse:collapse;margin:{0 if k == 0 else 18}px 0 6px"><tr>'
+                    f'<td style="{serif};font-size:19px;line-height:1.35;font-weight:600;padding:0 10px 0 0;vertical-align:top">{k + 1}. {a(st["link"], st["title"])}</td>'
+                    f'<td style="text-align:right;vertical-align:top;width:1%;white-space:nowrap;padding-top:3px">{theme_pill(st.get("tags"))}</td></tr></table>'
                     + (f'<p style="{f};font-size:15px;line-height:1.55;color:#34485E;margin:0 0 6px"><b style="color:#13202E">Ce qui s’est passé.</b> {esc(st["what"])}</p>' if st.get('what') else '')
-                    + (f'<p style="{f};font-size:15px;line-height:1.55;color:#34485E;margin:0 0 6px;background:#EEF8F5;padding:10px 12px;border-radius:8px"><b style="color:#0B7A62">Pour vous, {esc((st.get("short") or ed["short"][0]).lower())}.</b> {esc(st["for_you"])}</p>' if st.get('for_you') else '')
+                    + (f'<p style="{f};font-size:15px;line-height:1.55;color:#34485E;margin:0 0 6px;background:#EEF8F5;padding:10px 12px;border-radius:8px"><b style="color:#0B7A62">{esc(st.get("short") or ed["short"][0])} ·</b> {esc(st["for_you"])}</p>' if st.get('for_you') else '')
                     + f'<p style="{f};font-size:12px;color:#62758B;margin:0">{esc(" · ".join(st["sources"][:4]))}</p>')
         return box(h2('Les sujets de la semaine' if wk else SEC['stories']) + out)
 
     def ul(rows):
-        return f'<ul style="{f};margin:0;padding-left:18px;font-size:14px;line-height:1.5;color:#34485E">' + ''.join(f'<li style="margin:0 0 7px">{r}</li>' for r in rows) + '</ul>'
+        """rows: text, or (text, pill): the pill sits at the right of its line"""
+        tr = ''
+        for r in rows:
+            txt, p_ = r if isinstance(r, tuple) else (r, '')
+            tr += (f'<tr><td style="{f};padding:6px 10px 6px 0;font-size:14px;line-height:1.45;color:#34485E;vertical-align:top">{txt}</td>'
+                   f'<td style="padding:6px 0;text-align:right;vertical-align:top;width:1%;white-space:nowrap">{p_}</td></tr>')
+        return f'<table role="presentation" width="100%" style="border-collapse:collapse">{tr}</table>'
 
     def cons():
         if not E.get('cons'):
@@ -260,19 +292,20 @@ def render_letter(today, E, pid, mine=None, exclude=(), interests=(), france=Fal
             j = '' if left is None else 'auj.' if left == 0 else f'J-{left}'
             col = '#B8322D' if left is not None and left <= 7 else '#34485E'
             tr += (f'<tr><td style="font-family:Menlo,Consolas,monospace;padding:6px 12px 6px 0;color:{col};font-weight:600;white-space:nowrap;vertical-align:top;font-size:13px">{j}</td>'
-                   f'<td style="{f};padding:6px 0;font-size:14px;line-height:1.4">{a(c["link"], c["title"])} <span style="color:#62758B;font-size:12px">· {esc(c["source"])}</span></td></tr>')
+                   f'<td style="{f};padding:6px 10px 6px 0;font-size:14px;line-height:1.4">{a(c["link"], c["title"])} <span style="color:#62758B;font-size:12px">· {esc(c["source"])}</span></td>'
+                   f'<td style="padding:6px 0;text-align:right;vertical-align:top;width:1%;white-space:nowrap">{pill(CONS_T.get(c.get("theme") or "other", ""))}</td></tr>')
         return box(h2(SEC['cons']) + f'<table role="presentation" width="100%" style="border-collapse:collapse">{tr}</table>')
 
     secs = {
         'markets': markets, 'digest': digest, 'top': top, 'stories': stories, 'cons': cons,
-        'official': lambda: box(h2(SEC['official']) + ul([f'{a(o["link"], o["title"])} <span style="color:#62758B;font-size:12px">· {esc(o["source"])}, {ddm(o["date"])}</span>' for o in E['official']])) if E.get('official') else '',
-        'pubs': lambda: box(h2(SEC['pubs']) + ul([f'{a(o["link"], o["title"])} <span style="color:#62758B;font-size:12px">· {esc(o["source"])}</span>' for o in E['pubs']])) if E.get('pubs') else '',
+        'official': lambda: box(h2(SEC['official']) + ul([(f'{a(o["link"], o["title"])} <span style="color:#62758B;font-size:12px">· {esc(o["source"])}, {ddm(o["date"])}</span>', theme_pill(o.get('tags'), True)) for o in E['official']])) if E.get('official') else '',
+        'pubs': lambda: box(h2(SEC['pubs']) + ul([(f'{a(o["link"], o["title"])} <span style="color:#62758B;font-size:12px">· {esc(o["source"])}</span>', theme_pill(o.get('tags'))) for o in E['pubs']])) if E.get('pubs') else '',
         'agenda': lambda: box(h2(SEC['agenda']) + ul([f'<b>{ddm(e["date"])}</b> · {esc((e.get("title") or [""])[0])}' for e in E['agenda']])) if E.get('agenda') else '',
         'post': lambda: box(h2('Les posts de la semaine' if wk else SEC['post']) + ul([a(p_["url"], (p_.get("author") or "LinkedIn") + (" · " + p_["note"] if p_.get("note") else "")) for p_ in (E.get('posts') or [E['post']])])) if E.get('post') else '',
     }
     # the articles of the last day that match the reader's own keywords (public.news_keyword), after the stories
-    secs['mine'] = lambda: box(h2('Vos mots-clés') + ul([f'{a(o["link"], o["title"])} <span style="color:#62758B;font-size:12px">· {esc(o["source"])}</span>' for o in mine])) if mine else ''
-    order = list(ed.get('order') or secs)
+    secs['mine'] = lambda: box(h2('Vos mots-clés') + ul([(f'{a(o["link"], o["title"])} <span style="color:#62758B;font-size:12px">· {esc(o["source"])}</span>', theme_pill(o.get('tags'))) for o in mine])) if mine else ''
+    order = [k for k in (ed.get('order') or secs) if k != 'markets']   # the tiles are at the top, in the header
     order.insert(order.index('stories') + 1 if 'stories' in order else len(order), 'mine')
     body = ''.join(secs[k]() for k in order if k in secs)
     one = box(h2('En une phrase') + f'<p style="{serif};font-size:19px;line-height:1.45;margin:0;color:#13202E">{esc(ed["headline"])}</p>') if ed.get('headline') else ''
@@ -280,8 +313,8 @@ def render_letter(today, E, pid, mine=None, exclude=(), interests=(), france=Fal
             f'<tr><td style="background:#0a0e13;padding:22px 28px;border-radius:12px 12px 0 0">'
             f'<p style="{f};margin:0;font-size:13px;color:#B8C9D9"><span style="font-weight:700;color:#14D3A9">PowerKlock</span> · {frday(today)}</p>'
             f'<p style="{serif};margin:8px 0 4px;font-size:30px;font-weight:600;color:#FFFFFF">{TITLE[wk]}</p>'
-            f'<p style="{f};margin:0 0 4px;font-size:13px;color:#B8C9D9">{SUB[wk]}</p>'
-            f'<p style="{f};margin:0;font-size:13px;color:#B8C9D9">Édition <b style="color:#FFFFFF">{esc(ed["name"][0])}</b>{" · semaine du " + frday(today - timedelta(days=7)) if wk else " · depuis vendredi" if E.get("monday") else ""}</p></td></tr>'
+            f'<p style="{f};margin:0;font-size:13px;color:#B8C9D9">{SUB[wk]}{" · semaine du " + frday(today - timedelta(days=7)) if wk else ""}</p>'
+            + markets() + '</td></tr>'
             + one + body +
             f'<tr><td style="padding:16px 28px;background:#F3F6F9;border-radius:0 0 12px 12px"><p style="{f};font-size:12px;color:#62758B;line-height:1.6;margin:0">'
             f'Sujets choisis pour le profil {esc(ed["name"][0])} ; résumés rédigés automatiquement à partir des titres et extraits, chaque sujet renvoie à ses articles.<br>'
