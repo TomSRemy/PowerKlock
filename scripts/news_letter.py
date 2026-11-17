@@ -222,20 +222,18 @@ def markets(today, days=1):
         if a:
             row("Gaz PEG", "PEG gas", a[1], "€/MWh", b[1], "SEFE", "markets/fuels")
     if days > 1:
-        # one tile per technology: the PPA benchmark (change over the week), and under it the CRE's latest M0
+        # one tile per technology: the PPA benchmark (change over the week)
         bm = (dload("history", "ppa_benchmark.json") or {}).get("days") or {}
-        off = (dload("cre_m0.json") or {}).get("official") or {}
+        # under it, the forecast M0 of next month (PowerKlock: the CRE's method on the month's forward, data/cre_m0.json)
+        fc = next((x for x in ((dload("cre_m0.json") or {}).get("forecast") or []) if x.get("month", "") > today.strftime("%Y-%m")), None)
         for tech, fr, en in (("solar", "Solaire", "Solar"), ("wind", "Éolien", "Wind")):
             a, b = back([(d, (bm[d].get(tech) or {}).get("ppa")) for d in sorted(bm)], 7)
             if not a:
                 continue
             row(f"{fr} · PPA France", f"{en} · France PPA", a[1], "€/MWh", b[1], "PowerKlock", "tools/ppa")
-            m0 = off.get(tech) or {}
-            ks = sorted(m0)
-            if ks:
-                mo = ks[-1]
-                rows[-1]["sub"] = [f"M0 {MOIS[int(mo[5:]) - 1]} (CRE) : {m0[mo]:.2f} €".replace(".", ","), f"M0 {mo} (CRE): €{m0[mo]:.2f}"]
-                rows[-1]["src"] = "PowerKlock, CRE"
+            if fc and fc.get(tech) is not None:
+                mo = fc["month"]
+                rows[-1]["sub"] = [f"M0 prévu {MOIS[int(mo[5:]) - 1]} : {fc[tech]:.2f} €".replace(".", ","), f"Forecast M0 {mo}: €{fc[tech]:.2f}"]
     go = go_y1()
     if go:
         row("Garanties d'origine " + go[2], "Guarantees of origin " + go[2], go[0], "€/MWh", go[1], "Commerg", "markets/go")
