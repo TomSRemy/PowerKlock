@@ -1,5 +1,5 @@
 {
- "open": 13,
+ "open": 12,
  "notes": [
   {
    "id": 29,
@@ -265,25 +265,6 @@
    },
    "body": "un des tablaux les plus importants. Essaye d'avoir toutes les données et l'historique pour faire des grpahs",
    "reply": "La donnée est déjà complète (111 périodes depuis CRE4/2016, toutes filières) et le graphique juste à côté de la table l'utilise déjà en entier. La table « derniers résultats » est volontairement limitée (dernier + précédent par filière, 3 ans) — vous voulez que je l'étende à tout l'historique, ou c'est le graphique qui répond déjà au besoin ?",
-   "done_at": null
-  },
-  {
-   "id": 194,
-   "status": "open",
-   "created_at": "2026-11-13T08:33+00:00",
-   "author": "Tom",
-   "route": "system/bilan",
-   "page": "Système électrique › Bilan électrique",
-   "tab": "2026 à date · 1 jour · heures",
-   "target_id": "bl-rte-load",
-   "target_label": "Selon RTE, année après année (graphique)",
-   "settings": {
-    "_page": "bilan",
-    "_path": "#bilan-host > section:nth-of-type(1)",
-    "pk-zone": "France"
-   },
-   "body": "gloablement il ma,que peut être une analyse économique dans cet aspect (revenu des export, financement du renouvelable etc etc)",
-   "reply": "Je n'ai rien codé, ça mérite une maquette (nouvelle section). Bonne nouvelle : les deux chiffres existent déjà sans nouvelle source — la valeur des exportations est déjà publiée par RTE sur cette page, et le coût de financement du soutien aux renouvelables (CRE) est déjà récupéré ailleurs sur le site. Je peux dessiner une maquette d'une section « Analyse économique » avec ces deux séries année par année — dites-moi si c'est le bon périmètre.",
    "done_at": null
   },
   {
@@ -3946,6 +3927,25 @@
    "body": "espacer et agrandinr les graphs et rajouter la projection 2026. Elklke n'est pas aprtout",
    "reply": "Fait : graphiques plus grands et plus espacés sur toute la page, et projection fin d'année 2026 ajoutée au graphique des émissions (comme pour la production). Elle ne peut pas apparaître sur les 4 graphiques « Selon RTE » (chiffres propres de RTE, publiés début 2027 seulement), ni sur les échanges par frontière ou le mix résiduel EEX (pas de projection calculée pour eux). Les facteurs de charge restent volontairement sans projection sur les mois à venir.",
    "done_at": "2026-11-18T16:38+00:00"
+  },
+  {
+   "id": 194,
+   "status": "done",
+   "created_at": "2026-11-13T08:33+00:00",
+   "author": "Tom",
+   "route": "system/bilan",
+   "page": "Système électrique › Bilan électrique",
+   "tab": "2026 à date · 1 jour · heures",
+   "target_id": "bl-rte-load",
+   "target_label": "Selon RTE, année après année (graphique)",
+   "settings": {
+    "_page": "bilan",
+    "_path": "#bilan-host > section:nth-of-type(1)",
+    "pk-zone": "France"
+   },
+   "body": "gloablement il ma,que peut être une analyse économique dans cet aspect (revenu des export, financement du renouvelable etc etc)",
+   "reply": "Fait : nouvelle section « Financement du soutien aux renouvelables » sur Bilan électrique (CRE, M€ convertis en Md€), juste après les exports RTE déjà présents. Années connues en plein, 2026/2027 prévus en pointillé. 2022 ressort négatif (prix de marché au-dessus du tarif garanti, les producteurs ont reversé l'écart) — expliqué dans la note sous le graphique.",
+   "done_at": "2026-11-18T23:43+00:00"
   },
   {
    "id": 195,
