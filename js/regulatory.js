@@ -51,11 +51,11 @@
       <div class="reg-f">${(it.tags || []).map(g => `<a class="reg-tag" href="#${TAG_ROUTE[g] || ''}" data-route="${TAG_ROUTE[g] || ''}">${esc(L(TAG_NAME[g] || [g, g]))}</a>`).join('')}
       ${it.source ? `<a class="reg-src" href="${esc(it.source[1])}" target="_blank" rel="noopener">${T('Source', 'Source')} : ${esc(it.source[0])} ↗</a>` : ''}</div></div></li>`;
     const chips = ['', ...Object.keys(j.kinds)].map(k => `<button type="button" class="reg-chip${k === theme ? ' on' : ''}" data-th="${k}">${k ? `<i class="reg-k" style="background:${KC[k]}"></i>` : ''}${esc(k ? L(j.kinds[k]) : T('Tout', 'All'))} <span>${k ? j.items.filter(it => it.kind === k).length : j.items.length}</span></button>`).join('');
-    host.innerHTML = `<div class="reg-chips">${chips}</div>
+    host.innerHTML = `<div class="reg-news" id="reg-news"></div>
+      <div class="reg-chips">${chips}</div>
       <h3 class="reg-h">${T('À venir', 'Upcoming')} <span>${up.length}</span></h3><ol class="reg-list">${up.map(card).join('') || '<li class="fuel-note">' + T('Rien d’annoncé pour ce thème.', 'Nothing announced for this theme.') + '</li>'}</ol>
       <h3 class="reg-h">${T('Historique', 'History')} <span>${past.length}</span></h3><ol class="reg-list">${past.map(card).join('')}</ol>
       <div class="reg-news" id="reg-jo"></div>
-      <div class="reg-news" id="reg-news"></div>
       <p class="fuel-note">${T('Chaque date est vérifiée sur sa source. Les événements apparaissent aussi sur les graphiques qu’ils concernent : en encadré pour les plus importants quand la place le permet, en pointillés sinon. Liste mise à jour au ', 'Each date is checked against its source. Events also show on the charts they concern: as a framed block for the most important ones when there is room, as dashed lines otherwise. List updated on ')}${esc(j.updated)}.</p>`;
     host.querySelectorAll('.reg-chip').forEach(b => b.addEventListener('click', () => { theme = b.dataset.th; render(); }));
     news(); jo();

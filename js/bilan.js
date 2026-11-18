@@ -86,21 +86,21 @@
       ${sent ? `<p class="bl-lead">${esc(sent)}</p>` : ''}
       ${rteRow()}
       ${RF && RF.years ? `<section class="bl-blk"><div class="bl-t"><h2>${T('Selon RTE, année après année', 'According to RTE, year after year')}</h2><span class="bl-src">RTE, Bilan électrique · ODRÉ · ${T('lu chaque année', 'read every year')}</span></div>
-        <div class="bl-cols"><div class="bl-c" style="height:240px"><canvas id="bl-rte-load"></canvas></div><div class="bl-c" style="height:240px"><canvas id="bl-rte-co2"></canvas></div></div>
-        <div class="bl-cols" style="margin-top:10px"><div class="bl-c" style="height:240px"><canvas id="bl-rte-curt"></canvas></div><div class="bl-c" style="height:240px"><canvas id="bl-rte-exp"></canvas></div></div></section>` : ''}
+        <div class="bl-cols"><div class="bl-c" style="height:280px"><canvas id="bl-rte-load"></canvas></div><div class="bl-c" style="height:280px"><canvas id="bl-rte-co2"></canvas></div></div>
+        <div class="bl-cols" style="margin-top:10px"><div class="bl-c" style="height:280px"><canvas id="bl-rte-curt"></canvas></div><div class="bl-c" style="height:280px"><canvas id="bl-rte-exp"></canvas></div></div></section>` : ''}
       <section class="bl-blk"><div class="bl-t"><h2>${T('Production par filière', 'Production by source')}</h2><span class="bl-src">RTE éCO2mix · TWh</span></div>
-        <div class="bl-cols"><div class="bl-c" style="height:300px"><canvas id="bl-src"></canvas></div><div class="bl-c" style="height:300px"><canvas id="bl-mon"></canvas></div></div></section>
+        <div class="bl-cols"><div class="bl-c" style="height:340px"><canvas id="bl-src"></canvas></div><div class="bl-c" style="height:340px"><canvas id="bl-mon"></canvas></div></div></section>
       <section class="bl-blk"><div class="bl-t"><h2>${T('Prix', 'Prices')}</h2><span class="bl-src">ENTSO-E day-ahead · €/MWh</span></div>
-        <div class="bl-cols"><div class="bl-c" style="height:260px"><canvas id="bl-spot"></canvas></div><div class="bl-c" style="height:260px"><canvas id="bl-neg"></canvas></div></div>
+        <div class="bl-cols"><div class="bl-c" style="height:340px"><canvas id="bl-spot"></canvas></div><div class="bl-c" style="height:340px"><canvas id="bl-neg"></canvas></div></div>
         <div class="bl-mini bl-mini-row">${[[N(sp.avg, 1) + ' €', T('spot moyen', 'average spot')], [N(sp.neg_h, 0) + ' h', T('à prix négatif', 'at a negative price')], [N(sp.high_h, 0) + ' h', T('au-dessus de 100 €/MWh', 'above 100 €/MWh')],
           [N(sp.max_day_avg, 0) + ' €', T('journée la plus chère', 'dearest day') + ' (' + (sp.max_day ? new Date(sp.max_day + 'T12:00:00Z').toLocaleDateString(T('fr-FR', 'en-GB'), { day: 'numeric', month: 'short', timeZone: 'UTC' }) : '–') + ')']].map(([v, l]) => `<div><b>${v}</b>${l}</div>`).join('')}</div></section>
       <section class="bl-blk" id="bl-spiral"></section>
       <section class="bl-blk"><div class="bl-t"><h2>${T('Nucléaire et renouvelables · facteurs de charge', 'Nuclear and renewables · load factors')}</h2><span class="bl-src">RTE éCO2mix · Energy-Charts · ${T('production ÷ (capacité × heures)', 'output ÷ (capacity × hours)')}</span></div>
-        <div class="bl-c" style="height:260px"><canvas id="bl-lf"></canvas></div><p class="bl-foot" id="bl-lf-note" style="margin:6px 0 0"></p></section>
+        <div class="bl-c" style="height:340px"><canvas id="bl-lf"></canvas></div><p class="bl-foot" id="bl-lf-note" style="margin:6px 0 0"></p></section>
       <div class="bl-cols">
-        <section class="bl-blk"><div class="bl-t"><h2>${T('Consommation', 'Consumption')}</h2><span class="bl-src">RTE éCO2mix · TWh ${T('par mois', 'per month')}</span></div><div class="bl-c" style="height:240px"><canvas id="bl-load"></canvas></div></section>
-        <section class="bl-blk"><div class="bl-t"><h2>${T('Échanges par frontière', 'Exchanges by border')}</h2><span class="bl-src">Energy-Charts · ${T('solde physique, TWh', 'physical balance, TWh')}</span></div><div class="bl-c" style="height:240px"><canvas id="bl-bord"></canvas></div></section>
-        <section class="bl-blk"><div class="bl-t"><h2>${T('Émissions de la production', 'Emissions from production')}</h2><span class="bl-src">RTE · ${T('émissions directes', 'direct emissions')}</span></div><div class="bl-c" style="height:240px"><canvas id="bl-co2"></canvas></div></section>
+        <section class="bl-blk"><div class="bl-t"><h2>${T('Consommation', 'Consumption')}</h2><span class="bl-src">RTE éCO2mix · TWh ${T('par mois', 'per month')}</span></div><div class="bl-c" style="height:280px"><canvas id="bl-load"></canvas></div></section>
+        <section class="bl-blk"><div class="bl-t"><h2>${T('Échanges par frontière', 'Exchanges by border')}</h2><span class="bl-src">Energy-Charts · ${T('solde physique, TWh', 'physical balance, TWh')}</span></div><div class="bl-c" style="height:280px"><canvas id="bl-bord"></canvas></div></section>
+        <section class="bl-blk"><div class="bl-t"><h2>${T('Émissions de la production', 'Emissions from production')}</h2><span class="bl-src">RTE · ${T('émissions directes', 'direct emissions')}</span></div><div class="bl-c" style="height:280px"><canvas id="bl-co2"></canvas></div></section>
         <section class="bl-blk"><div class="bl-t"><h2>${T('Capacités installées', 'Installed capacity')}</h2><span class="bl-src">Energy-Charts · GW ${T('fin d’année', 'end of year')}</span></div><div id="bl-cap"></div></section>
       </div>
       <section class="bl-blk" id="bl-rm"></section>
@@ -215,6 +215,7 @@
     const ys = Object.keys(D.years).sort();
     mk('bl-co2', { type: 'bar', data: { labels: ys.map(y => y === String(D.current.year) ? y + '*' : y), datasets: [
       { label: T('Mt CO₂', 'Mt CO₂'), data: ys.map(y => D.years[y].co2_mt), backgroundColor: ys.map(y => y === year ? '#F07B6B' : 'rgba(240,123,107,.45)'), borderRadius: 3 },
+      ...(live && D.current.forecast && D.current.forecast.co2_mt != null ? [{ label: T(`${year}, fin d’année prévue`, `${year}, year-end forecast`), data: ys.map(y => y === String(D.current.year) ? D.current.forecast.co2_mt : null), backgroundColor: 'rgba(251,191,36,.12)', borderColor: '#FBBF24', borderWidth: 1, borderRadius: 3 }] : []),
       { type: 'line', label: 'g/kWh', data: ys.map(y => D.years[y].co2_g_kwh), borderColor: '#E6EDF3', borderWidth: 1.6, pointRadius: 2, yAxisID: 'y1', tension: 0 }] },
       options: opts({ scales: { x: { ticks: { color: '#7A93AB' }, grid: { display: false } }, y: { ticks: { color: '#7A93AB' }, grid: { color: 'rgba(255,255,255,.05)' }, title: { display: true, text: 'Mt', color: '#7A93AB' } },
         y1: { position: 'right', ticks: { color: '#B8C9D9' }, grid: { display: false }, title: { display: true, text: 'g/kWh', color: '#B8C9D9' } } } }) });
@@ -251,7 +252,7 @@
           return `<tr><td>${L(n)}</td><td>${cell(a)}</td><td>${cell(b)}</td><td class="${g != null && Math.abs(g) > 0.3 ? 'bl-up' : ''}">${g == null ? '–' : S(g, 2, ' pt')}</td><td>${cell(E.supplier[k])}</td><td>${cell(E.residual[k])}</td></tr>`; }).join('') +
         `<tr class="bl-tot"><td>${T('Renouvelable', 'Renewable')}</td><td>${cell(ren(P), 1)}</td><td>${cell(E.production.renewable, 1)}</td><td></td><td>${cell(E.supplier.renewable, 1)}</td><td>${cell(E.residual.renewable, 1)}</td></tr>
          <tr><td>CO₂ (g/kWh)</td><td>${N((D.years[y] || {}).co2_g_kwh, 1)}</td><td>${N(E.production.co2_g_kwh, 1)}</td><td></td><td>${N(E.supplier.co2_g_kwh, 1)}</td><td>${N(E.residual.co2_g_kwh, 1)}</td></tr></tbody></table></div>
-      <div class="bl-c" style="height:240px"><canvas id="bl-rmc"></canvas></div></div>
+      <div class="bl-c" style="height:280px"><canvas id="bl-rmc"></canvas></div></div>
       <details class="bl-why"><summary>${T('D’où viennent les écarts entre RTE et EEX ?', 'Where do the gaps between RTE and EEX come from?')}</summary><ul>
         <li>${T('<b>Même source.</b> EEX calcule le mix de production avec les données de RTE, que PowerKlock utilise aussi.', '<b>Same source.</b> EEX computes the production mix from RTE’s data, which PowerKlock also uses.')}</li>
         <li>${T('<b>Le pompage-turbinage (STEP) est exclu par EEX</b> : c’est de l’énergie stockée, pas produite. Inclus, l’hydraulique gagnerait environ 1 point (6,7 TWh en 2025) ; hors STEP, les deux mix concordent à 0,2 point près par filière.', '<b>Pumped storage is excluded by EEX</b>: it is stored energy, not production. Included, hydro would gain about 1 point (6.7 TWh in 2025); without it the two mixes agree within 0.2 point per source.')}</li>
