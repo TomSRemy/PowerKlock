@@ -16,7 +16,7 @@
     ['bio', ['Bioénergies', 'Bioenergy'], '#4E8A2C'], ['gas', ['Gaz', 'Gas'], '#F79A3E'], ['coal', ['Charbon', 'Coal'], '#83563A'], ['oil', ['Fioul', 'Oil'], '#E0525A']];   // = PK_PAL.fuel
   const BORDER = { GB: ['Grande-Bretagne', 'Great Britain'], CH: ['Suisse', 'Switzerland'], IT: ['Italie', 'Italy'], DE: ['Allemagne', 'Germany'], BE: ['Belgique', 'Belgium'], ES: ['Espagne', 'Spain'] };
   const L = a => T(a[0], a[1]);
-  let D = null, RM = null, RF = null, RC = null, year = null;
+  let D = null, RM = null, RF = null, RC = null, CS = null, year = null;
   const MON = () => T(['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'], ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']);
 
   async function render() {
@@ -26,6 +26,7 @@
     // what only RTE publishes, read every year from its Bilan électrique, and its weather-corrected consumption (ODRÉ):
     // scripts/fetch_rte_bilan.py
     if (!RF) [RF, RC] = await Promise.all(['history/rte_bilan_figures.json', 'history/rte_curtailment.json'].map(f => fetch((typeof DATA_BASE !== 'undefined' ? DATA_BASE : 'data/') + f).then(r => r.ok ? r.json() : null).catch(() => null)));
+    if (!CS) CS = await fetch((typeof DATA_BASE !== 'undefined' ? DATA_BASE : 'data/') + 'cspe.json').then(r => r.ok ? r.json() : null).catch(() => null);
     if (!D) { host.innerHTML = '<div class="fuel-note">' + T('Bilan indisponible.', 'Review not available.') + '</div>'; return; }
     const cur = D.current, y0 = String(cur.year);
     if (!year) year = y0;
@@ -88,6 +89,9 @@
       ${RF && RF.years ? `<section class="bl-blk"><div class="bl-t"><h2>${T('Selon RTE, année après année', 'According to RTE, year after year')}</h2><span class="bl-src">RTE, Bilan électrique · ODRÉ · ${T('lu chaque année', 'read every year')}</span></div>
         <div class="bl-cols"><div class="bl-c" style="height:280px"><canvas id="bl-rte-load"></canvas></div><div class="bl-c" style="height:280px"><canvas id="bl-rte-co2"></canvas></div></div>
         <div class="bl-cols" style="margin-top:10px"><div class="bl-c" style="height:280px"><canvas id="bl-rte-curt"></canvas></div><div class="bl-c" style="height:280px"><canvas id="bl-rte-exp"></canvas></div></div></section>` : ''}
+      ${CS && CS.years ? `<section class="bl-blk"><div class="bl-t"><h2>${T('Financement du soutien aux renouvelables', 'Funding renewable support')}</h2><span class="bl-src">CRE, délibération annuelle · M€</span></div>
+        <div class="bl-c" style="height:280px"><canvas id="bl-cspe"></canvas></div>
+        <p class="bl-foot" style="margin:6px 0 0">${T('Charges de service public de l’énergie dues aux renouvelables électriques (éolien, solaire, biomasse, biométhane…) : ce que les fournisseurs reversent aux producteurs au-delà du prix de marché. Négatif une année où les prix de marché ont dépassé le tarif garanti (2022) : les producteurs ont alors reversé l’écart.', 'Public-service charges for electricity renewables (wind, solar, biomass, biomethane…): what suppliers pay producers above the market price. Negative in a year when market prices exceeded the guaranteed tariff (2022): producers then paid back the gap.')}</p></section>` : ''}
       <section class="bl-blk"><div class="bl-t"><h2>${T('Production par filière', 'Production by source')}</h2><span class="bl-src">RTE éCO2mix · TWh</span></div>
         <div class="bl-cols"><div class="bl-c" style="height:340px"><canvas id="bl-src"></canvas></div><div class="bl-c" style="height:340px"><canvas id="bl-mon"></canvas></div></div></section>
       <section class="bl-blk"><div class="bl-t"><h2>${T('Prix', 'Prices')}</h2><span class="bl-src">ENTSO-E day-ahead · €/MWh</span></div>
@@ -140,6 +144,14 @@
       options: opts({ plugins: { legend: { display: true, position: 'bottom', labels: { color: '#B8C9D9', boxWidth: 10 } }, title: { display: true, text: T('Renouvelables arrêtés aux prix négatifs, TWh', 'Renewables stopped at negative prices, TWh'), color: '#B8C9D9' } }, scales: { x: { stacked: true, ticks: { color: '#7A93AB' }, grid: { display: false } }, y: Object.assign(ax('TWh'), { stacked: true }) } }) });
     mk('bl-rte-exp', { type: 'bar', data: { labels: yr, datasets: [bar(T('Valeur nette des exportations', 'Net value of exports'), 'exportBn', '#7FC8F8')] },
       options: opts({ plugins: { legend: { display: false }, title: { display: true, text: T('Valeur nette des exportations, Md€', 'Net value of exports, bn €'), color: '#B8C9D9' } }, scales: { x: { ticks: { color: '#7A93AB' }, grid: { display: false } }, y: ax(T('Md€', 'bn €')) } }) });
+    if (CS && CS.years) {
+      const cys = Object.keys(CS.years).sort();
+      const val = y => { const r = CS.years[y]; return r && (r.observed || r.forecast) ? (r.observed || r.forecast).total_power / 1000 : null; };
+      const isFc = y => !(CS.years[y].observed);
+      mk('bl-cspe', { type: 'bar', data: { labels: cys.map(y => isFc(y) ? y + T(' (prévu)', ' (forecast)') : y), datasets: [
+        { label: T('Soutien aux renouvelables, Md€', 'Renewable support, bn €'), data: cys.map(val), backgroundColor: cys.map(y => isFc(y) ? 'rgba(251,191,36,.35)' : '#FBBF24'), borderColor: cys.map(y => isFc(y) ? '#FBBF24' : 'transparent'), borderWidth: cys.map(y => isFc(y) ? 1 : 0), borderDash: [5, 4], borderRadius: 3 }] },
+        options: opts({ plugins: { legend: { display: false }, title: { display: true, text: T('Soutien aux renouvelables, Md€ (plein : connu · pointillé : prévu)', 'Renewable support, bn € (solid: known · dashed: forecast)'), color: '#B8C9D9' } }, scales: { x: { ticks: { color: '#7A93AB' }, grid: { display: false } }, y: ax(T('Md€', 'bn €')) } }) });
+    }
   }
 
   function charts(A, B, live, vs) {
