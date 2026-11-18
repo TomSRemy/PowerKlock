@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-18T15:51:40+00:00",
+ "updated": "2026-11-18T22:59:17+00:00",
  "asof": "2026-11-18",
  "notes": 2,
  "engine": "proxy",
@@ -7,45 +7,45 @@
   {
    "topic": "France",
    "topic_en": "France",
-   "text": "La disponibilité nucléaire en France est de 45579,79 MW, en baisse de 2,4% sur 7 jours. La consommation d'électricité reste faible, avec une croissance de la demande ralentie selon RTE. Cela pousse les prix à la baisse.",
-   "text_en": "France's nuclear availability is 45579.79 MW, down 2.4% over 7 days. Electricity consumption remains low, with slowed demand growth according to RTE. This pushes prices down.",
+   "text": "La disponibilité nucléaire en France est revenue à un niveau normal, ce qui devrait réduire les prix de l'électricité. Le réseau électrique français est prêt pour l'hiver sans craintes, même en cas de vague de froid.",
+   "text_en": "France's nuclear availability has returned to a normal level, which should reduce electricity prices. The French power grid is ready for winter without concerns, even in the event of a cold wave.",
    "tone": "down"
   },
   {
    "topic": "Golfe",
    "topic_en": "Gulf",
-   "text": "La production et les exportations de pétrole dans la région du Golfe ont augmenté, ce qui a entraîné une baisse du prix du Brent. Cela pousse les prix à la baisse.",
-   "text_en": "Oil production and exports in the Gulf region have increased, leading to a fall in Brent prices. This pushes prices down.",
+   "text": "La production et les exportations de pétrole dans la région du Golfe ont augmenté, ce qui a entraîné une baisse du prix du Brent.",
+   "text_en": "Oil production and exports in the Gulf region have increased, leading to a drop in Brent prices.",
    "tone": "down"
   },
   {
    "topic": "Norvège",
    "topic_en": "Norway",
-   "text": "Les approvisionnements en gaz norvégiens ont diminué légèrement en raison de travaux de maintenance prolongés, mais devraient se rétablir rapidement. Cela pousse les prix à la hausse.",
-   "text_en": "Norwegian gas supplies have decreased slightly due to prolonged maintenance work, but are expected to recover soon. This pushes prices up.",
+   "text": "Les livraisons de gaz norvégiennes ont diminué en raison d'une maintenance prolongée, mais devraient se rétablir rapidement.",
+   "text_en": "Norwegian gas deliveries have decreased due to prolonged maintenance, but are expected to recover soon.",
    "tone": "up"
   }
  ],
  "outlook": {
   "oil": {
    "tone": "down",
-   "text": "Le prix du pétrole devrait continuer à baisser en raison de l'augmentation de la production et des exportations dans la région du Golfe.",
-   "text_en": "Oil prices are expected to continue falling due to increased production and exports in the Gulf region."
+   "text": "Le prix du pétrole devrait continuer à baisser en raison de la hausse de la production et des exportations dans la région du Golfe.",
+   "text_en": "Oil prices are expected to continue to fall due to increased production and exports in the Gulf region."
   },
   "gas": {
-   "tone": "down",
-   "text": "Les prix du gaz devraient baisser en raison de la révision à la hausse des prévisions de température et de la diminution des préoccupations géopolitiques.",
-   "text_en": "Gas prices are expected to fall due to upward revisions in temperature forecasts and decreased geopolitical concerns."
+   "tone": "up",
+   "text": "Les prix du gaz pourraient augmenter en raison de la maintenance prolongée en Norvège et de la demande accrue en hiver.",
+   "text_en": "Gas prices may rise due to prolonged maintenance in Norway and increased winter demand."
   },
   "power": {
    "tone": "down",
-   "text": "Les prix de l'électricité devraient continuer à baisser en raison de la faible consommation et de la disponibilité nucléaire en France.",
-   "text_en": "Power prices are expected to continue falling due to low consumption and nuclear availability in France."
+   "text": "Les prix de l'électricité devraient baisser en raison de la disponibilité nucléaire accrue en France et de la prévision de températures plus douces en Europe.",
+   "text_en": "Electricity prices are expected to fall due to increased nuclear availability in France and forecasts of milder temperatures in Europe."
   },
   "carbon": {
-   "tone": "down",
-   "text": "Les prix du carbone devraient baisser en raison de la diminution des préoccupations géopolitiques et de la révision à la hausse des prévisions de température.",
-   "text_en": "Carbon prices are expected to fall due to decreased geopolitical concerns and upward revisions in temperature forecasts."
+   "tone": "flat",
+   "text": "Les prix du carbone devraient rester stables en raison de l'absence de facteurs significatifs influençant la demande ou l'offre.",
+   "text_en": "Carbon prices are expected to remain stable due to the lack of significant factors affecting demand or supply."
   }
  }
 }
