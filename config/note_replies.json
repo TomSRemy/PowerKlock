@@ -772,8 +772,8 @@
   "reply": "Fait : graphiques plus grands et plus espacés sur toute la page, et projection fin d'année 2026 ajoutée au graphique des émissions (comme pour la production). Elle ne peut pas apparaître sur les 4 graphiques « Selon RTE » (chiffres propres de RTE, publiés début 2027 seulement), ni sur les échanges par frontière ou le mix résiduel EEX (pas de projection calculée pour eux). Les facteurs de charge restent volontairement sans projection sur les mois à venir."
  },
  "194": {
-  "status": "open",
-  "reply": "Je n'ai rien codé, ça mérite une maquette (nouvelle section). Bonne nouvelle : les deux chiffres existent déjà sans nouvelle source — la valeur des exportations est déjà publiée par RTE sur cette page, et le coût de financement du soutien aux renouvelables (CRE) est déjà récupéré ailleurs sur le site. Je peux dessiner une maquette d'une section « Analyse économique » avec ces deux séries année par année — dites-moi si c'est le bon périmètre."
+  "status": "done",
+  "reply": "Fait : nouvelle section « Financement du soutien aux renouvelables » sur Bilan électrique (CRE, M€ convertis en Md€), juste après les exports RTE déjà présents. Années connues en plein, 2026/2027 prévus en pointillé. 2022 ressort négatif (prix de marché au-dessus du tarif garanti, les producteurs ont reversé l'écart) — expliqué dans la note sous le graphique."
  },
  "195": {
   "status": "done",
