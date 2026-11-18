@@ -614,11 +614,11 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
         <div class="fuel-grid-2">
           <div class="chart-container fuel-card">
             <div class="fuel-card-head"><div><div class="table-title">Forward contracts</div><div class="fuel-card-sub" id="cal-history-sub">Baseload, contracts still to deliver · 3 months</div></div><span class="source-badge">Market data</span></div>
-            <div style="position:relative;height:320px"><canvas id="cal-history" style="width:100%;height:320px"></canvas></div>
+            <div style="position:relative;height:460px"><canvas id="cal-history" style="width:100%;height:460px"></canvas></div>
           </div>
           <div class="chart-container fuel-card">
             <div class="fuel-card-head"><div><div class="table-title">Contracts table</div><div class="fuel-card-sub" id="cal-table-sub">Last settlement, change on the day and on the week</div></div><span class="source-badge">Market data</span></div>
-            <div id="cal-table" style="max-height:330px;overflow:auto"></div>
+            <div id="cal-table" style="max-height:460px;overflow:auto"></div>
           </div>
         </div>
         <div style="margin-top:14px">
@@ -3276,7 +3276,7 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
         <div class="hist-section-body open" id="hs-body-bess-eu">
 <div class="kpi-strip fuel-kpis" id="bess-eu-kpis"></div>
 <div class="chart-container fuel-card" style="margin-bottom:14px">
-  <div class="fuel-card-head"><div><div class="table-title">Co-optimised value by zone</div><div class="fuel-card-sub">k€ per MW per year · last 30 days · split by market · white mark: day-ahead alone</div></div><span class="source-badge">ENTSO-E · regelleistung.net · PowerKlock</span></div>
+  <div class="fuel-card-head"><div><div class="table-title">Co-optimised value by zone</div><div class="fuel-card-sub">k€ per MW per year · last 30 days · split by market · white mark: day-ahead alone · amber triangle: realistic, no foresight</div></div><span class="source-badge">ENTSO-E · regelleistung.net · PowerKlock</span></div>
   <div style="position:relative;height:320px"><canvas id="bess-eu-c" style="width:100%;height:320px"></canvas></div>
 </div>
 <div class="chart-container fuel-card" style="margin-bottom:14px">
@@ -4926,6 +4926,15 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
 <div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Installed capacity and the PPE3 path</div><div class="fuel-card-sub" id="cap-ppe-sub">GW, end of year · dashed: straight line to the targets</div></div><span class="source-badge">Energy-Charts · PPE3</span></div><div style="position:relative;height:300px"><canvas id="cap-ppe" style="width:100%;height:300px"></canvas></div></div>
         </div>
       </div>
+      <div class="hist-section hist-section-strong" id="hs-capacity-hours">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-capacity-hours')">
+          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>Full-load hours, France<span class="pk-hs-meta">How much each technology actually ran, not just how much is installed</span></div>
+          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="hist-section-body open" id="hs-body-capacity-hours">
+<div class="chart-container fuel-card"><div class="fuel-card-head"><div><div class="table-title">Full-load hours by technology</div><div class="fuel-card-sub" id="cap-hours-sub">Yearly production ÷ installed capacity</div></div><span class="source-badge">RTE (ODRÉ) · Energy-Charts</span></div><div style="position:relative;height:320px"><canvas id="cap-hours" style="width:100%;height:320px"></canvas></div></div>
+        </div>
+      </div>
       <div class="hist-section hist-section-strong" id="hs-capacity-1">
         <div class="hist-section-header open" onclick="toggleStrongSection('hs-capacity-1')">
           <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Country comparison</div>
@@ -5686,6 +5695,7 @@ prix     = coût gaz × 1 / (1 + exp(−(a − b × (couverture − 100)))) × (
 <script src="js/capture-regions.js"></script>
 <script src="js/pen-curve.js"></script>
 <script src="js/cap-ppe.js"></script>
+<script src="js/cap-hours.js"></script>
 <script src="js/data-guard.js"></script>
 <script src="js/i18n.js"></script>
 <script src="js/theme.js"></script>
