@@ -207,15 +207,19 @@
         let j = null; try { const r = await fetch(DATA_BASE + 'neg_forecast.json?t=' + Math.floor(Date.now() / 6e5)); j = r.ok ? await r.json() : null; } catch (_) {}
         const ds0 = j && j.days ? Object.keys(j.days).sort().slice(-2) : [];
         if (!ds0.length) { noDataMsg(cid, _fT('Pas encore de prévision de prix négatifs', 'No negative-price forecast yet'), _fT('Construite avec les prévisions de la veille, plusieurs fois par jour', 'Built with the day-ahead forecasts, several times a day')); return null; }
-        const lbl = [], pr = [], act = [], pf = [];
+        const lbl = [], pr = [], act = [], pf = [], plo = [], phi = [];
         ds0.forEach(d => { const x = j.days[d]; for (let h = 0; h < 24; h++) { lbl.push(h === 0 ? new Date(d + 'T12:00:00Z').toLocaleDateString(_fT('fr-FR', 'en-GB'), { weekday: 'short', day: '2-digit', timeZone: 'UTC' }) : String(h).padStart(2, '0') + 'h');
-          pr.push(x.prob[h] == null ? null : Math.round(x.prob[h] * 100)); act.push(x.actual && x.actual[h] != null ? +(+x.actual[h]).toFixed(1) : null); pf.push(x.price && x.price[h] != null ? x.price[h] : null); } });
+          pr.push(x.prob[h] == null ? null : Math.round(x.prob[h] * 100)); act.push(x.actual && x.actual[h] != null ? +(+x.actual[h]).toFixed(1) : null); pf.push(x.price && x.price[h] != null ? x.price[h] : null);
+          plo.push(x.price_lo && x.price_lo[h] != null ? x.price_lo[h] : null); phi.push(x.price_hi && x.price_hi[h] != null ? x.price_hi[h] : null); } });
         _fuelChart(cid, { type: 'bar', data: { labels: lbl, datasets: [
           { label: _fT('Probabilité de prix négatif (%)', 'Chance of a negative price (%)'), data: pr, backgroundColor: pr.map(v => v == null ? 'transparent' : v >= 50 ? 'rgba(237,105,101,.8)' : v >= 20 ? 'rgba(251,191,36,.7)' : 'rgba(127,200,248,.45)'), borderRadius: 2, yAxisID: 'y' },
           { type: 'line', label: _fT('Prix day-ahead, quand il est connu (€/MWh)', 'Day-ahead price, when known (€/MWh)'), data: act, borderColor: '#E6EDF3', borderWidth: 1.6, pointRadius: 0, spanGaps: false, yAxisID: 'y1' },
+          // error band: 8 times out of 10 the price fell inside it over the last twelve replayed months (P10–P90 of the error, hour by hour)
+          { type: 'line', label: '', data: plo, borderWidth: 0, pointRadius: 0, spanGaps: false, yAxisID: 'y1', fill: false },
+          { type: 'line', label: _fT('Marge d’erreur, 8 fois sur 10 (€/MWh)', 'Error margin, 8 times out of 10 (€/MWh)'), data: phi, borderWidth: 0, pointRadius: 0, spanGaps: false, yAxisID: 'y1', fill: '-1', backgroundColor: 'rgba(251,191,36,.16)' },
           { type: 'line', label: _fT('Prévision de prix (€/MWh)', 'Price forecast (€/MWh)'), data: pf, borderColor: '#FBBF24', borderDash: [5, 4], borderWidth: 1.4, pointRadius: 0, spanGaps: false, yAxisID: 'y1' }] },
           options: _fuelOpts({ scales: { x: Object.assign(_fuelXAxis(), { ticks: { color: C_TX3, font: { size: 10 }, autoSkip: false, maxRotation: 0, callback: (v, i) => i % 6 === 0 ? lbl[i] : '' } }), y: _fuelAxis(_fT('% de probabilité', '% chance'), { min: 0, max: 100 }), y1: _fuelAxis('€/MWh', { position: 'right', grid: { display: false } }) },
-            plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 8 } } } }) }, 'forecast-negative-prices');
+            plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 8, filter: it => !!it.text } } } }) }, 'forecast-negative-prices');
         const k = j.skill || {}, exp = ds0.map(d => new Date(d + 'T12:00:00Z').toLocaleDateString(_fT('fr-FR', 'en-GB'), { weekday: 'short', timeZone: 'UTC' }) + ' ≈ ' + _fT(String(j.days[d].expected_hours).replace('.', ','), String(j.days[d].expected_hours)) + ' h').join(' · ');
         const ps = j.price_skill; const n0 = v => _fT(String(v).replace('.', ','), String(v));
         // live record: forecasts published before 11:00 the day before, against the real prices (data/history/neg_forecast_rex.json)
@@ -227,6 +231,7 @@
             + (old ? _fT(` (l’ancien modèle, avec l’Allemagne absente le matin, se trompait de ${n0(old.mae)} €/MWh sur ${old.days} jours, contre ${n0(old.naive_mae)} pour « demain = aujourd’hui »)`, ` (the former model, with Germany missing in the morning, was off by ${old.mae} €/MWh over ${old.days} days vs ${old.naive_mae} for « tomorrow = today »)`) : '');
         return { sub: _fT('Heures négatives attendues : ', 'Expected negative hours: ') + exp
           + (ps ? _fT(` · rejeu avec la météo réelle depuis ${ps.from} (cas le plus favorable) : erreur moyenne sur le prix ${n0(ps.mae)} €/MWh, contre ${n0(ps.naive_mae)} pour le prix de la veille`, ` · replay with the real weather since ${ps.from} (best case): mean price error ${ps.mae} €/MWh vs ${ps.naive_mae} for the day-before price`) : '')
+          + (ps && ps.band_by_hour ? _fT(' ; la zone jaune est la marge d’erreur : sur les 12 derniers mois rejoués, le prix est tombé dedans 8 fois sur 10 (sans compter l’erreur de la prévision météo, donc un peu trop étroite)', '; the yellow area is the error margin: over the last 12 replayed months the price fell inside it 8 times out of 10 (weather forecast error not included, so slightly too narrow)') : '')
           + (k.caught != null ? _fT(', ', ', ') + Math.round(k.caught * 100) + _fT(' % des jours à prix négatifs repérés', ' % of the days with negative prices flagged') : '')
           + (k.false_alarms != null ? ', ' + Math.round(k.false_alarms * 100) + _fT(' % de fausses alertes', ' % false alarms') : '')
           + liveTxt };
