@@ -1030,7 +1030,13 @@ if __name__ == '__main__':
     write_json('data/prices.json', {'updated': ts, 'zones': prices})
 
     genmix = fetch_genmix()
-    write_json('data/genmix.json', {'updated': ts, 'countries': genmix})
+    # when ENTSO-E returns no generation at all (a new Paris day not yet published, or an outage), an all-zero
+    # snapshot would blank the generation-mix pages until the next run: the last snapshot with data is kept, its
+    # 'updated' unchanged so the Data status page shows its real age
+    if any((g or {}).get('total') for g in genmix.values()):
+        write_json('data/genmix.json', {'updated': ts, 'countries': genmix})
+    else:
+        print("  genmix: no zone reported any generation, data/genmix.json left as it was")
 
     renewables = fetch_renewables()
     write_json('data/renewables.json', {'updated': ts, 'slotTz': 'Europe/Paris', 'countries': renewables})
