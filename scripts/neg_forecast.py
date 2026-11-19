@@ -4,7 +4,8 @@
 What drives a negative price is the share of demand left once solar, wind and nuclear are served:
   R = (load − solar − wind − nuclear) ÷ load          (RTE éCO2mix actuals, data/history/fr_hourly)
 nuclear = the nuclear AVAILABLE (highest hourly output of the week before: its output drops when prices go
-negative, so the output itself hides the surplus). The solar share, weekend, hour and month feed a logistic
+negative, so the output itself hides the surplus). The solar share, weekend, hour and month, and the day before
+(negative or not at the same hour, its price, how many negative hours it had: they come back in runs) feed a logistic
 regression on the last three years, recent days weighing more (half-life one year: batteries and flexible
 demand change the market). Germany is left out: its day-ahead solar, wind and load forecasts come out in the
 late afternoon, after the morning forecast and the noon auction, and a model trained with them but run
@@ -35,6 +36,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 H = os.path.join(ROOT, 'data', 'history', 'fr_hourly')
 OUT = os.path.join(ROOT, 'data', 'neg_forecast.json')
 HALF = 365.0
+PRICES = {}      # day → 24 hourly prices (fr_hourly), for the day-before features; filled in main()
 USE_DE = False   # Germany's day-ahead forecasts are not out at publication time: never used (see above)
 REX = os.path.join(ROOT, 'data', 'history', 'neg_forecast_rex.json')
 RH = os.path.join(ROOT, 'data', 'history', 'region_hourly')
@@ -78,8 +80,15 @@ def feats(d, h, s, w, l, nav, de):
         Rd = 0.0; has = 0.0
     we = 1.0 if date.fromisoformat(d).weekday() >= 5 else 0.0
     m = int(d[5:7])
+    # the day before, known at publication (its prices come out at noon two days ahead); the day before that if missing
+    t = date.fromisoformat(d)
+    y = next((PRICES[k] for k in ((t - timedelta(days=1)).isoformat(), (t - timedelta(days=2)).isoformat())
+              if PRICES.get(k) and PRICES[k][h] is not None), None)
+    p1 = y[h] if y else 0.0
+    cnt = sum(1 for x in y if x is not None and x < 0) if y else 0
     return [1.0, R, min(R, 0) ** 2, Rd * has, min(Rd, 0) ** 2 * has, has, s / l, we, we * s / l,
-            math.sin(2 * math.pi * h / 24), math.cos(2 * math.pi * h / 24), math.sin(2 * math.pi * m / 12), math.cos(2 * math.pi * m / 12), R * Rd * has]
+            math.sin(2 * math.pi * h / 24), math.cos(2 * math.pi * h / 24), math.sin(2 * math.pi * m / 12), math.cos(2 * math.pi * m / 12), R * Rd * has,
+            1.0 if y and p1 < 0 else 0.0, max(min(p1, 100), -50) / 50, cnt / 24, min(cnt, 1)]
 
 
 def dataset(data, hist, d0, d1):
@@ -196,7 +205,7 @@ def fc_days_hint():
         return []
 
 
-MODEL = 'v2'   # v1: with Germany and prices up to d-2 (until 19 Nov 2026); v2: without Germany, with the day-before price
+MODEL = 'v2'   # v1: with Germany and prices up to d-2 (until 19 Nov 2026); v2: without Germany, with the day before (price and negative hours)
 
 
 def rex_update(out_days, hist, now=None):
@@ -252,6 +261,11 @@ def rex_update(out_days, hist, now=None):
 def main():
     data = rows(2022)
     hist = dict(data)
+    for y_ in range(2021, date.today().year + 1):   # prices of every day, today's included even before its actuals
+        try:
+            PRICES.update({k: v.get('p') for k, v in json.load(open(os.path.join(H, f'{y_}.json')))['days'].items() if v.get('p')})
+        except OSError:
+            pass
     # ── replay since January 2025
     months = sorted({d[:7] for d, _ in data if d >= '2025-01'})
     brier = brier0 = 0.0; nb = 0; daily = []
