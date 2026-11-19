@@ -2,16 +2,77 @@
  "date": "2026-11-18",
  "countries": {
   "FR": {
-   "spot": 60.35
+   "spot": 60.35,
+   "forwardCurve": {
+    "M+1": 175.75,
+    "M+2": 190.28,
+    "M+3": 176.04,
+    "Q+1": 163.87,
+    "Q+2": 71.04,
+    "Q+3": 87.4,
+    "S+1": 79.22,
+    "S+2": 106.81,
+    "Y+1": 108.08,
+    "Y+2": 60.63,
+    "Y+3": 56.62
+   }
   },
   "UK": {
-   "spot": 185.6
+   "spot": 185.6,
+   "forwardCurve": {
+    "M+1": 168.44,
+    "M+2": 179.96,
+    "M+3": 169.72,
+    "Q+1": 165.76,
+    "Q+2": 121.75,
+    "Q+3": 113.09,
+    "S+1": 117.4,
+    "S+2": 112.85,
+    "Y+1": 127.8,
+    "Y+2": 83.67,
+    "Y+3": 68.7
+   },
+   "generationMix": {
+    "gas": 14.99,
+    "wind": 6.81,
+    "solar": 1.47,
+    "nuclear": 5.13,
+    "hydro": 0.43,
+    "biomass": 2.1,
+    "other": 1.14
+   }
   },
   "DE": {
-   "spot": 224.83
+   "spot": 224.83,
+   "forwardCurve": {
+    "M+1": 195.13,
+    "M+2": 203.8,
+    "M+3": 192.26,
+    "Q+1": 180.93,
+    "Q+2": 114.87,
+    "Q+3": 123.82,
+    "S+1": 119.34,
+    "S+2": 133.02,
+    "Y+1": 138.93,
+    "Y+2": 98.55,
+    "Y+3": 85.54
+   }
   },
   "NL": {
-   "spot": 210.8
+   "spot": 210.8,
+   "forwardCurve": {
+    "M+1": 198.02,
+    "M+2": 207.62,
+    "M+3": 193.58,
+    "Q+1": 182.05,
+    "Q+2": 115.92,
+    "Q+3": 121.19,
+    "S+1": 118.57,
+    "S+2": 130.73,
+    "Y+1": 137.56,
+    "Y+2": 96.42,
+    "Y+3": 85.64
+   }
   }
  },
  "marketInsightsHtml": "<p>La charge de base allemande du 26 décembre a légèrement baissé de 0,85 € à 202,80 €/MWh et la charge de base française a chuté de 3,20 € à 185,00 €/MWh en raison de révisions continentales plus chaudes à court terme, tandis que le 26 décembre britannique a gagné 1,00 £ à 177,75 £/MWh. Le Day-Ahead allemand a plongé de 61,28 € pour s'établir à 146,25 €/MWh alors que l'éolien allemand a grimpé vers 42,6 GW, tandis que le Day-Ahead français est resté stable à 64,24 €/MWh après que le vent ait atteint un record historique de 19,94 GW.</p><p>La production éolienne du Royaume-Uni devrait passer de 7,2 GW aujourd'hui à 3,5 GW vendredi et 3,3 GW samedi, tandis que l'éolien français chutera de 16,7 GW aujourd'hui à seulement 5,0 GW samedi et l'éolien allemand reculera de 42,6 GW à 6,6 GW dimanche, soulevant la consommation d'énergie thermique en fin de semaine.</p><p>Les fortes pluies alpines et ibériques ont également porté la production française au fil de l'eau à un sommet de 542 GWh en 20 semaines et ont fait grimper les réserves hydroélectriques espagnoles de 330 GWh à 9,9 TWh (capacité de 42,9 %), bien que les stocks hydroélectriques suisses soient tombés à un déficit saisonnier record de 16,4 points de pourcentage en dessous de la normale à 62,3 %.</p>",
