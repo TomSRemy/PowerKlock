@@ -4,17 +4,23 @@
 What drives a negative price is the share of demand left once solar, wind and nuclear are served:
   R = (load − solar − wind − nuclear) ÷ load          (RTE éCO2mix actuals, data/history/fr_hourly)
 nuclear = the nuclear AVAILABLE (highest hourly output of the week before: its output drops when prices go
-negative, so the output itself hides the surplus). The same share for Germany (exports), the solar share,
-weekend, hour and month feed a logistic regression on the last three years, recent days weighing more
-(half-life one year: batteries and flexible demand change the market).
+negative, so the output itself hides the surplus). The solar share, weekend, hour and month feed a logistic
+regression on the last three years, recent days weighing more (half-life one year: batteries and flexible
+demand change the market). Germany is left out: its day-ahead solar, wind and load forecasts come out in the
+late afternoon, after the morning forecast and the noon auction, and a model trained with them but run
+without them was biased low by about 50 €/MWh in autumn 2026 (USE_DE).
 
 Forecast: solar, wind and load of the day-ahead forecast published by the TSO (data/forecast.json,
 ENTSO-E via Energy-Charts); nuclear available as above.
 
-Skill: replayed month by month since January 2025, each month predicted from the months before it with
-the ACTUAL solar, wind and load (so forecast errors of the weather are not counted) and the nuclear of
-the week before. Brier score against the frequency of the same month and hour in past years; daily
-count of negative hours predicted vs real.
+Skill, two records:
+ · replay: month by month since January 2025, each month predicted from the months before it with the ACTUAL
+   French solar, wind and load (weather forecast errors are not counted, so this is a best case) and the
+   nuclear of the week before. Brier score against the frequency of the same month and hour in past years;
+   daily count of negative hours predicted vs real.
+ · live: every forecast published before 11:00 Paris the day before (ahead of the noon auction) is kept in
+   data/history/neg_forecast_rex.json and scored against the real prices once they are known; the price is
+   compared with the naive forecast « tomorrow = today » (the day-before price, known at publication).
 
 Writes data/neg_forecast.json          python scripts/neg_forecast.py
 """
@@ -29,6 +35,8 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 H = os.path.join(ROOT, 'data', 'history', 'fr_hourly')
 OUT = os.path.join(ROOT, 'data', 'neg_forecast.json')
 HALF = 365.0
+USE_DE = False   # Germany's day-ahead forecasts are not out at publication time: never used (see above)
+REX = os.path.join(ROOT, 'data', 'history', 'neg_forecast_rex.json')
 RH = os.path.join(ROOT, 'data', 'history', 'region_hourly')
 
 
@@ -64,7 +72,7 @@ def nuclear_avail(hist, d, days=7):
 def feats(d, h, s, w, l, nav, de):
     """features of one hour: French residual share with nuclear available, German residual share, solar share, calendar"""
     R = (l - s - w - nav) / l
-    if de and None not in (de[0][h], de[1][h], de[2][h]) and de[2][h]:
+    if USE_DE and de and None not in (de[0][h], de[1][h], de[2][h]) and de[2][h]:
         Rd = (de[2][h] - de[0][h] - de[1][h]) / de[2][h]; has = 1.0
     else:
         Rd = 0.0; has = 0.0
@@ -129,19 +137,18 @@ def price_feats(hist, fuel_pts, d, h, s, w, l, nav, de):
     if None in (s, w, l) or not l:
         return None
     t = date.fromisoformat(d)
-    prev = [hist.get((t - timedelta(days=k)).isoformat()) for k in range(2, 9)]   # known before the auction: D-2 and before
+    # known before the auction of day d: the prices of d-1 (published at noon on d-2) and before
+    prev = [hist.get((t - timedelta(days=k)).isoformat()) for k in range(1, 8)]
     pm = [x for pp in prev if pp for x in pp['p'] if x is not None]
     ph = [pp['p'][h] for pp in prev if pp and pp['p'][h] is not None]
+    p1 = next((pp['p'][h] for pp in prev[:2] if pp and pp['p'][h] is not None), None)   # same hour, the day before (d-2 if missing)
     ttf, eua = _asof(fuel_pts[0], d), _asof(fuel_pts[1], d)
-    if len(pm) < 48 or not ph or ttf is None or eua is None:
+    if len(pm) < 48 or not ph or p1 is None or ttf is None or eua is None:
         return None
     fuel = 2.0 * ttf + 0.37 * eua
     R = (l - s - w - nav) / l
-    Rd = 0.0
-    if de and None not in (de[0][h], de[1][h], de[2][h]) and de[2][h]:
-        Rd = (de[2][h] - de[0][h] - de[1][h]) / de[2][h]
     we = 1.0 if t.weekday() >= 5 else 0.0
-    return [1, float(np.mean(pm)), float(np.mean(ph)), fuel, fuel * max(R, -1), R, max(R, 0) * fuel, min(R, 0), Rd, Rd * fuel, s / l, we,
+    return [1, float(np.mean(pm)), float(np.mean(ph)), float(p1), fuel, fuel * max(R, -1), R, max(R, 0) * fuel, min(R, 0), s / l, we,
             math.sin(2 * math.pi * h / 24), math.cos(2 * math.pi * h / 24), we * s / l]
 
 
@@ -172,12 +179,13 @@ def price_model(data, hist):
         b = ridge(X[tr], Y[tr]); err += list(np.abs(X[te] @ b - Y[te]))
     for d, r in data:
         if d >= '2025-01':
-            p2 = hist.get((date.fromisoformat(d) - timedelta(days=2)).isoformat())
-            if p2:
-                naive += [abs(a - b) for a, b in zip(r['p'], p2['p']) if a is not None and b is not None]
+            p1 = hist.get((date.fromisoformat(d) - timedelta(days=1)).isoformat())   # naive: tomorrow = today
+            if p1:
+                naive += [abs(a - b) for a, b in zip(r['p'], p1['p']) if a is not None and b is not None]
     last = K[-1]
     b = ridge(X[[k >= str(int(last[:4]) - 2) + last[4:] for k in K]], Y[[k >= str(int(last[:4]) - 2) + last[4:] for k in K]])
-    skill = {'mae': round(float(np.mean(err)), 2), 'naive_mae': round(float(np.mean(naive)), 2), 'from': '2025-01'}
+    skill = {'mae': round(float(np.mean(err)), 2), 'naive_mae': round(float(np.mean(naive)), 2), 'from': '2025-01', 'naive': 'day before',
+             'replay': 'actual French weather, Germany never used'}
     return b, fuel, skill
 
 
@@ -186,6 +194,59 @@ def fc_days_hint():
         return list(json.load(open(os.path.join(ROOT, 'data', 'forecast.json')))['zones']['FR']['days'])
     except (OSError, ValueError, KeyError):
         return []
+
+
+MODEL = 'v2'   # v1: with Germany and prices up to d-2 (until 19 Nov 2026); v2: without Germany, with the day-before price
+
+
+def rex_update(out_days, hist, now=None):
+    """live record: keep the last forecast published before 11:00 Paris the day before each delivery day, score it
+    once the real prices are in. The forecast of a day is never replaced after its cut-off."""
+    from datetime import datetime, time as dtime
+    from zoneinfo import ZoneInfo
+    par = ZoneInfo('Europe/Paris')
+    now = now or datetime.now(par)
+    try:
+        rex = json.load(open(REX))
+    except (OSError, ValueError):
+        rex = {}
+    rex.setdefault('pending', {}); rex.setdefault('scored', {})
+    for d, v in out_days.items():
+        cut = datetime.combine(date.fromisoformat(d) - timedelta(days=1), dtime(11, 0), par)
+        if now <= cut and d not in rex['scored'] and v.get('price') and None not in v['price']:
+            rex['pending'][d] = {'published': now.strftime('%Y-%m-%d %H:%M'), 'model': MODEL, 'price': v['price'],
+                                 'prob': v['prob'], 'expected_hours': v['expected_hours']}
+    for d in sorted(list(rex['pending'])):
+        r, y = hist.get(d), hist.get((date.fromisoformat(d) - timedelta(days=1)).isoformat())
+        if not r or not r.get('p') or None in r['p'] or len(r['p']) != 24:
+            continue
+        f, real = rex['pending'].pop(d), r['p']
+        e = [a - b for a, b in zip(f['price'], real)]
+        top = lambda a, sgn: set(sorted(range(24), key=lambda h: sgn * a[h])[:6])
+        rec = {'published': f['published'], 'model': f['model'], 'mae': round(sum(abs(x) for x in e) / 24, 1), 'bias': round(sum(e) / 24, 1),
+               'neg_expected': f['expected_hours'], 'neg_real': sum(1 for x in real if x < 0),
+               'dear_hit': len(top(f['price'], -1) & top(real, -1)), 'cheap_hit': len(top(f['price'], 1) & top(real, 1))}
+        if y and y.get('p') and None not in y['p']:
+            rec['naive_mae'] = round(sum(abs(a - b) for a, b in zip(y['p'], real)) / 24, 1)
+        rex['scored'][d] = rec
+    # summary per model: the page shows the current model's live record
+    summ = {}
+    for m in sorted({x['model'] for x in rex['scored'].values()}):
+        xs = [x for x in rex['scored'].values() if x['model'] == m]
+        nv = [x['naive_mae'] for x in xs if 'naive_mae' in x]
+        flagged = [x for x in xs if x['neg_expected'] >= 1]; neg = [x for x in xs if x['neg_real'] > 0]
+        summ[m] = {'days': len(xs), 'from': min(d for d, x in rex['scored'].items() if x['model'] == m),
+                   'mae': round(sum(x['mae'] for x in xs) / len(xs), 1), 'bias': round(sum(x['bias'] for x in xs) / len(xs), 1),
+                   'naive_mae': round(sum(nv) / len(nv), 1) if nv else None,
+                   'dear_hit': round(sum(x['dear_hit'] for x in xs) / (6 * len(xs)), 3), 'cheap_hit': round(sum(x['cheap_hit'] for x in xs) / (6 * len(xs)), 3),
+                   'days_flagged': len(flagged), 'false_alarms': sum(1 for x in flagged if x['neg_real'] == 0),
+                   'days_negative': len(neg), 'caught': sum(1 for x in neg if x['neg_expected'] >= 1)}
+    rex['summary'] = summ; rex['current'] = MODEL
+    rex['method'] = ('Forecast published before 11:00 Paris the day before, against the real day-ahead prices. '
+                     'Naive: the day-before price, same hour. Hours: the 6 dearest and 6 cheapest of the day.')
+    with open(REX, 'w') as fh:
+        json.dump(rex, fh, separators=(',', ':'), ensure_ascii=False)
+    return {'current': MODEL, 'models': summ}
 
 
 def main():
@@ -276,7 +337,8 @@ def main():
                        'actual': rawp.get(d)}
     out = {'updated': fc.get('updated'), 'method': __doc__.split('\n\n')[1].replace('\n', ' '),
            'source': 'RTE éCO2mix (history) · ENTSO-E day-ahead forecasts via Energy-Charts · ENTSO-E day-ahead prices',
-           'days': out_days, 'skill': skill, 'price_skill': PF[2], 'replay_monthly': {k: [round(v[0], 1), int(v[1])] for k, v in sorted(monthly.items())}}
+           'days': out_days, 'skill': skill, 'price_skill': PF[2], 'replay_monthly': {k: [round(v[0], 1), int(v[1])] for k, v in sorted(monthly.items())},
+           'live': rex_update(out_days, hist), 'model': MODEL}
     with open(OUT, 'w') as f:
         json.dump(out, f, separators=(',', ':'), ensure_ascii=False)
     print(json.dumps(skill), {d: v['expected_hours'] for d, v in out_days.items()})
