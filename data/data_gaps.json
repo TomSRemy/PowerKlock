@@ -1,10 +1,45 @@
 {
-"updated": "2026-11-17T03:08:06+00:00",
+"updated": "2026-11-19T22:32:49+00:00",
 "storage": {
-"data_mb": 212.4
+"data_mb": 212.9
 },
-"open": [],
+"open": [
+{
+"id": "pricecheck:2026-10-25:BG",
+"dataset": "pricecheck",
+"what": "2026-10-25: BG day-ahead 228.44 €/MWh here, 229.63 at Energy-Charts",
+"repair": "auto: asked again to ENTSO-E",
+"since": "2026-11-19T22:32:49+00:00",
+"lastSeen": "2026-11-19T22:32:49+00:00"
+},
+{
+"id": "prices:2026-11-20",
+"dataset": "prices",
+"what": "2026-11-20: no day-ahead price for NL, IT_NORD",
+"repair": "auto: retried every 20-30 min, then the history repair",
+"since": "2026-11-19T13:52:07+00:00",
+"lastSeen": "2026-11-19T22:32:49+00:00"
+}
+],
 "resolved": [
+{
+"id": "rte:2026-11-18",
+"dataset": "rte",
+"what": "2026-11-18: RTE éCO2mix incomplete (nuclear, wind, solar, load)",
+"repair": "flagged: RTE job (3 runs a day)",
+"since": "2026-11-19T03:49:42+00:00",
+"lastSeen": "2026-11-19T13:52:08+00:00",
+"resolvedAt": "2026-11-19T22:32:49+00:00"
+},
+{
+"id": "prices:2026-11-18",
+"dataset": "prices",
+"what": "2026-11-18: no day-ahead price for IT_NORD",
+"repair": "auto: retried every 20-30 min, then the history repair",
+"since": "2026-11-17T13:49:41+00:00",
+"lastSeen": "2026-11-17T13:49:42+00:00",
+"resolvedAt": "2026-11-17T22:43:25+00:00"
+},
 {
 "id": "prices:2026-11-15",
 "dataset": "prices",
@@ -2682,24 +2717,6 @@
 "id": "pricecheck:2021-11-20:BG",
 "dataset": "pricecheck",
 "what": "2021-11-20: BG day-ahead 391.48 €/MWh here, 199.71 at Energy-Charts",
-"repair": "auto: asked again to ENTSO-E (last 30 days)",
-"since": "2026-10-24T12:42:39+00:00",
-"lastSeen": "2026-10-24T15:13:25+00:00",
-"resolvedAt": "2026-10-24T17:34:21+00:00"
-},
-{
-"id": "pricecheck:2021-11-21:BG",
-"dataset": "pricecheck",
-"what": "2021-11-21: BG day-ahead 405.89 €/MWh here, 207.57 at Energy-Charts",
-"repair": "auto: asked again to ENTSO-E (last 30 days)",
-"since": "2026-10-24T12:42:39+00:00",
-"lastSeen": "2026-10-24T15:13:25+00:00",
-"resolvedAt": "2026-10-24T17:34:21+00:00"
-},
-{
-"id": "pricecheck:2021-11-22:BG",
-"dataset": "pricecheck",
-"what": "2021-11-22: BG day-ahead 504.3 €/MWh here, 257.84 at Energy-Charts",
 "repair": "auto: asked again to ENTSO-E (last 30 days)",
 "since": "2026-10-24T12:42:39+00:00",
 "lastSeen": "2026-10-24T15:13:25+00:00",

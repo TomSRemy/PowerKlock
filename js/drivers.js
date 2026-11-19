@@ -165,16 +165,20 @@
 
   // ── Sankey ──
   function sankey(d3, host) {
-    const W = host.clientWidth, mob = W < 700, H = mob ? 440 : 470, top = 10, bot = 10, nw = 6, padL = mob ? 98 : 170, padR = mob ? 64 : 210, x0 = padL, x1 = W - padR;
+    const W = host.clientWidth, mob = W < 700, top = 10, bot = 10, nw = 6, padL = mob ? 98 : 170, padR = mob ? 64 : 210, x0 = padL, x1 = W - padR;
+    let H = mob ? 440 : 470;
+    const links = []; ORDER.forEach(h => KEYS.forEach(k => { const v = L(h).i[k]; if (v >= 0.01) links.push({ k, h, v }); }));
+    const leftTot = KEYS.map(k => sum(links.filter(l => l.k === k), l => l.v));
+    const gapR = 22, s = Math.min((H - top - bot - gapR * 3) / 4, (H - top - bot - 60) / sum(leftTot, x => x)) * 0.95;
+    const MIN = mob ? 30 : 40, slots = leftTot.map(v => Math.max(v * s, MIN)), gL = Math.max(4, (H - top - bot - sum(slots, x => x)) / (KEYS.length - 1));
+    // low-weight fundamentals (e.g. coal) can hit the MIN floor and push the total past the nominal height:
+    // grow the canvas to fit everything instead of letting the bottom rows clip.
+    H = Math.max(H, top + bot + sum(slots, x => x) + gL * (KEYS.length - 1));
     const C = { rise: css('--down'), fall: css('--up'), ux: css('--border3'), bg: css('--bg2'), bg0: css('--bg'), t2: css('--text2'), t3: css('--text3') };
     const col = k => css(DN[k].c);
     const svg = d3.select(host).append('svg').attr('width', W).attr('height', H).attr('class', 'cqp-svg').attr('role', 'img').attr('aria-label', tr('Fundamentals → maturities')), defs = svg.append('defs');
     const hp = defs.append('pattern').attr('id', 'cqp-hatch').attr('width', 6).attr('height', 6).attr('patternUnits', 'userSpaceOnUse').attr('patternTransform', 'rotate(45)');
     hp.append('rect').attr('width', 6).attr('height', 6).attr('fill', C.bg); hp.append('line').attr('x1', 0).attr('y1', 0).attr('x2', 0).attr('y2', 6).attr('stroke', C.ux).attr('stroke-width', 2);
-    const links = []; ORDER.forEach(h => KEYS.forEach(k => { const v = L(h).i[k]; if (v >= 0.01) links.push({ k, h, v }); }));
-    const leftTot = KEYS.map(k => sum(links.filter(l => l.k === k), l => l.v));
-    const gapR = 22, s = Math.min((H - top - bot - gapR * 3) / 4, (H - top - bot - 60) / sum(leftTot, x => x)) * 0.95;
-    const MIN = mob ? 30 : 40, slots = leftTot.map(v => Math.max(v * s, MIN)), gL = Math.max(4, (H - top - bot - sum(slots, x => x)) / (KEYS.length - 1));
     const ln = {}; let y = top; KEYS.forEach((k, i) => { const hh = leftTot[i] * s; ln[k] = { y: y + (slots[i] - hh) / 2, h: hh, o: 0, cy: y + slots[i] / 2 }; y += slots[i] + gL; });
     const rn = {}; y = top; ORDER.forEach(h => { rn[h] = { y, h: s, o: 0 }; y += s + gapR; });
     links.sort((a, b) => ORDER.indexOf(a.h) - ORDER.indexOf(b.h)); links.forEach(l => { l.y0 = ln[l.k].y + ln[l.k].o; ln[l.k].o += l.v * s; });

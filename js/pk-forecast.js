@@ -202,7 +202,7 @@
     PKW.register({
       id: 'fc-neg', title: 'France · day-ahead price and chance of a negative price, today and tomorrow', category: 'prices', page: 'morning', pageCanvas: 'mrn-neg',
       source: 'PowerKlock model on RTE éCO2mix history and TSO day-ahead forecasts', size: { w: 6, h: 4 },
-      desc: 'For each hour of today and tomorrow, the chance that the French day-ahead price is below zero: residual demand once solar, wind and the nuclear available are served, the same for Germany, the solar share, the calendar; a logistic model on the last three years. Its record since January 2025 is given under the chart. Where the price is already known, the real price is drawn.',
+      desc: 'For each hour of today and tomorrow, the chance that the French day-ahead price is below zero, and the price: residual demand once solar, wind and the nuclear available are served, the solar share, the calendar, the price of the day before and the gas and CO2 cost; models on the last two to three years. Germany is left out: its forecasts come out after the morning forecast. Under the chart, two records: the replay with the real French weather (a best case) and the live record of every forecast published before 11:00 the day before, against the real prices. Where the price is already known, the real price is drawn.',
       async draw(cid) {
         let j = null; try { const r = await fetch(DATA_BASE + 'neg_forecast.json?t=' + Math.floor(Date.now() / 6e5)); j = r.ok ? await r.json() : null; } catch (_) {}
         const ds0 = j && j.days ? Object.keys(j.days).sort().slice(-2) : [];
@@ -216,14 +216,20 @@
           { type: 'line', label: _fT('Prévision de prix (€/MWh)', 'Price forecast (€/MWh)'), data: pf, borderColor: '#FBBF24', borderDash: [5, 4], borderWidth: 1.4, pointRadius: 0, spanGaps: false, yAxisID: 'y1' }] },
           options: _fuelOpts({ scales: { x: Object.assign(_fuelXAxis(), { ticks: { color: C_TX3, font: { size: 10 }, autoSkip: false, maxRotation: 0, callback: (v, i) => i % 6 === 0 ? lbl[i] : '' } }), y: _fuelAxis(_fT('% de probabilité', '% chance'), { min: 0, max: 100 }), y1: _fuelAxis('€/MWh', { position: 'right', grid: { display: false } }) },
             plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 8 } } } }) }, 'forecast-negative-prices');
-        const k = j.skill || {}, exp = ds0.map(d => new Date(d + 'T12:00:00Z').toLocaleDateString(_fT('fr-FR', 'en-GB'), { weekday: 'short', timeZone: 'UTC' }) + ' ≈ ' + j.days[d].expected_hours + ' h').join(' · ');
+        const k = j.skill || {}, exp = ds0.map(d => new Date(d + 'T12:00:00Z').toLocaleDateString(_fT('fr-FR', 'en-GB'), { weekday: 'short', timeZone: 'UTC' }) + ' ≈ ' + _fT(String(j.days[d].expected_hours).replace('.', ','), String(j.days[d].expected_hours)) + ' h').join(' · ');
         const ps = j.price_skill; const n0 = v => _fT(String(v).replace('.', ','), String(v));
+        // live record: forecasts published before 11:00 the day before, against the real prices (data/history/neg_forecast_rex.json)
+        const lv = j.live && j.live.models ? j.live.models[j.live.current] : null, old = j.live && j.live.models ? j.live.models.v1 : null;
+        const liveTxt = lv && lv.days >= 7
+          ? _fT(` · bilan réel des prévisions publiées la veille (${lv.days} jours depuis le ${lv.from}) : erreur moyenne ${n0(lv.mae)} €/MWh, contre ${n0(lv.naive_mae)} pour « demain = aujourd’hui » ; ${lv.false_alarms} fausse(s) alerte(s) sur ${lv.days_flagged} jour(s) annoncé(s) avec des prix négatifs`,
+                ` · live record of the forecasts published the day before (${lv.days} days since ${lv.from}): mean error ${lv.mae} €/MWh vs ${lv.naive_mae} for « tomorrow = today »; ${lv.false_alarms} false alarm(s) out of ${lv.days_flagged} day(s) flagged with negative prices`)
+          : _fT(' · bilan réel des prévisions publiées : nouveau modèle depuis le 20 nov. 2026, pas encore assez de jours', ' · live record of the published forecasts: new model since 20 Nov 2026, not enough days yet')
+            + (old ? _fT(` (l’ancien modèle, avec l’Allemagne absente le matin, se trompait de ${n0(old.mae)} €/MWh sur ${old.days} jours, contre ${n0(old.naive_mae)} pour « demain = aujourd’hui »)`, ` (the former model, with Germany missing in the morning, was off by ${old.mae} €/MWh over ${old.days} days vs ${old.naive_mae} for « tomorrow = today »)`) : '');
         return { sub: _fT('Heures négatives attendues : ', 'Expected negative hours: ') + exp
-          + (ps ? _fT(` · prévision de prix : erreur moyenne ${n0(ps.mae)} €/MWh depuis ${ps.from}, contre ${n0(ps.naive_mae)} pour le prix de l’avant-veille`, ` · price forecast: ${ps.mae} €/MWh mean error since ${ps.from} vs ${ps.naive_mae} for the price two days before`) : '')
-          + _fT(` · bilan depuis ${k.from || '–'} : `, ` · record since ${k.from || '–'}: `)
-          + (k.caught != null ? Math.round(k.caught * 100) + _fT(' % des jours à prix négatifs repérés', ' % of the days with negative prices flagged') : '')
+          + (ps ? _fT(` · rejeu avec la météo réelle depuis ${ps.from} (cas le plus favorable) : erreur moyenne sur le prix ${n0(ps.mae)} €/MWh, contre ${n0(ps.naive_mae)} pour le prix de la veille`, ` · replay with the real weather since ${ps.from} (best case): mean price error ${ps.mae} €/MWh vs ${ps.naive_mae} for the day-before price`) : '')
+          + (k.caught != null ? _fT(', ', ', ') + Math.round(k.caught * 100) + _fT(' % des jours à prix négatifs repérés', ' % of the days with negative prices flagged') : '')
           + (k.false_alarms != null ? ', ' + Math.round(k.false_alarms * 100) + _fT(' % de fausses alertes', ' % false alarms') : '')
-          + (k.skill_vs_climatology != null ? ', ' + Math.round(k.skill_vs_climatology * 100) + _fT(' % mieux que la fréquence habituelle', ' % better than the usual frequency') : '') };
+          + liveTxt };
       },
     });
 

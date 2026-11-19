@@ -186,13 +186,18 @@ _renReg({
   async draw(cid, p) {
     const D = await _renDay(p.zone, p.day);
     if (!D.z) { noDataMsg(cid, 'No generation data for ' + p.zone + ' on ' + _renFmtDay(D.day), ''); return { day: D.day }; }
-    const { z, st, n, lbls, day } = D;
+    const { z, st, n, lbls, day, fc } = D;
     const ds = [];
     const area = (label, data, col) => ({ label, data, backgroundColor: rgba(col, .55), borderColor: col, borderWidth: 1, fill: true, pointRadius: 0, stack: 'g', yAxisID: 'y', tension: 0 });
     if (z.windOnshore) ds.push(area('Wind onshore', _renGW(z.windOnshore), C_WON));
     if (z.windOffshore && z.windOffshore.some(v => v)) ds.push(area('Wind offshore', _renGW(z.windOffshore), C_WOFF));
     if (!z.windOnshore && st.wind) ds.push(area('Wind', _renGW(st.wind), C_WON));
     if (st.solar) ds.push(area('Solar', _renGW(st.solar), C_SOL));
+    // Day-ahead forecast of the same total, only stored for the latest fetched day (same source as the ren-fc chart)
+    if (fc && (fc.windForecast || fc.solarForecast) && n === (fc.windForecast || fc.solarForecast).length) {
+      const tot = (a, b) => (a || Array(n).fill(null)).map((v, i) => { const w = v, s = (b || [])[i]; return (w == null && s == null) ? null : (w || 0) + (s || 0); });
+      ds.push({ label: 'Wind + solar forecast', data: _renGW(tot(fc.windForecast, fc.solarForecast)), type: 'line', borderColor: '#B8C9D9', borderDash: [5, 4], borderWidth: 1.3, pointRadius: 0, fill: false, yAxisID: 'y', tension: 0, order: -2 });
+    }
     if (z.hourly && z.hourly.length === n) ds.push({ label: 'Day-ahead price', data: z.hourly, type: 'line', borderColor: '#FFFFFF', borderWidth: 1.4, pointRadius: 0, fill: false, yAxisID: 'y1', tension: 0, order: -1, stack: 'p' });
     const a = nowLineAnnotation({ slots: n, labels: lbls, chartDate: day });
     _fuelChart(cid, { type: 'line', data: { labels: lbls, datasets: ds }, options: _fuelOpts({

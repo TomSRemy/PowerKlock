@@ -706,5 +706,81 @@
  "177": {
   "status": "done",
   "reply": "Fait : « Production France en ce moment » s’ouvre sur aujourd’hui (J) avec les filtres J, J-1, J-3 et J-7. Après la dernière donnée RTE, les prévisions en pointillés sur fond hachuré : éolien et solaire (prévision PowerKlock), consommation (prévision RTE J-1). La case « + demain (prévision) » prolonge jusqu’à la fin de demain. Zoom à la souris comme ailleurs."
+ },
+ "178": {
+  "status": "done",
+  "reply": "Fait : le badge haussier/baissier est maintenant aligné à droite, au même niveau que le titre, dans toutes les tuiles (y compris le tableau de bord)."
+ },
+ "179": {
+  "status": "wontfix",
+  "reply": "Normal, pas un bug : c'est la carte « demain » du prix spot, qui dépend de l'enchère day-ahead (résultat publié ~13h-14h). Rien à charger plus tôt, la donnée n'existe pas avant."
+ },
+ "180": {
+  "status": "done",
+  "reply": "Fait : « Dans l'actualité réglementaire » est maintenant en haut de la page, avant le calendrier des échéances."
+ },
+ "181": {
+  "status": "done",
+  "reply": "Corrigé : le graphique grandit maintenant pour montrer tous les postes (certains, comme le charbon, poussaient le bas du graphe hors cadre)."
+ },
+ "182": {
+  "status": "wontfix",
+  "reply": "Pas de bug trouvé sur la mise à jour elle-même (slider, période, onglets et redimensionnement redessinent bien le graphique) — probablement le même souci que la note précédente : les postes coupés en bas ne semblaient pas bouger. Dites-moi si ça persiste une fois le correctif ci-dessus en place."
+ },
+ "183": {
+  "status": "done",
+  "reply": "Fait : chaque jour du calendrier est cliquable (et accessible au clavier/tactile) et affiche ses chiffres sous le calendrier — le survol reste disponible en plus sur desktop."
+ },
+ "184": {
+  "status": "done",
+  "reply": "Fait : le filtre de période (1M à All) en haut de page s'applique maintenant aussi à la vue Calendrier — il ne l'affectait pas avant."
+ },
+ "185": {
+  "status": "open",
+  "reply": "Vérifié : les deux pages lisent deux fichiers différents (comparaison : fr_market_series.json · Aujourd'hui : fr_market_calchain.json), mais les valeurs sont identiques sur toutes les dates communes des 8 derniers jours — l'écart que vous avez vu est un décalage de quelques heures le jour même (une page ajoute la date du jour avant que la cotation soit disponible, l'autre après), pas une erreur de donnée. Fusionner les deux fichiers en un seul serait plus propre mais c'est un changement de pipeline : je vous le propose séparément si vous voulez qu'on le fasse."
+ },
+ "186": {
+  "status": "done",
+  "reply": "Fait : tableau et graphique des contrats calendaires agrandis à la même hauteur (460px) ; le jeu « Liquide » par défaut (11 lignes max) s'affiche désormais sans scroll."
+ },
+ "187": {
+  "status": "open",
+  "reply": "Le graphique actuel montre le volume par région en barres ; le prix n'est que dans l'info-bulle (invisible au survol sur mobile). Deux options : (A) ajouter le prix en ligne sur un second axe du même graphique, ou (B) un second graphique à côté, barres de prix par région. Je recommande (A), plus compact. Votre choix ?"
+ },
+ "188": {
+  "status": "done",
+  "reply": "La source est déjà indiquée (bandeau ENTSO-E · regelleistung.net · PowerKlock, en haut à droite) et la méthode est expliquée dans la note sous le tableau. J'ai complété le sous-titre pour que le triangle ambre (« réaliste, sans anticipation ») soit expliqué comme le trait blanc. Si ça reste confus, dites-moi précisément ce qui gêne et je retravaille la mise en page."
+ },
+ "189": {
+  "status": "open",
+  "reply": "Vérifié en détail (données, logique de repli, dates) : rien de concrètement cassé trouvé sur ce graphique. Qu'est-ce qui vous paraissait faux précisément ?"
+ },
+ "190": {
+  "status": "done",
+  "reply": "Fait : la prévision éolien+solaire (pointillé) est ajoutée au graphique intraday, en plus du prix."
+ },
+ "191": {
+  "status": "open",
+  "reply": "La donnée est déjà complète (111 périodes depuis CRE4/2016, toutes filières) et le graphique juste à côté de la table l'utilise déjà en entier. La table « derniers résultats » est volontairement limitée (dernier + précédent par filière, 3 ans) — vous voulez que je l'étende à tout l'historique, ou c'est le graphique qui répond déjà au besoin ?"
+ },
+ "192": {
+  "status": "done",
+  "reply": "Fait : nouveau graphique « France · heures pleine charge par technologie » sur Capacité installée (production ÷ capacité installée, par an), avec la production de chaque filière dans la légende du graphique. Calculé à partir des données déjà stockées (RTE/ODRÉ + Energy-Charts), aucune nouvelle source."
+ },
+ "193": {
+  "status": "done",
+  "reply": "Fait : graphiques plus grands et plus espacés sur toute la page, et projection fin d'année 2026 ajoutée au graphique des émissions (comme pour la production). Elle ne peut pas apparaître sur les 4 graphiques « Selon RTE » (chiffres propres de RTE, publiés début 2027 seulement), ni sur les échanges par frontière ou le mix résiduel EEX (pas de projection calculée pour eux). Les facteurs de charge restent volontairement sans projection sur les mois à venir."
+ },
+ "194": {
+  "status": "done",
+  "reply": "Fait : nouvelle section « Financement du soutien aux renouvelables » sur Bilan électrique (CRE, M€ convertis en Md€), juste après les exports RTE déjà présents. Années connues en plein, 2026/2027 prévus en pointillé. 2022 ressort négatif (prix de marché au-dessus du tarif garanti, les producteurs ont reversé l'écart) — expliqué dans la note sous le graphique."
+ },
+ "195": {
+  "status": "done",
+  "reply": "Fait : graphique plus grand. L'intensité carbone (g/kWh) est déjà dans le tableau juste au-dessus (RTE et EEX, production et résiduel) ; je ne l'ai pas ajoutée au graphique lui-même — il a déjà 2 échelles (% et TWh) et 3 séries, une 3e échelle le rendrait moins lisible, pas plus. Je peux proposer un petit graphique séparé pour l'intensité carbone si vous voulez le suivi visuel en plus du tableau."
+ },
+ "196": {
+  "status": "done",
+  "reply": "Fait : toutes les tuiles réservent maintenant la même hauteur pour la ligne sous le chiffre, donc les graphiques démarrent tous à la même hauteur, y compris sur mobile."
  }
 }

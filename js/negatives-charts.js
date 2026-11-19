@@ -28,7 +28,11 @@
   // the page's window applied to the views by year (at least three years to compare) and by month of history
   const winYears = w => ({ '5Y': 6, all: 30 }[w] || 3);
   const winMonths = w => ({ '1M': 1, '3M': 3, '1Y': 12, '2Y': 24, '5Y': 60, all: 600 }[w] || 12);
-  const winLabel = w => ({ '1M': 'last month', '3M': 'last 3 months', '1Y': 'last 12 months', '2Y': 'last 2 years', '5Y': 'last 5 years', all: 'all history' }[w] || 'last 12 months');
+  const T = (fr, en) => (!window.PKI18n || PKI18n.lang !== 'en') ? fr : en;
+  const winLabel = w => ({
+    '1M': T('le dernier mois', 'last month'), '3M': T('les 3 derniers mois', 'last 3 months'), '1Y': T('les 12 derniers mois', 'last 12 months'),
+    '2Y': T('les 2 dernières années', 'last 2 years'), '5Y': T('les 5 dernières années', 'last 5 years'), all: T('tout l’historique', 'all history'),
+  }[w] || T('les 12 derniers mois', 'last 12 months'));
   const leap = y => (y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0));
   const doy = ds => { const d = new Date(ds + 'T12:00:00Z'); return Math.floor((d - Date.UTC(d.getUTCFullYear(), 0, 0)) / 86400000); };
   function yearInfo(ser) {
@@ -80,7 +84,7 @@
       if (!zones.length) { noDataMsg(cid, 'Hourly profile not available', ''); return null; }
       const ds = zones.map((z, i) => { const r = last12(pr.zones[z], null, winMonths(p && p.win)); return _fuelLineDs(z.replace('_LU', ''), r.map(v => v == null ? null : Math.round(v * 10) / 10), PAL[i % PAL.length], { borderWidth: z === 'FR' ? 2.6 : 1.6, tension: 0 }); });
       _fuelChart(cid, { type: 'line', data: { labels: HRS, datasets: ds }, options: _fuelOpts({ scales: { x: _fuelXAxis(), y: _fuelAxis('% of days negative', { beginAtZero: true }) }, plugins: { legend: legend() } }) }, 'negative-hours-by-hour');
-      return { title: 'Hour of day · share of days with a negative price', sub: winLabel(p && p.win).replace(/^./, c => c.toUpperCase()) + ' (complete months) · the solar signature: negative prices cluster around midday' };
+      return { title: 'Hour of day · share of days with a negative price', sub: T(`${winLabel(p && p.win).replace(/^./, c => c.toUpperCase())} (mois complets) · signature solaire : les prix négatifs se concentrent autour de midi`, `${winLabel(p && p.win).replace(/^./, c => c.toUpperCase())} (complete months) · the solar signature: negative prices cluster around midday`) };
     },
     async cumul(cid) {
       const s = await summary(); const zones = shown(z => s && s.zones && s.zones[z]);
@@ -172,22 +176,28 @@
       pct.map((row, m) => `<tr><th>${MN[m]}</th>${row.map((v, h) => `<td style="background:${col(v)}" title="${MN[m]} ${HRS[h]}: negative on ${v.toFixed(0)} % of days">${v >= 10 ? Math.round(v) : ''}</td>`).join('')}</tr>`).join('') +
       `</tbody></table></div><div class="fuel-note">% of days with a negative price at each hour, ${years[0]}–${years[years.length - 1]} (${zname(zone)}). Darker = more often negative; figures shown from 10 %.</div>`;
   }
-  async function calendarHTML(zone) {
+  async function calendarHTML(zone, win) {
     const s = await summary(), ser = s && s.zones && s.zones[zone];
     if (!ser) return '<div class="fuel-note">No history for ' + zone + '.</div>';
-    const last = ser.slice(-371), max = Math.max(1, ...last.map(d => d.negH || 0));
+    const last = ser.slice(-winDays(win)), max = Math.max(1, ...last.map(d => d.negH || 0));
     const col = v => !v ? 'var(--bg3)' : `rgba(237,105,101,${(0.25 + 0.75 * v / max).toFixed(2)})`;
     const pad = (new Date(last[0].d + 'T12:00:00Z').getUTCDay() + 6) % 7;
     let cells = '', months = '', prevM = '';
     for (let i = 0; i < pad; i++) cells += '<i class="neg-cal-x"></i>';
-    last.forEach((d, i) => { cells += `<i style="background:${col(d.negH || 0)}" title="${d.d}: ${(d.negH || 0).toFixed(2)} h below 0${d.min != null ? ' · min ' + d.min.toFixed(1) + ' €/MWh' : ''}"></i>`;
+    last.forEach((d, i) => { const txt = d.d + ': ' + (d.negH || 0).toFixed(2) + ' h below 0' + (d.min != null ? ' · min ' + d.min.toFixed(1) + ' €/MWh' : '');
+      cells += `<i tabindex="0" style="background:${col(d.negH || 0)}" title="${txt}" onclick="negCalPick('${zone}',this)" onkeydown="if(event.key==='Enter')negCalPick('${zone}',this)" data-txt="${txt.replace(/"/g, '&quot;')}"></i>`;
       const m = d.d.slice(5, 7); if (m !== prevM && d.d.slice(8) <= '07') { months += `<span style="grid-column:${Math.floor((i + pad) / 7) + 1}">${MN[+m - 1]}</span>`; prevM = m; } });
     const negDays = last.filter(d => (d.negH || 0) > 0).length;
     const weeks = Math.ceil((last.length + pad) / 7), cols = `grid-template-columns:repeat(${weeks},minmax(9px,1fr))`;
     return `<div class="neg-cal-wrap"><div class="neg-cal-m" style="${cols}">${months}</div><div class="neg-cal" style="${cols}">${cells}</div></div>
       <div class="neg-cal-leg"><span>0 h</span><i style="background:var(--bg3)"></i><i style="background:rgba(237,105,101,.35)"></i><i style="background:rgba(237,105,101,.65)"></i><i style="background:rgba(237,105,101,1)"></i><span>${max.toFixed(0)} h</span>
-      <span class="neg-cal-note">${negDays} days with a negative price over the last 12 months · hover a day for details</span></div>`;
+      <span class="neg-cal-note">${T(`${negDays} jours à prix négatif, ${winLabel(win)} · cliquez ou touchez un jour pour voir ses chiffres`, `${negDays} days with a negative price, ${winLabel(win)} · click or tap a day for its figures`)}</span></div>
+      <div class="neg-cal-detail" id="neg-cal-detail-${zone}">Click or tap a day above to see its figures here.</div>`;
   }
+  // Click/tap a calendar cell (desktop already has the native tooltip; this also covers touch, where hover never fires).
+  window.negCalPick = function (zone, el) {
+    const d = document.getElementById('neg-cal-detail-' + zone); if (d) d.textContent = el.getAttribute('data-txt') || '';
+  };
 
   // ── Catalogue widgets (☆ from the page with the current settings) ──
   if (window.PKW) {
@@ -230,7 +240,7 @@
       window.NEGC_STATE = Object.assign(window.NEGC_STATE || {}, { zone: code, zv: view, win });
       const hostId = 'neg-drill-chart-' + code, host = document.getElementById(hostId); if (!host) return;
       if (view === 'mh') { host.innerHTML = card('neg-hm', 'When do negative prices hit · month × hour', zname(code) + ' · % of days negative at each hour', '<div id="neg-hm-body"></div>'); document.getElementById('neg-hm-body').innerHTML = await heatmapHTML(code); PKW.star('neg-zone-heatmap', 'neg-hm-body'); return; }
-      if (view === 'cal') { host.innerHTML = card('neg-cal', 'Calendar · negative hours per day', zname(code) + ' · last 12 months', '<div id="neg-cal-body"></div>'); document.getElementById('neg-cal-body').innerHTML = await calendarHTML(code); return; }
+      if (view === 'cal') { host.innerHTML = card('neg-cal', 'Calendar · negative hours per day', zname(code) + ' · ' + winLabel(win), '<div id="neg-cal-body"></div>'); document.getElementById('neg-cal-body').innerHTML = await calendarHTML(code, win); return; }
       return drawInto(hostId, 'neg-drill-canvas', 'neg-zone', { zone: code, view, win });
     },
   };
@@ -251,6 +261,9 @@
   .neg-cal-leg { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-top: 10px; font: 10px 'JetBrains Mono', monospace; color: var(--text3); }
   .neg-cal-leg i { display: inline-block; width: 12px; height: 12px; border-radius: 2px; }
   .neg-cal-note { margin-left: 14px; }
+  .neg-cal i { cursor: pointer; }
+  .neg-cal i:focus-visible { outline: 2px solid var(--acc, #14D3A9); outline-offset: 1px; }
+  .neg-cal-detail { margin-top: 8px; font: 11px 'JetBrains Mono', monospace; color: var(--text2); }
   `;
   document.head.appendChild(css);
 })();

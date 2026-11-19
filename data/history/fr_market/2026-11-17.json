@@ -4,5 +4,80 @@
  "marketInsights": {
   "gas": "<p>A bearish open to start the week following a strong trend upwards in price action from Tuesday morning last week. A the time of writing the TTF front month Dec-26 contract is trading at &euro;87.90/MWh whilst the NBP Dec-26 is trading at 219p/therm.</p>\n<p>On the geopolitical front, over the weekend Iran stuck an airbase in Bahrain with drones attacking a helicopter base and additionally a representative of Iran claimed the path to ending the conflict was open. From the US, following Trumps post claiming they don&rsquo;t need a deal with Iran, Trump looks to have refocused Vance on domestic issues.</p>\n<p>Following a meeting last week in Abu Dhabi with representatives from the US, Russia and Ukraine this weekend saw Ukraine launch attacks inside Russia with a bridge and Oil facilities as the target. On Thursday Trump is expected to meet Putin and Xi Jinping at a summit discussing nuclear arms and Iran. Market participants will follow any headlines that come out closely.</p>\n<p>Weather forecast last week were a significant driver of price action with cooler weather runs adding further bullishness. This morning, temperature forecast have revised upwards with many weather runs forecasting at or around seasonal normal levels for late November. The AIFS has turned a little bearish in the latest runs.</p>",
   "power": "<p>Power prices have fallen as well this morning following the move in the gas markets.</p>\n<p>With geopolitical situation much quieter this weekend that what we have come to expect, much of the move can be attributed to the weather forecasts. As described in the gas commentary, temperatures are set to be around seasonal normal for the end of Nov in the latest runs. Wind speeds, especially in the UK, have taken a turn upwards expecting wind to climb to around seasonal normal level, dampening the expectation of last week where forecasts predicted a significant amount of power generation would have to come through gas fired generation.</p>\n<p>EUA prices have fallen alongside the rest of the European energy commodity moves this morning, trading now below &euro;88 having been over &euro;90 last week</p>"
+ },
+ "countries": {
+  "FR": {
+   "spot": 64.24,
+   "forwardCurve": {
+    "M+1": 186.42,
+    "M+2": 200.55,
+    "M+3": 185.99,
+    "Q+1": 173.25,
+    "Q+2": 74.5,
+    "Q+3": 91.62,
+    "S+1": 83.06,
+    "S+2": 111.36,
+    "Y+1": 113.42,
+    "Y+2": 63.62,
+    "Y+3": 58.55
+   }
+  },
+  "UK": {
+   "spot": 180,
+   "forwardCurve": {
+    "M+1": 178.98,
+    "M+2": 188.96,
+    "M+3": 179.76,
+    "Q+1": 175.2,
+    "Q+2": 127.11,
+    "Q+3": 118.56,
+    "S+1": 122.81,
+    "S+2": 118.31,
+    "Y+1": 134.2,
+    "Y+2": 86.58,
+    "Y+3": 70.18
+   },
+   "generationMix": {
+    "gas": 10.87,
+    "wind": 13.82,
+    "solar": 1.3,
+    "nuclear": 5.13,
+    "hydro": 0.39,
+    "biomass": 1.96,
+    "other": 1
+   }
+  },
+  "DE": {
+   "spot": 146.25,
+   "forwardCurve": {
+    "M+1": 205.04,
+    "M+2": 214.69,
+    "M+3": 202.12,
+    "Q+1": 190.47,
+    "Q+2": 120.52,
+    "Q+3": 129.17,
+    "S+1": 124.84,
+    "S+2": 138.95,
+    "Y+1": 145.46,
+    "Y+2": 102.33,
+    "Y+3": 88.71
+   }
+  },
+  "NL": {
+   "spot": 139.44,
+   "forwardCurve": {
+    "M+1": 207.95,
+    "M+2": 218.54,
+    "M+3": 203.7,
+    "Q+1": 191.76,
+    "Q+2": 122.56,
+    "Q+3": 128.35,
+    "S+1": 125.47,
+    "S+2": 137.15,
+    "Y+1": 145.09,
+    "Y+2": 100.22,
+    "Y+3": 88.79
+   }
+  }
  }
 }

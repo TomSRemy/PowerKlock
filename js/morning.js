@@ -345,7 +345,9 @@ async function _mrnFacts() {
   k.zones = a && a.zones;   // every bidding zone of today, for the stories' Europe ranking
   k.bess = await bessP; k.dgAsof = dgFresh ? dg.asof : null;
   k.fc = neg && neg.days && neg.days[tm] ? neg.days[tm] : null;
-  k.skill = neg && neg.price_skill;
+  // usual error: the live record of the published forecasts once it has 14 days, else the replay (labelled)
+  { const lv = neg && neg.live && neg.live.models ? neg.live.models[neg.live.current] : null;
+    k.skill = lv && lv.days >= 14 ? { mae: lv.mae, live: true } : (neg && neg.price_skill ? { mae: neg.price_skill.mae, live: false } : null); }
   k.spotDays = ((sum && sum.zones && sum.zones.FR) || []).filter(r => r.avg != null && r.d <= t);
   const yrs = chain && chain.FR && chain.FR.years;
   k.cals = yrs ? Object.keys(yrs).sort().slice(0, 3).map(yy => ({ y: yy, pts: yrs[yy].dates.map((x, i) => [x, yrs[yy].values[i]]) })) : [];
@@ -371,7 +373,7 @@ function _mrnSpot(k, el) {
     const fb = _mrnMean(k.fc.price);
     out.push(`<div class="mrn3-day fcst"><div class="mrn3-day-h"><span>${_mT('Demain · ', 'Tomorrow · ') + _mDay(k.tm)}</span><span class="mrn3-chip fc">${_mT('prévision', 'forecast')}</span></div>
       <div><span class="mrn3-big fc">≈ ${_mN(fb, 0)}<small>€/MWh base</small></span> <span class="mrn3-kv">${_mT('prix publié vers 13 h', 'price out around 13:00')}</span></div>
-      <div class="mrn3-kv">${k.fc.expected_hours != null ? B('≈ ' + _mN(k.fc.expected_hours, 0) + ' h') + ' ' + _mT('de prix négatif probables', 'of likely negative prices') : ''}${k.skill ? ' · ' + _mT('erreur habituelle ± ', 'usual error ± ') + _mN(k.skill.mae, 0) + ' €' : ''}</div></div>`);
+      <div class="mrn3-kv">${k.fc.expected_hours != null ? B('≈ ' + _mN(k.fc.expected_hours, 0) + ' h') + ' ' + _mT('de prix négatif probables', 'of likely negative prices') : ''}${k.skill ? ' · ' + (k.skill.live ? _mT('erreur constatée ± ', 'observed error ± ') : _mT('erreur en rejeu ± ', 'replay error ± ')) + _mN(k.skill.mae, 0) + ' €' : ''}</div></div>`);
   } else out.push(`<div class="mrn3-day fcst"><div class="mrn3-day-h"><span>${_mT('Demain · ', 'Tomorrow · ') + _mDay(k.tm)}</span><span class="mrn3-chip fc">${_mT('prévision', 'forecast')}</span></div><div class="mrn3-kv">${_mT('Prévision au prochain passage du modèle ; prix publié vers 13 h.', 'Forecast at the model’s next run; price out around 13:00.')}</div></div>`);
   const d7 = k.spotDays.slice(-7), p7 = k.spotDays.slice(-14, -7), m7 = _mrnMean(d7.map(r => r.avg)), mp = _mrnMean(p7.map(r => r.avg));
   const r30 = _mrnMean(k.spotDays.slice(-30).map(r => r.avg));
@@ -607,15 +609,19 @@ async function _mrnTiles2(el) {
   const T = [], t = (cat, n, v, u, sub, curve, col, tn) => T.push(`<a class="mrn2-tile mrn-sys-t" data-tile="${SYS[cat][0]}" href="#${SYS[cat][1]}" data-route="${SYS[cat][1]}"><span class="mrn3-cat">${cat}</span><span class="mrn3-th"><span class="mrn2-tn${tn ? ' mrn-' + tn : ''}">${n}</span></span><span class="mrn2-tv">${v}<small>${u}</small></span><span class="mrn2-tc">${sub}</span>${curve ? _mrnSpark(curve, col) : ''}<span class="mrn3-tx"><span></span><span>${_mT('aujourd’hui', 'today')}</span></span></a>`);
   if (window.pkRte) {
     const td = _mrnToday();
-    const [R, Ry] = await Promise.all([pkRte.day(td).catch(() => null), pkRte.day(_mrnAdd(td, -1)).catch(() => null)]);
-    const at = (a, i) => Array.isArray(a) ? a[i] : null, li = R && Array.isArray(R.nuclear) ? R.nuclear.reduce((m, v, j) => v != null ? j : m, -1) : -1;
+    const last = X => X && Array.isArray(X.nuclear) ? X.nuclear.reduce((m, v, j) => v != null ? j : m, -1) : -1;
+    let [R, Ry] = await Promise.all([pkRte.day(td).catch(() => null), pkRte.day(_mrnAdd(td, -1)).catch(() => null)]);
+    // just after midnight RTE has nothing for the new day yet: show yesterday's last quarter-hour, marked as yesterday
+    const late = last(R) < 0 && last(Ry) >= 0;
+    if (late) { R = Ry; Ry = await pkRte.day(_mrnAdd(td, -2)).catch(() => null); }
+    const at = (a, i) => Array.isArray(a) ? a[i] : null, li = last(R);
     const dY = (key, i) => { const y = Ry && at(Ry[key], i), v = at(R[key], i); return y != null && v != null ? v - y : null; };
     const tnY = (d, upBad, eps) => d == null || Math.abs(d) < eps ? '' : (d > 0) === upBad ? 'up' : 'down';
-    const vsY = (key, i, d, unit, scale) => { const y = Ry && at(Ry[key], i); const v = at(R[key], i); return y != null && v != null ? _mS((v - y) / (scale || 1), d) + ' ' + unit + _mT(' vs hier même heure', ' vs yesterday same time') : ''; };
+    const vsY = (key, i, d, unit, scale) => { const y = Ry && at(Ry[key], i); const v = at(R[key], i); return y != null && v != null ? _mS((v - y) / (scale || 1), d) + ' ' + unit + (late ? _mT(' vs la veille même heure', ' vs the day before same time') : _mT(' vs hier même heure', ' vs yesterday same time')) : ''; };
     if (li >= 0) {
-      const hh = String(Math.floor(li / 4)).padStart(2, '0') + ':' + String(li % 4 * 15).padStart(2, '0');
+      const hh = String(Math.floor(li / 4)).padStart(2, '0') + ':' + String(li % 4 * 15).padStart(2, '0') + (late ? _mT(' (hier)', ' (yesterday)') : '');
       const day = (key, f) => Array.isArray(R[key]) ? R[key].slice(0, li + 1).filter((_, j) => j % 4 === 0).map(v => v == null ? null : f ? f(v) : v) : null;
-      if (at(R.co2, li) != null) t(_mT('Carbone', 'Carbon'), _mT('CO₂ France à ', 'CO₂ France at ') + hh, Math.round(at(R.co2, li)), 'g/kWh', _mT('hier en moyenne ', 'yesterday on average ') + (Ry && Array.isArray(Ry.co2) ? Math.round(_mrnMean(Ry.co2)) : '–') + ' g/kWh', day('co2'), '#94A3B8', tnY(Ry && Array.isArray(Ry.co2) ? at(R.co2, li) - _mrnMean(Ry.co2) : null, true, 2));
+      if (at(R.co2, li) != null) t(_mT('Carbone', 'Carbon'), _mT('CO₂ France à ', 'CO₂ France at ') + hh, Math.round(at(R.co2, li)), 'g/kWh', (late ? _mT('la veille en moyenne ', 'the day before on average ') : _mT('hier en moyenne ', 'yesterday on average ')) + (Ry && Array.isArray(Ry.co2) ? Math.round(_mrnMean(Ry.co2)) : '–') + ' g/kWh', day('co2'), '#94A3B8', tnY(Ry && Array.isArray(Ry.co2) ? at(R.co2, li) - _mrnMean(Ry.co2) : null, true, 2));
       if (at(R.load, li) != null) t(_mT('Demande', 'Demand'), _mT('Consommation à ', 'Consumption at ') + hh, _mN(at(R.load, li) / 1000, 1), 'GW', vsY('load', li, 1, 'GW', 1000), day('load'), '#E6EDF3', tnY(dY('load', li), true, 300));
       if (at(R.nuclear, li) != null) t(_mT('Production', 'Generation'), _mT('Nucléaire à ', 'Nuclear at ') + hh, _mN(at(R.nuclear, li) / 1000, 1), 'GW', vsY('nuclear', li, 1, 'GW', 1000), day('nuclear'), '#A98BD4', tnY(dY('nuclear', li), false, 300));
       const ws = (at(R.wind, li) || 0) + (at(R.solar, li) || 0), ld = at(R.load, li);
