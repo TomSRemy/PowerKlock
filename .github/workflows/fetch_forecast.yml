@@ -82,7 +82,7 @@ jobs:
         run: |
           git config user.name "PowerDesk Bot"
           git config user.email "bot@powerdesk.local"
-          git add data/forecast.json data/history/forecast data/neg_forecast.json data/fr_fc_combined.json
+          git add data/forecast.json data/history/forecast data/neg_forecast.json data/history/neg_forecast_rex.json data/fr_fc_combined.json
           if git diff --staged --quiet; then echo "No change"; exit 0; fi
           git commit -q -m "data: forecasts $(date -u '+%Y-%m-%d %H:%M')"
           for i in 1 2 3 4 5; do

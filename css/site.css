@@ -3359,6 +3359,7 @@ details.cf-contracts[open] > summary { margin-bottom: 8px; }
 .mrn-cfcard .mrn3-cat { margin: 0; }
 .mrn2-tile .mrn3-cat { color: var(--text3); }   /* the accent green clashes when the tile's own colour is red */
 .mrn2-tile .mrn3-cat.mrn-up { color: var(--down); } .mrn2-tile .mrn3-cat.mrn-down { color: var(--up); }   /* flat stays the neutral grey above */
+.mrn3-th { display: flex; align-items: center; justify-content: space-between; gap: 6px; }   /* title and badge on the same line, badge right-aligned (note 178) */
 /* Today: Explain switch, Discovery story and quiz */
 .mrn-xbtn-w { display: inline-flex; align-items: center; gap: 12px; }
 .mrn-xbtn { border: 1px solid var(--border2, rgba(255,255,255,.15)); background: transparent; color: var(--text2); border-radius: 999px; padding: 0 12px; height: 26px; font-size: 11px; cursor: pointer; white-space: nowrap; }
@@ -3491,7 +3492,7 @@ html:not([lang="fr"]) .pk-fr-only{display:none !important}
 @media (max-width: 600px) { .reg-it { grid-template-columns: 1fr; gap: 4px; } }
 
 /* Bilan électrique (js/bilan.js) */
-.bl-wrap { max-width: none; display: grid; gap: 16px; padding: 6px 0 30px; }
+.bl-wrap { max-width: none; display: grid; gap: 22px; padding: 6px 0 30px; }
 .bl-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 14px; flex-wrap: wrap; }
 .bl-h1 { margin: 0; font: 600 22px 'Outfit', sans-serif; color: var(--text); } .bl-sub { margin: 4px 0 0; font-size: 13px; color: var(--text3); }
 .bl-yrs { display: flex; gap: 5px; flex-wrap: wrap; } .bl-y { font-size: 12.5px; padding: 5px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg2); color: var(--text2); cursor: pointer; } .bl-y.on { border-color: var(--accent); color: var(--accent); }
@@ -3501,10 +3502,10 @@ html:not([lang="fr"]) .pk-fr-only{display:none !important}
 .bl-kv { font: 600 25px 'Outfit', sans-serif; color: var(--text); font-variant-numeric: tabular-nums; } .bl-kv small { font-size: 12px; color: var(--text3); font-weight: 500; margin-left: 4px; }
 .bl-kc { font-size: 12.5px; color: var(--text2); } .bl-up { color: #ED6965; } .bl-dn { color: #14D3A9; }
 .bl-lead { margin: 0; padding: 12px 16px; border-radius: 10px; background: rgba(20,211,169,.06); border: 1px solid rgba(20,211,169,.25); color: var(--text); font-size: 14.5px; line-height: 1.55; }
-.bl-blk { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 16px; display: grid; gap: 10px; min-width: 0; }
+.bl-blk { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 18px; display: grid; gap: 12px; min-width: 0; }
 .bl-t { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; } .bl-t h2 { margin: 0; font: 600 16px 'Outfit', sans-serif; color: var(--text); }
 .bl-src { font: 500 11px 'JetBrains Mono', monospace; color: var(--text3); text-decoration: none; }
-.bl-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; } @media (max-width: 900px) { .bl-cols { grid-template-columns: 1fr; } }
+.bl-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; } @media (max-width: 900px) { .bl-cols { grid-template-columns: 1fr; } }
 .bl-c { position: relative; min-width: 0; } .bl-c[hidden] { display: none; }
 .bl-mini { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; align-content: start; } .bl-mini div { background: rgba(255,255,255,.03); border-radius: 8px; padding: 10px 12px; font-size: 12.5px; color: var(--text2); } .bl-mini b { display: block; font-size: 20px; color: var(--text); font-variant-numeric: tabular-nums; }
 .bl-tab { width: 100%; border-collapse: collapse; font-size: 13px; } .bl-tab th, .bl-tab td { padding: 6px 8px; border-bottom: 1px solid var(--border); text-align: right; font-variant-numeric: tabular-nums; } .bl-tab th:first-child, .bl-tab td:first-child { text-align: left; } .bl-tab th { font-size: 11px; color: var(--text3); font-weight: 600; }
@@ -3735,6 +3736,7 @@ html body .pm-o-l, html body .pkf-t-l, html body .mrn2-tc { white-space: normal;
 .bl-kv, .pkf-t-v, .mrn2-tv, .pkd-kpi-v { font-family: 'JetBrains Mono', monospace !important; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
 .bl-kv { font-size: 22px; } .bl-kv small, .pkf-t-v small, .mrn2-tv small { font: 400 12px 'JetBrains Mono', monospace; color: var(--text3); }
 .bl-kc, .pkf-t-s, .mrn2-tc { font-family: 'JetBrains Mono', monospace; font-size: 11px; line-height: 1.35; }
+.mrn2-tile .mrn2-tc { min-height: 2.7em; }   /* reserves 2 lines so the sparkline below starts at the same height across tiles, whether this line wraps or not */
 /* Negative prices › who keeps producing below 0 €: the obligations and Journal officiel tables wrap their long texts */
 .flex-tbl { width: 100%; table-layout: fixed; font-size: 12px; border-collapse: collapse; }
 .flex-tbl th, .flex-tbl td { white-space: normal !important; text-align: left !important; vertical-align: top; padding: 6px 8px; font-family: 'Inter', sans-serif; line-height: 1.4; overflow-wrap: anywhere; }
@@ -4279,3 +4281,11 @@ span.nl-src { margin: 0; }
 .pkd-acc-e small { color: var(--text3); font-size: 11px; }
 .pkd-acc-b { display: flex; gap: 6px; flex: none; }
 .pkd-acc-s { font-size: 12px; color: var(--text2); margin: -2px 0 6px; } .pkd-acc-s summary { cursor: pointer; color: var(--accent); } .pkd-acc-s div { display: flex; flex-wrap: wrap; gap: 6px 12px; margin: 6px 0 4px; } .pkd-acc-s small { color: var(--text3); }
+/* Beta switch (js/beta.js): off by default; the owner compares the new page layout with the current one */
+.pk-beta-btn { width: auto; padding: 0 9px; font-size: 11px; font-weight: 600; letter-spacing: .02em; }
+.pk-beta-btn.on { color: var(--accent); border-color: var(--accent); background: rgba(20, 211, 169, .1); }
+.pk-beta-note { margin: 0 0 14px; padding: 8px 14px; border: 1px solid rgba(20, 211, 169, .35); border-left: 3px solid var(--accent); border-radius: 8px; background: rgba(20, 211, 169, .06); color: var(--text2); font-size: 12px; }
+.pk-beta-note b { color: var(--accent); }
+.pk-beta .pk-beta-read { margin: 0 0 14px; }
+.pr-breadcrumb-parent-beta { color: var(--text2); font-family: 'JetBrains Mono', monospace; }
+.pk-beta tr.zone-row.pk-beta-hl > td { background: rgba(20, 211, 169, .07); }

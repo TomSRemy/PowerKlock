@@ -1,44 +1,51 @@
 {
- "updated": "2026-11-17T00:20:43+00:00",
- "asof": "2026-11-17",
+ "updated": "2026-11-19T15:55:46+00:00",
+ "asof": "2026-11-19",
  "notes": 2,
  "engine": "proxy",
  "context": [
   {
    "topic": "France",
    "topic_en": "France",
-   "text": "La disponibilité nucléaire en France est en baisse, avec une disponibilité de 45579,79 MW, en baisse de 2,4% sur 7 jours. Cela pousse les prix à la hausse. La consommation d'électricité en France est également en baisse, avec des prix spot en baisse sur les derniers jours.",
-   "text_en": "Nuclear availability in France is decreasing, with a capacity of 45579.79 MW, down 2.4% over 7 days. This pushes prices up. Electricity consumption in France is also decreasing, with spot prices falling over the last few days.",
+   "text": "La disponibilité du nucléaire en France est en baisse de 2,4% avec 45579,79 MW, ce qui pousse les prix à la hausse. La consommation d'électricité est également en baisse, avec des prix spot à 60,4 €/MWh",
+   "text_en": "French nuclear availability is down 2.4% at 45579.79 MW, pushing prices up. Electricity consumption is also down, with spot prices at 60.4 €/MWh",
    "tone": "up"
   },
   {
    "topic": "Golfe",
    "topic_en": "Gulf",
-   "text": "La production et les exportations de pétrole dans la région du Golfe sont en augmentation, ce qui entraîne une baisse du prix du Brent. Cela a un impact à la baisse sur les prix de l'énergie en Europe.",
-   "text_en": "Oil production and exports in the Gulf region are increasing, leading to a decrease in Brent prices. This has a downward impact on European energy prices.",
+   "text": "Les tensions dans le Golfe et les risques liés au détroit d'Hormuz font augmenter les prix du pétrole, ce qui a un impact sur les prix de l'électricité",
+   "text_en": "Tensions in the Gulf and risks related to the Strait of Hormuz are increasing oil prices, which affects electricity prices",
+   "tone": "up"
+  },
+  {
+   "topic": "Norvège",
+   "topic_en": "Norway",
+   "text": "La Norvège a augmenté sa production de gaz, ce qui fait baisser les prix du gaz, mais les livraisons norvégiennes ont baissé légèrement ces derniers jours",
+   "text_en": "Norway has increased its gas production, which is lowering gas prices, but Norwegian deliveries have fallen slightly in recent days",
    "tone": "down"
   }
  ],
  "outlook": {
   "oil": {
    "tone": "down",
-   "text": "Les prix du pétrole devraient continuer à baisser en raison de la production et des exportations accrues dans la région du Golfe.",
-   "text_en": "Oil prices are expected to continue falling due to increased production and exports in the Gulf region."
+   "text": "Les prix du pétrole devraient baisser en raison de la hausse de la production",
+   "text_en": "Oil prices are expected to fall due to increased production"
   },
   "gas": {
    "tone": "down",
-   "text": "Les prix du gaz devraient également baisser en raison de la révision à la hausse des prévisions de température et de la baisse des risques géopolitiques.",
-   "text_en": "Gas prices are also expected to fall due to upward revisions in temperature forecasts and decreased geopolitical risks."
+   "text": "Les prix du gaz devraient baisser en raison de la hausse de la production norvégienne",
+   "text_en": "Gas prices are expected to fall due to increased Norwegian production"
   },
   "power": {
-   "tone": "down",
-   "text": "Les prix de l'électricité devraient suivre la tendance à la baisse des prix du gaz et du pétrole.",
-   "text_en": "Power prices are expected to follow the downward trend in gas and oil prices."
+   "tone": "flat",
+   "text": "Les prix de l'électricité devraient rester stables en raison de la baisse de la consommation",
+   "text_en": "Electricity prices are expected to remain stable due to decreased consumption"
   },
   "carbon": {
-   "tone": "down",
-   "text": "Les prix du carbone devraient également baisser en raison de la baisse des prix de l'énergie.",
-   "text_en": "Carbon prices are also expected to fall due to the decrease in energy prices."
+   "tone": "flat",
+   "text": "Les prix du carbone devraient rester stables en raison de la réglementation",
+   "text_en": "Carbon prices are expected to remain stable due to regulation"
   }
  }
 }

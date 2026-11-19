@@ -29,7 +29,7 @@
   const MIX = [['nuclear', 'Nuclear', '#7B4B9C'], ['hydro', 'Hydro', '#3FA6B4'], ['wind', 'Wind', '#14D3A9'], ['solar', 'Solar', '#FBBF24'],
     ['bio', 'Bioenergy', '#8BC34A'], ['gas', 'Gas', '#C4A57B'], ['coal', 'Coal', '#6B6B6B'], ['oil', 'Oil', '#A0522D']];
   const S = { cons: null, meta: null, res: null, settings: { unit: 'auto', stamp: 'auto', go: 0, ppaTech: 'solar', ppa: 0, supplier: '', residual: '', rmCountry: 'FR', annualFactor: '', flexPct: 10, flexGoal: 'cost', pvKwp: 0, pvYield: 1150, fixPeriod: 'cal1',
-    conn: 'auto', margin: 2, cee: 10, goP: 0, turpe: '', turpeFix: '', net: 'dist', turpeAcc: '', accRisk: '', accKwc: 0, accKey: 100, accYield: 1150, accPrice: 80, pmo: 7.5, country: 'FR', gc: '' } };
+    accKwc: 0, accKey: 100, accYield: 1150 } };
   // Residual mix CO2 factors (g/kWh) quoted from the AIB European Residual Mix
   // results (www.aib-net.org), France and Belgium only; other countries: entered by the user.
   const RM = { FR: { 2022: 124.96, 2023: 40.74, 2024: 23.52, 2025: 17.11 }, BE: { 2022: 144.27, 2023: 167.49, 2024: 131.73, 2025: 171.01 } };
@@ -315,12 +315,6 @@
     o.flexAuto = st.flexPct ? o.flex : flex(rows, 10, 'cost');
     try { o.fixed = await fixedPrice(o, st.fixPeriod, o.shp); } catch (e) { console.warn('[carbon] fixed price', e); o.fixed = null; }
     o.acc = accSim(o, rows, st);
-    if (o.acc) { try { o.acc.fixed = await fixedPrice(o, st.fixPeriod, o.acc.shp); } catch (e) { console.warn('[carbon] ACC complement', e); } }
-    if (o.acc) {   // national cost of solar forecast errors (€/MWh produced), ENTSO-E, scripts/fetch_fr_imbalance_cost.py
-      const ic = await (imbP || (imbP = getJSON('history/fr_imbalance_cost.json')));
-      let c = 0, m = 0; if (ic && ic.months) { const own = Object.values(ic.months).filter(x => x.solar && x.solar.ours).length >= 3 && (!ic.use || ic.use.solar === 'ours'); Object.values(ic.months).forEach(x => { const b = x.solar && (own ? x.solar.ours : x.solar); if (b && b.mwh) { c += b.costEur; m += b.mwh; } }); }
-      o.acc.imbNat = m ? c / m : null;
-    }
     return o;
   }
 
@@ -332,7 +326,7 @@
   // last two complete years of French day-ahead prices), + the capacity cost
   // spread over the volume. Excludes grid fees, taxes, guarantees of origin
   // and the supplier's margin and risk premium.
-  let fwdP = null, imbP = null;
+  let fwdP = null;
   // Collective self-consumption (ACC): a share (allocation key) of a local solar installation's output
   // (national solar profile scaled to kWc × yield) covers the site quarter-hour by quarter-hour; the
   // rest (allo-consumption) comes from the supplier. Returns the residual average days for its price.
@@ -570,6 +564,7 @@
       _fuelKpi('Saving per kW cut', f1(CAP_PRICE / 1000), '€', _c(`chaque kW de moins sur les plages des ${cp.days.length} jours de pointe, chaque hiver`, `each kW less in the ${cp.days.length} peak days' windows, every winter`)),
     ].join('') + `<div class="fuel-note" style="grid-column:1/-1">${_c(`Plages de pointe : 07h–10h et 17h–20h les jours de pointe d’hiver de RTE (jusqu’à 22 par hiver, annoncés la veille). La liste de RTE n’est pas publique ici : les ${cp.days.length} jours ouvrés de plus forte consommation nationale dans vos données en tiennent lieu`, `Peak windows: 07:00–10:00 and 17:00–20:00 on RTE's winter peak days (up to 22 per winter, announced the day before). RTE's own list is not public here: the ${cp.days.length} weekdays of highest national consumption in your data stand in for them`)} (${cp.days.slice(0, 6).join(', ')}${cp.days.length > 6 ? '…' : ''}).</div>` : `<div class="fuel-note" style="grid-column:1/-1">${_c('Aucun jour ouvré d’hiver (novembre à mars) dans vos données : le coût de capacité en a besoin.', 'No winter weekday (November to March) in your data: the capacity cost needs one.')}</div>`;
     renderFixed(o);
+    renderAccDay(o);
     const fx = o.flex, pct = +S.settings.flexPct || 0;
     $('cf-flex-kpis').innerHTML = [
       _fuelKpi('Energy moved', MWh(fx.moved), '', _c(`${pct} % de chaque jour, même jour, sans nouvelle pointe`, `${pct} % of each day, same day, no new peak`)),
@@ -734,20 +729,19 @@
   function renderFixed(o) {
     const host = $('cf-fix'); if (!host) return;
     const x = o.fixed;
-    if (!x) { host.innerHTML = `<div class="fuel-note">${_c('Prix à terme indisponibles : le prix fixe ne peut pas être calculé.', 'Forward prices not available: the fixed price cannot be computed.')}</div>`; return; }
+    if (!x) { host.innerHTML = `<div class="fuel-note">${_c('Prix à terme indisponibles : la valeur à terme de votre profil ne peut pas être calculée.', 'Forward prices not available: the forward value of your profile cannot be computed.')}</div>`; return; }
     if (x.missing) { host.innerHTML = `<div class="fuel-note">${_c(`Pas de prix à terme ou d’historique de prix pour ${esc(x.missing)} : choisissez une autre période.`, `No forward price or price history for ${esc(x.missing)}: pick another period.`)}</div>`; return; }
     const lbl = { cal1: 'Cal ' + x.months[0].k.slice(0, 4), cal2: 'Cal ' + x.months[0].k.slice(0, 4), next12: _c('12 prochains mois', 'next 12 months') }[x.period];
     const pct1 = v => (v * 100).toFixed(1) + ' %';
     host.innerHTML = `<div class="kpi-strip fuel-kpis" style="grid-template-columns:repeat(4,1fr);margin-bottom:10px">` + [
-      _fuelKpi('Fixed price · energy', f2(x.energy), '€/MWh', _c(`${lbl} · fourchette ${f2(x.lo)}–${f2(x.hi)} selon l’année d’historique`, `${lbl} · range ${f2(x.lo)}–${f2(x.hi)} with each history year`)),
+      _fuelKpi('Forward value · energy', f2(x.energy), '€/MWh', _c(`${lbl} · fourchette ${f2(x.lo)}–${f2(x.hi)} selon l’année d’historique`, `${lbl} · range ${f2(x.lo)}–${f2(x.hi)} with each history year`)),
       _fuelKpi('Your profile factor', pct1(x.factor), '', _c(`vs le prix à terme base pondéré par votre volume (${f2(x.base)} €/MWh) · mesuré sur ${x.histYears.join(' et ')}${x.realised ? ' · ' + pct1(x.realised) + ' sur votre propre période' : ''}`, `vs the forward baseload weighted by your volume (${f2(x.base)} €/MWh) · measured on ${x.histYears.join(' and ')}${x.realised ? ' · ' + pct1(x.realised) + ' in your own period' : ''}`), x.factor > 1 ? 'down' : 'up'),
       _fuelKpi('Capacity', x.cap == null ? '–' : f2(x.cap), '€/MWh', x.cap == null ? _c('il faut un jour ouvré d’hiver dans vos données', 'needs a winter weekday in your data') : 'winter peak days, spread over the year'),
       _fuelKpi('Energy + capacity', f2(x.total), '€/MWh', _c(`≈ ${eur(x.total * x.E / 1000)} pour ${f1(x.E / 1000)} MWh`, `≈ ${eur(x.total * x.E / 1000)} for ${f1(x.E / 1000)} MWh`)),
-    ].join('') + `</div><div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">Month</th><th>Volume MWh</th><th>Forward base €/MWh</th><th style="text-align:left">Contract</th><th>Profile factor</th><th>Your price €/MWh</th></tr></thead><tbody>` +
+    ].join('') + `</div><div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">Month</th><th>Volume MWh</th><th>Forward base €/MWh</th><th style="text-align:left">Contract</th><th>Profile factor</th><th>Forward value €/MWh</th></tr></thead><tbody>` +
       x.months.map(r => `<tr><td style="text-align:left">${MON[+r.k.slice(5) - 1]} ${r.k.slice(0, 4)}</td><td>${f1(r.E / 1000)}</td><td>${f2(r.F)}</td><td style="text-align:left;color:var(--tx3)">${esc(r.from || '')}</td><td>${pct1(r.fac)}</td><td><b>${f2(r.F * r.fac)}</b></td></tr>`).join('') +
-      `</tbody></table></div><div class="fuel-note">${_c(`Calcul : le prix à terme base de chaque mois (dernier règlement, ${esc(x.asOf || '')} ; un mois sans contrat propre prend son trimestre, sa saison ou son année, profilé par les ratios du spot) × votre facteur de profil de ce mois, c’est-à-dire ce que votre jour ouvré moyen et votre week-end moyen auraient coûté sur le spot français en ${x.histYears.join(' et ')}, divisé par le prix base (la fourchette prend chaque année seule). Volume = vos jours moyens répétés sur le calendrier de livraison. Capacité = le coût des jours de pointe d’hiver ci-dessus, réparti sur le volume. <b>Non inclus</b> : TURPE, taxes (accise, CTA, TVA), garanties d’origine, la marge du fournisseur et sa prime de risque volume et profil (souvent 1 à 5 €/MWh).`,
-        `How it is computed: each month's baseload forward (latest settlement, ${esc(x.asOf || '')}; a month without its own contract takes its quarter, season or year shaped by day-ahead ratios) × your profile factor for that month, i.e. what your average working day and weekend would have cost on the French day-ahead market in ${x.histYears.join(' and ')} divided by the baseload (the range uses each year alone). Volume = your average days repeated over the delivery calendar. Capacity = the winter peak-day cost above spread over the volume. <b>Not included</b>: grid fees (TURPE), taxes (excise, CTA, VAT), guarantees of origin, the supplier's margin and its volume and shape risk premium (often 1 to 5 €/MWh).`)}</div>`;
-    renderBill(o);
+      `</tbody></table></div><div class="fuel-note">${_c(`Ce n’est pas un prix fixe de fournisseur : c’est ce que vaut votre profil sur les prix à terme du jour. Calcul : le prix à terme base de chaque mois (dernier règlement, ${esc(x.asOf || '')} ; un mois sans contrat propre prend son trimestre, sa saison ou son année, profilé par les ratios du spot) × votre facteur de profil de ce mois, c’est-à-dire ce que votre jour ouvré moyen et votre week-end moyen auraient coûté sur le spot français en ${x.histYears.join(' et ')}, divisé par le prix base (la fourchette prend chaque année seule). Volume = vos jours moyens répétés sur le calendrier de livraison. Capacité = le coût des jours de pointe d’hiver ci-dessus, réparti sur le volume. <b>Non inclus</b> : TURPE, taxes (accise, CTA, TVA), garanties d’origine, la marge du fournisseur et sa prime de risque (volume, forme, écarts), qu’aucune source publique ne permet de chiffrer : saisissez celles de votre fournisseur dans la facture ci-dessous.`,
+        `This is not a supplier's fixed price: it is what your profile is worth on today's forward prices. How it is computed: each month's baseload forward (latest settlement, ${esc(x.asOf || '')}; a month without its own contract takes its quarter, season or year shaped by day-ahead ratios) × your profile factor for that month, i.e. what your average working day and weekend would have cost on the French day-ahead market in ${x.histYears.join(' and ')} divided by the baseload (the range uses each year alone). Volume = your average days repeated over the delivery calendar. Capacity = the winter peak-day cost above spread over the volume. <b>Not included</b>: grid fees (TURPE), taxes (excise, CTA, VAT), guarantees of origin, the supplier's margin and its risk premium (volume, shape, imbalance), which no public source allows to price: enter your supplier's in the bill below.`)}</div>`;
   }
 
   // ── ACC: average day hour by hour (consumption, ACC share, complement, surplus) ──
@@ -771,92 +765,6 @@
       scales: { x: Object.assign(_fuelXAxis(), { stacked: true }), y: _fuelAxis('kWh per hour (average day)', { stacked: true, beginAtZero: true }) } }) }, 'carbon-acc-average-day');
     const S = v => v.reduce((a, b) => a + (b || 0), 0), sc = S(c), sx = S(x), sg = S(g);
     const sub = $('cf-accday-sub'); if (sub) sub.textContent = _c(`Jour moyen · l’ACC couvre ${pc(sc ? sx / sc : 0)} de votre consommation · ${pc(sg ? sx / sg : 0)} de votre part autoconsommée, ${f1(S(sur))} kWh de surplus par jour`, `Average day · ACC covers ${pc(sc ? sx / sc : 0)} of your consumption · ${pc(sg ? sx / sg : 0)} of your share self-consumed, ${f1(S(sur))} kWh a day surplus`);
-  }
-
-  // ── The whole bill, before VAT: supplier only vs with ACC ─────────
-  // €/MWh, ZNI surcharge included (≤ 36 kVA; > 36 kVA), revised every 1 February and 1 August (CIBS L. 312-37):
-  //   1 Feb 2026 30.85 / 26.58 · 1 Aug 2026 30.62 / 26.35 (24.69 + ZNI 5.93 for households)
-  const ACCISE = { small: 30.62, large: 26.35, since: '1 August 2026' };
-  // Belgium (professional use), INDICATIVE 2026 values to check against the supplier's tariff card: federal special
-  // excise by yearly consumption band (€/MWh; band rates found on 2026 supplier tariff cards, not on an official text),
-  // energy contribution (kept for professional use after the 1 August 2026 reform, Programme Act of 30 May 2026)
-  const BE_EXCISE = [[20, 14.21], [50, 12.09], [1000, 11.39]], BE_CONTRIB = 1.9261;
-  const beExcise = mwh => { let left = mwh, prev = 0, eur = 0; for (const [up, r] of BE_EXCISE) { const q = Math.max(0, Math.min(left, up - prev)); eur += q * r; left -= q; prev = up; } if (left > 0) eur += left * BE_EXCISE[BE_EXCISE.length - 1][1]; return mwh ? eur / mwh : BE_EXCISE[0][1]; };
-  const BE_REG = { WAL: 'Wallonia', VLA: 'Flanders', BRU: 'Brussels' };
-  function renderBill(o) {
-    const host = $('cf-bill'), x = o.fixed; if (!host) return;
-    if (!x || x.missing) { host.innerHTML = ''; return; }
-    const st = S.settings, n = v => v === '' || v == null || !isFinite(+v) ? 0 : +v;
-    const conn = st.conn === 'auto' ? (o.peak.v <= 36 ? 'small' : 'large') : st.conn;
-    const BE = /^BE/.test(st.country || 'FR'), reg = BE ? BE_REG[st.country.slice(3)] || 'Belgium' : '';
-    const has = v => v !== '' && v != null && isFinite(+v), turpeIn = has(st.turpe) || has(st.turpeFix);
-    const yearMWh = o.E / 1000 * 365 / Math.max(1, o.days.length);
-    const acc = BE ? beExcise(yearMWh) : ACCISE[conn];
-    const ctaRate = st.net === 'trans' ? 0.05 : 0.15;   // CTA from 1 Feb 2026: 15 % of the fixed TURPE on distribution networks, 5 % on transmission
-    const E = x.E / 1000, capEur = (x.cap || 0) * E;   // MWh, € per year
-    const per = (eur, mwh) => mwh ? eur / mwh : 0;
-    const lines = [];
-    const A = o.acc && o.acc.fixed && !o.acc.fixed.missing ? o.acc : null;
-    const Er = A ? A.fixed.E / 1000 : E, Ea = E - Er;
-    const row = (label, a, b, note) => lines.push({ label, a, b, note });
-    row(BE ? 'Energy (fixed price, French forwards)' : 'Energy (fixed price)', x.energy * E, A ? A.fixed.energy * Er : null, A ? `complement priced on your residual profile: ${f2(A.fixed.energy)} €/MWh vs ${f2(x.energy)} for all your consumption (profile factor ${(A.fixed.factor * 100).toFixed(1)} % vs ${(x.factor * 100).toFixed(1)} %)` : `${f2(x.energy)} €/MWh`);
-    const capB = A && A.capR != null && o.capacity && o.capacity.cost ? capEur * A.capR / o.capacity.cost : capEur;
-    if (!BE) row('Capacity', capEur, A ? capB : null, A ? `winter peak days; with ACC on your load left in the 07–10h and 17–20h windows (${pc(o.capacity && o.capacity.cost ? 1 - capB / capEur : 0)} lower)` : 'winter peak days, 07–10h and 17–20h');
-    if (BE) row('Green certificates (regional quota)', n(st.gc) * E, A ? n(st.gc) * Er : null, has(st.gc) ? _c(`${f2(n(st.gc))} €/MWh sur l’énergie vendue par le fournisseur (${reg})`, `${f2(n(st.gc))} €/MWh on the energy the supplier sells (${reg})`) : `enter the cost from your supplier's tariff card (${reg}: quota × certificate price; Wallonia's is the highest)`);
-    else row('Energy savings certificates (CEE)', n(st.cee) * E, A ? n(st.cee) * Er : null, _c(`${f2(n(st.cee))} €/MWh sur l’énergie vendue par le fournisseur`, `${f2(n(st.cee))} €/MWh on the energy the supplier sells`));
-    if (n(st.goP)) row('Guarantees of origin', n(st.goP) * E, A ? n(st.goP) * Er : null, `${f2(n(st.goP))} €/MWh`);
-    row('Supplier margin', n(st.margin) * E, A ? n(st.margin) * Er : null, `${f2(n(st.margin))} €/MWh`);
-    if (A) {
-      row('ACC energy (to the producer)', 0, n(st.accPrice) * Ea, `${f1(Ea)} MWh at ${f2(n(st.accPrice))} €/MWh`);
-      row('PMO fees', 0, n(st.pmo) * Ea, `${f2(n(st.pmo))} €/MWh of ACC energy`);
-      const risk = has(st.accRisk) ? n(st.accRisk) : (A.imbNat != null ? Math.max(0, A.imbNat) : 0);
-      row('Complement risk (ACC volume)', 0, risk * Ea, `the supplier carries the forecast error of the ACC output on the complement: ${f2(risk)} €/MWh of ACC energy${has(st.accRisk) ? ' (entered)' : ' (national solar imbalance cost, ENTSO-E; a single site is less predictable: raise it if needed)'}`);
-    }
-    if (BE) {
-      row('Federal special excise', acc * E, A ? acc * E : null, `${f2(acc)} €/MWh on ${f0(yearMWh)} MWh a year, bands ${BE_EXCISE.map(([u, r]) => '≤ ' + u + ' MWh ' + r).join(' · ')} €/MWh (indicative 2026, professional use: check your tariff card) · shared energy taxed like any other`);
-      row('Energy contribution', BE_CONTRIB * E, A ? BE_CONTRIB * E : null, `${BE_CONTRIB} €/MWh (professional use; abolished for households from 1 August 2026)`);
-    } else row('Excise (accise)', acc * E, A ? acc * Er + (A.exempt ? 0 : acc * Ea) : null, `${f2(acc)} €/MWh (${conn === 'small' ? '≤ 36 kVA' : '> 36 kVA'}, since ${ACCISE.since}; revised each 1 Feb and 1 Aug)` + (A ? (A.exempt ? ' · ACC part at 0 €/MWh (installation under 1 MW)' : ' · ACC part taxed (installation of 1 MW or more)') : ''));
-    if (turpeIn) {
-      const tv = n(st.turpe), tva = has(st.turpeAcc) ? n(st.turpeAcc) : tv, tf = n(st.turpeFix);
-      row(BE ? 'Grid fees · variable part' : 'TURPE · variable part', tv * E, A ? tv * Er + tva * Ea : null, BE ? `${f2(tv)} €/MWh (distribution, transmission, federal and regional surcharges of your DSO's tariff card)${A ? ` · ${f2(tva)} €/MWh on the shared energy${has(st.turpeAcc) ? '' : ' (same rate: enter the reduced local-sharing rate if your DSO grants one)'}` : ''}` : `${f2(tv)} €/MWh drawn${A ? (has(st.turpeAcc) ? ` · ${f2(tva)} €/MWh on the ACC energy (ACC withdrawal option, self-produced indices)` : ' · same rate on the ACC energy (enter the ACC option rate if chosen)') : ''}`);
-      if (tf) row(BE ? 'Grid fees · fixed part' : 'TURPE · fixed part', tf, A ? tf : null, `${eur(tf)} a year (management, metering, ${BE ? 'capacity' : 'subscribed power'})`);
-      if (tf && !BE) row('CTA', tf * ctaRate, A ? tf * ctaRate : null, `${(ctaRate * 100).toFixed(0)} % of the fixed TURPE (${st.net === 'trans' ? 'transmission' : 'distribution'} network, rate from 1 Feb 2026): does not move with volume`);
-    }
-    const tA = lines.reduce((s, l) => s + l.a, 0), tB = A ? lines.reduce((s, l) => s + l.b, 0) : null;
-    o.bill = { lines, tA, tB, E, acc: !!A };
-    // what the supplier charges per MWh it supplies: full consumption vs complement only
-    const SUP = ['Energy (fixed price)', 'Energy (fixed price, French forwards)', 'Capacity', 'Energy savings certificates (CEE)', 'Green certificates (regional quota)', 'Guarantees of origin', 'Supplier margin', 'Complement risk (ACC volume)'];
-    const supA = lines.filter(l => SUP.includes(l.label)).reduce((a, l) => a + l.a, 0) / (E || 1);
-    const supB = A ? lines.filter(l => SUP.includes(l.label)).reduce((a, l) => a + l.b, 0) / (Er || 1) : null;
-    const k = v => v == null ? '–' : eur(v);
-    host.innerHTML = `<div class="kpi-strip fuel-kpis" style="grid-template-columns:repeat(${A ? 3 : 2},1fr);margin-bottom:10px">` + [
-      _fuelKpi('All-in · supplier only', f2(per(tA, E)), '€/MWh', _c(`${k(tA)} par an HT${turpeIn ? '' : ' · TURPE non saisi'}`, `${k(tA)} a year before VAT${turpeIn ? '' : ' · grid fees not entered'}`)),
-      _fuelKpi('Volume', f1(E), 'MWh', 'over the delivery period'),
-      ...(A ? [_fuelKpi('All-in · with ACC', f2(per(tB, E)), '€/MWh', _c(`${k(tB)} par an HT`, `${k(tB)} a year before VAT`), tB < tA ? 'up' : 'down'),
-        _fuelKpi('ACC covers', pc(A.share), '', `${f0(A.kwc)} kWc × ${Math.round(A.key * 100)} % · ${tB < tA ? _c('économie', 'saving') : _c('surcoût', 'extra cost')} ${k(Math.abs(tA - tB))} ${_c('par an', 'a year')}`, tB < tA ? 'up' : 'down'),
-        _fuelKpi('Supplier price · complement', f2(supB), '€/MWh', _c(`vs ${f2(supA)} €/MWh pour fournir toute votre consommation (+${f2(supB - supA)}) : moins d’heures, plus chères, et le risque de volume de l’ACC`, `vs ${f2(supA)} €/MWh to supply all your consumption (+${f2(supB - supA)}): fewer, dearer hours and the ACC volume risk`), 'down'),
-        _fuelKpi('Break-even ACC price', Ea ? f2(n(st.accPrice) + (tA - tB) / Ea) : '–', '€/MWh', _c('au-dessus, l’ACC vous coûte plus que le fournisseur seul', 'above it, the ACC costs you more than supplier only'))] : []),
-    ].join('') + `</div><div class="chart-container fuel-card" style="margin-bottom:12px"><div class="fuel-card-head"><div><div class="table-title">What your bill is made of</div><div class="fuel-card-sub">${_c('€/MWh de votre consommation totale, HT · chaque bloc de la facture', '€/MWh of your total consumption, before VAT · each block of the bill')}${A ? _c(', fournisseur seul vs avec ACC', ', supplier only vs with ACC') : ''}</div>${A ? '<div class="fuel-card-sub" style="margin-top:4px">' + _c('Avec l’ACC, deux achats : l’<b>énergie ACC</b>, produite par le parc solaire partagé et payée au producteur au prix ACC (plus les frais de la PMO) ; et le <b>complément</b>, tout ce que le parc ne couvre pas (soir, nuit, hiver), acheté au fournisseur. Le complément coûte plus cher au MWh : ce sont les heures sans soleil, les plus chères, et le fournisseur porte l’incertitude sur la production du parc.', 'With the ACC, two purchases: the <b>ACC energy</b>, produced by the shared solar plant and paid to the producer at the ACC price (plus the PMO fees); and the <b>complement</b>, everything the plant does not cover (evening, night, winter), bought from the supplier. The complement costs more per MWh: those are the hours without sun, the dearest ones, and the supplier carries the uncertainty on the plant output.') + '</div>' : ''}</div><span class="source-badge">PowerKlock</span></div><div style="position:relative;height:${A ? 230 : 160}px"><canvas id="cf-bill-chart" style="width:100%;height:${A ? 230 : 160}px"></canvas></div></div><div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">Component</th><th>Supplier only · €/MWh</th><th>k€</th>${A ? '<th>With ACC · €/MWh</th><th>k€</th>' : ''}<th style="text-align:left">Basis</th></tr></thead><tbody>` +
-      lines.map(l => `<tr><td style="text-align:left">${l.label}</td><td>${f2(per(l.a, E))}</td><td>${f1(l.a / 1000)}</td>${A ? `<td>${f2(per(l.b, E))}</td><td>${f1(l.b / 1000)}</td>` : ''}<td style="text-align:left;white-space:normal;color:var(--tx3)">${l.note}</td></tr>`).join('') +
-      `<tr><td style="text-align:left"><b>Total before VAT</b></td><td><b>${f2(per(tA, E))}</b></td><td><b>${f1(tA / 1000)}</b></td>${A ? `<td><b>${f2(per(tB, E))}</b></td><td><b>${f1(tB / 1000)}</b></td>` : ''}<td style="text-align:left;color:var(--tx3)">${_c(`€/MWh de votre consommation totale · TVA ${BE ? 21 : 20} % en sus (récupérable pour la plupart des entreprises)`, `€/MWh of your total consumption · VAT ${BE ? 21 : 20} % on top (recoverable for most businesses)`)}</td></tr></tbody></table></div>` +
-      `<div class="fuel-note">${A ? _c(`ACC : ${f1(A.prod / 1000)} MWh produits pour vous sur la période de vos données, ${pc(A.self / (A.prod || 1))} consommés sur site quart d’heure par quart d’heure, ${f1(A.surplus / 1000)} MWh de surplus (vendus par le producteur, hors de votre facture). Sans les heures solaires, le reste de votre fourniture coûte plus cher au MWh : c’est l’écart à garder en tête. `, `ACC: ${f1(A.prod / 1000)} MWh produced for you over your data period, ${pc(A.self / (A.prod || 1))} consumed on site quarter-hour by quarter-hour, ${f1(A.surplus / 1000)} MWh surplus (sold by the producer, outside your bill). Without the solar hours, the rest of your supply costs more per MWh: that is the spread to keep in mind. `) : ''}${BE ? _c(`Belgique (${reg}) : énergie valorisée sur les prix à terme français (les prix à terme belges ne sont pas dans PowerKlock ; les deux marchés sont couplés et en général à quelques €/MWh : ajustez la marge si votre offre diffère). Pas de bloc capacité (le mécanisme de capacité belge passe par les tarifs réseau). Partage d’énergie : l’énergie partagée paie l’accise et la cotisation énergie comme toute autre ; les frais de réseau sont ceux de votre GRD, réduits dans certaines régions pour le partage local : saisissez ce tarif comme tarif réseau ACC. Tranches d’accise et certificats verts indicatifs : vérifiez la grille de votre fournisseur.`, `Belgium (${reg}): energy priced on the French forwards (Belgian forwards are not in PowerKlock; the two markets are coupled and usually within a few €/MWh: adjust the margin if your offer differs). No capacity block (the Belgian capacity mechanism is paid through the grid tariffs). Energy sharing (partage d'énergie / energiedelen): the shared energy pays the excise and the energy contribution like any other; grid fees are your DSO's, reduced in some regions for local sharing: enter that rate as the ACC grid rate. Excise bands and green certificates are indicative: check your supplier's tariff card.`) : _c(`Exonération d’accise pour l’ACC : chaque installation renouvelable de moins de 1 MW (avec deux parcs, vérifiez la lecture du seuil pour le vôtre), consommation par les participants (CIBS L. 312-79 et L. 312-87, loi de finances 2025 art. 75, confirmée par le Conseil d’État le 30 mars 2026). CEE : environ 10 €/MWh en période 6 (2026-2030) ; appliqués ici à l’énergie du fournisseur seulement. Taux d’accise réduits (électro-intensifs, certaines activités) et TURPE dépendent de votre contrat : saisissez ce que montre votre facture.`, `Excise exemption for ACC: each renewable installation under 1 MW (with two parks, check how the threshold is read for yours), consumption by the participants (CIBS L. 312-79 and L. 312-87, Finance Law 2025 art. 75, upheld by the Conseil d’État on 30 March 2026). CEE: around 10 €/MWh in period 6 (2026-2030); applied here to the supplier's energy only. Reduced excise rates (electro-intensive, some activities) and grid fees depend on your contract: enter what your bill shows.`)}</div>`;
-    // stacked bar: one bar per scenario, one block per component, totals at the end
-    const COL = { 'Energy (fixed price)': '#7FC8F8', 'Energy (fixed price, French forwards)': '#7FC8F8', 'Capacity': '#C4A57B', 'Energy savings certificates (CEE)': '#F59E0B', 'Guarantees of origin': '#34D399', 'Supplier margin': '#94A3B8',
-      'ACC energy (to the producer)': '#FBBF24', 'PMO fees': '#FDE68A', 'Excise (accise)': '#ED6965', 'Complement risk (ACC volume)': '#F97316', 'TURPE · variable part': '#64748B', 'TURPE · fixed part': '#475569', 'CTA': '#334155',
-      'Green certificates (regional quota)': '#22C55E', 'Federal special excise': '#ED6965', 'Energy contribution': '#F87171', 'Grid fees · variable part': '#64748B', 'Grid fees · fixed part': '#475569' };
-    const bars = A ? ['Supplier only', 'With ACC'] : ['Supplier only'];
-    const r2 = v => Math.round(v * 100) / 100;
-    const tot = A ? [per(tA, E), per(tB, E)] : [per(tA, E)];
-    const totals = { id: 'cfBillTotals', afterDatasetsDraw(ch) { const g = ch.ctx, xs = ch.scales.x, ys = ch.scales.y; g.save(); g.font = '600 12px "IBM Plex Mono", monospace'; g.fillStyle = C_TX2 || '#B8C9D9'; g.textBaseline = 'middle';
-      tot.forEach((t, i) => g.fillText(f2(t) + ' €/MWh', xs.getPixelForValue(t) + 8, ys.getPixelForValue(i))); g.restore(); } };
-    const inBar = { id: 'cfBillLabels', afterDatasetsDraw(ch) { const g = ch.ctx; g.save(); g.font = '600 10px "IBM Plex Mono", monospace'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillStyle = '#0B1620';
-      ch.data.datasets.forEach((d, di) => ch.getDatasetMeta(di).data.forEach((el, i) => { const v = d.data[i]; if (!v) return; const w = Math.abs(el.x - el.base); if (w < 34) return; g.fillText(v.toFixed(v >= 10 ? 0 : 1), (el.x + el.base) / 2, el.y); })); g.restore(); } };
-    renderAccDay(o);
-    _fuelChart('cf-bill-chart', { type: 'bar', data: { labels: bars, datasets: lines.filter(l => l.a || l.b).map(l => ({
-      label: l.label, data: A ? [r2(per(l.a, E)), r2(per(l.b, E))] : [r2(per(l.a, E))], backgroundColor: COL[l.label] || '#7A93AB', borderWidth: 0, borderSkipped: false, barPercentage: .62, categoryPercentage: .9 })) },
-      plugins: [totals, inBar],
-      options: _fuelOpts({ indexAxis: 'y', layout: { padding: { right: 110 } }, plugins: { legend: legend(), tooltip: { callbacks: { label: c => ` ${c.dataset.label}: ${f2(c.raw)} €/MWh` } } },
-        scales: { x: _fuelAxis('€/MWh', { stacked: true, beginAtZero: true }), y: { stacked: true, grid: { display: false }, ticks: { color: C_TX2, font: { size: 11 } } } } }) }, 'carbon-bill-blocks');
   }
 
   // ── Reporting ─────────────────────────────────────────────────────
@@ -962,12 +870,10 @@
         ['Solar: size (kWp)', +S.settings.pvKwp || 0], ['Solar: production (MWh)', r2(o.pv.prod / 1000)], ['Solar: self-consumed (MWh)', r2(o.pv.self / 1000)], ['Solar: CO2 avoided (t)', r2(t(o.pv.co2))],
         ['Source', 'PowerKlock — RTE éCO2mix, ENTSO-E day-ahead, AIB residual mix'],
       ].map(([k, v]) => ({ Item: k, Value: v })));
-      if (o.fixed && o.fixed.months) add('Fixed price', o.fixed.months.map(r => ({ Month: r.k, 'Volume MWh': r2(r.E / 1000), 'Forward base €/MWh': r2(r.F), Contract: r.from, 'Profile factor': Math.round(r.fac * 10000) / 10000, 'Your price €/MWh': r2(r.F * r.fac) }))
-        .concat([{ Month: 'Total', 'Volume MWh': r2(o.fixed.E / 1000), 'Forward base €/MWh': r2(o.fixed.base), 'Profile factor': Math.round(o.fixed.factor * 10000) / 10000, 'Your price €/MWh': r2(o.fixed.energy) },
-          { Month: 'Capacity €/MWh', 'Your price €/MWh': r2(o.fixed.cap) }, { Month: 'Energy + capacity €/MWh', 'Your price €/MWh': r2(o.fixed.total) },
+      if (o.fixed && o.fixed.months) add('Forward value', o.fixed.months.map(r => ({ Month: r.k, 'Volume MWh': r2(r.E / 1000), 'Forward base €/MWh': r2(r.F), Contract: r.from, 'Profile factor': Math.round(r.fac * 10000) / 10000, 'Forward value €/MWh': r2(r.F * r.fac) }))
+        .concat([{ Month: 'Total', 'Volume MWh': r2(o.fixed.E / 1000), 'Forward base €/MWh': r2(o.fixed.base), 'Profile factor': Math.round(o.fixed.factor * 10000) / 10000, 'Forward value €/MWh': r2(o.fixed.energy) },
+          { Month: 'Capacity €/MWh', 'Forward value €/MWh': r2(o.fixed.cap) }, { Month: 'Energy + capacity €/MWh', 'Forward value €/MWh': r2(o.fixed.total) },
           { Month: 'Excludes grid fees, taxes, guarantees of origin, supplier margin and risk premium' }]));
-      if (o.bill) add('Bill', o.bill.lines.map(l => Object.assign({ Component: l.label, 'Supplier only €': r2(l.a), 'Supplier only €/MWh': r2(l.a / o.bill.E) }, o.bill.acc ? { 'With ACC €': r2(l.b), 'With ACC €/MWh': r2(l.b / o.bill.E) } : {}, { Basis: l.note.replace(/<[^>]+>/g, '') }))
-        .concat([Object.assign({ Component: 'Total before VAT', 'Supplier only €': r2(o.bill.tA), 'Supplier only €/MWh': r2(o.bill.tA / o.bill.E) }, o.bill.acc ? { 'With ACC €': r2(o.bill.tB), 'With ACC €/MWh': r2(o.bill.tB / o.bill.E) } : {})]));
       add('Monthly', Object.keys(o.monthly).sort().map(m => ({ Month: m, 'Consumption MWh': r2(o.monthly[m].E / 1000), 'Location-based t CO2': r2(o.monthly[m].em / 1e6), 'Spot cost €': r2(o.monthly[m].cost) })));
       add('Daily', o.daily.map(x => ({ Date: x.d, 'Consumption kWh': r2(x.E), 'Intensity g/kWh': r2(x.ci) })));
       add('Average day', HRS.map((h, i) => ({ Hour: h, 'Consumption kWh': r2(o.hourC[i] / o.days.length), 'Grid intensity g/kWh': o.hourN[i] ? r2(o.hourI[i] / o.hourN[i]) : null, 'Day-ahead €/MWh': o.hourPn[i] ? r2(o.hourP[i] / o.hourPn[i]) : null })));
@@ -997,16 +903,10 @@
     $('cf-export').addEventListener('click', exportCSV);
     $('cf-xlsx').addEventListener('click', exportXlsx);
     const am = $('cf-accday-m'); if (am) am.addEventListener('change', () => { if (S.res) renderAccDay(S.res); });
-    // France / Belgium: the fields that only exist in one country
-    const beUI = () => { const be = /^BE/.test(S.settings.country || 'FR'), lab = (id, fr, bel) => { const e = $(id); const sp = e && e.closest('.cf-field') && e.closest('.cf-field').querySelector('span'); if (sp) sp.textContent = be ? bel : fr; };
-      document.querySelectorAll('#page-carbonfoot .cf-be').forEach(e => { e.hidden = !be; });
-      ['cf-fix-cee', 'cf-fix-conn', 'cf-fix-net'].forEach(id => { const f = $(id) && $(id).closest('.cf-field'); if (f) f.hidden = be; });
-      lab('cf-fix-turpe', _c('TURPE part variable', 'TURPE variable part'), _c('Frais de réseau, variable (grille du GRD)', 'Grid fees, variable (DSO card)')); lab('cf-fix-turpefix', _c('TURPE part fixe', 'TURPE fixed part'), _c('Frais de réseau, fixe', 'Grid fees, fixed')); };
-    const cty = $('cf-fix-country'); if (cty) { cty.value = S.settings.country || 'FR'; cty.addEventListener('change', () => setTimeout(beUI, 0)); setTimeout(beUI, 0); }
     const bind = (id, key, rebuild) => { const el = $(id); if (el) el.addEventListener('change', e => { S.settings[key] = e.target.value; if (S.raw) (rebuild ? load(S.raw, S.meta) : run()); }); };
     bind('cf-unit', 'unit', true); bind('cf-stamp', 'stamp', true);
     ['go', 'ppa', 'ppa-tech:ppaTech', 'supplier', 'residual', 'rm-country:rmCountry', 'annual:annualFactor', 'flex-pct:flexPct', 'flex-goal:flexGoal', 'pv-kwp:pvKwp', 'pv-yield:pvYield', 'fix-period:fixPeriod',
-      'fix-country:country', 'fix-gc:gc', 'fix-conn:conn', 'fix-margin:margin', 'fix-cee:cee', 'fix-go:goP', 'fix-turpe:turpe', 'fix-turpefix:turpeFix', 'fix-net:net', 'acc-turpe:turpeAcc', 'acc-risk:accRisk', 'acc-kwc:accKwc', 'acc-key:accKey', 'acc-yield:accYield', 'acc-price:accPrice', 'acc-pmo:pmo'].forEach(x => { const [id, key] = x.split(':'); bind('cf-' + id, key || id); });
+      'acc-kwc:accKwc', 'acc-key:accKey', 'acc-yield:accYield'].forEach(x => { const [id, key] = x.split(':'); bind('cf-' + id, key || id); });
   }
 
   window.addEventListener('load', () => setTimeout(() => {
