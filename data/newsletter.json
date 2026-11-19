@@ -1,157 +1,178 @@
 {
- "date": "2026-11-16",
- "updated": "2026-11-16T22:58:03+00:00",
+ "date": "2026-11-19",
+ "updated": "2026-11-19T22:39:03+00:00",
  "engine": "proxy",
- "monday": true,
+ "monday": false,
+ "weekly": false,
  "markets": [
-  {
-   "label": [
-    "Spot France demain",
-    "France spot tomorrow"
-   ],
-   "value": 64.58,
-   "unit": "€/MWh",
-   "chg": -121.8,
-   "pct": -65.3,
-   "src": "ENTSO-E"
-  },
   {
    "label": [
     "Spot France aujourd'hui",
     "France spot today"
    ],
-   "value": 186.38,
+   "value": 60.35,
    "unit": "€/MWh",
-   "chg": 87.19,
-   "pct": 87.9,
-   "src": "ENTSO-E"
+   "page": "markets/spot",
+   "src": "ENTSO-E",
+   "show": "pct",
+   "hours": false,
+   "chg": -3.89,
+   "pct": -6.1
+  },
+  {
+   "label": [
+    "Pointe − base aujourd'hui",
+    "Peak − base today"
+   ],
+   "value": 4.89,
+   "unit": "€/MWh",
+   "page": "markets/spot",
+   "src": "ENTSO-E",
+   "show": "abs",
+   "hours": false,
+   "chg": -11.37,
+   "pct": null
+  },
+  {
+   "label": [
+    "Heures ≤ 0 € demain",
+    "Hours ≤ 0 € tomorrow"
+   ],
+   "value": 1,
+   "unit": "h",
+   "page": "markets/spot/negative",
+   "src": "ENTSO-E",
+   "show": "h",
+   "hours": true,
+   "chg": -2,
+   "pct": null
   },
   {
    "label": [
     "Cal 27 France",
     "Cal 27 France"
    ],
-   "value": 113.43,
+   "value": 110.99,
    "unit": "€/MWh",
-   "chg": -5.06,
-   "pct": -4.3,
-   "src": "EEX"
+   "page": "markets/forwards",
+   "src": "EEX",
+   "show": "pct",
+   "hours": false,
+   "chg": 2.91,
+   "pct": 2.7
   },
   {
    "label": [
     "Gaz PEG",
     "PEG gas"
    ],
-   "value": 82.29,
+   "value": 83.09,
    "unit": "€/MWh",
-   "chg": -6.68,
-   "pct": -7.5,
-   "src": "PowerKlock"
+   "page": "markets/fuels",
+   "src": "PowerKlock",
+   "show": "pct",
+   "hours": false,
+   "chg": 4.22,
+   "pct": 5.4
   },
   {
    "label": [
-    "Gaz TTF",
-    "TTF gas"
+    "Garanties d'origine 2027",
+    "Guarantees of origin 2027"
    ],
-   "value": 83.8,
+   "value": 1.85,
    "unit": "€/MWh",
-   "chg": -6.82,
-   "pct": -7.5,
-   "src": "PowerKlock"
-  },
-  {
-   "label": [
-    "CO₂ EUA",
-    "CO₂ EUA"
-   ],
-   "value": 88.15,
-   "unit": "€/t",
-   "chg": -2.23,
-   "pct": -2.5,
-   "src": "PowerKlock"
+   "page": "markets/go",
+   "src": "Commerg",
+   "show": "pct",
+   "hours": false,
+   "chg": -0.01,
+   "pct": -0.5
   }
  ],
  "official": [
   {
-   "title": "Décret du 13 novembre 2026 portant diverses dispositions relatives à la sécurisation du financement des charges nucléaires",
-   "link": "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000055088721",
+   "title": "Arrêté du 13 novembre 2026 portant agrément d'un organisme pour délivrer aux opérateurs les attestations de capacité mentionnées à l'article R. 543-99 du code de l'environnement",
+   "link": "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000055101653",
    "source": "Journal officiel",
-   "date": "2026-11-15T00:00:00+00:00"
+   "date": "2026-11-19T00:00:00+00:00",
+   "tags": [
+    "fr",
+    "regulation",
+    "official"
+   ]
   },
   {
-   "title": "Arrêté du 2 novembre 2026 pris en application de l'article D. 361-7-6 du code de l'énergie relatif aux critères techniques et économiques utilisés afin de garantir la pertinence des investissements inscrits dans les…",
-   "link": "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000055088743",
+   "title": "Arrêté du 13 novembre 2026 portant agrément d'un organisme chargé de délivrer aux opérateurs les attestations de capacité mentionnées à l'article R. 543-99 du code de l'environnement",
+   "link": "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000055101755",
    "source": "Journal officiel",
-   "date": "2026-11-15T00:00:00+00:00"
-  },
-  {
-   "title": "Arrêté du 12 novembre 2026 modifiant l'article 5-1 de l'arrêté du 29 décembre 2014 relatif aux modalités d'application du dispositif des certificats d'économies d'énergie, relatif à la bonification des opérations…",
-   "link": "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000055087500",
-   "source": "Journal officiel",
-   "date": "2026-11-14T00:00:00+00:00"
-  },
-  {
-   "title": "Arrêté du 13 novembre 2026 modifiant l'arrêté du 6 novembre 2026 prévoyant des bonifications particulières pour les opérations relatives aux offres intégrées sélectionnées dans le cadre de l'appel à candidatures «…",
-   "link": "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000055087516",
-   "source": "Journal officiel",
-   "date": "2026-11-14T00:00:00+00:00"
-  },
-  {
-   "title": "Arrêté du 2 novembre 2026 portant création du programme PRO-INNO-88 dans le cadre du dispositif des certificats d'économies d'énergie",
-   "link": "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000055081256",
-   "source": "Journal officiel",
-   "date": "2026-11-13T00:00:00+00:00"
+   "date": "2026-11-19T00:00:00+00:00",
+   "tags": [
+    "fr",
+    "regulation",
+    "official"
+   ]
   }
  ],
  "pubs": [
   {
-   "title": "Fewer major Canadian companies disclosing net zero goals -report",
-   "link": "https://carbon-pulse.com/572099/",
-   "source": "Carbon Pulse",
-   "date": "2026-11-16T20:11:44+00:00"
+   "title": "Energy crisis reinforces comeback of nuclear power, says IEA",
+   "link": "https://www.world-nuclear-news.org/articles/energy-crisis-reinforces-comeback-of-nuclear-power-says-iea",
+   "source": "World Nuclear News",
+   "date": "2026-11-19T16:39:51+00:00",
+   "tags": [
+    "power",
+    "geopolitics",
+    "report"
+   ]
   },
   {
-   "title": "Euro Markets: EUAs drop 1% amid steeper energy losses as market weighs weather, reform talks",
-   "link": "https://carbon-pulse.com/571658/",
-   "source": "Carbon Pulse",
-   "date": "2026-11-16T17:20:17+00:00"
+   "title": "Solar PV to lead global electricity generation ‘across all scenarios’ by mid-2030s, says IEA",
+   "link": "https://www.pv-tech.org/solar-pv-lead-global-electricity-generation-across-all-scenarios-mid-2030s-iea/",
+   "source": "PV Tech",
+   "date": "2026-11-19T13:10:34+00:00",
+   "tags": [
+    "power",
+    "report",
+    "renewables"
+   ]
   },
   {
-   "title": "Prix du gaz : à quel niveau le marché rouvre ce lundi 16 novembre, le point complet sur le PEG",
-   "link": "https://news.google.com/rss/articles/CBMibEFVX3lxTFBkTXE5R3hVaXlfelJMbndkV080M3FXSElsSWRFVDI3X2FhMFM0VFlLc1JqU3pva2lxLTF0U2Nia2c2U1JoLVJhM0R1bHVpT201QWN0OXA5WS03blNRU2c2TGpDckk3Ml8zOWV6dg?oc=5",
-   "source": "Selectra",
-   "date": "2026-11-15T23:48:28+00:00"
+   "title": "Le World Energy Outlook 2026 en 10 infographies",
+   "link": "https://www.connaissancedesenergies.org/le-world-energy-outlook-2026-en-10-infographies",
+   "source": "Connaissance des Énergies",
+   "date": "2026-11-19T00:00:00+00:00",
+   "tags": [
+    "fr",
+    "report"
+   ]
   },
   {
-   "title": "Les Français, trop fauchés pour s’hyper-électrifier ?",
-   "link": "https://www.revolution-energetique.com/actus/les-francais-trop-fauches-pour-shyper-electrifier/",
-   "source": "Révolution Énergétique",
-   "date": "2026-11-13T15:25:05+00:00"
+   "title": "La réserve secondaire fait plonger les revenus d’octobre [Observatoire des batteries]",
+   "link": "https://www.greenunivers.com/2026/11/la-reserve-secondaire-fait-plonger-les-revenus-en-octobre-observatoire-des-batteries-438957/",
+   "source": "GreenUnivers",
+   "date": "2026-11-18T16:34:03+00:00",
+   "tags": [
+    "fr",
+    "power",
+    "report"
+   ]
   },
   {
-   "title": "Le prix du gaz décroche de 3,8% : l'effet trompeur qui va faire grimper votre facture cet hiver",
-   "link": "https://news.google.com/rss/articles/CBMiwgFBVV95cUxQMnludnRfSUR5NlhMZUUtTWlwMkJLZnlFa0pTc2ZNMTNWUlZqb2RjVDNWR0EzdDlxeVpjNnpxSVdha3BXT2ZJdDVtTjg2aTNIT1NVVmlGTVJjWnRBWHdIRG9vRWUycmtNSU9yTlZSSzd2Qm9PaFB0TE9feWhrQUU2LTZUNE9STVg1T21ZTTh4Q2I5d1Q1SU5FeUNPSTFpUUNkSWZSMloySWVfenNlSldFYW40STRXaWJWSTM1U0lBc3RPQQ?oc=5",
+   "title": "Prix du gaz : le marché décroche de 7% mais voici le mécanisme qui va quand même faire grimper votre facture",
+   "link": "https://news.google.com/rss/articles/CBMi1gFBVV95cUxOREdKb3BNTExXVi1qbXgzS1FyR3F5emJyOHRaaTlCNV8wY2R5dVFsUmw0MDhVSkQwVjRZZ0xDU2tvcWlyU21ESVFUTWRpS3VaQlRWdkxjaDkwOThqNVNKb3ZjV1dFalAtbTl2RkM2M29YakxzaUc4aGtTSlo2dEN6b1BpX213eFVJV3FfMzV1Z2FZd1dmcFZpaWRNdnN2b1phTEd5dWd1aHFJQWxBS3BKVzBLcjd5Tl8wNF95a3ZsWjFhZzRJcmcwMUtLVlY5bWpTcVJWbDh3?oc=5",
    "source": "Bourse Inside",
-   "date": "2026-11-13T11:07:06+00:00"
+   "date": "2026-11-18T04:28:30+00:00",
+   "tags": [
+    "fr",
+    "report",
+    "markets",
+    "regulation",
+    "watch"
+   ]
   }
  ],
  "cons": [
-  {
-   "title": "Projet d’arrêté supprimant la fiche d’opération standardisée BAR-TH-159 « Pompe à chaleur hybride individuelle » du dispositif des certificats d’économies d’énergie",
-   "link": "https://www.consultations-publiques.developpement-durable.gouv.fr/projet-d-arrete-supprimant-la-fiche-d-operation-a3473.html",
-   "source": "Ministère · Énergies et climat",
-   "deadline": "2026-11-16",
-   "opened": "2026-10-26",
-   "theme": "cee"
-  },
-  {
-   "title": "Niveau de dotation de Electricité de Mayotte (EDM) au titre du fonds de péréquation de l’électricité (FPE) pour les années 2027 à 2029 et cadre de régulation associé",
-   "link": "https://www.cre.fr/documents/consultations-publiques/niveau-de-dotation-de-electricite-de-mayotte-edm-au-titre-du-fonds-de-perequation-de-lelectricite-fpe-pour-les-annees-2027-a-2029-et-cadre-de-regulation-associe.html",
-   "source": "CRE",
-   "deadline": "2026-11-18",
-   "opened": "2026-10-15",
-   "theme": "tariffs"
-  },
   {
    "title": "Création d'une ligne électrique entre Eguzon et Marmagne : RTE invite le public à s'exprimer sur le projet",
    "link": "https://www.rte-france.com/actualites/2026-09-29-cp-eguzon-marmagne-concertation",
@@ -169,18 +190,122 @@
    "theme": "cee"
   },
   {
-   "title": "Projet d’arrêté portant modification des bonifications associées aux fiches d’opérations standardisées portant les références BAR-TH-171 et BAR-TH-172 du dispositif des certificats d’économies d’énergie",
-   "link": "https://www.consultations-publiques.developpement-durable.gouv.fr/projet-d-arrete-portant-modification-des-a3490.html",
+   "title": "Projet d’arrêté portant la création de la fiche d’opération standardisée IND-UT-142, du référentiel de contrôle et de la bonification associés",
+   "link": "https://www.consultations-publiques.developpement-durable.gouv.fr/projet-d-arrete-portant-la-creation-de-la-fiche-d-a3487.html",
    "source": "Ministère · Énergies et climat",
-   "deadline": "2026-12-05",
-   "opened": "2026-11-13",
+   "deadline": "2026-12-01",
+   "opened": "2026-11-10",
    "theme": "cee"
   }
  ],
- "agenda": [],
+ "agenda": [
+  {
+   "date": "2026-12-01",
+   "title": [
+    "Arrêt aux prix négatifs dès 5 MW",
+    "Curtailment at negative prices from 5 MW"
+   ],
+   "text": [
+    "Solaire et éolien terrestre sous obligation d’achat ou complément de rémunération (avant : 10 MW).",
+    "Solar and onshore wind under feed-in tariff or contract for difference (before: 10 MW)."
+   ],
+   "kind": "reg"
+  }
+ ],
  "post": null,
+ "posts": [],
+ "digest": null,
+ "top": [
+  {
+   "title": "« HoloSolis bénéficie d’une seconde chance » [Henri Poupart-Lafarge]",
+   "link": "https://www.greenunivers.com/2026/11/holosolis-beneficie-dune-seconde-chance-henri-poupart-lafarge-439076/",
+   "source": "GreenUnivers",
+   "date": "2026-11-19T14:18:10+00:00",
+   "n": 1,
+   "tags": [
+    "fr",
+    "power",
+    "carbon",
+    "regulation",
+    "renewables"
+   ]
+  },
+  {
+   "title": "Électricité industrielle : l’UE autorise l’Allemagne à cumuler deux aides face aux prix élevés",
+   "link": "https://wattselse.com/veille/article/4597/electricite-industrielle-lue-autorise-lallemagne-a-cumuler-deux-aides-face-aux-p",
+   "source": "Watts Else",
+   "date": "2026-11-19T04:18:52+00:00",
+   "n": 1,
+   "tags": [
+    "fr",
+    "power",
+    "regulation",
+    "build"
+   ]
+  },
+  {
+   "title": "Prix de l’électricité : la CRE redéfinit les offres à tarification dynamique",
+   "link": "https://news.google.com/rss/articles/CBMiowFBVV95cUxQNHdXdHdKTFBIRFpWRWVWQVQ2TFRVMjgyZVlmQ09wWXhMWnpveUltakJETFlFOGcyLUhQcDlKaFliTXFWbVQ0QUZhNU4tRlhWVEdEYnJJUXMtOElEdkZPZG5CWVpJZjhMWnNxdkNjNzFIcl9WdHVsdE8zVTBkWE14T2ZsUmxxR04wYXYyWFZKSGU1V2VGSzNmdXpFOVhsTFNWeldR?oc=5",
+   "source": "L'Energeek",
+   "date": "2026-11-19T19:46:58+00:00",
+   "n": 1,
+   "tags": [
+    "fr",
+    "regulation",
+    "watch",
+    "power"
+   ]
+  },
+  {
+   "title": "Pourquoi la France adhère-t-elle au marché européen de l’électricité ?",
+   "link": "https://news.google.com/rss/articles/CBMiqgFBVV95cUxNcE1HYkFHSW8ySm9GalBpTE05OFBCdkhCQ0N2dGYzdVNJZGEzUEhsbTdmOHdfdTZSTEt0d0ZIcENENl9qbElIZk9STC00UVlTNjZtZUFyY2xCa0lMTXhMdFVzYld4WVRlcEJjdzhGSWZVOGRJbGFHTF9DMUpMbHVhTHQ2bDlTVy02QW9YRzVqQWxjaThJSkFWSGExRkl4aDJwWnRXZ0V0TWlKQQ?oc=5",
+   "source": "Le Courrier des Stratèges",
+   "date": "2026-11-19T08:31:41+00:00",
+   "n": 1,
+   "tags": [
+    "fr",
+    "regulation",
+    "watch",
+    "power"
+   ]
+  },
+  {
+   "title": "Le système de stockage d'énergie commercial TCL X5 est désormais disponible en Europe et peut être commandé auprès des distributeurs agrées TCL Solar en France et en Suisse dès aujourd'hui.",
+   "link": "https://news.google.com/rss/articles/CBMiqAFBVV95cUxPYThWYmUydFg0aTBDWGdiOU9nYkxUR29PNW9aQnhteGIxQ2NNSFdsdExjbHJQUno2cWREMmgwVWtTRkRMbjI4bDhWbkVwM3B0aUpKdFlDNGNTNHFrNGczRE9UZFRrV1hRcWdwWjc2VURNWTdFNl9BclltTE9VOXdiVVpjSFBpN0VMRXFtWU1PR2ZVV1c0b2dsRkwwbHhuRnF3QjRGWG9zMTM?oc=5",
+   "source": "Yahoo Finance France",
+   "date": "2026-11-19T08:45:00+00:00",
+   "n": 1,
+   "tags": [
+    "fr",
+    "power",
+    "watch",
+    "renewables"
+   ]
+  },
+  {
+   "title": "POWERCHINA construira le parc éolien Amunet II d'AMEA Power sur la mer Rouge",
+   "link": "https://news.google.com/rss/articles/CBMinwFBVV95cUxPWUpYTF9nSVJyVXhkaUVBZ09Za0otamlxNHg3aEdEVUR4b3hvMjl2UURXdFdld3dmWER2YjVGOGJ2amVQSU5ybUoyd2JKRy1DUmRQWnFSc01yOGRoU3lOY3p0OU84RjdSa1JxR1lidFdHN0pUbkYzWGpDaHlUanVfQVhuZUg2YXkyQ3hYdWdDRHFYLU5vQS1UcWR4VmhkRHc?oc=5",
+   "source": "energynews.pro",
+   "date": "2026-11-19T00:43:33+00:00",
+   "n": 1,
+   "tags": [
+    "markets",
+    "fr",
+    "watch",
+    "geopolitics",
+    "power",
+    "renewables"
+   ]
+  }
+ ],
  "profiles": {
   "regulatory": {
+   "hero_chart": {
+    "img": "newsletter_img/2026-11-19_spot-france-3-derni-res-semaines-moyenne.png",
+    "title": "Spot France, 3 dernières semaines (moyennes journalières)",
+    "src": "ENTSO-E",
+    "page": "markets/spot"
+   },
    "name": [
     "Réglementaire et affaires publiques",
     "Regulatory and public affairs"
@@ -190,62 +315,223 @@
     "Regulatory"
    ],
    "order": [
+    "digest",
     "official",
     "cons",
     "stories",
+    "top",
     "pubs",
     "markets",
     "agenda",
     "post"
    ],
-   "headline": "Négociations sur passoires thermiques, règles PPE3 et soutien public",
-   "headline_en": "Negotiations on thermal sieves, PPE3 rules and public support",
+   "headline": "La CRE redéfinit les offres à tarification dynamique, un arrêté sur l'échelonnement des centrales renouvelables et publication des prix seuils pour les contrats de complément de rémunération.",
+   "headline_en": "CRE redefines dynamic pricing offers, an upcoming decree on scheduling of renewable energy plants, and publication of threshold prices for complementary remuneration contracts.",
    "stories": [
     {
-     "id": "assoiresthermiques438764",
-     "title": "Ultimes négociations parlementaires sur les passoires thermiques",
-     "link": "https://www.greenunivers.com/2026/11/ultimes-negociations-parlementaires-sur-les-passoires-thermiques-438764/",
+     "id": "gsznmdxpfovhstfnweldroc5",
+     "title": "Prix de l’électricité : la CRE redéfinit les offres à tarification dynamique",
+     "link": "https://news.google.com/rss/articles/CBMiowFBVV95cUxQNHdXdHdKTFBIRFpWRWVWQVQ2TFRVMjgyZVlmQ09wWXhMWnpveUltakJETFlFOGcyLUhQcDlKaFliTXFWbVQ0QUZhNU4tRlhWVEdEYnJJUXMtOElEdkZPZG5CWVpJZjhMWnNxdkNjNzFIcl9WdHVsdE8zVTBkWE14T2ZsUmxxR04wYXYyWFZKSGU1V2VGSzNmdXpFOVhsTFNWeldR?oc=5",
+     "tags": [
+      "fr",
+      "regulation",
+      "watch",
+      "power"
+     ],
+     "sources": [
+      "L'Energeek"
+     ],
+     "what": null,
+     "what_en": null,
+     "for_you": "Analyser les implications réglementaires et économiques pour ajuster les stratégies de tarification et les contrats avec les clients.",
+     "for_you_en": "Analyze regulatory and economic implications to adjust pricing strategies and customer contracts."
+    },
+    {
+     "id": "entbientotremplace439200",
+     "title": "L’arrêté « échelonnement » bientôt remplacé",
+     "link": "https://www.greenunivers.com/2026/11/larrete-echelonnement-bientot-remplace-439200/",
      "tags": [
       "fr",
       "power",
-      "regulation"
+      "regulation",
+      "renewables"
      ],
      "sources": [
       "GreenUnivers"
      ],
      "what": null,
      "what_en": null,
-     "for_you": "Suivre l'évolution du projet de loi",
-     "for_you_en": "Follow the evolution of the bill"
+     "for_you": "Suivre les évolutions du cadre réglementaire pour anticiper les ajustements nécessaires dans la gestion des centrales.",
+     "for_you_en": "Monitor regulatory changes to anticipate adjustments in plant management."
     },
     {
-     "id": "rlappeldoffresppe3neutre",
-     "title": "Électricité : la CRE soutient de nouvelles règles pour l’appel d’offres PPE3 Neutre",
-     "link": "https://wattselse.com/veille/article/4543/electricite-la-cre-soutient-de-nouvelles-regles-pour-lappel-doffres-ppe3-neutre",
+     "id": "publicationdesprixseuils",
+     "title": "Contrats de complément de rémunération : publication des prix seuils",
+     "link": "https://www.enerplan.asso.fr/contrats-de-complement-de-remuneration-publication-des-prix-seuils/",
+     "tags": [
+      "fr",
+      "regulation",
+      "power",
+      "assoc",
+      "renewables"
+     ],
+     "sources": [
+      "Enerplan"
+     ],
+     "what": null,
+     "what_en": null,
+     "for_you": "Vérifier la conformité des contrats existants et ajuster les négociations avec les partenaires.",
+     "for_you_en": "Check compliance of existing contracts and adjust negotiations with partners."
+    }
+   ],
+   "ai": true
+  },
+  "legal": {
+   "hero_chart": {
+    "img": "newsletter_img/2026-11-19_spot-france-3-derni-res-semaines-moyenne.png",
+    "title": "Spot France, 3 dernières semaines (moyennes journalières)",
+    "src": "ENTSO-E",
+    "page": "markets/spot"
+   },
+   "name": [
+    "Juriste",
+    "Legal"
+   ],
+   "short": [
+    "Juriste",
+    "Legal"
+   ],
+   "order": [
+    "official",
+    "cons",
+    "digest",
+    "stories",
+    "top",
+    "pubs",
+    "agenda",
+    "markets",
+    "post"
+   ],
+   "headline": "La CRE redéfinit les offres à tarification dynamique, EY et Afry chargés de calculer les indemnités hydroélectriques",
+   "headline_en": "CRE redefines dynamic pricing offers, EY and Afry tasked with calculating hydroelectric compensation",
+   "stories": [
+    {
+     "id": "gsznmdxpfovhstfnweldroc5",
+     "title": "Prix de l’électricité : la CRE redéfinit les offres à tarification dynamique",
+     "link": "https://news.google.com/rss/articles/CBMiowFBVV95cUxQNHdXdHdKTFBIRFpWRWVWQVQ2TFRVMjgyZVlmQ09wWXhMWnpveUltakJETFlFOGcyLUhQcDlKaFliTXFWbVQ0QUZhNU4tRlhWVEdEYnJJUXMtOElEdkZPZG5CWVpJZjhMWnNxdkNjNzFIcl9WdHVsdE8zVTBkWE14T2ZsUmxxR04wYXYyWFZKSGU1V2VGSzNmdXpFOVhsTFNWeldR?oc=5",
+     "tags": [
+      "fr",
+      "regulation",
+      "watch",
+      "power"
+     ],
+     "sources": [
+      "L'Energeek"
+     ],
+     "what": null,
+     "what_en": null,
+     "for_you": "Analyser les implications sur les contrats de fourniture d'électricité à tarif variable.",
+     "for_you_en": "Review implications on variable-rate electricity supply contracts."
+    },
+    {
+     "id": "tesprevuesparlaloi439186",
+     "title": "Hydroélectricité : EY et Afry choisis pour calculer les indemnités prévues par la loi",
+     "link": "https://www.greenunivers.com/2026/11/hydroelectricite-ey-et-afry-choisis-pour-calculer-les-indemnites-prevues-par-la-loi-439186/",
      "tags": [
       "fr",
       "power",
-      "regulation"
+      "regulation",
+      "renewables"
+     ],
+     "sources": [
+      "GreenUnivers"
+     ],
+     "what": null,
+     "what_en": null,
+     "for_you": "Surveiller le processus de calcul des indemnités et son impact sur les accords existants.",
+     "for_you_en": "Monitor the compensation calculation process and its impact on existing agreements."
+    }
+   ],
+   "ai": true
+  },
+  "supplier": {
+   "hero_chart": {
+    "img": "newsletter_img/2026-11-19_m0-publi-s-par-la-cre-12-derniers-mois.png",
+    "title": "M0 publiés par la CRE, 12 derniers mois",
+    "src": "CRE",
+    "page": "renewables/m0"
+   },
+   "name": [
+    "Fournisseur et agrégateur",
+    "Supplier and aggregator"
+   ],
+   "short": [
+    "Fournisseur-agrégateur",
+    "Supplier-aggregator"
+   ],
+   "order": [
+    "markets",
+    "digest",
+    "stories",
+    "top",
+    "cons",
+    "official",
+    "pubs",
+    "agenda",
+    "post"
+   ],
+   "headline": "Publication des prix seuils pour les contrats de complément de rémunération, liste des fournisseurs de Zeevonk finalisée et plafonnement des investissements de RTE",
+   "headline_en": "Publication of price thresholds for complementary remuneration contracts, Zeevonk suppliers list finalized, and RTE resilience investments capped",
+   "stories": [
+    {
+     "id": "publicationdesprixseuils",
+     "title": "Contrats de complément de rémunération : publication des prix seuils",
+     "link": "https://www.enerplan.asso.fr/contrats-de-complement-de-remuneration-publication-des-prix-seuils/",
+     "tags": [
+      "fr",
+      "regulation",
+      "power",
+      "assoc",
+      "renewables"
+     ],
+     "sources": [
+      "Enerplan"
+     ],
+     "what": null,
+     "what_en": null,
+     "for_you": "Cela permet d'ajuster les stratégies de tarification pour s'aligner sur les nouvelles limites.",
+     "for_you_en": "This allows adjusting pricing strategies to align with new thresholds."
+    },
+    {
+     "id": "lalistedesfournisseursdu",
+     "title": "Zeevonk phase I : l’accord avec Siemens Gamesa, boucle la liste des fournisseurs du le parc éolien en mer Zeevonk pour la phase I",
+     "link": "https://wattselse.com/veille/article/4601/zeevonk-phase-i-laccord-avec-siemens-gamesa-boucle-la-liste-des-fournisseurs-du",
+     "tags": [
+      "fr",
+      "power",
+      "regulation",
+      "renewables"
      ],
      "sources": [
       "Watts Else"
      ],
-     "what": "La référence de prix retenue dans le complément de rémunération détermine qui absorbe le risque de cannibalisation des recettes renouvelables lors des heures de production simultanée, et donc l’intérêt ou non à adosser du stockage aux…",
+     "what": "La sélection d’un fournisseur de turbines engage la chaîne industrielle en amont de la réalisation : elle fige la classe de puissance (15 MW) et l’ordre de grandeur de la capacité électrique de la phase I, ce qui conditionne les besoins de…",
      "what_en": null,
-     "for_you": "Analyser les règles pour l'appel d'offres",
-     "for_you_en": "Analyze the rules for the call for tenders"
+     "for_you": "Cela offre une visibilité sur les fournisseurs clés des projets éoliens, influençant les stratégies d'approvisionnement.",
+     "for_you_en": "This provides visibility on key suppliers for offshore projects, influencing sourcing strategies."
     },
     {
-     "id": "tq1q1mllxctjmcu1vbenroc5",
-     "title": "La Cour des comptes s'inquiète d'un soutien public \"potentiellement massif\" pour tenir les objectifs de la PPE 3",
-     "link": "https://news.google.com/rss/articles/CBMi3wFBVV95cUxPakh1V0YtQjJMV05VZEtPSDlNMWhNTWxFUEJlMUM0ZXJLb0xjN3JPWko5QWZWX045T0pQckpxdjBGV3ppZ0ZnYmdNSXVCSjN3QVREaHlwVzNPWGF2bDBtUXFNUUVaNFJVUVg5dUZBemxqV3ZjU3dqY3Z3VlU1SkJKTHl0Yk11Q2dEMVV1VnpJUUxEaHhNTGJyT3lIZm9hWDc2QWk2ZjBCaVh4QmZWUjMtaFZTQ3l4bVp5RWRUYXJ6OUVmVUZ3N3BrVjdRMDNRNTNtQ1Q1MllXcTJMcU1VbENR?oc=5",
+     "id": "lem9iuw9eswnzyxhkmhdnoc5",
+     "title": "Réseau électrique : la CRE encadre à 129,8 millions d’euros la résilience de RTE",
+     "link": "https://news.google.com/rss/articles/CBMijgFBVV95cUxOdXNseWZUZ0Z3QmJ0MWxMQmJpUFd5eWs5SW54V2JOdVB3b2U5cG1FOVlzYXhJamU3OUIyU1liSEhhNmVFWS1pZ3JUMVpkRWxLbjN4aUVWeUdhckF6MFpoajd1eXRxbFduSHdfNGN5MXhjd21fVURwUUJTcGxHR0llem9IUW9ESWNZYXhkMHdn?oc=5",
      "tags": [
       "fr",
-      "regulation",
-      "watch"
+      "power",
+      "watch",
+      "regulation"
      ],
      "sources": [
-      "AEF info"
+      "L'Energeek"
      ],
      "what": null,
      "what_en": null,
@@ -256,6 +542,7 @@
    "ai": true
   },
   "origination": {
+   "hero_chart": null,
    "name": [
     "Origination",
     "Origination"
@@ -266,73 +553,83 @@
    ],
    "order": [
     "markets",
+    "digest",
     "stories",
+    "top",
     "cons",
     "official",
     "pubs",
     "agenda",
     "post"
    ],
-   "headline": "Nouvelles règles pour l'appel d'offres PPE3 Neutre",
-   "headline_en": "New rules for PPE3 Neutre call for tenders",
+   "headline": "Statkraft renforce les PPA avec des projets solaires et stockage en Hollande, tandis que l'Allemagne réforme ses taxes énergétiques et publie des prix seuils pour les contrats complémentaires.",
+   "headline_en": "Statkraft strengthens PPAs with solar and storage projects in the Netherlands, while Germany reforms energy taxes and publishes threshold prices for complementary contracts.",
    "stories": [
     {
-     "id": "rlappeldoffresppe3neutre",
-     "title": "Électricité : la CRE soutient de nouvelles règles pour l’appel d’offres PPE3 Neutre",
-     "link": "https://wattselse.com/veille/article/4543/electricite-la-cre-soutient-de-nouvelles-regles-pour-lappel-doffres-ppe3-neutre",
+     "id": "rchantbessdutchsolarsite",
+     "title": "Statkraft pairs PPA with part-tolled, part-merchant BESS contract at Dutch solar site",
+     "link": "https://www.energy-storage.news/statkraft-ppa-tolled-merchant-bess-dutch-solar-site/",
+     "tags": [
+      "power",
+      "deal",
+      "markets",
+      "renewables"
+     ],
+     "sources": [
+      "Energy-Storage.news"
+     ],
+     "what": null,
+     "what_en": null,
+     "for_you": "Les projets intégrant solaire et stockage pourraient influencer la structuration des PPA et la valorisation des contrats de stockage.",
+     "for_you_en": "Projects combining solar and storage may impact PPA structuring and the valuation of storage contracts."
+    },
+    {
+     "id": "ctriciteetvaplafonnerles",
+     "title": "En Allemagne, le gouvernement baisse la taxe sur l’électricité et va plafonner les prix des carburants",
+     "link": "https://wattselse.com/veille/article/4590/en-allemagne-le-gouvernement-baisse-la-taxe-sur-lelectricite-et-va-plafonner-les",
      "tags": [
       "fr",
       "power",
-      "regulation"
+      "regulation",
+      "deal"
      ],
      "sources": [
       "Watts Else"
      ],
-     "what": "La référence de prix retenue dans le complément de rémunération détermine qui absorbe le risque de cannibalisation des recettes renouvelables lors des heures de production simultanée, et donc l’intérêt ou non à adosser du stockage aux…",
+     "what": "Le signal porte moins sur le niveau de la taxe que sur le mode de financement : la mesure 2027 est adossée à des crédits EEG non consommés, ce qui lie le soutien au pouvoir d’achat à la marge budgétaire laissée par le soutien aux…",
      "what_en": null,
-     "for_you": "Impact sur les contrats et les recettes renouvelables",
-     "for_you_en": "Impact on contracts and renewable revenues"
+     "for_you": "Les mesures de soutien liées aux crédits énergétiques pourraient affecter les marges budgétaires et les stratégies de financement des projets.",
+     "for_you_en": "Support mechanisms tied to energy credits may impact budget margins and financing strategies for projects."
     },
     {
-     "id": "rqm9wodlsmthymlhotw1noc5",
-     "title": "AirTrunk and European Energy ink 1GW+ renewables deal",
-     "link": "https://news.google.com/rss/articles/CBMiggFBVV95cUxOLVpjQ21XRENuS3hFUklFaGZMOHFtSG5UTkktSzRwQ01nSGJTaDZvc19DOG1pQUQ3N3BFa1ppQk55eUJuNkpxdnZoaGt3Q3hXQ01mek03U19vZzVoX0M2aUZjeEVuR2ViZTZCU2EzRFBPQ2FRQm9wODlsMThyMlhOTW1n?oc=5",
-     "tags": [
-      "markets",
-      "watch",
-      "deal",
-      "power"
-     ],
-     "sources": [
-      "Energy Source & Distribution",
-      "pv magazine Australia"
-     ],
-     "what": null,
-     "what_en": null,
-     "for_you": null,
-     "for_you_en": null
-    },
-    {
-     "id": "iquemaissansargent438790",
-     "title": "Un plan pour le solaire thermique mais sans argent",
-     "link": "https://www.greenunivers.com/2026/11/un-plan-pour-le-solaire-thermique-mais-sans-argent-438790/",
+     "id": "publicationdesprixseuils",
+     "title": "Contrats de complément de rémunération : publication des prix seuils",
+     "link": "https://www.enerplan.asso.fr/contrats-de-complement-de-remuneration-publication-des-prix-seuils/",
      "tags": [
       "fr",
+      "regulation",
       "power",
-      "deal"
+      "assoc",
+      "renewables"
      ],
      "sources": [
-      "GreenUnivers"
+      "Enerplan"
      ],
      "what": null,
      "what_en": null,
-     "for_you": null,
-     "for_you_en": null
+     "for_you": "Les prix seuils doivent être surveillés pour ajuster les contrats et optimiser les marges de négociation.",
+     "for_you_en": "Threshold prices should be monitored to adjust contracts and optimize negotiation margins."
     }
    ],
    "ai": true
   },
   "markets": {
+   "hero_chart": {
+    "img": "newsletter_img/2026-11-19_nucl-aire-disponible-en-france-2-dernier.png",
+    "title": "Nucléaire disponible en France, 2 derniers mois",
+    "src": "PowerKlock",
+    "page": "system/generation/nuclear"
+   },
    "name": [
     "Expert marchés",
     "Market expert"
@@ -343,49 +640,49 @@
    ],
    "order": [
     "markets",
+    "digest",
     "stories",
+    "top",
     "pubs",
     "official",
     "cons",
     "agenda",
     "post"
    ],
-   "headline": "Prix énergétiques sous tension",
-   "headline_en": "Energy prices under tension",
+   "headline": "L'approvisionnement hivernal français dépend de l'énergie nucléaire et des interconnexions, malgré un niveau hydraulique à 50 %.",
+   "headline_en": "French winter energy supply relies on nuclear and interconnections despite hydropower at 50%.",
    "stories": [
     {
-     "id": "iquenizhnekamskneftekhim",
-     "title": "Ukraine : frappes de drones sur l’usine pétrochimique Nizhnekamskneftekhim",
-     "link": "https://wattselse.com/veille/article/4528/ukraine-frappes-de-drones-sur-lusine-petrochimique-nizhnekamskneftekhim",
+     "id": "essousles50deremplissage",
+     "title": "Électricité cet hiver : RTE rassure, malgré des barrages sous les 50 % de remplissage",
+     "link": "https://wattselse.com/veille/article/4595/electricite-cet-hiver-rte-rassure-malgre-des-barrages-sous-les-50-de-remplissage",
      "tags": [
       "fr",
       "power",
-      "regulation",
-      "geopolitics",
-      "markets"
+      "regulation"
      ],
      "sources": [
       "Watts Else"
      ],
-     "what": "Le site est un nœud d’offre de polymères et de carburants russes : un arrêt prolongé ne pèse pas seulement sur le bilan de Sibur, mais transfère la tension vers les prix spot du polypropylène et du polyéthylène et vers les acheteurs…",
-     "what_en": null,
-     "for_you": "Impact sur les prix du polypropylène et polyéthylène",
-     "for_you_en": "Impact on polypropylene and polyethylene prices"
+     "what": "La marge hivernale française dépend de l'énergie nucléaire et des interconnexions, alors que les barrages sont à 50 % de leur niveau décennal. Le risque dépend des conditions météo.",
+     "what_en": "French winter energy margin relies on nuclear and interconnections, while reservoirs are at 50% of their decadal level. Risks depend on weather conditions.",
+     "for_you": "Surveillez les disponibilités nucléaires et les flux d'interconnexions pour évaluer les risques de pénurie.",
+     "for_you_en": "Monitor nuclear availability and interconnection flows to assess shortage risks."
     },
     {
-     "id": "2c2tgpdckk3ml8zowv6dgoc5",
-     "title": "Prix du gaz : à quel niveau le marché rouvre ce lundi 16 novembre, le point complet sur le PEG",
-     "link": "https://news.google.com/rss/articles/CBMibEFVX3lxTFBkTXE5R3hVaXlfelJMbndkV080M3FXSElsSWRFVDI3X2FhMFM0VFlLc1JqU3pva2lxLTF0U2Nia2c2U1JoLVJhM0R1bHVpT201QWN0OXA5WS03blNRU2c2TGpDckk3Ml8zOWV6dg?oc=5",
+     "id": "fylu5vqs1ucwr4vmhkrhcoc5",
+     "title": "POWERCHINA construira le parc éolien Amunet II d'AMEA Power sur la mer Rouge",
+     "link": "https://news.google.com/rss/articles/CBMinwFBVV95cUxPWUpYTF9nSVJyVXhkaUVBZ09Za0otamlxNHg3aEdEVUR4b3hvMjl2UURXdFdld3dmWER2YjVGOGJ2amVQSU5ybUoyd2JKRy1DUmRQWnFSc01yOGRoU3lOY3p0OU84RjdSa1JxR1lidFdHN0pUbkYzWGpDaHlUanVfQVhuZUg2YXkyQ3hYdWdDRHFYLU5vQS1UcWR4VmhkRHc?oc=5",
      "tags": [
-      "fr",
-      "report",
       "markets",
-      "regulation",
+      "fr",
       "watch",
-      "gas"
+      "geopolitics",
+      "power",
+      "renewables"
      ],
      "sources": [
-      "Selectra"
+      "energynews.pro"
      ],
      "what": null,
      "what_en": null,
@@ -393,27 +690,31 @@
      "for_you_en": null
     },
     {
-     "id": "ttpscarbonpulsecom571658",
-     "title": "Euro Markets: EUAs drop 1% amid steeper energy losses as market weighs weather, reform talks",
-     "link": "https://carbon-pulse.com/571658/",
+     "id": "ttpscarbonpulsecom573440",
+     "title": "Euro Markets: EUA record modest gain as traders take a break after hectic Wednesday",
+     "link": "https://carbon-pulse.com/573440/",
      "tags": [
       "carbon",
-      "geopolitics",
-      "markets",
-      "report"
+      "markets"
      ],
      "sources": [
       "Carbon Pulse"
      ],
-     "what": "EUAs baissent de 1% ce lundi",
-     "what_en": "EUAs drop 1% on Monday",
-     "for_you": "Influence sur les prix du carbone",
-     "for_you_en": "Influence on carbon prices"
+     "what": "Les cours du carbone européen ont grimpé modérément après une baisse liée à une annulation de vote sur les réformes du marché.",
+     "what_en": "EU carbon prices rose modestly after a decline linked to a postponed vote on market reforms.",
+     "for_you": "Adaptez vos positions en fonction de l'incertitude liée aux réformes du marché carbone.",
+     "for_you_en": "Adjust positions based on uncertainty around carbon market reforms."
     }
    ],
    "ai": true
   },
   "commercial": {
+   "hero_chart": {
+    "img": "newsletter_img/2026-11-19_cal-27-france-3-derniers-mois-de-cotatio.png",
+    "title": "Cal 27 France, 3 derniers mois de cotation",
+    "src": "EEX",
+    "page": "markets/forwards"
+   },
    "name": [
     "Commercial",
     "Sales"
@@ -424,75 +725,115 @@
    ],
    "order": [
     "markets",
+    "digest",
     "stories",
+    "top",
     "official",
     "cons",
     "pubs",
     "agenda",
     "post"
    ],
-   "headline": "Frappes sur usine, prix du gaz, décrets énergie",
-   "headline_en": "Plant strikes, gas prices, energy decrees",
+   "headline": "Évolution des prix de l'électricité et suppression d'aides à la transition énergétique impactent les entreprises.",
+   "headline_en": "Electricity price shifts and withdrawal of energy transition grants affect businesses.",
    "stories": [
     {
-     "id": "iquenizhnekamskneftekhim",
-     "title": "Ukraine : frappes de drones sur l’usine pétrochimique Nizhnekamskneftekhim",
-     "link": "https://wattselse.com/veille/article/4528/ukraine-frappes-de-drones-sur-lusine-petrochimique-nizhnekamskneftekhim",
+     "id": "scherque2029200867202611",
+     "title": "Électricité des entreprises : 2027 cote presque deux fois plus cher que 2029",
+     "link": "https://www.enerzine.com/electricite-des-entreprises-2027-cote-presque-deux-fois-plus-cher-que-2029/200867-2026-11",
+     "tags": [
+      "fr",
+      "power"
+     ],
+     "sources": [
+      "Enerzine"
+     ],
+     "what": null,
+     "what_en": null,
+     "for_you": "Suggérez à vos clients d’opter pour des contrats à long terme pour sécuriser des tarifs plus stables.",
+     "for_you_en": "Advise your clients to choose long-term contracts to secure more stable rates."
+    },
+    {
+     "id": "rlegouvernementapresenav",
+     "title": "Ces aides à la transition énergétique supprimées par le gouvernement après en avoir fait la promotion",
+     "link": "https://wattselse.com/veille/article/4609/ces-aides-a-la-transition-energetique-supprimees-par-le-gouvernement-apres-en-av",
      "tags": [
       "fr",
       "power",
       "regulation",
-      "geopolitics",
-      "markets"
+      "renewables"
      ],
      "sources": [
       "Watts Else"
      ],
-     "what": "Le site est un nœud d’offre de polymères et de carburants russes : un arrêt prolongé ne pèse pas seulement sur le bilan de Sibur, mais transfère la tension vers les prix spot du polypropylène et du polyéthylène et vers les acheteurs…",
-     "what_en": null,
-     "for_you": "Prix du polypropylène et polyéthylène en tension",
-     "for_you_en": "Tension on polypropylene and polyethylene prices"
+     "what": "Le fonds chaleur, qui soutenait la chaleur renouvelable, est supprimé alors que le gouvernement promouvait ses objectifs. Le relais passe aux CEE.",
+     "what_en": "The heat fund, supporting renewable heat, is canceled despite prior government promotion. The transition shifts to CEE.",
+     "for_you": "Informez vos clients de ce changement et orientez-les vers les dispositifs CEE pour leurs projets.",
+     "for_you_en": "Inform your clients about this change and guide them toward CEE schemes for their projects."
     },
     {
-     "id": "j0mmfba0doylhhm0e0aesoc5",
-     "title": "Tarif Tempo EDF : votre samedi ne sera jamais rouge, mais attention à ce mois où aucun jour blanc n'a été vu depuis 2021",
-     "link": "https://news.google.com/rss/articles/CBMi5AFBVV95cUxNZEN1U1BIT19GQnEteERvTFV6OXFHRVVydzBqNWtOS1JMcUdwTUtWSG8yTjhIOFQ4RlJhX3JGdVdBUzZnelRtUlhNYlpYWGNIRUFJU2JaM1VVUTNmSG95MjdOYlRCOUJlQkxyWjFOSXdXV29jSmVuRzBPSXdsVUhESWg3amM5bWV2a21iRE9SaFVmODU2eXR2SzJHQWN1WEUxTEtacU1HS0RkRG82QU5hblZ5VjRCRjJBMmctbjEzeF9oaVBZUkZoX1AzbE9nUloyMjlkaDJ0MmFBa0dOYlhHM0E0aEs?oc=5",
+     "id": "1fbcdzkmw9nr1rsmi01sqoc5",
+     "title": "Batteries de réseau : la CRE expérimente un tarif pour le stockage en basse tension",
+     "link": "https://news.google.com/rss/articles/CBMipwFBVV95cUxNaDhON3lha3kycVN0a0xoQkIwZUd0Wm1lQVgzcFNCZFVtekQ4S2doWXFVekVscjd1dmRJOVhiTVpBLWg4YXlQQlcwWGM5encyRU9zalRiaGJIMDZoMkwyV0Z3WndCWHpLOHU1cTVPSmJCdkQ5OTNIWFFZREt2VWxRNnhPRHJQbHFIMjExdWkzTllNVHNUano1V1FBcDZkMW9NR1RsMi01SQ?oc=5",
      "tags": [
       "fr",
-      "power",
+      "regulation",
       "watch",
-      "regulation"
+      "power"
      ],
      "sources": [
-      "Bourse Inside"
+      "L'Energeek"
      ],
      "what": null,
      "what_en": null,
      "for_you": null,
      "for_you_en": null
-    },
-    {
-     "id": "2c2tgpdckk3ml8zowv6dgoc5",
-     "title": "Prix du gaz : à quel niveau le marché rouvre ce lundi 16 novembre, le point complet sur le PEG",
-     "link": "https://news.google.com/rss/articles/CBMibEFVX3lxTFBkTXE5R3hVaXlfelJMbndkV080M3FXSElsSWRFVDI3X2FhMFM0VFlLc1JqU3pva2lxLTF0U2Nia2c2U1JoLVJhM0R1bHVpT201QWN0OXA5WS03blNRU2c2TGpDckk3Ml8zOWV6dg?oc=5",
-     "tags": [
-      "fr",
-      "report",
-      "markets",
-      "regulation",
-      "watch",
-      "gas"
-     ],
-     "sources": [
-      "Selectra"
-     ],
-     "what": null,
-     "what_en": null,
-     "for_you": "Suivi du PEG",
-     "for_you_en": "Monitoring PEG"
     }
    ],
    "ai": true
   }
- }
+ },
+ "figure": {
+  "value": "2 h",
+  "dir": "dn",
+  "text": "2 heures à 0 € ou moins aujourd'hui en France.",
+  "text_en": "2 hours at €0 or below today in France.",
+  "src": "ENTSO-E",
+  "page": "markets/spot/negative"
+ },
+ "weather": {
+  "kind": "cloud",
+  "label": [
+   "Nuageux",
+   "Cloudy"
+  ],
+  "sub": [
+   "prix en baisse",
+   "prices down"
+  ]
+ },
+ "week_ahead": [
+  {
+   "date": "2026-11-22",
+   "kind": "cons",
+   "title": "Création d'une ligne électrique entre Eguzon et Marmagne : RTE invite le public à s'exprimer sur le projet",
+   "link": "https://www.rte-france.com/actualites/2026-09-29-cp-eguzon-marmagne-concertation",
+   "source": "RTE"
+  },
+  {
+   "date": "2026-11-25",
+   "kind": "cons",
+   "title": "Projet d’arrêté relatif au plan d’action établi sur la base des recommandations découlant de l’audit énergétique ou sur la base du système de management de l’énergie",
+   "link": "https://www.consultations-publiques.developpement-durable.gouv.fr/projet-d-arrete-relatif-au-plan-d-action-etabli-a3483.html",
+   "source": "Ministère · Énergies et climat"
+  },
+  {
+   "date": "2026-12-01",
+   "kind": "event",
+   "title": "Arrêt aux prix négatifs dès 5 MW",
+   "title_en": "Curtailment at negative prices from 5 MW",
+   "link": null,
+   "source": null
+  }
+ ]
 }

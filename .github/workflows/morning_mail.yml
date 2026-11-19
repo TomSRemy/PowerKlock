@@ -51,7 +51,7 @@ jobs:
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}   # the posts the team voted for
         run: |
-          pip install -q scikit-learn==1.6.1 "psycopg[binary]==3.3.2"
+          pip install -q scikit-learn==1.6.1 "psycopg[binary]==3.3.2" matplotlib==3.9.2   # matplotlib: the charts of the mail (scripts/news_charts.py)
           F=""; if [ "${{ inputs.preview }}" = "true" ]; then F="--force"; fi
           W=""; if [ "${{ steps.ed.outputs.mode }}" = "weekly" ]; then W="--weekly"; fi
           python scripts/news_digest.py $F || echo "::warning::digest not written"
@@ -59,7 +59,7 @@ jobs:
           if [ "${{ inputs.preview }}" = "true" ]; then echo "Preview: nothing committed."; exit 0; fi
           git config user.name "PowerDesk Bot"
           git config user.email "bot@powerdesk.local"
-          git add data/news_digest.json data/newsletter.json data/newsletter_week.json 2>/dev/null || true
+          git add -A data/news_digest.json data/newsletter.json data/newsletter_week.json data/newsletter_img 2>/dev/null || true
           if git diff --staged --quiet; then echo "No new edition."; exit 0; fi
           git commit -q -m "data: newsletter $(TZ=Europe/Paris date +%F)"
           for i in 1 2 3 4 5; do git pull -q --rebase -X theirs origin main && git push -q && exit 0; git rebase --abort 2>/dev/null || true; sleep 5; done

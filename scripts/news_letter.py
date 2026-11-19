@@ -28,6 +28,7 @@ from datetime import date, datetime, timedelta, timezone
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from morning_mail import load as dload, spot   # noqa: E402
 from news_digest import PARIS, PROXY, energy, focus, sid, similar, top_posts   # noqa: E402
+import news_charts   # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, "data", "newsletter.json")             # 7 O'Klock, every weekday at 7:00
@@ -240,6 +241,59 @@ def markets(today, days=1):
     return rows
 
 
+def figure_of_day(today):
+    """the figure of the day: the spot's move on the day before when it is large (15 % or more), with how long since a
+    larger one; else the hours at 0 € or below of the day; else none"""
+    t, y = news_charts.day_avg(today), news_charts.day_avg(today - timedelta(days=1))
+    if t is not None and y:
+        pct = (t / y - 1) * 100
+        if abs(pct) >= 15:
+            k, since = 2, None
+            while k <= 365:
+                a, b = news_charts.day_avg(today - timedelta(days=k - 1)), news_charts.day_avg(today - timedelta(days=k))
+                if a is not None and b and abs(a / b - 1) * 100 >= abs(pct) and (a / b - 1) * pct > 0:
+                    since = k - 1
+                    break
+                k += 1
+            word = "baisse" if pct < 0 else "hausse"
+            when = (f"la plus forte {word} depuis {since} jours" if since and since > 7 else f"la plus forte {word} de la semaine" if since else f"la plus forte {word} depuis un an")
+            when_en = (f"the largest {'fall' if pct < 0 else 'rise'} in {since} days" if since and since > 7 else f"the largest {'fall' if pct < 0 else 'rise'} of the week" if since else f"the largest {'fall' if pct < 0 else 'rise'} in a year")
+            v = f"{'−' if pct < 0 else '+'}{abs(pct):.0f} %"
+            return {"value": v, "dir": "dn" if pct < 0 else "up",
+                    "text": f"Le spot France passe de {y:.0f} € à {t:.0f} € le MWh en 24 h : {when}.",
+                    "text_en": f"France spot moves from €{y:.0f} to €{t:.0f} per MWh in 24 h: {when_en}.", "src": "ENTSO-E", "page": "markets/spot"}
+    n = news_charts.day_neg(today)
+    if n:
+        return {"value": f"{n:.0f} h", "dir": "dn", "text": f"{n:.0f} heures à 0 € ou moins aujourd'hui en France.", "text_en": f"{n:.0f} hours at €0 or below today in France.",
+                "src": "ENTSO-E", "page": "markets/spot/negative"}
+    return None
+
+
+def weather(today):
+    """the market's weather, from the spot's move on the day before: clearing (prices down 10 % or more), storm (up 20 %
+    or more), cloudy otherwise"""
+    t, y = news_charts.day_avg(today), news_charts.day_avg(today - timedelta(days=1))
+    if t is None or not y:
+        return None
+    pct = (t / y - 1) * 100
+    if pct <= -10:
+        return {"kind": "sun", "label": ["Éclaircie", "Clearing"], "sub": ["prix en baisse", "prices down"]}
+    if pct >= 20:
+        return {"kind": "storm", "label": ["Orage", "Storm"], "sub": ["prix en forte hausse", "prices up sharply"]}
+    return {"kind": "cloud", "label": ["Nuageux", "Cloudy"], "sub": ["prix stables" if abs(pct) < 5 else "prix en hausse" if pct > 0 else "prix en baisse", "prices steady" if abs(pct) < 5 else "prices up" if pct > 0 else "prices down"]}
+
+
+def prune_images(keep_days=21):
+    """the images of past editions are kept three weeks (the site shows the latest edition only)"""
+    lim = (date.today() - timedelta(days=keep_days)).isoformat()
+    try:
+        for f in os.listdir(news_charts.IMG):
+            if f[:10] < lim:
+                os.remove(os.path.join(news_charts.IMG, f))
+    except OSError:
+        pass
+
+
 def main():
     force, use_ai, weekly = "--force" in sys.argv, "--no-ai" not in sys.argv, "--weekly" in sys.argv
     out_path = OUT_WEEK if weekly else OUT
@@ -296,6 +350,29 @@ def main():
                "agenda": agenda, "post": posts[0] if posts else None, "posts": posts if weekly else [], "digest": digest,
                "top": [{"title": i["title"], "link": i["link"], "source": i["source"], "date": i["date"], "n": 1 + len(i.get("other_sources") or []), "tags": i.get("tags") or []} for i in top],
                "profiles": {}}
+    edition["figure"] = None if weekly else figure_of_day(today)
+    edition["weather"] = weather(today)
+    soon = sorted([{"date": c["deadline"], "kind": "cons", "title": c["title"], "link": c["link"], "source": c.get("source")} for c in cons
+                   if c.get("deadline") and t <= c["deadline"] <= iso(today + timedelta(days=7 if not weekly else 14))]
+                  + [{"date": e["date"], "kind": "event", "title": (e.get("title") or [""])[0], "title_en": (e.get("title") or ["", ""])[-1], "link": None, "source": None}
+                     for e in events if t <= (e.get("date") or "") <= iso(today + timedelta(days=14 if not weekly else 21))], key=lambda x: x["date"])[:6]
+    edition["week_ahead"] = soon
+    prune_images()
+    if weekly:
+        # « Ce jour-là »: the spot the same day in past years (published daily averages)
+        past = []
+        for k in range(1, 6):
+            try:
+                d0 = today.replace(year=today.year - k)
+            except ValueError:
+                continue
+            v = news_charts.day_avg(d0)
+            if v is not None:
+                past.append({"year": d0.year, "value": round(v, 2)})
+        edition["on_this_day"] = {"today": news_charts.day_avg(today), "past": past} if past else None
+        w, marks = news_charts.week_chart(today, os.path.join(news_charts.IMG, f"{t}_week.png"))
+        edition["week_chart"] = dict(w, img=f"newsletter_img/{t}_week.png", path=None, marks=marks) if w else None
+    charts = {}
     for pid, prof in profiles.items():
         stories = pick(items, prof, now, hours, 5 if weekly else 3)
         gen = {}
@@ -321,7 +398,17 @@ def main():
                         "sources": [i["source"]] + [o["source"] for o in i.get("other_sources") or []],
                         "what": clip(what, 360) or None, "what_en": (clip(g.get("what_en"), 360) or None) if what and what == g.get("what") else None,
                         "for_you": (clip(g.get("for_you"), 260) or None) if not EMPTY.search(g.get("for_you") or "") else None, "for_you_en": clip(g.get("for_you_en"), 260) or None})
-        edition["profiles"][pid] = {"name": prof["name"], "short": prof["short"], "order": prof["order"], "headline": clip(gen.get("headline"), 300) or None, "headline_en": clip(gen.get("headline_en"), 300) or None,
+        # the lead story's chart, chosen by its own words; one image per chart shared by the profiles
+        hero = None
+        if out:
+            spec = news_charts.pick(out[0]["title"] + " " + (out[0].get("what") or "") + " " + " ".join(i.get("snippet") or "" for i in stories[:1]), today)
+            if spec:
+                key = re.sub(r"[^a-z0-9]+", "-", spec["title"].lower())[:40]
+                if key not in charts:
+                    news_charts.draw(spec, os.path.join(news_charts.IMG, f"{t}_{key}.png"))
+                    charts[key] = {"img": f"newsletter_img/{t}_{key}.png", "title": spec["title"], "src": spec["src"], "page": spec["page"]}
+                hero = charts[key]
+        edition["profiles"][pid] = {"hero_chart": hero, "name": prof["name"], "short": prof["short"], "order": prof["order"], "headline": clip(gen.get("headline"), 300) or None, "headline_en": clip(gen.get("headline_en"), 300) or None,
                                     "stories": out, "ai": bool(by)}
         print(f"{pid}: {len(out)} stories, AI text for {len(by)}")
     with open(out_path, "w") as f:
