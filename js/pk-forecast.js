@@ -207,10 +207,28 @@
         let j = null; try { const r = await fetch(DATA_BASE + 'neg_forecast.json?t=' + Math.floor(Date.now() / 6e5)); j = r.ok ? await r.json() : null; } catch (_) {}
         const ds0 = j && j.days ? Object.keys(j.days).sort().slice(-2) : [];
         if (!ds0.length) { noDataMsg(cid, _fT('Pas encore de prévision de prix négatifs', 'No negative-price forecast yet'), _fT('Construite avec les prévisions de la veille, plusieurs fois par jour', 'Built with the day-ahead forecasts, several times a day')); return null; }
+        // shown only once the live record of the forecasts published the day before proves it works (data/history/neg_forecast_rex.json):
+        //   price: ≥ 30 days scored and a mean error at least 15 % below « tomorrow = today »;
+        //   negative hours: ≥ 10 real negative days, ≥ 70 % of them flagged, ≤ 30 % false alarms
+        const n1 = v => _fT(String(v).replace('.', ','), String(v));
+        const lv = j.live && j.live.models ? j.live.models[j.live.current] : null;
+        const priceOk = !!(lv && lv.days >= 30 && lv.naive_mae && lv.mae <= 0.85 * lv.naive_mae);
+        const negOk = !!(lv && lv.days_negative >= 10 && lv.caught / lv.days_negative >= 0.7 && lv.days_flagged && lv.false_alarms / lv.days_flagged <= 0.3);
+        const rec = lv ? _fT(`bilan réel : ${lv.days} jour(s) depuis le ${lv.from}, erreur moyenne ${n1(lv.mae)} €/MWh contre ${n1(lv.naive_mae)} pour « demain = aujourd’hui », ${lv.days_negative} jour(s) réellement négatif(s), ${lv.false_alarms} fausse(s) alerte(s) sur ${lv.days_flagged}`,
+                                `live record: ${lv.days} day(s) since ${lv.from}, mean error ${lv.mae} €/MWh vs ${lv.naive_mae} for « tomorrow = today », ${lv.days_negative} real negative day(s), ${lv.false_alarms} false alarm(s) out of ${lv.days_flagged}`)
+                       : _fT('bilan réel : pas encore de jour noté (nouveau modèle depuis le 20 nov. 2026)', 'live record: no day scored yet (new model since 20 Nov 2026)');
+        if (!priceOk && !negOk) {
+          const why = _fT('Prévision en test : elle s’affichera quand son bilan réel le justifiera (prix : 30 jours et 15 % mieux que « demain = aujourd’hui » ; heures négatives : 10 jours négatifs, 70 % repérés, au plus 30 % de fausses alertes).',
+                          'Forecast on trial: it will show once its live record justifies it (price: 30 days and 15 % better than « tomorrow = today »; negative hours: 10 negative days, 70 % flagged, at most 30 % false alarms).');
+          noDataMsg(cid, _fT('Prévision en test', 'Forecast on trial'), why);
+          return { sub: why + ' · ' + rec };
+        }
         const lbl = [], pr = [], act = [], pf = [], plo = [], phi = [];
         ds0.forEach(d => { const x = j.days[d]; for (let h = 0; h < 24; h++) { lbl.push(h === 0 ? new Date(d + 'T12:00:00Z').toLocaleDateString(_fT('fr-FR', 'en-GB'), { weekday: 'short', day: '2-digit', timeZone: 'UTC' }) : String(h).padStart(2, '0') + 'h');
           pr.push(x.prob[h] == null ? null : Math.round(x.prob[h] * 100)); act.push(x.actual && x.actual[h] != null ? +(+x.actual[h]).toFixed(1) : null); pf.push(x.price && x.price[h] != null ? x.price[h] : null);
           plo.push(x.price_lo && x.price_lo[h] != null ? x.price_lo[h] : null); phi.push(x.price_hi && x.price_hi[h] != null ? x.price_hi[h] : null); } });
+        if (!priceOk) { pf.fill(null); plo.fill(null); phi.fill(null); }   // only the part that has proved itself is drawn
+        if (!negOk) pr.fill(null);
         _fuelChart(cid, { type: 'bar', data: { labels: lbl, datasets: [
           { label: _fT('Probabilité de prix négatif (%)', 'Chance of a negative price (%)'), data: pr, backgroundColor: pr.map(v => v == null ? 'transparent' : v >= 50 ? 'rgba(237,105,101,.8)' : v >= 20 ? 'rgba(251,191,36,.7)' : 'rgba(127,200,248,.45)'), borderRadius: 2, yAxisID: 'y' },
           { type: 'line', label: _fT('Prix day-ahead, quand il est connu (€/MWh)', 'Day-ahead price, when known (€/MWh)'), data: act, borderColor: '#E6EDF3', borderWidth: 1.6, pointRadius: 0, spanGaps: false, yAxisID: 'y1' },
@@ -223,7 +241,7 @@
         const k = j.skill || {}, exp = ds0.map(d => new Date(d + 'T12:00:00Z').toLocaleDateString(_fT('fr-FR', 'en-GB'), { weekday: 'short', timeZone: 'UTC' }) + ' ≈ ' + _fT(String(j.days[d].expected_hours).replace('.', ','), String(j.days[d].expected_hours)) + ' h').join(' · ');
         const ps = j.price_skill; const n0 = v => _fT(String(v).replace('.', ','), String(v));
         // live record: forecasts published before 11:00 the day before, against the real prices (data/history/neg_forecast_rex.json)
-        const lv = j.live && j.live.models ? j.live.models[j.live.current] : null, old = j.live && j.live.models ? j.live.models.v1 : null;
+        const old = j.live && j.live.models ? j.live.models.v1 : null;
         const liveTxt = lv && lv.days >= 7
           ? _fT(` · bilan réel des prévisions publiées la veille (${lv.days} jours depuis le ${lv.from}) : erreur moyenne ${n0(lv.mae)} €/MWh, contre ${n0(lv.naive_mae)} pour « demain = aujourd’hui » ; ${lv.false_alarms} fausse(s) alerte(s) sur ${lv.days_flagged} jour(s) annoncé(s) avec des prix négatifs`,
                 ` · live record of the forecasts published the day before (${lv.days} days since ${lv.from}): mean error ${lv.mae} €/MWh vs ${lv.naive_mae} for « tomorrow = today »; ${lv.false_alarms} false alarm(s) out of ${lv.days_flagged} day(s) flagged with negative prices`)
