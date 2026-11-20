@@ -344,7 +344,9 @@ async function _mrnFacts() {
   k.today = _mrnHourly(fr(a)); k.tomorrow = _mrnHourly(fr(b)); k.yday = _mrnHourly(fr(c));
   k.zones = a && a.zones;   // every bidding zone of today, for the stories' Europe ranking
   k.bess = await bessP; k.dgAsof = dgFresh ? dg.asof : null;
-  k.fc = neg && neg.days && neg.days[tm] ? neg.days[tm] : null;
+  // the brief announces only published prices: no forecast figure for tomorrow (not reliable enough to announce;
+  // it stays on its own chart with its record, js/pk-forecast.js)
+  k.fc = null;
   // usual error: the live record of the published forecasts once it has 14 days, else the replay (labelled)
   { const lv = neg && neg.live && neg.live.models ? neg.live.models[neg.live.current] : null;
     k.skill = lv && lv.days >= 14 ? { mae: lv.mae, live: true } : (neg && neg.price_skill ? { mae: neg.price_skill.mae, live: false } : null); }
@@ -374,7 +376,7 @@ function _mrnSpot(k, el) {
     out.push(`<div class="mrn3-day fcst"><div class="mrn3-day-h"><span>${_mT('Demain · ', 'Tomorrow · ') + _mDay(k.tm)}</span><span class="mrn3-chip fc">${_mT('prévision', 'forecast')}</span></div>
       <div><span class="mrn3-big fc">≈ ${_mN(fb, 0)}<small>€/MWh base</small></span> <span class="mrn3-kv">${_mT('prix publié vers 13 h', 'price out around 13:00')}</span></div>
       <div class="mrn3-kv">${k.fc.expected_hours != null ? B('≈ ' + _mN(k.fc.expected_hours, 0) + ' h') + ' ' + _mT('de prix négatif probables', 'of likely negative prices') : ''}${k.skill ? ' · ' + (k.skill.live ? _mT('erreur constatée ± ', 'observed error ± ') : _mT('erreur en rejeu ± ', 'replay error ± ')) + _mN(k.skill.mae, 0) + ' €' : ''}</div></div>`);
-  } else out.push(`<div class="mrn3-day fcst"><div class="mrn3-day-h"><span>${_mT('Demain · ', 'Tomorrow · ') + _mDay(k.tm)}</span><span class="mrn3-chip fc">${_mT('prévision', 'forecast')}</span></div><div class="mrn3-kv">${_mT('Prévision au prochain passage du modèle ; prix publié vers 13 h.', 'Forecast at the model’s next run; price out around 13:00.')}</div></div>`);
+  } else out.push(`<div class="mrn3-day fcst"><div class="mrn3-day-h"><span>${_mT('Demain · ', 'Tomorrow · ') + _mDay(k.tm)}</span><span class="mrn3-chip fc">${_mT('à venir', 'coming')}</span></div><div class="mrn3-kv">${_mT('Prix de demain publiés vers 13 h.', 'Tomorrow’s prices out around 13:00.')}</div></div>`);
   const d7 = k.spotDays.slice(-7), p7 = k.spotDays.slice(-14, -7), m7 = _mrnMean(d7.map(r => r.avg)), mp = _mrnMean(p7.map(r => r.avg));
   const r30 = _mrnMean(k.spotDays.slice(-30).map(r => r.avg));
   if (m7 != null) out.push(`<div class="mrn3-day"><div class="mrn3-day-h"><span>${_mT('7 derniers jours', 'Last 7 days')}</span><span class="mrn3-chip av">${_mT('moyenne', 'average')}</span></div>
