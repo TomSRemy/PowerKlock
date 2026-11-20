@@ -1,6 +1,6 @@
 {
- "date": "2026-11-19",
- "updated": "2026-11-19T22:39:03+00:00",
+ "date": "2026-11-20",
+ "updated": "2026-11-20T05:57:21+00:00",
  "engine": "proxy",
  "monday": false,
  "weekly": false,
@@ -10,33 +10,33 @@
     "Spot France aujourd'hui",
     "France spot today"
    ],
-   "value": 60.35,
+   "value": 123.54,
    "unit": "€/MWh",
    "page": "markets/spot",
    "src": "ENTSO-E",
    "show": "pct",
    "hours": false,
-   "chg": -3.89,
-   "pct": -6.1
+   "chg": 63.19,
+   "pct": 104.7
   },
   {
    "label": [
     "Pointe − base aujourd'hui",
     "Peak − base today"
    ],
-   "value": 4.89,
+   "value": 27.29,
    "unit": "€/MWh",
    "page": "markets/spot",
    "src": "ENTSO-E",
    "show": "abs",
    "hours": false,
-   "chg": -11.37,
+   "chg": 22.4,
    "pct": null
   },
   {
    "label": [
-    "Heures ≤ 0 € demain",
-    "Hours ≤ 0 € tomorrow"
+    "Heures ≤ 0 € aujourd'hui",
+    "Hours ≤ 0 € today"
    ],
    "value": 1,
    "unit": "h",
@@ -231,19 +231,6 @@
    ]
   },
   {
-   "title": "Électricité industrielle : l’UE autorise l’Allemagne à cumuler deux aides face aux prix élevés",
-   "link": "https://wattselse.com/veille/article/4597/electricite-industrielle-lue-autorise-lallemagne-a-cumuler-deux-aides-face-aux-p",
-   "source": "Watts Else",
-   "date": "2026-11-19T04:18:52+00:00",
-   "n": 1,
-   "tags": [
-    "fr",
-    "power",
-    "regulation",
-    "build"
-   ]
-  },
-  {
    "title": "Prix de l’électricité : la CRE redéfinit les offres à tarification dynamique",
    "link": "https://news.google.com/rss/articles/CBMiowFBVV95cUxQNHdXdHdKTFBIRFpWRWVWQVQ2TFRVMjgyZVlmQ09wWXhMWnpveUltakJETFlFOGcyLUhQcDlKaFliTXFWbVQ0QUZhNU4tRlhWVEdEYnJJUXMtOElEdkZPZG5CWVpJZjhMWnNxdkNjNzFIcl9WdHVsdE8zVTBkWE14T2ZsUmxxR04wYXYyWFZKSGU1V2VGSzNmdXpFOVhsTFNWeldR?oc=5",
    "source": "L'Energeek",
@@ -283,25 +270,35 @@
    ]
   },
   {
-   "title": "POWERCHINA construira le parc éolien Amunet II d'AMEA Power sur la mer Rouge",
-   "link": "https://news.google.com/rss/articles/CBMinwFBVV95cUxPWUpYTF9nSVJyVXhkaUVBZ09Za0otamlxNHg3aEdEVUR4b3hvMjl2UURXdFdld3dmWER2YjVGOGJ2amVQSU5ybUoyd2JKRy1DUmRQWnFSc01yOGRoU3lOY3p0OU84RjdSa1JxR1lidFdHN0pUbkYzWGpDaHlUanVfQVhuZUg2YXkyQ3hYdWdDRHFYLU5vQS1UcWR4VmhkRHc?oc=5",
-   "source": "energynews.pro",
-   "date": "2026-11-19T00:43:33+00:00",
+   "title": "COP31: EU says it’s on track for 2030 climate target if planned measures delivered",
+   "link": "https://carbon-pulse.com/573706/",
+   "source": "Carbon Pulse",
+   "date": "2026-11-19T16:30:28+00:00",
    "n": 1,
    "tags": [
-    "markets",
+    "carbon",
+    "regulation"
+   ]
+  },
+  {
+   "title": "Crise d’Ormuz : l’AIE prévoit jusqu’à 50 % de pointe électrique supplémentaire d’ici 2035",
+   "link": "https://news.google.com/rss/articles/CBMifkFVX3lxTE9zcl9Tbm5VZkRqUE9uTlRkdFlqMDUwWjVuemJzLVhZZHhtZkx2ZFctcHkxaHpLRUIxSkJ5eS1xOVdXMEpsZm56T3JkRkpjT0J1Z3N5Qmh1S09QenRKc1NsME1HR0dESTFKanZ2S0lkODIyZkFpOFh6eDB1R196QQ?oc=5",
+   "source": "Les Smartgrids",
+   "date": "2026-11-19T14:50:00+00:00",
+   "n": 1,
+   "tags": [
     "fr",
+    "regulation",
     "watch",
     "geopolitics",
-    "power",
-    "renewables"
+    "power"
    ]
   }
  ],
  "profiles": {
   "regulatory": {
    "hero_chart": {
-    "img": "newsletter_img/2026-11-19_spot-france-3-derni-res-semaines-moyenne.png",
+    "img": "newsletter_img/2026-11-20_spot-france-3-derni-res-semaines-moyenne.png",
     "title": "Spot France, 3 dernières semaines (moyennes journalières)",
     "src": "ENTSO-E",
     "page": "markets/spot"
@@ -325,8 +322,8 @@
     "agenda",
     "post"
    ],
-   "headline": "La CRE redéfinit les offres à tarification dynamique, un arrêté sur l'échelonnement des centrales renouvelables et publication des prix seuils pour les contrats de complément de rémunération.",
-   "headline_en": "CRE redefines dynamic pricing offers, an upcoming decree on scheduling of renewable energy plants, and publication of threshold prices for complementary remuneration contracts.",
+   "headline": null,
+   "headline_en": null,
    "stories": [
     {
      "id": "gsznmdxpfovhstfnweldroc5",
@@ -343,8 +340,8 @@
      ],
      "what": null,
      "what_en": null,
-     "for_you": "Analyser les implications réglementaires et économiques pour ajuster les stratégies de tarification et les contrats avec les clients.",
-     "for_you_en": "Analyze regulatory and economic implications to adjust pricing strategies and customer contracts."
+     "for_you": null,
+     "for_you_en": null
     },
     {
      "id": "entbientotremplace439200",
@@ -361,8 +358,8 @@
      ],
      "what": null,
      "what_en": null,
-     "for_you": "Suivre les évolutions du cadre réglementaire pour anticiper les ajustements nécessaires dans la gestion des centrales.",
-     "for_you_en": "Monitor regulatory changes to anticipate adjustments in plant management."
+     "for_you": null,
+     "for_you_en": null
     },
     {
      "id": "publicationdesprixseuils",
@@ -380,15 +377,15 @@
      ],
      "what": null,
      "what_en": null,
-     "for_you": "Vérifier la conformité des contrats existants et ajuster les négociations avec les partenaires.",
-     "for_you_en": "Check compliance of existing contracts and adjust negotiations with partners."
+     "for_you": null,
+     "for_you_en": null
     }
    ],
-   "ai": true
+   "ai": false
   },
   "legal": {
    "hero_chart": {
-    "img": "newsletter_img/2026-11-19_spot-france-3-derni-res-semaines-moyenne.png",
+    "img": "newsletter_img/2026-11-20_spot-france-3-derni-res-semaines-moyenne.png",
     "title": "Spot France, 3 dernières semaines (moyennes journalières)",
     "src": "ENTSO-E",
     "page": "markets/spot"
@@ -412,8 +409,8 @@
     "markets",
     "post"
    ],
-   "headline": "La CRE redéfinit les offres à tarification dynamique, EY et Afry chargés de calculer les indemnités hydroélectriques",
-   "headline_en": "CRE redefines dynamic pricing offers, EY and Afry tasked with calculating hydroelectric compensation",
+   "headline": null,
+   "headline_en": null,
    "stories": [
     {
      "id": "gsznmdxpfovhstfnweldroc5",
@@ -430,8 +427,8 @@
      ],
      "what": null,
      "what_en": null,
-     "for_you": "Analyser les implications sur les contrats de fourniture d'électricité à tarif variable.",
-     "for_you_en": "Review implications on variable-rate electricity supply contracts."
+     "for_you": null,
+     "for_you_en": null
     },
     {
      "id": "tesprevuesparlaloi439186",
@@ -448,15 +445,15 @@
      ],
      "what": null,
      "what_en": null,
-     "for_you": "Surveiller le processus de calcul des indemnités et son impact sur les accords existants.",
-     "for_you_en": "Monitor the compensation calculation process and its impact on existing agreements."
+     "for_you": null,
+     "for_you_en": null
     }
    ],
-   "ai": true
+   "ai": false
   },
   "supplier": {
    "hero_chart": {
-    "img": "newsletter_img/2026-11-19_m0-publi-s-par-la-cre-12-derniers-mois.png",
+    "img": "newsletter_img/2026-11-20_m0-publi-s-par-la-cre-12-derniers-mois.png",
     "title": "M0 publiés par la CRE, 12 derniers mois",
     "src": "CRE",
     "page": "renewables/m0"
@@ -480,8 +477,8 @@
     "agenda",
     "post"
    ],
-   "headline": "Publication des prix seuils pour les contrats de complément de rémunération, liste des fournisseurs de Zeevonk finalisée et plafonnement des investissements de RTE",
-   "headline_en": "Publication of price thresholds for complementary remuneration contracts, Zeevonk suppliers list finalized, and RTE resilience investments capped",
+   "headline": null,
+   "headline_en": null,
    "stories": [
     {
      "id": "publicationdesprixseuils",
@@ -499,8 +496,8 @@
      ],
      "what": null,
      "what_en": null,
-     "for_you": "Cela permet d'ajuster les stratégies de tarification pour s'aligner sur les nouvelles limites.",
-     "for_you_en": "This allows adjusting pricing strategies to align with new thresholds."
+     "for_you": null,
+     "for_you_en": null
     },
     {
      "id": "lalistedesfournisseursdu",
@@ -517,8 +514,8 @@
      ],
      "what": "La sélection d’un fournisseur de turbines engage la chaîne industrielle en amont de la réalisation : elle fige la classe de puissance (15 MW) et l’ordre de grandeur de la capacité électrique de la phase I, ce qui conditionne les besoins de…",
      "what_en": null,
-     "for_you": "Cela offre une visibilité sur les fournisseurs clés des projets éoliens, influençant les stratégies d'approvisionnement.",
-     "for_you_en": "This provides visibility on key suppliers for offshore projects, influencing sourcing strategies."
+     "for_you": null,
+     "for_you_en": null
     },
     {
      "id": "lem9iuw9eswnzyxhkmhdnoc5",
@@ -539,10 +536,15 @@
      "for_you_en": null
     }
    ],
-   "ai": true
+   "ai": false
   },
   "origination": {
-   "hero_chart": null,
+   "hero_chart": {
+    "img": "newsletter_img/2026-11-20_benchmark-ppa-france-solaire-et-olien-3-.png",
+    "title": "Benchmark PPA France, solaire et éolien, 3 derniers mois",
+    "src": "PowerKlock",
+    "page": "tools/ppa"
+   },
    "name": [
     "Origination",
     "Origination"
@@ -562,8 +564,8 @@
     "agenda",
     "post"
    ],
-   "headline": "Statkraft renforce les PPA avec des projets solaires et stockage en Hollande, tandis que l'Allemagne réforme ses taxes énergétiques et publie des prix seuils pour les contrats complémentaires.",
-   "headline_en": "Statkraft strengthens PPAs with solar and storage projects in the Netherlands, while Germany reforms energy taxes and publishes threshold prices for complementary contracts.",
+   "headline": null,
+   "headline_en": null,
    "stories": [
     {
      "id": "rchantbessdutchsolarsite",
@@ -580,8 +582,8 @@
      ],
      "what": null,
      "what_en": null,
-     "for_you": "Les projets intégrant solaire et stockage pourraient influencer la structuration des PPA et la valorisation des contrats de stockage.",
-     "for_you_en": "Projects combining solar and storage may impact PPA structuring and the valuation of storage contracts."
+     "for_you": null,
+     "for_you_en": null
     },
     {
      "id": "ctriciteetvaplafonnerles",
@@ -598,8 +600,8 @@
      ],
      "what": "Le signal porte moins sur le niveau de la taxe que sur le mode de financement : la mesure 2027 est adossée à des crédits EEG non consommés, ce qui lie le soutien au pouvoir d’achat à la marge budgétaire laissée par le soutien aux…",
      "what_en": null,
-     "for_you": "Les mesures de soutien liées aux crédits énergétiques pourraient affecter les marges budgétaires et les stratégies de financement des projets.",
-     "for_you_en": "Support mechanisms tied to energy credits may impact budget margins and financing strategies for projects."
+     "for_you": null,
+     "for_you_en": null
     },
     {
      "id": "publicationdesprixseuils",
@@ -617,15 +619,15 @@
      ],
      "what": null,
      "what_en": null,
-     "for_you": "Les prix seuils doivent être surveillés pour ajuster les contrats et optimiser les marges de négociation.",
-     "for_you_en": "Threshold prices should be monitored to adjust contracts and optimize negotiation margins."
+     "for_you": null,
+     "for_you_en": null
     }
    ],
-   "ai": true
+   "ai": false
   },
   "markets": {
    "hero_chart": {
-    "img": "newsletter_img/2026-11-19_nucl-aire-disponible-en-france-2-dernier.png",
+    "img": "newsletter_img/2026-11-20_nucl-aire-disponible-en-france-2-dernier.png",
     "title": "Nucléaire disponible en France, 2 derniers mois",
     "src": "SEFE",
     "page": "system/generation/nuclear"
@@ -649,8 +651,8 @@
     "agenda",
     "post"
    ],
-   "headline": "L'approvisionnement hivernal français dépend de l'énergie nucléaire et des interconnexions, malgré un niveau hydraulique à 50 %.",
-   "headline_en": "French winter energy supply relies on nuclear and interconnections despite hydropower at 50%.",
+   "headline": null,
+   "headline_en": null,
    "stories": [
     {
      "id": "essousles50deremplissage",
@@ -664,10 +666,10 @@
      "sources": [
       "Watts Else"
      ],
-     "what": "La marge hivernale française dépend de l'énergie nucléaire et des interconnexions, alors que les barrages sont à 50 % de leur niveau décennal. Le risque dépend des conditions météo.",
-     "what_en": "French winter energy margin relies on nuclear and interconnections, while reservoirs are at 50% of their decadal level. Risks depend on weather conditions.",
-     "for_you": "Surveillez les disponibilités nucléaires et les flux d'interconnexions pour évaluer les risques de pénurie.",
-     "for_you_en": "Monitor nuclear availability and interconnection flows to assess shortage risks."
+     "what": "La marge hivernale française dépend d’une hypothèse de disponibilité nucléaire et des interconnexions, alors que le matelas hydraulique est à environ la moitié de sa référence décennale : le profil de risque tient à l’enchaînement météo et…",
+     "what_en": null,
+     "for_you": null,
+     "for_you_en": null
     },
     {
      "id": "fylu5vqs1ucwr4vmhkrhcoc5",
@@ -700,17 +702,17 @@
      "sources": [
       "Carbon Pulse"
      ],
-     "what": "Les cours du carbone européen ont grimpé modérément après une baisse liée à une annulation de vote sur les réformes du marché.",
-     "what_en": "EU carbon prices rose modestly after a decline linked to a postponed vote on market reforms.",
-     "for_you": "Adaptez vos positions en fonction de l'incertitude liée aux réformes du marché carbone.",
-     "for_you_en": "Adjust positions based on uncertainty around carbon market reforms."
+     "what": "EU carbon ended Thursday modestly higher, despite briefly dropping to a new three-month low after a European Parliament committee postponed a vote on market reforms, while UKAs declined to respond to reports that the UK and EU were looking…",
+     "what_en": null,
+     "for_you": null,
+     "for_you_en": null
     }
    ],
-   "ai": true
+   "ai": false
   },
   "commercial": {
    "hero_chart": {
-    "img": "newsletter_img/2026-11-19_cal-27-france-3-derniers-mois-de-cotatio.png",
+    "img": "newsletter_img/2026-11-20_cal-27-france-3-derniers-mois-de-cotatio.png",
     "title": "Cal 27 France, 3 derniers mois de cotation",
     "src": "EEX",
     "page": "markets/forwards"
@@ -734,8 +736,8 @@
     "agenda",
     "post"
    ],
-   "headline": "Évolution des prix de l'électricité et suppression d'aides à la transition énergétique impactent les entreprises.",
-   "headline_en": "Electricity price shifts and withdrawal of energy transition grants affect businesses.",
+   "headline": null,
+   "headline_en": null,
    "stories": [
     {
      "id": "scherque2029200867202611",
@@ -750,8 +752,8 @@
      ],
      "what": null,
      "what_en": null,
-     "for_you": "Suggérez à vos clients d’opter pour des contrats à long terme pour sécuriser des tarifs plus stables.",
-     "for_you_en": "Advise your clients to choose long-term contracts to secure more stable rates."
+     "for_you": null,
+     "for_you_en": null
     },
     {
      "id": "rlegouvernementapresenav",
@@ -766,10 +768,10 @@
      "sources": [
       "Watts Else"
      ],
-     "what": "Le fonds chaleur, qui soutenait la chaleur renouvelable, est supprimé alors que le gouvernement promouvait ses objectifs. Le relais passe aux CEE.",
-     "what_en": "The heat fund, supporting renewable heat, is canceled despite prior government promotion. The transition shifts to CEE.",
-     "for_you": "Informez vos clients de ce changement et orientez-les vers les dispositifs CEE pour leurs projets.",
-     "for_you_en": "Inform your clients about this change and guide them toward CEE schemes for their projects."
+     "what": "Le fonds chaleur est le guichet qui finance la chaleur renouvelable livrée par réseaux, segment dont la feuille de route vise un triplement d’ici 2035 : fermer les nouvelles demandes alors que le relais annoncé passe par les CEE, assis sur…",
+     "what_en": null,
+     "for_you": null,
+     "for_you_en": null
     },
     {
      "id": "1fbcdzkmw9nr1rsmi01sqoc5",
@@ -790,26 +792,26 @@
      "for_you_en": null
     }
    ],
-   "ai": true
+   "ai": false
   }
  },
  "figure": {
-  "value": "2 h",
-  "dir": "dn",
-  "text": "2 heures à 0 € ou moins aujourd'hui en France.",
-  "text_en": "2 hours at €0 or below today in France.",
+  "value": "+105 %",
+  "dir": "up",
+  "text": "Le spot France passe de 60 € à 124 € le MWh en 24 h : la plus forte hausse depuis 25 jours.",
+  "text_en": "France spot moves from €60 to €124 per MWh in 24 h: the largest rise in 25 days.",
   "src": "ENTSO-E",
-  "page": "markets/spot/negative"
+  "page": "markets/spot"
  },
  "weather": {
-  "kind": "cloud",
+  "kind": "storm",
   "label": [
-   "Nuageux",
-   "Cloudy"
+   "Orage",
+   "Storm"
   ],
   "sub": [
-   "prix en baisse",
-   "prices down"
+   "prix en forte hausse",
+   "prices up sharply"
   ]
  },
  "week_ahead": [
@@ -835,5 +837,6 @@
    "link": null,
    "source": null
   }
- ]
+ ],
+ "pinned": null
 }

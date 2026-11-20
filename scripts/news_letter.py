@@ -105,7 +105,7 @@ def pick(items, prof, now, hours, n=3):
     return out
 
 
-def ask(prof, stories, official):
+def ask(prof, stories, official, model=None):
     payload = {"sujets": [{"id": sid(i), "titre": i["title"], "medias": [i["source"]] + [o["source"] for o in i.get("other_sources") or []],
                            "extrait": (i.get("snippet") or "")[:320]} for i in stories],
                "textes_officiels": [o["title"] for o in official[:5]]}
@@ -113,7 +113,7 @@ def ask(prof, stories, official):
            "messages": [{"role": "user", "content": json.dumps(payload, ensure_ascii=False)}]}
     # a model of the proxy's list (Worker powerklock-ai). Qwen3 30B wrote the most useful « Pour vous » in a comparison
     # of the free models on the same stories (16 Nov. 2026); NEWS_MODEL overrides it
-    msg["model"] = os.environ.get("NEWS_MODEL") or MODEL
+    msg["model"] = model or os.environ.get("NEWS_MODEL") or MODEL
     req = urllib.request.Request(PROXY, data=json.dumps(msg).encode(), headers={"Content-Type": "application/json", "User-Agent": "PowerKlock-newsletter"})
     r = json.load(urllib.request.urlopen(req, timeout=150))
     parts = [b.get("text") for b in r.get("content", []) if b.get("type") == "text"]
@@ -239,6 +239,22 @@ def markets(today, days=1):
     if go:
         row("Garanties d'origine " + go[2], "Guarantees of origin " + go[2], go[0], "€/MWh", go[1], "Commerg", "markets/go")
     return rows
+
+
+def pinned(now):
+    """the story the admin put at the top in the last 36 hours (public.news_pin, warehouse migration 027), or None"""
+    db = os.environ.get("SUPABASE_DB_URL")
+    if not db:
+        return None
+    try:
+        import psycopg
+        with psycopg.connect(db, connect_timeout=15, prepare_threshold=None) as conn, conn.cursor() as cur:
+            cur.execute("select link from public.news_pin where pinned_at >= %s order by pinned_at desc limit 1", (now - timedelta(hours=36),))
+            r = cur.fetchone()
+            return r[0] if r else None
+    except Exception as e:      # the newsletter must not depend on the database
+        print("  pin not read:", str(e)[:160])
+        return None
 
 
 def figure_of_day(today):
@@ -373,13 +389,19 @@ def main():
         w, marks = news_charts.week_chart(today, os.path.join(news_charts.IMG, f"{t}_week.png"))
         edition["week_chart"] = dict(w, img=f"newsletter_img/{t}_week.png", path=None, marks=marks) if w else None
     charts = {}
+    pin_link = pinned(now)
+    pin = next((i for i in items if i.get("link") == pin_link), None) if pin_link else None
+    edition["pinned"] = pin_link if pin else None
     for pid, prof in profiles.items():
         stories = pick(items, prof, now, hours, 5 if weekly else 3)
+        if pin:     # the admin's pinned story leads every profile's edition
+            stories = [pin] + [i for i in stories if i.get("link") != pin["link"]][:len(stories) - 1 if stories else 0]
         gen = {}
         if use_ai and stories:
             for attempt in (1, 2):      # the free model sometimes answers without JSON: once more
                 try:
-                    gen = ask(prof, stories, official)
+                    # the second try on the proxy's default model (Llama 3.3 70B), when Qwen3 is down or answers badly
+                    gen = ask(prof, stories, official, None if attempt == 1 else "@cf/meta/llama-3.3-70b-instruct-fp8-fast")
                     break
                 except Exception as e:  # the edition still goes out, with the extracts
                     print(f"{pid}: AI text not written, attempt {attempt} ({str(e)[:160]})")

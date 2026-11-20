@@ -108,8 +108,19 @@ def s_neg(today):
     return {"title": "Heures à 0 € ou moins en France, 30 derniers jours", "unit": "h", "src": "ENTSO-E", "page": "markets/spot/negative", "bars": True, "lines": [("Heures", pts)]}
 
 
+def s_ppa(today):
+    bm = (load("history", "ppa_benchmark.json") or {}).get("days") or {}
+    ks = sorted(bm)[-90:]
+    if len(ks) < 10:
+        return None
+    lab = lambda d: f"{int(d[8:10])} {MOIS[int(d[5:7]) - 1]}"  # noqa: E731
+    return {"title": "Benchmark PPA France, solaire et éolien, 3 derniers mois", "unit": "€/MWh", "src": "PowerKlock", "page": "tools/ppa",
+            "lines": [("Solaire", [(lab(d), (bm[d].get("solar") or {}).get("ppa")) for d in ks]), ("Éolien", [(lab(d), (bm[d].get("wind") or {}).get("ppa")) for d in ks])]}
+
+
 # the story's own words → its chart (the first that matches and has data)
 RULES = [
+    (r"\bppas?\b|power purchase agreement|contrat d.achat direct", s_ppa),
     (r"\bm0\b|compl[ée]ment de r[ée]mun[ée]ration|prix de capture|capture|cannibali|appel d.offres (cre|ppe)", s_m0),
     (r"prix n[ée]gatif|heures? n[ée]gative|negative price", s_neg),
     (r"garanties? d.origine|guarantees? of origin|\bgos?\b", s_go),
