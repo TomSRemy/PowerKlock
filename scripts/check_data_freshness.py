@@ -30,6 +30,10 @@ WATCHED = [
     # `|| echo "::warning..."`, so an expired/revoked token fails forever without failing the
     # job or sending the e-mail — found stale 23 days (HTTP 401) on 2026-11-18.
     ('data/rte_pp.json', 'updated', 30),
+    # Markets › What drives the price: scripts/build_drivers.py was run by no workflow and the page stayed
+    # at 7 Nov 2026 for 13 days. Rebuilt after every warehouse sync and rewritten when a figure changes
+    # (a new delivery day every day): 3 days leave room for a late feed, not for a job that stopped.
+    ('data/drivers/frames.json', 'updated', 72),
 ]
 # files whose own "error" field means broken regardless of age (set when the fetch itself failed
 # but something — e.g. an older successful payload — was still written or kept)
