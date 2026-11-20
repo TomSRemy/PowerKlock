@@ -6,16 +6,77 @@
    "nuclearCapacity": {
     "actualMW": 47001.18,
     "forecastMW": 52150
+   },
+   "forwardCurve": {
+    "M+1": 185.58,
+    "M+2": 199.16,
+    "M+3": 183.71,
+    "Q+1": 170.5,
+    "Q+2": 72.83,
+    "Q+3": 89.54,
+    "S+1": 81.18,
+    "S+2": 108.45,
+    "Y+1": 110.99,
+    "Y+2": 62.02,
+    "Y+3": 57.27
    }
   },
   "UK": {
-   "spot": 188.01
+   "spot": 188.01,
+   "forwardCurve": {
+    "M+1": 174.97,
+    "M+2": 187.06,
+    "M+3": 177.06,
+    "Q+1": 172.75,
+    "Q+2": 126.55,
+    "Q+3": 116.01,
+    "S+1": 121.25,
+    "S+2": 115.48,
+    "Y+1": 132.15,
+    "Y+2": 85.22,
+    "Y+3": 69.32
+   },
+   "generationMix": {
+    "gas": 17.67,
+    "wind": 9.08,
+    "solar": 1.26,
+    "nuclear": 5.13,
+    "hydro": 0.38,
+    "biomass": 1.86,
+    "other": 1.13
+   }
   },
   "DE": {
-   "spot": 214.51
+   "spot": 214.51,
+   "forwardCurve": {
+    "M+1": 203.59,
+    "M+2": 212.47,
+    "M+3": 200.15,
+    "Q+1": 187.95,
+    "Q+2": 117.58,
+    "Q+3": 126.15,
+    "S+1": 121.86,
+    "S+2": 135.28,
+    "Y+1": 142.51,
+    "Y+2": 100.59,
+    "Y+3": 86.25
+   }
   },
   "NL": {
-   "spot": 213.19
+   "spot": 213.19,
+   "forwardCurve": {
+    "M+1": 204.16,
+    "M+2": 214.64,
+    "M+3": 201.66,
+    "Q+1": 188.65,
+    "Q+2": 117.38,
+    "Q+3": 128.75,
+    "S+1": 123.1,
+    "S+2": 134.05,
+    "Y+1": 142.35,
+    "Y+2": 99.31,
+    "Y+3": 84.2
+   }
   }
  },
  "marketInsightsHtml": "<p>Le mois de décembre français s'est établi à 176,20 €/MWh et le premier trimestre 2027 à 163,75 €/MWh, tandis que le Day-Ahead français a atteint son plus bas niveau à 60,35 €/MWh après un vent fort et un record de 2,19 GW pour l'éolien offshore français.</p><p>L'éolien français passe de 17,4 GW aujourd'hui à 3,3 GW samedi avant de rebondir à 9,0 GW dimanche, tandis que l'éolien allemand passe de 18,4 GW aujourd'hui à 12,7 GW demain et 20,4 GW samedi avant de tomber à environ 6,8-7,4 GW dimanche et lundi, l'éolien néerlandais restant faible entre 0,5 et 1,8 GW.</p><p>La disponibilité nucléaire française plus faible d'une année sur l'autre (en moyenne 48,5 GW de novembre à mars) et l'hydroélectricité étanche maintiennent une prime de risque au premier trimestre 27.</p>",
