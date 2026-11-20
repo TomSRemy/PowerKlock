@@ -26,7 +26,12 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 PACK_BYTES = 7_500_000      # taille visée d'un paquet (texte brut, avant échappement JSON)
 CHUNK_CHARS = 6_000_000     # un fichier plus gros est coupé en morceaux de cette taille
-EXTRA_DAILY = 45            # derniers jours de livraison ajoutés même si le relevé ne les a pas lus
+# ajoutés même si le relevé ne les a pas lus, pour qu'un clic hors du parcours du relevé (autre zone, autre jour, exemple
+# chargé) trouve ses données : dossiers entiers, et les N derniers fichiers des dossiers datés
+EXTRA_ALL = ["data", "data/map", "data/geo", "data/drivers", "data/samples", "data/history", "data/history/monthly", "data/history/fr_hourly",
+             "data/history/genmix_daily", "data/history/fr_imbalance_price", "data/history/forecast", "data/history/fr_prices",
+             "data/history/jao_core", "data/history/gb_hourly"]
+EXTRA_LAST = {"data/history/daily": 120, "data/history/rte": 24, "data/history/flows": 14, "data/history/fr_market": 200}
 # caractères qu'un envoi refuse dans un fichier texte (contrôle, remplacement U+FFFD, zone privée, marque d'ordre) :
 # écrits \uXXXX, ce qui revient au même dans une chaîne JavaScript ou JSON
 SPECIAL = re.compile("[\x00-\x08\x0b\x0c\x0e-\x1f\x7f\u0080-\u009f\u2028\u2029\ue000-\uf8ff\ufeff\ufff0-\uffff]")
@@ -115,9 +120,13 @@ def main():
             if r.get("status") == 200 and path not in seen and (ROOT / path).is_file():
                 seen.add(path)
                 order.append(path)
-    for f in sorted((ROOT / "data/history/daily").glob("*.json"))[-EXTRA_DAILY:]:
+    n_read = len(order)
+    extra = [f for d in EXTRA_ALL for f in sorted((ROOT / d).iterdir()) if f.is_file()]
+    for d, n in EXTRA_LAST.items():
+        extra += sorted(f for f in (ROOT / d).iterdir() if f.is_file())[-n:]
+    for f in extra:
         rel = str(f.relative_to(ROOT))
-        if rel not in seen:
+        if rel not in seen and f.suffix in (".json", ".csv", ".ics", ".geojson"):
             seen.add(rel)
             order.append(rel)
     index, packs, cur, cur_size = {}, [], {}, 0
@@ -156,7 +165,7 @@ def main():
     (out / "files.json").write_text(json.dumps(files, indent=0))
     size = sum((out / f).stat().st_size for f in files) + (out / "index.html").stat().st_size
     big = max(((out / f).stat().st_size, f) for f in files)
-    print(f"{len(static)} fichiers du site, {len(order)} fichiers de données ({total / 1e6:.1f} Mo) en {len(packs)} paquets ; "
+    print(f"{len(static)} fichiers du site, {len(order)} fichiers de données dont {n_read} lus par le relevé ({total / 1e6:.1f} Mo) en {len(packs)} paquets ; "
           f"total {size / 1e6:.1f} Mo, plus gros fichier {big[1]} {big[0] / 1e6:.1f} Mo ; page {(out / 'index.html').stat().st_size / 1e6:.2f} Mo")
     return 0
 

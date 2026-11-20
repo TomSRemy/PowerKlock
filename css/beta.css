@@ -197,3 +197,12 @@ html.pk-beta #mrn-first { margin-top: 18px; }
 .pkb-head-meta { margin-top: 6px; font: 11px 'JetBrains Mono', monospace; color: var(--text3); }
 /* search: the "Page" tag carried the class .page and took "display: none" from the pages (the page name was then cut in a 56 px column): shown again */
 html.pk-beta #pk-search .pk-s-k.page { display: block; padding: 2px 0; margin: 0; max-width: none; }
+/* phones: the benchmarks two by two, so the market tiles stay within reach of the thumb */
+@media (max-width: 768px) {
+  .pkb-orig { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .pkb-orig > .pkb-tile:last-child:nth-child(even) { grid-column: 1 / -1; }
+  .pkb-tile { padding: 10px 11px; }
+  .pkb-tile-v { font-size: 18px; }
+  .pkb-tile-2 { gap: 12px; }
+  .pkb-orig-h span { display: none; }
+}
