@@ -1,5 +1,5 @@
 {
- "lastUpdate": "2026-11-20T16:04:08.122653+00:00",
+ "lastUpdate": "2026-11-20T17:17:13.895306+00:00",
  "spot": {
   "value": 190.19,
   "unit": "EUR/MWh",
@@ -319,10 +319,10 @@
      "contract": "UK Q1 27 base",
      "marketId": 189670,
      "unit": "GBP/MWh",
-     "value": 172.75,
+     "value": 172.76,
      "date": "2026-11-19",
-     "varD1Pct": 4.21,
-     "varW1Pct": -9.65
+     "varD1Pct": 4.22,
+     "varW1Pct": -9.64
     },
     {
      "tenor": "Q+2",
@@ -369,10 +369,10 @@
      "contract": "UK Cal 2027 base",
      "marketId": 189470,
      "unit": "GBP/MWh",
-     "value": 132.15,
+     "value": 132.14,
      "date": "2026-11-19",
-     "varD1Pct": 3.41,
-     "varW1Pct": -8.16
+     "varD1Pct": 3.4,
+     "varW1Pct": -8.17
     },
     {
      "tenor": "Y+2",
@@ -381,7 +381,7 @@
      "unit": "GBP/MWh",
      "value": 85.22,
      "date": "2026-11-19",
-     "varD1Pct": 1.87,
+     "varD1Pct": 1.86,
      "varW1Pct": -6.73
     },
     {
@@ -389,10 +389,10 @@
      "contract": "UK Cal 2029 base",
      "marketId": 189487,
      "unit": "GBP/MWh",
-     "value": 69.32,
+     "value": 69.31,
      "date": "2026-11-19",
-     "varD1Pct": 0.91,
-     "varW1Pct": -6.15
+     "varD1Pct": 0.9,
+     "varW1Pct": -6.16
     }
    ],
    "forwardCurveDate": "2026-11-19",
@@ -627,7 +627,7 @@
      "contract": "NL Win2027 base",
      "marketId": 73872,
      "unit": "EUR/MWh",
-     "value": 134.05,
+     "value": 134.06,
      "date": "2026-11-19",
      "varD1Pct": 2.54,
      "varW1Pct": -7.02
