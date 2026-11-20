@@ -1,0 +1,3346 @@
+{
+ "ok": true,
+ "current": {
+  "url": "http://127.0.0.1:8821/index.html",
+  "beta": false,
+  "lang": "fr",
+  "width": 1440,
+  "views": 100,
+  "unique": {
+   "chart": 253,
+   "kpi": 296,
+   "text": 1275,
+   "table": 86,
+   "section": 117,
+   "control": 201,
+   "figure": 4,
+   "map": 1
+  },
+  "seconds": 429,
+  "date": "2026-11-20 20:57 UTC"
+ },
+ "beta": {
+  "url": "http://127.0.0.1:8821/index.html",
+  "beta": true,
+  "lang": "fr",
+  "width": 1440,
+  "views": 101,
+  "unique": {
+   "chart": 253,
+   "kpi": 300,
+   "text": 1375,
+   "table": 87,
+   "section": 117,
+   "control": 202,
+   "figure": 4,
+   "map": 1
+  },
+  "seconds": 434,
+  "date": "2026-11-20 20:57 UTC"
+ },
+ "summary": {
+  "chart": {
+   "current": 253,
+   "beta": 253,
+   "found": 253,
+   "missing": 0,
+   "added": 0
+  },
+  "table": {
+   "current": 86,
+   "beta": 87,
+   "found": 86,
+   "missing": 0,
+   "added": 1
+  },
+  "kpi": {
+   "current": 296,
+   "beta": 300,
+   "found": 296,
+   "missing": 0,
+   "added": 4
+  },
+  "section": {
+   "current": 117,
+   "beta": 117,
+   "found": 117,
+   "missing": 0,
+   "added": 0
+  },
+  "map": {
+   "current": 1,
+   "beta": 1,
+   "found": 1,
+   "missing": 0,
+   "added": 0
+  },
+  "figure": {
+   "current": 4,
+   "beta": 4,
+   "found": 4,
+   "missing": 0,
+   "added": 0
+  },
+  "control": {
+   "current": 201,
+   "beta": 202,
+   "found": 201,
+   "missing": 0,
+   "added": 1
+  },
+  "text": {
+   "current": 1275,
+   "beta": 1376,
+   "found": 1275,
+   "missing": 0,
+   "added": 101
+  }
+ },
+ "missing": [],
+ "weaker_charts": [],
+ "renamed_sections": [
+  {
+   "key": "hs-prices-main",
+   "current": "Tableau Day-Ahead",
+   "beta": "Toutes les zones · aujourd’hui"
+  },
+  {
+   "key": "hs-cc-main",
+   "current": "Analyse multi-zones",
+   "beta": "Zones comparées"
+  }
+ ],
+ "charts": [
+  {
+   "key": "mrn-quick/france · jeudi # novembrejeu. # nov./0",
+   "title": "France · jeudi 19 novembrejeu. 19 nov.",
+   "current": "today > Coup d’œil",
+   "beta": "today > Coup d’œil",
+   "size_current": [
+    356,
+    250
+   ],
+   "size_beta": [
+    336,
+    240
+   ]
+  },
+  {
+   "key": "mrn-quick/france · vendredi # novembreven. # nov./0",
+   "title": "France · vendredi 20 novembreven. 20 nov.",
+   "current": "today > Coup d’œil",
+   "beta": "today > Coup d’œil",
+   "size_current": [
+    356,
+    250
+   ],
+   "size_beta": [
+    336,
+    240
+   ]
+  },
+  {
+   "key": "mrn-l-day",
+   "title": "Le prix heure par heure aujourd’hui",
+   "current": "today > Découverte",
+   "beta": "today > Découverte",
+   "size_current": [
+    549,
+    260
+   ],
+   "size_beta": [
+    519,
+    280
+   ]
+  },
+  {
+   "key": "mrn-sptm",
+   "title": "France · spot par mois, 12 mois",
+   "current": "today > Expert",
+   "beta": "today > Expert",
+   "size_current": [
+    530,
+    320
+   ],
+   "size_beta": [
+    500,
+    320
+   ]
+  },
+  {
+   "key": "mrn-sp30",
+   "title": "France · spot, 30 derniers jours",
+   "current": "today > Expert",
+   "beta": "today > Expert",
+   "size_current": [
+    530,
+    320
+   ],
+   "size_beta": [
+    500,
+    320
+   ]
+  },
+  {
+   "key": "mrn-fwdp",
+   "title": "Électricité France · forwards, historique",
+   "current": "today > Expert",
+   "beta": "today > Expert",
+   "size_current": [
+    530,
+    320
+   ],
+   "size_beta": [
+    500,
+    320
+   ]
+  },
+  {
+   "key": "mrn-ttfc",
+   "title": "Gaz TTF · forwards, historique",
+   "current": "today > Expert",
+   "beta": "today > Expert",
+   "size_current": [
+    530,
+    320
+   ],
+   "size_beta": [
+    500,
+    320
+   ]
+  },
+  {
+   "key": "mrn-drv",
+   "title": "Le Cal+1 et ses moteurs",
+   "current": "today > Expert",
+   "beta": "today > Expert",
+   "size_current": [
+    1108,
+    280
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "mrn-wxt",
+   "title": "Température prévue vs normale",
+   "current": "today > Expert",
+   "beta": "today > Expert",
+   "size_current": [
+    530,
+    280
+   ],
+   "size_beta": [
+    500,
+    301
+   ]
+  },
+  {
+   "key": "mrn-fload",
+   "title": "Consommation France vs normale",
+   "current": "today > Expert",
+   "beta": "today > Expert",
+   "size_current": [
+    530,
+    280
+   ],
+   "size_beta": [
+    500,
+    280
+   ]
+  },
+  {
+   "key": "mrn-nucy",
+   "title": "Production nucléaire française par mois, année contre année",
+   "current": "today > Expert",
+   "beta": "today > Expert",
+   "size_current": [
+    530,
+    280
+   ],
+   "size_beta": [
+    500,
+    348
+   ]
+  },
+  {
+   "key": "mrn-fremit",
+   "title": "Indisponibilités nucléaires",
+   "current": "today > Expert",
+   "beta": "today > Expert",
+   "size_current": [
+    530,
+    280
+   ],
+   "size_beta": [
+    500,
+    376
+   ]
+  },
+  {
+   "key": "mrn-wxw",
+   "title": "Vent prévu vs normale",
+   "current": "today > Expert",
+   "beta": "today > Expert",
+   "size_current": [
+    530,
+    280
+   ],
+   "size_beta": [
+    500,
+    280
+   ]
+  },
+  {
+   "key": "mrn-wxs",
+   "title": "Soleil prévu vs normale",
+   "current": "today > Expert",
+   "beta": "today > Expert",
+   "size_current": [
+    530,
+    280
+   ],
+   "size_beta": [
+    500,
+    280
+   ]
+  },
+  {
+   "key": "mrn-hyd",
+   "title": "Réservoirs hydrauliques France",
+   "current": "today > Expert",
+   "beta": "today > Expert",
+   "size_current": [
+    530,
+    280
+   ],
+   "size_beta": [
+    500,
+    280
+   ]
+  },
+  {
+   "key": "mrn-wxp",
+   "title": "Précipitations prévues vs normale",
+   "current": "today > Expert",
+   "beta": "today > Expert",
+   "size_current": [
+    530,
+    280
+   ],
+   "size_beta": [
+    500,
+    280
+   ]
+  },
+  {
+   "key": "mrn-gsy",
+   "title": "Stocks de gaz UE, année contre année",
+   "current": "today > Expert",
+   "beta": "today > Expert",
+   "size_current": [
+    530,
+    300
+   ],
+   "size_beta": [
+    500,
+    280
+   ]
+  },
+  {
+   "key": "mrn-coal",
+   "title": "Charbon et pétrole",
+   "current": "today > Expert",
+   "beta": "today > Expert",
+   "size_current": [
+    530,
+    300
+   ],
+   "size_beta": [
+    500,
+    288
+   ]
+  },
+  {
+   "key": "mrn-cr",
+   "title": "Solaire · taux de capture glissant",
+   "current": "today > Expert",
+   "beta": "today > Expert",
+   "size_current": [
+    530,
+    260
+   ],
+   "size_beta": [
+    500,
+    280
+   ]
+  },
+  {
+   "key": "mrn-creg",
+   "title": "Solaire · taux de capture par région",
+   "current": "today > Expert",
+   "beta": "today > Expert",
+   "size_current": [
+    530,
+    260
+   ],
+   "size_beta": [
+    500,
+    280
+   ]
+  },
+  {
+   "key": "mrn-crw",
+   "title": "Éolien · taux de capture glissant",
+   "current": "today > Expert",
+   "beta": "today > Expert",
+   "size_current": [
+    530,
+    260
+   ],
+   "size_beta": [
+    500,
+    280
+   ]
+  },
+  {
+   "key": "mrn-cregw",
+   "title": "Éolien · taux de capture par région",
+   "current": "today > Expert",
+   "beta": "today > Expert",
+   "size_current": [
+    530,
+    260
+   ],
+   "size_beta": [
+    500,
+    301
+   ]
+  },
+  {
+   "key": "mrn-go",
+   "title": "Garanties d'origine · renouvelables",
+   "current": "today > Expert",
+   "beta": "today > Expert",
+   "size_current": [
+    530,
+    320
+   ],
+   "size_beta": [
+    500,
+    320
+   ]
+  },
+  {
+   "key": "mrn-prod",
+   "title": "Production France en ce moment",
+   "current": "today > Expert",
+   "beta": "today > Expert",
+   "size_current": [
+    530,
+    300
+   ],
+   "size_beta": [
+    500,
+    395
+   ]
+  },
+  {
+   "key": "mrn-sysm",
+   "title": "Production France par mois",
+   "current": "today > Expert",
+   "beta": "today > Expert",
+   "size_current": [
+    530,
+    300
+   ],
+   "size_beta": [
+    500,
+    470
+   ]
+  },
+  {
+   "key": "mrn-fc",
+   "title": "France · éolien, solaire et consommation Prévision",
+   "current": "today > Expert",
+   "beta": "today > Expert",
+   "size_current": [
+    1108,
+    300
+   ],
+   "size_beta": [
+    1048,
+    300
+   ]
+  },
+  {
+   "key": "mrn-fund-stack",
+   "title": "Semaine par semaine · offre bas carbone face à la demande",
+   "current": "today > Expert",
+   "beta": "today > Expert",
+   "size_current": [
+    1108,
+    280
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "mrn-fcc",
+   "title": "France · éolien, PowerKlock vs GRT Prévision",
+   "current": "today > Expert",
+   "beta": "today > Expert",
+   "size_current": [
+    530,
+    300
+   ],
+   "size_beta": [
+    500,
+    300
+   ]
+  },
+  {
+   "key": "mrn-fcs",
+   "title": "France · solaire, PowerKlock vs GRT Prévision",
+   "current": "today > Expert",
+   "beta": "today > Expert",
+   "size_current": [
+    530,
+    300
+   ],
+   "size_beta": [
+    500,
+    300
+   ]
+  },
+  {
+   "key": "mrn2/france · jeudi # novembrejeu. # nov./0",
+   "title": "France · jeudi 19 novembrejeu. 19 nov.",
+   "current": "today > Expert",
+   "beta": "today > Expert",
+   "size_current": [
+    356,
+    250
+   ],
+   "size_beta": [
+    336,
+    240
+   ]
+  },
+  {
+   "key": "mrn2/france · vendredi # novembreven. # nov./0",
+   "title": "France · vendredi 20 novembreven. 20 nov.",
+   "current": "today > Expert",
+   "beta": "today > Expert",
+   "size_current": [
+    356,
+    250
+   ],
+   "size_beta": [
+    336,
+    240
+   ]
+  },
+  {
+   "key": "pkd-grid/france spot · today and tomorrow/0",
+   "title": "Spot France · aujourd’hui et demain",
+   "current": "dashboards",
+   "beta": "dashboards",
+   "size_current": [
+    657,
+    197
+   ],
+   "size_beta": [
+    622,
+    197
+   ]
+  },
+  {
+   "key": "pr-home-intraday-canvas",
+   "title": "",
+   "current": "markets/spot/overview",
+   "beta": "markets/spot/overview",
+   "size_current": [
+    1146,
+    260
+   ],
+   "size_beta": [
+    1086,
+    320
+   ]
+  },
+  {
+   "key": "pr-home-fwd-canvas",
+   "title": "Baseload FR · DE · NL · GB",
+   "current": "markets/spot/overview",
+   "beta": "markets/spot/overview",
+   "size_current": [
+    549,
+    280
+   ],
+   "size_beta": [
+    519,
+    280
+   ]
+  },
+  {
+   "key": "prfwd-chart-compare",
+   "title": "Comparaison par pays Un produit, les 4 zones sur le même graphique",
+   "current": "markets/forwards > Comparaison",
+   "beta": "markets/forwards > Comparaison",
+   "size_current": [
+    1142,
+    300
+   ],
+   "size_beta": [
+    1082,
+    320
+   ]
+  },
+  {
+   "key": "cal-history",
+   "title": "Contrats forward",
+   "current": "markets/forwards > Contrats calendaires",
+   "beta": "markets/forwards > Contrats calendaires",
+   "size_current": [
+    530,
+    460
+   ],
+   "size_beta": [
+    500,
+    360
+   ]
+  },
+  {
+   "key": "cal-drivers",
+   "title": "Le Cal+1 et ses moteurs",
+   "current": "markets/forwards > Contrats calendaires",
+   "beta": "markets/forwards > Contrats calendaires",
+   "size_current": [
+    1108,
+    320
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "price-compare-canvas",
+   "title": "Analyse multi-zones ven. 20 nov. 2026",
+   "current": "markets/spot > Quotidien",
+   "beta": "markets/spot > Quotidien",
+   "size_current": [
+    1142,
+    340
+   ],
+   "size_beta": [
+    1082,
+    320
+   ]
+  },
+  {
+   "key": "spt-30d",
+   "title": "Spot · 30 derniers jours",
+   "current": "markets/spot > Quotidien",
+   "beta": "markets/spot > Quotidien",
+   "size_current": [
+    1108,
+    280
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "spt-day-latest/spot · latest delivery day/0",
+   "title": "Spot · dernier jour de livraison",
+   "current": "markets/spot > Quotidien",
+   "beta": "markets/spot > Quotidien",
+   "size_current": [
+    530,
+    265
+   ],
+   "size_beta": [
+    500,
+    280
+   ]
+  },
+  {
+   "key": "spt-day-prev/spot · previous day/0",
+   "title": "Spot · veille",
+   "current": "markets/spot > Quotidien",
+   "beta": "markets/spot > Quotidien",
+   "size_current": [
+    530,
+    265
+   ],
+   "size_beta": [
+    500,
+    280
+   ]
+  },
+  {
+   "key": "spt-monthly",
+   "title": "Spot par mois · 12 mois",
+   "current": "markets/spot > Historique",
+   "beta": "markets/spot > Historique",
+   "size_current": [
+    1108,
+    280
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "hmz-canvas",
+   "title": "Analyse multi-zones 3 months · 22 août 2026 → 20 nov. 2026",
+   "current": "markets/spot > Historique",
+   "beta": "markets/spot > Historique",
+   "size_current": [
+    1142,
+    340
+   ],
+   "size_beta": [
+    1082,
+    320
+   ]
+  },
+  {
+   "key": "flex-fleet-wind",
+   "title": "Puissance éolienne par soutien",
+   "current": "markets/spot/negative",
+   "beta": "markets/spot/negative",
+   "size_current": [
+    530,
+    300
+   ],
+   "size_beta": [
+    500,
+    348
+   ]
+  },
+  {
+   "key": "flex-fleet-solar",
+   "title": "Puissance solaire de plus de 36 kW par soutien",
+   "current": "markets/spot/negative",
+   "beta": "markets/spot/negative",
+   "size_current": [
+    530,
+    300
+   ],
+   "size_beta": [
+    500,
+    320
+   ]
+  },
+  {
+   "key": "flex-kept",
+   "title": "Production gardée aux prix négatifs",
+   "current": "markets/spot/negative",
+   "beta": "markets/spot/negative",
+   "size_current": [
+    530,
+    300
+   ],
+   "size_beta": [
+    500,
+    280
+   ]
+  },
+  {
+   "key": "flex-lost",
+   "title": "Énergie non produite aux prix négatifs",
+   "current": "markets/spot/negative",
+   "beta": "markets/spot/negative",
+   "size_current": [
+    530,
+    300
+   ],
+   "size_beta": [
+    500,
+    280
+   ]
+  },
+  {
+   "key": "bess-canvas",
+   "title": "Arbitrage batterie — spreads TB Prix horaires des n plus hautes moins les n plus basses · ",
+   "current": "markets/spot/spread",
+   "beta": "markets/spot/spread",
+   "size_current": [
+    1142,
+    260
+   ],
+   "size_beta": [
+    1082,
+    320
+   ]
+  },
+  {
+   "key": "hist-spread-canvas",
+   "title": "Spread journalier DA (max−min) Potentiel d'arbitrage intrajournalier · moyenne glissante 3",
+   "current": "markets/spot/spread",
+   "beta": "markets/spot/spread",
+   "size_current": [
+    1142,
+    200
+   ],
+   "size_beta": [
+    1082,
+    320
+   ]
+  },
+  {
+   "key": "neg-cc-canvas",
+   "title": "Heures négatives par zone et par année",
+   "current": "markets/spot/negative",
+   "beta": "markets/spot/negative",
+   "size_current": [
+    1108,
+    340
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "imb-fr-act",
+   "title": "France · prix d'activation mFRR vs day-ahead",
+   "current": "markets/spot/imbalance > mFRR",
+   "beta": "markets/spot/imbalance > mFRR",
+   "size_current": [
+    1108,
+    300
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "fuel-eua-ttf",
+   "title": "EUA & TTF",
+   "current": "markets/fuels > Vue d'ensemble",
+   "beta": "markets/fuels > Vue d'ensemble",
+   "size_current": [
+    1108,
+    320
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "fuel-switch",
+   "title": "Bascule charbon-gaz",
+   "current": "markets/fuels > Vue d'ensemble",
+   "beta": "markets/fuels > Vue d'ensemble",
+   "size_current": [
+    1108,
+    320
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "fuel-hubs",
+   "title": "Hubs gaziers européens",
+   "current": "markets/fuels > Gaz",
+   "beta": "markets/fuels > Gaz",
+   "size_current": [
+    1108,
+    320
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "fuel-gas-years",
+   "title": "Stocks de gaz UE · cette année et la précédente face à 2019 et après",
+   "current": "markets/fuels > Gaz",
+   "beta": "markets/fuels > Gaz",
+   "size_current": [
+    1108,
+    320
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "fuel-coal",
+   "title": "Charbon API2",
+   "current": "markets/fuels > Charbon & pétrole",
+   "beta": "markets/fuels > Charbon & pétrole",
+   "size_current": [
+    530,
+    300
+   ],
+   "size_beta": [
+    500,
+    280
+   ]
+  },
+  {
+   "key": "fuel-oil",
+   "title": "Pétrole Brent",
+   "current": "markets/fuels > Charbon & pétrole",
+   "beta": "markets/fuels > Charbon & pétrole",
+   "size_current": [
+    530,
+    300
+   ],
+   "size_beta": [
+    500,
+    280
+   ]
+  },
+  {
+   "key": "fuel-lng",
+   "title": "Arbitrage GNL",
+   "current": "markets/fuels > Charbon & pétrole",
+   "beta": "markets/fuels > Charbon & pétrole",
+   "size_current": [
+    1108,
+    320
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "fwdc-ttf",
+   "title": "Courbe forward TTF",
+   "current": "markets/fuels/forwards > Courbes",
+   "beta": "markets/fuels/forwards > Courbes",
+   "size_current": [
+    530,
+    280
+   ],
+   "size_beta": [
+    500,
+    280
+   ]
+  },
+  {
+   "key": "fwdc-eua",
+   "title": "Strip EUA décembre",
+   "current": "markets/fuels/forwards > Courbes",
+   "beta": "markets/fuels/forwards > Courbes",
+   "size_current": [
+    530,
+    280
+   ],
+   "size_beta": [
+    500,
+    294
+   ]
+  },
+  {
+   "key": "ttf-cal",
+   "title": "Contrats forward TTF",
+   "current": "markets/fuels/forwards > TTF : contrats et cotations",
+   "beta": "markets/fuels/forwards > TTF : contrats et cotations",
+   "size_current": [
+    1108,
+    320
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "spark-bars",
+   "title": "Clean spark et dark spreads par zone",
+   "current": "markets/fuels/spreads > Quotidien",
+   "beta": "markets/fuels/spreads > Quotidien",
+   "size_current": [
+    1108,
+    280
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "sprh-daily",
+   "title": "Clean spreads quotidiens",
+   "current": "markets/fuels/spreads > Historique",
+   "beta": "markets/fuels/spreads > Historique",
+   "size_current": [
+    1108,
+    320
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "sprh-monthly",
+   "title": "Moyenne mensuelle",
+   "current": "markets/fuels/spreads > Historique",
+   "beta": "markets/fuels/spreads > Historique",
+   "size_current": [
+    1108,
+    320
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "go-indic-canvas",
+   "title": "GO AIB renouvelable — indications de prix (€/MWh)",
+   "current": "markets/go > EU",
+   "beta": "markets/go > EU",
+   "size_current": [
+    1108,
+    320
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "go-cal1-canvas",
+   "title": "GO AIB renouvelable — indications de prix CAL+1 UE (€/MWh)",
+   "current": "markets/go > EU",
+   "beta": "markets/go > EU",
+   "size_current": [
+    1108,
+    220
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "go-spread-canvas",
+   "title": "Spread bid/ask — tendance (€/MWh)",
+   "current": "markets/go > EU",
+   "beta": "markets/go > EU",
+   "size_current": [
+    1108,
+    320
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "go-hist-canvas",
+   "title": "Indications de prix hebdomadaires — prix mid (€/MWh)",
+   "current": "markets/go > EU",
+   "beta": "markets/go > EU",
+   "size_current": [
+    1108,
+    320
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "go-wow-canvas",
+   "title": "Variation sur la semaine (€/MWh)",
+   "current": "markets/go > EU",
+   "beta": "markets/go > EU",
+   "size_current": [
+    1108,
+    320
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "go-cal-canvas",
+   "title": "Forward curve — Cal 2026 → 2028",
+   "current": "markets/go > EU",
+   "beta": "markets/go > EU",
+   "size_current": [
+    530,
+    280
+   ],
+   "size_beta": [
+    500,
+    280
+   ]
+  },
+  {
+   "key": "go-box-canvas",
+   "title": "Distribution des prix — boîte à moustaches (€/MWh)",
+   "current": "markets/go > EU",
+   "beta": "markets/go > EU",
+   "size_current": [
+    530,
+    280
+   ],
+   "size_beta": [
+    500,
+    280
+   ]
+  },
+  {
+   "key": "go-auct-reg",
+   "title": "Dernière enchère par région",
+   "current": "markets/go > Enchères France",
+   "beta": "markets/go > Enchères France",
+   "size_current": [
+    530,
+    300
+   ],
+   "size_beta": [
+    500,
+    300
+   ]
+  },
+  {
+   "key": "go-auct-tech-canvas",
+   "title": "Volume vendu & prix moyen pondéré — éolien vs solaire",
+   "current": "markets/go > Enchères France",
+   "beta": "markets/go > Enchères France",
+   "size_current": [
+    1108,
+    320
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "go-auct-vol-canvas",
+   "title": "Volume total — offert vs attribué (MWh)",
+   "current": "markets/go > Enchères France",
+   "beta": "markets/go > Enchères France",
+   "size_current": [
+    1108,
+    300
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "bess-idx-f",
+   "title": "Indice forward, jour par jour",
+   "current": "markets/bess > Indice",
+   "beta": "markets/bess > Indice",
+   "size_current": [
+    1108,
+    290
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "bess-idx-m",
+   "title": "Réalisé, par mois",
+   "current": "markets/bess > Indice",
+   "beta": "markets/bess > Indice",
+   "size_current": [
+    1108,
+    290
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "bess-eu-c",
+   "title": "Valeur co-optimisée par zone",
+   "current": "markets/bess > Europe",
+   "beta": "markets/bess > Europe",
+   "size_current": [
+    1108,
+    320
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "bess-eu-m",
+   "title": "Day-ahead seul, mois par mois",
+   "current": "markets/bess > Europe",
+   "beta": "markets/bess > Europe",
+   "size_current": [
+    1108,
+    280
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "bess-tb-canvas",
+   "title": "Spreads batterie TB1 à TB4 · France, 90 jours",
+   "current": "markets/bess > Valeur day-ahead",
+   "beta": "markets/bess > Valeur day-ahead",
+   "size_current": [
+    1108,
+    280
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "bess-day-canvas",
+   "title": "Une journée type, quart d’heure par quart d’heure",
+   "current": "markets/bess > Valeur day-ahead",
+   "beta": "markets/bess > Valeur day-ahead",
+   "size_current": [
+    1108,
+    280
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "bess-m-canvas",
+   "title": "Annualisé par mois",
+   "current": "markets/bess > Valeur day-ahead",
+   "beta": "markets/bess > Valeur day-ahead",
+   "size_current": [
+    1108,
+    300
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "bess-d-canvas",
+   "title": "Jour par jour",
+   "current": "markets/bess > Valeur day-ahead",
+   "beta": "markets/bess > Valeur day-ahead",
+   "size_current": [
+    1108,
+    260
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "bess-res-canvas",
+   "title": "Prix FCR en France, annualisé par mois",
+   "current": "markets/bess > Réserves",
+   "beta": "markets/bess > Réserves",
+   "size_current": [
+    1108,
+    280
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "cm-chart",
+   "title": "Votre batterie",
+   "current": "markets/bess > Mécanisme de capacité",
+   "beta": "markets/bess > Mécanisme de capacité",
+   "size_current": [
+    1108,
+    240
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "ren-intraday",
+   "title": "Intraday output vs price · FR · ven. 20 nov. 2026",
+   "current": "renewables/capture > Quotidien",
+   "beta": "renewables/capture > Quotidien",
+   "size_current": [
+    1108,
+    320
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "ren-fc",
+   "title": "Prévision vs réel",
+   "current": "renewables/capture > Quotidien",
+   "beta": "renewables/capture > Quotidien",
+   "size_current": [
+    1108,
+    320
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "ren-cr",
+   "title": "Taux de capture",
+   "current": "renewables/capture > Historique",
+   "beta": "renewables/capture > Historique",
+   "size_current": [
+    1108,
+    320
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "ren-daily",
+   "title": "Production quotidienne",
+   "current": "renewables/capture > Historique",
+   "beta": "renewables/capture > Historique",
+   "size_current": [
+    1108,
+    320
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "ren-m0",
+   "title": "M0 · officiel, estimé et prévu",
+   "current": "renewables/capture > M0 et appels d’offres",
+   "beta": "renewables/capture > M0 et appels d’offres",
+   "size_current": [
+    1108,
+    340
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "ren-ao",
+   "title": "Appels d'offres CRE · prix retenu vs M0",
+   "current": "renewables/capture > M0 et appels d’offres",
+   "beta": "renewables/capture > M0 et appels d’offres",
+   "size_current": [
+    1108,
+    320
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "ren-cspe",
+   "title": "Coût public du soutien aux renouvelables",
+   "current": "renewables/capture > M0 et appels d’offres",
+   "beta": "renewables/capture > M0 et appels d’offres",
+   "size_current": [
+    1108,
+    300
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "ceu-solar",
+   "title": "Taux de capture du solaire par pays",
+   "current": "renewables/capture > Europe",
+   "beta": "renewables/capture > Europe",
+   "size_current": [
+    530,
+    300
+   ],
+   "size_beta": [
+    500,
+    280
+   ]
+  },
+  {
+   "key": "ceu-wind",
+   "title": "Taux de capture de l’éolien par pays",
+   "current": "renewables/capture > Europe",
+   "beta": "renewables/capture > Europe",
+   "size_current": [
+    530,
+    300
+   ],
+   "size_beta": [
+    500,
+    280
+   ]
+  },
+  {
+   "key": "cn-proj",
+   "title": "Taux de capture · historique et projection",
+   "current": "renewables/capture > Cannibalisation",
+   "beta": "renewables/capture > Cannibalisation",
+   "size_current": [
+    812,
+    440
+   ],
+   "size_beta": [
+    767,
+    320
+   ]
+  },
+  {
+   "key": "cn-capfit",
+   "title": "Taux de capture vs capacité installée",
+   "current": "renewables/capture > Cannibalisation",
+   "beta": "renewables/capture > Cannibalisation",
+   "size_current": [
+    1108,
+    380
+   ],
+   "size_beta": [
+    1048,
+    360
+   ]
+  },
+  {
+   "key": "cn-roll",
+   "title": "Taux de capture glissant",
+   "current": "renewables/capture > Cannibalisation",
+   "beta": "renewables/capture > Cannibalisation",
+   "size_current": [
+    1108,
+    340
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "cn-roll-eur",
+   "title": "Prix capté glissant vs baseload",
+   "current": "renewables/capture > Cannibalisation",
+   "beta": "renewables/capture > Cannibalisation",
+   "size_current": [
+    1108,
+    320
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "cn-xcy",
+   "title": "Taux de capture par an · France et ses voisins",
+   "current": "renewables/capture > Cannibalisation",
+   "beta": "renewables/capture > Cannibalisation",
+   "size_current": [
+    530,
+    360
+   ],
+   "size_beta": [
+    500,
+    404
+   ]
+  },
+  {
+   "key": "cn-xc",
+   "title": "Taux de capture vs capacité installée · France et ses voisins",
+   "current": "renewables/capture > Cannibalisation",
+   "beta": "renewables/capture > Cannibalisation",
+   "size_current": [
+    530,
+    360
+   ],
+   "size_beta": [
+    500,
+    382
+   ]
+  },
+  {
+   "key": "cn-hc",
+   "title": "Prix vs part solaire ou éolienne, heure par heure · France et ses voisins",
+   "current": "renewables/capture > Cannibalisation",
+   "beta": "renewables/capture > Cannibalisation",
+   "size_current": [
+    1108,
+    380
+   ],
+   "size_beta": [
+    1048,
+    360
+   ]
+  },
+  {
+   "key": "cn-pen",
+   "title": "Prix selon la couverture de la région par solaire, éolien et nucléaire",
+   "current": "renewables/capture > Cannibalisation",
+   "beta": "renewables/capture > Cannibalisation",
+   "size_current": [
+    1108,
+    380
+   ],
+   "size_beta": [
+    1048,
+    360
+   ]
+  },
+  {
+   "key": "cn-negh",
+   "title": "Heures à prix nul ou négatif · historique et projection",
+   "current": "renewables/capture > Cannibalisation",
+   "beta": "renewables/capture > Cannibalisation",
+   "size_current": [
+    530,
+    320
+   ],
+   "size_beta": [
+    500,
+    360
+   ]
+  },
+  {
+   "key": "cn-prof",
+   "title": "Profil de production journalier par mois",
+   "current": "renewables/capture > Cannibalisation",
+   "beta": "renewables/capture > Cannibalisation",
+   "size_current": [
+    530,
+    320
+   ],
+   "size_beta": [
+    500,
+    360
+   ]
+  },
+  {
+   "key": "cn-reg",
+   "title": "Solaire · taux de capture par région",
+   "current": "renewables/capture > Cannibalisation",
+   "beta": "renewables/capture > Cannibalisation",
+   "size_current": [
+    530,
+    380
+   ],
+   "size_beta": [
+    500,
+    380
+   ]
+  },
+  {
+   "key": "cn-reg-w",
+   "title": "Éolien · taux de capture par région",
+   "current": "renewables/capture > Cannibalisation",
+   "beta": "renewables/capture > Cannibalisation",
+   "size_current": [
+    530,
+    380
+   ],
+   "size_beta": [
+    500,
+    380
+   ]
+  },
+  {
+   "key": "ren-capfwd",
+   "title": "Prix captés forward",
+   "current": "renewables/capture > Capture forward",
+   "beta": "renewables/capture > Capture forward",
+   "size_current": [
+    1108,
+    320
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "cap-history",
+   "title": "Capacité installée par an · France",
+   "current": "renewables/capacity > Par année",
+   "beta": "renewables/capacity > Par année",
+   "size_current": [
+    530,
+    396
+   ],
+   "size_beta": [
+    500,
+    396
+   ]
+  },
+  {
+   "key": "cap-ppe",
+   "title": "Capacité installée et trajectoire PPE3",
+   "current": "renewables/capacity > Par année",
+   "beta": "renewables/capacity > Par année",
+   "size_current": [
+    1108,
+    300
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "cap-hours",
+   "title": "Heures pleine charge par filière",
+   "current": "renewables/capacity > Par année",
+   "beta": "renewables/capacity > Par année",
+   "size_current": [
+    1108,
+    320
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "cap-compare",
+   "title": "Comparaison par pays",
+   "current": "renewables/capacity > Comparaison",
+   "beta": "renewables/capacity > Comparaison",
+   "size_current": [
+    1108,
+    380
+   ],
+   "size_beta": [
+    1048,
+    360
+   ]
+  },
+  {
+   "key": "pm-chart-price",
+   "title": "Carte électriqueIntensité carbone, prix, part renouvelable et échanges transfrontaliers en",
+   "current": "system/map",
+   "beta": "system/map",
+   "size_current": [
+    350,
+    200
+   ],
+   "size_beta": [
+    350,
+    240
+   ]
+  },
+  {
+   "key": "pm-chart-mix",
+   "title": "Carte électriqueIntensité carbone, prix, part renouvelable et échanges transfrontaliers en",
+   "current": "system/map",
+   "beta": "system/map",
+   "size_current": [
+    350,
+    260
+   ],
+   "size_beta": [
+    350,
+    240
+   ]
+  },
+  {
+   "key": "pm-chart-co2",
+   "title": "Carte électriqueIntensité carbone, prix, part renouvelable et échanges transfrontaliers en",
+   "current": "system/map",
+   "beta": "system/map",
+   "size_current": [
+    350,
+    200
+   ],
+   "size_beta": [
+    350,
+    240
+   ]
+  },
+  {
+   "key": "gms-daily",
+   "title": "Production par filière, jour par jour",
+   "current": "system/generation > Historique",
+   "beta": "system/generation > Historique",
+   "size_current": [
+    1108,
+    340
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "gms-profile",
+   "title": "Journée moyenne par filière",
+   "current": "system/generation > Historique",
+   "beta": "system/generation > Historique",
+   "size_current": [
+    530,
+    300
+   ],
+   "size_beta": [
+    500,
+    280
+   ]
+  },
+  {
+   "key": "gms-share",
+   "title": "Parts des filières par mois",
+   "current": "system/generation > Historique",
+   "beta": "system/generation > Historique",
+   "size_current": [
+    530,
+    300
+   ],
+   "size_beta": [
+    500,
+    280
+   ]
+  },
+  {
+   "key": "nuc-hist",
+   "title": "Capacité nucléaire disponible",
+   "current": "system/generation/nuclear",
+   "beta": "system/generation/nuclear",
+   "size_current": [
+    1108,
+    300
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "nuc-season",
+   "title": "Comparaison saisonnière",
+   "current": "system/generation/nuclear",
+   "beta": "system/generation/nuclear",
+   "size_current": [
+    1108,
+    320
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "nuc-mod",
+   "title": "Production vs disponibilité",
+   "current": "system/generation/nuclear",
+   "beta": "system/generation/nuclear",
+   "size_current": [
+    1108,
+    320
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "nuc-monthly",
+   "title": "Production nucléaire par mois",
+   "current": "system/generation/nuclear",
+   "beta": "system/generation/nuclear",
+   "size_current": [
+    1108,
+    320
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "remit-unavail",
+   "title": "Indisponibilités nucléaires françaises",
+   "current": "system/generation/outages > Indisponibilités",
+   "beta": "system/generation/outages > Indisponibilités",
+   "size_current": [
+    1108,
+    320
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "ro-proj",
+   "title": "Disponibilité nucléaire annoncée · 4 prochains mois",
+   "current": "system/generation/outages > Indisponibilités",
+   "beta": "system/generation/outages > Indisponibilités",
+   "size_current": [
+    1108,
+    280
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "ro-tl",
+   "title": "Planning des arrêts · réacteurs nucléaires",
+   "current": "system/generation/outages > Indisponibilités",
+   "beta": "system/generation/outages > Indisponibilités",
+   "size_current": [
+    1108,
+    950
+   ],
+   "size_beta": [
+    1048,
+    950
+   ]
+  },
+  {
+   "key": "load-canvas",
+   "title": "France — load (GW) · ven. 20 nov. 2026",
+   "current": "system/demand > Quotidien",
+   "beta": "system/demand > Quotidien",
+   "size_current": [
+    1108,
+    300
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "load-fc",
+   "title": "Consommation, éolien et solaire · aujourd’hui et demain",
+   "current": "system/demand > Prévision",
+   "beta": "system/demand > Prévision",
+   "size_current": [
+    1108,
+    320
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "load-normal",
+   "title": "Consommation France vs normale",
+   "current": "system/demand > Historique",
+   "beta": "system/demand > Historique",
+   "size_current": [
+    530,
+    280
+   ],
+   "size_beta": [
+    500,
+    320
+   ]
+  },
+  {
+   "key": "load-monthly",
+   "title": "Consommation France par mois, année contre année",
+   "current": "system/demand > Historique",
+   "beta": "system/demand > Historique",
+   "size_current": [
+    530,
+    280
+   ],
+   "size_beta": [
+    500,
+    341
+   ]
+  },
+  {
+   "key": "cb-intraday",
+   "title": "Intraday exchanges by border · ven. 20 nov. 2026",
+   "current": "system/demand/flows > Quotidien",
+   "beta": "system/demand/flows > Quotidien",
+   "size_current": [
+    1108,
+    320
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "cb-days",
+   "title": "Échanges quotidiens",
+   "current": "system/demand/flows > Quotidien",
+   "beta": "system/demand/flows > Quotidien",
+   "size_current": [
+    1108,
+    320
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "frs-prod",
+   "title": "Production par source",
+   "current": "system/france > Quotidien",
+   "beta": "system/france > Quotidien",
+   "size_current": [
+    1108,
+    360
+   ],
+   "size_beta": [
+    1048,
+    360
+   ]
+  },
+  {
+   "key": "frs-co2",
+   "title": "Intensité CO₂",
+   "current": "system/france > Quotidien",
+   "beta": "system/france > Quotidien",
+   "size_current": [
+    1108,
+    320
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "frs-exch",
+   "title": "Échanges commerciaux par frontière",
+   "current": "system/france > Quotidien",
+   "beta": "system/france > Quotidien",
+   "size_current": [
+    1108,
+    320
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "frs-flex",
+   "title": "STEP et batteries",
+   "current": "system/france > Quotidien",
+   "beta": "system/france > Quotidien",
+   "size_current": [
+    1108,
+    320
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "frs-env",
+   "title": "Cette année vs années précédentes",
+   "current": "system/france > Quotidien",
+   "beta": "system/france > Quotidien",
+   "size_current": [
+    1108,
+    320
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "frs-monthly",
+   "title": "Production mensuelle par source",
+   "current": "system/france > Historique",
+   "beta": "system/france > Historique",
+   "size_current": [
+    1108,
+    320
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "reg-lf",
+   "title": "Wind & solar load factors · jeu. 19 nov. 2026",
+   "current": "system/france/regions > Quotidien",
+   "beta": "system/france/regions > Quotidien",
+   "size_current": [
+    1108,
+    280
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "reg-lf-hist",
+   "title": "Facteurs de charge par mois",
+   "current": "system/france/regions > Quotidien",
+   "beta": "system/france/regions > Quotidien",
+   "size_current": [
+    1108,
+    280
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "reg-cap",
+   "title": "Capacité installée par région",
+   "current": "system/france/regions > Capacités et consommation",
+   "beta": "system/france/regions > Capacités et consommation",
+   "size_current": [
+    1108,
+    320
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "reg-gas-elec",
+   "title": "Consommation de gaz et d'électricité en France",
+   "current": "system/france/regions > Capacités et consommation",
+   "beta": "system/france/regions > Capacités et consommation",
+   "size_current": [
+    1108,
+    300
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "wx-forecast-canvas",
+   "title": "Température",
+   "current": "system/weather > Quotidien",
+   "beta": "system/weather > Quotidien",
+   "size_current": [
+    1108,
+    300
+   ],
+   "size_beta": [
+    1048,
+    300
+   ]
+  },
+  {
+   "key": "wx-out-temp",
+   "title": "Température vs normale",
+   "current": "system/weather > Prévision 5 semaines",
+   "beta": "system/weather > Prévision 5 semaines",
+   "size_current": [
+    530,
+    280
+   ],
+   "size_beta": [
+    500,
+    280
+   ]
+  },
+  {
+   "key": "wx-out-wind",
+   "title": "Production éolienne vs normale",
+   "current": "system/weather > Prévision 5 semaines",
+   "beta": "system/weather > Prévision 5 semaines",
+   "size_current": [
+    530,
+    280
+   ],
+   "size_beta": [
+    500,
+    280
+   ]
+  },
+  {
+   "key": "wx-out-solar",
+   "title": "Production solaire vs normale",
+   "current": "system/weather > Prévision 5 semaines",
+   "beta": "system/weather > Prévision 5 semaines",
+   "size_current": [
+    530,
+    280
+   ],
+   "size_beta": [
+    500,
+    280
+   ]
+  },
+  {
+   "key": "wx-out-precip",
+   "title": "Indicateur hydraulique · précipitations vs normale",
+   "current": "system/weather > Prévision 5 semaines",
+   "beta": "system/weather > Prévision 5 semaines",
+   "size_current": [
+    530,
+    280
+   ],
+   "size_beta": [
+    500,
+    280
+   ]
+  },
+  {
+   "key": "hydro-res",
+   "title": "Remplissage des réservoirs hydrauliques",
+   "current": "system/weather > Réservoirs hydrauliques",
+   "beta": "system/weather > Réservoirs hydrauliques",
+   "size_current": [
+    530,
+    320
+   ],
+   "size_beta": [
+    500,
+    320
+   ]
+  },
+  {
+   "key": "hydro-eu",
+   "title": "Réservoirs en Europe vs normale",
+   "current": "system/weather > Réservoirs hydrauliques",
+   "beta": "system/weather > Réservoirs hydrauliques",
+   "size_current": [
+    530,
+    320
+   ],
+   "size_beta": [
+    500,
+    320
+   ]
+  },
+  {
+   "key": "hdd-canvas",
+   "title": "DJU chauffage quotidiens vs normale",
+   "current": "system/weather/hdd > Quotidien",
+   "beta": "system/weather/hdd > Quotidien",
+   "size_current": [
+    1108,
+    320
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "hdd-cum",
+   "title": "Saison de chauffe à date",
+   "current": "system/weather/hdd > Quotidien",
+   "beta": "system/weather/hdd > Quotidien",
+   "size_current": [
+    1108,
+    320
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "bl-rte-load",
+   "title": "Selon RTE, année après annéeRTE, Bilan électrique · ODRÉ · lu chaque année",
+   "current": "system/bilan",
+   "beta": "system/bilan",
+   "size_current": [
+    561,
+    280
+   ],
+   "size_beta": [
+    531,
+    280
+   ]
+  },
+  {
+   "key": "bl-rte-co2",
+   "title": "Selon RTE, année après annéeRTE, Bilan électrique · ODRÉ · lu chaque année",
+   "current": "system/bilan",
+   "beta": "system/bilan",
+   "size_current": [
+    561,
+    280
+   ],
+   "size_beta": [
+    531,
+    280
+   ]
+  },
+  {
+   "key": "bl-rte-curt",
+   "title": "Selon RTE, année après annéeRTE, Bilan électrique · ODRÉ · lu chaque année",
+   "current": "system/bilan",
+   "beta": "system/bilan",
+   "size_current": [
+    561,
+    280
+   ],
+   "size_beta": [
+    531,
+    280
+   ]
+  },
+  {
+   "key": "bl-rte-exp",
+   "title": "Selon RTE, année après annéeRTE, Bilan électrique · ODRÉ · lu chaque année",
+   "current": "system/bilan",
+   "beta": "system/bilan",
+   "size_current": [
+    561,
+    280
+   ],
+   "size_beta": [
+    531,
+    280
+   ]
+  },
+  {
+   "key": "bl-cspe",
+   "title": "Financement du soutien aux renouvelablesCRE, délibération annuelle · M€",
+   "current": "system/bilan",
+   "beta": "system/bilan",
+   "size_current": [
+    1142,
+    280
+   ],
+   "size_beta": [
+    1082,
+    320
+   ]
+  },
+  {
+   "key": "bl-src",
+   "title": "Production par filièreRTE éCO2mix · TWh",
+   "current": "system/bilan",
+   "beta": "system/bilan",
+   "size_current": [
+    561,
+    340
+   ],
+   "size_beta": [
+    531,
+    320
+   ]
+  },
+  {
+   "key": "bl-mon",
+   "title": "Production par filièreRTE éCO2mix · TWh",
+   "current": "system/bilan",
+   "beta": "system/bilan",
+   "size_current": [
+    561,
+    340
+   ],
+   "size_beta": [
+    531,
+    320
+   ]
+  },
+  {
+   "key": "bl-spot",
+   "title": "PrixENTSO-E day-ahead · €/MWh",
+   "current": "system/bilan",
+   "beta": "system/bilan",
+   "size_current": [
+    561,
+    340
+   ],
+   "size_beta": [
+    531,
+    320
+   ]
+  },
+  {
+   "key": "bl-neg",
+   "title": "PrixENTSO-E day-ahead · €/MWh",
+   "current": "system/bilan",
+   "beta": "system/bilan",
+   "size_current": [
+    561,
+    340
+   ],
+   "size_beta": [
+    531,
+    320
+   ]
+  },
+  {
+   "key": "bl-spiral/la spirale · tous les prix horaires depuis #entso-e day-ahead · €/mwh · moyenne horaire/0",
+   "title": "La Spirale · tous les prix horaires depuis 2019ENTSO-E day-ahead · €/MWh · moyenne horaire",
+   "current": "system/bilan",
+   "beta": "system/bilan",
+   "size_current": [
+    494,
+    774
+   ],
+   "size_beta": [
+    640,
+    640
+   ]
+  },
+  {
+   "key": "bl-spiral/la spirale · tous les prix horaires depuis #entso-e day-ahead · €/mwh · moyenne horaire/1",
+   "title": "La Spirale · tous les prix horaires depuis 2019ENTSO-E day-ahead · €/MWh · moyenne horaire",
+   "current": "system/bilan",
+   "beta": "system/bilan",
+   "size_current": [
+    494,
+    774
+   ],
+   "size_beta": [
+    640,
+    640
+   ]
+  },
+  {
+   "key": "bl-lf",
+   "title": "Nucléaire et renouvelables · facteurs de chargeRTE éCO2mix · Energy-Charts · production ÷ ",
+   "current": "system/bilan",
+   "beta": "system/bilan",
+   "size_current": [
+    1142,
+    340
+   ],
+   "size_beta": [
+    1082,
+    320
+   ]
+  },
+  {
+   "key": "bl-load",
+   "title": "ConsommationRTE éCO2mix · TWh par mois",
+   "current": "system/bilan",
+   "beta": "system/bilan",
+   "size_current": [
+    542,
+    280
+   ],
+   "size_beta": [
+    512,
+    280
+   ]
+  },
+  {
+   "key": "bl-bord",
+   "title": "Échanges par frontièreEnergy-Charts · solde physique, TWh",
+   "current": "system/bilan",
+   "beta": "system/bilan",
+   "size_current": [
+    542,
+    280
+   ],
+   "size_beta": [
+    512,
+    280
+   ]
+  },
+  {
+   "key": "bl-co2",
+   "title": "Émissions de la productionRTE · émissions directes",
+   "current": "system/bilan",
+   "beta": "system/bilan",
+   "size_current": [
+    542,
+    280
+   ],
+   "size_beta": [
+    512,
+    280
+   ]
+  },
+  {
+   "key": "bl-rmc",
+   "title": "Mix de production, de fourniture et mix résiduel 2025EEX · registre des garanties d’origin",
+   "current": "system/bilan",
+   "beta": "system/bilan",
+   "size_current": [
+    500,
+    280
+   ],
+   "size_beta": [
+    473,
+    280
+   ]
+  },
+  {
+   "key": "pp-sum-wf",
+   "title": "Du prix de marché au prix PPA",
+   "current": "tools/ppa > Entrées et prix",
+   "beta": "tools/ppa > Entrées et prix",
+   "size_current": [
+    337,
+    300
+   ],
+   "size_beta": [
+    317,
+    280
+   ]
+  },
+  {
+   "key": "pp-cmp-price",
+   "title": "Prix du PPA par méthode",
+   "current": "tools/ppa > Entrées et prix",
+   "beta": "tools/ppa > Entrées et prix",
+   "size_current": [
+    337,
+    300
+   ],
+   "size_beta": [
+    317,
+    280
+   ]
+  },
+  {
+   "key": "pp-cmp-years",
+   "title": "Valeur captée par année de livraison",
+   "current": "tools/ppa > Entrées et prix",
+   "beta": "tools/ppa > Entrées et prix",
+   "size_current": [
+    337,
+    300
+   ],
+   "size_beta": [
+    317,
+    280
+   ]
+  },
+  {
+   "key": "pp-fan",
+   "title": "Capture : passé et projection, avec percentiles",
+   "current": "tools/ppa > Entrées et prix",
+   "beta": "tools/ppa > Entrées et prix",
+   "size_current": [
+    1108,
+    320
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "pp-park-years",
+   "title": "Le parc en un coup d’œil",
+   "current": "tools/ppa > Le parc",
+   "beta": "tools/ppa > Le parc",
+   "size_current": [
+    530,
+    254
+   ],
+   "size_beta": [
+    500,
+    280
+   ]
+  },
+  {
+   "key": "pp-prof-nat",
+   "title": "Profil journalier · national",
+   "current": "tools/ppa > Le parc",
+   "beta": "tools/ppa > Le parc",
+   "size_current": [
+    1108,
+    300
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "pp-monthly",
+   "title": "Production mensuelle",
+   "current": "tools/ppa > Le parc",
+   "beta": "tools/ppa > Le parc",
+   "size_current": [
+    530,
+    300
+   ],
+   "size_beta": [
+    500,
+    280
+   ]
+  },
+  {
+   "key": "pp-annual",
+   "title": "Production annuelle",
+   "current": "tools/ppa > Le parc",
+   "beta": "tools/ppa > Le parc",
+   "size_current": [
+    530,
+    300
+   ],
+   "size_beta": [
+    500,
+    280
+   ]
+  },
+  {
+   "key": "pp-ph-occ",
+   "title": "Fréquence des prix",
+   "current": "tools/ppa > Le parc",
+   "beta": "tools/ppa > Le parc",
+   "size_current": [
+    530,
+    280
+   ],
+   "size_beta": [
+    500,
+    280
+   ]
+  },
+  {
+   "key": "pp-ph-cy",
+   "title": "Cannibalisation par année",
+   "current": "tools/ppa > Le parc",
+   "beta": "tools/ppa > Le parc",
+   "size_current": [
+    530,
+    280
+   ],
+   "size_beta": [
+    500,
+    280
+   ]
+  },
+  {
+   "key": "pp-ph-vol",
+   "title": "Volume par mois, année après année",
+   "current": "tools/ppa > Le parc",
+   "beta": "tools/ppa > Le parc",
+   "size_current": [
+    530,
+    280
+   ],
+   "size_beta": [
+    500,
+    280
+   ]
+  },
+  {
+   "key": "pp-ph-cap",
+   "title": "Prix capté par mois, année après année",
+   "current": "tools/ppa > Le parc",
+   "beta": "tools/ppa > Le parc",
+   "size_current": [
+    530,
+    280
+   ],
+   "size_beta": [
+    500,
+    280
+   ]
+  },
+  {
+   "key": "pp-ph-ts",
+   "title": "Spot et prix capté, mois par mois",
+   "current": "tools/ppa > Le parc",
+   "beta": "tools/ppa > Le parc",
+   "size_current": [
+    530,
+    280
+   ],
+   "size_beta": [
+    500,
+    280
+   ]
+  },
+  {
+   "key": "pp-ph-hour",
+   "title": "Prix capté par heure de la journée",
+   "current": "tools/ppa > Le parc",
+   "beta": "tools/ppa > Le parc",
+   "size_current": [
+    530,
+    280
+   ],
+   "size_beta": [
+    500,
+    287
+   ]
+  },
+  {
+   "key": "pp-sens",
+   "title": "Ce qui fait bouger le prix",
+   "current": "tools/ppa > Comparaison et prix",
+   "beta": "tools/ppa > Comparaison et prix",
+   "size_current": [
+    1108,
+    260
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "pp-cmp-cannib",
+   "title": "Cannibalisation par méthode · passé et projection",
+   "current": "tools/ppa > Comparaison et prix",
+   "beta": "tools/ppa > Comparaison et prix",
+   "size_current": [
+    1108,
+    320
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "pp-fanm",
+   "title": "Projection par méthode · P10–P90 par année",
+   "current": "tools/ppa > Comparaison et prix",
+   "beta": "tools/ppa > Comparaison et prix",
+   "size_current": [
+    1108,
+    320
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "pp-vsa",
+   "title": "Chaque méthode face au réalisé",
+   "current": "tools/ppa > Comparaison et prix",
+   "beta": "tools/ppa > Comparaison et prix",
+   "size_current": [
+    1108,
+    320
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "pp-bt-chart",
+   "title": "Taux de capture : prévu en début d'année vs réel",
+   "current": "tools/ppa > Comparaison et prix",
+   "beta": "tools/ppa > Comparaison et prix",
+   "size_current": [
+    530,
+    300
+   ],
+   "size_beta": [
+    500,
+    280
+   ]
+  },
+  {
+   "key": "pp-st-chart",
+   "title": "Mois par mois",
+   "current": "tools/ppa > Méthodes > Court terme (mensuel)",
+   "beta": "tools/ppa > Méthodes > Court terme (mensuel)",
+   "size_current": [
+    530,
+    300
+   ],
+   "size_beta": [
+    500,
+    280
+   ]
+  },
+  {
+   "key": "pp-cr-chart",
+   "title": "Prix du parc face au M0, mois par mois",
+   "current": "tools/ppa > Méthodes > M0-indexed (complément)",
+   "beta": "tools/ppa > Méthodes > M0-indexed (complément)",
+   "size_current": [
+    530,
+    280
+   ],
+   "size_beta": [
+    500,
+    280
+   ]
+  },
+  {
+   "key": "pp-waterfall",
+   "title": "Construction du prix",
+   "current": "tools/ppa > Méthodes",
+   "beta": "tools/ppa > Méthodes",
+   "size_current": [
+    530,
+    320
+   ],
+   "size_beta": [
+    500,
+    320
+   ]
+  },
+  {
+   "key": "pp-fpc-curve",
+   "title": "Courbe de prix forward · moyennes mensuelles",
+   "current": "tools/ppa > Méthodes > Forme forward",
+   "beta": "tools/ppa > Méthodes > Forme forward",
+   "size_current": [
+    530,
+    280
+   ],
+   "size_beta": [
+    500,
+    280
+   ]
+  },
+  {
+   "key": "pp-fpc-week",
+   "title": "Courbe de prix forward · une semaine de juin",
+   "current": "tools/ppa > Méthodes > Forme forward",
+   "beta": "tools/ppa > Méthodes > Forme forward",
+   "size_current": [
+    530,
+    280
+   ],
+   "size_beta": [
+    500,
+    294
+   ]
+  },
+  {
+   "key": "pp-fpc-years",
+   "title": "Les trois valorisations, année par année",
+   "current": "tools/ppa > Méthodes > Forme forward",
+   "beta": "tools/ppa > Méthodes > Forme forward",
+   "size_current": [
+    530,
+    320
+   ],
+   "size_beta": [
+    500,
+    320
+   ]
+  },
+  {
+   "key": "pp-proj",
+   "title": "Taux de capture · historique et projection",
+   "current": "tools/ppa > Méthodes > Tendance de capacité",
+   "beta": "tools/ppa > Méthodes > Tendance de capacité",
+   "size_current": [
+    812,
+    440
+   ],
+   "size_beta": [
+    767,
+    320
+   ]
+  },
+  {
+   "key": "pp-capfit",
+   "title": "Taux de capture vs capacité installée",
+   "current": "tools/ppa > Méthodes > Tendance de capacité",
+   "beta": "tools/ppa > Méthodes > Tendance de capacité",
+   "size_current": [
+    1108,
+    380
+   ],
+   "size_beta": [
+    1048,
+    360
+   ]
+  },
+  {
+   "key": "pp-xcy",
+   "title": "Taux de capture par an · France et ses voisins",
+   "current": "tools/ppa > Méthodes > Tendance de capacité",
+   "beta": "tools/ppa > Méthodes > Tendance de capacité",
+   "size_current": [
+    530,
+    360
+   ],
+   "size_beta": [
+    500,
+    368
+   ]
+  },
+  {
+   "key": "pp-xc",
+   "title": "Taux de capture vs capacité installée · France et ses voisins",
+   "current": "tools/ppa > Méthodes > Tendance de capacité",
+   "beta": "tools/ppa > Méthodes > Tendance de capacité",
+   "size_current": [
+    530,
+    360
+   ],
+   "size_beta": [
+    500,
+    360
+   ]
+  },
+  {
+   "key": "pp-hc",
+   "title": "Prix vs part solaire ou éolienne, heure par heure · France et ses voisins",
+   "current": "tools/ppa > Méthodes > Tendance de capacité",
+   "beta": "tools/ppa > Méthodes > Tendance de capacité",
+   "size_current": [
+    1108,
+    380
+   ],
+   "size_beta": [
+    1048,
+    360
+   ]
+  },
+  {
+   "key": "pp-negh",
+   "title": "Heures à prix nul ou négatif · historique et projection",
+   "current": "tools/ppa > Méthodes > Tendance de capacité",
+   "beta": "tools/ppa > Méthodes > Tendance de capacité",
+   "size_current": [
+    1108,
+    340
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "pp-hedge-chart",
+   "title": "Ce que rapporte un MWh, selon la couverture",
+   "current": "tools/ppa > Entrées et prix",
+   "beta": "tools/ppa > Entrées et prix",
+   "size_current": [
+    726,
+    300
+   ],
+   "size_beta": [
+    726,
+    280
+   ]
+  },
+  {
+   "key": "pp-mc-d1",
+   "title": "Prix spot, moyenne annuelle",
+   "current": "tools/ppa > Méthodes > Tendance de capacité",
+   "beta": "tools/ppa > Méthodes > Tendance de capacité",
+   "size_current": [
+    338,
+    240
+   ],
+   "size_beta": [
+    318,
+    360
+   ]
+  },
+  {
+   "key": "pp-mc-d2",
+   "title": "Décote de forme",
+   "current": "tools/ppa > Méthodes > Tendance de capacité",
+   "beta": "tools/ppa > Méthodes > Tendance de capacité",
+   "size_current": [
+    338,
+    240
+   ],
+   "size_beta": [
+    318,
+    360
+   ]
+  },
+  {
+   "key": "pp-mc-d3",
+   "title": "Production payée",
+   "current": "tools/ppa > Méthodes > Tendance de capacité",
+   "beta": "tools/ppa > Méthodes > Tendance de capacité",
+   "size_current": [
+    338,
+    240
+   ],
+   "size_beta": [
+    318,
+    360
+   ]
+  },
+  {
+   "key": "pp-mc-src",
+   "title": "D'où vient la prime de risque",
+   "current": "tools/ppa > Méthodes > Tendance de capacité",
+   "beta": "tools/ppa > Méthodes > Tendance de capacité",
+   "size_current": [
+    530,
+    260
+   ],
+   "size_beta": [
+    500,
+    280
+   ]
+  },
+  {
+   "key": "pp-mc-curve",
+   "title": "Prix du PPA → risque et marge",
+   "current": "tools/ppa > Méthodes > Tendance de capacité",
+   "beta": "tools/ppa > Méthodes > Tendance de capacité",
+   "size_current": [
+    530,
+    260
+   ],
+   "size_beta": [
+    500,
+    280
+   ]
+  },
+  {
+   "key": "pp-mc-u",
+   "title": "Ce que vaut l'actif par MWh · distribution",
+   "current": "tools/ppa > Méthodes > Tendance de capacité",
+   "beta": "tools/ppa > Méthodes > Tendance de capacité",
+   "size_current": [
+    530,
+    320
+   ],
+   "size_beta": [
+    500,
+    320
+   ]
+  },
+  {
+   "key": "pp-mc-fan",
+   "title": "P&L annuel au prix du PPA · éventail",
+   "current": "tools/ppa > Méthodes > Tendance de capacité",
+   "beta": "tools/ppa > Méthodes > Tendance de capacité",
+   "size_current": [
+    530,
+    320
+   ],
+   "size_beta": [
+    500,
+    334
+   ]
+  },
+  {
+   "key": "pp-mc-hist",
+   "title": "P&L total · distribution",
+   "current": "tools/ppa > Méthodes > Tendance de capacité",
+   "beta": "tools/ppa > Méthodes > Tendance de capacité",
+   "size_current": [
+    530,
+    300
+   ],
+   "size_beta": [
+    500,
+    280
+   ]
+  },
+  {
+   "key": "pp-pnl",
+   "title": "P&L face à la cannibalisation historique",
+   "current": "tools/ppa > Méthodes",
+   "beta": "tools/ppa > Méthodes",
+   "size_current": [
+    530,
+    762
+   ],
+   "size_beta": [
+    500,
+    360
+   ]
+  },
+  {
+   "key": "pp-wx-rates",
+   "title": "Taux de capture par année de livraison",
+   "current": "tools/ppa > Méthodes > Simulation météo",
+   "beta": "tools/ppa > Méthodes > Simulation météo",
+   "size_current": [
+    530,
+    300
+   ],
+   "size_beta": [
+    500,
+    280
+   ]
+  },
+  {
+   "key": "pp-wx-week",
+   "title": "Une semaine de juin simulée",
+   "current": "tools/ppa > Méthodes > Simulation météo",
+   "beta": "tools/ppa > Méthodes > Simulation météo",
+   "size_current": [
+    530,
+    300
+   ],
+   "size_beta": [
+    500,
+    280
+   ]
+  },
+  {
+   "key": "pp-wx-u",
+   "title": "Ce que rapporte un MWh sur la livraison",
+   "current": "tools/ppa > Méthodes > Simulation météo",
+   "beta": "tools/ppa > Méthodes > Simulation météo",
+   "size_current": [
+    530,
+    280
+   ],
+   "size_beta": [
+    500,
+    280
+   ]
+  },
+  {
+   "key": "pp-roll-pct",
+   "title": "Taux de capture glissant",
+   "current": "tools/ppa > Comparaison et prix",
+   "beta": "tools/ppa > Comparaison et prix",
+   "size_current": [
+    1108,
+    340
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "pp-roll-eur",
+   "title": "Prix capté glissant vs baseload",
+   "current": "tools/ppa > Comparaison et prix",
+   "beta": "tools/ppa > Comparaison et prix",
+   "size_current": [
+    1108,
+    320
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "boa-dscr",
+   "title": "Entrées et résultatContrat, financement, le verdict et le DSCR année par année · k€ par MW",
+   "current": "tools/boa > Entrées et résultat",
+   "beta": "tools/boa > Entrées et résultat",
+   "size_current": [
+    574,
+    220
+   ],
+   "size_beta": [
+    542,
+    280
+   ]
+  },
+  {
+   "key": "boa-rev",
+   "title": "Entrées et résultatContrat, financement, le verdict et le DSCR année par année · k€ par MW",
+   "current": "tools/boa > Entrées et résultat",
+   "beta": "tools/boa > Entrées et résultat",
+   "size_current": [
+    574,
+    170
+   ],
+   "size_beta": [
+    542,
+    280
+   ]
+  },
+  {
+   "key": "boa-stack",
+   "title": "La batterie et son marchéCe que paie le marché aujourd’hui, les trois scénarios et l’empil",
+   "current": "tools/boa > La batterie",
+   "beta": "tools/boa > La batterie",
+   "size_current": [
+    1112,
+    260
+   ],
+   "size_beta": [
+    1052,
+    320
+   ]
+  },
+  {
+   "key": "fc-hourly",
+   "title": "Production, heure par heure Prévision",
+   "current": "tools/forecast > Site et prévision > Solaire",
+   "beta": "tools/forecast > Site et prévision > Solaire",
+   "size_current": [
+    1108,
+    320
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "fc-daily",
+   "title": "Énergie par jour, 16 jours Prévision",
+   "current": "tools/forecast > Site et prévision > Solaire",
+   "beta": "tools/forecast > Site et prévision > Solaire",
+   "size_current": [
+    1108,
+    280
+   ],
+   "size_beta": [
+    1048,
+    320
+   ]
+  },
+  {
+   "key": "fc-nat-solar",
+   "title": "Solaire · erreur mois par mois",
+   "current": "tools/forecast > Quelle fiabilité",
+   "beta": "tools/forecast > Quelle fiabilité",
+   "size_current": [
+    530,
+    240
+   ],
+   "size_beta": [
+    500,
+    280
+   ]
+  },
+  {
+   "key": "fc-nat-wind",
+   "title": "Éolien · erreur mois par mois",
+   "current": "tools/forecast > Quelle fiabilité",
+   "beta": "tools/forecast > Quelle fiabilité",
+   "size_current": [
+    530,
+    240
+   ],
+   "size_beta": [
+    500,
+    280
+   ]
+  },
+  {
+   "key": "fc-bt-solar",
+   "title": "Solaire · Occitanie · une semaine d'été",
+   "current": "tools/forecast > Quelle fiabilité",
+   "beta": "tools/forecast > Quelle fiabilité",
+   "size_current": [
+    530,
+    260
+   ],
+   "size_beta": [
+    500,
+    280
+   ]
+  },
+  {
+   "key": "fc-bt-wind",
+   "title": "Éolien · Hauts-de-France · une semaine d'hiver",
+   "current": "tools/forecast > Quelle fiabilité",
+   "beta": "tools/forecast > Quelle fiabilité",
+   "size_current": [
+    530,
+    260
+   ],
+   "size_beta": [
+    500,
+    280
+   ]
+  },
+  {
+   "key": "ma-canvas-price",
+   "title": "Prix day-ahead",
+   "current": "intel/analysis",
+   "beta": "intel/analysis",
+   "size_current": [
+    682,
+    209
+   ],
+   "size_beta": [
+    622,
+    274
+   ]
+  },
+  {
+   "key": "ma-canvas-spark",
+   "title": "Ce qu'il reste à produire",
+   "current": "intel/analysis",
+   "beta": "intel/analysis",
+   "size_current": [
+    682,
+    190
+   ],
+   "size_beta": [
+    622,
+    280
+   ]
+  },
+  {
+   "key": "ma-canvas-loadren",
+   "title": "Consommation et renouvelables",
+   "current": "intel/analysis",
+   "beta": "intel/analysis",
+   "size_current": [
+    682,
+    190
+   ],
+   "size_beta": [
+    622,
+    280
+   ]
+  },
+  {
+   "key": "ma-canvas-mix",
+   "title": "Qui produit",
+   "current": "intel/analysis",
+   "beta": "intel/analysis",
+   "size_current": [
+    682,
+    210
+   ],
+   "size_beta": [
+    622,
+    280
+   ]
+  },
+  {
+   "key": "ma-fc-48h",
+   "title": "Solaire, éolien et consommation · aujourd'hui et demain",
+   "current": "intel/analysis",
+   "beta": "intel/analysis",
+   "size_current": [
+    1146,
+    300
+   ],
+   "size_beta": [
+    1086,
+    320
+   ]
+  },
+  {
+   "key": "ma-fc-err",
+   "title": "Erreur de prévision solaire · jour par jour",
+   "current": "intel/analysis",
+   "beta": "intel/analysis",
+   "size_current": [
+    1146,
+    260
+   ],
+   "size_beta": [
+    1086,
+    320
+   ]
+  },
+  {
+   "key": "ma-fc-wind",
+   "title": "Production éolienne · 5 prochaines semaines",
+   "current": "intel/analysis",
+   "beta": "intel/analysis",
+   "size_current": [
+    549,
+    260
+   ],
+   "size_beta": [
+    519,
+    280
+   ]
+  },
+  {
+   "key": "ma-fc-solar",
+   "title": "Production solaire · 5 prochaines semaines",
+   "current": "intel/analysis",
+   "beta": "intel/analysis",
+   "size_current": [
+    549,
+    260
+   ],
+   "size_beta": [
+    519,
+    280
+   ]
+  },
+  {
+   "key": "rp-canvas",
+   "title": "",
+   "current": "system/replay",
+   "beta": "system/replay",
+   "size_current": [
+    1178,
+    663
+   ],
+   "size_beta": [
+    1118,
+    629
+   ]
+  },
+  {
+   "key": "cmp-chart",
+   "title": "Comparaison",
+   "current": "tools/compare",
+   "beta": "tools/compare",
+   "size_current": [
+    879,
+    420
+   ],
+   "size_beta": [
+    819,
+    320
+   ]
+  },
+  {
+   "key": "cmp-roll-c",
+   "title": "Le lien dans le temps",
+   "current": "tools/compare",
+   "beta": "tools/compare",
+   "size_current": [
+    414,
+    150
+   ],
+   "size_beta": [
+    384,
+    240
+   ]
+  }
+ ],
+ "live_not_comparable": [],
+ "errors": {
+  "current": 31,
+  "beta": 25,
+  "beta_page_errors": [
+   {
+    "view": "intel/news > Textes officiels",
+    "error": "tab not found"
+   }
+  ]
+ }
+}

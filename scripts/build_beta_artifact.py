@@ -40,9 +40,14 @@ SPECIAL = re.compile("[\x00-\x08\x0b\x0c\x0e-\x1f\x7f\u0080-\u009f\u2028\u2029\u
 def plain(text):
     return SPECIAL.sub(lambda m: "\\u%04x" % ord(m.group(0)), text.lstrip("\ufeff"))
 
+
 SHIM = r"""<script>/* claude.ai copy: data served from the snapshot packs, the beta on by default, other sites refused at once */
 (function () {
   window.PK_ARTIFACT = __STAMP__;
+  // the viewer sets its own light or dark on the page: a choice made with the site's theme button wins over it
+  try { new MutationObserver(function () { var want = null, de = document.documentElement; try { want = localStorage.getItem('pk-theme'); } catch (e) {}
+    if ((want === 'light' || want === 'dark') && de.getAttribute('data-theme') !== want) de.setAttribute('data-theme', want); })
+    .observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] }); } catch (e) {}
   var IDX = __INDEX__, packs = {}, native = window.fetch.bind(window), base = location.href.split('#')[0].split('?')[0].replace(/[^/]*$/, '');
   function pack(n) { return packs[n] || (packs[n] = native('pk/data-' + n + '.json').then(function (r) { return r.json(); })); }
   window.fetch = function (input, init) {
@@ -79,7 +84,8 @@ def build_page(stamp, index):
     keep += re.findall(r'<link rel="stylesheet" href="css/site\.css">', head)
     shim = SHIM.replace("__STAMP__", json.dumps(stamp)).replace("__INDEX__", json.dumps(index, separators=(",", ":")))
     top = '<title>PowerKlock Bêta</title>\n<meta name="description" content="PowerKlock, version bêta : menu par métier, recherche, plan du site. Instantané des données du ' + stamp + '.">\n'
-    return top + shim + "\n".join(keep) + "\n" + body
+    # le squelette de claude.ai met le texte de la page à 14 px ; le site compte sur les 16 px du navigateur
+    return top + "<style>body{font-size:16px;line-height:normal}</style>\n" + shim + "\n".join(keep) + "\n" + body
 
 
 def main():
