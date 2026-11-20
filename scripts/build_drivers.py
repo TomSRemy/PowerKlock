@@ -8,10 +8,15 @@ Output, one object per maturity (spot, m1, q1, cal):
   s   daily price series [[date, €/MWh], ...] (spot: day-ahead base average `avg`; forwards: EEX settlement)
   i, r2, b: weight of each driver, explained share, pass-through of 1 €/MWh of gas. js/drivers.js reads them when
       present and otherwise uses the values of its SENS table (regressions of 8 Nov 2026).
+Plus `updated` at the top (UTC time of the last run that changed a figure): scripts/check_data_freshness.py
+watches it, and scripts/check_data_gaps.py flags a last week that falls behind.
 
 Drivers: ttf (TTF day-ahead, €/MWh), eua (EUA front December, €/t), coal (API2, $/t), wind, sol, load, nuc (France
-daily averages in GW from RTE éCO2mix; nuc = available nuclear capacity), de (German price of the same maturity,
-kept as a level only: it is part of the unexplained share).
+daily averages in GW from RTE éCO2mix; nuc = available nuclear capacity, in GW: the feed is in MW and revises
+its last two or three days, so the nuclear contribution of the latest week can still move), de (German price of
+the same maturity, kept as a level only: it is part of the unexplained share).
+A delivery day enters the spot regression once RTE has published at least 88 of its 96 quarter-hours and the TTF
+and nuclear availability of that day are known: the spot therefore ends one or two days before today.
 
 Method (the Method section of the page):
   1. Window: one year of daily data ending on the last forward settlement.
@@ -23,6 +28,8 @@ Method (the Method section of the page):
   4. Contribution of a driver over a week = coefficient × change of the driver over that week. The unexplained share
      of a week = price change − sum of the contributions (computed by the page, not stored).
   5. Frames are written for the last 52 weeks (fewer for a contract quoted for less time: M+1 since March 2026).
+     The page reads the maturities side by side, counting the weeks from the end: every maturity therefore stops
+     at the same week, the last one all of them have reached.
 
 Warehouse tables (Supabase, see the powerklock-sql skill and warehouse/): day-ahead daily averages, forwards
 settlements (EEX, France and Germany base), commodities (TTF, EUA, API2), RTE éCO2mix daily (wind, solar, load),
@@ -30,17 +37,19 @@ nuclear availability.
 
 Usage:  python3 scripts/build_drivers.py   (the warehouse connection comes from the environment, as in the other
 warehouse jobs: never a file — SUPABASE_DB_URL or WAREHOUSE_DB_URL)
+Run by .github/workflows/warehouse-sync.yml right after each sync, so the warehouse holds the latest files.
 """
 import json
 import os
 import sys
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 
 import numpy as np
 import psycopg
 
 OUT_PATH = 'data/drivers/frames.json'
 WINDOW_DAYS = 365
+MIN_SLOTS = 88   # quarter-hours RTE must have published for a day to count (same limit as scripts/check_data_gaps.py)
 
 # maturity → (forward tenor, drivers regressed on, level-or-diff)
 FWD_TENORS = {'m1': 'M+1', 'q1': 'Q+1', 'cal': 'Y+1'}
@@ -61,9 +70,10 @@ def fetch_daily_fuel_means(cur, since):
     wind, sol, load = {}, {}, {}
     for d, w, s, l in cur.fetchall():
         iso = d.isoformat()
-        if w: wind[iso] = sum(v for v in w if v is not None) / len([v for v in w if v is not None]) / 1000
-        if s: sol[iso] = sum(v for v in s if v is not None) / len([v for v in s if v is not None]) / 1000
-        if l: load[iso] = sum(v for v in l if v is not None) / len([v for v in l if v is not None]) / 1000
+        for arr, out in ((w, wind), (s, sol), (l, load)):
+            vals = [v for v in (arr or []) if v is not None]
+            if len(vals) >= MIN_SLOTS:   # a day still being published (today) would give the mean of its first hours
+                out[iso] = sum(vals) / len(vals) / 1000
     return wind, sol, load
 
 
@@ -120,13 +130,14 @@ def build_maturity(cur, key, since):
     wind, sol, load = fetch_daily_fuel_means(cur, since)
     nuc = fetch_series(cur, """select trade_date, value from market.commodity_close
                                where key='fr_nuc_avail' and trade_date >= %s order by trade_date""", (since,))
+    nuc = {d: v / 1000 for d, v in nuc.items()}   # the feed is in MW, the page shows GW
     if key == 'spot':
         price = fetch_series(cur, """select delivery_date, avg from market.da_price_day
                                      where zone='FR' and delivery_date >= %s order by delivery_date""", (since,))
         ttf = fetch_series(cur, """select trade_date, value from market.commodity_close
                                    where key='ttf' and trade_date >= %s order by trade_date""", (since,))
         levels = {'ttf': ttf, 'wind': wind, 'sol': sol, 'load': load, 'nuc': nuc}
-        dates = sorted(set(price) & set(ttf) & set(wind) & set(load) & set(nuc))
+        dates = sorted(set(price) & set(ttf) & set(wind) & set(sol) & set(load) & set(nuc))
         if len(dates) < 30:
             return None
         y = np.array([price[d] for d in dates])
@@ -166,6 +177,19 @@ def build_maturity(cur, key, since):
     return {'w': frames, 's': s_series, 'i': i, 'r2': round(r2, 2), 'b': round(raw_coef.get('ttf', 0.0), 2)}
 
 
+def align_last_week(out):
+    """js/drivers.js pairs the maturities by counting the frames from the end. When one maturity has entered a new
+    week before the others (Monday's spot inputs before Monday's settlements, or the reverse), its extra frame
+    would shift all its weeks by one against the others: every maturity stops at the last week they all have."""
+    week = lambda f: date.fromisoformat(f['d']).isocalendar()[:2]
+    lasts = [week(m['w'][-1]) for m in out.values() if m['w']]
+    if not lasts:
+        return
+    common = min(lasts)
+    for m in out.values():
+        m['w'] = [f for f in m['w'] if week(f) <= common]
+
+
 def main() -> int:
     db = os.environ.get('SUPABASE_DB_URL') or os.environ.get('WAREHOUSE_DB_URL')
     if not db:
@@ -184,10 +208,20 @@ def main() -> int:
     if not out:
         print('No maturity had enough data: frames.json left as is.')
         return 0
+    align_last_week(out)
+    try:
+        with open(OUT_PATH) as f:
+            old = json.load(f)
+    except (OSError, ValueError):
+        old = {}
+    if {k: v for k, v in old.items() if k != 'updated'} == json.loads(json.dumps(out)):
+        print(f'{OUT_PATH}: no figure changed, left as is (updated {old.get("updated")}).')
+        return 0
+    out = {'updated': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'), **out}
     os.makedirs(os.path.dirname(OUT_PATH), exist_ok=True)
     with open(OUT_PATH, 'w') as f:
         json.dump(out, f, separators=(',', ':'))
-    print(f'Wrote {OUT_PATH} ({", ".join(out)})')
+    print(f'Wrote {OUT_PATH} (' + ', '.join(f"{k} to {v['w'][-1]['d']}" for k, v in out.items() if k != 'updated' and v['w']) + ')')
     return 0
 
 

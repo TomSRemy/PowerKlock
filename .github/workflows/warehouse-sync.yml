@@ -3,6 +3,9 @@ name: Warehouse sync (Supabase)
 # Mirrors the data files into the PowerKlock PostgreSQL warehouse
 # (warehouse/README.md). Runs after each data fetch, every 6 hours as a
 # safety net, or by hand (tick "full" to reload everything).
+# Right after the sync, scripts/build_drivers.py reads the warehouse and rebuilds
+# data/drivers/frames.json (Markets › What drives the price, and its block on
+# Today); the file is pushed only when a figure changed.
 #
 # Needs the repository secret SUPABASE_DB_URL: Supabase → Connect →
 # Session pooler connection string (IPv4; the "Direct" one is IPv6-only and
@@ -26,6 +29,7 @@ on:
     paths:
       - 'data/history/fr_market_contracts.json'
       - 'warehouse/**'
+      - 'scripts/build_drivers.py'
       - '.github/workflows/warehouse-sync.yml'
   schedule:
     - cron: '17 */6 * * *'
@@ -45,7 +49,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
-      contents: read
+      contents: write     # to push data/drivers/frames.json
     steps:
       - name: Check secret
         id: secret
@@ -73,13 +77,41 @@ jobs:
 
       - name: Install dependencies
         if: steps.secret.outputs.ok == 'true'
-        run: pip install "psycopg[binary]==3.3.2"
+        run: pip install "psycopg[binary]==3.3.2" numpy==2.2.6
 
       - name: Sync
         if: steps.secret.outputs.ok == 'true'
         env:
           WAREHOUSE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: python warehouse/sync.py ${{ inputs.full && '--full' || '' }}
+
+      - name: What drives the price (weekly frames from the warehouse just synced)
+        if: steps.secret.outputs.ok == 'true'
+        env:
+          WAREHOUSE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: python scripts/build_drivers.py
+
+      - name: Commit and push the frames
+        if: steps.secret.outputs.ok == 'true'
+        run: |
+          git config user.name "PowerDesk Bot"
+          git config user.email "bot@powerdesk.local"
+          git add data/drivers/frames.json
+          if git diff --staged --quiet; then
+            echo "No change in data/drivers/frames.json — skipping commit."
+            exit 0
+          fi
+          git commit -m "data: what drives the price $(date -u '+%Y-%m-%d %H:%M UTC')"
+          # Other bots push to main at the same time: on a conflict keep this
+          # run's fresh file (-X theirs = the commit being replayed).
+          for i in 1 2 3 4 5 6 7 8; do
+            git pull --rebase --autostash -X theirs origin main && git push origin HEAD:main && exit 0
+            git rebase --abort 2>/dev/null || true
+            echo "Push attempt $i failed, retrying..."
+            sleep $((5 + RANDOM % 20))
+          done
+          echo "Failed to push after 8 attempts."
+          exit 1
 
       - name: E-mail on failure
         if: failure()
