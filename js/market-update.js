@@ -506,15 +506,12 @@ if (window.PKW) PKW.register({
     const [J, P] = await Promise.all([_muGet('d' + d, 'history/daily/' + d + '.json'), _muGet('d' + _muAdd(d, -1), 'history/daily/' + _muAdd(d, -1) + '.json')]);
     let q = J && J.zones && J.zones[Z] && J.zones[Z].hourly; const qp = P && P.zones && P.zones[Z] && P.zones[Z].hourly;
     // tomorrow before the auction (about 13:00): France only, the PowerKlock forecast, said as such
-    if (!q && Z === 'FR' && p.day === 'tomorrow') { const nf = await _muGet('negf', 'neg_forecast.json'); const f = nf && nf.days && nf.days[d]; if (f && f.price && f.price.filter(v => v != null).length >= 20) { q = f.price.slice(0, 24); fcast = true; } }
+    // tomorrow before the auction (about 13:00): no forecast figure, only « published around 13:00 »
     if (!q) { const _dd = o => new Date(d + 'T12:00:00Z').toLocaleDateString(T('fr-FR', 'en-GB'), Object.assign({ timeZone: 'UTC' }, o)); host.innerHTML = `<div class="mu-day mu-day-grey"><div class="mu-day-h"><div><div class="mu-day-t">${_muZoneName(Z)} · <span class="mu-day-dl">${_dd({ weekday: 'long', day: 'numeric', month: 'long' })}</span><span class="mu-day-ds">${_dd({ weekday: 'short', day: 'numeric', month: 'short' })}</span></div></div></div><div class="fuel-note mu-day-why" style="padding:26px 6px;text-align:center"></div></div>`;
       // three different cases, three messages: not published yet (and how the forecast is doing), late, or a failed load
       const why = host.querySelector('.mu-day-why'), now = new Date(), parisH = +now.toLocaleString('en-GB', { hour: '2-digit', hour12: false, timeZone: 'Europe/Paris' });
       if (d > t) {
-        const nf = Z === 'FR' ? await _muGet('negf', 'neg_forecast.json') : null, upd = nf && nf.updated ? new Date(nf.updated) : null;
-        const when = upd ? upd.toLocaleString(T('fr-FR', 'en-GB'), { weekday: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' }) : null;
-        const fc = Z !== 'FR' ? '' : parisH >= 10 ? T(`<br>Prévision PowerKlock en retard aujourd’hui${when ? ' (dernière mise à jour ' + when + ')' : ''}.`, `<br>PowerKlock forecast late today${when ? ' (last update ' + when + ')' : ''}.`)
-          : T('<br>La prévision PowerKlock arrive dans la matinée.', '<br>The PowerKlock forecast comes in the morning.');
+        const fc = '';
         why.innerHTML = parisH < 13 ? T('Pas encore publié : prix connu vers 13 h.', 'Not published yet: price known around 13:00.') + fc
           : T('Prix en cours de publication (attendu vers 13 h, en retard).', 'Price being published (due around 13:00, late).') + fc;
       } else {

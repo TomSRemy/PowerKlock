@@ -205,8 +205,6 @@ def markets(today, days=1):
             row("Pointe − base aujourd'hui", "Peak − base today", t["peak"] - t["base"], "€/MWh", (y["peak"] - y["base"]) if y else None, "ENTSO-E", show="abs")
         if tm:
             row("Heures ≤ 0 € demain", "Hours ≤ 0 € tomorrow", tm["neg"], "h", t["neg"] if t else None, "ENTSO-E", "markets/spot/negative", show="h")
-        elif fc.get("expected_hours") is not None:
-            row("Heures ≤ 0 € demain (prévision)", "Hours ≤ 0 € tomorrow (forecast)", fc["expected_hours"], "h", t["neg"] if t else None, "PowerKlock", "markets/spot/negative", show="h")
         elif t:
             row("Heures ≤ 0 € aujourd'hui", "Hours ≤ 0 € today", t["neg"], "h", y["neg"] if y else None, "ENTSO-E", "markets/spot/negative", show="h")
     ch = dload("history", "fr_market_calchain.json") or {}
