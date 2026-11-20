@@ -1,0 +1,22 @@
+{
+ "date": "2026-11-20",
+ "countries": {
+  "FR": {
+   "spot": 190.19
+  },
+  "UK": {
+   "spot": 186.22
+  },
+  "DE": {
+   "spot": 187.88
+  },
+  "NL": {
+   "spot": 194.28
+  }
+ },
+ "marketInsightsHtml": "<p>Le parc nucléaire français fonctionnera avec environ 9 GW hors ligne au cours du mois, soit une moyenne de 9,3 GW avec la connexion IFA (France vers Royaume-Uni) à moitié capacité en raison de maintenance jusqu'au 12 décembre.</p>",
+ "marketInsights": {
+  "gas": "<p>European gas prices have opened higher this morning, with Dec-26 front month contract climbing to 215p/therm, &euro;86/MWh (TTF) and &euro;87.20/MWh (THE).</p>\n<p>A large volume of Norwegian capacity was offline yesterday, with 80mcm/day offline due to planned maintenance. There was an unexpected outage at Asgard that took another 10mcm/day offline with an uncertain duration. This helped to boost near term contracts as prompt markets gained in value.</p>\n<p>On Thursday, the European parliament and Council reached an agreement to the EU Methane regulation to postpone requirements for gas, oil and coal importers aimed to reduce further the strain in global energy markets. This agreement will require sign off by the European Parliament and the Council.</p>\n<p>Temperatures across Europe are set to remain below seasonal average bringing heightened demand this weekend. The UK is set to see temps turn negative tonight and hold 3/4&deg;C below the seasonal average throughout the weekend. Germany and the Netherlands will see the cold move in to start the week as temperatures look set to test zero on Monday.</p>\n<p>The UK Prime Minister is in Brussels today to attend a UK-EU summit with energy and carbon policy on the agenda which could bring some headlines later today.</p>",
+  "power": "<p>Power contracts posted gains on Thursday, dragged upwards by rising European gas markets as cold weather and high demand tighten markets, whilst outages and political focus on the Middle East continued to bring risk.</p>\n<p>Q1-27 contracts saw the highest increase across the curve with a &pound;6/MWh climb with the contract reaching &pound;172/MWh. Front month December saw the largest gain as it found support from tightening supply due to cold weather and Norwegian outages. Dec-26 lifted &pound;7/MWh.</p>\n<p>The French nuclear fleet will run with approximately 9GW offline during the month at an average of 9.3GW with the IFA (France to UK) connection at half capacity due to maintenance until 12th December.</p>\n<p>There are expectations of Dunkelflaute conditions across the weekend and to start next week with cold temperatures and well below seasonal average wind generation which could see increased prices across spot markets next week.</p>"
+ }
+}
