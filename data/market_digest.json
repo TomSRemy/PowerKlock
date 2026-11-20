@@ -1,44 +1,51 @@
 {
- "updated": "2026-11-19T23:08:02+00:00",
- "asof": "2026-11-19",
+ "updated": "2026-11-20T15:39:07+00:00",
+ "asof": "2026-11-20",
  "notes": 2,
  "engine": "proxy",
  "context": [
   {
    "topic": "France",
    "topic_en": "France",
-   "text": "La disponibilité nucléaire en France est en hausse, avec 47 001 MW disponibles. La consommation d'électricité est en baisse en raison de la météo plus clémente. Cela pousse les prix à la baisse.",
-   "text_en": "Nuclear availability in France is increasing, with 47,001 MW available. Electricity consumption is decreasing due to milder weather. This is pushing prices down.",
+   "text": "La disponibilité nucléaire en France a augmenté de 3,1% en une semaine, à 47 001,18 MW, ce qui pousse les prix à la baisse. La consommation électrique en France a également été impactée par la météo, avec des températures plus fraîches que prévu.",
+   "text_en": "French nuclear availability increased by 3.1% in a week, to 47,001.18 MW, pushing prices down. French electricity consumption was also affected by weather, with cooler-than-expected temperatures.",
    "tone": "down"
   },
   {
    "topic": "Golfe",
    "topic_en": "Gulf",
-   "text": "Les tensions dans le Golfe persistent, mais les livraisons de GNL et la production américaine augmentent, ce qui compense le risque géopolitique et pousse les prix à la baisse.",
-   "text_en": "Tensions in the Gulf persist, but LNG deliveries and US production are increasing, which offsets the geopolitical risk and pushes prices down.",
+   "text": "Les tensions dans le Golfe ont entraîné une augmentation des prix du pétrole, mais l'effet sur les prix de l'électricité en France est limité.",
+   "text_en": "Tensions in the Gulf led to an increase in oil prices, but the effect on French electricity prices is limited.",
+   "tone": "flat"
+  },
+  {
+   "topic": "Norvège",
+   "topic_en": "Norway",
+   "text": "La production gazière norvégienne a augmenté, ce qui a entraîné une baisse des prix du gaz en Europe, et donc une baisse des prix de l'électricité en France.",
+   "text_en": "Norwegian gas production increased, leading to a decrease in European gas prices, and therefore a decrease in French electricity prices.",
    "tone": "down"
   }
  ],
  "outlook": {
   "oil": {
-   "tone": "down",
-   "text": "Les prix du pétrole devraient continuer à baisser en raison de la forte production américaine et de l'augmentation des exportations du Moyen-Orient.",
-   "text_en": "Oil prices are expected to continue to fall due to strong US production and increased exports from the Middle East."
+   "tone": "up",
+   "text": "Les prix du pétrole devraient augmenter en raison des tensions dans le Golfe.",
+   "text_en": "Oil prices are expected to rise due to tensions in the Gulf."
   },
   "gas": {
    "tone": "down",
-   "text": "Les prix du gaz devraient rester bas en raison de la forte production norvégienne et de la baisse de la demande pour la production d'électricité.",
-   "text_en": "Gas prices are expected to remain low due to strong Norwegian production and decreased demand for electricity generation."
+   "text": "Les prix du gaz devraient baisser en raison de l'augmentation de la production norvégienne.",
+   "text_en": "Gas prices are expected to fall due to increased Norwegian production."
   },
   "power": {
-   "tone": "flat",
-   "text": "Les prix de l'électricité devraient rester stables en raison de la balance entre l'offre et la demande.",
-   "text_en": "Electricity prices are expected to remain stable due to the balance between supply and demand."
+   "tone": "down",
+   "text": "Les prix de l'électricité devraient baisser en raison de la disponibilité nucléaire accrue en France.",
+   "text_en": "Electricity prices are expected to fall due to increased nuclear availability in France."
   },
   "carbon": {
    "tone": "flat",
-   "text": "Les prix du carbone devraient rester stables en raison de la stabilité de la demande et de l'offre.",
-   "text_en": "Carbon prices are expected to remain stable due to stable demand and supply."
+   "text": "Les prix du carbone devraient rester stables.",
+   "text_en": "Carbon prices are expected to remain stable."
   }
  }
 }
