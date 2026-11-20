@@ -16,6 +16,7 @@ unreachable from CI: their failures are reported as warnings, not errors.
     python tests/smoke.py            # exit code 1 on any error
 """
 import functools
+import json
 import http.server
 import os
 import re
@@ -34,6 +35,29 @@ KNOWN_WARNINGS = {
 }
 LIVE_WIDGETS = {'cb-intraday', 'cb-days', 'cb-fr-avg', 'kpi-fr-load', 'kpi-fr-net', 'kpi-hdd', 'wx-forecast', 'hdd', 'hdd-cum',
                 'imb-intraday', 'imb-days', 'imb-dist', 'load-day'}
+
+
+def _fc_neg_on_trial():
+    """True while the live record of the price forecast does not justify showing it (same rule as js/pk-forecast.js):
+    price: 30 days scored and a mean error at least 15 % below « tomorrow = today »;
+    negative hours: 10 real negative days, 70 % of them flagged, at most 30 % false alarms."""
+    try:
+        with open(os.path.join(ROOT, 'data', 'neg_forecast.json'), encoding='utf-8') as f:
+            live = json.load(f).get('live') or {}
+    except (OSError, ValueError):
+        return False
+    lv = (live.get('models') or {}).get(live.get('current'))
+    if not lv:
+        return True
+    price_ok = lv.get('days', 0) >= 30 and lv.get('naive_mae') and lv.get('mae') is not None and lv['mae'] <= 0.85 * lv['naive_mae']
+    neg_ok = (lv.get('days_negative', 0) >= 10 and lv.get('caught', 0) / lv['days_negative'] >= 0.7
+              and lv.get('days_flagged') and lv.get('false_alarms', 0) / lv['days_flagged'] <= 0.3)
+    return not (price_ok or neg_ok)
+
+
+# widgets hidden on purpose until their record justifies them: they show a marked "on trial" message instead of a chart.
+# Accepted only while the data really says so; once the record is good enough, the chart must draw like any other.
+TRIAL_WIDGETS = {'fc-neg': _fc_neg_on_trial}
 # Messages from third-party endpoints that CI cannot always reach.
 NOISE = re.compile(r'Failed to load resource|net::ERR_|favicon|opendata\.elia|odre\.opendatasoft|open-meteo|supabase', re.I)
 
@@ -252,10 +276,16 @@ def main():
             // a widget drawn on its own canvas without Chart.js (js/spiral.js) marks it data-pk-drawn="1" once painted
             const own = !!el.querySelector('canvas[data-pk-drawn="1"]');
             return { wid: it.wid, chart: !!ch || html || own, kpi: !!el.querySelector('.pkd-kpi .pkd-kpi-v:not(.pkd-kpi-na)'),
+                     trial: ((el.querySelector('.no-data-msg[data-pk-trial]') || {}).dataset || {}).pkTrial || '',
                      msg: (el.querySelector('.no-data-msg, .pkd-empty-w, .pkd-loading') || {}).innerText || '' };
         })""")
         for r in res:
-            if r['chart'] or r['kpi']:
+            trial = TRIAL_WIDGETS.get(r['wid'])
+            if trial and (r['trial'] == r['wid']) != trial():
+                # the message and the record disagree: hidden although it has proved itself, or drawn although it has not
+                errors.append(f"[catalogue] {r['wid']}: {'on trial' if r['trial'] else 'shown'}, but its live record says the opposite")
+                continue
+            if r['chart'] or r['kpi'] or (trial and r['trial'] == r['wid'] and len(r['msg'].strip()) > 40):
                 continue
             line = f"[catalogue] {r['wid']}: not drawn ({r['msg'].strip()[:120] or 'empty'})"
             (warnings if r['wid'] in LIVE_WIDGETS else errors).append(line)
