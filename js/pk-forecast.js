@@ -221,6 +221,8 @@
           const why = _fT('Prévision en test : elle s’affichera quand son bilan réel le justifiera (prix : 30 jours et 15 % mieux que « demain = aujourd’hui » ; heures négatives : 10 jours négatifs, 70 % repérés, au plus 30 % de fausses alertes).',
                           'Forecast on trial: it will show once its live record justifies it (price: 30 days and 15 % better than « tomorrow = today »; negative hours: 10 negative days, 70 % flagged, at most 30 % false alarms).');
           noDataMsg(cid, _fT('Prévision en test', 'Forecast on trial'), why);
+          // a deliberate state, not missing data: marked so that tests/smoke.py can tell the two apart (it checks the record itself)
+          const tm = document.getElementById(cid) && document.getElementById(cid).parentNode.querySelector('.no-data-msg'); if (tm) tm.dataset.pkTrial = 'fc-neg';
           return { sub: why + ' · ' + rec };
         }
         const lbl = [], pr = [], act = [], pf = [], plo = [], phi = [];
