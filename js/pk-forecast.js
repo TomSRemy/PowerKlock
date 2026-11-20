@@ -300,6 +300,67 @@
     });
   }
 
+  // forecast error history: how far off the TSO day-ahead forecast was, day by day, from data/history/forecast/<YYYY-MM>.json
+  //   error (WAPE) = Σ|forecast − actual| ÷ Σ actual over the hours of the delivery day; bias = Σ(forecast − actual) ÷ Σ actual
+  const histP = {};
+  function histMonth(ym) {
+    if (!histP[ym]) histP[ym] = fetch(base() + 'history/forecast/' + ym + '.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : null).catch(() => null);
+    return histP[ym];
+  }
+  const prevYm = ym => { const [y, m] = ym.split('-').map(Number); return new Date(Date.UTC(y, m - 2, 1)).toISOString().slice(0, 7); };
+  async function errorSeries(zone, kind) {
+    const out = [];
+    let ym = today().slice(0, 7);
+    for (let i = 0; i < 36; i++) {                       // back month by month until the archive stops
+      const j = await histMonth(ym);
+      if (!j || !j.days) break;
+      Object.keys(j.days).forEach(d => {
+        const k = j.days[d][zone] && j.days[d][zone][kind];
+        if (!k || !k.fc || !k.act) return;
+        let e = 0, a = 0, b = 0, n = 0;
+        k.fc.forEach((f, h) => { const v = k.act[h]; if (f == null || v == null) return; e += Math.abs(f - v); b += f - v; a += v; n++; });
+        if (n >= 20 && a > 0) out.push({ d, err: e / a, bias: b / a });   // a day still in progress (hours missing) is left out
+      });
+      ym = prevYm(ym);
+    }
+    return out.sort((x, y) => x.d < y.d ? -1 : 1);
+  }
+  const KIND_NAME = { solar: 'Solar', wind: 'Wind', load: 'Load' };
+
+  if (window.PKW) {
+    PKW.register({
+      id: 'fc-error', title: 'Forecast error · day by day', category: 'renewables', page: 'analysis', pageCanvas: 'ma-fc-err',
+      source: 'TSO day-ahead forecasts and actual output (ENTSO-E, via Energy-Charts)', size: { w: 6, h: 5 },
+      desc: 'How far off the grid operators’ day-ahead forecast was, day by day, as a share of actual output (error = Σ|forecast − actual| ÷ Σ actual over the hours of the day), with its 7-day average. Solar, wind or load.',
+      params: [{ key: 'zone', label: 'Zone', inTitle: true, options: Object.entries(ZONES) }, { key: 'kind', label: 'Series', options: [['solar', 'Solar'], ['wind', 'Wind'], ['load', 'Load']] }], defaults: { zone: 'FR', kind: 'solar' },
+      titleFn: p => (ZONES[p.zone] || p.zone) + ' · ' + (KIND_NAME[p.kind] || 'Solar').toLowerCase() + ' forecast error',
+      async draw(cid, p) {
+        const zone = p.zone || 'FR', kind = KIND_NAME[p.kind] ? p.kind : 'solar';
+        const acc = await accuracy(zone);
+        if (acc[kind] && acc[kind].note) { noDataMsg(cid, 'Error not measurable', 'Actual output is reported for only part of the fleet'); return null; }
+        const ser = await errorSeries(zone, kind);
+        if (ser.length < 3) { noDataMsg(cid, 'Not enough history yet', 'The forecast archive is still short'); return null; }
+        const lbl = ser.map(r => new Date(r.d + 'T12:00:00Z').toLocaleDateString('en-GB', { day: '2-digit', month: 'short', timeZone: 'UTC' }));
+        const pc = v => Math.round(v * 1000) / 10;
+        const daily = ser.map(r => pc(r.err));
+        const roll = ser.map((_, i) => { const w = ser.slice(Math.max(0, i - 6), i + 1); return w.length >= 4 ? pc(w.reduce((s, r) => s + r.err, 0) / w.length) : null; });
+        _fuelChart(cid, { type: 'line', data: { labels: lbl, datasets: [
+          _fuelLineDs('Daily error', daily, COL[kind], { borderWidth: 1, pointRadius: 2, borderColor: COL[kind] + '99' }),
+          _fuelLineDs('7-day average', roll, COL[kind], { borderWidth: 2.4, spanGaps: false }),
+        ] }, options: _fuelOpts({
+          scales: { x: Object.assign(_fuelXAxis(), { ticks: { color: C_TX3, font: { size: 10 }, maxTicksLimit: 8, maxRotation: 0 } }),
+                    y: _fuelAxis('% of actual output', { beginAtZero: true, ticks: { color: C_TX3, font: { size: 10 }, callback: v => v + ' %' } }) },
+          plugins: { tooltip: { callbacks: { label: c => c.dataset.label + ': ' + (c.parsed.y == null ? '–' : c.parsed.y.toFixed(1)) + ' %' } } } }) }, 'forecast-error-' + kind + '-' + zone);
+        const mean = ser.reduce((s, r) => s + r.err, 0) / ser.length, bias = ser.reduce((s, r) => s + r.bias, 0) / ser.length;
+        const bt = Math.abs(bias) < 0.01 ? '' : ', bias ' + pc(Math.abs(bias)) + ' % ' + (bias > 0 ? 'high' : 'low');
+        return {
+          finding: KIND_NAME[kind] + ' forecast error: ' + pc(mean) + ' % on average over ' + ser.length + ' days' + bt,
+          sub: 'Day-ahead forecast against actual output, hourly · error = Σ|forecast − actual| ÷ Σ actual',
+        };
+      },
+    });
+  }
+
   // key figures for tomorrow (falls back to today when tomorrow is not published yet)
   async function tiles(host, zone) {
     if (!host) return;
@@ -326,5 +387,5 @@
     }).join('') + '</div><div class="pkf-note">' + chip() + ' TSO day-ahead forecast · <b>' + (ZONES[zone] || zone) + '</b> · fetched ' + (await published()) + (b ? '' : ' · tomorrow\u2019s forecast is not published yet (usually by midday): today shown') + '</div>';
   }
 
-  window.PKF = { get, day, accuracy, accText, published, bias, chip, tiles, nowSlot, today, zonePlugin, ZONES };
+  window.PKF = { get, day, accuracy, errorSeries, accText, published, bias, chip, tiles, nowSlot, today, zonePlugin, ZONES };
 })();

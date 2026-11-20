@@ -1179,6 +1179,7 @@
       else if (f) f.remove();
     };
     PKW.draw('fc-48h', 'ma-fc-48h', { zone: z }).then(r => sub('ma-fc-48h-sub', r));
+    PKW.draw('fc-error', 'ma-fc-err', { zone: z, kind: 'solar' }).then(r => sub('ma-fc-err-sub', r));
     PKW.draw('wx-outlook', 'ma-fc-wind', { country: cc, series: 'wind', past: '7' }).then(r => sub('ma-fc-wind-sub', r));
     PKW.draw('wx-outlook', 'ma-fc-solar', { country: cc, series: 'solar', past: '7' }).then(r => sub('ma-fc-solar-sub', r));
   }
