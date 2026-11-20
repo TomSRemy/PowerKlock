@@ -458,6 +458,10 @@
   window.addEventListener('resize', () => { document.querySelectorAll('canvas[data-pkb-sized]').forEach(c => { delete c.dataset.pkbSized; }); sizeLater(); });
   document.addEventListener('click', () => { sizeLater(); setTimeout(sizeCharts, 2500); });
   window.addEventListener('popstate', sizeLater);
+  // a chart drawn later (slow data, a section unfolded by code) is sized too: once after the last new chart
+  try { if (window.Chart && Chart.register) Chart.register({ id: 'pkbSize', afterInit() { sizeLater(); } }); } catch (e) { /* the clicks and page changes above still size the charts */ }
+  new MutationObserver(ms => { if (ms.some(m => m.target.classList && m.target.classList.contains('hist-section'))) sizeLater(); })
+    .observe(main, { attributes: true, attributeFilter: ['class'], subtree: true });
   PKBeta.sizeCharts = sizeCharts;
   PKBeta.afterNav = () => { sizeLater(); setTimeout(sizeCharts, 2500); };
 })();

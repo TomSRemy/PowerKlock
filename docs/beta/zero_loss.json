@@ -27,16 +27,16 @@
   "views": 101,
   "unique": {
    "chart": 253,
-   "kpi": 300,
-   "text": 1375,
-   "table": 87,
+   "kpi": 296,
+   "text": 1374,
+   "table": 86,
    "section": 117,
    "control": 202,
    "figure": 4,
    "map": 1
   },
-  "seconds": 434,
-  "date": "2026-11-20 20:57 UTC"
+  "seconds": 429,
+  "date": "2026-11-20 21:06 UTC"
  },
  "summary": {
   "chart": {
@@ -48,17 +48,17 @@
   },
   "table": {
    "current": 86,
-   "beta": 87,
+   "beta": 86,
    "found": 86,
    "missing": 0,
-   "added": 1
+   "added": 0
   },
   "kpi": {
    "current": 296,
-   "beta": 300,
+   "beta": 296,
    "found": 296,
    "missing": 0,
-   "added": 4
+   "added": 0
   },
   "section": {
    "current": 117,
@@ -90,10 +90,10 @@
   },
   "text": {
    "current": 1275,
-   "beta": 1376,
+   "beta": 1374,
    "found": 1275,
    "missing": 0,
-   "added": 101
+   "added": 99
   }
  },
  "missing": [],
@@ -262,7 +262,7 @@
    ],
    "size_beta": [
     500,
-    348
+    376
    ]
   },
   {
@@ -276,7 +276,7 @@
    ],
    "size_beta": [
     500,
-    376
+    404
    ]
   },
   {
@@ -458,7 +458,7 @@
    ],
    "size_beta": [
     500,
-    470
+    395
    ]
   },
   {
@@ -472,7 +472,7 @@
    ],
    "size_beta": [
     1048,
-    300
+    320
    ]
   },
   {
@@ -500,7 +500,7 @@
    ],
    "size_beta": [
     500,
-    300
+    280
    ]
   },
   {
@@ -514,7 +514,7 @@
    ],
    "size_beta": [
     500,
-    300
+    280
    ]
   },
   {
@@ -1872,7 +1872,7 @@
    ],
    "size_beta": [
     500,
-    320
+    280
    ]
   },
   {
@@ -1886,7 +1886,7 @@
    ],
    "size_beta": [
     500,
-    341
+    301
    ]
   },
   {
@@ -3118,7 +3118,7 @@
    ],
    "size_beta": [
     1048,
-    320
+    280
    ]
   },
   {
@@ -3335,7 +3335,7 @@
  "live_not_comparable": [],
  "errors": {
   "current": 31,
-  "beta": 25,
+  "beta": 27,
   "beta_page_errors": [
    {
     "view": "intel/news > Textes officiels",
