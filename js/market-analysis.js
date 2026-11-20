@@ -1123,7 +1123,7 @@
 
   function _paintControls() {
     const pkPill = window.pkPill || function (o) {
-      return '<button onclick="' + o.onClick + '" style="padding:4px 10px;font-size:10px;border-radius:12px;cursor:pointer;background:' + (o.active ? 'rgba(20,211,169,0.15)' : 'transparent') + ';color:' + (o.active ? '#14D3A9' : 'var(--tx3)') + ';border:1px solid ' + (o.active ? 'rgba(20,211,169,0.4)' : 'var(--bd)') + ';font-family:\'JetBrains Mono\',monospace;font-weight:600">' + o.label + '</button>';
+      return '<button onclick="' + o.onClick + '" style="padding:4px 10px;min-height:24px;box-sizing:border-box;font-size:10px;border-radius:12px;cursor:pointer;background:' + (o.active ? 'rgba(20,211,169,0.15)' : 'transparent') + ';color:' + (o.active ? '#14D3A9' : 'var(--tx3)') + ';border:1px solid ' + (o.active ? 'rgba(20,211,169,0.4)' : 'var(--bd)') + ';font-family:\'JetBrains Mono\',monospace;font-weight:600">' + o.label + '</button>';
     };
 
     const win = document.getElementById('ma-window-pills');

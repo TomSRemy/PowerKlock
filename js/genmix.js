@@ -431,17 +431,17 @@ function renderGmMain() {
     const co2C  = _gmCo2Color(st.co2);
     const dom   = GM_FUEL_META[st.dom] || GM_FUEL_META.other;
     return `<tr class="gm-row" data-zone="${z}" style="cursor:pointer">
-      <td style="text-align:left;padding:9px 6px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--tx2)">${flagOf(z)} ${z}</td>
-      <td style="text-align:left;padding:9px 6px;font-size:11px;color:var(--tx3)">${nameOf(z)}</td>
-      <td style="text-align:right;padding:9px 6px;font-family:'JetBrains Mono',monospace;color:var(--tx);font-weight:600">${fmt(st.total / 1000)}</td>
-      <td style="text-align:right;padding:9px 6px;font-family:'JetBrains Mono',monospace;color:${renC};font-weight:600">${fmt(st.renPct, 1)}%</td>
-      <td style="text-align:right;padding:9px 6px;font-family:'JetBrains Mono',monospace;color:var(--tx2)">${fmt((mix.wind || 0) / 1000)}</td>
-      <td style="text-align:right;padding:9px 6px;font-family:'JetBrains Mono',monospace;color:var(--tx2)">${fmt((mix.solar || 0) / 1000)}</td>
-      <td style="text-align:right;padding:9px 6px;font-family:'JetBrains Mono',monospace;color:var(--tx2)">${fmt((mix.nuclear || 0) / 1000)}</td>
-      <td style="text-align:right;padding:9px 6px;font-family:'JetBrains Mono',monospace;color:var(--tx2)">${fmt((mix.hydro || 0) / 1000)}</td>
-      <td style="text-align:right;padding:9px 6px;font-family:'JetBrains Mono',monospace;color:${st.fosPct > 30 ? '#ED6965' : 'var(--tx2)'}">${fmt((mix.fossil || 0) / 1000)}</td>
-      <td style="text-align:left;padding:9px 6px;font-family:'JetBrains Mono',monospace"><span style="color:${dom.color};font-size:11px">${dom.emoji} ${dom.label}</span></td>
-      <td style="text-align:right;padding:9px 6px;font-family:'JetBrains Mono',monospace;color:${co2C};font-weight:600">${Math.round(st.co2)}</td>
+      <td style="text-align:left;padding:9px 12px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--tx2)">${flagOf(z)} ${z}</td>
+      <td style="text-align:left;padding:9px 12px;font-size:11px;color:var(--tx3)">${nameOf(z)}</td>
+      <td style="text-align:right;padding:9px 12px;font-family:'JetBrains Mono',monospace;color:var(--tx);font-weight:600">${fmt(st.total / 1000)}</td>
+      <td style="text-align:right;padding:9px 12px;font-family:'JetBrains Mono',monospace;color:${renC};font-weight:600">${fmt(st.renPct, 1)}%</td>
+      <td style="text-align:right;padding:9px 12px;font-family:'JetBrains Mono',monospace;color:var(--tx2)">${fmt((mix.wind || 0) / 1000)}</td>
+      <td style="text-align:right;padding:9px 12px;font-family:'JetBrains Mono',monospace;color:var(--tx2)">${fmt((mix.solar || 0) / 1000)}</td>
+      <td style="text-align:right;padding:9px 12px;font-family:'JetBrains Mono',monospace;color:var(--tx2)">${fmt((mix.nuclear || 0) / 1000)}</td>
+      <td style="text-align:right;padding:9px 12px;font-family:'JetBrains Mono',monospace;color:var(--tx2)">${fmt((mix.hydro || 0) / 1000)}</td>
+      <td style="text-align:right;padding:9px 12px;font-family:'JetBrains Mono',monospace;color:${st.fosPct > 30 ? '#ED6965' : 'var(--tx2)'}">${fmt((mix.fossil || 0) / 1000)}</td>
+      <td style="text-align:left;padding:9px 12px;font-family:'JetBrains Mono',monospace"><span style="color:${dom.color};font-size:11px">${dom.emoji} ${dom.label}</span></td>
+      <td style="text-align:right;padding:9px 12px;font-family:'JetBrains Mono',monospace;color:${co2C};font-weight:600">${Math.round(st.co2)}</td>
     </tr>`;
   }).join('');
 
@@ -1196,15 +1196,15 @@ function _gmRenderCarbonBreakdown(breakHost, co2, cmpData, cmpLabel, STACK) {
   const perH = co2.length / 24;
   const cleanH = co2.filter(v => v != null && v < 100).length / (perH || 1);
   const dirtyH = co2.filter(v => v != null && v > 300).length / (perH || 1);
-  const cell = (txt, o = {}) => `<td style="padding:6px 8px;${o.right ? 'text-align:right;' : ''}font-family:'JetBrains Mono',monospace;color:${o.color || 'var(--tx)'}">${txt}</td>`;
+  const cell = (txt, o = {}) => `<td style="padding:9px 12px;${o.right ? 'text-align:right;' : ''}font-family:'JetBrains Mono',monospace;color:${o.color || 'var(--tx)'}">${txt}</td>`;
   const row = (l, v, u, n, c) => `<tr style="border-top:1px solid var(--bd)">${cell(l, { color: 'var(--tx2)' })}${cell(v, { right: true, color: c })}${cell(u, { right: true, color: 'var(--tx3)' })}${cell(n, { color: 'var(--tx3)' })}</tr>`;
   breakHost.innerHTML = `
     <table style="width:100%;border-collapse:collapse;font-size:11px">
       <thead><tr>
-        <th style="padding:4px 8px;text-align:left;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Metric</th>
-        <th style="padding:4px 8px;text-align:right;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Value</th>
-        <th style="padding:4px 8px;text-align:right;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Unit</th>
-        <th style="padding:4px 8px;text-align:left;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Note</th>
+        <th style="padding:10px 12px;text-align:left;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Metric</th>
+        <th style="padding:10px 12px;text-align:right;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Value</th>
+        <th style="padding:10px 12px;text-align:right;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Unit</th>
+        <th style="padding:10px 12px;text-align:left;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Note</th>
       </tr></thead>
       <tbody>
         ${row('Today min', todayMin.toFixed(0), 'g/kWh', 'cleanest slot', '#14D3A9')}
@@ -1224,15 +1224,15 @@ function _gmRenderCarbonBreakdown(breakHost, co2, cmpData, cmpLabel, STACK) {
       </div>
       <table style="width:100%;border-collapse:collapse;font-size:11px;margin-bottom:10px">
         <thead><tr>
-          <th style="padding:4px 8px;text-align:left;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Technology</th>
-          <th style="padding:4px 8px;text-align:right;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">FE (g CO₂eq/kWh)</th>
-          <th style="padding:4px 8px;text-align:left;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Generation data</th>
+          <th style="padding:10px 12px;text-align:left;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Technology</th>
+          <th style="padding:10px 12px;text-align:right;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">FE (g CO₂eq/kWh)</th>
+          <th style="padding:10px 12px;text-align:left;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Generation data</th>
         </tr></thead>
         <tbody>
           ${STACK.map(f => `<tr style="border-top:1px solid var(--bd)">
-            <td style="padding:6px 8px;font-family:'JetBrains Mono',monospace"><span style="color:${GM_FUEL_META[f].color}">${GM_FUEL_META[f].emoji} ${GM_FUEL_META[f].label}</span></td>
-            <td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx)">${GM_FUEL_META[f].co2}</td>
-            <td style="padding:6px 8px;font-family:'JetBrains Mono',monospace;color:var(--tx3)">ENTSO-E A75 · 15 min</td>
+            <td style="padding:9px 12px;font-family:'JetBrains Mono',monospace"><span style="color:${GM_FUEL_META[f].color}">${GM_FUEL_META[f].emoji} ${GM_FUEL_META[f].label}</span></td>
+            <td style="padding:9px 12px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx)">${GM_FUEL_META[f].co2}</td>
+            <td style="padding:9px 12px;font-family:'JetBrains Mono',monospace;color:var(--tx3)">ENTSO-E A75 · 15 min</td>
           </tr>`).join('')}
         </tbody>
       </table>
@@ -1269,20 +1269,20 @@ function _gmBuildBreakdownTable(mix, st) {
     const m = GM_FUEL_META[k];
     const pct = (v / st.total) * 100;
     return `<tr>
-      <td style="padding:6px 8px;font-family:'JetBrains Mono',monospace"><span style="color:${m.color}">${m.emoji} ${m.label}</span></td>
-      <td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx)">${fmt(v / 1000)}</td>
-      <td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx2)">${pct.toFixed(2)}%</td>
-      <td style="padding:6px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx3)">${m.co2}</td>
+      <td style="padding:9px 12px;font-family:'JetBrains Mono',monospace"><span style="color:${m.color}">${m.emoji} ${m.label}</span></td>
+      <td style="padding:9px 12px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx)">${fmt(v / 1000)}</td>
+      <td style="padding:9px 12px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx2)">${pct.toFixed(2)}%</td>
+      <td style="padding:9px 12px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx3)">${m.co2}</td>
     </tr>`;
   }).filter(r => r).join('');
   return `
     <table style="width:100%;border-collapse:collapse;font-size:11px">
       <thead>
         <tr>
-          <th style="padding:4px 8px;text-align:left;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Source</th>
-          <th style="padding:4px 8px;text-align:right;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">GW</th>
-          <th style="padding:4px 8px;text-align:right;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">% Share</th>
-          <th style="padding:4px 8px;text-align:right;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">g CO₂/kWh</th>
+          <th style="padding:10px 12px;text-align:left;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Source</th>
+          <th style="padding:10px 12px;text-align:right;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">GW</th>
+          <th style="padding:10px 12px;text-align:right;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">% Share</th>
+          <th style="padding:10px 12px;text-align:right;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">g CO₂/kWh</th>
         </tr>
       </thead>
       <tbody>${rows}</tbody>
@@ -2459,7 +2459,7 @@ window.gmSetHistDate = function (ds) {
       + '<div class="gms-tbl-lab">Breakdown by fuel · day' + (isReal ? '' : ' · (simulated data — no real arrays for this day)') + '</div>'
       + '<table style="width:100%;border-collapse:collapse;font-size:11px">'
       +   '<thead><tr>'
-      +     ['Fuel', 'Now', 'Share', 'Day min', 'Day max', 'Day avg', 'CO₂'].map((h, i) => '<th style="padding:4px 8px;text-align:' + (i === 0 ? 'left' : 'right') + ';color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">' + h + '</th>').join('')
+      +     ['Fuel', 'Now', 'Share', 'Day min', 'Day max', 'Day avg', 'CO₂'].map((h, i) => '<th style="padding:10px 12px;text-align:' + (i === 0 ? 'left' : 'right') + ';color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">' + h + '</th>').join('')
       +   '</tr></thead><tbody></tbody></table>'
       + '</div>';
 
@@ -2541,14 +2541,14 @@ window.gmSetHistDate = function (ds) {
       tbody.innerHTML = '';
       slot.slice().sort((a, b) => b.v - a.v).forEach(o => {
         const f = o.f, s = STAT[f]; const tr = document.createElement('tr'); tr.style.borderTop = '1px solid var(--bd)';
-        tr.innerHTML = '<td style="padding:6px 8px"><span class="gms-cellnm"><span class="dot" style="background:' + FUEL[f].color + '"></span>' + FUEL[f].label + '</span></td>'
-          + '<td style="padding:6px 8px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:var(--tx)">' + fmtInst(o.v) + '</td><td style="padding:6px 8px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:var(--tx);font-weight:700">' + (o.v / tot * 100).toFixed(1) + '%</td>'
-          + '<td style="padding:6px 8px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:var(--tx3)">' + s.min.toFixed(2) + '</td><td style="padding:6px 8px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:var(--tx3)">' + s.max.toFixed(2) + '</td><td style="padding:6px 8px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:var(--tx2)">' + s.avg.toFixed(2) + '</td><td style="padding:6px 8px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:var(--tx3)">' + FUEL[f].co2 + '</td>';
+        tr.innerHTML = '<td style="padding:9px 12px"><span class="gms-cellnm"><span class="dot" style="background:' + FUEL[f].color + '"></span>' + FUEL[f].label + '</span></td>'
+          + '<td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:var(--tx)">' + fmtInst(o.v) + '</td><td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:var(--tx);font-weight:700">' + (o.v / tot * 100).toFixed(1) + '%</td>'
+          + '<td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:var(--tx3)">' + s.min.toFixed(2) + '</td><td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:var(--tx3)">' + s.max.toFixed(2) + '</td><td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:var(--tx2)">' + s.avg.toFixed(2) + '</td><td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:var(--tx3)">' + FUEL[f].co2 + '</td>';
         tbody.appendChild(tr);
       });
       const co2 = slot.reduce((s, o) => s + o.v * FUEL[o.f].co2, 0) / tot;
       const tr = document.createElement('tr'); tr.className = 'total'; tr.style.borderTop = '1px solid var(--bd2)';
-      tr.innerHTML = '<td style="padding:6px 8px;font-weight:700">Total</td><td style="padding:6px 8px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:var(--tx);font-weight:700">' + fmtInst(tot) + '</td><td style="padding:6px 8px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:var(--tx);font-weight:700">100%</td><td style="padding:6px 8px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:var(--tx3)">' + (minTotal / 1000).toFixed(2) + '</td><td style="padding:6px 8px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:var(--tx3)">' + (maxTotal / 1000).toFixed(2) + '</td><td style="padding:6px 8px;text-align:right;color:var(--tx3)">—</td><td style="padding:6px 8px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:var(--tx3)">' + Math.round(co2) + ' g</td>';
+      tr.innerHTML = '<td style="padding:9px 12px;font-weight:700">Total</td><td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:var(--tx);font-weight:700">' + fmtInst(tot) + '</td><td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:var(--tx);font-weight:700">100%</td><td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:var(--tx3)">' + (minTotal / 1000).toFixed(2) + '</td><td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:var(--tx3)">' + (maxTotal / 1000).toFixed(2) + '</td><td style="padding:9px 12px;text-align:right;color:var(--tx3)">—</td><td style="padding:9px 12px;text-align:right;font-family:\'JetBrains Mono\',monospace;color:var(--tx3)">' + Math.round(co2) + ' g</td>';
       tbody.appendChild(tr);
     }
 

@@ -104,7 +104,9 @@
         <th>Solar rate</th><th>Solar range</th><th>Solar capture</th><th>Wind rate</th><th>Wind range</th><th>Wind capture</th></tr></thead><tbody>` +
         r.rows.map(x => `<tr><td>${x.label}</td><td>${f1(x.base)}</td><td>${pc(x.sCR)}</td><td>${pc(x.sLo)}–${pc(x.sHi)}</td><td><b>${x.sCR == null ? '–' : f1(x.base * x.sCR)}</b></td>
           <td>${pc(x.wCR)}</td><td>${pc(x.wLo)}–${pc(x.wHi)}</td><td><b>${x.wCR == null ? '–' : f1(x.base * x.wCR)}</b></td></tr>`).join('') +
-        `</tbody></table></div><div class="fuel-note">€/MWh. Capture rate = output-weighted day-ahead price ÷ baseload over the months the product covers, weighted by each month's typical output; average and range of ${r.years.join(', ')} (RTE éCO2mix × ENTSO-E day-ahead). Assumes the cannibalisation of those years repeats: an indicator, not a quote.</div>`;
+        `</tbody></table></div><div class="fuel-note">${!window.PKI18n || PKI18n.lang !== 'en'
+          ? `€/MWh. Taux de capture = prix day-ahead pondéré par la production ÷ baseload sur les mois que couvre le produit, pondéré par la production habituelle de chaque mois ; moyenne et fourchette de ${r.years.join(', ')} (RTE éCO2mix × ENTSO-E day-ahead). Suppose que la cannibalisation de ces années se répète : un indicateur, pas une cotation.`
+          : `€/MWh. Capture rate = output-weighted day-ahead price ÷ baseload over the months the product covers, weighted by each month's typical output; average and range of ${r.years.join(', ')} (RTE éCO2mix × ENTSO-E day-ahead). Assumes the cannibalisation of those years repeats: an indicator, not a quote.`}</div>`;
     },
   });
 

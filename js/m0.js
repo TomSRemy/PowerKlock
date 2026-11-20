@@ -16,6 +16,7 @@ async function _m0Load() {
   if (!_m0Data) _m0Data = fetchJSON('cre_m0.json').then(j => j && j.official ? j : null);
   return _m0Data;
 }
+const M0_FR = () => !window.PKI18n || PKI18n.lang !== 'en';   // French by default
 const M0_FMT_MONTH = ym => { const [y, m] = ym.split('-'); return ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][+m - 1] + ' ' + y; };
 const M0_TECH = { solar: ['Solar', C_SOL], wind: ['Wind', C_WOFF], base: ['Base', '#B8C9D9'] };
 const M0_OFF = (j, tech) => tech === 'base' ? j.official.monthly : j.official[tech];
@@ -92,14 +93,17 @@ if (window.PKW) {
       const ms = [...new Set([...Object.keys(o.monthly), ...Object.keys(est)])].sort().slice(-12).reverse();
       // record of the estimate since 2023: mean absolute gap and bias against the CRE, per technology
       const rec = k => { const g = Object.keys(o[k] || {}).filter(m => m >= '2023' && est[m] && est[m][k === 'monthly' ? 'base' : k] != null).map(m => est[m][k === 'monthly' ? 'base' : k] - o[k][m]);
-        return g.length ? `${k === 'monthly' ? 'base' : k} ${(g.reduce((s, x) => s + Math.abs(x), 0) / g.length).toFixed(2)} €/MWh (bias ${(g.reduce((s, x) => s + x, 0) / g.length >= 0 ? '+' : '')}${(g.reduce((s, x) => s + x, 0) / g.length).toFixed(2)}, ${g.length} months)` : ''; };
+        const fr = M0_FR(), n2 = v => fr ? v.toFixed(2).replace('.', ',') : v.toFixed(2), mae = g.reduce((s, x) => s + Math.abs(x), 0) / g.length, bias = g.reduce((s, x) => s + x, 0) / g.length;
+        return g.length ? `${k === 'monthly' ? 'base' : fr ? (k === 'wind' ? 'éolien' : 'solaire') : k} ${n2(mae)} €/MWh (${fr ? 'biais' : 'bias'} ${bias >= 0 ? '+' : ''}${n2(bias)}, ${g.length} ${fr ? 'mois' : 'months'})` : ''; };
       const record = ['monthly', 'wind', 'solar'].map(rec).filter(Boolean).join(' · ');
       const gap = (a, b) => a == null || b == null ? '' : `<span class="m0-gap">${(b - a >= 0 ? '+' : '') + (b - a).toFixed(2)}</span>`;
       host.innerHTML = `<div style="overflow-x:auto"><table class="fuel-table"><thead><tr><th style="text-align:left">Month</th><th>Base M0</th><th>Wind M0</th><th>Wind capture</th><th>Solar M0</th><th>Solar capture</th><th>Negative hours</th></tr></thead><tbody>` +
         ms.map(m => { const e = est[m] || {}, cell = (cre, es) => cre != null ? `<b>${f(cre)}</b>${gap(cre, es)}` : es != null ? `<span class="m0-est" title="PowerKlock estimate, CRE not published yet">${f(es)} est.</span>` : '–';
           const neg = o.negSteps[m] ? o.negSteps[m].hours : e.negHours;
           return `<tr><td style="text-align:left">${M0_FMT_MONTH(m)}</td><td>${cell(o.monthly[m], e.base)}</td><td>${cell(o.wind[m], e.wind)}</td><td class="m0-cap">${f(e.windCap)}</td><td>${cell(o.solar[m], e.solar)}</td><td class="m0-cap">${f(e.solarCap)}</td><td>${neg == null ? '–' : neg.toFixed(neg % 1 ? 2 : 0) + ' h'}</td></tr>`; }).join('') +
-        `</tbody></table></div><div class="fuel-note">Bold: CRE official value; small figure: gap of the PowerKlock estimate (same method, weighted by the output of the parks under complément de rémunération published by ODRÉ, a few cents from the CRE; RTE national output for the latest weeks). "est.": not published by the CRE yet (base 5 working days, wind and solar 4 weeks after the month). The CRE solar profile covers plants above 250 kWc, PowerKlock uses all national solar: expect 1–3 €/MWh of gap on solar.${record ? ' <b>Record of the estimate since 2023</b>, mean gap to the CRE: ' + record + '.' : ''} Capture (red): PowerKlock, same weighting with every step, negative prices included.</div>`;
+        `</tbody></table></div><div class="fuel-note">${M0_FR()
+          ? `En gras : valeur officielle de la CRE ; petit chiffre : écart de l’estimation PowerKlock (même méthode, pondérée par la production des parcs sous complément de rémunération publiée par ODRÉ, à quelques centimes de la CRE ; production nationale RTE pour les dernières semaines). « est. » : pas encore publié par la CRE (base 5 jours ouvrés, éolien et solaire 4 semaines après le mois). Le profil solaire de la CRE couvre les centrales de plus de 250 kWc, PowerKlock utilise tout le solaire national : attendre 1 à 3 €/MWh d’écart sur le solaire.${record ? ' <b>Bilan de l’estimation depuis 2023</b>, écart moyen à la CRE : ' + record + '.' : ''} Capture (en rouge) : PowerKlock, même pondération avec tous les pas, prix négatifs compris.`
+          : `Bold: CRE official value; small figure: gap of the PowerKlock estimate (same method, weighted by the output of the parks under complément de rémunération published by ODRÉ, a few cents from the CRE; RTE national output for the latest weeks). "est.": not published by the CRE yet (base 5 working days, wind and solar 4 weeks after the month). The CRE solar profile covers plants above 250 kWc, PowerKlock uses all national solar: expect 1–3 €/MWh of gap on solar.${record ? ' <b>Record of the estimate since 2023</b>, mean gap to the CRE: ' + record + '.' : ''} Capture (red): PowerKlock, same weighting with every step, negative prices included.`}</div>`;
     },
   });
 }

@@ -556,17 +556,17 @@
       const co2Color = _gmCo2(p.co2);
       const dRenColor = p.dRenY1 == null ? 'var(--tx3)' : p.dRenY1 >= 0 ? '#14D3A9' : '#ED6965';
       return `<tr class="gmh-row" data-zone="${z}" style="cursor:pointer">
-        <td style="text-align:left;padding:9px 6px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--tx2)">${flag} ${z}</td>
-        <td style="text-align:left;padding:9px 6px;font-size:11px;color:var(--tx3)">${NAMES[z] || z}</td>
-        <td style="text-align:right;padding:9px 6px;font-family:'JetBrains Mono',monospace;color:var(--tx);font-weight:600">${p.avgLoadGW.toFixed(2)}</td>
-        <td style="text-align:right;padding:9px 6px;font-family:'JetBrains Mono',monospace;color:var(--tx2)">${p.energyTWh.toFixed(1)}</td>
-        <td style="text-align:right;padding:9px 6px;font-family:'JetBrains Mono',monospace;color:${renColor};font-weight:600">${p.renPct.toFixed(1)}%</td>
-        <td style="text-align:right;padding:9px 6px;font-family:'JetBrains Mono',monospace;color:var(--tx2)">${p.wind.toFixed(1)}</td>
-        <td style="text-align:right;padding:9px 6px;font-family:'JetBrains Mono',monospace;color:var(--tx2)">${p.solar.toFixed(1)}</td>
-        <td style="text-align:right;padding:9px 6px;font-family:'JetBrains Mono',monospace;color:${p.fosPct > 30 ? '#ED6965' : 'var(--tx2)'}">${p.fossil.toFixed(1)}</td>
-        <td style="text-align:left;padding:9px 6px;font-family:'JetBrains Mono',monospace"><span style="color:${dom.color}">${dom.emoji} ${dom.label}</span></td>
-        <td style="text-align:center;padding:9px 6px;font-family:'JetBrains Mono',monospace;color:${co2Color};font-weight:600">${Math.round(p.co2)}</td>
-        <td style="text-align:right;padding:9px 6px;font-family:'JetBrains Mono',monospace;color:${dRenColor};font-weight:600">${p.dRenY1 == null ? '–' : (p.dRenY1 >= 0 ? '+' : '') + p.dRenY1.toFixed(1)}</td>
+        <td style="text-align:left;padding:9px 12px;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:var(--tx2)">${flag} ${z}</td>
+        <td style="text-align:left;padding:9px 12px;font-size:11px;color:var(--tx3)">${NAMES[z] || z}</td>
+        <td style="text-align:right;padding:9px 12px;font-family:'JetBrains Mono',monospace;color:var(--tx);font-weight:600">${p.avgLoadGW.toFixed(2)}</td>
+        <td style="text-align:right;padding:9px 12px;font-family:'JetBrains Mono',monospace;color:var(--tx2)">${p.energyTWh.toFixed(1)}</td>
+        <td style="text-align:right;padding:9px 12px;font-family:'JetBrains Mono',monospace;color:${renColor};font-weight:600">${p.renPct.toFixed(1)}%</td>
+        <td style="text-align:right;padding:9px 12px;font-family:'JetBrains Mono',monospace;color:var(--tx2)">${p.wind.toFixed(1)}</td>
+        <td style="text-align:right;padding:9px 12px;font-family:'JetBrains Mono',monospace;color:var(--tx2)">${p.solar.toFixed(1)}</td>
+        <td style="text-align:right;padding:9px 12px;font-family:'JetBrains Mono',monospace;color:${p.fosPct > 30 ? '#ED6965' : 'var(--tx2)'}">${p.fossil.toFixed(1)}</td>
+        <td style="text-align:left;padding:9px 12px;font-family:'JetBrains Mono',monospace"><span style="color:${dom.color}">${dom.emoji} ${dom.label}</span></td>
+        <td style="text-align:center;padding:9px 12px;font-family:'JetBrains Mono',monospace;color:${co2Color};font-weight:600">${Math.round(p.co2)}</td>
+        <td style="text-align:right;padding:9px 12px;font-family:'JetBrains Mono',monospace;color:${dRenColor};font-weight:600">${p.dRenY1 == null ? '–' : (p.dRenY1 >= 0 ? '+' : '') + p.dRenY1.toFixed(1)}</td>
       </tr>`;
     }).join('');
 
@@ -1025,15 +1025,15 @@
       const stdev = Math.sqrt(data.reduce((s, v) => s + (v - avg) ** 2, 0) / data.length);
       const idxMax = data.indexOf(max);
       const idxMin = data.indexOf(min);
-      const cell = (txt, opts = {}) => `<td style="padding:6px 10px;${opts.right ? 'text-align:right;' : ''}font-family:'JetBrains Mono',monospace;color:${opts.color || 'var(--tx)'};${opts.dim ? 'color:var(--tx3);' : ''}">${txt}</td>`;
+      const cell = (txt, opts = {}) => `<td style="padding:9px 12px;${opts.right ? 'text-align:right;' : ''}font-family:'JetBrains Mono',monospace;color:${opts.color || 'var(--tx)'};${opts.dim ? 'color:var(--tx3);' : ''}">${txt}</td>`;
       const row = (label, val, unit, note, color) => `<tr style="border-top:1px solid var(--bd)">${cell(label)}${cell(val, { right: true, color })}${cell(unit, { right: true, dim: true })}${cell(note, { dim: true })}</tr>`;
       breakHost.innerHTML = `
         <table style="width:100%;border-collapse:collapse;font-size:11px">
           <thead><tr>
-            <th style="padding:4px 8px;text-align:left;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Metric</th>
-            <th style="padding:4px 8px;text-align:right;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Value</th>
-            <th style="padding:4px 8px;text-align:right;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Unit</th>
-            <th style="padding:4px 8px;text-align:left;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Note</th>
+            <th style="padding:10px 12px;text-align:left;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Metric</th>
+            <th style="padding:10px 12px;text-align:right;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Value</th>
+            <th style="padding:10px 12px;text-align:right;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Unit</th>
+            <th style="padding:10px 12px;text-align:left;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Note</th>
           </tr></thead>
           <tbody>
             ${row('Period avg',  avg.toFixed(2),    'GW',  'simple mean')}
@@ -1100,21 +1100,21 @@
         const share = (twh / totalTWh) * 100;
         const avgGW = (twh * 1000) / (days * 24);
         return `<tr style="border-top:1px solid var(--bd)">
-          <td style="padding:6px 10px;font-family:'JetBrains Mono',monospace"><span style="color:${meta.color}">${meta.emoji} ${meta.label}</span></td>
-          <td style="padding:6px 10px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx)">${twh.toFixed(2)}</td>
-          <td style="padding:6px 10px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx2)">${avgGW.toFixed(2)}</td>
-          <td style="padding:6px 10px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx2)">${share.toFixed(1)}%</td>
-          <td style="padding:6px 10px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx3)">${meta.co2 || '--'}</td>
+          <td style="padding:9px 12px;font-family:'JetBrains Mono',monospace"><span style="color:${meta.color}">${meta.emoji} ${meta.label}</span></td>
+          <td style="padding:9px 12px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx)">${twh.toFixed(2)}</td>
+          <td style="padding:9px 12px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx2)">${avgGW.toFixed(2)}</td>
+          <td style="padding:9px 12px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx2)">${share.toFixed(1)}%</td>
+          <td style="padding:9px 12px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx3)">${meta.co2 || '--'}</td>
         </tr>`;
       }).filter(Boolean).join('');
       tableHost.innerHTML = `
         <table style="width:100%;border-collapse:collapse;font-size:11px">
           <thead><tr>
-            <th style="padding:4px 8px;text-align:left;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Source</th>
-            <th style="padding:4px 8px;text-align:right;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">TWh</th>
-            <th style="padding:4px 8px;text-align:right;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Avg GW</th>
-            <th style="padding:4px 8px;text-align:right;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">% Share</th>
-            <th style="padding:4px 8px;text-align:right;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">g CO₂/kWh</th>
+            <th style="padding:10px 12px;text-align:left;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Source</th>
+            <th style="padding:10px 12px;text-align:right;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">TWh</th>
+            <th style="padding:10px 12px;text-align:right;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Avg GW</th>
+            <th style="padding:10px 12px;text-align:right;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">% Share</th>
+            <th style="padding:10px 12px;text-align:right;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">g CO₂/kWh</th>
           </tr></thead>
           <tbody>${rows}</tbody>
         </table>`;
@@ -1236,15 +1236,15 @@
       const max = Math.max(...data); const min = Math.min(...data); const avg = data.reduce((a, b) => a + b, 0) / data.length;
       const cleanDays = data.filter(v => v < 50).length;
       const dirtyDays = data.filter(v => v > 300).length;
-      const cell = (txt, opts = {}) => `<td style="padding:6px 10px;${opts.right ? 'text-align:right;' : ''}font-family:'JetBrains Mono',monospace;color:${opts.color || 'var(--tx)'};${opts.dim ? 'color:var(--tx3);' : ''}">${txt}</td>`;
+      const cell = (txt, opts = {}) => `<td style="padding:9px 12px;${opts.right ? 'text-align:right;' : ''}font-family:'JetBrains Mono',monospace;color:${opts.color || 'var(--tx)'};${opts.dim ? 'color:var(--tx3);' : ''}">${txt}</td>`;
       const row = (label, val, unit, note, color) => `<tr style="border-top:1px solid var(--bd)">${cell(label)}${cell(val, { right: true, color })}${cell(unit, { right: true, dim: true })}${cell(note, { dim: true })}</tr>`;
       breakHost.innerHTML = `
         <table style="width:100%;border-collapse:collapse;font-size:11px">
           <thead><tr>
-            <th style="padding:4px 8px;text-align:left;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Metric</th>
-            <th style="padding:4px 8px;text-align:right;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Value</th>
-            <th style="padding:4px 8px;text-align:right;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Unit</th>
-            <th style="padding:4px 8px;text-align:left;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Note</th>
+            <th style="padding:10px 12px;text-align:left;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Metric</th>
+            <th style="padding:10px 12px;text-align:right;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Value</th>
+            <th style="padding:10px 12px;text-align:right;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Unit</th>
+            <th style="padding:10px 12px;text-align:left;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Note</th>
           </tr></thead>
           <tbody>
             ${row('Period avg', Math.round(avg), 'g/kWh', '24h weighted average')}
@@ -1263,15 +1263,15 @@
           </div>
           <table style="width:100%;border-collapse:collapse;font-size:11px;margin-bottom:10px">
             <thead><tr>
-              <th style="padding:5px 8px;text-align:left;color:var(--tx3);font-weight:600">Technology</th>
-              <th style="padding:5px 8px;text-align:right;color:var(--tx3);font-weight:600">FE (g CO₂eq/kWh)</th>
-              <th style="padding:5px 8px;text-align:left;color:var(--tx3);font-weight:600">Data</th>
+              <th style="padding:10px 12px;text-align:left;color:var(--tx3);font-weight:600">Technology</th>
+              <th style="padding:10px 12px;text-align:right;color:var(--tx3);font-weight:600">FE (g CO₂eq/kWh)</th>
+              <th style="padding:10px 12px;text-align:left;color:var(--tx3);font-weight:600">Data</th>
             </tr></thead>
             <tbody>
               ${STACK.map(f => { const m = FUEL_META[f] || { color: '#7A93AB', label: f, emoji: '', co2: 0 }; return `<tr style="border-top:1px solid var(--bd)">
-                <td style="padding:5px 8px;font-family:'JetBrains Mono',monospace"><span style="color:${m.color}">${m.emoji} ${m.label}</span></td>
-                <td style="padding:5px 8px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx)">${m.co2}</td>
-                <td style="padding:5px 8px;font-family:'JetBrains Mono',monospace;color:var(--tx3)">ENTSO-E A75</td>
+                <td style="padding:9px 12px;font-family:'JetBrains Mono',monospace"><span style="color:${m.color}">${m.emoji} ${m.label}</span></td>
+                <td style="padding:9px 12px;text-align:right;font-family:'JetBrains Mono',monospace;color:var(--tx)">${m.co2}</td>
+                <td style="padding:9px 12px;font-family:'JetBrains Mono',monospace;color:var(--tx3)">ENTSO-E A75</td>
               </tr>`; }).join('')}
             </tbody>
           </table>
@@ -1309,11 +1309,11 @@
       return `rgb(${r},${g},${b})`;
     };
 
-    let html = `<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:10px;font-family:'JetBrains Mono',monospace"><thead><tr><th style="padding:6px 8px;text-align:left;color:var(--tx3)">Day</th>`;
+    let html = `<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:10px;font-family:'JetBrains Mono',monospace"><thead><tr><th style="padding:10px 12px;text-align:left;color:var(--tx3)">Day</th>`;
     HOURS.forEach(h => { html += `<th style="padding:4px 2px;color:var(--tx3);font-weight:500">${String(h).padStart(2, '0')}</th>`; });
     html += `</tr></thead><tbody>`;
     DAYS.forEach((d, di) => {
-      html += `<tr><td style="padding:6px 8px;color:var(--tx2);font-weight:600">${d}</td>`;
+      html += `<tr><td style="padding:9px 12px;color:var(--tx2);font-weight:600">${d}</td>`;
       HOURS.forEach((h, hi) => {
         const v = cells[di][hi];
         const bg = colorAt(v);
@@ -1328,16 +1328,16 @@
     if (breakHost) {
       const peakD = cells.map(row => Math.max(...row));
       const offD = cells.map(row => Math.min(...row));
-      const cell = (txt, opts = {}) => `<td style="padding:6px 10px;${opts.right ? 'text-align:right;' : ''}font-family:'JetBrains Mono',monospace;color:${opts.color || 'var(--tx)'};${opts.dim ? 'color:var(--tx3);' : ''}">${txt}</td>`;
+      const cell = (txt, opts = {}) => `<td style="padding:9px 12px;${opts.right ? 'text-align:right;' : ''}font-family:'JetBrains Mono',monospace;color:${opts.color || 'var(--tx)'};${opts.dim ? 'color:var(--tx3);' : ''}">${txt}</td>`;
       const rows = DAYS.map((d, i) => `<tr style="border-top:1px solid var(--bd)">${cell(d)}${cell(peakD[i].toFixed(2), { right: true })}${cell(offD[i].toFixed(2), { right: true })}${cell((peakD[i] - offD[i]).toFixed(2), { right: true, color: '#FBBF24' })}${cell(((peakD[i] - offD[i]) / peakD[i] * 100).toFixed(1) + '%', { right: true, dim: true })}</tr>`).join('');
       breakHost.innerHTML = `
         <table style="width:100%;border-collapse:collapse;font-size:11px">
           <thead><tr>
-            <th style="padding:4px 8px;text-align:left;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Day</th>
-            <th style="padding:4px 8px;text-align:right;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Peak GW</th>
-            <th style="padding:4px 8px;text-align:right;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Off-peak GW</th>
-            <th style="padding:4px 8px;text-align:right;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Spread GW</th>
-            <th style="padding:4px 8px;text-align:right;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Spread %</th>
+            <th style="padding:10px 12px;text-align:left;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Day</th>
+            <th style="padding:10px 12px;text-align:right;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Peak GW</th>
+            <th style="padding:10px 12px;text-align:right;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Off-peak GW</th>
+            <th style="padding:10px 12px;text-align:right;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Spread GW</th>
+            <th style="padding:10px 12px;text-align:right;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Spread %</th>
           </tr></thead>
           <tbody>${rows}</tbody>
         </table>`;
@@ -1799,13 +1799,13 @@
       const dRenStr = (dRen == null) ? '--' : (isFr ? '— ref —' : (dRen >= 0 ? '+' : '') + dRen.toFixed(1) + ' pts');
       const dCo2Str = (dCo2 == null) ? '--' : (isFr ? '— ref —' : (dCo2 >= 0 ? '+' : '') + Math.round(dCo2));
       return `<tr style="${isFr ? 'background:rgba(20,211,169,0.04);' : ''}">
-        <td style="text-align:left;padding:6px 10px;font-family:'JetBrains Mono',monospace;font-weight:600">${flag} ${z}${isFr ? ' <span style="color:#14D3A9;font-size:9px">●</span>' : ''}</td>
-        <td style="text-align:right;padding:6px 10px;font-family:'JetBrains Mono',monospace">${p.avgLoadGW.toFixed(2)}</td>
-        <td style="text-align:right;padding:6px 10px;font-family:'JetBrains Mono',monospace;color:${_gmRen(p.renPct)};font-weight:600">${p.renPct.toFixed(1)}%</td>
-        <td style="text-align:right;padding:6px 10px;font-family:'JetBrains Mono',monospace;color:${_gmCo2(p.co2)};font-weight:600">${Math.round(p.co2)}</td>
-        <td style="text-align:left;padding:6px 10px;font-family:'JetBrains Mono',monospace"><span style="color:${dom.color}">${dom.emoji} ${dom.label}</span></td>
-        <td style="text-align:right;padding:6px 10px;font-family:'JetBrains Mono',monospace;color:${dRenColor};font-weight:${isFr ? 500 : 600}">${dRenStr}</td>
-        <td style="text-align:right;padding:6px 10px;font-family:'JetBrains Mono',monospace;color:${dCo2Color};font-weight:${isFr ? 500 : 600}">${dCo2Str}</td>
+        <td style="text-align:left;padding:9px 12px;font-family:'JetBrains Mono',monospace;font-weight:600">${flag} ${z}${isFr ? ' <span style="color:#14D3A9;font-size:9px">●</span>' : ''}</td>
+        <td style="text-align:right;padding:9px 12px;font-family:'JetBrains Mono',monospace">${p.avgLoadGW.toFixed(2)}</td>
+        <td style="text-align:right;padding:9px 12px;font-family:'JetBrains Mono',monospace;color:${_gmRen(p.renPct)};font-weight:600">${p.renPct.toFixed(1)}%</td>
+        <td style="text-align:right;padding:9px 12px;font-family:'JetBrains Mono',monospace;color:${_gmCo2(p.co2)};font-weight:600">${Math.round(p.co2)}</td>
+        <td style="text-align:left;padding:9px 12px;font-family:'JetBrains Mono',monospace"><span style="color:${dom.color}">${dom.emoji} ${dom.label}</span></td>
+        <td style="text-align:right;padding:9px 12px;font-family:'JetBrains Mono',monospace;color:${dRenColor};font-weight:${isFr ? 500 : 600}">${dRenStr}</td>
+        <td style="text-align:right;padding:9px 12px;font-family:'JetBrains Mono',monospace;color:${dCo2Color};font-weight:${isFr ? 500 : 600}">${dCo2Str}</td>
       </tr>`;
     }).join('');
   }

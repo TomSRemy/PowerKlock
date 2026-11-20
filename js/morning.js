@@ -1258,9 +1258,9 @@ document.addEventListener('click', e => {   // a tile opens its chart full size 
   .mrn-neg{color:#7FC8F8}
   .mrn-movers{list-style:none;margin:0;padding:0} .mrn-movers li{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px;padding:5px 0;border-bottom:1px solid var(--bd);font-size:12.5px} .mrn-movers a{color:var(--tx);text-decoration:none;flex:1 1 60%;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .mrn-movers a:hover{color:var(--acc)} .mrn-cat{width:18px;text-align:center;color:var(--tx3)} .mrn-vote{margin:0 0 0 auto}
   .mrn-fwd{width:100%;border-collapse:collapse;font-size:12px}
-  .mrn-fwd th{font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3);font-weight:600;text-align:right;padding:6px 8px;border-bottom:1px solid var(--bd);white-space:nowrap}   /* headers on one line (note 80) */
+  .mrn-fwd th{font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3);font-weight:600;text-align:right;padding:10px 12px;border-bottom:1px solid var(--bd);white-space:nowrap}   /* headers on one line (note 80) */
   .mrn-fwd th:first-child,.mrn-fwd td:first-child{text-align:left}
-  .mrn-fwd td{padding:5px 8px;text-align:right;font-family:'IBM Plex Mono',monospace;color:var(--tx2);border-bottom:1px solid rgba(255,255,255,.03);white-space:nowrap}
+  .mrn-fwd td{padding:9px 12px;text-align:right;font-family:'IBM Plex Mono',monospace;color:var(--tx2);border-bottom:1px solid rgba(255,255,255,.03);white-space:nowrap}
   .mrn-fwd td:first-child{font-family:inherit;color:var(--tx)} .mrn-fwd td small{color:var(--tx3);font-size:10px}
   .mrn-fwd .mrn-fwd-p{color:var(--tx);font-weight:600}
   .mrn-fwd .mrn-up{color:var(--down,#ED6965)} .mrn-fwd .mrn-down{color:var(--up,#14D3A9)}
