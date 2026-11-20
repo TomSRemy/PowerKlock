@@ -319,7 +319,8 @@ def main():
     if (today.weekday() >= 5 or (weekly and today.weekday() != 0)) and not force:
         print("no edition today")
         return 0
-    if old.get("date") == today.isoformat() and not force:
+    built = datetime.fromisoformat(old["updated"]).astimezone(PARIS).hour if old.get("updated") else 0
+    if old.get("date") == today.isoformat() and built >= 5 and not force:   # an edition built in the night is rebuilt in the morning
         print("today's edition exists")
         return 0
     profiles = (load(PROFILES, {}) or {}).get("profiles") or {}
