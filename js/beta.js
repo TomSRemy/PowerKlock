@@ -3,6 +3,9 @@
 // the choice is kept in this browser, and the page reloads so each layout starts from a clean state.
 // The beta only MOVES existing blocks (charts, tables, KPI strips) and renames sections: every chart keeps its
 // own code, data and interactions, and nothing is removed. Pages are added one by one once validated.
+// Since 20 Nov. 2026 the beta also carries a new shell (js/beta-shell.js, css/beta.css, loaded only when it is on):
+// menu by job, search field, path and header on every page, site map, origination line on Today, one chart grid.
+// scripts/inventory_site.py and scripts/inventory_diff.py prove that every chart, table and figure is still there.
 (function () {
   let on = false;
   try { on = localStorage.getItem('pk-beta') === '1'; } catch (e) { /* storage blocked: beta stays off */ }
@@ -31,6 +34,12 @@
   }
   addButton();
   if (!on) return;
+  // the shell: its style sheet is asked for by js/nav-v2.js before the first paint (never on the public page or a
+  // shared dashboard); its script comes here, in order
+  if (window.pkBetaShell) {
+    if (document.readyState === 'loading') document.write('<script src="js/beta-shell.js"><\/script>');
+    else { const sc = document.createElement('script'); sc.src = 'js/beta-shell.js'; document.body.appendChild(sc); }
+  }
 
   const $ = id => document.getElementById(id);
   const crumbBar = parts => {
