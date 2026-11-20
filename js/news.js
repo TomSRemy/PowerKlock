@@ -10,7 +10,7 @@ async function loadNews() {
     window._newsAcctWired = true;
     PKAccount.onChange(async () => { await _newsLoadPersonal(); _newsApplyConfig(); _newsRefreshKwUI(); renderNewsPosts(); renderNews(newsData); if (_nlData !== undefined) { await _nlLoadMe(); renderNewsLetter(); } });
   }
-  await Promise.all([_newsLoadSections(), _newsLoadPersonal(), _newsLoadDigest(), _newsLoadCons()]);
+  await Promise.all([_newsLoadSections(), _newsLoadPersonal(), _newsLoadDigest(), _newsLoadCons(), _newsLoadPins()]);
   try {
     const r = await fetch(DATA_BASE + 'news.json?t=' + Date.now());
     if (!r.ok) throw new Error(r.status);
@@ -35,6 +35,7 @@ async function loadNews() {
   renderNewsSources();
   renderNewsAdd();
   _newsWireViews();
+  renderNewsUne();
   renderNewsConsMini();
   renderNewsOfficial();
   renderNewsCover();
@@ -244,6 +245,43 @@ async function renderNewsLetter() {
   host.querySelectorAll('[data-nlp]').forEach(b => b.addEventListener('click', () => { _newsStore('pk-nl-profile', b.dataset.nlp); renderNewsLetter(); }));
 }
 
+// ── The feed's top, « façon journal » (approved 19 Nov. 2026): the lead story of the morning's newsletter with its
+// chart on the left, three more stories, and beside the feed the price tiles and the figure of the day. Same choice
+// as the newsletter (data/newsletter.json, the profile chosen in the Newsletter tab, else Origination); a story the
+// admin pinned comes first. ──
+async function renderNewsUne() {
+  const host = document.getElementById('news-une'); if (!host) return;
+  if (_nlData === undefined) { try { const r = await fetch(DATA_BASE + 'newsletter.json?t=' + Date.now()); _nlData = r.ok ? await r.json() : null; } catch (_) { _nlData = null; } }
+  const E = _nlData, P = (E && E.profiles) || {};
+  if (!E || !Object.keys(P).length) { host.hidden = true; return; }
+  const en = window.PKI18n && PKI18n.lang === 'en', L = a => Array.isArray(a) ? (en ? a[1] : a[0]) : (a || '');
+  let pid = _newsStore('pk-nl-profile'); if (!P[pid]) pid = P.origination ? 'origination' : Object.keys(P)[0];
+  const ed = P[pid], S = (ed.stories || []).slice();
+  const pinItem = [...(_newsPins || [])].map(l => (newsData || []).find(i => i.link === l)).find(Boolean);
+  let lead = S[0], chart = ed.hero_chart;
+  if (pinItem && (!lead || lead.link !== pinItem.link)) { lead = { title: pinItem.title, link: pinItem.link, what: pinItem.snippet, tags: pinItem.tags, sources: [pinItem.source].concat((pinItem.other_sources || []).map(o => o.source)) }; chart = null; }
+  if (!lead) { host.hidden = true; return; }
+  const num = (v, d = 2) => v == null ? '–' : v.toLocaleString(en ? 'en-GB' : 'fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d });
+  const a = (u, t) => `<a href="${_newsEsc(u)}" target="_blank" rel="noopener noreferrer">${_newsEsc(t)}</a>`;
+  const th = tags => { const t = _NL_TH.find(x => (tags || []).includes(x[0])); return t ? `<span class="news-une-th nl-p-${t[0]}">${_newsT(t[1], t[2])}</span>` : ''; };
+  const others = S.filter(x => x.link !== lead.link).concat((E.top || []).filter(o => !S.some(x => x.link === o.link) && o.link !== lead.link)).slice(0, 3);
+  host.hidden = false;
+  host.innerHTML = `<article class="news-une-lead${chart ? '' : ' nochart'}">${chart ? `<figure class="news-une-ch"><figcaption>${_newsEsc(chart.title)}</figcaption><img src="${DATA_BASE + _newsEsc(chart.img)}" alt="${_newsEsc(chart.title)}"><div class="nl-src">${_newsT('Source', 'Source')} : ${_newsEsc(chart.src)} · <a href="#${_newsEsc(chart.page)}">${_newsT('voir sur PowerKlock', 'see on PowerKlock')}</a></div></figure>` : ''}
+    <div class="news-une-t"><span class="news-une-k">${pinItem && lead.link === pinItem.link ? _newsT('À la une · choisi par la rédaction', 'Lead story · editor’s pick') : _newsT('À la une', 'Lead story')} ${th(lead.tags)}</span>
+      <h2>${a(lead.link, lead.title)}</h2>${(en && lead.what_en) || lead.what ? `<p>${_newsEsc((en && lead.what_en) || lead.what)}</p>` : ''}
+      ${lead.for_you ? `<p class="nl-ret"><b>${_newsT('À retenir.', 'Takeaway.')}</b> ${_newsEsc((en && lead.for_you_en) || lead.for_you)}</p>` : ''}
+      <span class="nl-src">${(lead.sources || []).slice(0, 3).map(_newsEsc).join(' · ')}${_newsAdmin ? ' · ' + _newsPinBtn({ link: lead.link }) : ''}</span></div></article>
+    <div class="news-une-more">${others.map(o => `<article>${th(o.tags)}<h3>${a(o.link, o.title)}</h3><span class="nl-src">${_newsEsc((o.sources || [o.source]).slice(0, 2).join(' · '))}</span></article>`).join('')}</div>`;
+  const dg = document.getElementById('hs-news-digest'); if (dg) dg.hidden = true;     // the lead replaces « L'essentiel » on top of the feed
+  const mk = document.getElementById('news-mk'), mkBox = document.getElementById('news-side-mk');
+  if (mk && (E.markets || []).length) { mkBox.hidden = false;
+    mk.innerHTML = `<div class="news-mk">${E.markets.map(r => { const c = r.chg || 0, up = c > 0, dn = c < 0, red = r.hours ? dn : up, green = r.hours ? up : dn;
+      const ch = r.hours ? (r.chg == null ? '' : !c ? _newsT('stable', 'unchanged') : (up ? '▲ +' : '▼ −') + num(Math.abs(c), 0) + ' h') : r.show === 'abs' ? (r.chg == null ? '' : (up ? '▲ +' : dn ? '▼ −' : '= ') + num(Math.abs(c), 1) + ' €') : r.pct == null ? '' : (up ? '▲ +' : dn ? '▼ −' : '') + num(Math.abs(r.pct), 1) + ' %';
+      return `<a class="nl-tile" href="#${_newsEsc(r.page || 'today')}"><span>${_newsEsc(L(r.label))}</span><b>${num(r.value, r.hours ? (Number.isInteger(r.value) ? 0 : 1) : 2)}${r.hours ? ' h' : ''}</b><small>${r.hours ? '' : _newsEsc(r.unit)} <i class="${red ? 'up' : green ? 'dn' : ''}">${ch}</i></small></a>`; }).join('')}</div>`; }
+  const fg = document.getElementById('news-fig'), fgBox = document.getElementById('news-side-fig');
+  if (fg && E.figure) { fgBox.hidden = false; fg.innerHTML = `<div class="nl-fig"><b class="${E.figure.dir === 'dn' ? 'dn' : 'up'}">${_newsEsc(E.figure.value)}</b><p>${_newsEsc(en ? E.figure.text_en : E.figure.text)}</p></div>`; }
+}
+
 // what the last run read, beside the feed
 function renderNewsCover() {
   const host = document.getElementById('news-cover'); if (!host) return;
@@ -339,6 +377,34 @@ async function _newsSaveKw(value, team) {
   _newsRefreshKwUI();
   renderNews(newsData);
 }
+
+// « Mettre à la une »: the admin pins a story (public.news_pin, warehouse migration 027); the newsletter and the News page
+// lead with it for 36 hours. Others only see which one is pinned.
+let _newsAdmin = false, _newsPins = new Set();
+async function _newsLoadPins() {
+  const A = window.PKAccount; _newsAdmin = false; _newsPins = new Set();
+  if (!A || !A.configured) return;
+  try {
+    await A.ready(); if (!A.user) return;
+    const cl = A.client();
+    const [adm, pins] = await Promise.all([cl.rpc('is_news_admin'), cl.from('news_pin').select('link, pinned_at').gte('pinned_at', new Date(Date.now() - 36 * 3600e3).toISOString())]);
+    _newsAdmin = !!(adm && adm.data);
+    _newsPins = new Set(((pins && pins.data) || []).map(r => r.link));
+  } catch (e) { console.warn('[news] pins not read:', e); }
+}
+const _newsPinBtn = item => _newsAdmin ? `<button type="button" class="news-pinb${_newsPins.has(item.link) ? ' on' : ''}" data-pin="${_newsEsc(item.link)}" title="${_newsPins.has(item.link) ? _newsT('Retirer de la une', 'Remove from the top') : _newsT('Mettre à la une (newsletter et page Veille, 36 h)', 'Put at the top (newsletter and News page, 36 h)')}">${_newsPins.has(item.link) ? _newsT('À la une ✓', 'At the top ✓') : _newsT('Mettre à la une', 'Put at the top')}</button>`
+  : (_newsPins.has(item.link) ? `<span class="news-pinb on">${_newsT('À la une', 'At the top')}</span>` : '');
+document.addEventListener('click', async e => {
+  const b = e.target.closest && e.target.closest('[data-pin]'); if (!b) return;
+  e.preventDefault(); e.stopPropagation();
+  const cl = window.PKAccount && PKAccount.client && PKAccount.client(), link = b.dataset.pin; if (!cl) return;
+  const item = (newsData || []).find(i => i.link === link) || {};
+  b.disabled = true;
+  const r = _newsPins.has(link) ? await cl.from('news_pin').delete().eq('link', link) : await cl.from('news_pin').upsert({ link, title: String(item.title || '').slice(0, 400) }, { onConflict: 'link' });
+  if (r.error) { b.disabled = false; b.textContent = _newsT('Non enregistré : ', 'Not saved: ') + r.error.message; return; }
+  if (_newsPins.has(link)) _newsPins.delete(link); else _newsPins.add(link);
+  renderNews(newsData); if (typeof renderNewsUne === 'function') renderNewsUne();
+}, true);
 
 // most relevant first, but a fresh article beats an old one and one outlet cannot fill the top of the list:
 // impact, minus 0.3 per day of age, minus 0.6 for each article of the same outlet already placed above
@@ -608,7 +674,7 @@ function renderNews(items) {
       return `<a class="news-row${mine ? ' mine' : ''}" href="${_newsEsc(link)}" target="_blank" rel="noopener noreferrer"><span class="news-row-d">${recent ? t.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' }) : _newsDay(t)}</span>
         <span class="news-row-b"><span class="news-row-t">${mine ? '<span class="news-star">★</span>' : ''}${(item.tags || []).includes('official') ? `<span class="news-off">${_newsT('Texte officiel', 'Official text')}</span>` : ''}${_newsEsc(item.title)}</span>
         <small>${_newsEsc(item.source)}${more ? ` +${more}` : ''} · ${(item.tags || []).filter(x => !['official', 'fr', 'watch'].includes(x)).slice(0, 2).map(x => _newsEsc(_newsTagL(x))).join(' · ')}</small></span>
-        <span class="news-vote" data-link="${_newsEsc(item.link)}">${_newsVoteBtns(item.link)}</span></a>`;
+        <span class="news-row-f">${_newsPinBtn(item)}<span class="news-vote" data-link="${_newsEsc(item.link)}">${_newsVoteBtns(item.link)}</span></span></a>`;
     }).join('');
     return;
   }
@@ -626,7 +692,7 @@ function renderNews(items) {
       <div class="news-snippet">${_newsEsc(item.snippet)}</div>
       <div>${tagsHtml}${item.query ? ` <span class="news-q">search: ${_newsEsc(item.query)}</span>` : ''}${(item.countries || []).length ? ` <span class="news-q">${_newsEsc(item.countries.join(' · '))}</span>` : ''}</div>
       ${also}
-      <div class="news-vote" data-link="${_newsEsc(item.link)}">${_newsVoteBtns(item.link)}</div>
+      <div class="news-card-f"><div class="news-vote" data-link="${_newsEsc(item.link)}">${_newsVoteBtns(item.link)}</div>${_newsPinBtn(item)}</div>
     </a>`;
   }).join('');
 }
