@@ -2366,6 +2366,10 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
           <div class="fuel-card-head"><div><div class="table-title">Solar, wind and load · today and tomorrow</div><div class="fuel-card-sub" id="ma-fc-48h-sub">TSO day-ahead forecast</div></div><span class="source-badge">ENTSO-E · Energy-Charts</span></div>
           <div style="position:relative;height:300px"><canvas id="ma-fc-48h" style="width:100%;height:300px"></canvas></div>
         </div>
+        <div class="chart-container fuel-card" style="margin-top:14px">
+          <div class="fuel-card-head"><div><div class="table-title">Solar forecast error · day by day</div><div class="fuel-card-sub" id="ma-fc-err-sub">Day-ahead forecast against actual output</div></div><span class="source-badge">ENTSO-E · Energy-Charts</span></div>
+          <div style="position:relative;height:260px"><canvas id="ma-fc-err" style="width:100%;height:260px"></canvas></div>
+        </div>
         <div class="ma-fc-step">Next 5 weeks · weather outlook</div>
         <div class="fuel-grid-2" style="margin-top:14px">
           <div class="chart-container fuel-card">
