@@ -855,11 +855,55 @@
     'pp-mcsd': 'How far the discount can drift from its projection each year.', 'pp-rho': 'Link between a high-production year and a deeper discount (0 = none, 1 = full).',
     'pp-vs': 'Size of the volume and cannibalisation shocks in the stress scenarios.', 'pp-ss': 'Size of the spot price shocks in the stress scenarios.',
   };
+  // the same help in French, written here (a data-tip is not reached by the page dictionary)
+  const HELP_FR = {
+    'pp-tech': 'Solaire ou éolien : le profil de production national, la capacité installée et l’historique utilisés.',
+    'pp-t0': 'Première année calendaire de livraison.', 'pp-t1': 'Dernière année calendaire de livraison. Par défaut, la dernière année qui a un prix de marché (Cal).',
+    'pp-mw': 'Puissance installée de l’actif. Sert à estimer sa production annuelle quand aucune courbe n’est chargée.',
+    'pp-volume': 'Production attendue par an. Fixe le P&L en k€ et le poids de chaque année.',
+    'pp-degr': 'Perte de production annuelle (vieillissement des panneaux) : les dernières années pèsent un peu moins.',
+    'pp-file': 'Production de l’actif à l’heure ou au quart d’heure (CSV ou Excel). Le prix reflète alors cet actif ; sans courbe, le profil national est utilisé.',
+    'pp-model': 'Comment la décote est portée dans le futur : avec la capacité installée (objectifs PPE3), à plat sur la dernière année, ou selon une tendance.',
+    'pp-pct': 'Méthode Décote passée seulement : le centile des décotes passées utilisé. Mode projeté : la tendance est décalée de ce centile moins la médiane. Plus haut = plus prudent.',
+    'pp-stopt': 'Le parc s’arrête quand le prix day-ahead est sous cette valeur (ou à cette valeur et en dessous, avec « inférieur ou égal ») : 0 par défaut, une heure à exactement 0 est produite et payée 0, comme le fait la CRE. À une autre valeur, à 0,1 € près, le générateur donne la capture et la production payée de chaque mois à ce seuil, à partir de ses propres cellules.',
+    'pp-conv': 'Écrêté : l’actif s’arrête quand le prix est < 0 € ; cette production n’est ni produite ni payée, et le forward (Cal) se règle toujours sur toutes les heures. Sans écrêtement : chaque heure est produite et payée, prix négatifs compris. Arrêt partiel : seule la part saisie s’arrête (par exemple les parcs soumis à l’obligation d’arrêt), le reste produit et reçoit le prix négatif. Convention PPA Dashboard : l’ancienne règle de l’équipe, gardée pour comparer.',
+    'pp-alpha': 'Le risque de perte que vous acceptez. Plus bas = un prix plus prudent et une prime de risque plus forte.',
+    'pp-hedge': 'Le volume attendu est-il vendu à terme au prix Cal ? Couvert : seuls restent les risques de volume et de profil.',
+    'pp-imb': 'Coût des erreurs de prévision par MWh produit. Par défaut : estimation nationale (erreur de la prévision combinée du site ou de celle du GRT, la plus juste des deux sur 12 mois, × écart entre prix de déséquilibre et spot).',
+    'pp-go': 'Valeur des garanties d’origine par MWh, d’après les prix de marché.',
+    'pp-margin': 'Ce que l’acheteur garde par MWh. Déduit du prix payé au producteur, dans toutes les méthodes.',
+    'pp-disc': 'Taux d’actualisation appliqué aux années suivantes (0 = aucun).', 'pp-add': 'Une décote supplémentaire en % du forward, si vous en voulez une.',
+    'pp-volrisk': 'Méthode Décote passée : marge de risque volume, en % du forward, saisie à la main.', 'pp-pricerisk': 'Méthode Décote passée : marge de risque prix, en % du forward, saisie à la main.',
+    'pp-mcvol': 'De combien la production annuelle peut varier (1 écart-type).', 'pp-mcfwd': 'De combien le prix forward peut bouger d’ici la livraison (volatilité annuelle).',
+    'pp-mcsd': 'De combien la décote peut s’écarter de sa projection chaque année.', 'pp-rho': 'Lien entre une année de forte production et une décote plus profonde (0 = aucun, 1 = total).',
+    'pp-vs': 'Taille des chocs de volume et de cannibalisation dans les scénarios de stress.', 'pp-ss': 'Taille des chocs de prix spot dans les scénarios de stress.',
+    'pp-yearsel': 'Années passées utilisées pour mesurer la cannibalisation et la forme des prix. 2022 (crise du gaz) est exclue par défaut. Avec une courbe d’actif, seulement ses années complètes.',
+  };
+  // where an automatic value comes from, in French (the English text is written with the calculation)
+  const AUTO_FR = [
+    [/^spread of the years used around their trend, 3 to 8 pts$/, 'dispersion des années utilisées autour de leur tendance, 3 à 8 pts'],
+    [/^next calendar year$/, 'prochaine année calendaire'], [/^last Cal year quoted$/, 'dernière année Cal cotée'], [/^five years$/, 'cinq ans'],
+    [/^Commerg mid, AIB renewable, tenor years$/, 'milieu de fourchette Commerg, AIB renouvelable, années du contrat'], [/^default$/, 'valeur par défaut'],
+    [/^peak of the curve$/, 'pointe de la courbe'], [/^enter it to size the production$/, 'à saisir pour dimensionner la production'],
+    [/^asset curve, average year$/, 'courbe de l’actif, année moyenne'], [/^example: enter the capacity or a curve$/, 'exemple : saisissez la puissance ou une courbe'],
+    [/^([\d.]+) MW × national load factor ([\d.]+) %$/, (m, a, b) => `${fnum(a)} MW × facteur de charge national ${fnum(b)} %`],
+    [/^typical PV panel ageing$/, 'vieillissement habituel des panneaux'], [/^none for wind$/, 'aucune pour l’éolien'], [/^none: values in today’s money$/, 'aucune : valeurs en euros d’aujourd’hui'],
+    [/^national forecast error \((our combined forecast|the TSO day-ahead forecast)\) × \(imbalance − spot\), (\d+) months$/, (m, w, n) => `erreur de la prévision nationale (${w[0] === 'o' ? 'notre prévision combinée' : 'la prévision J-1 du GRT'}) × (déséquilibre − spot), ${n} mois`],
+    [/^past-discount default \(national estimate not computed yet\)$/, 'valeur par défaut de la Décote passée (estimation nationale pas encore calculée)'],
+    [/^past-discount default$/, 'valeur par défaut de la Décote passée'], [/^none$/, 'aucune'], [/^one chance in four$/, 'une chance sur quatre'], [/^Past discount$/, 'Décote passée'],
+    [/^spread of the national load factor, 6 years$/, 'dispersion du facteur de charge national, 6 ans'], [/^spread of the asset’s yearly output$/, 'dispersion de la production annuelle de l’actif'],
+    [/^asset’s (\d+) years against the national spread \(×([\d.]+)\) plus its own \(([\d.]+) %\)$/, (m, n, b, i) => `${n} années de l’actif face à la dispersion nationale (×${fnum(b)}) plus la sienne (${fnum(i)} %)`],
+    [/^France Cal\+1, (\d+) sessions$/, (m, n) => `France Cal+1, ${n} séances`], [/^assumption$/, 'hypothèse'],
+    [/^generator weather scenarios \((\d+) draws\)$/, (m, n) => `scénarios météo du générateur (${n} tirages)`],
+    [/^assumption: a sunnier \/ windier year cannibalises more$/, 'hypothèse : une année plus ensoleillée ou plus ventée cannibalise davantage'],
+  ];
+  const fnum = v => String(v).replace('.', ',');
+  const autoSrc = src => { if (!FRDOC() || src == null) return src; for (const [re, fr] of AUTO_FR) if (re.test(src)) return String(src).replace(re, fr); return src; };
   function addHelp() {
-    Object.entries(HELP).forEach(([id, tip]) => { const el = $(id); const f = el && el.closest('.cf-field'); const lab = f && f.querySelector(':scope > span'); if (!lab || lab.querySelector('.pp-help')) return;
+    Object.entries(HELP).forEach(([id, tip]) => { if (FRDOC() && HELP_FR[id]) tip = HELP_FR[id]; const el = $(id); const f = el && el.closest('.cf-field'); const lab = f && f.querySelector(':scope > span'); if (!lab || lab.querySelector('.pp-help')) return;
       const i = document.createElement('i'); i.className = 'pp-help'; i.tabIndex = 0; i.textContent = 'i'; i.dataset.tip = tip; i.setAttribute('aria-label', tip); lab.appendChild(i); });
     const ys = $('pp-yearsel'), lab = ys && ys.closest('.cf-field') && ys.closest('.cf-field').querySelector(':scope > span');
-    if (lab && !lab.querySelector('.pp-help')) { const i = document.createElement('i'); i.className = 'pp-help'; i.tabIndex = 0; i.textContent = 'i'; i.dataset.tip = 'Past years used to measure cannibalisation and the price shape. 2022 (gas crisis) is left out by default. With an asset curve, only its complete years.'; lab.appendChild(i); }
+    if (lab && !lab.querySelector('.pp-help')) { const i = document.createElement('i'); i.className = 'pp-help'; i.tabIndex = 0; i.textContent = 'i'; i.dataset.tip = FRDOC() ? HELP_FR['pp-yearsel'] : 'Past years used to measure cannibalisation and the price shape. 2022 (gas crisis) is left out by default. With an asset curve, only its complete years.'; i.setAttribute('aria-label', i.dataset.tip); lab.appendChild(i); }
   }
   const INTRO = {
     pct: '<b>Past discount</b> (formerly “PPA Dashboard”): the team’s original formula. By default, as in the tool’s projection: each delivery year’s discount = the linear trend of the last 3 years + (chosen percentile − median) of the past discounts; price = Σ forward × (1 − that discount), weighted by output, − risk margins entered by hand. Option: the percentile of the past years alone (the tool’s single headline price), which assumes the delivery years look like the past.',
@@ -877,7 +921,7 @@
       const v = a[0];
       inp.placeholder = v == null ? '' : String(v);
       if (S[k] == null && document.activeElement !== inp) inp.value = '';
-      if (tag) { const man = S[k] != null; tag.className = 'pp-auto' + (man ? ' man' : ''); tag.textContent = man ? `↺ auto${v != null ? ' ' + v : ''}` : 'auto'; tag.title = man ? 'Back to the automatic value: ' + a[1] : 'Automatic: ' + a[1]; tag.dataset.k = k; }
+      if (tag) { const man = S[k] != null; tag.className = 'pp-auto' + (man ? ' man' : ''); tag.textContent = man ? `↺ auto${v != null ? ' ' + v : ''}` : 'auto'; tag.title = FRDOC() ? (man ? 'Revenir à la valeur automatique : ' : 'Automatique : ') + autoSrc(a[1]) : man ? 'Back to the automatic value: ' + a[1] : 'Automatic: ' + a[1]; tag.dataset.k = k; }
     });
     const steps = document.querySelector('.pp-steps'); if (steps) steps.className = 'pp-steps m-' + (S.view === 'compare' ? 'all' : S.method);
     const pg = $('page-ppapricer'); if (pg) pg.dataset.m = S.view === 'compare' ? 'all' : S.method;
@@ -898,7 +942,7 @@
 
   function renderYears(o) {
     const host = $('pp-yearsel'); if (!host) return;
-    host.innerHTML = o.hist.map(x => `<button type="button" class="pp-chip${o.sel.includes(x.year) ? ' on' : ''}" data-y="${x.year}" title="Shape discount ${pc(x.sd)}${x.complete ? '' : ' · incomplete year'}">${x.year}${x.complete ? '' : ' YTD'}<em>${pc(x.sd)}</em></button>`).join('') +
+    host.innerHTML = o.hist.map(x => `<button type="button" class="pp-chip${o.sel.includes(x.year) ? ' on' : ''}" data-y="${x.year}" title="${FRDOC() ? 'Décote de profil' : 'Shape discount'} ${pc(x.sd)}${x.complete ? '' : FRDOC() ? ' · année incomplète' : ' · incomplete year'}">${x.year}${x.complete ? '' : ' YTD'}<em>${pc(x.sd)}</em></button>`).join('') +
       `<button type="button" class="pp-chip pp-chip-reset" data-y="reset">All but 2022</button>`;
     host.querySelectorAll('.pp-chip').forEach(b => b.addEventListener('click', () => {
       if (b.dataset.y === 'reset') S.years = null;
@@ -1273,7 +1317,7 @@
     const cur = S.view === 'compare' ? null : S.method;
     let rel = '';
     if (BT && BT.rows) { const rs = BT.rows.filter(r => r.tech === S.tech && r.year !== 2022), m = {}; RB.forEach(r => { if (rs.length && r[3]) m[r[3]] = mean(rs.map(x => Math.abs(x[r[3]] - x.actual))); }); const best = RB.filter(r => m[r[3]] != null).sort((a, b) => m[a[3]] - m[b[3]])[0];
-      if (best) rel = `<span class="rel" title="Historical replay ${BT.targets ? BT.targets[0] + '–' + BT.targets[BT.targets.length - 1] : ''}, 2022 left out: average gap between the capture rate each method predicted and the real one">Among the reference methods, most reliable in the replay (${S.tech}): <b>${best[1]}</b>, ${(m[best[3]] * 100).toFixed(1)} pts average error · <a href="#" data-rb-tab="Compare">see the replay</a></span>`; }
+      if (best) rel = `<span class="rel" title="Historical replay ${BT.targets ? BT.targets[0] + '–' + BT.targets[BT.targets.length - 1] : ''}, 2022 left out: average gap between the capture rate each method predicted and the real one">Among the reference methods, most reliable in the replay (${S.tech}): <b>${best[1]}</b>, ${(m[best[3]] * 100).toFixed(1)} pts average error · <button type="button" class="pk-linkbtn" data-rb-tab="Compare">see the replay</button></span>`; }
     else if (!BT) get('history/ppa_backtest.json').then(j => { if (j) { BT = j; renderResBar(S.last); } });
     // the published price first (the scenario generator, Tom 31 Oct. 2026); the five methods after it are references only
     const pub = GEN_ONLY() && o.ppaGen != null ? `<span class="pp-rb pp-rb-pub" title="The price the site publishes: the scenario generator (v2), its risk premium from the full Monte Carlo">Published price <b>${f2(o.ppaGen)}</b></span><span class="lbl">Reference methods</span>` : '';
@@ -1289,7 +1333,7 @@
     const e = $('pp-adv-n'); if (e) e.textContent = n ? n + ' changed' : '';
   }
   // long notes fold to two lines; a click opens them
-  function clampNotes() { document.querySelectorAll('#page-ppapricer .fuel-note').forEach(n => { if (!n.dataset.clamp) { n.dataset.clamp = '1'; n.classList.add('pp-clamp'); n.title = 'Click to read the whole note'; n.addEventListener('click', () => { n.classList.toggle('pp-clamp'); n.title = n.classList.contains('pp-clamp') ? 'Click to read the whole note' : ''; }); } }); }
+  function clampNotes() { document.querySelectorAll('#page-ppapricer .fuel-note').forEach(n => { if (!n.dataset.clamp) { n.dataset.clamp = '1'; n.classList.add('pp-clamp'); n.title = FRDOC() ? 'Cliquer pour lire toute la note' : 'Click to read the whole note'; n.addEventListener('click', () => { n.classList.toggle('pp-clamp'); n.title = n.classList.contains('pp-clamp') ? 'Click to read the whole note' : ''; }); } }); }
   // the inputs in one line, readable when the section is folded
   function inSummary(o) {
     const sum = $('pp-in-sum');
@@ -1327,13 +1371,13 @@
       _fuelKpi('Capture value', f2(o.fair), '€/MWh', 'forward × quoted-month factor × (1 − projected shape discount), no risk'),
       _fuelKpi('Risk premium', f2(o.premium), '€/MWh', `${o.alpha} % chance of loss accepted · Monte Carlo`),
       _fuelKpi('Chance of loss', mcA ? (mcA.prob * 100).toFixed(1) : '–', '%', 'at the PPA price, margin included', mcA && mcA.prob > 0.5 ? 'down' : 'up'),
-      _fuelKpi('Production', f0(o.volume), 'MWh/yr', o.auto.volume && S.volume == null ? o.auto.volume[1] : 'entered'),
+      _fuelKpi('Production', f0(o.volume), 'MWh/yr', o.auto.volume && S.volume == null ? autoSrc(o.auto.volume[1]) : FRDOC() ? 'saisie' : 'entered'),
     ] : [
       _fuelKpi('PPA price', f2(o.ppa), '€/MWh', `${tech} · ${T0}–${T1} · ${(o.ppa / o.ref * 100).toFixed(1)} % of forward`, ''),
       _fuelKpi('Reference forward', f2(o.ref), '€/MWh', 'average of the tenor Cal contracts'),
       _fuelKpi('Shape discount used', pc(o.sdCh), '', `${o.pdMode === 'past' ? 'P' + S.pct + ' of the past' : 'projected, trend + P' + S.pct + ' offset'} (${o.useAsset ? 'asset' : 'national'})`),
       _fuelKpi('Break-even', o.be ? 'P' + o.be : '> P100', '', 'percentile where the P&L turns negative', o.be && o.be <= S.pct ? 'down' : 'up'),
-      _fuelKpi('Production', f0(o.volume), 'MWh/yr', o.auto.volume && S.volume == null ? o.auto.volume[1] : 'entered'),
+      _fuelKpi('Production', f0(o.volume), 'MWh/yr', o.auto.volume && S.volume == null ? autoSrc(o.auto.volume[1]) : FRDOC() ? 'saisie' : 'entered'),
     ]).join('');
     // the price, step by step: each step points to the chart it comes from
     const first = o.years[0], last = o.years[o.years.length - 1];
@@ -1384,7 +1428,7 @@
         scales: { x: Object.assign(_fuelXAxis(), { grid: { display: false }, ticks: { color: C_TX2, font: { size: 10 }, autoSkip: false, maxRotation: 0 } }), y: _fuelAxis('€/MWh', { beginAtZero: true }) } }) }, 'ppa-waterfall');
     // year table
     $('pp-years').innerHTML = `<div style="overflow-x:auto"><table class="fuel-table pp-ptab"><thead><tr><th style="text-align:left">Year</th><th>Forward</th><th>Shape disc.</th><th>Capture</th><th>Neg. hours</th><th>MWh${S.conv === 'pos' ? ' paid' : ''}</th><th>P&L k€</th></tr></thead><tbody>` +
-      o.years.map(r => `<tr><td style="text-align:left">${r.y}</td><td>${f2(r.fwd)}</td><td>${pc(r.fsd)} <span class="pp-hint">± ${(r.sig * 100).toFixed(1)}</span></td><td>${f2(r.cp)}</td><td title="${r.negShare != null ? (r.negShare * 100).toFixed(1) + ' % of the output at prices < 0' : ''}">${f0(r.negH)}</td><td>${f0(r.ev)}</td><td class="${r.pnlK >= 0 ? 'pp-pos' : 'pp-neg'}">${sgn(r.pnlK)}</td></tr>`).join('') +
+      o.years.map(r => `<tr><td style="text-align:left">${r.y}</td><td>${f2(r.fwd)}</td><td>${pc(r.fsd)} <span class="pp-hint">± ${(r.sig * 100).toFixed(1)}</span></td><td>${f2(r.cp)}</td><td title="${r.negShare != null ? (FRDOC() ? (r.negShare * 100).toFixed(1).replace('.', ',') + ' % de la production à des prix < 0' : (r.negShare * 100).toFixed(1) + ' % of the output at prices < 0') : ''}">${f0(r.negH)}</td><td>${f0(r.ev)}</td><td class="${r.pnlK >= 0 ? 'pp-pos' : 'pp-neg'}">${sgn(r.pnlK)}</td></tr>`).join('') +
       `</tbody></table></div><div class="fuel-note">${o.years.some(r => r.kq != null && Math.abs(r.kq - 1) > 0.0005) ? (FRDOC() ? `Facteur des mois cotés k (le niveau lu mois par mois, comme le reste de l’outil) : ${o.years.map(r => r.y + ' ' + (r.kq || 1).toFixed(3)).join(', ')} ; valeur captée = forward × k × capture. ` : `Quoted-month factor k (the level read month by month, as the rest of the tool does): ${o.years.map(r => r.y + ' ' + (r.kq || 1).toFixed(3)).join(', ')}; capture value = forward × k × capture. `) : ''}Shape discount ${MODEL_T[o.model]}, from ${o.lastYr} (${pc(o.proj(o.lastYr))}, ${o.useAsset ? 'asset' : 'national'}); ± = 1 σ of the projection. Negative hours projected with the solar build-out${S.conv === 'pos' ? '; with the PPA Dashboard convention the output at prices < 0 is not paid, so the volume paid shrinks as they grow' : ''}. P&L = production × (capture − imbalance + GO − PPA price), central case.</div>`;
     // P&L vs percentile
     _fuelChart('pp-pnl', { type: 'line', data: { labels: o.pcts.map(p => 'P' + p), datasets: [
@@ -2292,7 +2336,7 @@ ${FRDOC() ? `<p>RTE éCO2mix (production nationale, 15 min) · prix day-ahead EN
     renderScen();
     const file = $('pp-file');
     file.addEventListener('change', async () => { const f = file.files[0]; if (f) await loadAsset(f, f.name); file.value = ''; });
-    page.querySelectorAll('a[data-sample]').forEach(a => a.addEventListener('click', async e => {
+    page.querySelectorAll('[data-sample]').forEach(a => a.addEventListener('click', async e => {
       e.preventDefault();
       const r = await fetch(a.dataset.sample); if (!r.ok) { $('pp-status').textContent = 'Test curve not found'; return; }
       const name = a.dataset.sample.split('/').pop(), f = new File([await r.blob()], name, { type: 'text/csv' });

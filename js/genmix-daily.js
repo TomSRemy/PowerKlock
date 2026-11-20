@@ -432,13 +432,13 @@ function _gmdczRenderSummaryTable() {
     const dRenStr = (dRen == null) ? '--' : (isFr ? '— ref —' : (dRen >= 0 ? '+' : '') + dRen.toFixed(1) + ' pts');
     const dCo2Str = (dCo2 == null) ? '--' : (isFr ? '— ref —' : (dCo2 >= 0 ? '+' : '') + Math.round(dCo2));
     return `<tr style="${isFr ? 'background:rgba(20,211,169,0.04);' : ''}">
-      <td style="text-align:left;padding:6px 10px;font-family:'JetBrains Mono',monospace;font-weight:600">${flag} ${z}${isFr ? ' <span style="color:#14D3A9;font-size:9px">●</span>' : ''}</td>
-      <td style="text-align:right;padding:6px 10px;font-family:'JetBrains Mono',monospace">${fmt(st.total / 1000, 2)}</td>
-      <td style="text-align:right;padding:6px 10px;font-family:'JetBrains Mono',monospace;color:${renColor(st.renPct)};font-weight:600">${fmt(st.renPct, 1)}%</td>
-      <td style="text-align:right;padding:6px 10px;font-family:'JetBrains Mono',monospace;color:${co2Color(st.co2)};font-weight:600">${Math.round(st.co2)}</td>
-      <td style="text-align:left;padding:6px 10px;font-family:'JetBrains Mono',monospace"><span style="color:${dom.color}">${dom.emoji || ''} ${dom.label || st.dom}</span></td>
-      <td style="text-align:right;padding:6px 10px;font-family:'JetBrains Mono',monospace;color:${dRenColor};font-weight:${isFr ? 500 : 600}">${dRenStr}</td>
-      <td style="text-align:right;padding:6px 10px;font-family:'JetBrains Mono',monospace;color:${dCo2Color};font-weight:${isFr ? 500 : 600}">${dCo2Str}</td>
+      <td style="text-align:left;padding:9px 12px;font-family:'JetBrains Mono',monospace;font-weight:600">${flag} ${z}${isFr ? ' <span style="color:#14D3A9;font-size:9px">●</span>' : ''}</td>
+      <td style="text-align:right;padding:9px 12px;font-family:'JetBrains Mono',monospace">${fmt(st.total / 1000, 2)}</td>
+      <td style="text-align:right;padding:9px 12px;font-family:'JetBrains Mono',monospace;color:${renColor(st.renPct)};font-weight:600">${fmt(st.renPct, 1)}%</td>
+      <td style="text-align:right;padding:9px 12px;font-family:'JetBrains Mono',monospace;color:${co2Color(st.co2)};font-weight:600">${Math.round(st.co2)}</td>
+      <td style="text-align:left;padding:9px 12px;font-family:'JetBrains Mono',monospace"><span style="color:${dom.color}">${dom.emoji || ''} ${dom.label || st.dom}</span></td>
+      <td style="text-align:right;padding:9px 12px;font-family:'JetBrains Mono',monospace;color:${dRenColor};font-weight:${isFr ? 500 : 600}">${dRenStr}</td>
+      <td style="text-align:right;padding:9px 12px;font-family:'JetBrains Mono',monospace;color:${dCo2Color};font-weight:${isFr ? 500 : 600}">${dCo2Str}</td>
     </tr>`;
   }).join('');
 
@@ -552,13 +552,13 @@ function _gmdczRenderHeatmap(o) {
       <table style="width:100%;border-collapse:collapse;font-size:11px;table-layout:fixed">
         <thead>
           <tr>
-            <th style="padding:4px 8px;text-align:left;color:var(--tx3);font-weight:600;width:90px;border-bottom:1px solid var(--bd)">Zone</th>`;
+            <th style="padding:10px 12px;text-align:left;color:var(--tx3);font-weight:600;width:90px;border-bottom:1px solid var(--bd)">Zone</th>`;
   FUEL_ORDER.forEach(k => {
     const m = FUEL_META[k];
     if (!m) return;
-    html += `<th style="padding:4px 8px;text-align:center;color:${m.color};font-weight:600;font-size:11px;border-bottom:1px solid var(--bd)">${m.emoji || ''} ${m.label || k}</th>`;
+    html += `<th style="padding:10px 12px;text-align:center;color:${m.color};font-weight:600;font-size:11px;border-bottom:1px solid var(--bd)">${m.emoji || ''} ${m.label || k}</th>`;
   });
-  html += `<th style="padding:4px 8px;text-align:right;color:var(--tx3);font-weight:600;width:80px;border-bottom:1px solid var(--bd)">Total</th></tr></thead><tbody>`;
+  html += `<th style="padding:10px 12px;text-align:right;color:var(--tx3);font-weight:600;width:80px;border-bottom:1px solid var(--bd)">Total</th></tr></thead><tbody>`;
 
   zones.forEach(z => {
     const mix = data[z];

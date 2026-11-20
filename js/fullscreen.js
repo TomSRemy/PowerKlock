@@ -913,8 +913,8 @@ window.pkZoneChip = function(opts) {
   const title   = opts.title ? ` title="${opts.title}"` : '';
 
   const css = active
-    ? `padding:3px 9px;border-radius:4px;font-size:10px;cursor:pointer;font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.03em;transition:all .15s;background:${color}22;color:${color};border:1px solid ${color}`
-    : `padding:3px 9px;border-radius:4px;font-size:10px;cursor:pointer;font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.03em;transition:all .15s;background:transparent;color:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.12)`;
+    ? `padding:3px 9px;min-height:24px;box-sizing:border-box;border-radius:4px;font-size:10px;cursor:pointer;font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.03em;transition:all .15s;background:${color}22;color:${color};border:1px solid ${color}`
+    : `padding:3px 9px;min-height:24px;box-sizing:border-box;border-radius:4px;font-size:10px;cursor:pointer;font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.03em;transition:all .15s;background:transparent;color:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.12)`;
 
   return `<button onclick="${onClick}"${title} style="${css}">${code}</button>`;
 };
@@ -943,8 +943,8 @@ window.pkFilterChip = function(opts) {
   const title   = opts.title ? ` title="${opts.title}"` : '';
 
   const css = active
-    ? `padding:3px 9px;border-radius:4px;font-size:10px;cursor:pointer;font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.03em;transition:all .15s;background:rgba(20,211,169,0.13);color:#14D3A9;border:1px solid #14D3A9`
-    : `padding:3px 9px;border-radius:4px;font-size:10px;cursor:pointer;font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.03em;transition:all .15s;background:transparent;color:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.12)`;
+    ? `padding:3px 9px;min-height:24px;box-sizing:border-box;border-radius:4px;font-size:10px;cursor:pointer;font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.03em;transition:all .15s;background:rgba(20,211,169,0.13);color:#14D3A9;border:1px solid #14D3A9`
+    : `padding:3px 9px;min-height:24px;box-sizing:border-box;border-radius:4px;font-size:10px;cursor:pointer;font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:.03em;transition:all .15s;background:transparent;color:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.12)`;
 
   return `<button onclick="${onClick}"${title} style="${css}">${label}</button>`;
 };

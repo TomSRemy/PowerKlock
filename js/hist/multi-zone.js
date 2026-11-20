@@ -469,7 +469,7 @@ async function renderHistMulti() {
 window.renderHistMulti = renderHistMulti;
 
 // ═══════════════════════════════════════════════════════════════════
-//  HMZ data table · STRICTLY MIRRORS Daily Compare zones (compact 9px 6px, 11px, 2 decimals)
+//  HMZ data table · STRICTLY MIRRORS Daily Compare zones (9px 12px, 11px: the dense-table norm, 2 decimals)
 //  ─ Header columns adapt to the active mode (lines/heatmap/profile/bands/spread)
 //  ─ Body styled identically to ccBody* in prices.js
 //  ─ Hover/click row → highlight matching curve in #hmz-canvas
@@ -485,7 +485,7 @@ function renderHmzTable(view, stats, selected, baseline) {
     return { code: z, ...st };
   }).filter(Boolean);
   if (!rows.length) {
-    tbody.innerHTML = `<tr><td colspan="6" style="color:var(--text3);text-align:center;padding:9px 6px;font-size:11px">No zones selected</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" style="color:var(--text3);text-align:center;padding:9px 12px;font-size:11px">No zones selected</td></tr>`;
     return;
   }
   let html = '';
@@ -572,7 +572,7 @@ function _hmzZoneCell(r) {
   const meta = (typeof ZONE_META !== 'undefined' && ZONE_META[r.code]) || {};
   const flag = (typeof FLAG_MAP !== 'undefined' && FLAG_MAP[r.code]) || '';
   const country = meta.country || (typeof _HO_NAMES !== 'undefined' && _HO_NAMES[r.code]) || r.code;
-  return `<td style="padding:9px 6px;vertical-align:middle">
+  return `<td style="padding:9px 12px;vertical-align:middle">
     <span style="display:inline-block;width:3px;height:12px;background:${col};border-radius:2px;vertical-align:middle;margin-right:6px"></span>
     <span style="font-family:'JetBrains Mono',monospace;font-weight:700;color:${col};font-size:11px">${flag} ${r.code}</span>
     <span style="color:var(--text3);margin-left:5px;font-family:'Inter',sans-serif;font-size:10.5px">${country}</span>
@@ -587,7 +587,7 @@ function _hmzTr(r, cells) {
   </tr>`;
 }
 
-const _HMZ_TD_R = "text-align:right;padding:9px 6px;font-family:'JetBrains Mono',monospace;font-size:11px;vertical-align:middle";
+const _HMZ_TD_R = "text-align:right;padding:9px 12px;font-family:'JetBrains Mono',monospace;font-size:11px;vertical-align:middle";
 const _HMZ_SUB  = "color:var(--text3);font-size:9px";
 
 function _hmzBodyLines(rows) {
@@ -602,7 +602,7 @@ function _hmzBodyLines(rows) {
     const widthPct = (r.min != null && r.max != null) ? ((r.max - r.min) / globalRng) * 100 : 0;
     const cells = `
       <td style="${_HMZ_TD_R};font-weight:600;color:var(--text)">${r.avg != null ? r.avg.toFixed(2) : '--'}</td>
-      <td style="padding:9px 6px;vertical-align:middle">
+      <td style="padding:9px 12px;vertical-align:middle">
         <div style="display:flex;align-items:center;gap:8px">
           <div style="flex:0 0 48px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:${r.min<0?'var(--down)':'var(--text2)'};line-height:11px">
             ${r.min != null ? r.min.toFixed(2) : '--'}
@@ -696,7 +696,7 @@ function _hmzBodySpreadVsRef(rows, baseline) {
   const maxAbs = validSpreads.length ? Math.max(...validSpreads, 1) : 1;
   return rows.map(r => {
     if (r.code === baseline) {
-      const cells = `<td colspan="5" style="text-align:center;padding:9px 6px;color:var(--text3);font-size:11px;font-style:italic">— reference (${baseline}) —</td>`;
+      const cells = `<td colspan="5" style="text-align:center;padding:9px 12px;color:var(--text3);font-size:11px;font-style:italic">— reference (${baseline}) —</td>`;
       return _hmzTr(r, cells);
     }
     const avgSpread = (r.avg != null && ref?.avg != null) ? (r.avg - ref.avg) : null;
@@ -1036,7 +1036,7 @@ function _hmzRenderHeatmap(perZone, selected) {
     Granularity: <b style="color:var(--tx)">${modeLabel}</b> · Baseline: <b style="color:var(--tx)">${baseline}</b> · Colour encodes Δ vs baseline
   </div>`;
   html += `<table style="border-collapse:separate;border-spacing:2px;font-size:9.5px;font-family:'JetBrains Mono',monospace">`;
-  html += `<thead><tr><th style="text-align:left;padding:4px 8px;color:var(--tx3);font-weight:600">Zone</th>`;
+  html += `<thead><tr><th style="text-align:left;padding:10px 12px;color:var(--tx3);font-weight:600">Zone</th>`;
   buckets.forEach(b => {
     html += `<th style="text-align:center;padding:4px;color:var(--tx3);font-weight:600;min-width:${cellMinWidth}px">${b.label}</th>`;
   });
@@ -1046,7 +1046,7 @@ function _hmzRenderHeatmap(perZone, selected) {
     const flag = (typeof FLAG_MAP !== 'undefined' && FLAG_MAP[z]) || '';
     const isBaseline = (z === baseline);
     let row = `<tr>`;
-    row += `<td style="padding:4px 8px;color:var(--tx);font-weight:600;white-space:nowrap${isBaseline ? ';border-left:2px solid #FBBF24' : ''}">${flag} ${z}${isBaseline ? ' <span style="color:#FBBF24;font-size:8px">★</span>' : ''}</td>`;
+    row += `<td style="padding:9px 12px;color:var(--tx);font-weight:600;white-space:nowrap${isBaseline ? ';border-left:2px solid #FBBF24' : ''}">${flag} ${z}${isBaseline ? ' <span style="color:#FBBF24;font-size:8px">★</span>' : ''}</td>`;
     buckets.forEach(b => {
       const v = matrix[z][b.key];
       if (v == null) {
