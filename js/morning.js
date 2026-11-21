@@ -949,9 +949,19 @@ function _mrnLearn(k, o) {
   if (c && c7 != null) { const why = [t7 != null && Math.abs(t7) >= 2 ? (t7 > 0 ? _mT('le gaz monte', 'gas is rising') : _mT('le gaz baisse', 'gas is falling')) : null, nucLow ? _mT('il y a moins de nucléaire disponible que prévu', 'less nuclear is available than planned') : null].filter(Boolean);
     p2 = _mT('Pour ' + c.y + ', le prix ', 'For ' + c.y + ', the price ') + (c7 > 1 ? _mT('<b class="mrn-up">monte</b>', '<b class="mrn-up">is rising</b>') : c7 < -1 ? _mT('<b class="mrn-dn">baisse</b>', '<b class="mrn-dn">is falling</b>') : _mT('est stable', 'is steady')) + (why.length ? _mT(' parce que ', ' because ') + why.join(_mT(' et qu’', ' and ')) : '') + '.'; }
   if (sent) sent.innerHTML = p1 + p2;
-  // today hour by hour, coloured: 0 € or below, normal, expensive
-  const tod = (k.today || []).slice(0, 24);
+  // today hour by hour, coloured: 0 € or below, normal, expensive. Today's price not received yet (a data gap,
+  // data/data_gaps.json): yesterday's, dated, and the reader is told (PK.gapText)
+  const gap = !k.today && o.day, tod = (k.today || k.yday || []).slice(0, 24), sD = k.today ? sT : sY;
+  if (gap && !tod.length) {   // nothing to show: the message instead of an empty chart
+    const c = document.getElementById(o.day);
+    if (c && c.parentElement) { c.style.display = 'none'; let m = c.parentElement.querySelector('.no-data-msg');
+      if (!m) { m = document.createElement('div'); m.className = 'no-data-msg'; m.style.cssText = 'display:flex;align-items:center;justify-content:center;height:100%;min-height:120px;color:var(--text3);font-size:12px;padding:20px;text-align:center'; c.parentElement.appendChild(m); }
+      m.textContent = PK.gapText(k.t, 'FR'); PK.markGap(m, k.t, 'FR'); }
+    if (o.note) o.note.textContent = '';
+  }
   if (o.day && tod.length && window._fuelChart) {
+    const sT = sD;   // the figures of the day drawn
+    { const c = document.getElementById(o.day), m = c && c.parentElement && c.parentElement.querySelector('.no-data-msg[data-pk-gap]'); if (m) { m.remove(); c.style.display = ''; } }
     const hi = sT ? sT.base * 1.5 : Infinity, top = Math.max(...tod.filter(v => v != null), 1);
     _fuelChart(o.day, { type: 'bar', data: { labels: tod.map((_, h) => _mrnFr() ? h + ' h' : h + ':00'), datasets: [
       { label: _mT('Prix, €/MWh', 'Price, €/MWh'), data: tod.map(v => v == null ? null : Math.round(v * 10) / 10), backgroundColor: tod.map(v => v != null && v > hi ? 'rgba(237,105,101,.8)' : 'rgba(127,200,248,.6)'), borderWidth: 0, order: 1 },
@@ -959,6 +969,11 @@ function _mrnLearn(k, o) {
       { label: _mT('Heures à 0 € ou moins', 'Hours at 0 € or below'), data: tod.map(v => v != null && v <= 0.1 ? top * 1.05 : null), backgroundColor: 'rgba(20,211,169,.22)', borderWidth: 0, barPercentage: 1, categoryPercentage: 1, order: 9 }] },
       options: _fuelOpts({ plugins: { legend: { display: false } }, scales: { x: Object.assign(_fuelXAxis(), { stacked: true }), y: _fuelAxis('€/MWh', { stacked: false }) } }) }, 'today-hours');
     const n = o.note;
+    // the gap line above the chart (the note under it keeps its height)
+    { const c = document.getElementById(o.day), box = c && c.parentElement; let g = box && box.parentElement.querySelector(':scope > .pk-gap-note');
+      if (gap && box) { if (!g) { g = document.createElement('div'); g.className = 'pk-gap-note'; g.style.cssText = 'font-size:11px;color:var(--text3);margin:0 0 4px'; box.before(g); }
+        g.textContent = PK.gapText(k.t, 'FR', k.y); PK.markGap(g, k.t, 'FR', k.y); }
+      else if (g) g.remove(); }
     if (n && sT) n.innerHTML = (sT.zero ? _mT(`<b>En vert</b> : ${sT.zero} h à 0 € ou moins, quand le vent et le soleil produisent plus que la France ne consomme. `, `<b>Green</b>: ${sT.zero} h at 0 € or below, when wind and sun produce more than France consumes. `) : '') +
       _mT(`<b>En rouge</b> : plus de 1,5 fois la moyenne du jour. Le plus cher : ${sT.maxH} h (${_mN(sT.max, 0)} €)` + (sT.maxH >= 17 && sT.maxH <= 21 ? ', quand le soleil se couche et que la demande monte.' : '.'), `<b>Red</b>: above 1.5 times the day’s average. The most expensive: ${sT.maxH}:00 (${_mN(sT.max, 0)} €)` + (sT.maxH >= 17 && sT.maxH <= 21 ? ', when the sun sets and demand rises.' : '.'));
   }
