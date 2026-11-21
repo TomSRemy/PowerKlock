@@ -95,5 +95,14 @@ _e = NS.export_rows([_row(1, 'done', 10), _row(2, 'open'), _row(3, 'done', 70)],
 check('notes: export keeps open notes and those closed < 60 days, open first', [n['id'] for n in _e['notes']] == [2, 1] and _e['open'] == 1, _e)
 check('notes: no e-mail address in the public file', all('@' not in json.dumps(n) for n in _e['notes']) and _e['notes'][0]['author'] == 'Tom', _e['notes'][0])
 
+# ── tone of the daily market commentaries (scripts/fetch_fr_market.py): same result as the rule the browser applied
+#    before (js/market-brief.js); expected values computed with the JavaScript regular expressions ──
+from fetch_fr_market import tone_score, insights_tone
+for _txt, _want in [('<p>Prices ROSE, rising and Higher</p><p>tightening</p>', 3), ('Gas fell; prices eased <b>lower</b>, downside, ample supply', -5),
+                    ('<p>risk</p>risks<i>weak</i>', 1), ('é risé risée Ease', -1), ('<br>', 0), ('', None), (None, None)]:
+    check(f'commentary tone {_txt!r}', tone_score(_txt) == _want, tone_score(_txt))
+check('commentary tone: scores and date only, no text', insights_tone({'gas': '<p>higher</p>', 'power': ''}, '2026-11-20') == {'gas': 1, 'date': '2026-11-20'})
+check('commentary tone: nothing read, nothing written', insights_tone({}, '2026-11-20') is None)
+
 print('FAILED' if fails else 'PASSED', f'({len(fails)} failed)')
 sys.exit(1 if fails else 0)

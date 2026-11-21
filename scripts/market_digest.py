@@ -29,10 +29,6 @@ def load(p):
         return None
 
 
-def plain(h):
-    return re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", str(h or "")).replace("&nbsp;", " ").replace("&amp;", "&").replace("&euro;", "€")).strip()
-
-
 def week_move(pts):
     """last value and its move over 7 days, from [[date, value], …]"""
     if not pts:
@@ -141,9 +137,11 @@ def run(notes=None):
         except (KeyError, TypeError, ValueError):
             pass
     fm = load("fr_market.json") or {}
-    mi, d = fm.get("marketInsights") or {}, (fm.get("marketInsightsDate") or fm.get("lastUpdate") or "")[:10]
-    if mi and (mi.get("gas") or mi.get("power")):
-        payload["notes"].append({"date": d, "kind": "daily energy report", "gas": plain(mi.get("gas"))[:3000], "power": plain(mi.get("power"))[:3000]})
+    # SEFE's daily commentaries are not kept (only their tone score: rising words minus easing words, > 0 = leaning up)
+    mt = fm.get("marketInsightsTone") or {}
+    if mt.get("gas") is not None or mt.get("power") is not None:
+        payload["notes"].append({"date": mt.get("date"), "kind": "daily energy report, tone score only (> 0 leans to rising prices, < 0 to easing)",
+                                 "gas_tone": mt.get("gas"), "power_tone": mt.get("power")})
     ctx, look = ask(payload)
     json.dump({"updated": datetime.now(timezone.utc).isoformat(timespec="seconds"), "asof": today.isoformat(),
                "notes": len(payload["notes"]), "engine": ENGINE, "context": ctx, "outlook": look}, open(OUT, "w"), ensure_ascii=False, indent=1)

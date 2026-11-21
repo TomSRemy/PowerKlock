@@ -1,9 +1,9 @@
 {
  "date": "2026-11-10",
- "marketInsightsHtml": null,
- "marketInsights": {
-  "gas": "<p>A relatively bearish day for the European gas markets yesterday following on from the trend of last week. Much of the bearishness still continues with the geopolitical headlines coming out surrounding the conflict in the Middle East.</p>\n<p>At the time of writing this morning the front month NBP Dec-26 contract is trading at 203p/therm whilst the TTF FM is at &euro;81.50/MWh.</p>\n<p>News came out yesterday with the plans of JD Vance heading to Qatar for further talks whilst last night Trump spoke on the positive contact he has had with the PM of Qatar also stating that there was momentum heading towards the end of the conflict. Following on from the mid term elections in the US last week, an announcement from the legislature in the US is looking to impeach the US Secretary of War, Pete Hegseth, for some actions they deem unlawful including the actions in Iran.</p>\n<p>The latest weather runs have added some colder weather runs into the mix from the 21st of November having been quite mild on the weekends runs. Wind speeds still seem to be looking above seasonal from mid month.</p>\n<p>The trilateral talks involving the US, Russia and Ukraine are set to begin in Abu Dhabi today with Trump remaining bullish on the meeting, the areas in the east of Ukraine still remain a key talking points for any peace talks.</p>",
-  "power": "<p>European power markets tracked the gas markets and continued to tick downwards yesterday. At the time of writing the front month DE baseload contract is trading at &euro;190.50/MWh with the UK Baseload FM contract trading at &pound;168/MWh.</p>\n<p>German DA prices still remain high having been high on Monday with cooler cold and still days in NW Europe. The current price for DA in Germany is at &euro;308/MWh, around &euro;118 premium to the front month contract. German DA power price hit their highest prices since 2022 this week with the cooler temperatures and low winds.</p>\n<p>The most recent weather forecasts have brough some cooler weather runs into the forecast but wind speeds look to still be heading above seasonal normal mid month which should provide some good renewable generation to the supply mix.</p>\n<p>EUA prices saw a slight recovery yesterday having opened at below &euro;87 and closing at &euro;87.56 at the end of the day &ndash; prices this morning have seen a 20 cent increase on last nights close at the time of writing.</p>"
+ "marketInsightsTone": {
+  "gas": 0,
+  "power": 0,
+  "date": "2026-11-10"
  },
  "countries": {
   "FR": {

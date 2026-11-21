@@ -18,7 +18,6 @@ mirrored too so the Prices > Forward page can treat all four uniformly.
 """
 import sys
 import re
-import html
 import json
 import calendar
 from datetime import datetime, timezone, date
@@ -277,34 +276,8 @@ def fetch_forward_history(h, resolved, days):
     return series
 
 
-def fetch_market_insights_text(h):
-    """Pull the Electricity-section narrative from today's cockpit layout."""
-    r = requests.get(f"{API}/Cockpits/{COCKPIT_GUID}", params={"isTemplate": "false"}, headers=h, timeout=30)
-    r.raise_for_status()
-    content = json.loads(r.json()["content"])
-    in_electricity = False
-    seen_insights_title = False
-    for w in content:
-        if w.get("type") == "title":
-            t = (w.get("titleText") or "").strip()
-            if t == "Electricity":
-                in_electricity = True
-            elif t == "Market Insights" and in_electricity:
-                seen_insights_title = True
-            elif in_electricity and t and t != "Market Insights":
-                if seen_insights_title:
-                    break
-        elif w.get("type") == "text" and in_electricity and seen_insights_title:
-            return w.get("content", "")
-    return None
-
-
-FRANCE_KEYWORDS = re.compile(r"\bFrance\b|\bFrench\b", re.IGNORECASE)
-SENTENCE_SPLIT = re.compile(r"(?<=[.!?])\s+(?=[A-Z])")
-
-
 def fetch_market_insights_all(h):
-    """Both daily commentaries of the cockpit, in full (English): Natural Gas and Electricity → {"gas": html, "power": html}"""
+    """Both daily commentaries of the cockpit (English): Natural Gas and Electricity → {"gas": html, "power": html}, held in memory only"""
     r = requests.get(f"{API}/Cockpits/{COCKPIT_GUID}", params={"isTemplate": "false"}, headers=h, timeout=30)
     r.raise_for_status()
     content = json.loads(r.json()["content"])
@@ -323,41 +296,28 @@ def fetch_market_insights_all(h):
     return out
 
 
-def translate_to_fr(text):
-    if not text.strip():
-        return text
-    r = requests.get(
-        "https://translate.googleapis.com/translate_a/single",
-        params={"client": "gtx", "sl": "en", "tl": "fr", "dt": "t", "q": text},
-        timeout=20,
-    )
-    r.raise_for_status()
-    data = r.json()
-    return "".join(seg[0] for seg in data[0] if seg[0])
+# Tone of SEFE's daily commentaries: the site shows only whether the analysts lean towards rising or easing prices,
+# never their text. Same word lists and same rule as the market brief used to apply in the browser (js/market-brief.js):
+# tags replaced by spaces, then (rising words) - (easing words); ASCII word boundaries as in JavaScript.
+TONE_UP = re.compile(r"\b(tight\w*|tense|tension\w*|ris(e|es|ing)|higher|increas\w*|support\w*|firm\w*|bullish|pressure\w*|spik\w*"
+                     r"|jump\w*|surg\w*|climb\w*|strong\w*|gain\w*|deteriorat\w*|disrupt\w*|risk\w*)\b", re.I | re.A)
+TONE_DOWN = re.compile(r"\b(eas(e|es|ed|ing)|fall\w*|fell|lower\w*|declin\w*|drop\w*|bearish|weak\w*|loosen\w*|relief|soft\w*"
+                       r"|improv\w*|calm\w*|resilient|ample|comfortable|down\w*)\b", re.I | re.A)
 
 
-def france_focus_french(raw_html):
-    """Keep only France-related sentences from the (English, multi-country) narrative,
-    translate them to French. Falls back to the France-filtered English text if
-    translation is unavailable."""
-    if not raw_html:
+def tone_score(html_text):
+    """(rising words) - (easing words) of one commentary; None when there is no text"""
+    plain = re.sub(r"<[^>]+>", " ", html_text or "")
+    if not plain:
         return None
-    paragraphs = re.findall(r"<p>(.*?)</p>", raw_html, re.DOTALL)
-    kept_paragraphs = []
-    for p in paragraphs:
-        plain = html.unescape(re.sub(r"<[^>]+>", "", p)).strip()
-        sentences = SENTENCE_SPLIT.split(plain)
-        france_sentences = [s for s in sentences if FRANCE_KEYWORDS.search(s)]
-        if france_sentences:
-            kept_paragraphs.append(" ".join(france_sentences))
-    if not kept_paragraphs:
-        return None
-    try:
-        fr_paragraphs = [translate_to_fr(p) for p in kept_paragraphs]
-    except Exception as e:
-        print(f"  [warn] translation failed ({e}), keeping English France-focused text")
-        fr_paragraphs = kept_paragraphs
-    return "".join(f"<p>{p}</p>" for p in fr_paragraphs)
+    return sum(1 for _ in TONE_UP.finditer(plain)) - sum(1 for _ in TONE_DOWN.finditer(plain))
+
+
+def insights_tone(texts, day):
+    """{"gas": n, "power": n, "date": day} from the commentaries just read; the texts themselves are not kept"""
+    out = {k: tone_score(texts.get(k)) for k in ("gas", "power")}
+    out = {k: v for k, v in out.items() if v is not None}
+    return dict(out, date=day) if out else None
 
 
 def ms_to_date(ms):
@@ -512,13 +472,11 @@ def daily_run():
         countries_out[cc] = snap
         countries_dates[cc] = dates
 
-    print("Fetching market insights narrative...")
-    raw_insights_html = fetch_market_insights_text(h)
-    insights_html = france_focus_french(raw_insights_html)
-    try:
-        insights_all = fetch_market_insights_all(h)   # gas and power commentaries in full, for the market brief
+    print("Scoring the tone of the market commentaries...")
+    try:   # gas and power commentaries, read only to score their tone for the market brief, then dropped
+        insights_tone_today = insights_tone(fetch_market_insights_all(h), today)
     except Exception as e:
-        print("  all insights not read:", e); insights_all = {}
+        print("  commentaries not read:", e); insights_tone_today = None
 
     fr = countries_out["FR"]
     snapshot = {
@@ -531,9 +489,7 @@ def daily_run():
         "nuclearCapacityDate": fr["nuclearCapacityDate"],
         "generationMix": fr["generationMix"],
         "generationMixDate": fr["generationMixDate"],
-        "marketInsightsHtml": insights_html,
-        "marketInsights": insights_all,
-        "marketInsightsDate": today,
+        "marketInsightsTone": insights_tone_today,
         "countries": countries_out,
     }
     OUT_SNAPSHOT.parent.mkdir(parents=True, exist_ok=True)
@@ -568,10 +524,11 @@ def daily_run():
             save_hist_day(dates["generationMix"], day)
             touched_dates.add(dates["generationMix"])
 
-    # Market insights narrative only exists for "today" — no historical lookup for it.
+    # The commentaries' tone only exists for "today" — no historical lookup for it.
     day = load_hist_day(today)
-    day["marketInsightsHtml"] = insights_html
-    day["marketInsights"] = insights_all
+    for k in ("marketInsightsHtml", "marketInsights"):
+        day.pop(k, None)
+    day["marketInsightsTone"] = insights_tone_today
     save_hist_day(today, day)
     touched_dates.add(today)
     print(f"Updated history for {sorted(touched_dates)}")
