@@ -339,8 +339,10 @@ def _year(y):
     for c in CS:
         p = PRE[c]
         for t in 'sw':
-            c1 = L.cap(c, t, y) or 1.0
-            c0 = L.cap(c, t, y - 1) or c1
+            # a year-end fleet not published yet (the running year; France's until RTE's yearly figure, in spring): the
+            # last known pace carried on, never 1 GW (which made the output per GW of that year several times too high)
+            c1 = L.cap(c, t, y) or L.cap_guess(c, t, y, y) or 1.0
+            c0 = L.cap(c, t, y - 1) or L.cap_guess(c, t, y - 1, y - 1) or c1
             gw = (c0 + (c1 - c0) * frac)[:, None] * 1000
             out[f'{c}_{t}'] = np.clip((_addback(y, t) if c == 'FR' else a[p + t]) / gw, 0, 1.2)
             if c == 'FR':
