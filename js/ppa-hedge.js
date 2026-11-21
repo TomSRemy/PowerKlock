@@ -43,6 +43,9 @@
     // year's capture rate, the generator's own (cg) when there, else the capacity trend's with its month-shape, part-year
     // and stop factors; x = the capture drift so far
     const kg = Y.map(r => r.cg != null ? 1 : (r.kq || 1) * (r.g || 1) * (r.sr || 1));
+    // a year delivered in part is hedged with the forward of its months (hq × the Cal, as the pricer), 1 on a whole year:
+    // one MWh hedged then pays hq × (forward − spot), so the deltas are ÷ hq
+    const hq = Y.map(r => r.hq || 1);
     const rate = (r, t, x) => r.cg != null ? Math.max(0, r.cg - x) : kg[t] * (1 - Math.min(0.95, Math.max(0, r.fsd + x)));
     const names = ['none', 'b2b', 'b2b70', 'delta0', 'minvar', 'dyn'];
     const U = Object.fromEntries(names.map(k => [k, new Float64Array(N)])), traded = Object.fromEntries(names.map(k => [k, 0]));
@@ -64,21 +67,21 @@
         // dynamic delta: the capture-adjusted delta with the capture drift known so far, changed every `step` months
         let pnl = 0, h = 0, tr = 0;
         for (let k = 0; k < mt; k++) {
-          if (k % step === 0) { const nh = r.ev * rate(r, t, X[k]); tr += Math.abs(nh - h); h = nh; }
-          pnl += h * (F(k) - F(k + 1));
+          if (k % step === 0) { const nh = r.ev * rate(r, t, X[k]) / hq[t]; tr += Math.abs(nh - h); h = nh; }
+          pnl += h * hq[t] * (F(k) - F(k + 1));
         }
         tr += h;   // the position closes at delivery (the future settles on the spot): counted as one more trade
         HP.dyn[t][i] = pnl; dynTr[i] += tr;
       }
     }
-    // static hedges: a position h set at signing, settled at delivery: h × (forward − spot)
-    const hmv = Y.map((r, t) => { const s = SP[t], v = V[t], ms = mean(Array.from(s)), mv = mean(Array.from(v)); let c = 0, vv = 0; for (let i = 0; i < N; i++) { c += (s[i] - ms) * (v[i] - mv); vv += (s[i] - ms) ** 2; } return vv > 0 ? c / vv : 0; });
-    const H = { none: Y.map(() => 0), b2b: Y.map(r => r.ev), b2b70: Y.map(r => 0.7 * r.ev), delta0: Y.map((r, t) => r.ev * rate(r, t, 0)), minvar: hmv };
+    // static hedges: a position h set at signing, settled at delivery: h × hq × (forward − spot)
+    const hmv = Y.map((r, t) => { const s = SP[t], v = V[t], ms = mean(Array.from(s)), mv = mean(Array.from(v)); let c = 0, vv = 0; for (let i = 0; i < N; i++) { c += (s[i] - ms) * (v[i] - mv); vv += (s[i] - ms) ** 2; } return vv > 0 ? c / vv / hq[t] : 0; });
+    const H = { none: Y.map(() => 0), b2b: Y.map(r => r.ev), b2b70: Y.map(r => 0.7 * r.ev), delta0: Y.map((r, t) => r.ev * rate(r, t, 0) / hq[t]), minvar: hmv };
     for (let i = 0; i < N; i++) {
       let den = 0; const num = Object.fromEntries(names.map(k => [k, 0]));
       Y.forEach((r, t) => {
         den += r.df * PR[t][i];
-        Object.keys(H).forEach(k => { num[k] += r.df * (V[t][i] + H[k][t] * (r.fwd - SP[t][i]) - S.bidask * H[k][t]); });
+        Object.keys(H).forEach(k => { num[k] += r.df * (V[t][i] + H[k][t] * hq[t] * (r.fwd - SP[t][i]) - S.bidask * H[k][t]); });
         num.dyn += r.df * (V[t][i] + HP.dyn[t][i]);
       });
       num.dyn -= S.bidask * dynTr[i] * (Y.reduce((a, r) => a + r.df, 0) / Y.length);
@@ -92,7 +95,7 @@
   async function run() {
     const host = $('pp-hedge-body'); if (!host || !window.PKPpa || !PKPpa.last) return;
     const o = PKPpa.last(); if (!o || !o.years || !o.years.length) return;
-    const key = [o.tenor.join(','), o.st && o.st.tech, o.st && o.st.stopT, o.st && o.st.stopEq, o.refW, o.sigV, o.rho, S.bidask, S.step].join('|'); if (KEY === key) return; KEY = key;
+    const key = [o.tenor.join(','), o.m0, o.m1, o.st && o.st.tech, o.st && o.st.stopT, o.st && o.st.stopEq, o.refW, o.sigV, o.rho, S.bidask, S.step].join('|'); if (KEY === key) return; KEY = key;
     const sm = simulate(o), alpha = (o.alpha || 25) / 100;
     const LBL = fr() ? { none: 'Pas de couverture', b2b: 'Back to back (volume attendu)', b2b70: 'Back to back 70 %', delta0: 'Delta à la signature (volume × taux de capture)', minvar: 'Ratio optimal (variance minimale)', dyn: S.step === 1 ? 'Delta dynamique (chaque mois)' : 'Delta dynamique (chaque trimestre)' }
       : { none: 'No hedge', b2b: 'Back to back (expected volume)', b2b70: 'Back to back 70 %', delta0: 'Delta at signing (volume × capture rate)', minvar: 'Minimum-variance ratio', dyn: S.step === 1 ? 'Dynamic delta (monthly)' : 'Dynamic delta (quarterly)' };
@@ -102,10 +105,11 @@
     const capW = sm.H.delta0.reduce((a, h) => a + h, 0) / sm.volume, dg = o.capBetaDiag && o.capBetaDiag.beta != null && o.capBetaDiag.share != null ? o.capBetaDiag : null;
     const red = r => base.sd > 0 ? (1 - (r.sd / base.sd) ** 2) * 100 : 0;
     const ratio = k => k === 'dyn' ? '' : n0(sm.H[k].reduce((a, h) => a + h, 0) / sm.volume * 100) + ' %';
-    // the published price prices the hedge ratio entered (back to back at 100 % by default, Tom 3 Nov. 2026); the best
-    // hedge measured here is named next to it (its figures, with the capture drift, are in this section)
+    // the published price prices the ratio that minimises its premium by default (js/tool-ppa.js o.hedgeUsed, since 21 Nov.
+    // 2026, PPA review; a ratio entered overrides it); the best strategy measured here is named next to it (its figures,
+    // with a trading cost per trade and without the model error, are in this section)
     const bh = document.getElementById('pp-best-hedge');
-    HEDGE.best = best.k === 'b2b' ? (fr() ? ' Le back to back à 100 % est aussi la meilleure couverture mesurée pour ce contrat (section Couverture).' : ' Back to back at 100 % is also the best hedge measured for this contract (Hedging section).')
+    HEDGE.best = best.k === 'b2b' ? (fr() ? ' Meilleure couverture mesurée pour ce contrat : le back to back à 100 % (section Couverture).' : ' Best hedge measured for this contract: back to back at 100 % (Hedging section).')
       : (fr() ? ` Meilleure couverture mesurée pour ce contrat : <b>${LBL[best.k]}</b>${ratio(best.k) ? ' (' + ratio(best.k) + ')' : ''}, détail dans la section Couverture.`
         : ` Best hedge measured for this contract: <b>${LBL[best.k]}</b>${ratio(best.k) ? ' (' + ratio(best.k) + ')' : ''}, details in the Hedging section.`);
     if (bh) bh.innerHTML = HEDGE.best;
