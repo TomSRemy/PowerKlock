@@ -616,14 +616,14 @@
     // 2026, only 44 % for solar and 67 % for wind: scripts/ppa_band_stop_test.py); since 3 Nov. 2026 the dynamic premium below replaces it where the error replay exists
     const BAND = D.fcst && D.fcst.generator && D.fcst.generator.band && D.fcst.generator.band[st.tech];
     o.premiumGen = null; o.sigGen = null; o.premVolGen = null; o.liqRisk = null; o.premNoPrice = null;
+    // at a stop threshold other than 0 the full Monte Carlo's band at that threshold ('bandT', read between two grid
+    // points), so the band is the threshold's own; at 0 (or without bandT) the band at 0
+    const BTg = stopTeff(st) && D.fcst && D.fcst.generator && D.fcst.generator.bandT && D.fcst.generator.bandT[st.tech];
+    const bandOf = y => { const B = BTg && BTg[String(y)]; if (!B) return BAND && BAND[String(y)]; const T = stopTeff(st), g = Object.keys(B).map(Number).sort((a, b) => a - b);
+      if (g.length < 2) return BAND && BAND[String(y)]; const t = clamp(T, g[0], g[g.length - 1]); let i = 0; while (i < g.length - 2 && g[i + 1] < t) i++;
+      const w = (t - g[i]) / (g[i + 1] - g[i]), a = B[String(g[i])], b = B[String(g[i + 1])], ip = k => a[k] == null || b[k] == null ? null : a[k] * (1 - w) + b[k] * w;
+      return { p10: ip('p10'), p25: ip('p25'), p50: ip('p50'), p90: ip('p90') }; };
     if (o.gen && BAND && o.mc) {
-      // at a stop threshold other than 0 the full Monte Carlo's band at that threshold ('bandT', read between two grid
-      // points), so the premium is the threshold's own
-      const BT = stopTeff(st) && D.fcst.generator.bandT && D.fcst.generator.bandT[st.tech];
-      const bandOf = y => { const B = BT && BT[String(y)]; if (!B) return BAND[String(y)]; const T = stopTeff(st), g = Object.keys(B).map(Number).sort((a, b) => a - b);
-        if (g.length < 2) return BAND[String(y)]; const t = clamp(T, g[0], g[g.length - 1]); let i = 0; while (i < g.length - 2 && g[i + 1] < t) i++;
-        const w = (t - g[i]) / (g[i + 1] - g[i]), a = B[String(g[i])], b = B[String(g[i + 1])];
-        return { p25: a.p25 * (1 - w) + b.p25 * w, p50: a.p50 * (1 - w) + b.p50 * w }; };
       const sg = years.map(r => { const b = bandOf(r.y); return b && b.p50 != null && b.p25 != null && b.p50 > b.p25 ? (b.p50 - b.p25) / 0.6745 / Math.sqrt(Math.max(1, r.y - o.lastYr)) : null; }).filter(v => v != null);
       if (sg.length) {
         o.sigGen = mean(sg); const mg = simulate(Object.assign({}, o, { sig0: o.sigGen }), st); o.premiumGen = fair - qtl(mg.Us, alpha / 100);
@@ -764,7 +764,8 @@
         o.creditRisk = 0;
         const pd = (st.pd || 0) / 100, rr = (st.rr != null ? st.rr : 40) / 100;
         if (pd > 0) {
-          const P0 = fair - prem - imb + goW - margin, T_ = years.length; let el = 0;
+          // the contract price before credit: the published price's own (the generator's value, its additional discount)
+          const P0 = o.genFair - prem - refW * add / 100 - imb + goW - margin, T_ = years.length; let el = 0;
           for (let t = 0; t < T_; t++) {
             let ex = 0;
             for (let i = 0; i < mA.N; i++) { let v = 0; for (let u = t; u < T_; u++) v += years[u].df * mA.prod[u][i] * (mA.cpM[u][i] - imb + goW - P0); ex += Math.max(0, v); }
@@ -775,7 +776,12 @@
         }
         o.premiumGen = prem;
         o.diversif = prem - (o.modelRiskDyn + B + Bal + o.hedgeCost + o.creditRisk);
-        o.premNoPrice = o.premiumGen;
+        // the premium once the price level is no longer the buyer's (Cal- and month-indexed products, js/ppa-products.js:
+        // the index is fixed at a date and the buyer hedges at that same price): the hedge and liquidity lines go, the
+        // volume line is read on the draws without forward price moves (its price still moves with the weather), the
+        // rest unchanged
+        const vN = Math.max(0, PAt(mV, o.hedgeUsed / 100) - R_.pN), BN = o.inclVol ? vN : 0;
+        o.premNoPrice = Math.max(0, o.biasDyn + Math.sqrt(dM * dM + BN * BN + Bal * Bal)) + o.hedgeCost + o.creditRisk;
       }
     }
     o.modelRisk = o.premiumGen != null ? 0 : mrT && mrT.qPts > 0 ? refW * mrT.qPts / 100 : 0;
@@ -784,10 +790,11 @@
     // the published price's own range (21 Nov. 2026, PPA review): the generator's capture at its P10 and P90 of each
     // delivery year (its full Monte Carlo: weather, fleet growth, nuclear, export limit, load), the rest of the price
     // unchanged; until then the benchmark borrowed the capacity trend's range. The years' extremes are added as if they
-    // came together: the wide side
+    // came together: the wide side. A capture-risk range only: the forward price, the volume and the model's own error
+    // are not in it. At a stop threshold other than 0, the band at that threshold (bandT)
     o.ppaGenLo = null; o.ppaGenHi = null;
     if (o.gen && BAND && o.ppaGen != null) {
-      const bq = (k) => years.reduce((a, r, i) => { const B_ = BAND[String(r.y)]; return a == null || !B_ || !(B_.p50 > 0) || B_[k] == null ? null : a + r.wt * r.fwd * o.gen[i].capture * B_[k] / B_.p50; }, 0);
+      const bq = (k) => years.reduce((a, r, i) => { const B_ = bandOf(r.y); return a == null || !B_ || !(B_.p50 > 0) || B_[k] == null ? null : a + r.wt * r.fwd * o.gen[i].capture * B_[k] / B_.p50; }, 0);
       const lo = bq('p10'), hi = bq('p90');
       if (lo != null && hi != null) { o.ppaGenLo = o.ppaGen - o.genFair + lo; o.ppaGenHi = o.ppaGen - o.genFair + hi; }
     }
@@ -1206,6 +1213,7 @@
     const gen = use.length === 1 && use[0].k === 'int' && o.genProf != null && o.premVolGen != null;
     // a stop threshold other than 0: the change of value against the same park stopping at 0 €
     const thrFx = gen && o.genFair0 != null ? fair - o.genFair0 : 0;
+    const addE = gen ? (o.refW || 0) * (o.add || 0) / 100 : 0;
     const st = gen
       ? [['Cal forward', ref, 1], ['Monthly profile', o.genProf - ref], ['Hourly cannibalisation', fair - o.genProf - thrFx],
         ...(thrFx ? [['Stop threshold effect', thrFx]] : []),
@@ -1216,7 +1224,9 @@
             ...(o.liqRisk ? [['Liquidity risk', -o.liqRisk]] : []), ...(o.inclBal && o.balRisk ? [['Balancing risk', -o.balRisk]] : []),
             ...(o.hedgeCost ? [['Hedging cost', -o.hedgeCost]] : []), ...(o.creditRisk ? [['Credit risk', -o.creditRisk]] : []),
             ['Diversification', -o.diversif]]
-          : [['Volume risk', -o.premVolGen], ...(o.liqRisk != null ? [['Liquidity risk', -o.liqRisk]] : []), ['Price & capture risk', risk + o.premVolGen + (o.liqRisk || 0)]]),
+          : [['Volume risk', -o.premVolGen], ...(o.liqRisk != null ? [['Liquidity risk', -o.liqRisk]] : []), ['Price & capture risk', risk + o.premVolGen + (o.liqRisk || 0) + addE]]),
+        // the additional discount (% of the forward), its own bar so the bars close on the price
+        ...(addE ? [['Additional discount', -addE]] : []),
         ['Imbalance cost', -o.imb], ['GO', o.goW], ['Margin', -o.margin], ['PPA price', price, 1]]
       : [['Cal forward', ref, 1], [S.tech === 'wind' ? 'Wind profile' : 'Solar profile', fair - ref], ['Risk', risk], ['Imbalance', -o.imb], ['GO', o.goW], ['Margin', -o.margin], ['PPA price', price, 1]];
     const sub = $('pp-sum-wf-sub'), subT = gen ? '€/MWh · the published price, line by line' : '€/MWh · average of the methods ticked';
