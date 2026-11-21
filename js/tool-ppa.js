@@ -634,7 +634,13 @@
         const w = (t - Ts[i]) / (Ts[i + 1] - Ts[i]), a = at(Ts[i], h, k), b = at(Ts[i + 1], h, k); return a == null || b == null ? null : a * (1 - w) + b * w; };
       // each delivery year at the horizon of its middle, in the replay's buckets (beyond 12 months: the 12-month one)
       const hz = r => { const M = monthsOf(r.y), mid = r.y + ((M[0] - 1) + M[M.length - 1]) / 24, mo = (mid - now) * 12; return mo <= 4.5 ? 3 : mo <= 7.5 ? 6 : mo <= 10.5 ? 9 : 12; };
-      const parts = years.map(r => { const v = q(hz(r)); return v == null ? null : r.wt * r.fwd * Math.max(0, v) / 100; });
+      // beyond the replay's 12 months the spread of the error grows as the square root of the horizon (21 Nov. 2026, PPA
+      // review: the replay 1 to 3 years ahead, scripts/ppa_model_risk.py, reads ×1.24 at 2 years and ×1.53 at 3 for solar,
+      // 9 cases; √time gives ×1.41 and ×1.73, the prudent side); its mean (the bias) is not scaled
+      const hGrow = r => { const M = monthsOf(r.y), mid = r.y + ((M[0] - 1) + M[M.length - 1]) / 24; return Math.sqrt(Math.max(12, (mid - now) * 12) / 12); };
+      o.modelHz = years.map(r => ({ y: r.y, grow: hGrow(r) }));
+      const parts = years.map(r => { const v = q(hz(r)), bq = q(hz(r), 'bias_pts'); if (v == null) return null; const b0 = bq == null ? 0 : bq;
+        return r.wt * r.fwd * Math.max(0, b0 + Math.max(0, v - b0) * hGrow(r)) / 100; });
       if (parts.every(v => v != null)) {
         const wsum = years.reduce((a, r) => a + r.wt, 0) || 1;
         o.modelRiskDyn = parts.reduce((a, b) => a + b, 0) / wsum;
@@ -654,7 +660,10 @@
         const e0 = VG && VG.elastPrice != null ? VG.elastPrice : 0, se0 = VG && VG.elastPriceSe != null ? VG.elastPriceSe : 0;
         const nat_ = volBeta ? volBeta.beta * sigNat ** 2 / (o.sigV ** 2) : o.useAsset && astFull.length >= 8 ? sigNat ** 2 / (o.sigV ** 2) : 1;
         o.elP = e0 ? e0 * Math.max(0, 1 - (se0 * se0) / (e0 * e0)) * Math.min(1, nat_) : 0;
-        const run_ = x => simulate(Object.assign({}, o, { sig0: 0 }, x), st), P = m => fair - qtl(m.Us, alpha / 100);
+        // the draws stand on the generator's own capture of each year, not the capacity trend's (21 Nov. 2026, PPA review:
+        // each method is independent, its premium too)
+        const yG = years.map((r, i) => Object.assign({}, r, { fsd: clamp(1 - o.gen[i].capture / ((r.kq || 1) * (r.g || 1) * (r.sr || 1)), 0, 0.95) }));
+        const run_ = x => simulate(Object.assign({}, o, { sig0: 0, years: yG }, x), st), P = m => o.genFair - qtl(m.Us, alpha / 100);
         const pN = P(run_({ noPriceRisk: true, sigV: 0, sigL: 0 })), pL = P(run_({ noPriceRisk: true, sigV: 0 })), pH = P(run_({ sigV: 0 })), mA = run_({}), pA = P(mA);
         o.premBase = pN;   // the draws with no risk at all: ≈ 0 (a check)
         o.liqRisk = years.some(r => r.liqK > 0) && o.sigL > 0 ? Math.max(0, pL - pN) : 0;
@@ -712,6 +721,16 @@
     o.modelRisk = o.premiumGen != null ? 0 : mrT && mrT.qPts > 0 ? refW * mrT.qPts / 100 : 0;
     o.modelRiskInfo = mrT ? { level: MR.level, n: mrT.n, qPts: mrT.qPts, meanEur: mrT.meanEur, maeEur: mrT.maeEur, byH: mrT.byH, anchorMae: mrT.anchorMae } : null;
     o.ppaGen = o.gen ? o.genFair - (o.premiumGen != null ? o.premiumGen : o.premium) - o.modelRisk - refW * add / 100 - imb + goW - margin : null;
+    // the published price's own range (21 Nov. 2026, PPA review): the generator's capture at its P10 and P90 of each
+    // delivery year (its full Monte Carlo: weather, fleet growth, nuclear, export limit, load), the rest of the price
+    // unchanged; until then the benchmark borrowed the capacity trend's range. The years' extremes are added as if they
+    // came together: the wide side
+    o.ppaGenLo = null; o.ppaGenHi = null;
+    if (o.gen && BAND && o.ppaGen != null) {
+      const bq = (k) => years.reduce((a, r, i) => { const B_ = BAND[String(r.y)]; return a == null || !B_ || !(B_.p50 > 0) || B_[k] == null ? null : a + r.wt * r.fwd * o.gen[i].capture * B_[k] / B_.p50; }, 0);
+      const lo = bq('p10'), hi = bq('p90');
+      if (lo != null && hi != null) { o.ppaGenLo = o.ppaGen - o.genFair + lo; o.ppaGenHi = o.ppaGen - o.genFair + hi; }
+    }
     o.method = st.method;
     // asset-specific FPC method (three pricings): js/ppa-fpc.js
     o.capPathFor = capPath;
