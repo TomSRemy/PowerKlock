@@ -1024,7 +1024,7 @@
   }
 
   // ══════════════════════════════════════════════════════════════════════════
-  // PANEL 5 · MARCHE (courbe forward, nucleaire, analyse — source PowerKlock cockpit)
+  // PANEL 5 · MARCHE (courbe forward, nucleaire, analyse — source PowerKlock)
   // ══════════════════════════════════════════════════════════════════════════
 
   function windowCutoffDates(dates, win) {

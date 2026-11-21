@@ -208,7 +208,7 @@ def main():
     h = auth_headers(get_token())
     out = {
         "updated": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        "source": "PowerKlock cockpit (market-data.invalid), public daily link",
+        "source": "PowerKlock",
         "series": {},
         "curves": {},
     }
