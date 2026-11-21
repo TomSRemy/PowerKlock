@@ -167,9 +167,9 @@
   .pk-s-row{display:grid;grid-template-columns:56px minmax(0,1fr);grid-template-rows:auto auto;column-gap:10px;padding:8px 10px;border-radius:6px;cursor:pointer}
   .pk-s-row.on,.pk-s-row:hover{background:var(--accent-dim)}
   .pk-s-k{grid-row:1/3;align-self:center;font:600 9.5px 'JetBrains Mono',monospace;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);border:1px solid var(--border2);border-radius:4px;text-align:center;padding:2px 0}
-  .pk-s-k.page{color:var(--accent);border-color:rgba(20,211,169,.4)}
+  .pk-s-k.page{display:block;padding:2px 0;color:var(--accent);border-color:rgba(20,211,169,.4)}
   .pk-s-k.section{color:#7FC8F8;border-color:rgba(127,200,248,.4)}
-  .pk-s-l{font-size:13px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pk-s-l{font-size:13px;color:var(--text);overflow-wrap:anywhere}
   .pk-s-sub{font-size:11px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .pk-s-empty{padding:16px;color:var(--text3);font-size:12px;text-align:center}
   .pk-s-foot{padding:8px 14px;border-top:1px solid var(--border);font-size:10.5px;color:var(--text3)}
