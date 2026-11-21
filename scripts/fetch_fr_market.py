@@ -1,7 +1,6 @@
 """
-fetch_fr_market.py — Power market data for FR/UK/DE/NL from the PowerKlock
-"Market Insights" daily cockpit (market-data.invalid), via its
-public JSON API.
+fetch_fr_market.py — Power market data for FR/UK/DE/NL from a public
+"Market Insights" daily cockpit, via its public JSON API.
 
 No credentials needed: the cockpit is published on a public link ("daily"), and
 PublicAuthorization hands out a reusable Bearer token to anyone who asks.
@@ -16,6 +15,7 @@ which stay FR-specific for backward compatibility with the France Cockpit
 page). UK/DE/NL were added later under the "countries" key, where FR is
 mirrored too so the Prices > Forward page can treat all four uniformly.
 """
+import os
 import sys
 import re
 import json
@@ -25,7 +25,7 @@ from pathlib import Path
 
 import requests
 
-API = "https://market-data.invalid/api"
+API = os.environ.get("MARKET_API_URL", "").rstrip("/")  # GitHub secret MARKET_API_URL
 PUBLIC_LINK = "daily"
 COCKPIT_GUID = "169b4b92-d10a-41b1-b018-898c8b78ee06"
 
@@ -922,6 +922,8 @@ def write_contracts():
 
 
 if __name__ == "__main__":
+    if not API:
+        sys.exit("MARKET_API_URL is not set (GitHub secret)")
     if "--contracts" in sys.argv:
         write_contracts()
         write_peak()

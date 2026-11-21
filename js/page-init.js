@@ -186,7 +186,7 @@
     if (target === 'spread' && typeof window.renderHistSpread === 'function') {
       setTimeout(() => window.renderHistSpread(), 30);
     }
-    // Forward curve power — FR forward curve, nuclear, market insights (PowerKlock cockpit)
+    // Forward curve power — FR forward curve, nuclear, market insights (PowerKlock)
     if (target === 'forward' && typeof window.renderPrFwd === 'function') {
       setTimeout(() => window.renderPrFwd(), 30);
     }
