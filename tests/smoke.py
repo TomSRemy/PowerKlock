@@ -58,6 +58,64 @@ def _fc_neg_on_trial():
 # widgets hidden on purpose until their record justifies them: they show a marked "on trial" message instead of a chart.
 # Accepted only while the data really says so; once the record is good enough, the chart must draw like any other.
 TRIAL_WIDGETS = {'fc-neg': _fc_neg_on_trial}
+
+
+# A day-ahead price not received yet from ENTSO-E is a data gap (data/data_gaps.json, Data status), not a broken page:
+# the widget says so in plain words and, when it can, draws the latest delivery day that has the price
+# (js/pk-core.js PK.gapText / PK.markGap). The element carries data-pk-gap="<day>:<zone,zone>" and, when an earlier
+# day is drawn, data-pk-shown="<day>". Accepted only when the daily files confirm it: the day is the current delivery
+# day (today or tomorrow, Paris time, one day of slack for a run that crosses midnight), none of the zones has a
+# price in data/history/daily/<day>.json, and the day drawn instead does have it. A widget that claims a gap while
+# the data is there, or that shows nothing at all, still fails.
+def _paris_today():
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+    return datetime.now(ZoneInfo('Europe/Paris')).date()
+
+
+def _zone_price(day, zone):
+    try:
+        with open(os.path.join(ROOT, 'data', 'history', 'daily', day + '.json'), encoding='utf-8') as f:
+            z = (json.load(f).get('zones') or {}).get(zone)
+    except (OSError, ValueError):
+        return None
+    return z.get('avg') if isinstance(z, dict) else None
+
+
+def gap_problem(gap, shown, text):
+    """None when the marker is true to the data files, else what is wrong with it"""
+    from datetime import date, timedelta
+    m = re.fullmatch(r'(\d{4}-\d{2}-\d{2}):([A-Z0-9_,]+)', gap or '')
+    if not m:
+        return f'unreadable gap marker {gap!r}'
+    day, zones = m.group(1), m.group(2).split(',')
+    t = _paris_today()
+    if not (t - timedelta(days=1) <= date.fromisoformat(day) <= t + timedelta(days=1)):
+        return f'gap claimed for {day}, not the current delivery day (older holes are filled by scripts/heal_price_gaps.py)'
+    have = [z for z in zones if _zone_price(day, z) is not None]
+    if have:
+        return f'says the {",".join(have)} price of {day} is missing, but data/history/daily/{day}.json has it'
+    if shown and not any(_zone_price(shown, z) is not None for z in zones):
+        return f'draws {shown} instead, which has no {",".join(zones)} price either'
+    if len((text or '').strip()) < 30:
+        return 'no message for the reader'
+    return None
+
+
+GAP_JS = """[...document.querySelectorAll('[data-pk-gap]')].filter(e => e.offsetParent !== null || e.closest('.pkd-item'))
+    .map(e => ({ gap: e.dataset.pkGap, shown: e.dataset.pkShown || '', text: e.innerText || e.textContent || '' }))"""
+gaps_seen = {}
+
+
+def check_gaps(page, tag):
+    for g in page.evaluate(GAP_JS):
+        bad = gap_problem(g['gap'], g['shown'], g['text'])
+        if bad:
+            errors.append(f"[{tag}] data gap marker: {bad}")
+        else:
+            gaps_seen.setdefault(g['gap'], set()).add(tag)
+
+
 # Messages from third-party endpoints that CI cannot always reach.
 NOISE = re.compile(r'Failed to load resource|net::ERR_|favicon|opendata\.elia|odre\.opendatasoft|open-meteo|supabase', re.I)
 
@@ -145,6 +203,7 @@ def main():
                         p.wait_for_timeout(500)
                     r['undrawn'] = [c for c in r['undrawn'] if not drawn(c)]
                 tag = f"{label}{(' › ' + tab) if tab else ''}"
+                check_gaps(p, tag)
                 if r['overflow']:
                     errors.append(f"[{tag}] wider than the screen ({width}px)")
                 # deterministic layout defects fail the test (a known one is listed in KNOWN_WARNINGS with its reason)
@@ -277,6 +336,8 @@ def main():
             const own = !!el.querySelector('canvas[data-pk-drawn="1"]');
             return { wid: it.wid, chart: !!ch || html || own, kpi: !!el.querySelector('.pkd-kpi .pkd-kpi-v:not(.pkd-kpi-na)'),
                      trial: ((el.querySelector('.no-data-msg[data-pk-trial]') || {}).dataset || {}).pkTrial || '',
+                     gap: ((el.querySelector('.no-data-msg[data-pk-gap], .pkd-kpi[data-pk-gap]') || {}).dataset || {}).pkGap || '',
+                     gapText: (el.querySelector('.no-data-msg[data-pk-gap], .pkd-kpi[data-pk-gap]') || {}).innerText || '',
                      msg: (el.querySelector('.no-data-msg, .pkd-empty-w, .pkd-loading') || {}).innerText || '' };
         })""")
         for r in res:
@@ -287,12 +348,18 @@ def main():
                 continue
             if r['chart'] or r['kpi'] or (trial and r['trial'] == r['wid'] and len(r['msg'].strip()) > 40):
                 continue
+            # the price of the day not received yet: its message is the right state (the marker is checked below)
+            if r['gap'] and not gap_problem(r['gap'], '', r['gapText']):
+                continue
             line = f"[catalogue] {r['wid']}: not drawn ({r['msg'].strip()[:120] or 'empty'})"
             (warnings if r['wid'] in LIVE_WIDGETS else errors).append(line)
+        check_gaps(p, 'catalogue')
         b.close()
     srv.shutdown()
 
     print(f"Pages {len(pages)} · sub-pages {len(subs)} · catalogue widgets {len(ids)}")
+    for g, where_ in sorted(gaps_seen.items()):
+        print('GAP  ', g, '(price not received yet, confirmed by the data files) shown as such on:', ', '.join(sorted(where_)))
     for w in warnings:
         print('WARN ', w)
     for e in errors:

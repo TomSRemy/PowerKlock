@@ -35,21 +35,29 @@
     titleFn: p => zoneName(p.zone) + ' · DA base',
     async html(host, p) {
       const data = await PKW.waitFor(() => (typeof pricesData !== 'undefined' && pricesData && pricesData.length) ? pricesData : null);
-      let z = data && data.find(x => x.code === p.zone), asOf = '';
-      if (!z || z.today == null) {   // the day's file is there but this zone not yet: its latest published day
-        const j = await fetch(DATA_BASE + 'prices.json').then(r => r.ok ? r.json() : null).catch(() => null);
-        z = j && (j.zones || []).find(x => x.code === p.zone);
-        asOf = z && j.updated ? ' · as of ' + new Date(j.updated).toLocaleDateString(window.PKI18n && PKI18n.lang === 'en' ? 'en-GB' : 'fr-FR', { day: 'numeric', month: 'short' }) : '';
+      let z = data && data.find(x => x.code === p.zone), gap = null;
+      if (!z || z.today == null) {   // the day's file is there but this zone not yet (a data gap): its latest delivery day, dated
+        const day = window._currentPriceDate || PK.today();
+        const last = await PK.lastPriceDay(p.zone, day, 7);
+        const prev = last && await PK.lastPriceDay(p.zone, new Date(Date.parse(last.day + 'T12:00:00Z') - 864e5).toISOString().slice(0, 10), 0);
+        if (last) z = { today: last.z.avg, min: last.z.min, max: last.z.max, negHours: last.z.negH, hourly: last.z.hourly,
+          vsYday: prev ? Math.round((last.z.avg - prev.z.avg) * 100) / 100 : null };
+        gap = { day, shown: last && last.day };
       }
-      if (!z || z.today == null) return empty(host, 'No price for ' + p.zone + ' yet');
+      if (!z || z.today == null) {
+        empty(host, gap ? PK.gapText(gap.day, p.zone) : 'No price for ' + p.zone + ' yet');
+        if (gap) PK.markGap(host.querySelector('.pkd-kpi'), gap.day, p.zone);
+        return;
+      }
       // Rising power price = red, as on the Prices table.
       tile(host, {
         value: f(z.today, 2), unit: ' €/MWh',
         chg: z.vsYday != null ? (z.vsYday >= 0 ? '▲ ' : '▼ ') + signed(z.vsYday, 2) + ' d/d' : '',
         tone: z.vsYday == null ? null : z.vsYday > 0 ? 'down' : 'up',
-        meta: 'min ' + f(z.min, 1) + ' · max ' + f(z.max, 1) + (z.negHours ? ' · ' + z.negHours + ' h < 0' : '') + asOf,
+        meta: gap ? PK.gapText(gap.day, p.zone, gap.shown) : 'min ' + f(z.min, 1) + ' · max ' + f(z.max, 1) + (z.negHours ? ' · ' + z.negHours + ' h < 0' : ''),
         spark: Array.isArray(z.hourly) ? z.hourly : null,   // the delivery day, quarter-hour by quarter-hour
       });
+      if (gap) PK.markGap(host.querySelector('.pkd-kpi'), gap.day, p.zone, gap.shown);
     },
   });
 
