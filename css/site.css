@@ -830,7 +830,7 @@
   #ho-table thead th,
   #compare-data-table thead th,
   #hmz-data-table thead th {
-    font-size: 11px;
+    font-size: 10px;   /* label size of every table header (STYLEGUIDE § 4) */
   }
   /* First column (Zone/CODE) should also follow the body size */
   #prices-table tbody td:first-child,
@@ -1348,11 +1348,11 @@
     display: block; max-width: 100%; overflow-x: auto;
   }
   .meth-table th, .meth-table td {
-    padding: 7px 14px; text-align: left;
+    padding: 9px 12px; text-align: left;
     border-bottom: 1px solid var(--border2);
   }
   .meth-table th {
-    font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
+    padding: 10px 12px; font-size: 10px; font-weight: 600; letter-spacing: 0.06em;
     text-transform: uppercase; color: var(--tx3);
   }
   .meth-table td { color: var(--text2); }
@@ -2356,7 +2356,7 @@
     border-bottom: 1px solid var(--bd);
   }
   .pr-home-anomalies-table th {
-    padding: 9px 14px;
+    padding: 10px 12px;
     font-size: 10px;
     color: var(--tx3);
     font-weight: 600;
@@ -2377,7 +2377,7 @@
     background: rgba(20,211,169,0.05);
   }
   .pr-home-anomalies-table td {
-    padding: 9px 14px;
+    padding: 9px 12px;
     color: var(--tx2);
     text-align: left;
   }
@@ -3094,7 +3094,6 @@
   .pp-doc li { margin-bottom:4px; }
   .pp-proj-grid { display:grid; grid-template-columns:minmax(0,3fr) minmax(260px,1fr); gap:14px; }
   @media (max-width: 1100px) { .pp-proj-grid { grid-template-columns:minmax(0,1fr); } }
-  .pp-ptab td, .pp-ptab th { padding:5px 8px !important; }
   .pp-ptab tr.pp-tenor td { background: rgba(251,191,36,.10); }
   /* pricer layout: aligned fields, lean strips, method-specific blocks */
   .pp-steps .cf-form { align-items:end; }
@@ -3183,6 +3182,9 @@
   .cf-link { color:var(--accent); text-decoration:none; letter-spacing:0; text-transform:none; }
   .cf-samples { font-size:11px; color:var(--text3); }
   .cf-samples a { color:var(--accent); text-decoration:none; }
+  /* an action that looks like a link (loads a sample, opens a tab): a button, not href="#" */
+  .pk-linkbtn { background:none; border:0; padding:5px 0; margin:-5px 0; min-height:24px; font:inherit; color:var(--accent); cursor:pointer; text-decoration:none; }
+  .pk-linkbtn:hover { text-decoration:underline; }
   .cf-opt { font-style:normal; font-weight:400; text-transform:none; letter-spacing:0; color:var(--text3); margin-left:6px; }
   .cf-words { background:#1c242e; border:1px solid var(--border); border-left:3px solid var(--accent); border-radius:8px; padding:12px 16px; margin:0 0 14px; }
   .cf-words ul { margin:0; padding-left:18px; display:flex; flex-direction:column; gap:6px; font-size:13px; line-height:1.55; color:var(--text2); }
@@ -3405,9 +3407,10 @@ table.mrn-got tr.mrn-fwd-g2 th { padding-top: 14px; }
 .mrn-sys-t .mrn3-tx { margin-top: auto; }
 /* Today › 4 weeks: one table, a row opens its chart */
 table.mrn-wtab { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; margin-bottom: 12px; }
-table.mrn-wtab th, table.mrn-wtab td { padding: 7px 10px; border-bottom: 1px solid var(--border, rgba(255,255,255,.08)); text-align: right; font-variant-numeric: tabular-nums; }
+table.mrn-wtab th, table.mrn-wtab td { padding: 9px 12px; border-bottom: 1px solid var(--border, rgba(255,255,255,.08)); text-align: right; font-variant-numeric: tabular-nums; }
 table.mrn-wtab th:first-child { text-align: left; width: 24%; font-weight: 500; color: var(--text2); }
-table.mrn-wtab thead th { font: 600 11px 'JetBrains Mono', monospace; color: var(--text3); text-transform: none; }
+table.mrn-wtab thead th { font: 600 10px 'JetBrains Mono', monospace; color: var(--text3); text-transform: none; padding: 10px 12px; }
+table.mrn-wtab thead th:first-child { font-weight: 600; color: var(--text3); }
 tr.mrn-wrow { cursor: pointer; }
 tr.mrn-wrow:hover td, tr.mrn-wrow:hover th, tr.mrn-wrow:focus-visible td, tr.mrn-wrow:focus-visible th { background: rgba(20,211,169,.07); outline: none; }
 .mrn-wgo { color: var(--accent, #14D3A9); opacity: .5; font-size: 12px; margin-left: 4px; }
@@ -3508,7 +3511,7 @@ html:not([lang="fr"]) .pk-fr-only{display:none !important}
 .bl-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; } @media (max-width: 900px) { .bl-cols { grid-template-columns: 1fr; } }
 .bl-c { position: relative; min-width: 0; } .bl-c[hidden] { display: none; }
 .bl-mini { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; align-content: start; } .bl-mini div { background: rgba(255,255,255,.03); border-radius: 8px; padding: 10px 12px; font-size: 12.5px; color: var(--text2); } .bl-mini b { display: block; font-size: 20px; color: var(--text); font-variant-numeric: tabular-nums; }
-.bl-tab { width: 100%; border-collapse: collapse; font-size: 13px; } .bl-tab th, .bl-tab td { padding: 6px 8px; border-bottom: 1px solid var(--border); text-align: right; font-variant-numeric: tabular-nums; } .bl-tab th:first-child, .bl-tab td:first-child { text-align: left; } .bl-tab th { font-size: 11px; color: var(--text3); font-weight: 600; }
+.bl-tab { width: 100%; border-collapse: collapse; font-size: 13px; } .bl-tab th, .bl-tab td { padding: 9px 12px; border-bottom: 1px solid var(--border); text-align: right; font-variant-numeric: tabular-nums; } .bl-tab th:first-child, .bl-tab td:first-child { text-align: left; } .bl-tab th { font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: var(--text3); font-weight: 600; padding: 10px 12px; }
 .bl-note { font-size: 12px; color: var(--text3); margin: 6px 0 0; } .bl-foot { font-size: 12.5px; color: var(--text3); margin: 0; line-height: 1.5; max-width: 110ch; }
 .bl-reg { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; } .bl-reg li { display: flex; gap: 12px; font-size: 13.5px; } .bl-reg span { min-width: 64px; color: var(--text3); font-family: 'JetBrains Mono', monospace; font-size: 12px; } .bl-reg a { color: var(--text); }
 .bl-p { margin: 0; color: var(--text2); font-size: 13.5px; line-height: 1.55; max-width: 100ch; } .bl-tot td { font-weight: 600; color: var(--text); }
@@ -3538,7 +3541,7 @@ html:not([lang="fr"]) .pk-fr-only{display:none !important}
 #page-bess td.bess-okt { color: var(--up); font-weight: 600; }
 #page-bess td.bess-warnt { color: #FBBF24; font-weight: 600; }
 #page-bess td.bess-badt { color: var(--down); font-weight: 600; }
-#page-bess .bess-streams td, #page-bess .bess-streams th { vertical-align: top; text-align: left; font-size: 12px; }
+#page-bess .bess-streams td, #page-bess .bess-streams th { vertical-align: top; text-align: left; }
 #page-bess .bess-streams td:first-child { font-weight: 600; white-space: nowrap; }
 #page-bess .bess-method { padding: 4px 4px 0; font-size: 13px; line-height: 1.6; color: var(--text2); max-width: 980px; }
 #page-bess .bess-method h4 { margin: 14px 0 6px; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--text); }
@@ -3627,15 +3630,17 @@ html[data-theme="light"] #page-boa .boa-f3 code { color: #1D4E89; } html[data-th
 .pp-band-s { font-size:12.5px; color:var(--text3); margin-top:4px; }
 .pp-band-risk { font-size:12.5px; color:var(--text2); margin-top:10px; line-height:1.5; }
 .pp-band-risk:empty { display:none; }
-.pp-band-m { display:grid; grid-template-columns:repeat(auto-fit, minmax(118px, 1fr)); gap:8px; }
-.pp-mcard { position:relative; display:grid; gap:2px; padding:10px 12px 10px 36px; border-radius:10px; background:var(--bg3); border:1px solid var(--border); cursor:pointer; min-width:0; }
+.pp-band-m { display:grid; grid-template-columns:repeat(auto-fit, minmax(132px, 1fr)); gap:8px; }
+/* same tile as a .kpi-card (STYLEGUIDE § 2): 8 px radius, one step above the card */
+.pp-mcard { position:relative; display:grid; gap:2px; padding:14px 14px 14px 38px; border-radius:8px; background:#1c242e; border:1px solid var(--border); cursor:pointer; min-width:0; }
 .pp-mcard.on { border-color:color-mix(in srgb, var(--accent) 60%, var(--border)); }
 .pp-mcard.na { opacity:.6; cursor:default; }
-.pp-mcard input { position:absolute; left:12px; top:12px; width:16px; height:16px; accent-color:var(--accent); margin:0; }
-.pp-mcard-n { font:600 11px 'JetBrains Mono',monospace; text-transform:uppercase; letter-spacing:.04em; color:var(--text3); line-height:1.3; }
-.pp-mcard-v { font:700 20px 'JetBrains Mono',monospace; color:var(--text); }
+.pp-mcard input { position:absolute; left:14px; top:15px; width:16px; height:16px; accent-color:var(--accent); margin:0; }
+.pp-mcard-n { font:600 10px 'Outfit',sans-serif; text-transform:uppercase; letter-spacing:.1em; color:var(--text3); line-height:1.3; }
+.pp-mcard-v { font:600 22px 'JetBrains Mono',monospace; color:var(--text); }
 .pp-mcard:not(.on) .pp-mcard-v { color:var(--text3); }
 .pp-mcard-s { font-size:11px; color:var(--text3); }
+html[data-theme="light"] .pp-mcard { background:var(--bg2); }
 .pp-grid3 { display:grid; grid-template-columns:repeat(auto-fit, minmax(290px, 1fr)); gap:14px; margin-bottom:14px; }
 .pp-grid3 > .chart-container { min-width:0; margin:0; }
 .pk-subviews[hidden] { display:none !important; }
@@ -3739,7 +3744,8 @@ html body .pm-o-l, html body .pkf-t-l, html body .mrn2-tc { white-space: normal;
 .mrn2-tile .mrn2-tc { min-height: 2.7em; }   /* reserves 2 lines so the sparkline below starts at the same height across tiles, whether this line wraps or not */
 /* Negative prices › who keeps producing below 0 €: the obligations and Journal officiel tables wrap their long texts */
 .flex-tbl { width: 100%; table-layout: fixed; font-size: 12px; border-collapse: collapse; }
-.flex-tbl th, .flex-tbl td { white-space: normal !important; text-align: left !important; vertical-align: top; padding: 6px 8px; font-family: 'Inter', sans-serif; line-height: 1.4; overflow-wrap: anywhere; }
+.flex-tbl th, .flex-tbl td { white-space: normal !important; text-align: left !important; vertical-align: top; padding: 9px 12px; font-family: 'Inter', sans-serif; line-height: 1.4; overflow-wrap: anywhere; }
+.flex-tbl th { padding: 10px 12px; }
 .flex-tbl td:first-child, .flex-tbl th:first-child { width: 92px; font-family: 'JetBrains Mono', monospace; color: var(--text3); }
 .flex-tbl td:last-child, .flex-tbl th:last-child { width: 120px; }
 .bl-k .bl-split { color: #FBBF24; font-size: 11px; }   /* Yearly review, forecast view: known · projected */
@@ -4261,3 +4267,10 @@ span.nl-src { margin: 0; }
 .pk-beta .pk-beta-read { margin: 0 0 14px; }
 .pr-breadcrumb-parent-beta { color: var(--text2); font-family: 'JetBrains Mono', monospace; }
 .pk-beta tr.zone-row.pk-beta-hl > td { background: rgba(20, 211, 169, .07); }
+
+/* Clickable targets: 24 px at least (WCAG 2.5.8, STYLEGUIDE § 7). Period buttons were 19 px high, the sub-toggles of
+   the sticky bar 23 px, "Edit" of the tools 22 px; link-like buttons keep their line and get the height by padding. */
+.pk-gf-btn, .pk-tabbar-subtoggle button, .cf-sumbar .cf-edit { min-height: 24px; min-width: 24px; box-sizing: border-box; }
+.sp-fh button, .pk-guard-inline { min-height: 24px; box-sizing: border-box; }
+.sp-fh { padding-bottom: 1px; }
+.cmp-chip button { min-width: 24px; min-height: 24px; margin: -4px -6px -4px 0; box-sizing: border-box; }

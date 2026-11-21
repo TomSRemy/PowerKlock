@@ -323,6 +323,8 @@
         k.fc.forEach((f, h) => { const v = k.act[h]; if (f == null || v == null) return; e += Math.abs(f - v); b += f - v; a += v; n++; });
         if (n >= 20 && a > 0) out.push({ d, err: e / a, bias: b / a });   // a day still in progress (hours missing) is left out
       });
+      // a month whose file starts after its first days is the month the archive began: nothing before it to ask for
+      const first = Object.keys(j.days).sort()[0]; if (first && first.slice(0, 7) === ym && +first.slice(8) > 5) break;
       ym = prevYm(ym);
     }
     return out.sort((x, y) => x.d < y.d ? -1 : 1);
