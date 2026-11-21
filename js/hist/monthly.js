@@ -1174,24 +1174,24 @@ function _bdHodShape(zone, summary) {
       const color = YEAR_PALETTE[y] || '#7A93AB';
 
       return `<tr style="border-top:1px solid var(--bd)">
-        <td style="padding:6px 10px;font-family:'JetBrains Mono',monospace;font-weight:600;color:${color}">${y}</td>
-        <td style="padding:6px 10px;text-align:right;font-family:'JetBrains Mono',monospace">${maxV.toFixed(2)}× <span style="color:var(--tx3);font-size:9px">@${String(maxH).padStart(2, '0')}h</span></td>
-        <td style="padding:6px 10px;text-align:right;font-family:'JetBrains Mono',monospace">${minV.toFixed(2)}× <span style="color:var(--tx3);font-size:9px">@${String(minH).padStart(2, '0')}h</span></td>
-        <td style="padding:6px 10px;text-align:right;font-family:'JetBrains Mono',monospace">${fmtR(mid)}</td>
-        <td style="padding:6px 10px;text-align:right;font-family:'JetBrains Mono',monospace">${fmtR(eve)}</td>
-        <td style="padding:6px 10px;text-align:right;font-family:'JetBrains Mono',monospace;color:#FBBF24">${spread.toFixed(1)}%</td>
+        <td style="padding:9px 12px;font-family:'JetBrains Mono',monospace;font-weight:600;color:${color}">${y}</td>
+        <td style="padding:9px 12px;text-align:right;font-family:'JetBrains Mono',monospace">${maxV.toFixed(2)}× <span style="color:var(--tx3);font-size:9px">@${String(maxH).padStart(2, '0')}h</span></td>
+        <td style="padding:9px 12px;text-align:right;font-family:'JetBrains Mono',monospace">${minV.toFixed(2)}× <span style="color:var(--tx3);font-size:9px">@${String(minH).padStart(2, '0')}h</span></td>
+        <td style="padding:9px 12px;text-align:right;font-family:'JetBrains Mono',monospace">${fmtR(mid)}</td>
+        <td style="padding:9px 12px;text-align:right;font-family:'JetBrains Mono',monospace">${fmtR(eve)}</td>
+        <td style="padding:9px 12px;text-align:right;font-family:'JetBrains Mono',monospace;color:#FBBF24">${spread.toFixed(1)}%</td>
       </tr>`;
     }).join('');
 
     host.innerHTML = `
       <table style="width:100%;border-collapse:collapse;font-size:11px">
         <thead><tr>
-          <th style="padding:6px 10px;text-align:left;color:var(--tx3);font-weight:600">Year</th>
-          <th style="padding:6px 10px;text-align:right;color:var(--tx3);font-weight:600">Peak (× avg)</th>
-          <th style="padding:6px 10px;text-align:right;color:var(--tx3);font-weight:600">Trough (× avg)</th>
-          <th style="padding:6px 10px;text-align:right;color:var(--tx3);font-weight:600">Mid-day (10–15h)</th>
-          <th style="padding:6px 10px;text-align:right;color:var(--tx3);font-weight:600">Evening (17–20h)</th>
-          <th style="padding:6px 10px;text-align:right;color:var(--tx3);font-weight:600">Spread max−min</th>
+          <th style="padding:10px 12px;text-align:left;color:var(--tx3);font-weight:600">Year</th>
+          <th style="padding:10px 12px;text-align:right;color:var(--tx3);font-weight:600">Peak (× avg)</th>
+          <th style="padding:10px 12px;text-align:right;color:var(--tx3);font-weight:600">Trough (× avg)</th>
+          <th style="padding:10px 12px;text-align:right;color:var(--tx3);font-weight:600">Mid-day (10–15h)</th>
+          <th style="padding:10px 12px;text-align:right;color:var(--tx3);font-weight:600">Evening (17–20h)</th>
+          <th style="padding:10px 12px;text-align:right;color:var(--tx3);font-weight:600">Spread max−min</th>
         </tr></thead>
         <tbody>${rows}</tbody>
       </table>`;

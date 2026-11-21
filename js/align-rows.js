@@ -58,11 +58,24 @@
   'use strict';
   if (!window.Chart || !Chart.register) return;
   // cards of the Yearly review (.bl-blk), Market analysis (.ma-panel-row) and Today's day cards (.mu-day) too: 22 charts had no description
-  const label = cv => { const card = cv.closest('.chart-container, .pkd-item, .fuel-card, .bl-blk, .ma-panel-row, .mu-day'); if (!card) return '';
-    const t = card.querySelector('.table-title, .pkd-title, .mu-day-t, .bl-t, .ma-lbl'), sub = card.querySelector('.fuel-card-sub, .pkd-sub, .ma-lbl-sub');
-    return [t && t.textContent, sub && sub.textContent].filter(Boolean).map(x => x.replace(/\s+/g, ' ').trim()).join(' · ').slice(0, 300); };
-  try { Chart.register({ id: 'pkA11y', afterRender(ch) { const cv = ch.canvas; if (!cv || cv.dataset.pkA11y === '1') return; const l = label(cv);
-    if (l) { cv.setAttribute('role', 'img'); cv.setAttribute('aria-label', l); cv.dataset.pkA11y = '1'; } } }); } catch (_) {}
+  const clean = x => (x || '').replace(/\s+/g, ' ').trim();
+  const label = cv => {
+    const card = cv.closest('.chart-container, .pkd-item, .fuel-card, .bl-blk, .ma-panel-row, .mu-day, .pr-home-chart-card, .boa-card');
+    if (card) { const t = card.querySelector('.table-title, .pkd-title, .mu-day-t, .bl-t, .ma-lbl, #pr-home-chart-title, .boa-sec, .fuel-card-head > :first-child'), sub = card.querySelector('.fuel-card-sub, .pkd-sub, .ma-lbl-sub');
+      const l = [t && t.textContent, sub && sub.textContent].filter(Boolean).map(clean).join(' · '); if (l) return l.slice(0, 300); }
+    // a chart with its heading just above it (map panel, pricer blocks), then the title of its section
+    const box = cv.parentElement; let prev = box && box.previousElementSibling, n = 0;
+    while (prev && n++ < 3) { if (/pm-d-sec|boa-sec|table-title|fuel-card-head/.test(prev.className || '') && clean(prev.textContent)) return clean(prev.textContent).slice(0, 300); prev = prev.previousElementSibling; }
+    const sec = cv.closest('.hist-section'), st = sec && sec.querySelector('.hist-section-title');
+    return st ? clean(st.textContent).slice(0, 300) : '';
+  };
+  const describe = cv => { if (!cv || cv.dataset.pkA11y === '1') return; const l = label(cv);
+    if (l) { cv.setAttribute('role', 'img'); if (!cv.getAttribute('aria-label')) cv.setAttribute('aria-label', l); cv.dataset.pkA11y = '1'; } };
+  try { Chart.register({ id: 'pkA11y', afterRender(ch) { describe(ch.canvas); } }); } catch (_) {}
+  // canvases drawn by hand (the Spiral, forecast cards of Today) are not Chart.js charts: described by a pass on the page
+  let ts = []; const run = () => document.querySelectorAll('.page.active canvas:not([data-pk-a11y])').forEach(describe);
+  const pass = () => { ts.forEach(clearTimeout); ts = [900, 3000, 8000].map(d => setTimeout(run, d)); };   // pages that draw late (Yearly review) are caught by the later passes
+  window.addEventListener('load', pass); window.addEventListener('hashchange', pass); document.addEventListener('click', pass, true);
 })();
 function pkEnsureH1() {
   const pg = document.querySelector('.page.active'); if (!pg || pg.querySelector('h1')) return;

@@ -298,6 +298,8 @@ function renderGOKPIs() {
 // not a single rolling product's bid/ask band.
 // Decimals that follow the size of the numbers: axis labels as precise as the gap between two ticks
 // (0.5 € steps → one decimal, 1 € steps → none), values in tooltips with two decimals under 10 €, one above.
+// axis title = the unit (STYLEGUIDE § 3), same style as the other pages
+const _goAxT = text => ({ display:true, text, color:C_TX3, font:{size:10} });
 function _goTick(v, i, ticks) {
   const step = ticks && ticks.length > 1 ? Math.abs(ticks[1].value - ticks[0].value) : 1;
   const d = step >= 1 ? 0 : step >= 0.1 ? 1 : 2;
@@ -342,7 +344,7 @@ function drawGoIndicChart() {
       },
       scales: {
         x: { grid:GRID, ticks:{color:C_TX3, maxTicksLimit:12} },
-        y: { grid:GRID, ticks:{color:C_TX3, callback:_goTick} }
+        y: { grid:GRID, ticks:{color:C_TX3, callback:_goTick}, title:_goAxT('€/MWh') }
       }
     }
   });
@@ -388,7 +390,7 @@ function drawGoCal1Chart() {
       },
       scales: {
         x: { grid:GRID, ticks:{color:C_TX3, maxTicksLimit:10} },
-        y: { grid:GRID, ticks:{color:C_TX3, callback:_goTick} }
+        y: { grid:GRID, ticks:{color:C_TX3, callback:_goTick}, title:_goAxT('€/MWh') }
       }
     }
   });
@@ -428,7 +430,7 @@ function drawGoCalChart() {
       scales: {
         x: { grid:GRID_NONE, ticks:{color:C_TX3} },
         // Bars start at zero: a truncated axis made a 0.05 € gap look like 3x.
-        y: { grid:GRID, ticks:{color:C_TX3, callback:_goTick}, beginAtZero:true }
+        y: { grid:GRID, ticks:{color:C_TX3, callback:_goTick}, beginAtZero:true, title:_goAxT('€/MWh') }
       }
     }
   });
@@ -454,7 +456,7 @@ function drawGoSpreadChart() {
     options: {
       responsive:true, maintainAspectRatio:false,
       plugins:{ legend:{display:false}, tooltip:{callbacks:{label:ctx=>(ctx.raw==null?'–':_goNum(ctx.raw)+' €/MWh')}}, zoom:ZOOM_CFG },
-      scales:{ x:{grid:GRID,ticks:{color:C_TX3,maxTicksLimit:8}}, y:{grid:GRID,ticks:{color:C_TX3,callback:_goTick},beginAtZero:true} }
+      scales:{ x:{grid:GRID,ticks:{color:C_TX3,maxTicksLimit:8}}, y:{grid:GRID,ticks:{color:C_TX3,callback:_goTick},beginAtZero:true,title:_goAxT('€/MWh')} }
     }
   });
   setTimeout(()=>{ addFullscreen('go-spread-canvas'); addDownload('go-spread-canvas','go-spread'); },100);
@@ -561,7 +563,7 @@ function drawGoAuctionVolChart() {
       },
       scales: {
         x: { grid:GRID_NONE, ticks:{color:C_TX3, maxTicksLimit:14, font:{size:9}} },
-        y: { grid:GRID, ticks:{color:C_TX3, callback:v=>(v/1000).toFixed(0)+'k'} }
+        y: { grid:GRID, ticks:{color:C_TX3, callback:v=>(v/1000).toFixed(0)+'k'}, title:_goAxT('MWh') }
       }
     }
   });
@@ -666,7 +668,7 @@ function drawGoHist() {
       },
       scales: {
         x:{ grid:GRID, ticks:{color:C_TX3, maxTicksLimit:12} },
-        y:{ grid:GRID, ticks:{color:C_TX3, callback:_goTick} }
+        y:{ grid:GRID, ticks:{color:C_TX3, callback:_goTick}, title:_goAxT('€/MWh') }
       }
     }
   });
@@ -701,7 +703,7 @@ function drawGoWoW() {
     options: {
       responsive:true, maintainAspectRatio:false,
       plugins:{ legend:{display:false}, tooltip:{callbacks:{label:ctx=>(ctx.raw>=0?'+':'')+_goNum(ctx.raw)+' €/MWh'}}, zoom:ZOOM_CFG },
-      scales:{ x:{grid:GRID_NONE, ticks:{color:C_TX3, maxTicksLimit:10, font:{size:9}}}, y:{grid:GRID, ticks:{color:C_TX3,callback:_goTick}} }
+      scales:{ x:{grid:GRID_NONE, ticks:{color:C_TX3, maxTicksLimit:10, font:{size:9}}}, y:{grid:GRID, ticks:{color:C_TX3,callback:_goTick}, title:_goAxT('€/MWh')} }
     }
   });
   setTimeout(()=>{ addFullscreen('go-wow-canvas'); },100);
@@ -745,7 +747,7 @@ function drawGoBox() {
     options: {
       responsive:true, maintainAspectRatio:false,
       plugins:{ legend:{display:true, position:'bottom', labels:{color:C_TX2,font:{size:10},boxWidth:10,padding:12}}, tooltip:{callbacks:{label:ctx=>ctx.dataset.label+': '+(ctx.raw==null?'–':(Array.isArray(ctx.raw)?ctx.raw[0].toFixed(2)+'–'+ctx.raw[1].toFixed(2):_goNum(ctx.raw))+' €/MWh')}} },
-      scales:{ x:{grid:GRID_NONE, ticks:{color:C_TX3, font:{size:9}}}, y:{grid:GRID, ticks:{color:C_TX3,callback:_goTick}, beginAtZero:false} }
+      scales:{ x:{grid:GRID_NONE, ticks:{color:C_TX3, font:{size:9}}}, y:{grid:GRID, ticks:{color:C_TX3,callback:_goTick}, beginAtZero:false, title:_goAxT('€/MWh')} }
     }
   });
   setTimeout(()=>{ addFullscreen('go-box-canvas'); },100);
