@@ -4284,3 +4284,14 @@ span.nl-src { margin: 0; }
 #gm-table th, #gm-table td { padding-left: 7px !important; padding-right: 7px !important; }
 #compare-data-table tbody td:first-child, #compare-data-table tbody td > div { white-space: normal; }
 
+/* PPA pricer › P&L: the stress-scenario table beside the chart is taller than it; the chart keeps its own height
+   (300 px, never above 360 px) instead of stretching to the table's (~760 px) */
+.fuel-grid-2 > .chart-container:has(#pp-pnl) { align-self: start; }
+.fuel-grid-2 > .chart-container > div:has(> #pp-pnl) { flex: 0 0 auto; max-height: 360px; }
+
+/* Phone: the top bar's right-hand buttons fit the screen; "Sign in" wraps on two short lines instead of being cut off */
+@media (max-width: 480px) {
+  .topbar .topbar-right { gap: 4px; }
+  .topbar .topbar-right > * { margin-left: 0; margin-right: 0; }
+  .topbar .topbar-right .pkd-acc:not([title]) { white-space: normal; line-height: 1.1; letter-spacing: 0; max-width: 76px; padding: 2px 6px; text-align: center; }
+}
