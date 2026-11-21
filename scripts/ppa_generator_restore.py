@@ -4,8 +4,8 @@
 left the file without it, so the site fell back silently to the old method for a few hours).
 
 Copies from the previous file (saved before scripts/ppa_lab.py ran) the 'generator' block and each month's
-'generator', 'generatorPaid', 'generatorP10' and 'generatorP90' into the new file, and marks the block
-'restored' with today's date so the pricer can say so. Exits 1 when there is nothing to restore.
+'generator', 'generatorPaid', 'generatorP10', 'generatorP90', 'generatorT' and 'generatorPaidT' into the new file,
+and marks the block 'restored' with today's date so the pricer can say so. Exits 1 when there is nothing to restore.
     python scripts/ppa_generator_restore.py /tmp/ppa_forecast_prev.json
 """
 import json
@@ -15,7 +15,9 @@ from datetime import date
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 F_PATH = os.path.join(ROOT, 'data', 'history', 'ppa_forecast.json')
-KEYS = ('generator', 'generatorPaid', 'generatorP10', 'generatorP90')
+# generatorT / generatorPaidT (each month at the other stop thresholds) since 21 Nov. 2026 (PPA review): without them a
+# restored week priced every stop threshold other than 0 as if it were 0
+KEYS = ('generator', 'generatorPaid', 'generatorP10', 'generatorP90', 'generatorT', 'generatorPaidT')
 
 
 def main():

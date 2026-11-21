@@ -141,7 +141,7 @@ def main():
             k = G.anchor_factors(t, A, past, st, lambda d: c0)[mode]
         anchors[tech] = {'year': A, 'mode': mode, **{c: {'winter': round(k[c][1], 4), 'summer': round(k[c][7], 4)} for c in ('curt', 'all') if c in k}}
         print('anchor', tech, anchors[tech], flush=True)
-        for Y in range(this.year, 2031):
+        for Y in L.horizon(this):
             capY = {c: {tt: L.cap_future(c, tt, Y) for tt in 'sw'} for c in ('FR',) + L.NEIGH}
             with _cfg(BEST[tech] if V2 else {}):
                 m, dist = G.simulate(t, Y, past, st, A, capY, None, n=60, rule='fuel', cost=lambda d: c0,
@@ -205,7 +205,11 @@ def main():
     # says the model is drifting away from what the market has shown. A measure only: nothing is corrected
     fc['generator'] = {'stopGrid': [float(x) for x in (G.STOP_GRID or ())],
                        'asOf': this.isoformat(), 'lastYear': A, 'fuelCost': round(c0, 2), 'sims': 60, 'belowFloor': below,
-                       'belowFloorExpected': 0.10, 'anchor': anchors}
+                       'belowFloorExpected': 0.10, 'anchor': anchors,
+                       # France's last year-end fleet published by RTE (solar and wind both): the years after it are
+                       # extrapolated, which the pricer can say ("fleet known to 2025, extrapolated since")
+                       'fleetLastYear': min(max(y for y, v in L.B.CAP[t].items() if v) for t in 'sw'),
+                       'horizon': [L.horizon(this)[0], L.horizon(this)[-1]]}
     if V2 and band:
         # yearly capture quantiles of the full Monte Carlo: the pricer sets its capture drift on P50 − P25
         fc['generator']['band'] = band

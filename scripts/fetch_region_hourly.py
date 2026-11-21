@@ -12,7 +12,8 @@ the meter and missing from the public power series); they are kept for the merit
 order, where their thermal fleet counts.
 
 Writes data/history/region_hourly/YYYY.json
-    {"year", "unit": "MW", "countries": {"DE": {"s": {day: [24]}, "w": …, "l": …, "n": …}}}
+    {"year", "unit": "MW", "countries": {"DE": {"s": {day: [24]}, "w": …, "l": …, "n": …}},
+     "coverage": {"DE": {"asOf", "expectedDays", "fullLoadDays", "gapDays", "missingDays"} | {…, "failed": date}}}
     python scripts/fetch_region_hourly.py            # every year from 2016
     python scripts/fetch_region_hourly.py --recent   # last and current year
 """
@@ -59,52 +60,80 @@ def hourly(ts, vals):
     return {h: s / n for h, (s, n) in acc.items()}
 
 
-def by_paris_day(series, y):
-    """UTC hourly → {Paris day: [24]} (the missing spring hour repeats the one before, the autumn extra hour is dropped)"""
+def by_paris_day(series, y, gaps=None):
+    """UTC hourly → {Paris day: [24]}. The spring hour missing from the local clock repeats the one before, the autumn
+    extra hour is dropped; any other hour without data stays None and is counted in gaps {day: hours}. Until 21 Nov. 2026
+    (PPA review) every hour after a gap repeated the last value, which also completed the running day with its last hour
+    and hid the gap from scripts/ppa_lab.py (a day with a missing load hour is left out of the model)"""
     out = {}
     d = date(y, 1, 1)
     while d.year == y:
-        row = []
+        row, dst = [], set()
         for h in range(24):
             loc = datetime(d.year, d.month, d.day, h, tzinfo=PARIS)
+            if loc.astimezone(timezone.utc).astimezone(PARIS).hour != h:
+                dst.add(h)          # 02:00 on the last Sunday of March does not exist in Paris
             u = int(loc.astimezone(timezone.utc).timestamp()) // 3600
             v = series.get(u)
             row.append(None if v is None else round(v))
         if any(v is not None for v in row):
-            for h in range(1, 24):
-                if row[h] is None and row[h - 1] is not None:
+            for h in dst:
+                if h and row[h] is None:
                     row[h] = row[h - 1]
+            if gaps is not None and None in row:
+                gaps[d.isoformat()] = row.count(None)
             out[d.isoformat()] = row
         d += timedelta(days=1)
     return out
+
+
+def coverage(doc_c, y, gaps):
+    """what a country's year holds, for scripts/ppa_guard.py: days expected (to yesterday, Paris), days with a full load
+    series, days with a missing hour (any series) and days with nothing"""
+    today = datetime.now(PARIS).date()
+    end = min(date(y, 12, 31), today - timedelta(days=1))
+    exp = max(0, (end - date(y, 1, 1)).days + 1)
+    full = sum(1 for d, r in doc_c.get('l', {}).items() if d <= end.isoformat() and None not in r)
+    return {'asOf': today.isoformat(), 'expectedDays': exp, 'fullLoadDays': full,
+            'gapDays': len([d for d in gaps if d <= end.isoformat()]),
+            'missingDays': exp - len([d for d in doc_c.get('l', {}) if d <= end.isoformat()])}
 
 
 def main():
     this = date.today().year
     years = range(this - 1, this + 1) if '--recent' in sys.argv else range(int(sys.argv[sys.argv.index('--since') + 1]) if '--since' in sys.argv else 2016, this + 1)
     OUT.mkdir(parents=True, exist_ok=True)
+    failed = []
     for y in years:
         f = OUT / f'{y}.json'
         doc = json.loads(f.read_text()) if f.exists() else {'year': y, 'unit': 'MW', 'source': 'Energy-Charts public power (Fraunhofer ISE)', 'countries': {}}
+        cov = doc.setdefault('coverage', {})
         for c, cc in COUNTRIES.items():
             pw = get(cc, y)
             if not pw:
-                print(y, c, 'no data', flush=True)
+                # the country keeps its last data; the failure is written down (and read by scripts/ppa_guard.py)
+                print(f'::warning::Energy-Charts gave no data for {c} {y}: its previous data kept', flush=True)
+                cov[c] = dict(cov.get(c) or {}, failed=datetime.now(PARIS).date().isoformat())
+                failed.append(f'{c} {y}')
                 continue
             t = {p['name']: p['data'] for p in pw['production_types']}
             ts = pw['unix_seconds']
             won, woff = hourly(ts, t.get('Wind onshore')), hourly(ts, t.get('Wind offshore'))
             wind = {h: won.get(h, 0) + woff.get(h, 0) for h in set(won) | set(woff)}
-            doc['countries'][c] = {'s': by_paris_day(hourly(ts, t.get('Solar')), y), 'w': by_paris_day(wind, y),
-                                   'l': by_paris_day(hourly(ts, t.get('Load')), y), 'n': by_paris_day(hourly(ts, t.get('Nuclear')), y)}
+            gaps = {}
+            doc['countries'][c] = {'s': by_paris_day(hourly(ts, t.get('Solar')), y, gaps), 'w': by_paris_day(wind, y, gaps),
+                                   'l': by_paris_day(hourly(ts, t.get('Load')), y, gaps), 'n': by_paris_day(hourly(ts, t.get('Nuclear')), y, gaps)}
             for k, names in TYPES.items():
                 parts = [hourly(ts, t[nm]) for nm in names if t.get(nm)]
                 if parts:
                     tot = {h: sum(p.get(h, 0) for p in parts) for h in set().union(*parts)}
                     doc['countries'][c][k] = by_paris_day({h: abs(v) for h, v in tot.items()}, y)
-            print(y, c, len(doc['countries'][c]['l']), 'days', flush=True)
+            cov[c] = coverage(doc['countries'][c], y, gaps)
+            print(y, c, len(doc['countries'][c]['l']), 'days;', cov[c], flush=True)
             time.sleep(2)
         f.write_text(json.dumps(doc, separators=(',', ':')))
+    if failed:
+        print('no data from Energy-Charts for:', ', '.join(failed), '(previous data kept; see coverage in the yearly files)')
 
 
 if __name__ == '__main__':

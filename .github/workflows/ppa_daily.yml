@@ -30,8 +30,10 @@ jobs:
           python-version: '3.12'   # numpy 2.5 needs Python 3.12 or later
       - name: Install dependencies
         run: |
-          pip install playwright==1.48.0 numpy==2.5.4
+          pip install playwright==1.48.0 numpy==2.5.4 requests==2.33.1   # requests: imported by the PPA guard's data loaders
           python -m playwright install --with-deps chromium
+      - name: Checks on what the published price stands on (ages, completeness, plausibility; scripts/ppa_guard.py)
+        run: python scripts/ppa_guard.py
       - name: Price the day
         run: python scripts/ppa_daily.py
       - name: Capture implied by the peak / base forwards (in observation)
@@ -62,4 +64,5 @@ jobs:
           GO_GMAIL_APP_PASSWORD: ${{ secrets.GO_GMAIL_APP_PASSWORD }}
           WORKFLOW: ${{ github.workflow }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          BODY: "${{ env.PPA_GUARD != '' && format('Contrôle du prix PPA publié en échec (scripts/ppa_guard.py) : {0}. Le prix du jour n''a pas été publié. Détail : {1}/{2}/actions/runs/{3}', env.PPA_GUARD, github.server_url, github.repository, github.run_id) || '' }}"
         run: python3 scripts/notify_failure.py || true
