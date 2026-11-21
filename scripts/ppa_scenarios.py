@@ -311,7 +311,21 @@ def potential(y, t):
 
 def actual_T(t, Y, T, pot=False):
     """L.actual at stop threshold T (output stopped strictly below T €/MWh), weighted by the national output or (pot) by
-    the output without stops at negative prices"""
+    the output without stops at negative prices: quarter-hourly with PK_QH_REALISED=1 (L.QH_REALISED), else hourly"""
+    if L.QH_REALISED:
+        return actual_T_qh(t, Y, T, pot)
+    return actual_T_hourly(t, Y, T, pot)
+
+
+def actual_T_qh(t, Y, T, pot=False):
+    """actual_T on quarter-hours (L.actual_qh): each quarter-hour's output at its own price; pot: the hourly output
+    without stops (potential) on its four quarter-hours"""
+    r = L.actual_qh(t, Y, T, potential(Y, t) if pot else None)
+    return {m: {k: v[k] for k in ('curt', 'paid', 'base', 'mwh', 'days')} for m, v in r.items()}
+
+
+def actual_T_hourly(t, Y, T, pot=False):
+    """actual_T on hourly means of price and output (fr_hourly)"""
     a = L.DATA[Y]
     P, V = a['fr_p'], (potential(Y, t) if pot else a['fr_' + t])
     out = {}

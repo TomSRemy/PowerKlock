@@ -628,7 +628,105 @@ def make_pm(Y, st):
 
 
 # ── actuals ──────────────────────────────────────────────────────────────────
+# The realised the model is judged against, anchored on and whose errors make the model-risk premium. France's day-ahead
+# market settles each quarter-hour since 1 Oct. 2025, and a contract (and the site's realised capture,
+# scripts/build_fr_capture.py) stops the park per quarter-hour, strictly below the threshold: the quarter-hour realised
+# (actual_qh) prices each quarter-hour of RTE's output at its own price. The hourly one (actual_hourly) stops the park on
+# the mean of the hour's four prices: an hour mixing 0 € and negative quarter-hours dissolves its zeros (solar output
+# settled at exactly 0 € in 2026: 9.8 % on quarter-hours, 6.2 % on hourly means) and its value is too high (solar Oct.
+# 2025 – Nov. 2026, value per MWh of potential output 54.97 hourly against 54.23 €). Before Oct. 2025 the four prices
+# of an hour are equal and both give the same. PK_QH_REALISED=1 makes actual() and ppa_scenarios.actual_T() the
+# quarter-hour one (Lot 2, 22 Nov. 2026; off until approved: it moves wind's anchoring and the model-risk premium)
+QH_REALISED = os.environ.get('PK_QH_REALISED') == '1'
+_QH = {}
+
+
+def _rte_qh(y):
+    """{Paris day: {'s': [96], 'w': [96]}} from RTE éCO2mix (data/history/rte/YYYY-MM.json): consolidated data ('def')
+    come every 30 minutes (each value repeated on its two quarter-hours), real-time data ('tr', the last months) every
+    15 minutes"""
+    out = {}
+    for m in range(1, 13):
+        try:
+            d = json.load(open(os.path.join(ROOT, 'data', 'history', 'rte', f'{y}-{m:02d}.json')))['days']
+        except (OSError, ValueError, KeyError):
+            continue
+        for day, v in d.items():
+            s, w = v.get('solar') or [], v.get('wind') or []
+            if len(s) == 96 and len(w) == 96:
+                out[day] = {'s': s, 'w': w}
+    return out
+
+
+def qh(y):
+    """year y's quarter-hours, aligned on DATA[y]['days']: {'p', 's', 'w': days × 96, 'avg': days, 'qhOut': days (bool)}.
+    Prices from data/history/daily/<D>.json (France, 96 a day, the hourly price repeated before Oct. 2025, as
+    build_fr_capture reads them; a quarter-hour the day does not have, as on the spring clock change, is NaN); the day's
+    base is its published average 'avg' (a 25-hour day keeps 96 quarter-hours in its series: its mean is not its base).
+    Output from RTE éCO2mix (_rte_qh); a day without it takes the hourly output on its four quarter-hours ('qhOut' False)"""
+    if y in _QH:
+        return _QH[y]
+    a = DATA[y]
+    days = a['days']
+    n = len(days)
+    P, S, W = np.full((n, 96), np.nan), np.empty((n, 96)), np.empty((n, 96))
+    avg, has = np.full(n, np.nan), np.zeros(n, bool)
+    rte = _rte_qh(y)
+    for i, d in enumerate(days):
+        try:
+            z = (json.load(open(os.path.join(ROOT, 'data', 'history', 'daily', f'{d}.json'))).get('zones') or {}).get('FR') or {}
+        except (OSError, ValueError):
+            z = {}
+        h = z.get('hourly')
+        if isinstance(h, list) and len(h) in (24, 96):
+            h = [x for x in h for _ in range(4)] if len(h) == 24 else h
+            P[i] = [np.nan if x is None else x for x in h]
+        else:
+            P[i] = np.repeat(a['fr_p'][i], 4)
+        avg[i] = z['avg'] if isinstance(z.get('avg'), (int, float)) else np.nanmean(P[i])
+        r = rte.get(d)
+        if r:
+            S[i] = [max(0.0, x or 0.0) for x in r['s']]; W[i] = [max(0.0, x or 0.0) for x in r['w']]; has[i] = True
+        else:
+            S[i] = np.repeat(a['fr_s'][i], 4); W[i] = np.repeat(a['fr_w'][i], 4)
+    _QH[y] = {'p': P, 's': S, 'w': W, 'avg': avg, 'qhOut': has}
+    return _QH[y]
+
+
+def actual_qh(t, Y, T=0.0, V=None):
+    """actual() on quarter-hours: each quarter-hour of France's output of technology t priced at its own price, the park
+    stopped strictly below T €/MWh (an output at T or above is produced and paid), the month's base the mean of its
+    days' published averages; 'mwh' in MWh (a quarter-hour of 1 MW = 0.25 MWh), 'negH' in hours (4 quarter-hours = 1).
+    V: another output, days × 24 (repeated on its quarter-hours) or days × 96, in place of the national one"""
+    a, q = DATA[Y], qh(Y)
+    P = q['p']
+    V = q[t] if V is None else (np.repeat(V, 4, axis=1) if V.shape[1] == 24 else V)
+    ok = np.isfinite(P)
+    Pz, Vz = np.where(ok, P, 0.0), np.where(ok, V, 0.0)
+    out = {}
+    for m in range(1, 13):
+        k = a['month'] == m
+        if k.sum() < 20:
+            continue
+        Pm, Vm = Pz[k], Vz[k]
+        base = float(q['avg'][k].mean())
+        pos = ok[k] & (Pm >= T)
+        e = Vm.sum()
+        ep = (Vm * pos).sum()
+        out[m] = {'all': float((Vm * Pm).sum() / e / base), 'curt': float((Vm * Pm * pos).sum() / ep / base) if ep > 0 else None,
+                  'paid': float(ep / e), 'negH': int(round((ok[k] & (Pm < 0)).sum() / 4)), 'base': base, 'mwh': float(e / 4),
+                  'days': int(k.sum())}
+    return out
+
+
 def actual(t, Y):
+    """the realised month by month, the park stopped strictly below 0 €/MWh: quarter-hourly with PK_QH_REALISED=1, else
+    hourly (see QH_REALISED)"""
+    return actual_qh(t, Y) if QH_REALISED else actual_hourly(t, Y)
+
+
+def actual_hourly(t, Y):
+    """the realised on hourly means of price and output (fr_hourly), the park stopped when the hour's mean price is < 0"""
     a = DATA[Y]
     P, V = a['fr_p'], a['fr_' + t]
     out = {}

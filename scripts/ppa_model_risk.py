@@ -6,7 +6,8 @@ Replay: each delivery year from 2023 (the years with France's Core export limits
 complete months only), priced 1, 2 and 3 years ahead with only the complete years known then, exactly as the generator
 prices today (scripts/ppa_scenarios.py simulate, current settings, with each anchoring on the last known year:
 none, year, season); error = the generator's capture − the realised
-capture, output stopped at prices ≤ 0, production-weighted, in capture points (so the pricer applies it to the
+capture (ppa_lab.actual: hourly, or each quarter-hour at its own price with PK_QH_REALISED=1), output stopped at
+prices < 0, production-weighted, in capture points (so the pricer applies it to the
 forwards of the tenor) and in € on the realised baseload. Deliveries whose last known year is before 2022 are left out
 (other regime, no JAO).
 
@@ -88,6 +89,7 @@ def main():
                 rows.append({'tech': tech, 'year': Y, 'h': h, 'known': A, 'months': len(act), 'byMode': by})
                 print(tech, Y, f'h={h}', '  '.join(f"{k} {v['eur']:+.2f}" for k, v in by.items()), flush=True)
     out = {'asOf': date.today().isoformat(), 'level': LEVEL, 'protocol': __doc__.split('Writes')[0].strip(),
+           'realised': 'quarter-hour' if L.QH_REALISED else 'hourly',
            'anchorMode': {}, 'anchorMae': {}, 'rows': rows}
     for tech in ('solar', 'wind'):
         rs = [r for r in rows if r['tech'] == tech]

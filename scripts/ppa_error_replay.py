@@ -20,6 +20,10 @@ delivery (28 days or more of data), against the realised capture at the same T, 
 × its paid share × the month's baseload. A delivery that runs past the last complete month is scored on the months it
 has (the latest starts therefore weigh their first months only).
 
+The realised is the hourly one (the park stopped on the hour's mean price) unless PK_QH_REALISED=1: then each
+quarter-hour of RTE's output at its own price, as a contract and scripts/build_fr_capture.py stop the park (from Oct.
+2025, when the day-ahead became quarter-hourly; ppa_lab.actual_qh). The file says which ('realised').
+
 Error of a case = central capture value − realised capture value, in €/MWh and in capture points of the realised
 baseload (pts = € ÷ base × 100; the pricer applies the points to the forwards). Positive = the model priced too high.
 Every case weighs the same. Per technology, T and horizon h (3, 6, 9, 12 months, and 'all' pooled): n, bias (mean),
@@ -166,7 +170,8 @@ def main():
             print(TECH[t], D, f'{time.time() - T0:.0f}s', flush=True)
     out = {'asOf': date.today().isoformat(), 'protocol': __doc__.split('Writes')[0].strip(), 'level': LEVEL,
            'lastMonth': f'{last[0]}-{last[1]:02d}', 'starts': [starts[0].isoformat(), starts[-1].isoformat()], 'step': a.step,
-           'thresholds': [f'{T:g}' for T in TS], 'horizons': list(HORIZONS), 'rows': {}}
+           'thresholds': [f'{T:g}' for T in TS], 'horizons': list(HORIZONS), 'rows': {},
+           'realised': 'quarter-hour' if L.QH_REALISED else 'hourly'}
     for t, tech in TECH.items():
         act = complete_months(t)
         rows = []
