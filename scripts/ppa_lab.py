@@ -102,7 +102,10 @@ def load_years():
                 a[c + '_' + k] = np.array([[x or 0 for x in rg[c][k].get(d, [0] * 24)] for d in days], float)
         pu = pumping_hours(y)
         a['fr_pump'] = np.array([pu.get(d, [0] * 24) for d in days], float)
-        a['complete'] = len(days) >= 340
+        # complete = the year is over and nearly all its days are there. Until 21 Nov. 2026 a running year counted as
+        # complete from its 340th day (about 8 December): it then became the reference year with three weeks of December
+        # missing and, for France, Belgium and Spain, no installed capacity published yet
+        a['complete'] = len(days) >= 340 and y < date.today().year
         Y[y] = a
     return Y, caps
 
