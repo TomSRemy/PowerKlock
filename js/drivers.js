@@ -13,7 +13,10 @@
 //   · PKDrivers.tile(host, opts) draws the 4 maturity cards for Today (Quick
 //     look) and the dashboard widget 'price-drivers' (js/dash-widgets.js).
 // Data: data/drivers/frames.json (scripts/build_drivers.py documents how it is
-// rebuilt from the warehouse). d3 (js/vendor/d3.min.js) is loaded only when the
+// rebuilt from the warehouse and the data files). The spot's latest days (yesterday
+// while the nuclear availability is not out, today and tomorrow once their auction
+// is out) are provisional frames (pv): tagged on the cards, the table and the
+// top bar, and explained in #cqp-pv under the chart. d3 (js/vendor/d3.min.js) is loaded only when the
 // Flows view is drawn; the cards and the table do not need it.
 // Texts are written in English and translated by js/i18n.js (assets/i18n_fr.json,
 // assets/i18n_fr_tpl.json); numbers are written the English way and put in the
@@ -92,13 +95,23 @@
     return { p: fs[fs.length - 1].p, r: fs[0].r, dy, c, ux, d: fs[fs.length - 1].d, d0: d0.toISOString().slice(0, 10) };
   }
   const xval = (k, w) => { const f = frame(DN[k].src, w) || frame('cal', w); return f && f.x ? f.x[k] : null; };
+  // provisional spot days (scripts/build_drivers.py): forecasts, estimated nuclear availability or last gas close
+  const pvOf = (h, w) => { const f = frame(h, w); return f && f.pv && f.pv.length ? f.pv : null; };
+  function pvWhy(pv) {
+    const out = [], fc = pv.filter(k => k === 'wind' || k === 'sol' || k === 'load');
+    if (fc.length) out.push(tr('day-ahead forecasts completing the RTE data published so far'));
+    if (pv.includes('nuc')) out.push(tr('nuclear availability estimated from REMIT outages until the first published value'));
+    if (pv.includes('ttf')) out.push(tr('the last TTF close'));
+    return out;
+  }
+  const pvTag = (h, w) => (h === 'spot' && pvOf(h, w) ? ` · <span class="cqp-prov" title="${esc(tr('Latest days still being published: replaced by the actual figures once complete'))}">${tr('provisional')}</span>` : '');
   const top2 = (h, a) => Object.entries(a.c).filter(([k, v]) => L(h).i[k] && Math.abs(v) >= 1).sort((x, y) => Math.abs(y[1]) - Math.abs(x[1])).slice(0, 2);
 
   // ── the 4 maturity cards (page, Today, dashboards) ──
   function cardsHTML(w, per, o) {
     o = o || {};
     return ORDER.map(h => {
-      const S = L(h), a = agg(h, w, per), lab = `<div class="kpi-label">${S.t} · ${esc(S.sub)}</div>`;
+      const S = L(h), a = agg(h, w, per), lab = `<div class="kpi-label">${S.t} · ${esc(S.sub)}${pvTag(h, w)}</div>`;
       const tag = o.link ? 'a' : 'div', attr = o.link ? ' href="#markets/drivers" data-route="markets/drivers"' : o.pick ? ' role="button" tabindex="0"' : '';
       if (!a) return `<${tag} class="kpi-card cqp-kpi"${attr} data-h="${h}">${lab}<div class="kpi-value">–</div><div class="kpi-meta">${tr('not yet quoted')}</div></${tag}>`;
       const t = top2(h, a);
@@ -256,7 +269,7 @@
     if (!a) { host.innerHTML = `<div class="fuel-note">${tr('not yet quoted')}</div>`; return; }
     const rows = KEYS.filter(k => S.i[k]).map(k => [k, a.c[k]]).concat([['ux', a.ux]]), mx = Math.max(...rows.map(r => Math.abs(r[1])), Math.abs(a.dy), 1);
     const bar = v => { const w = Math.abs(v) / mx * 50; return `<div class="cqp-b2"><i class="${v > 0 ? 'cqp-bg-rise' : 'cqp-bg-fall'}" style="left:${v < 0 ? 50 - w : 50}%;width:${w}%"></i></div>`; };
-    host.innerHTML = `<div class="table-title cqp-mt">${S.t} · ${esc(S.sub)} <span class="fuel-card-sub">${tr('tap a card to switch')}</span></div><div class="cqp-ml">` +
+    host.innerHTML = `<div class="table-title cqp-mt">${S.t} · ${esc(S.sub)}${pvTag(st.focus, st.week)} <span class="fuel-card-sub">${tr('tap a card to switch')}</span></div><div class="cqp-ml">` +
       rows.sort((x, y) => Math.abs(y[1]) - Math.abs(x[1])).map(([k, v]) => `<div class="cqp-mr"><span class="cqp-mk"><i ${k === 'ux' ? 'class="cqp-hatch"' : `style="background:${css(DN[k].c)}"`}></i>${tr(k === 'ux' ? 'Unexplained' : DN[k].n)}</span>${bar(v)}<span class="cqp-mv ${tone(v)}">${sg(v)}</span></div>`).join('') +
       `<div class="cqp-mr cqp-mtot"><span class="cqp-mk">${tr('Price change')}</span>${bar(a.dy)}<span class="cqp-mv ${tone(a.dy)}">${sg(a.dy)}</span></div></div>`;
   }
@@ -268,7 +281,7 @@
     const rise = css('--down'), fall = css('--up');
     const cell = (v, on) => { if (!on) return '<td class="cqp-na">·</td>'; if (Math.abs(v) < 0.5) return `<td class="cqp-flat">${sg(v)}</td>`;
       const al = 0.12 + 0.55 * Math.min(1, Math.abs(v) / mx); return `<td class="${tone(v)}" style="background:${rgba(v > 0 ? rise : fall, al.toFixed(2))};color:var(--text)">${sg(v)}</td>`; };
-    let h = `<div class="cqp-tw"><table class="fuel-table cqp-ht"><thead><tr><th style="text-align:left">${tr('Fundamental')}</th>` + ORDER.map(o => `<th>${L(o).t}<span class="cqp-thsub">${esc(L(o).sub)}</span></th>`).join('') + '</tr></thead><tbody>';
+    let h = `<div class="cqp-tw"><table class="fuel-table cqp-ht"><thead><tr><th style="text-align:left">${tr('Fundamental')}</th>` + ORDER.map(o => `<th>${L(o).t}<span class="cqp-thsub">${esc(L(o).sub)}${pvOf(o, st.week) ? ' · ' + tr('provisional') : ''}</span></th>`).join('') + '</tr></thead><tbody>';
     h += KEYS.map(k => `<tr><td class="cqp-k"><i style="background:${css(DN[k].c)}"></i>${tr(DN[k].n)}</td>` + ORDER.map(o => (A[o] ? cell(A[o].c[k], !!L(o).i[k]) : '<td>–</td>')).join('') + '</tr>').join('');
     h += `<tr><td class="cqp-k"><i class="cqp-hatch"></i>${tr('Unexplained')}</td>` + ORDER.map(o => (A[o] ? cell(A[o].ux, true) : '<td>–</td>')).join('') + '</tr>';
     h += `<tr class="cqp-tot"><td class="cqp-k">${tr('Price change')}</td>` + ORDER.map(o => (A[o] ? `<td class="${tone(A[o].dy)}">${sg(A[o].dy)}</td>` : '<td>–</td>')).join('') + '</tr>';
@@ -276,11 +289,22 @@
     host.innerHTML = h;
   }
 
+  // under the chart: which spot days are provisional and what stands in for the missing figures
+  function pvNote() {
+    const el = $('cqp-pv'); if (!el) return;
+    const pv = pvOf('spot', st.week), days = F.spot && F.spot.pv ? Object.keys(F.spot.pv).sort() : [];
+    if (!pv || !days.length) { el.hidden = true; el.innerHTML = ''; return; }
+    el.hidden = false;
+    el.innerHTML = `<b class="cqp-prov">${tr('Provisional')}</b> <span>${tr('Spot:')}</span> <span>${days.map(dt).join(', ')}</span>. ` +
+      `<span>${tr('Explained with')}</span> <span>${pvWhy(pv).join(' · ')}</span>. <span>${tr('Replaced by the actual figures at the next updates.')}</span>`;
+  }
+
   async function render(full) {
     const host = $('cqp-viz'); if (!host || !F) return;
     heads(); legend(); kpis(); lede();
     const a = agg('cal', st.week, st.per), wk = $('cqp-wk'); if (wk) wk.textContent = a ? `${dt(a.d0)} → ${dt(a.d)}` : '';
     const rng = $('cqp-rng'); if (rng) rng.value = st.week;
+    pvNote();
     const mob = host.clientWidth < 700;
     if (st.view === 'table') { st.G = null; table(host); return; }
     if (full || mob || !st.G || !host.querySelector('svg')) {
@@ -316,7 +340,8 @@
     if (st.ready) return; st.ready = true;
     const rng = $('cqp-rng'); rng.max = NW() - 1; rng.addEventListener('input', () => { st.week = +rng.value; stop(); render(); });
     $('cqp-play').addEventListener('click', () => { if (st.playing) { stop(); return; } st.playing = true; if (st.week >= NW() - 1) st.week = Math.min(NW() - 1, st.per); const b = $('cqp-play'); b.textContent = '❚❚'; b.setAttribute('aria-label', tr('Pause')); render(); st.timer = setTimeout(tick, 600); });
-    const upd = $('cqp-upd'); if (upd) upd.textContent = tr(fill('France · to {d}', { d: dt(F.spot.w[F.spot.w.length - 1].d) }));
+    const ls = F.spot.w[F.spot.w.length - 1], upd = $('cqp-upd');
+    if (upd) upd.textContent = tr(fill(ls.pv ? 'France · to {d} · provisional' : 'France · to {d}', { d: dt(ls.d) }));
     const meta = $('cqp-meta'); if (meta) meta.textContent = tr(fill('{n} maturities · one frame a week since {d}', { n: ORDER.length, d: dt(F.cal.w[0].d) }));
   }
 

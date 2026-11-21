@@ -3836,6 +3836,7 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
             <div class="cqp-viz" id="cqp-viz"><div class="loading-row" style="padding:14px"><span class="spinner"></span></div></div>
             <div class="cqp-tl"><button type="button" class="pk-btn-ghost cqp-play" id="cqp-play" aria-label="Replay the weeks" title="Replay the weeks">▶</button><span class="cqp-wk" id="cqp-wk"></span><input type="range" id="cqp-rng" min="0" step="1" value="0" aria-label="Week"></div>
           </div>
+          <div class="fuel-note cqp-pvnote" id="cqp-pv" hidden></div>
           <div class="fuel-note">Source: PowerKlock regressions on EEX forwards, ENTSO-E day-ahead prices, RTE éCO2mix, TTF, EUA and API2 closes. Indicative, not a pricing model: the calculation is in the Method section below.</div>
         </div>
       </div>
@@ -3847,6 +3848,7 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
         <div class="hist-section-body open" id="hs-body-drivers-1">
           <p class="fuel-note cqp-method">Sensitivities come from one-year linear regressions (Nov 2025 to Nov 2026): daily changes for the forwards, daily levels for the spot. Weight of a fundamental = its importance in the regression × the explained share (R²). Contribution over the period = sensitivity × change of the fundamental, summed week by week. Unexplained covers alignment with Germany, expectations and anything the measured fundamentals miss.</p>
           <p class="fuel-note cqp-method">Limits: TTF day-ahead stands in for the TTF forwards, which are not stored yet; nuclear availability is known only in the short term, so it has no measurable effect on the forwards. M+1 has been quoted in the warehouse since March 2026 only.</p>
+          <p class="fuel-note cqp-method">Latest days: a delivery day is final once RTE has published at least 88 of its 96 quarter-hours and its TTF close and nuclear availability are out; only final days enter the regressions. The days after it, up to tomorrow once its day-ahead auction is out, are shown as provisional, with the published day-ahead average and, for what is missing, the RTE quarter-hours published so far completed with the day-ahead forecasts (PowerKlock combined forecast for wind and solar, TSO forecast for demand), a nuclear availability estimated from the ENTSO-E REMIT outages (fleet capacity seen over the last 7 published days minus the unavailability of the day) and the last TTF close. The actual figures replace them at the next updates.</p>
         </div>
       </div>
     </div>
