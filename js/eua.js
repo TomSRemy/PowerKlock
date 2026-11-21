@@ -2,7 +2,7 @@
 // CARBON & FUELS · FORWARD CURVES · CLEAN SPARK / DARK SPREADS
 // All three pages read real data only:
 //   - data/commodities.json (+ history file) via window.PKC (commodities.js)
-//   - data/fr_market.json (power forward curves, SEFE)
+//   - data/fr_market.json (power forward curves, Energy Market Price)
 //   - pricesData / data/history/summary.json (ENTSO-E day-ahead)
 // Fuel-cost conventions live in PKC.FUEL so every page agrees.
 // ════════════════════════════════════════════════════════════════════

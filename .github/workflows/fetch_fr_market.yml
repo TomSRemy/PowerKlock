@@ -1,14 +1,14 @@
-name: Fetch FR Market Data (SEFE)
+name: Fetch FR Market Data (Energy Market Price)
 
 # Fetch France power forward curve, spot, nuclear capacity, generation mix,
 # the daily market-insights narrative, and gas/carbon/coal/oil series
-# (data/commodities.json) from SEFE Energy's public "daily" cockpit
+# (data/commodities.json) from Energy Market Price's public "daily" cockpit
 # (cockpit.energymarketprice.com). No credentials needed — publicly authorized link.
 
 on:
   schedule:
-    - cron: '30 6 * * *'  # 06:30 UTC = 08:30 CET — after the SEFE daily report refreshes
-    # then again through the day: SEFE corrects and completes its cockpit after the morning, and GitHub often starts
+    - cron: '30 6 * * *'  # 06:30 UTC = 08:30 CET — after the Energy Market Price daily report refreshes
+    # then again through the day: Energy Market Price corrects and completes its cockpit after the morning, and GitHub often starts
     # the morning run hours late (11:54 UTC on 23 Oct, not at all before 10:37 on 27 Oct). Each run commits only a change.
     - cron: '7 7 * * *'
     - cron: '43 8 * * *'
@@ -53,7 +53,7 @@ jobs:
         run: python scripts/build_forward_monthly.py || echo "::warning::monthly forward not rebuilt"
       - name: Fetch gas / carbon / coal / oil + FR nuclear availability
         if: steps.due.outputs.run == 'true'
-        # Same SEFE public cockpit; failure must not block the FR market commit.
+        # Same Energy Market Price public cockpit; failure must not block the FR market commit.
         continue-on-error: true
         run: PYTHONPATH=scripts python scripts/fetch_commodities.py
       - name: Commit and push data files
@@ -66,7 +66,7 @@ jobs:
             echo "No data changes — skipping commit."
             exit 0
           fi
-          git commit -m "data: update FR market (SEFE) $(date -u '+%Y-%m-%d %H:%M UTC')"
+          git commit -m "data: update FR market (Energy Market Price) $(date -u '+%Y-%m-%d %H:%M UTC')"
           # Other bots push to main at the same time: on a conflict keep this
           # run's fresh files (-X theirs = the commit being replayed).
           for i in 1 2 3 4 5 6 7 8; do

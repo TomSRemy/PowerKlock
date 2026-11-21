@@ -1,5 +1,5 @@
 // ── NUCLEAR (France) ──────────────────────────────────────────────────
-// Available capacity (actual + operator forecast) from SEFE's cockpit via
+// Available capacity (actual + operator forecast) from Energy Market Price's cockpit via
 // window.PKC; output from the daily ENTSO-E generation files.
 // Installed capacity: 57 reactors incl. Flamanville 3 (RTE, 2025).
 const FR_NUC_INSTALLED_MW = 63000;

@@ -19,7 +19,7 @@ on:
     workflows:
       - Fetch Energy Data
       - Fetch RTE (éCO2mix France, M0 reference prices)
-      - Fetch FR Market Data (SEFE)
+      - Fetch FR Market Data (Energy Market Price)
       - Fetch GO Prices (Commerg)
       - Fetch GO Auctions (EEX FR)
       - Fetch Energy-Charts (capacity, cross-border flows)

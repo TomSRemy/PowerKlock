@@ -14,7 +14,7 @@
   const fmt = (d) => d ? parisDay(d) + ' ' + parisHM(d) : '–';
   const getJSON = (f) => fetch(DATA_BASE + f + (f.includes('?') ? '&' : '?') + 't=' + Date.now()).then(r => r.ok ? r.json() : null).catch(() => null);
   const exists = (f) => fetch(DATA_BASE + f + '?t=' + Date.now(), { method: 'HEAD' }).then(r => r.ok).catch(() => false);
-  // Business days between d and now (SEFE publishes on trading days only).
+  // Business days between d and now (Energy Market Price publishes on trading days only).
   function businessHours(d) {
     let h = 0, t = new Date(d.getTime());
     while (t < Date.now()) { const wd = t.getUTCDay(); if (wd !== 0 && wd !== 6) h++; t = new Date(t.getTime() + H); }

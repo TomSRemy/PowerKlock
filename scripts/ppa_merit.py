@@ -17,7 +17,7 @@ the rest at last year's observed negative depth); French nuclear above its minim
 curve (price ÷ CCGT cost by use of the available fleet); the neighbours' thermal fleet at last year's observed offer
 curve (Germany's price ÷ CCGT cost by use of the fleet, winter and summer); reservoirs on the week's energy, pumped
 storage on the day's spread. Data: éCO2mix (France), Energy-Charts (neighbours, data/history/region_hourly), JAO
-(data/history/jao_core), flows (data/history/flows), SEFE and the World Bank (fuels)."""
+(data/history/jao_core), flows (data/history/flows), Energy Market Price and the World Bank (fuels)."""
 import json, os, glob
 from datetime import date
 import numpy as np
@@ -167,7 +167,7 @@ def costs(days):
     wb = coal_monthly()
     for d in days:
         last = s.get(d, last)
-        # before the SEFE quotes (2022): the World Bank's monthly South African coal (data/history/coal_monthly.json)
+        # before the Energy Market Price quotes (2022): the World Bank's monthly South African coal (data/history/coal_monthly.json)
         cu.append(last if last is not None else wb.get(d[:7], 70.0))
     coal = np.array(cu, float) / usd / 6.98                                        # €/MWh thermal (25.1 GJ/t)
     brent = daily('brent', days) / usd / 1.7

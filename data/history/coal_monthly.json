@@ -1,5 +1,5 @@
 {
-"source": "World Bank, Commodity Markets (Pink Sheet), monthly prices: Coal, South African (Richards Bay), nominal $/t; history before the SEFE API2 series (2022)",
+"source": "World Bank, Commodity Markets (Pink Sheet), monthly prices: Coal, South African (Richards Bay), nominal $/t; history before the Energy Market Price API2 series (2022)",
 "unit": "$/t",
 "months": {
 "2015-01": 59.29,

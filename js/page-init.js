@@ -186,7 +186,7 @@
     if (target === 'spread' && typeof window.renderHistSpread === 'function') {
       setTimeout(() => window.renderHistSpread(), 30);
     }
-    // Forward curve power — FR forward curve, nuclear, market insights (SEFE cockpit)
+    // Forward curve power — FR forward curve, nuclear, market insights (Energy Market Price cockpit)
     if (target === 'forward' && typeof window.renderPrFwd === 'function') {
       setTimeout(() => window.renderPrFwd(), 30);
     }

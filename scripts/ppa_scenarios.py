@@ -572,7 +572,7 @@ def year_share(y, region=True, hydro=False):
 
 def fuel_cost():
     """{date: €/MWh} short-run cost of a gas plant: TTF day-ahead ÷ 0.55 + 0.37 t/MWh × EUA (data/history/
-    commodities_series.json, SEFE daily; EUA before its first point takes its first value), days without a quote carry
+    commodities_series.json, Energy Market Price daily; EUA before its first point takes its first value), days without a quote carry
     the last one"""
     global _FUEL
     if _FUEL is None:

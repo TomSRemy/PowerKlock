@@ -2,7 +2,7 @@
 // COMMODITIES — gas, carbon, coal, oil, FX and FR nuclear availability
 // Source: data/commodities.json (last ~400 days, every page) and
 // data/history/commodities_series.json (full history, on demand), both
-// written by scripts/fetch_commodities.py from SEFE's public cockpit.
+// written by scripts/fetch_commodities.py from Energy Market Price's public cockpit.
 //
 // Also the single home of the fuel-cost conventions used for clean spark /
 // clean dark spreads, so every page computes them the same way.
