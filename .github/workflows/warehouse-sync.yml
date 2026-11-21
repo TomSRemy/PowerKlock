@@ -3,9 +3,12 @@ name: Warehouse sync (Supabase)
 # Mirrors the data files into the PowerKlock PostgreSQL warehouse
 # (warehouse/README.md). Runs after each data fetch, every 6 hours as a
 # safety net, or by hand (tick "full" to reload everything).
-# Right after the sync, scripts/build_drivers.py reads the warehouse and rebuilds
+# Right after the sync, scripts/build_drivers.py reads the warehouse and the data
+# files (they win, so a day the warehouse lacks still counts) and rebuilds
 # data/drivers/frames.json (Markets › What drives the price, and its block on
-# Today); the file is pushed only when a figure changed.
+# Today); the file is pushed only when a figure changed. The data fetch runs
+# about 30 times a day (11:17 and 12:47 UTC for the day-ahead auction) and the RTE
+# job three times: the latest days are shown as provisional frames in between.
 #
 # Needs the repository secret SUPABASE_DB_URL: Supabase → Connect →
 # Session pooler connection string (IPv4; the "Direct" one is IPv6-only and
@@ -15,6 +18,7 @@ on:
   workflow_run:
     workflows:
       - Fetch Energy Data
+      - Fetch RTE (éCO2mix France, M0 reference prices)
       - Fetch FR Market Data (PowerKlock)
       - Fetch GO Prices (Commerg)
       - Fetch GO Auctions (EEX FR)
@@ -85,7 +89,7 @@ jobs:
           WAREHOUSE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
         run: python warehouse/sync.py ${{ inputs.full && '--full' || '' }}
 
-      - name: What drives the price (weekly frames from the warehouse just synced)
+      - name: What drives the price (weekly frames from the warehouse just synced and the data files)
         if: steps.secret.outputs.ok == 'true'
         env:
           WAREHOUSE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}

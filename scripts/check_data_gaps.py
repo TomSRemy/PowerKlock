@@ -13,7 +13,7 @@ Checks (each issue has a stable id, so it is followed run after run):
   commodities Brent, TTF, EUA, API2 coal, EU storage: two business days or more missing in a row
               (last 120 days), or the last close older than 4 business days
   forwards    France Cal+1 settlement older than 4 business days
-  drivers     What drives the price (data/drivers/frames.json): last spot day older than 4 days, or last
+  drivers     What drives the price (data/drivers/frames.json): last final spot day older than 4 days, or last
               forward week older than 4 business days
   cr          ODRÉ output of the parks under complément de rémunération: months up to M-2
   activation  mFRR activation prices, last 60 days
@@ -150,7 +150,8 @@ def _check_drivers(add):
         w = (j.get(k) or {}).get('w') or []
         if not w:
             add('drivers', k, f'What drives the price: no {lab} frames', 'flagged: warehouse sync job (after each data fetch)'); continue
-        lastd = date.fromisoformat(w[-1]['d'])
+        # the spot's latest days can be provisional frames (forecasts, estimated nuclear): watch the last final one
+        lastd = date.fromisoformat((j.get(k) or {}).get('firm') or w[-1]['d'])
         late = bdays_between(lastd, TODAY) > limit if limit else (TODAY - lastd).days > 4
         if late:
             add('drivers', k + ':stale', f'What drives the price: last {lab} week ends on {lastd.isoformat()}', 'flagged: warehouse sync job (after each data fetch)')

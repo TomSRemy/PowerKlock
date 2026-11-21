@@ -4040,6 +4040,8 @@ a.cqp-kpi:hover,.cqp-kpi:hover{border-color:var(--border3)!important}
 .cqp-b2 i{position:absolute;top:0;bottom:0;border-radius:2px}.cqp-bg-rise{background:var(--down)}.cqp-bg-fall{background:var(--up)}
 .cqp-mv{font:600 12px 'JetBrains Mono',monospace;text-align:right}
 .cqp-method{max-width:760px;color:var(--text2);margin:0 2px 10px}
+.cqp-prov{color:var(--warn);font-weight:600;text-transform:none;letter-spacing:0}
+.cqp-pvnote{margin:8px 2px 0;color:var(--text2)}
 .cqp-xlink{margin:8px 2px 0}.cqp-xlink a{color:var(--accent);text-decoration:none}.cqp-xlink a:hover{text-decoration:underline}
 .cqp-today{margin:0 0 12px}.cqp-today .cqp-kpis{margin-bottom:0}
 .cqp-more{font-size:11px;color:var(--accent);text-decoration:none;white-space:nowrap;align-self:center}.cqp-more:hover{text-decoration:underline}
