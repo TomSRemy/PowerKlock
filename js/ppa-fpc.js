@@ -179,7 +179,9 @@
       const Mo = o.monthsOf ? o.monthsOf(y) : null;   // a year delivered in part: its months only
       const pts = F.pts.filter(p => +p.d.slice(0, 4) === y && (!Mo || Mo.includes(+p.d.slice(5, 7))));
       const V = pts.map(p => pAt(p.d, p.h)), P = pts.map(p => p.v);
-      const cal = mean(P), f = profileCost(V, P, null);
+      // (2) stops strictly below 0 on its own curve, as (1) and (3) do on theirs (until 21 Nov. 2026 every hour of the
+      // FPC was paid, so (2) did not give back (3) on the reference year: solar −37.7 % against −30.8 %)
+      const cal = mean(P), f = profileCost(V, P, pos ? P.map(p => p != null && p >= 0) : null, baseAll);
       // the year's cannibalisation: each season's term weighted by the value of the output in that season
       let c = 0, ws = 0;
       SEASONS.forEach(([sn, inS]) => { const cs = seasonOf(y, sn); let w = 0;
