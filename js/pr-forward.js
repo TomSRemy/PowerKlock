@@ -3,7 +3,7 @@
 // ────────────────────────────────────────────────────────────────────────────
 // Source : data/fr_market.json + data/history/fr_market_series.json
 //          + data/history/fr_market_calchain.json
-// (scripts/fetch_fr_market.py — Energy Market Price public cockpit, daily cron)
+// (scripts/fetch_fr_market.py — PowerKlock public cockpit, daily cron)
 //
 // Structure (mirrors the Genmix Daily board's row-drill pattern):
 //   - KPI strip, one card per country

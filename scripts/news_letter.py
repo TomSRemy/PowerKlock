@@ -218,7 +218,7 @@ def markets(today, days=1):
     if "peg" in cs:
         a, b = back(cs["peg"]["points"], days)
         if a:
-            row("Gaz PEG", "PEG gas", a[1], "€/MWh", b[1], "EMP", "markets/fuels")
+            row("Gaz PEG", "PEG gas", a[1], "€/MWh", b[1], "PowerKlock", "markets/fuels")
     if days > 1:
         # one tile per technology: the PPA benchmark (change over the week)
         bm = (dload("history", "ppa_benchmark.json") or {}).get("days") or {}

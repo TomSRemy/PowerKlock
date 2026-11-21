@@ -1,7 +1,7 @@
 // ════════════════════════════════════════════════════════════════════
 // PRICES OVERVIEW (dashboard home) — analyst blocks
 //   · Fuels, carbon & spreads strip (commodities feed + displayed DA day)
-//   · Power forward curves FR / DE / NL / UK (Energy Market Price, UK converted to EUR)
+//   · Power forward curves FR / DE / NL / UK (PowerKlock, UK converted to EUR)
 //   · FR hourly price heatmap, last 14 delivery days (daily history files)
 // Called from prRenderHome() after the core blocks.
 // ════════════════════════════════════════════════════════════════════

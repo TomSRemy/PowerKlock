@@ -1,5 +1,5 @@
 """
-fetch_fr_market.py — Power market data for FR/UK/DE/NL from the Energy Market Price
+fetch_fr_market.py — Power market data for FR/UK/DE/NL from the PowerKlock
 "Market Insights" daily cockpit (cockpit.energymarketprice.com), via its
 public JSON API.
 
@@ -296,7 +296,7 @@ def fetch_market_insights_all(h):
     return out
 
 
-# Tone of Energy Market Price's daily commentaries: the site shows only whether the analysts lean towards rising or easing prices,
+# Tone of PowerKlock's daily commentaries: the site shows only whether the analysts lean towards rising or easing prices,
 # never their text. Same word lists and same rule as the market brief used to apply in the browser (js/market-brief.js):
 # tags replaced by spaces, then (rising words) - (easing words); ASCII word boundaries as in JavaScript.
 TONE_UP = re.compile(r"\b(tight\w*|tense|tension\w*|ris(e|es|ing)|higher|increas\w*|support\w*|firm\w*|bullish|pressure\w*|spik\w*"

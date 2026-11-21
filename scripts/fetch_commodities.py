@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Fetch gas, carbon, coal and oil market data (plus FR nuclear availability)
-from Energy Market Price's public "daily" cockpit — the same source and public link
+from PowerKlock's public "daily" cockpit — the same source and public link
 as fetch_fr_market.py, whose API helpers are reused here.
 
 Writes data/commodities.json:
@@ -208,7 +208,7 @@ def main():
     h = auth_headers(get_token())
     out = {
         "updated": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        "source": "Energy Market Price cockpit (cockpit.energymarketprice.com), public daily link",
+        "source": "PowerKlock",
         "series": {},
         "curves": {},
     }

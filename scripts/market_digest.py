@@ -137,7 +137,7 @@ def run(notes=None):
         except (KeyError, TypeError, ValueError):
             pass
     fm = load("fr_market.json") or {}
-    # Energy Market Price's daily commentaries are not kept (only their tone score: rising words minus easing words, > 0 = leaning up)
+    # PowerKlock's daily commentaries are not kept (only their tone score: rising words minus easing words, > 0 = leaning up)
     mt = fm.get("marketInsightsTone") or {}
     if mt.get("gas") is not None or mt.get("power") is not None:
         payload["notes"].append({"date": mt.get("date"), "kind": "daily energy report, tone score only (> 0 leans to rising prices, < 0 to easing)",

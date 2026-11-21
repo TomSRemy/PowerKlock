@@ -3,7 +3,7 @@ import_cal_history_xlsx.py — one-off import of a user-supplied Excel archive o
 French Cal-year power base forward prices (EEX, digitized from Energy-Charts.info
 PDF charts) into data/history/fr_market_calchain.json.
 
-This extends FR's Cal-year history well beyond what the Energy Market Price cockpit API serves
+This extends FR's Cal-year history well beyond what the PowerKlock API serves
 live (expired contracts return no data there — see fetch_fr_market.py's
 fetch_country_cal_years docstring), from ~2023 back to 2020-12-28.
 

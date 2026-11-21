@@ -1024,7 +1024,7 @@
   }
 
   // ══════════════════════════════════════════════════════════════════════════
-  // PANEL 5 · MARCHE (courbe forward, nucleaire, analyse — source Energy Market Price cockpit)
+  // PANEL 5 · MARCHE (courbe forward, nucleaire, analyse — source PowerKlock)
   // ══════════════════════════════════════════════════════════════════════════
 
   function windowCutoffDates(dates, win) {
@@ -1054,7 +1054,7 @@
       var html = '';
 
       html += '<div class="kpi-strip fr-kpi-strip">';
-      // Energy Market Price dates the day-ahead spot by its auction (trading) day.
+      // PowerKlock dates the day-ahead spot by its auction (trading) day.
       html += kpiCard('Spot FR', num(snap.spot && snap.spot.value, 2), '€/MWh', snap.spot && snap.spot.date ? 'delivery ' + shiftDays(snap.spot.date, 1) : '');
       var y1 = (snap.forwardCurve || []).filter(function (r) { return r.tenor === 'Y+1'; })[0];
       var y2 = (snap.forwardCurve || []).filter(function (r) { return r.tenor === 'Y+2'; })[0];

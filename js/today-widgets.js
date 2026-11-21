@@ -10,7 +10,7 @@
 (function () {
   'use strict';
   if (!window.PKW || typeof _mrnFactsP !== 'function') return;
-  const SRC = 'ENTSO-E · EMP · RTE · PowerKlock';
+  const SRC = 'ENTSO-E · RTE · PowerKlock';
   let seq = 0;
   const nid = p => 'tdw-' + p + '-' + (++seq);
   const fail = host => { host.innerHTML = '<div class="fuel-note">' + _mT('Indisponible pour le moment.', 'Not available right now.') + '</div>'; };

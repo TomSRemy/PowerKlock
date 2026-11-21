@@ -205,7 +205,7 @@ def _check_market_second_sources(add):
         if (mc.get(k) or {}).get('error'):   # a check that compared nothing is a problem, not a pass
             add('mktcheck', f'{k}:error', f"{lab}: second source not compared ({mc[k]['error']})", 'flagged: market job, next run')
         if (mc.get(k) or {}).get('stale_since'):
-            add('mktcheck', f'{k}:stale', f"{lab}: same value every day since {mc[k]['stale_since']} while FRED moves (feed stuck?)", 'flagged: check the Energy Market Price cockpit feed')
+            add('mktcheck', f'{k}:stale', f"{lab}: same value every day since {mc[k]['stale_since']} while FRED moves (feed stuck?)", 'flagged: check the PowerKlock feed')
         for row in ((mc.get(k) or {}).get('days') or [])[-10:]:
             add('mktcheck', f"{row['day']}:{k}", f"{row['day']}: {lab} {row['ours']} here vs {row['ref']} (FRED), {row['pct']} %", 'flagged: market job')
     try:

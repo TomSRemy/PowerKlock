@@ -128,7 +128,7 @@ create table if not exists market.commodity (
   name      text not null,
   unit      text,
   contract  text,
-  source    text not null default 'Energy Market Price cockpit'
+  source    text not null default 'PowerKlock'
 );
 
 create table if not exists market.commodity_close (
@@ -144,7 +144,7 @@ create table if not exists market.forward_settlement (
   tenor       text not null,           -- M+1 … Y+3 (rolling products)
   value       double precision not null,
   currency    text not null,           -- EUR or GBP
-  source      text not null default 'Energy Market Price cockpit',
+  source      text not null default 'PowerKlock',
   primary key (market, trade_date, tenor)
 );
 

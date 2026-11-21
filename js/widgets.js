@@ -10,7 +10,7 @@
 //     id: 'fuel-eua-ttf',            // stable id, saved in user layouts
 //     title: 'EUA & TTF',
 //     category: 'fuels',             // see PKW.CATEGORIES
-//     source: 'EMP',
+//     source: 'PowerKlock',
 //     desc: 'One-line description shown in the catalogue',
 //     page: 'eua',                   // showPage() target for "open source page"
 //     pageCanvas: 'fuel-eua-ttf',    // canvas on that page (gets the ☆ button)

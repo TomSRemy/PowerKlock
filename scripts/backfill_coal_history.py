@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Coal price before the Energy Market Price series (data/history/commodities_series.json 'coal', API2 Cal+1, from January 2022):
+"""Coal price before the PowerKlock series (data/history/commodities_series.json 'coal', API2 Cal+1, from January 2022):
 the World Bank's monthly coal prices (Commodity Markets, "Pink Sheet", CMO-Historical-Data-Monthly.xlsx), South
 African coal (Richards Bay, the closest to the ARA price paid in north-west Europe), $/t, 2015-01 to 2021-12.
 
@@ -36,7 +36,7 @@ def main():
             if isinstance(v, (int, float)):
                 months[f'{k[:4]}-{k[5:]}'] = round(float(v), 2)
     OUT.write_text(json.dumps({'source': 'World Bank, Commodity Markets (Pink Sheet), monthly prices: Coal, South African (Richards Bay), '
-                                         'nominal $/t; history before the Energy Market Price API2 series (2022)', 'unit': '$/t', 'months': months}, indent=0))
+                                         'nominal $/t; history before the PowerKlock API2 series (2022)', 'unit': '$/t', 'months': months}, indent=0))
     print(len(months), 'months', min(months), max(months))
 
 

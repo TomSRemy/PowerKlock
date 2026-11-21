@@ -9,7 +9,7 @@ Two parts.
        flat Cal        Cal × Σ w_m × r_m × c_m ÷ Σ w_m
    w_m = national monthly output share × paid share, c_m = monthly capture rate of a method
    (data/history/ppa_forecast.json), F_m = monthly forward, r_m = historical month ÷ year day-ahead ratio.
-2. Backtest on the complete years (2023-2025): in the last quarter of Y−1, the four quoted quarters of Y (Energy Market Price closes,
+2. Backtest on the complete years (2023-2025): in the last quarter of Y−1, the four quoted quarters of Y (PowerKlock closes,
    data/history/fr_market_contracts_FR.json) against the realised seasonal factor of Y,
        Σ_q E_q × baseload_q ÷ (E_year × baseload_year)
    and against the historical quarter ratios known at the time (complete years since 2016, 2022 left out).

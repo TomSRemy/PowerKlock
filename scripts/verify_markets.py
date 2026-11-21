@@ -7,12 +7,12 @@ Second sources beyond the day-ahead prices (those are in scripts/verify_prices.p
               figures are estimates RTE revises later (30 Oct. 2026: solar 4 282 MW real-time against 4 104 MW at
               Energy-Charts, 4.3 %, on a dull day), and a later run compares them again; a missing or broken day
               still shows at once.
-  brent       Brent (Energy Market Price cockpit, ICE front month) against the Brent spot of the US EIA via FRED
+  brent       Brent (PowerKlock, ICE front month) against the Brent spot of the US EIA via FRED
               (DCOILBRENTEU). Different instruments: the gap is usually within 5 % but the physical spot
               ran 10 to 25 % above the futures in Apr and Sep-Oct 2026. So only what a second source can
               prove is flagged: a gap above 30 % (unit error, wrong contract) and a series that stays
               flat 5 days while FRED moves (stale feed). The monthly mean gap is written as information.
-  eurusd      EUR/USD (Energy Market Price cockpit) against the ECB-based FRED series DEXUSEU, tolerance 0.5 %.
+  eurusd      EUR/USD (PowerKlock) against the ECB-based FRED series DEXUSEU, tolerance 0.5 %.
 Forwards, TTF, EUA, coal: no free second source.
 
     python scripts/verify_markets.py [--days 45]
@@ -133,7 +133,7 @@ def main():
     out = {'updated': datetime.now(timezone.utc).isoformat(timespec='seconds'), 'window': [d0.isoformat(), d1.isoformat()]}
     out['generation'] = generation(d0.isoformat(), d1.isoformat()) or {'error': 'Energy-Charts not reached'}
     out['brent'] = series_check('brent', fred('DCOILBRENTEU'), 0.30, d0.isoformat(), stale_days=5)
-    # Energy Market Price's EUR/USD is taken during the day, FRED's at noon New York: up to 0.6 % apart on a busy day
+    # PowerKlock's EUR/USD is taken during the day, FRED's at noon New York: up to 0.6 % apart on a busy day
     out['eurusd'] = series_check('eurusd', fred('DEXUSEU'), 0.01, d0.isoformat(), stale_days=5)
     json.dump(out, open(OUT, 'w'), indent=0)
     for k in ('generation', 'brent', 'eurusd'):

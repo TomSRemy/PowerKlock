@@ -17,7 +17,7 @@
  *   - Wind / Solar      · REAL (same)
  *   - TTF / EUA         · REAL (data/commodities.json via window.PKC)
  *   - Temp / wind 100 m · REAL (Open-Meteo, hourly, zone reference point)
- *   - Nuclear           · FR: available capacity (Energy Market Price); others: actual output
+ *   - Nuclear           · FR: available capacity (PowerKlock); others: actual output
  *   - Load / net import · REAL when the day carries ENTSO-E load (A65);
  *                         net import = load − total generation
  *   - Mix               · REAL (ENTSO-E A75); days without data stay empty
@@ -300,7 +300,7 @@
       const ttfV = refs.ttf != null ? refs.ttf : ((daily && typeof daily.ttf === 'number') ? daily.ttf : null);
       const ttf = new Array(slotsPerDay).fill(ttfV);
       const eua = new Array(slotsPerDay).fill(refs.eua != null ? refs.eua : null);
-      // Nuclear: FR available capacity (Energy Market Price, daily); other zones actual output
+      // Nuclear: FR available capacity (PowerKlock, daily); other zones actual output
       const frAvail = (zone === 'FR' && window.PKC) ? PKC.valueOn('fr_nuc_avail', dateStr) : null;
       const nucAvail = frAvail != null ? new Array(slotsPerDay).fill(frAvail / 1000) : mix.nuclear.map(v => v == null ? null : v / 1000);
 

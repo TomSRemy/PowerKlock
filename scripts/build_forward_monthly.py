@@ -2,7 +2,7 @@
 """France baseload forward for every month of the quoted horizon, for the PPA pricer's
 monthly periods (a contract that is not a calendar year: April 2027 → November 2028).
 
-For each month, the finest listed liquid contract (last Energy Market Price close; liquid = months M+1 to M+3, quarters Q+1 to Q+4,
+For each month, the finest listed liquid contract (last PowerKlock close; liquid = months M+1 to M+3, quarters Q+1 to Q+4,
 Cals; seasons and further months or quarters are quoted but thinly traded and left out):
   month contract                       → its price
   else quarter                         → quarter × (month ÷ quarter ratio)
@@ -168,7 +168,7 @@ def main():
                 break
     for v in months.values():
         v['value'] = round(v['value'], 2)
-    out = {'asOf': newest, 'source': 'Energy Market Price, last closes, liquid products only (months M+1 to M+3, quarters Q+1 to Q+4, Cals); day-ahead ratios (complete years, 2022 left out)',
+    out = {'asOf': newest, 'source': 'PowerKlock, last closes, liquid products only (months M+1 to M+3, quarters Q+1 to Q+4, Cals); day-ahead ratios (complete years, 2022 left out)',
            'illiquidLeftOut': dropped,
            'ratios': {k: {str(m): round(x, 4) for m, x in v.items()} if isinstance(v, dict) else v for k, v in R.items()}, 'months': months}
     with open(os.path.join(H, 'fr_forward_monthly.json'), 'w') as f:
