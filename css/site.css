@@ -4274,3 +4274,13 @@ span.nl-src { margin: 0; }
 .sp-fh button, .pk-guard-inline { min-height: 24px; box-sizing: border-box; }
 .sp-fh { padding-bottom: 1px; }
 .cmp-chip button { min-width: 24px; min-height: 24px; margin: -4px -6px -4px 0; box-sizing: border-box; }
+
+/* Column headers wrap, never overlap or get cut (Generation table, Compare zones). The Generation table sizes its columns
+   to their content: "Hydraulique" is one word that a fixed 8 % column could not hold at 1024-1280 px; on a phone the
+   table scrolls inside its frame. The Compare zones zone cell puts the country under the code when the column is narrow. */
+#gm-table { table-layout: auto !important; }
+#gm-table thead th, #compare-data-table thead th { white-space: normal; vertical-align: bottom; }
+#gm-table thead th { letter-spacing: .03em; }
+#gm-table th, #gm-table td { padding-left: 7px !important; padding-right: 7px !important; }
+#compare-data-table tbody td:first-child, #compare-data-table tbody td > div { white-space: normal; }
+
