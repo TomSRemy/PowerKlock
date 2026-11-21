@@ -1,7 +1,15 @@
 // ════════════════════════════════════════════════════════════════════
 // TOOLS › PPA PRICER (France, solar or wind, pay-as-produced)
-// Two methods, same data:
-//  · Step by step (default) — every chart of the page is a step of the price:
+// The published price (since 31 Oct. 2026, solar and wind) is the single scenario generator's ('int', o.ppaGen):
+//      value        Σ weight × Cal forward × the generator's capture of each delivery year (scripts/ppa_generator.py,
+//                   data/history/ppa_forecast.json: months, stop threshold, quoted month shape)
+//      risk premium the buyer's risks, each measured (compute, 'dynamic premium'): model error (the replay's 75th
+//                   percentile, growing as √ of the lead beyond the replay's), hedge, volume, liquidity, balancing,
+//                   hedging cost, credit (optional), joined as the root of the sum of squares; the hedge at the ratio
+//                   that minimises the premium unless one is entered; the captured price a share of the spot
+//      PPA price    = value − premium − additional discount − imbalance + GO − margin
+// The other methods, same data, are references next to it:
+//  · Capacity trend ('build', step by step) — every chart of the page is a step of its price:
 //      1 forwards       France Cal baseload (market data), editable
 //      2 cannibalisation shape discount = 1 − capture price ÷ baseload, per
 //                       year (national RTE × day-ahead, or the asset curve ×
@@ -9,10 +17,11 @@
 //                       by default from installed capacity (log fit, PPE3 path)
 //      3 capture value  Σ forward × k × (1 − projected discount), k = quoted-month factor, weighted by the
 //                       expected production and a discount factor
-//      4 risk premium   Monte Carlo (10,000 trajectories: forward path,
+//      4 risk premium   its own Monte Carlo (10,000 trajectories: forward path,
 //                       production, cannibalisation drift, correlated): the
 //                       price whose chance of loss equals the risk accepted
 //      5 PPA price      = value at risk − imbalance + GO − margin
+//  · Forward shape, weather simulation, European model: their own tabs (js/ppa-fpc.js, js/ppa-wx.js, euYears)
 //  · PPA Dashboard — the team's Streamlit formula: Forward − Forward × (shape
 //      discount at a percentile of history + add. discount + volume risk +
 //      price risk) − imbalance + GO − margin (the Streamlit tool added it; deducted here like every method)
@@ -863,9 +872,11 @@
   // Per trajectory and year: the forward moves as one path to delivery (σ·√τ),
   // production varies around its expectation, the shape discount drifts away
   // from its projection (random walk, σ per √year, as in the projection band),
-  // with a correlation between production and that drift. Hedged: the
-  // expected volume is sold forward at the Cal price, so only the volume and
-  // shape risks remain. U = Σ df × (production × spot × (1 − shape discount)
+  // with a correlation between production and that drift. Hedged: a share of
+  // the expected volume (the ratio entered, 100 % by default for the capacity
+  // trend; the generator's runs take every ratio from UA + ratio × UH) is sold
+  // forward at the Cal price, or at the forward of the months delivered for a
+  // part year in the generator's runs. U = Σ df × (production × captured price
   // + hedge result) ÷ Σ df × production: what one MWh of the contract earned.
   function rng(seed) { let a = seed >>> 0; return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
   const qtl = (sorted, q) => { const r = q * (sorted.length - 1), lo = Math.floor(r); return sorted[lo] + (sorted[Math.min(sorted.length - 1, lo + 1)] - sorted[lo]) * (r - lo); };
@@ -1081,11 +1092,11 @@
   }
   // a method left out of the published price for this technology by the weekly leave-one-out check (scripts/ppa_weights.py
   // 'exclude': the replayed average is closer to the realised without it; on 29 Oct. 2026 the forward shape for solar)
-  // the published price of a technology set by the single scenario generator alone (Tom, 30 Oct. 2026: solar; replay
-  // 2020–2025 1–3 years ahead, no correction: 0.87 €/MWh mean error against 1.84 for the average of the methods). Wind
-  // keeps the average until the generator is right for it (it overvalues wind by about 2.4 €/MWh)
-  // (only when the generator's months are there: without them the average of the methods sets it, as before)
-  const GEN_ONLY = () => !!(D && D.fcst && D.fcst.generator);   // since 31 Oct. 2026 for wind too (solar since 30 Oct.)
+  // the published price of a technology set by the single scenario generator alone (Tom, 30 Oct. 2026 for solar: replay
+  // 2020–2025 1–3 years ahead, no correction, 0.87 €/MWh mean error against 1.84 for the average of the methods; since
+  // 31 Oct. 2026 for wind too); only when the generator's months are there: without them the average of the methods
+  // sets it, as before
+  const GEN_ONLY = () => !!(D && D.fcst && D.fcst.generator);
   function outOf(k, st) {
     if (GEN_ONLY(st)) return k !== 'pct' && k !== 'int';
     const X = D && D.weights && D.weights.exclude, t = (st || S).tech === 'wind' ? 'wind' : 'solar';
@@ -1100,7 +1111,7 @@
     return W > 0 ? its.reduce((a, m) => a + wOf(m.k, st) * m[f], 0) / W : null;
   }
   // the integrated method (since 30 Oct. 2026): the single scenario generator, the same for both technologies, no
-  // bias correction (scripts/ppa_generator.py); shown as a test, never in the published price until wind is right
+  // bias correction (scripts/ppa_generator.py); it sets the published price whenever its months are there (GEN_ONLY)
   function integrated(o) {
     return o.ppaGen == null ? { k: 'int', v: null } : { k: 'int', v: o.ppaGen, fair: o.genFair, ref: o.refW };
   }
