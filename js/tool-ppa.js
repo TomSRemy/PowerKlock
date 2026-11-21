@@ -234,9 +234,11 @@
   // how much the technology's captured price moves when the baseload moves by 1 € (Tom 1 Nov. 2026): the same calendar
   // month a year apart, BOTH years within the last two complete years and the running one (pairs that reach back into
   // the 2021–2023 crisis read 0.96 for solar, when its capture rate was near 1), national, in the pricer's convention.
-  // Measured since 2024: solar 0.80 (capture rate 0.73), wind 0.97 (0.89): a little more than the share. On whole years
-  // the share holds better than a discount fixed in euros (replay 2023–2025: 5.2 against 29.5 pts for solar), so the
-  // central capture stays a share; only the Monte Carlo's moves around it use this sensitivity
+  // It reads about 0.88 for solar and 0.86 for wind on the data of 21 Nov. 2026, inflated by the winter months (high
+  // baseload and high capture rate move together) and by the running incomplete month. Used only by the capacity
+  // trend's own Monte Carlo (its price, 'build', is frozen as it is); the published price (the generator) does not use
+  // it: an elasticity study (21 Nov. 2026, PPA review) found the captured price moving as a SHARE of the baseload
+  // (elasticity ≈ 1.09 solar, 1.00 wind), so its € pass-through is each year's capture rate (simulate, r.cg)
   function captureBeta(st) {
     const t = st.tech === 'solar' ? 's' : 'w', c = cols(st), M = {};
     D.cap.forEach(r => { const k = r[0].slice(0, 7), m = M[k] || (M[k] = [0, 0, 0, 0]); m[0] += r[c.P]; m[1] += r[c.N]; m[2] += r[c.R]; m[3] += r[c.E]; });
@@ -246,6 +248,23 @@
     if (xs.length < 9) return null;
     const r = linreg(xs, ys);
     return { beta: clamp(r.sl, 0.3, 1.3), n: xs.length, r2: r.r2, from: y0 };
+  }
+  // the same sensitivity as a diagnostic only, shown in the Hedging section (not used by any price): complete months
+  // only (the running month left out) and each pair weighted by the month's output, so that a month that produces little
+  // weighs little; also the output-weighted capture rate of the same months, the share model's € pass-through
+  function captureBetaDiag(st) {
+    const c = cols(st), M = {};
+    D.cap.forEach(r => { const k = r[0].slice(0, 7), m = M[k] || (M[k] = [0, 0, 0, 0, 0]); m[0] += r[c.P]; m[1] += r[c.N]; m[2] += r[c.R]; m[3] += r[c.E]; m[4]++; });
+    const last = D.cap.length ? D.cap[D.cap.length - 1][0] : null;
+    const full = k => { const y = +k.slice(0, 4), mo = +k.slice(5, 7), dn = new Date(Date.UTC(y, mo, 0)).getUTCDate(); return M[k][4] >= dn && !(last && last.slice(0, 7) === k && +last.slice(8, 10) < dn); };
+    const y0 = thisYear() - 2, P = [];
+    Object.keys(M).forEach(k => { const y = +k.slice(0, 4), pk = (y - 1) + k.slice(4), p = M[pk], m = M[k]; if (y - 1 < y0 || !p || !full(k) || !full(pk) || !m[3] || !p[3]) return;
+      P.push({ x: m[0] / m[1] - p[0] / p[1], y: m[2] / m[3] - p[2] / p[3], w: m[3] + p[3] }); });
+    if (P.length < 9) return null;
+    const W = P.reduce((a, q) => a + q.w, 0), mx = P.reduce((a, q) => a + q.w * q.x, 0) / W, my = P.reduce((a, q) => a + q.w * q.y, 0) / W;
+    let sxy = 0, sxx = 0; P.forEach(q => { sxy += q.w * (q.x - mx) * (q.y - my); sxx += q.w * (q.x - mx) ** 2; });
+    let R = 0, E = 0, B = 0; Object.keys(M).forEach(k => { if (+k.slice(0, 4) < y0 || !full(k) || !M[k][1]) return; R += M[k][2]; E += M[k][3]; B += M[k][3] * M[k][0] / M[k][1]; });
+    return { beta: sxx > 0 ? sxy / sxx : null, n: P.length, from: y0, share: B > 0 ? R / B : null };
   }
   function euYears(o, st, fld = 'regional') {   // fld: 'regional' (central), 'p10' / 'p90' (the simulated weather's spread), 'anchored' (the integrated method, no bias correction)
     const conv = st.conv === 'all' ? 'all' : 'curt';
@@ -528,7 +547,7 @@
     const wavg = k => years.reduce((a, r) => a + r.wt * r[k], 0);
     const refW = wavg('fwd'), fair = wavg('cp'), goW = wavg('go'), sdW = wavg('fsd');
     const o = { st, stAt: { tech: st.tech, conv: st.conv }, biasOf, nat, ast, hist, useAsset, complete, monthsOf, m0, m1, sel: fitRows.map(x => x.year), histSd, reg, lastYr, anchor, proj, fitLine, model, cfit, capOff, capPath: cp, excluded, sig0, sigT,
-      sigL: LIQ && LIQ.sigStep ? LIQ.sigStep : 0, lastQ, liq: LIQ, capBeta: BETA,
+      sigL: LIQ && LIQ.sigStep ? LIQ.sigStep : 0, lastQ, liq: LIQ, capBeta: BETA, capBetaDiag: st.conv === 'pos' ? null : captureBetaDiag(st),
       tenor, negHours, negShare, nhReg, nhFitYears, shLast, fwds, fwdAuto, ref, refW, goVal, goMkt, goW, fair, sdW, volume, mw, lf, degr, disc, imb, margin, add, volRisk, priceRisk, alpha, volStress, spotStress, sigV, sigF, rho, years, auto };
     // Monte Carlo: the realised value of one MWh of the contract, 10,000 trajectories
     if (!st.noMC) o.mc = simulate(o, st);
@@ -668,8 +687,11 @@
         const nat_ = volBeta ? volBeta.beta * sigNat ** 2 / (o.sigV ** 2) : o.useAsset && astFull.length >= 8 ? sigNat ** 2 / (o.sigV ** 2) : 1;
         o.elP = e0 ? e0 * Math.max(0, 1 - (se0 * se0) / (e0 * e0)) * Math.min(1, nat_) : 0;
         // the draws stand on the generator's own capture of each year, not the capacity trend's (21 Nov. 2026, PPA review:
-        // each method is independent, its premium too)
-        const yG = years.map((r, i) => Object.assign({}, r, { fsd: clamp(1 - o.gen[i].capture / ((r.kq || 1) * (r.g || 1) * (r.sr || 1)), 0, 0.95) }));
+        // each method is independent, its premium too), and its captured price moves as a share of the spot: forward ×
+        // the generator's capture of that year (cg, the months delivered and the stop threshold included) × spot ÷
+        // forward, no fitted sensitivity and none of the capacity trend's factors (kq, g, sr: simulate)
+        const yG = years.map((r, i) => Object.assign({}, r, { cg: o.gen[i].capture }));
+        o.yearsGen = yG;
         const run_ = x => simulate(Object.assign({}, o, { sig0: 0, years: yG }, x), st), P = m => o.genFair - qtl(m.Us, alpha / 100);
         const pN = P(run_({ noPriceRisk: true, sigV: 0, sigL: 0 })), pL = P(run_({ noPriceRisk: true, sigV: 0 })), pH = P(run_({ sigV: 0 })), mA = run_({}), pA = P(mA);
         o.premBase = pN;   // the draws with no risk at all: ≈ 0 (a check)
@@ -832,9 +854,12 @@
         const dt = t === 0 ? Math.max(1, r.y - o.lastYr) : 1;
         rw += Math.sqrt(dt) * o.sig0 * (o.rho * zv + rc * gauss());
         const sd = clamp(r.fsd + rw, 0, 0.95);
-        // the captured price: its expected level (forward × capture rate) moved by the measured sensitivity to the spot
-        // (captureBeta); without it, as before, a share of the spot
-        const cap = (o.capBeta ? Math.max(0, r.fwd * (1 - sd) + o.capBeta.beta * (sLW - r.fwd)) : sLW * (1 - sd)) * (r.kq || 1) * (r.g || 1) * (r.sr || 1);
+        // the captured price. The generator's draws (r.cg, the published price): a share of the spot, exactly the
+        // generator's capture of the year × the spot (its drift, when there is one, taken off that share). The capacity
+        // trend's own draws: its expected level (forward × capture rate) moved by the measured sensitivity to the spot
+        // (captureBeta), × its quoted-month, part-year and stop factors
+        const cap = r.cg != null ? sLW * Math.max(0, r.cg - rw)
+          : (o.capBeta ? Math.max(0, r.fwd * (1 - sd) + o.capBeta.beta * (sLW - r.fwd)) : sLW * (1 - sd)) * (r.kq || 1) * (r.g || 1) * (r.sr || 1);
         const v = pr * cap + hr * r.ev * (r.fwd - spotW);   // the share hedged of the expected volume, sold at the Cal
         prod[t][i] = pr; val[t][i] = v; sdM[t][i] = sd; cpM[t][i] = cap; spM[t][i] = sLW;
         num += r.df * v; den += r.df * pr;
