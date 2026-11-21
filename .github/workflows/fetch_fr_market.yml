@@ -47,6 +47,8 @@ jobs:
         run: pip install requests==2.33.1
       - name: Fetch FR market data
         if: steps.due.outputs.run == 'true'
+        env:
+          MARKET_API_URL: ${{ secrets.MARKET_API_URL }}
         run: python scripts/fetch_fr_market.py
       - name: Monthly forward over the quoted horizon
         if: steps.due.outputs.run == 'true'
@@ -55,6 +57,8 @@ jobs:
         if: steps.due.outputs.run == 'true'
         # Same PowerKlock public cockpit; failure must not block the FR market commit.
         continue-on-error: true
+        env:
+          MARKET_API_URL: ${{ secrets.MARKET_API_URL }}
         run: PYTHONPATH=scripts python scripts/fetch_commodities.py
       - name: Commit and push data files
         if: steps.due.outputs.run == 'true'
