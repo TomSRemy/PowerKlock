@@ -2,8 +2,8 @@ name: Fetch FR Market Data (PowerKlock)
 
 # Fetch France power forward curve, spot, nuclear capacity, generation mix,
 # the daily market-insights narrative, and gas/carbon/coal/oil series
-# (data/commodities.json) from PowerKlock's public "daily" cockpit
-# (cockpit.energymarketprice.com). No credentials needed — publicly authorized link.
+# (data/commodities.json) from a public "daily" cockpit.
+# No credentials needed — publicly authorized link.
 
 on:
   schedule:

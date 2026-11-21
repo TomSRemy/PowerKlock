@@ -1,7 +1,6 @@
 """
-fetch_fr_market.py — Power market data for FR/UK/DE/NL from the PowerKlock
-"Market Insights" daily cockpit (cockpit.energymarketprice.com), via its
-public JSON API.
+fetch_fr_market.py — Power market data for FR/UK/DE/NL from a public
+"Market Insights" daily cockpit, via its public JSON API.
 
 No credentials needed: the cockpit is published on a public link ("daily"), and
 PublicAuthorization hands out a reusable Bearer token to anyone who asks.
