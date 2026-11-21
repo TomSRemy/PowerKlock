@@ -186,7 +186,7 @@
         pts.forEach((p, i) => { if (inS(+p.d.slice(5, 7))) w += V[i] * p.v; });   // the output's value in the season, hour by hour
         if (cs == null || !(w > 0)) return; c += w * cs; ws += w; });
       c = ws > 0 ? c / ws : cannibOf(y);
-      const bias = o.biasOf ? o.biasOf('fpc', y) : 0;   // the method's past bias (scripts/ppa_bias.py), where it helps
+      const bias = o.biasOf ? o.biasOf('fpc', y) : 0;   // the method's past bias (scripts/ppa_bias.py): 0 since 21 Nov. 2026 (js/tool-ppa.js BIAS_OFF)
       return { y, cal, fwdCost: f, cannib: c, bias, capture: cal * (1 + f + c - bias), rate: 1 + f + c - bias,
         months: Array.from({ length: 12 }, (_, m) => mean(pts.filter(p => +p.d.slice(5, 7) === m + 1).map(p => p.v))) };
     });

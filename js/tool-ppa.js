@@ -103,11 +103,15 @@
   const FRDOC = () => !window.PKI18n || PKI18n.lang !== 'en';
   // ISO day → '6 Nov 2026' (translated to '6 nov. 2026' by the page); dates on screen are never ISO (STYLEGUIDE § 8)
   const dLongPP = iso => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); return m ? +m[3] + ' ' + ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+m[2] - 1] + ' ' + m[1] : iso; };
+  // the methods whose past bias is measured but no longer taken off their capture (see biasOf): keys of the test bench
+  const BIAS_OFF = { step: true, fpc: true };
   // one sentence on the method's past-bias correction (scripts/ppa_bias.py), in the page's language
   function biasLine(o, k) {
     if (!o || !o.biasOf) return '';
     const v = o.tenor.map(y => [y, o.biasOf(k, y)]).filter(([, b]) => b);
     const fr = FRDOC(), p = b => (b > 0 ? '−' : '+') + (Math.abs(b) * 100).toFixed(1).replace('.', fr ? ',' : '.') + (fr ? ' pt' : ' pts');
+    if (BIAS_OFF[k]) return fr ? ' Pas de correction de biais pour cette méthode : ses erreurs passées à 2 et 3 ans partaient toutes d’une dernière année connue antérieure à la chute de la capture solaire de 2024 ; rejouée sur 2026 depuis 2024 et 2025, la correction dégradait son prix (scripts/ppa_bias.py la mesure toujours).'
+      : ' No bias correction for this method: its past errors 2 and 3 years ahead were all made from a last known year before the 2024 fall of the solar capture; replayed on 2026 from 2024 and 2025, the correction made its price worse (scripts/ppa_bias.py still measures it).';
     if (!v.length) return fr ? ' Pas de correction de biais pour cette méthode ici : sur les erreurs passées, elle n’améliorait pas ses prix (scripts/ppa_bias.py).' : ' No bias correction for this method here: on its past errors it did not improve its prices (scripts/ppa_bias.py).';
     return fr ? ` Correction de biais : sa capture est corrigée de son erreur moyenne passée, à la même distance du dernier exercice complet (années livrées 2018–2025 hors 2022, pricées avec les seules années connues alors) : ${v.map(([y, b]) => y + ' ' + p(b)).join(', ')} ; au rejeu 2024–2026, cette correction réduit son erreur moyenne sur 1 à 3 ans (scripts/ppa_bias.py).`
       : ` Bias correction: its capture is corrected by its mean past error at the same distance from the last complete year (delivery years 2018–2025 without 2022, priced with only the years known then): ${v.map(([y, b]) => y + ' ' + p(b)).join(', ')}; on the 2024–2026 replay this lowers its mean error over 1 to 3 years (scripts/ppa_bias.py).`;
@@ -496,8 +500,13 @@
     const kq = shapeFactors({ tenor }, st);
     // each method's past bias, learnt on its own errors (scripts/ppa_bias.py): taken off its capture where the test
     // showed it helps (data/history/ppa_bias.json 'adopt'); the delivery year's horizon after the last complete year, 1 to 3
+    // Not taken off the two methods anchored on the last complete year (BIAS_OFF: capacity trend, forward shape; audit of
+    // 21 Nov. 2026): their past errors at 2 and 3 years were all made from a last known year before the 2024 fall of the
+    // solar capture, and the pricer now starts from 2025 with a slope that has seen it. Replayed on 2026 (10 complete
+    // months, the pricer's stop rule) from 2024 and 2025, the correction made both worse, solar and wind (8 cases in 8:
+    // solar capacity trend −2.6 → −3.6 and +0.3 → −3.6 €/MWh, forward shape −8.1 → −11.5 and −1.1 → −8.0)
     const biasOf = (k, y) => { const B = D.bias, conv = st.conv === 'all' ? 'all' : st.conv === 'curt' ? 'curt' : null;
-      if (!B || !B.bias || !conv || !((B.adopt[st.tech] || {})[conv] || []).includes(k)) return 0;
+      if (BIAS_OFF[k] || !B || !B.bias || !conv || !((B.adopt[st.tech] || {})[conv] || []).includes(k)) return 0;
       const e = ((B.bias[st.tech] || {})[k] || {})[conv], v = e && e[String(Math.min(3, Math.max(1, y - B.lastYear)))]; return v ? v.value : 0; };
     // a year delivered only in part: its share of the year's output, and its months' value against the whole year's
     const part = partFactors(tenor, monthsOf, st);
