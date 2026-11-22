@@ -676,7 +676,7 @@ def make_pm(Y, st):
 # settled at exactly 0 € in 2026: 9.8 % on quarter-hours, 6.2 % on hourly means) and its value is too high (solar Oct.
 # 2025 – Nov. 2026, value per MWh of potential output 54.97 hourly against 54.23 €). Before Oct. 2025 the four prices
 # of an hour are equal and both give the same. PK_QH_REALISED=1 makes actual() and ppa_scenarios.actual_T() the
-# quarter-hour one (Lot 2, 22 Nov. 2026; off until approved: it moves wind's anchoring and the model-risk premium)
+# quarter-hour one (Lot 2, 22 Nov. 2026; on in the PPA jobs since 22 Nov. 2026, Tom: it moves wind's anchoring and the model-risk premium)
 QH_REALISED = os.environ.get('PK_QH_REALISED') == '1'
 _QH = {}
 

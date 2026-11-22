@@ -657,7 +657,7 @@ STOP_POT = os.environ.get('PK_STOP_POT') == '1'   # with STOP_GRID: also 'curtTp
 # −1 € 1.46 → 1.42 €/MWh mean absolute error, solar 3.05 → 3.01: little gain, not taken
 
 
-QH_SPLIT = os.environ.get('PK_QH_SPLIT') or None   # test (Lot 2, 22 Nov. 2026), off: the split of a park's output
+QH_SPLIT = os.environ.get('PK_QH_SPLIT') or None   # Lot 2, 22 Nov. 2026; 'c2' on for solar since 22 Nov. 2026 (Tom): the split of a park's output
 # between "paid at 0 €" and "stopped below 0 €" at the stop thresholds near 0, which the cells learn on hourly prices
 # while a contract stops the park per quarter-hour (France's day-ahead is quarter-hourly since 1 Oct. 2025). Measured on
 # the quarter-hours, the share of solar output at or below 0 that settles at exactly 0 € is 0.34 in 2024, 2025 and 2026;
@@ -2659,7 +2659,7 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
                             if isinstance(m_, int) and m_ in mT:
                                 mr[m_].setdefault('curtT' + key_, {})[T_] = mT[m_]['curt']
                                 mr[m_].setdefault('paidT' + key_, {})[T_] = mT[m_]['paid']
-                if QH_SPLIT == 'c2':
+                if QH_SPLIT == 'c2' and t == 's':   # solar only: on wind the replay error grew (q75 1.89 → 2.06)
                     # c2: the output at or below 0 split between paid at 0 € and stopped as the last 12 months of
                     # quarter-hours did (before the base-rule rescaling below, which carries it like every T)
                     obs_ = qh_split_obs(t, roll_date())

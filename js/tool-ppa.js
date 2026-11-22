@@ -66,6 +66,14 @@
     const [cap, mkt, goCsv, capa, chain, imbc, ccap, hcan, fcst, fwm, pbias, errR] = await Promise.all([get('history/fr_capture.json'), get('fr_market.json'), fetch(DATA_BASE + 'go_prices.csv').then(r => r.ok ? r.text() : '').catch(() => ''), get('history/capacity.json'), get('history/fr_market_calchain.json'), get('history/fr_imbalance_cost.json'), get('history/country_capture.json'), get('history/hourly_cannib.json'), get('history/ppa_forecast.json'), get('history/fr_forward_monthly.json'), get('history/ppa_bias.json'), get('history/ppa_error_replay.json')]);
     const fwd = {};
     ((mkt && mkt.forwardCurve) || []).forEach(r => { const m = /Cal\s?(\d{4})/.exec(r.contract || ''); if (m && r.value != null) fwd[+m[1]] = r.value; });
+    // the newest close of each Cal: the snapshot (fr_market.json) carries the previous session's settlement until the
+    // next morning, while the Cal chain already holds the day's close by the evening, and the monthly curve reads it:
+    // the newer of the two, so the level and the monthly shape stand on the same session (22 Nov. 2026)
+    let fwdDate = mkt && mkt.forwardCurve && mkt.forwardCurve[0] && mkt.forwardCurve[0].date;
+    const cy = chain && chain.FR && chain.FR.years;
+    if (cy) Object.keys(fwd).forEach(y => { const c = cy[y]; if (!c || !c.dates || !c.dates.length) return;
+      const i = c.dates.length - 1, d = c.dates[i];
+      if (c.values[i] != null && (!fwdDate || d > String(fwdDate).slice(0, 10))) { fwd[+y] = c.values[i]; fwdDate = d; } });
     // GO: latest Commerg mid per production year (AIB renewable)
     const go = {};
     goCsv.split(/\r?\n/).slice(1).forEach(l => { const c = l.split(','); if (c.length < 8 || !/Renewable/i.test(c[4])) return; const bid = parseFloat(c[6]), ask = parseFloat(c[7]); const mid = isFinite(bid) && isFinite(ask) ? (bid + ask) / 2 : isFinite(bid) ? bid : null; if (mid != null && (!go[c[5]] || c[1] >= go[c[5]].d)) go[c[5]] = { d: c[1], v: mid }; });
@@ -98,7 +106,7 @@
         imbCost[k].sdYear = Math.sqrt(v1 / (nEff * 12 / l24.length)); imbCost[k].nSd = l24.length;
       } });
     const fwdRows = ((mkt && mkt.forwardCurve) || []).filter(r => r.value != null).map(r => ({ contract: r.contract, value: r.value }));
-    D = { hc: hcan || null, cc: (ccap && ccap.countries) || null, fwdRows, imbCost, cap: (cap && cap.days) || [], ix, profile: (cap && cap.profile) || {}, capGW, fwd, fwdDate: mkt && mkt.forwardCurve && mkt.forwardCurve[0] && mkt.forwardCurve[0].date, go, fwdVol, fwdVolN, volTerm,
+    D = { hc: hcan || null, cc: (ccap && ccap.countries) || null, fwdRows, imbCost, cap: (cap && cap.days) || [], ix, profile: (cap && cap.profile) || {}, capGW, fwd, fwdDate, go, fwdVol, fwdVolN, volTerm,
       fcst: fcst || null, fwRatio: (fwm && fwm.ratios && fwm.ratios.year) || null, fwM: (fwm && fwm.months) || null, bias: pbias || null, errR: errR || null };
     D.weights = await pwts;
     // hours with a day-ahead price at or below zero, per year (YTD annualised): the hours the PPA Dashboard convention leaves unpaid

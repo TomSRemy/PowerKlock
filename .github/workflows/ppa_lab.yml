@@ -17,6 +17,9 @@ concurrency:
 jobs:
   lab:
     runs-on: ubuntu-latest
+    env:   # the quarter-hour market (since 1 Oct. 2025): realised per quarter-hour, solar's 0 € split as observed (Tom, 22 Nov. 2026)
+      PK_QH_REALISED: '1'
+      PK_QH_SPLIT: c2
     timeout-minutes: 240
     permissions:
       contents: write

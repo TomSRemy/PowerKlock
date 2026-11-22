@@ -160,16 +160,26 @@ def headline(x, tech='', day=''):
 
 
 def forwards_day():
-    """the Paris date of the forwards the pricer read (data/fr_market.json, as js/tool-ppa.js D.fwdDate). The job runs at
+    """the Paris date of the forwards the pricer read (data/fr_market.json, or the Cal chain when newer, as js/tool-ppa.js D.fwdDate). The job runs at
     14:15 UTC but has started as late as 22:16 UTC, after midnight in Paris in summer: the run's own date then named the
     wrong session (PPA review, 21 Nov. 2026). None when the file gives no date"""
     try:
         with open(os.path.join(ROOT, 'data', 'fr_market.json')) as f:
             fc = json.load(f).get('forwardCurve') or []
         d = fc[0].get('date') if fc else None
-        return d[:10] if d and len(d) >= 10 else None
+        d = d[:10] if d and len(d) >= 10 else None
     except (OSError, ValueError, AttributeError):
-        return None
+        d = None
+    # the pricer takes a Cal chain's close when it is newer than the snapshot's (js/tool-ppa.js, 22 Nov. 2026): same date
+    try:
+        with open(os.path.join(ROOT, 'data', 'history', 'fr_market_calchain.json')) as f:
+            ch = json.load(f)['FR']['years']
+        last = max((v['dates'][-1] for v in ch.values() if v.get('dates')), default=None)
+        if last and (d is None or last > d):
+            d = last
+    except (OSError, ValueError, KeyError, TypeError):
+        pass
+    return d
 
 
 def recompute_all():
