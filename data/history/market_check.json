@@ -1,8 +1,8 @@
 {
-"updated": "2026-11-21T10:09:57+00:00",
+"updated": "2026-11-22T07:35:17+00:00",
 "window": [
-"2026-10-06",
-"2026-11-20"
+"2026-10-07",
+"2026-11-21"
 ],
 "generation": {
 "agree_days": 46,
@@ -10,14 +10,14 @@
 "days": []
 },
 "brent": {
-"agree": 31,
+"agree": 30,
 "differ": 0,
 "days": [],
 "tolerance_pct": 30.0,
-"mean_gap_pct": -6.9
+"mean_gap_pct": -6.4
 },
 "eurusd": {
-"agree": 27,
+"agree": 26,
 "differ": 0,
 "days": [],
 "tolerance_pct": 1.0,
