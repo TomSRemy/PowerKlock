@@ -1,6 +1,6 @@
 {
  "name": "PowerKlock data API",
- "updated": "2026-11-22T12:57:34Z",
+ "updated": "2026-11-22T14:22:24Z",
  "usage": "Plain HTTPS GET, JSON, no key. Cite the source of each dataset. Times are Paris delivery days unless stated.",
  "datasets": [
   {
@@ -17,7 +17,7 @@
    "content": "Same content for any delivery day since 2015 (France) / 2020 (other zones).",
    "refresh": "daily",
    "source": "ENTSO-E Transparency Platform",
-   "example": "https://tomsremy.github.io/PowerKlock/data/history/daily/2026-11-22.json"
+   "example": "https://tomsremy.github.io/PowerKlock/data/history/daily/2026-11-23.json"
   },
   {
    "url": "https://tomsremy.github.io/PowerKlock/data/history/monthly/{YYYY-MM}.json",
@@ -33,7 +33,7 @@
    "content": "Per zone, every day: average, min, max, negative hours, peak / off-peak, rolling averages.",
    "refresh": "daily",
    "source": "ENTSO-E Transparency Platform",
-   "sizeKB": 19035
+   "sizeKB": 19041
   },
   {
    "url": "https://tomsremy.github.io/PowerKlock/data/history/fr_prices/{YYYY}.json",
