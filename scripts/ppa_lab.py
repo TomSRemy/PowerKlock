@@ -153,31 +153,71 @@ def cap_guess(c, t, Y, last):
 
 
 def cap_future(c, t, Y):
-    """forecast capacity: France its last yearly pace, never below the PPE3 path; neighbours their last yearly pace"""
-    ys = [y for y in range(2010, 2040) if cap(c, t, y) and (c != 'DE' or y <= date.today().year)]
+    """forecast capacity: France its last yearly pace, never below the PPE3 path; neighbours their last yearly pace, never
+    beyond the line to their official target while that target is ahead. A forecast fleet never shrinks."""
+    # completed years only (PPA review, 21 Nov. 2026): Energy-Charts gives Germany's running year as a year-to-date fleet,
+    # which was read as a year-end figure and slowed the pace; the running year is extrapolated like the years after it
+    ys = [y for y in range(2010, date.today().year) if cap(c, t, y)]
     last = ys[-1]
     if Y <= last:
         return cap(c, t, Y)
+    g0_ = cap(c, t, last)
     if c == 'FR':
         # the last year's pace, never below the PPE3 path (as js/tool-ppa.js capPath; the test bench's own pace)
-        pts = [(last, cap(c, t, last))] + [(y, g) for y, g in PPE3[t].items() if y > last]
+        pts = [(last, g0_)] + [(y, g) for y, g in sorted(PPE3[t].items()) if y > last]
         ppe = None
         for (y0, g0), (y1, g1) in zip(pts, pts[1:]):
             if Y <= y1:
                 ppe = g0 + (g1 - g0) * (Y - y0) / (y1 - y0)
                 break
-        if ppe is None:
+        if ppe is None and len(pts) >= 2:
             (ya, ga), (yb, gb) = pts[-2], pts[-1]
             ppe = gb + (gb - ga) / (yb - ya) * (Y - yb)
-        return max(ppe, cap_guess(c, t, Y, last) or 0)
+        elif ppe is None:
+            # every PPE3 point is behind the last observed year: the path's last pace (between its two last points),
+            # carried on from the last observed fleet
+            (ya, ga), (yb, gb) = sorted(PPE3[t].items())[-2:]
+            ppe = g0_ + (gb - ga) / (yb - ya) * (Y - last)
+        return max(ppe, cap_guess(c, t, Y, last) or 0, g0_)
     g = cap_guess(c, t, Y, last)
+    if g is None:
+        return None
     tg = TARGETS.get(c, {}).get(t)
-    if g is not None and tg and Y > last:
-        # never beyond the straight line from the last known year to the official target (then its slope)
+    if tg and last < tg[0] and g0_ < tg[1]:
+        # never beyond the straight line from the last known year to the official target (then its slope). Once the
+        # target is reached or its year has passed, the line would point down: the last observed pace is carried on
         ty, tv = tg
-        slope = (tv - cap(c, t, last)) / max(1, ty - last)
-        g = min(g, cap(c, t, last) + slope * (Y - last))
-    return g
+        g = min(g, g0_ + (tv - g0_) / (ty - last) * (Y - last))
+    # a fleet that shrank last year is held flat, never extrapolated downwards
+    return max(g, g0_)
+
+
+HORIZON_MIN = 5   # forecast at least this many years past the running year
+
+
+def last_quoted_cal():
+    """the last French Cal year quoted (data/fr_market.json's curve, else the Cal chain), None when neither is readable"""
+    ys = []
+    try:
+        for e in json.load(open(os.path.join(ROOT, 'data', 'fr_market.json'))).get('forwardCurve') or []:
+            c = str(e.get('contract') or '')
+            if e.get('value') is not None and 'Cal' in c:
+                ys += [int(w[3:7]) for w in c.split() if w.startswith('Cal') and w[3:7].isdigit()]
+    except (OSError, ValueError):
+        pass
+    try:
+        ys += [int(y) for y in json.load(open(os.path.join(ROOT, 'data', 'history', 'fr_market_calchain.json')))['FR'].get('years', {})]
+    except (OSError, ValueError, KeyError):
+        pass
+    return max(ys) if ys else None
+
+
+def horizon(today=None):
+    """the delivery years forecast, from the running year to the last quoted Cal, at least HORIZON_MIN years ahead.
+    Until 21 Nov. 2026 (PPA review) this stopped at a fixed 2030: from January 2028 the pricer's default tenor (next
+    year to the last quoted Cal) would have reached a year with no forecast"""
+    y0 = (today or date.today()).year
+    return list(range(y0, max(last_quoted_cal() or 0, y0 + HORIZON_MIN) + 1))
 
 
 # ── regional price model ─────────────────────────────────────────────────────
@@ -1008,7 +1048,7 @@ def ensemble(res):
 
 
 def forecast(res, choice, sims):
-    """monthly capture rates for the pricer: every month from next month to the end of 2030, both conventions"""
+    """monthly capture rates for the pricer: every month from next month to the end of the horizon (horizon()), both conventions"""
     this = date.today()
     past = [y for y in DATA if DATA[y]['complete']]
     last = max(past)
@@ -1019,7 +1059,7 @@ def forecast(res, choice, sims):
         pm = PriceModel([y for y in past if st['with2022'] or y != 2022][-st['window']:], st['regional'], 'mean', st['level'] != 'none')
         train = [y for y in past if y != 2022]
         V = B.S if t == 's' else B.W
-        for Y in range(this.year, 2031):
+        for Y in horizon(this):
             capY = {c: {tt: cap_future(c, tt, Y) for tt in 'sw'} for c in ('FR',) + NEIGH}
             lv = forward_levels(Y) if st['level'] == 'forward' else levels_for(last + 1, 'lastyear') if st['level'] == 'lastyear' else None
             m4, m5, dist = regional(t, Y, past, pm, last, capY, max(60, sims // 2), lv, st['regional'])

@@ -80,7 +80,7 @@ def main():
             mod = sum(w[k] * mods[k[0]][k[1]][conv] for k in ks) / sum(w.values())
             info.setdefault(tech, {})[conv] = {'anchor': f'{win[0][0]}-{win[0][1]:02d}…{win[-1][0]}-{win[-1][1]:02d}', 'factor': round(real / mod, 4),
                                                'realised': round(real, 4), 'model': round(mod, 4)}
-        for Y in range(this.year, 2031):
+        for Y in L.horizon(this):
             capY = {c: {tt: L.cap_future(c, tt, Y) for tt in 'sw'} for c in ('FR',) + L.NEIGH}
             mY, _, _ = L.regional(t, Y, past, pm, A, capY, 0, lvA, st['regional'])
             for conv in ('curt', 'all'):
