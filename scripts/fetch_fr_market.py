@@ -25,7 +25,7 @@ from pathlib import Path
 
 import requests
 
-API = os.environ.get("MARKET_API_URL", "").rstrip("/")  # GitHub secret MARKET_API_URL
+API = os.environ.get("MARKET_API_URL", "").strip().strip('"\'`').rstrip("/.").strip()   # a pasted secret often carries a space, quotes or a final dot  # GitHub secret MARKET_API_URL
 PUBLIC_LINK = "daily"
 COCKPIT_GUID = "169b4b92-d10a-41b1-b018-898c8b78ee06"
 
@@ -186,7 +186,12 @@ BACKFILL_DAYS = 1500  # comfortably covers the FR spot series back to 2022-09; l
 def get_token():
     r = requests.get(f"{API}/Auth/PublicAuthorization", params={"customLink": PUBLIC_LINK}, timeout=20)
     r.raise_for_status()
-    return r.json()["auth"]["access_token"]
+    try:
+        return r.json()["auth"]["access_token"]
+    except ValueError:
+        # the server answered, but with a page instead of the API's JSON: the secret's address is not the API's base
+        sys.exit(f"MARKET_API_URL does not point at the API: {r.status_code} {r.headers.get('content-type', '?')} at path "
+                 f"{requests.utils.urlparse(r.url).path!r} (expected JSON; the value should end with /api)")
 
 
 def auth_headers(token):
