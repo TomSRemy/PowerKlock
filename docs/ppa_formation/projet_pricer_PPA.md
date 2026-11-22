@@ -81,7 +81,7 @@ Dans la cascade, la capture solaire 2027 vaut 60,7 % du Cal (et non 65 %) à cau
 - Le revenu par MWh produit change très peu ; seul le volume livré change.
 - Production solaire vendue à exactement 0 € (quart d'heure) : 0,7 % en 2023, 5,4 % en 2024, 8,2 % en 2025, 9,8 % en 2026. Écart de prix entre « ≤ 0 » et « < 0 » : 0,7 / 2,8 / 4,6 / 9,3 €/MWh livré.
 - Erreur du modèle au 75e centile : 0,76 €/MWh avec « ≤ 0 », 2,26 avec « < 0 ».
-- Le marché day-ahead est au quart d'heure depuis le 1er octobre 2025 ; le générateur apprend sur l'heure. Il voit 24 % des heures creuses à exactement 0 €, contre 34 % réalisé au quart d'heure. Correction livrée mais éteinte (PK_QH_REALISED, PK_QH_SPLIT=c2 pour le solaire) : allumée, prix solaire « < 0 » environ −1 €/MWh.
+- Le marché day-ahead est au quart d'heure depuis le 1er octobre 2025 ; le générateur apprend sur l'heure. Il voit 24 % des heures creuses à exactement 0 €, contre 34 % réalisé au quart d'heure. Correction allumée le 22 nov. 2026 au soir (PK_QH_REALISED=1 partout, PK_QH_SPLIT=c2 pour le solaire seulement) : réalisé au quart d'heure ; en solaire, production à 0 € ou moins partagée entre payée à 0 € et arrêtée comme observé sur 12 mois (rejeu : erreur q75 2,45 → 1,58 €/MWh ; en éolien 1,89 → 2,06, donc pas appliquée). Prix solaire « < 0 » environ −1 €/MWh au prochain calcul hebdomadaire.
 - Obligation d'arrêt aux prix négatifs : parcs OA de 10 MW et plus depuis le 22 déc. 2025 ; parcs OA et CR de plus de 5 MW le 1er déc. 2026 ; de 1 à 5 MW le 1er mars 2027.
 - Conseils : coter les deux clauses ; préférer « à 0 € et en dessous » ; écrire le pas de règlement (quart d'heure) dans le contrat ; si « < 0 » est imposé, prévoir un ajustement d'environ 0,8 €/MWh par point de production réglée à 0 €.
 
@@ -158,7 +158,7 @@ Détail solaire, générateur / tendance (prévu − réalisé) : 2023 à 1 an +
 - Neuf cas de test par filière, quatre ans depuis la rupture de 2024.
 - Ancrage éolien : compense environ 1,1 €/MWh d'écart sur l'année d'apprentissage et 1,3 € de plus l'année suivante, cause non trouvée. Bruit de tirage : 0,7 €/MWh (30 tirages).
 - Erreur du modèle mesurée jusqu'à 12 mois ; extrapolation vérifiée en solaire (rejeu ×1,24 à 2 ans, ×1,53 à 3 ans), hypothèse en éolien (×2,02 et ×0,90 sur 9 cas).
-- Partage 0,00 € / −0,01 € imprévisible ; apprentissage horaire contre marché au quart d'heure.
+- Partage 0,00 € / −0,01 € imprévisible ; corrigé en solaire par le partage observé sur 12 mois (depuis le 22 nov.), pas en éolien.
 - Deux versions défendables du modèle diffèrent de 6 à 10 points de revenu solaire sur 2027-2029 : l'incertitude de modèle solaire est plus large que la prime ne le dit.
 - Couche solaire : coefficient de signe inattendu (plus d'excédent, moins de prix très négatifs).
 - Fourchette P10-P90 sur 60 scénarios, règle de prix différente de celle du prix central.
@@ -178,8 +178,11 @@ Détail solaire, générateur / tendance (prévu − réalisé) : 2023 à 1 an +
 - 21 nov. 2026 : le générateur de scénarios fixe le prix publié ; arrêt strictement sous 0 € ; prime incluse dans le prix, une barre par risque dans la cascade ; biais passé non retiré de la tendance de capacité et de la forme forward.
 - 22 nov. 2026 : mise en ligne (« pousse tout ») de : correction de décembre (année complète seulement une fois terminée ; parc manquant extrapolé, jamais 1 GW) ; horizon glissant (plus de limite 2030) ; parcs voisins jamais en baisse ; pas de repli silencieux sur une autre méthode ; contrôles de fraîcheur des sources ; prime selon l'horizon ; prix capté proportionnel au taux de capture ; ratio de couverture optimal ; livraisons partielles couvertes avec leurs mois ; forme forward avec la bonne règle d'arrêt.
 
+- 22 nov. 2026 au soir (« pousse tout ce qui te paraît bien ») : réalisé au quart d'heure et partage 0 € observé pour le solaire ; chaque Cal = clôture la plus récente entre l'instantané et l'historique des Cal (le pricer avait une séance de retard : 110,99 au lieu de 114,12 pour le Cal 2027 ; sur les données du 20 nov. solaire 40,50 → 41,11, éolien 66,20 → 67,15) ; courbe mensuelle calée sur la moyenne des heures de chaque contrat (mars 743 h, octobre 745 h).
+
+**Bloquant, à faire par Tom :** ajouter le secret GitHub MARKET_API_URL (Settings › Secrets › Actions). Il manque depuis le 21 nov. : la collecte des forwards et des matières premières échoue à chaque passage, les prix restent ceux du 20 nov.
+
 **En ligne mais à trancher :**
-- Allumer le réalisé au quart d'heure et la correction du partage 0 € pour le solaire (effet environ −1 €/MWh).
 - Publier la fourchette du générateur dans l'historique du benchmark.
 - Ancrage éolien : le rendre visible dans la cascade, 300 tirages, 12 mois glissants.
 - Afficher les deux clauses d'arrêt côte à côte ; brancher le testeur d'offre et le pricer court terme sur le générateur.
