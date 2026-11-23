@@ -385,8 +385,7 @@ def main():
             if v is not None:
                 past.append({"year": d0.year, "value": round(v, 2)})
         edition["on_this_day"] = {"today": news_charts.day_avg(today), "past": past} if past else None
-        w, marks = news_charts.week_chart(today, os.path.join(news_charts.IMG, f"{t}_week.png"))
-        edition["week_chart"] = dict(w, img=f"newsletter_img/{t}_week.png", path=None, marks=marks) if w else None
+        edition["week_chart"] = None   # no chart any more (the owner's choice, 23 Nov. 2026)
     charts = {}
     pin_link = pinned(now)
     pin = next((i for i in items if i.get("link") == pin_link), None) if pin_link else None
@@ -420,9 +419,9 @@ def main():
                         "free": [{"source": o["source"], "link": o["link"]} for o in i.get("free") or []] or None,   # paid outlet: the story at free ones
                         "what": clip(what, 360) or None, "what_en": (clip(g.get("what_en"), 360) or None) if what and what == g.get("what") else None,
                         "for_you": (clip(g.get("for_you"), 260) or None) if not EMPTY.search(g.get("for_you") or "") else None, "for_you_en": clip(g.get("for_you_en"), 260) or None})
-        # the lead story's chart, chosen by its own words; one image per chart shared by the profiles
+        # no chart any more (the owner's choice, 23 Nov. 2026): the lead story is text only
         hero = None
-        if out:
+        if False:
             spec = news_charts.pick(out[0]["title"] + " " + (out[0].get("what") or "") + " " + " ".join(i.get("snippet") or "" for i in stories[:1]), today)
             if spec:
                 key = re.sub(r"[^a-z0-9]+", "-", spec["title"].lower())[:40]

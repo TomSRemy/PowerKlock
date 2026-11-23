@@ -196,11 +196,11 @@ async function renderNewsLetter() {
   const wd = d => jours[(new Date(d + 'T12:00:00Z').getUTCDay() + 6) % 7];
   const thL = tags => { const t = _NL_TH.find(x => (tags || []).includes(x[0])); return t ? `<span class="nl-th nl-p-${t[0]}">${_newsT(t[1], t[2])}</span>` : ''; };
   const S = ed.stories || [], parts = [];
-  const wc = E.week_chart;
+  const wc = null;   // no chart any more (the owner's choice, 23 Nov. 2026)
   if (E.weekly && wc) parts.push(`<section class="nl-sec"><h2>${_newsT('Le graphique de la semaine', 'The week’s chart')}</h2><p class="nl-ct">${_newsT('Spot France', 'France spot')} : ${wc.pct < 0 ? '−' : '+'}${num(Math.abs(wc.pct || 0), 0)} % ${_newsT('sur la semaine', 'over the week')}</p>
     <img class="nl-img" src="${DATA_BASE + _newsEsc(wc.img)}" alt="">${(wc.marks || []).map(m => `<p class="nl-mark"><b>${m.n}</b> ${wd(m.date)} ${ddm(m.date)} · ${_newsEsc(en ? m.title_en || m.title : m.title)}</p>`).join('')}
     <div class="nl-src">${_newsT('Moyennes journalières publiées (ENTSO-E).', 'Published daily averages (ENTSO-E).')}${(wc.marks || []).length ? ' ' + _newsT('Les repères situent les événements de la semaine ; ils n’expliquent pas à eux seuls le prix.', 'The markers place the week’s events; they do not explain the price on their own.') : ''}</div></section>`);
-  if (S[0]) { const h = S[0], ch = ed.hero_chart;
+  if (S[0]) { const h = S[0], ch = null;
     parts.push(`<section class="nl-sec nl-hero"><h2>${E.weekly ? _newsT('Le sujet de la semaine', 'Story of the week') : _newsT('À la une', 'Lead story')} ${thL(h.tags)}</h2>
       <div class="nl-hero-in">${ch ? `<figure class="nl-hero-ch"><figcaption>${_newsEsc(ch.title)}</figcaption><img class="nl-img" src="${DATA_BASE + _newsEsc(ch.img)}" alt="${_newsEsc(ch.title)}"><div class="nl-src">${_newsT('Source', 'Source')} : ${_newsEsc(ch.src)} · <a href="#${_newsEsc(ch.page)}">${_newsT('voir sur PowerKlock', 'see on PowerKlock')}</a></div></figure>` : ''}
       <div class="nl-hero-t"><h3>${a(h.link, h.title)}</h3>${(en && h.what_en) || h.what ? `<p>${_newsEsc((en && h.what_en) || h.what)}</p>` : ''}
@@ -259,7 +259,7 @@ async function renderNewsUne() {
   let pid = _newsStore('pk-nl-profile'); if (!P[pid]) pid = P.origination ? 'origination' : Object.keys(P)[0];
   const ed = P[pid], S = (ed.stories || []).slice();
   const pinItem = [...(_newsPins || [])].map(l => (newsData || []).find(i => i.link === l)).find(Boolean);
-  let lead = S[0], chart = ed.hero_chart;
+  let lead = S[0], chart = null;
   if (pinItem && (!lead || lead.link !== pinItem.link)) { lead = { title: pinItem.title, link: pinItem.link, what: pinItem.snippet, tags: pinItem.tags, sources: [pinItem.source].concat((pinItem.other_sources || []).map(o => o.source)) }; chart = null; }
   if (!lead) { host.hidden = true; return; }
   const num = (v, d = 2) => v == null ? '–' : v.toLocaleString(en ? 'en-GB' : 'fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d });

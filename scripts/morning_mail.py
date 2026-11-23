@@ -280,7 +280,7 @@ def journal(today, E, ed, wk, mine):
             f'<p style="{f};font-size:11px;color:#8A8A8A;margin:6px 0 0">Sources : {esc(srcs)}. {"Variation sur la semaine" if wk else "Variation sur la séance précédente"}. Chaque tuile ouvre sa page sur le site.</p></td></tr>')
     body = []
     # ── PowerBrunch: the week's chart first ──
-    wc = E.get('week_chart')
+    wc = None   # no chart any more (the owner's choice, 23 Nov. 2026)
     if wk and wc:
         pct = wc.get('pct')
         ttl = f'Spot France : {"−" if (pct or 0) < 0 else "+"}{abs(pct or 0):.0f} % sur la semaine' + (f', {len(wc["marks"])} événement{"s" if len(wc["marks"]) > 1 else ""} repéré{"s" if len(wc["marks"]) > 1 else ""}' if wc.get('marks') else '')
@@ -295,7 +295,7 @@ def journal(today, E, ed, wk, mine):
     if st:
         h = st[0]
         lab, col = theme_of(h.get('tags'))
-        ch = ed.get('hero_chart')
+        ch = None   # no chart any more (the owner's choice, 23 Nov. 2026)
         chart = (f'<div style="margin:12px 0;padding:10px;border:1px solid #EBEBEB;border-radius:10px"><p style="{f};margin:0 0 6px;font-size:12.5px;font-weight:600;color:#383838">{esc(ch["title"])}</p>{img(ch["img"], ch["title"])}'
                  f'<p style="{f};margin:6px 0 0;font-size:11.5px;color:#6B6B6B">Source : {esc(ch["src"])} · <a href="{SITE}#{esc(ch["page"])}" style="{green}">voir sur PowerKlock</a></p></div>') if ch else ''
         body.append(row(kick(('Le sujet de la semaine' if wk else 'À la une') + (f' · <span style="color:{col}">{lab}</span>' if lab else '')) +

@@ -55,11 +55,21 @@ async function renderNewsHome() {
   // ── the lead: the admin's pick, else the reader's first story, else the most important article ──
   const pin = [...(_newsPins || [])].map(byLink).find(Boolean);
   const st = ((prof && prof.stories) || []).filter(s => s && s.title);
-  let lead = pin ? { title: pin.title, link: pin.link, what: '', tags: pin.topics || pin.tags, sources: [pin.source] } : st[0];
+  // a text always follows the lead's title: the story's summary, else the essentials' line on it, else the outlet's
+  // extract, else who covers it; without a pick, the first story that has a text leads
+  const dig = ((E.digest && (E.digest.items || E.digest)) || []);
+  const textOf = s => { if (!s) return ''; const it = byLink(s.link), d = Array.isArray(dig) ? dig.find(x => x && x.link === s.link) : null;
+    return (en && s.what_en) || s.what || (d && ((en && d.text_en) || d.text)) || _nhSnip(it && it.snippet, s.title) || ''; };
+  let lead = pin ? { title: pin.title, link: pin.link, what: '', tags: pin.topics || pin.tags, sources: [pin.source] } : (st.find(s => textOf(s)) || st[0]);
   if (!lead && items[0]) lead = { title: items[0].title, link: items[0].link, tags: items[0].topics || items[0].tags, sources: [items[0].source] };
   const leadItem = lead && byLink(lead.link);
   if (lead) seen.add(lead.link);
-  const leadWhat = lead ? ((en && lead.what_en) || lead.what || _nhSnip(leadItem && leadItem.snippet, lead.title)) : '';
+  let leadWhat = lead ? textOf(lead) : '';
+  if (lead && !leadWhat) {
+    const outlets = [...new Set([(lead.sources || [])[0] || (leadItem && leadItem.source)].concat(((leadItem && leadItem.other_sources) || []).map(o => o.source)).filter(Boolean))];
+    leadWhat = outlets.length > 1 ? _newsT(`Un sujet suivi par ${outlets.length} médias : ${outlets.slice(0, 4).join(', ')}.`, `A story covered by ${outlets.length} outlets: ${outlets.slice(0, 4).join(', ')}.`)
+      : _newsT(`Publié par ${outlets[0] || 'la source'}${leadItem ? ' le ' + _newsDay(leadItem.date) : ''}. Lire l’article pour le détail.`, `Published by ${outlets[0] || 'the source'}${leadItem ? ' on ' + _newsDay(leadItem.date) : ''}. Read the article for the details.`);
+  }
   const th = tags => { const t = _NL_TH.find(x => (tags || []).includes(x[0])); return t ? _newsT(t[1], t[2]) : ''; };
   const leadH = lead ? `<section class="nh-lead"><span class="nh-k nh-k-lead">${pin && pin.link === lead.link ? _newsT('À la une · choisi par la rédaction', 'Top story · editor’s pick') : _newsT('À la une', 'Top story')}${th(lead.tags) ? ' · ' + _newsEsc(th(lead.tags)) : ''}</span>
     <h2>${_nhA(lead.link, _newsEsc(lead.title))}</h2>${leadWhat ? `<p class="nh-chapo">${_newsEsc(leadWhat)}</p>` : ''}
