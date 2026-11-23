@@ -1,5 +1,5 @@
 name: Probe Modo Energy (temporary)
-# Temporary: checks which public lists of Modo Energy articles exist (feed, sitemap, robots.txt). Removed after reading.
+# Temporary: checks which public lists of Modo Energy articles exist (sitemap, Europe section). Removed after reading.
 on:
   push:
     branches: [claude/brave-dijkstra-0b04zg]
@@ -11,11 +11,15 @@ jobs:
     steps:
       - run: |
           UA="Mozilla/5.0 (PowerKlock news fetcher; +https://github.com/TomSRemy/PowerKlock)"
-          for u in https://modoenergy.com/robots.txt https://modoenergy.com/research https://modoenergy.com/rss.xml https://modoenergy.com/research/rss.xml https://modoenergy.com/feed https://modoenergy.com/research/feed https://modoenergy.com/sitemap.xml https://modoenergy.com/research/en/sitemap.xml; do
-            echo "=== $u"; curl -sL -m 20 -A "$UA" -o /tmp/p -w '%{http_code} %{content_type} %{size_download}\n' "$u" || true
-            head -c 1500 /tmp/p | tr -s '\n' | head -40; echo
-            grep -oiE '<link[^>]+(rss|atom)[^>]*>' /tmp/p | head -5 || true
-            grep -oE 'https://modoenergy\.com/[^"<> ]*sitemap[^"<> ]*' /tmp/p | sort -u | head -20 || true
-            grep -oE 'https://modoenergy\.com/research/[^"<> ]*' /tmp/p | grep -iE 'france|french|/fr' | sort -u | head -15 || true
-            grep -oE 'href="/research/[^"]*"' /tmp/p | sort -u | head -40 || true
-          done
+          echo "=== research sitemap"; curl -sL -m 30 -A "$UA" -o /tmp/s https://modoenergy.com/research/sitemap.xml -w '%{http_code} %{size_download}\n'
+          head -c 1200 /tmp/s; echo
+          echo "urls: $(grep -c '<loc>' /tmp/s)  lastmod: $(grep -c '<lastmod>' /tmp/s)"
+          echo "--- france/french entries (first 30)"; tr '<' '\n' < /tmp/s | grep -E '^(loc|lastmod)>' | paste - - 2>/dev/null | grep -iE 'france|french' | head -30
+          echo "--- newest 25 by lastmod"; tr '<' '\n' < /tmp/s | grep -E '^(loc|lastmod)>' | sed 's/^[a-z]*>//' | paste - - | sort -k2 -r | head -25
+          echo "=== europe section"; curl -sL -m 20 -A "$UA" -o /tmp/e https://modoenergy.com/research/europe -w '%{http_code}\n'
+          grep -oE 'href="/research/[^"]*"' /tmp/e | sort -u | head -60
+          grep -oE 'href="/research/europe/[^"]*"' /tmp/e | sort -u
+          echo "=== one article"; a=$(tr '<' '\n' < /tmp/s | grep '^loc>' | sed 's/^loc>//' | grep -iE 'france|french' | head -1); echo "$a"
+          curl -sL -m 20 -A "$UA" -o /tmp/a "$a"; grep -oE '<title>[^<]*</title>|<meta (property|name)="(og:title|og:description|article:published_time|description)"[^>]*>' /tmp/a | head -8
+          grep -oE 'datePublished"?:"?[^",]*' /tmp/a | head -3
+          echo "=== terms links"; grep -oE 'href="[^"]*(terms|legal)[^"]*"' /tmp/e | sort -u | head
