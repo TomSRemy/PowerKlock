@@ -1,7 +1,7 @@
 // ════════════════════════════════════════════════════════════════════
 // account.js · window.PKAccount — sign-in and cloud storage (Supabase)
 // ────────────────────────────────────────────────────────────────────
-// Sign-in by e-mail link (no password). Each user owns one row in
+// Sign-in by e-mail and password, Google, or a 6-digit code by e-mail. Each user owns one row in
 // public.user_dashboards (schema: supabase/schema.sql), protected by
 // row-level security, so a user only ever reads and writes their own row.
 //
@@ -79,6 +79,24 @@
     if (error) throw error;
   }
 
+  // Google sign-in (Supabase › Authentication › Providers › Google). The button only shows once the provider is on:
+  // the project's public auth settings say so (GET /auth/v1/settings, read with the publishable key).
+  let googleP = null;
+  function googleEnabled() {
+    if (!configured) return Promise.resolve(false);
+    if (!googleP) googleP = fetch(CONFIG.url + '/auth/v1/settings', { headers: { apikey: CONFIG.anonKey } })
+      .then(r => r.ok ? r.json() : null).then(j => !!(j && j.external && j.external.google)).catch(() => false);
+    return googleP;
+  }
+  async function signInGoogle() {
+    await ready();
+    if (!client) throw new Error('Accounts are not configured yet.');
+    const { error } = await client.auth.signInWithOAuth({
+      provider: 'google', options: { redirectTo: location.origin + location.pathname, queryParams: { prompt: 'select_account' } },
+    });
+    if (error) throw error;
+  }
+
   async function setPassword(password) {
     await ready();
     if (!client || !user) throw new Error('Sign in first.');
@@ -139,7 +157,7 @@
 
   window.PKAccount = {
     configured,
-    ready, signIn, verifyCode, signInPassword, setPassword, signOut, load, save,
+    ready, signIn, verifyCode, signInPassword, signInGoogle, googleEnabled, setPassword, signOut, load, save,
     sharedCreate, sharedUpdate, sharedGet,
     get user() { return user; },
     client: () => client,   // supabase-js client (RLS applies), null until ready()
