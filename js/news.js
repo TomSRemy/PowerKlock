@@ -729,7 +729,8 @@ const _newsSubj = i => i.topics || (i.tags || []).filter(t => _NEWS_TOPICS.inclu
 function _newsPills(item) {
   const t = _newsSubj(item); if (!t.length) return '';
   const lab = k => { const x = _NL_TH.find(y => y[0] === k); return x ? _newsT(x[1], x[2]) : _newsTagL(k); };
-  return `<span class="nf-pills">${t.slice(0, 2).map(k => `<span class="nl-pill nl-p-${k} nf-pill" role="button" tabindex="0" data-ftag="${k}" title="${_newsT('Voir tous les articles de ce sujet', 'See every article on this subject')}">${_newsEsc(lab(k))}</span>`).join('')}${t.length > 2 ? `<span class="nf-pmore" title="${_newsEsc(t.slice(2).map(lab).join(' · '))}">+${t.length - 2}</span>` : ''}</span>`;
+  const pill = (k, n) => `<span class="nl-pill nl-p-${k} nf-pill${n > 1 ? ' nf-extra' : ''}" role="button" tabindex="0" data-ftag="${k}" title="${_newsT('Voir tous les articles de ce sujet', 'See every article on this subject')}">${_newsEsc(lab(k))}</span>`;
+  return `<span class="nf-pills">${t.map(pill).join('')}${t.length > 2 ? `<span class="nf-pmore" role="button" tabindex="0" aria-expanded="false" title="${_newsT('Voir les autres sujets', 'Show the other subjects')} : ${_newsEsc(t.slice(2).map(lab).join(' · '))}">+${t.length - 2}</span>` : ''}</span>`;
 }
 
 // selects of the sources and countries present in the feed
