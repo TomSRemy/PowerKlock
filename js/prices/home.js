@@ -123,6 +123,17 @@
       setT('pr-home-kpi-fr-meta', 'FR not loaded');
     }
 
+    // DE (sixth card, shown in the beta layout: tiles go by even numbers)
+    const de = loaded.find(z => z.code === 'DE_LU');
+    if (de) {
+      setV('pr-home-kpi-de-v', `${de.today.toFixed(2)}<span class="pr-home-kpi-unit"> €/MWh</span>`);
+      const yd = _yday(de), meta = document.getElementById('pr-home-kpi-de-meta');
+      if (yd != null && meta) {
+        const diff = de.today - yd;
+        meta.innerHTML = `<span style="color:${diff >= 0 ? 'var(--down)' : 'var(--up)'}">${diff >= 0 ? '▲ +' : '▼ '}${diff.toFixed(2)}</span> vs J-1`;
+      }
+    }
+
     // EU panel avg
     const avg = loaded.reduce((s, z) => s + z.today, 0) / loaded.length;
     setV('pr-home-kpi-eu-v', `${avg.toFixed(2)}<span class="pr-home-kpi-unit"> €/MWh</span>`);
