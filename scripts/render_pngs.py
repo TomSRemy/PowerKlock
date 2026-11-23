@@ -22,7 +22,7 @@ from playwright.sync_api import sync_playwright
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PORT = 8811
-SITE = 'https://tomsremy.github.io/PowerKlock/'
+SITE = 'https://powerklock.com/'
 RAW = 'https://raw.githubusercontent.com/TomSRemy/PowerKlock/png/'
 
 
