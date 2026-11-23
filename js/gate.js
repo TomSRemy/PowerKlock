@@ -43,6 +43,14 @@
   }
   function open(approved) {
     const was = state !== 'open';
+    // signed in from the public page: menus, beta layout and pages were set up for a visitor when the site opened, so
+    // reload once into the full site (the cached approval makes the reload open straight on it, without the bar)
+    if (was && approved) {
+      cache(true);
+      // back from Google or an e-mail link the address still holds the token for a moment (js/dashboard.js clears it)
+      let n = 0; const go = () => (authHash() && n++ < 20) ? setTimeout(go, 250) : location.reload();
+      go(); return;
+    }
     state = 'open'; cache(approved);
     H.classList.remove('pk-public');
     const el = document.getElementById('pk-gate'); if (el) el.remove();
