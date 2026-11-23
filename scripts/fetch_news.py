@@ -479,7 +479,51 @@ def eex_news(now):
     return items
 
 
-PUBLISHERS = {"rte": ("RTE", "rte", rte_news, ["fr", "power", "markets"]), "eex": ("EEX", "eex", eex_news, ["markets"])}
+MODO_SITEMAP = "https://modoenergy.com/research/sitemap.xml"
+MODO_CACHE = Path("data/news_modo.json")
+# Modo Energy's research articles about France and the rest of Europe (their slug names the market); US, Australian and
+# other markets are left out. robots.txt allows every reader; their terms forbid copying or framing the content, so only
+# the title (from the page's <title>) and the link are kept, as for every outlet.
+MODO_EUROPE = re.compile(r"france|french|europe|european|germany|german|spain|spanish|iberia|italy|italian|belgium|belgian|netherlands|dutch|"
+                         r"nordic|poland|polish|austria|switzerland|swiss|\bgb\b|great-britain|britain|entso|\beu\b", re.I)
+
+
+def modo_news(now, days=21, max_pages=12):
+    """Modo Energy research: the research sitemap (every article with its last change), the French version of each recent
+    European article; the page is read once for its title and publication date (cached in data/news_modo.json)."""
+    try:
+        cache = json.loads(MODO_CACHE.read_text())
+    except (OSError, ValueError):
+        cache = {}
+    r = requests.get(MODO_SITEMAP, headers=UA, timeout=40)
+    r.raise_for_status()
+    since = (now - timedelta(days=days)).isoformat()
+    recent = []
+    for loc, mod in re.findall(r"<loc>(https://modoenergy\.com/research/fr/[^<]+)</loc>\s*<lastmod>([^<]+)</lastmod>", r.text):
+        slug = loc.rsplit("/", 1)[-1]
+        if mod >= since and MODO_EUROPE.search(slug.replace("-", " ")):
+            recent.append((mod, loc))
+    items, fetched = [], 0
+    for mod, loc in sorted(recent, reverse=True):
+        c = cache.get(loc)
+        if not c and fetched < max_pages:
+            fetched += 1
+            time.sleep(1)
+            try:
+                page = requests.get(loc, headers=UA, timeout=30).text
+                title = html.unescape((re.search(r"<title>([^<]+)</title>", page) or [None, ""])[1]).split(" - Research | Modo")[0].strip()
+                pub = (re.search(r'article:published_time" content="([^"]+)"', page) or [None, mod])[1]
+                c = cache[loc] = {"title": title, "date": pub}
+            except requests.RequestException:
+                continue
+        if c and c.get("title"):
+            items.append({"title": clean(c["title"], 220), "link": loc, "date": parse_date(c["date"]), "snippet": ""})
+    MODO_CACHE.write_text(json.dumps({k: v for k, v in cache.items() if any(k == x[1] for x in recent)}, ensure_ascii=False, separators=(",", ":")))
+    return items
+
+
+PUBLISHERS = {"rte": ("RTE", "rte", rte_news, ["fr", "power", "markets"]), "eex": ("EEX", "eex", eex_news, ["markets"]),
+              "modo": ("Modo Energy", "modo", modo_news, ["power", "markets"])}
 
 
 OFFICIAL = {"jorf": ("Journal officiel", jorf, ["fr", "regulation", "official"]), "eurlex": ("EUR-Lex", eurlex, ["regulation", "official"])}
@@ -557,6 +601,80 @@ def cluster_stories(out, threshold=0.42):
     return merged
 
 
+# Paid outlets: for each of their recent articles, the same story at outlets readable for free (titles and links only).
+# First the outlets already collected (the story groups), else one press search on the title's key words; a result must
+# share two key words with the title. Cached in data/news_free.json, so an article is searched again at most once after 12 h.
+PAYWALL = re.compile(r"greenunivers|montel|wind ?power ?monthly|les echos|lesechos|contexte|recharge ?news|rechargenews", re.I)
+# words too common in energy news to tie two articles together, and words a search does not need
+GENERIC = set("wind power energy energie energetique solar solaire eolien eolienne eoliennes offshore france francais francaise french "
+              "project projet projects projets prix price prices market marche marches electricite electricity says nouveau nouvelle "
+              "first chief week semaine mwh eur gw mw year annee transition".split())
+QUERY_SKIP = set("malgre comment pourquoi apres avant entre selon face aussi encore toujours amid after before over how why what "
+                 "will could would should faces".split())
+# recurring columns of the paid outlets: nothing to look for elsewhere
+COLUMNS = re.compile(r"agenda de la transition|documents de la semaine|^round-up|^wind power patents|^montel news$|^l.essentiel", re.I)
+FREE_CACHE = Path("data/news_free.json")
+MAX_FREE_SEARCHES = 20
+
+
+def _norm_words(t):
+    import unicodedata
+    t = unicodedata.normalize("NFKD", re.sub(r"\b(?:qu|[cdjlmnst])['’]", "", (t or "").lower())).encode("ascii", "ignore").decode()
+    return {w for w in re.findall(r"[a-z0-9]+", t) if len(w) > 3 and w not in STOP and w not in GENERIC} | set(re.findall(r"\b[a-z]*\d[a-z0-9]+\b", t))
+
+
+def _key_query(title):
+    """the title's names and key words (capitalised words, then the longest), at most four: more would find nothing"""
+    t = re.sub(r"\b(?:[Qq]u|[CDJLMNSTcdjlmnst])['’]", "", re.sub(r"\s*\[[^\]]*\]?\s*$", "", title or ""))   # elisions; a trailing [Marchés] tag
+    toks = [w.strip("«»“”\"'’:,.()[]") for w in re.split(r"[\s/–]+", t)]
+    plain = lambda w: (w.isupper() and w.lower() not in GENERIC) or (_norm_words(w) and not _norm_words(w) <= QUERY_SKIP)  # noqa: E731
+    toks = [w for w in toks if len(w) > 2 and w.lower() not in STOP and not re.fullmatch(r"[\d.,%]+", w) and plain(w)
+            and not re.fullmatch(r"\[?[A-Z]{1,2}\]?", w)]
+    # names: a capital letter, except the first word of the title unless it is an acronym or has a digit
+    caps = [w for k, w in enumerate(toks) if (w[:1].isupper() and (k or w.isupper() or len(toks) < 3)) or any(c.isdigit() for c in w)]
+    rest = sorted((w for w in toks if w not in caps), key=len, reverse=True)
+    return " ".join(list(dict.fromkeys(caps + rest))[:4])
+
+
+def free_coverage(out, now):
+    try:
+        cache = json.loads(FREE_CACHE.read_text())
+    except (OSError, ValueError):
+        cache = {}
+    searches = 0
+    for rec in out:
+        if not PAYWALL.search(rec["source"] + " " + rec["link"]) or COLUMNS.search(rec["title"]):
+            continue
+        found = [{"source": o["source"], "link": o["link"]} for o in rec.get("other_sources") or [] if not PAYWALL.search(o["source"] + " " + o["link"])]
+        c = cache.get(rec["link"]) or {}
+        age = (now - datetime.fromisoformat(rec["date"])).total_seconds() / 3600
+        due = age <= 96 and (not c or (c.get("tries", 0) < 2 and (now - datetime.fromisoformat(c["at"])).total_seconds() > 12 * 3600))
+        if not found and due and searches < MAX_FREE_SEARCHES:
+            q, key = _key_query(rec["title"]), _norm_words(rec["title"])
+            res = []
+            if q:
+                searches += 1
+                time.sleep(3)
+                try:
+                    lang = "en" if re.search(r"montel|windpower", rec["source"], re.I) and not re.search(r"[éèàçù]", rec["title"]) else "fr"
+                    for it in gnews(q, lang):
+                        if PAYWALL.search(it["domain"] + " " + it["link"]) or len(key & _norm_words(it["title"])) < 2:
+                            continue
+                        if it["domain"] not in {r["source"] for r in res}:
+                            res.append({"source": it["domain"], "link": it["link"], "title": it["title"]})
+                except Exception as e:
+                    print(f"  free coverage: {q!r}: {str(e)[:80]}")
+            c = {"at": now.isoformat(timespec="seconds"), "tries": c.get("tries", 0) + 1, "free": res[:3]}
+            cache[rec["link"]] = c
+        found += [f for f in c.get("free") or [] if f["link"] not in {x["link"] for x in found}]
+        if found:
+            rec["free"] = found[:3]
+    links = {r["link"] for r in out}
+    FREE_CACHE.write_text(json.dumps({k: v for k, v in cache.items() if k in links}, ensure_ascii=False, separators=(",", ":")))
+    n = sum(1 for r in out if PAYWALL.search(r["source"] + " " + r["link"]))
+    print(f"  free coverage: {sum(1 for r in out if r.get('free'))} of {n} paid articles, {searches} searches")
+
+
 def main():
     now = datetime.now(timezone.utc)
     cfg = load_config()
@@ -577,7 +695,7 @@ def main():
             continue
         time.sleep(3)
         try:
-            n = add_items(out, gnews(s["q"], s.get("lang", "fr")), {"name": "Search", "cls": "search", "tags": s.get("tags", []) + ["watch"]}, now, PER_SEARCH, {"query": s["q"]})
+            n = add_items(out, gnews(s["q"], s.get("lang", "fr")), {"name": "Search", "cls": "search", "tags": s.get("tags", []) + ["watch"], "require": s.get("require")}, now, PER_SEARCH, {"query": s["q"]})
             status.append({"name": s["q"], "kind": "search", "ok": True, "n": n, "added": bool(s.get("added"))})
         except Exception as e:
             status.append({"name": s["q"], "kind": "search", "ok": False, "error": str(e)[:120], "added": bool(s.get("added"))})
@@ -600,6 +718,7 @@ def main():
     for rec in out:
         rec["impact"] = impact(rec, prefs)
     out = cluster_stories(out)
+    free_coverage(out, now)
     out.sort(key=lambda i: i["date"], reverse=True)
     OUT.parent.mkdir(parents=True, exist_ok=True)
     cons, errs = consultations(now)
