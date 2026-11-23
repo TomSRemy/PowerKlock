@@ -37,7 +37,7 @@
 <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600&family=Outfit:wght@300;400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/site.css">
 </head>
 <body>
@@ -2415,14 +2415,16 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
           <div class="pr-breadcrumb"><span class="pr-breadcrumb-parent pk-bc-static">Intelligence</span><span class="pr-breadcrumb-sep">›</span><span class="pr-breadcrumb-current">News</span></div>
           <div class="pr-tabs-separator"></div>
           <div class="tabs-nav" id="news-tabs" role="tablist">
-            <button class="tab-btn active" data-nv="feed" type="button">The feed</button>
+            <button class="tab-btn active" data-nv="home" type="button">Top stories</button>
+            <button class="tab-btn" data-nv="feed" type="button">Live feed</button>
             <button class="tab-btn" data-nv="official" type="button">Official texts <span class="news-tab-n" id="news-tab-off-n"></span></button>
             <button class="tab-btn" data-nv="letter" type="button">Newsletter</button>
           </div>
           <div class="pr-tabs-bar-filters"><span class="updated-badge" id="news-updated">Loading...</span></div>
         </div>
       </div>
-      <div class="news-view" id="news-v-feed">
+      <div class="news-view" id="news-v-home"><div class="nh" id="nh"><div class="fuel-note">Loading…</div></div></div>
+      <div class="news-view" id="news-v-feed" hidden>
       <div class="hist-section hist-section-strong" id="hs-news-digest" hidden>
         <div class="hist-section-header open" onclick="toggleStrongSection('hs-news-digest')">
           <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h10M4 18h7"/></svg><span id="news-digest-t">The essentials</span><span class="pk-hs-meta" id="news-digest-m"></span></div>
@@ -2430,41 +2432,57 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
         </div>
         <div class="hist-section-body open" id="hs-body-news-digest"><div id="news-digest"></div></div>
       </div>
-      <div class="news-layout">
+      <div class="news-layout nf-layout">
         <div class="news-main">
-          <div class="news-une" id="news-une" hidden></div>
-      <div class="hist-section hist-section-strong" id="hs-news-0">
-        <div class="hist-section-header open" onclick="toggleStrongSection('hs-news-0')">
-          <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="9" y1="4" x2="9" y2="20"/></svg>News<span class="pk-hs-meta">European energy press, official texts, associations · refreshed every hour</span></div>
-          <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+      <div class="nf-wrap" id="hs-news-0">
+        <div id="hs-body-news-0">
+      <div class="nf" id="nf">
+        <div class="nf-bar">
+          <input type="search" id="news-search" class="nf-q" placeholder="Search headlines…" oninput="renderNews(newsData)" aria-label="Search headlines">
+          <div class="nf-chips news-filters">
+            <button class="filter-btn active" data-tag="all" onclick="filterNews('all', this)">All</button>
+            <button class="filter-btn" data-tag="power" onclick="filterNews('power', this)">Power</button>
+            <button class="filter-btn" data-tag="renewables" onclick="filterNews('renewables', this)">Renewables</button>
+            <button class="filter-btn" data-tag="gas" onclick="filterNews('gas', this)">Gas</button>
+            <button class="filter-btn" data-tag="regulation" onclick="filterNews('regulation', this)">Regulation</button>
+            <button class="filter-btn" data-tag="markets" onclick="filterNews('markets', this)">Markets</button>
+            <button class="filter-btn" data-tag="deal" onclick="filterNews('deal', this)">Deals</button>
+            <button class="filter-btn" data-tag="assoc" onclick="filterNews('assoc', this)">Associations</button>
+            <button class="filter-btn" data-tag="mine" onclick="filterNews('mine', this)" title="Articles matching your own keywords">★ Keywords</button>
+          </div>
+          <button type="button" class="nf-fbtn" id="nf-fbtn" aria-expanded="false" aria-controls="nf-pop"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h18M6 12h12M10 19h4"/></svg>Filters <b id="nf-n" hidden></b></button>
+          <div class="nf-pop" id="nf-pop" hidden>
+            <label class="nf-f"><span>Period</span><select id="news-per" class="fuel-select" onchange="renderNews(newsData)"><option value="">Everything collected</option><option value="1">Last 24 hours</option><option value="3">Last 3 days</option><option value="7">Last 7 days</option></select></label>
+            <span class="nf-adv" id="news-advanced">
+              <label class="nf-f"><span>Country</span><select id="news-cty" class="fuel-select" onchange="renderNews(newsData)" aria-label="Country"><option value="">All countries</option></select></label>
+              <label class="nf-f nf-wide"><span>Source</span><select id="news-src" class="fuel-select" onchange="renderNews(newsData)" aria-label="Source"><option value="">All sources</option></select></label>
+            </span>
+            <div class="nf-wide nf-checks">
+              <label class="news-fr"><input type="checkbox" id="news-fr"> France focus</label>
+              <label><input type="checkbox" id="news-offonly" onchange="renderNews(newsData)"> Official texts only</label>
+              <label><input type="checkbox" id="news-freeonly" onchange="renderNews(newsData)"> Free to read only</label>
+            </div>
+            <div class="nf-wide"><span class="nf-k">More subjects</span>
+              <div class="nf-more news-filters">
+                <button class="filter-btn" data-tag="movers" onclick="filterNews('movers', this)" title="What moves prices or the renewable business, last 72 h, highest impact first">Market movers</button>
+                <button class="filter-btn" data-tag="geopolitics" onclick="filterNews('geopolitics', this)">Geopolitics</button>
+                <button class="filter-btn" data-tag="build" onclick="filterNews('build', this)">New capacity</button>
+                <button class="filter-btn" data-tag="carbon" onclick="filterNews('carbon', this)">Carbon</button>
+                <button class="filter-btn" data-tag="report" onclick="filterNews('report', this)">Reports</button>
+                <button class="filter-btn" data-tag="watch" onclick="filterNews('watch', this)" title="Articles found by the keyword searches across the press">Press searches</button>
+              </div>
+            </div>
+            <div class="nf-wide nf-pf"><button type="button" class="pk-btn-ghost" id="nf-reset">Reset</button><button type="button" class="pk-btn-ghost nf-done" id="nf-done">Done</button></div>
+          </div>
         </div>
-        <div class="hist-section-body open" id="hs-body-news-0">
-      <div class="news-modes">
-        <div class="news-seg" role="group" aria-label="Display"><button type="button" class="filter-btn active" data-nm="topics">By story</button><button type="button" class="filter-btn" data-nm="list">All articles</button></div>
-        <div class="news-seg" role="group" aria-label="Order" id="news-sort"><button type="button" class="filter-btn active" data-ns="important">Most important</button><button type="button" class="filter-btn" data-ns="recent">Most recent</button></div>
-        <span class="news-count" id="news-count"></span>
-      </div>
-<div class="news-filters">
-        <button class="filter-btn active" data-tag="all" onclick="filterNews('all', this)">All</button>
-        <button class="filter-btn" data-tag="movers" onclick="filterNews('movers', this)" title="What moves prices or the renewable business, last 72 h, highest impact first; your votes (useful / not useful) teach it"><svg class="nic" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>Market movers</button>
-        <button class="filter-btn" data-tag="geopolitics" onclick="filterNews('geopolitics', this)" title="Conflicts, sanctions, supply routes: what moves gas and power prices"><svg class="nic" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>Geopolitics</button>
-        <button class="filter-btn" data-tag="deal" onclick="filterNews('deal', this)" title="Acquisitions, sales of parks, financings"><svg class="nic" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>Deals</button>
-        <button class="filter-btn" data-tag="build" onclick="filterNews('build', this)" title="Commissionings, construction starts, permits"><svg class="nic" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20h20"/><path d="M5 20V10l7-5 7 5v10"/><path d="M10 20v-5h4v5"/></svg>New capacity</button>
-        <button class="filter-btn" data-tag="power" onclick="filterNews('power', this)"><svg class="nic" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Power</button>
-        <button class="filter-btn" data-tag="gas" onclick="filterNews('gas', this)"><svg class="nic" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>Gas</button>
-        <button class="filter-btn" data-tag="carbon" onclick="filterNews('carbon', this)"><svg class="nic" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>Carbon</button>
-        <button class="filter-btn" data-tag="regulation" onclick="filterNews('regulation', this)"><svg class="nic" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Regulation</button>
-        <button class="filter-btn" data-tag="report" onclick="filterNews('report', this)" title="Reference reports: CRE studies and observatories, RTE reports, renewables barometers and panoramas, residual mix"><svg class="nic" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5"/><path d="M9 17v-3M12 17v-5M15 17v-2"/></svg>Reports</button>
-        <button class="filter-btn" data-tag="assoc" onclick="filterNews('assoc', this)" title="Positions of trade associations and NGOs: SER, UFE, ANODE, France Renouvelables, Enerplan, Eurelectric, SolarPower Europe…"><svg class="nic" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20a6 6 0 0 1 12 0M14 20a5 5 0 0 1 7-4.5"/></svg>Associations</button>
-        <button class="filter-btn" data-tag="markets" onclick="filterNews('markets', this)"><svg class="nic" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Markets</button>
-        <button class="filter-btn" data-tag="watch" onclick="filterNews('watch', this)" title="Articles found by the keyword searches across the press"><svg class="nic" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>Watch</button>
-        <button class="filter-btn" data-tag="mine" onclick="filterNews('mine', this)" title="Articles matching your own keywords (below)">★ My keywords</button>
-        <span class="news-advanced" id="news-advanced">
-          <label class="news-fr" title="Only French news: French sources, and articles that talk about France (RTE, CRE, EDF, PPE…). Combines with the other filters."><input type="checkbox" id="news-fr"> France focus</label>
-          <select id="news-src" class="fuel-select" onchange="renderNews(newsData)" aria-label="Source"><option value="">All sources</option></select>
-          <select id="news-cty" class="fuel-select" onchange="renderNews(newsData)" aria-label="Country"><option value="">All countries</option></select>
-        </span>
-        <input type="search" id="news-search" class="fuel-select" placeholder="Search headlines…" oninput="renderNews(newsData)" style="min-width:200px">
+        <div class="nf-line">
+          <span class="nf-tokens" id="nf-tokens"></span><span class="news-count" id="news-count"></span>
+          <span class="nf-right">
+            <span class="news-seg" role="group" aria-label="Order" id="news-sort"><button type="button" class="filter-btn active" data-ns="recent">Most recent</button><button type="button" class="filter-btn" data-ns="important">Most important</button></span>
+            <span class="news-seg" role="group" aria-label="Display"><button type="button" class="filter-btn active" data-nm="list">All articles</button><button type="button" class="filter-btn" data-nm="topics">By story</button></span>
+            <button type="button" class="nf-save" id="nf-save" title="Show these filters as a section of your Top stories page">☆ Add to my home page</button>
+          </span>
+        </div>
       </div>
 <div class="news-grid" id="news-grid">
         <div class="empty-state" style="grid-column:1/-1"><span class="spinner"></span> Loading news feeds...</div>
@@ -2472,13 +2490,7 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
         </div>
       </div>
         </div>
-        <aside class="news-aside">
-          <div class="news-side" id="news-side-mk" hidden><div class="news-side-t">Markets this morning</div><div id="news-mk"></div></div>
-          <div class="news-side" id="news-side-fig" hidden><div class="news-side-t">Figure of the day</div><div id="news-fig"></div></div>
-          <div class="news-side" id="news-side-cons" hidden>
-            <div class="news-side-t"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>Consultations closing soon</div>
-            <div id="news-cons-mini"></div>
-          </div>
+        <aside class="news-aside nf-tools" aria-label="Tools of the feed">
       <div class="hist-section hist-section-strong" id="hs-news-posts" hidden>
         <div class="hist-section-header open" onclick="toggleStrongSection('hs-news-posts')">
           <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 11v5M8 8v.01M12 16v-5M12 13a2 2 0 0 1 4 0v3"/></svg>Posts to read<span class="pk-hs-meta">LinkedIn posts shared by the team · the most useful go into Monday's digest</span></div>
@@ -5285,6 +5297,8 @@ price    = gas cost × 1 / (1 + exp(−(a − b × (coverage − 100)))) × (1 �
             <p class="meth-p">Modo Energy publishes no feed: its research articles are read from the research sitemap (<code>modoenergy.com/research/sitemap.xml</code>, every article with its last change), French version, articles of the last 21 days about France and the rest of Europe only (the market is in the article's address). Each new page is read once for its title and publication date (<code>data/news_modo.json</code>). Their robots.txt allows every reader; their terms forbid copying the content, so only the title and the link are kept.</p>
             <h3 class="meth-h3">Also free to read</h3>
             <p class="meth-p">GreenUnivers, Montel, Windpower Monthly, Les Echos, Contexte and Recharge are paid. For each of their articles of the last four days (recurring columns aside), the collection looks for the same story at outlets free to read: first among the articles already collected (the same story group), else one press search on the title's names and key words (Google News, last 7 days, paid outlets left out). A result is kept only when its title shares at least two key words with the article's, words common to all energy news (wind, power, energy, price…) not counted. At most three links, titles and links only; an article is searched at most twice, 12 hours apart (<code>data/news_free.json</code>). An exclusive has no free equivalent: no line is shown.</p>
+            <h3 class="meth-h3">Subjects and sections</h3>
+            <p class="meth-p">Each article gets its own subjects from its title and summary only (regulation, renewables, markets, gas, deals, new capacity, geopolitics, carbon, power), not from the outlet it comes from. The pills beside an article show its first two subjects; the sections of Top stories use them, and an article appears once, in the first section of the reader's order. The order and the sections shown follow the reader's choices (Customise); the profile and France first are those of the newsletter.</p>
             <h3 class="meth-h3">Ranking (The feed, most important)</h3>
             <p class="meth-p">Each article gets a score: its strongest category (geopolitics 3, regulation 2, deals 2, new capacity 1.5, gas 1.5, renewables 1.5, markets 1, carbon 1, power 0.5) plus half of the others; +1 for an official text, −1.5 off topic; France +1.5, Europe +1; readers' votes adjust sources, categories and words (±3 at most). The list then takes 0.3 per day of age and 0.6 per article of the same outlet already placed above.</p>
             <h3 class="meth-h3">Newsletter and reading profiles</h3>
@@ -5474,6 +5488,8 @@ prix     = coût gaz × 1 / (1 + exp(−(a − b × (couverture − 100)))) × (
             <p class="meth-p">Modo Energy ne publie pas de flux : ses articles de recherche sont lus dans le plan du site (<code>modoenergy.com/research/sitemap.xml</code>, chaque article avec sa dernière modification), en version française, et seulement ceux des 21 derniers jours sur la France et le reste de l’Europe (le marché figure dans l’adresse de l’article). Chaque nouvelle page est lue une fois pour son titre et sa date de publication (<code>data/news_modo.json</code>). Leur robots.txt autorise tous les lecteurs ; leurs conditions interdisent de copier le contenu : seuls le titre et le lien sont gardés.</p>
             <h3 class="meth-h3">Aussi en accès libre</h3>
             <p class="meth-p">GreenUnivers, Montel, Windpower Monthly, Les Echos, Contexte et Recharge sont payants. Pour chacun de leurs articles des quatre derniers jours (hors rubriques récurrentes), la collecte cherche le même sujet chez des médias en accès libre : d’abord parmi les articles déjà collectés (le même groupe de sujet), sinon par une recherche presse sur les noms et mots-clés du titre (Google News, 7 derniers jours, médias payants exclus). Un résultat n’est gardé que si son titre partage au moins deux mots-clés avec celui de l’article, sans compter les mots communs à toute l’actualité de l’énergie (éolien, énergie, prix…). Trois liens au plus, titres et liens seulement ; un article est cherché deux fois au plus, à 12 heures d’intervalle (<code>data/news_free.json</code>). Une exclusivité n’a pas d’équivalent gratuit : aucune ligne ne s’affiche.</p>
+            <h3 class="meth-h3">Sujets et rubriques</h3>
+            <p class="meth-p">Chaque article reçoit ses propres sujets d’après son titre et son résumé seulement (régulation, renouvelables, marchés, gaz, transactions, nouvelles capacités, géopolitique, carbone, électricité), et non d’après le média qui le publie. Les bulles à côté d’un article montrent ses deux premiers sujets ; les rubriques d’À la une s’en servent, et un article n’y paraît qu’une fois, dans la première rubrique de l’ordre choisi par le lecteur. L’ordre et les rubriques affichées suivent ses choix (Personnaliser) ; le profil et la priorité France sont ceux de sa newsletter.</p>
             <h3 class="meth-h3">Classement (Le fil, plus importants)</h3>
             <p class="meth-p">Chaque article reçoit une note : sa catégorie la plus forte (géopolitique 3, régulation 2, transactions 2, nouvelles capacités 1,5, gaz 1,5, renouvelables 1,5, marchés 1, carbone 1, électricité 0,5) plus la moitié des autres ; +1 pour un texte officiel, −1,5 hors sujet ; France +1,5, Europe +1 ; les votes des lecteurs ajustent sources, catégories et mots (±3 au plus). La liste retire ensuite 0,3 par jour d’ancienneté et 0,6 par article du même média déjà placé au-dessus.</p>
             <h3 class="meth-h3">Newsletter et profils de lecture</h3>
@@ -5666,6 +5682,7 @@ prix     = coût gaz × 1 / (1 + exp(−(a − b × (couverture − 100)))) × (
 <script src="js/pk-autotools.js"></script>
 <script src="js/market.js"></script>
 <script src="js/news.js"></script>
+<script src="js/news_home.js"></script>
 <script src="js/analysis.js"></script>
 <script src="js/pk-forecast.js"></script>
 <script src="js/market-analysis.js"></script>
