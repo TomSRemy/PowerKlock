@@ -8,7 +8,7 @@ data files: no call to any service except the mail server.
 
 Environment (GitHub secrets)
   SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, ALERT_FROM   the same mail server as the alerts
-  MORNING_TO        recipients, comma-separated; without it (or without SMTP) the mail is only printed
+  MORNING_TO        no longer used: only the readers who asked for it in the site get the newsletter
   MORNING_DRY_RUN=1 print the mail, send nothing
 
     python scripts/morning_mail.py
@@ -436,7 +436,7 @@ def main():
     pid = os.environ.get('MORNING_PROFILE') or 'origination'
     if has_letter and pid in E['profiles']:
         subject, text, html = render_letter(today, E, pid)
-    # each reader who chose it in the site gets the edition of their profile; the team list (MORNING_TO) the default one
+    # each reader who asked for it in the site gets the edition of their profile(s); nobody else
     personal = []
     if has_letter:
         for r in readers(today, weekly):
@@ -458,9 +458,9 @@ def main():
         else:
             print('::warning::preview not sent: the SMTP_HOST, SMTP_USER and SMTP_PASS secrets are not set')
         return 0
-    seen = {m[0][0].lower() for m in personal}
-    to = [x.strip() for x in (os.environ.get('MORNING_TO') or '').split(',') if x.strip() and x.strip().lower() not in seen]
-    mails = ([(to, subject, text, html)] if to else []) + personal
+    # only the readers who asked for it in the site (public.news_profile): no list, no automatic sending (the owner, 23 Nov. 2026)
+    to = []
+    mails = personal
     ready = all(os.environ.get(k) for k in ('SMTP_HOST', 'SMTP_USER', 'SMTP_PASS')) and mails
     if os.environ.get('MORNING_DRY_RUN') == '1' or not ready:
         print(subject + '\n\n' + text + ('' if ready else '\n(not sent: SMTP_* or recipients missing)'))
@@ -469,7 +469,7 @@ def main():
         print(f'{len(personal)} personal edition(s) prepared')
         return 0
     send(mails)
-    print('sent:', len(to), 'on the team list,', len(personal), 'personal edition(s)')
+    print('sent:', len(personal), 'edition(s), to the readers who asked for it')
     return 0
 
 
