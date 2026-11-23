@@ -177,7 +177,13 @@ def parse_date(s):
         try:
             d = datetime.fromisoformat(s.replace("Z", "+00:00"))
         except ValueError:
-            return None
+            # Drupal feeds (ACER): "Fri, 11/20/2026 - 15:03", month first, Brussels time
+            m = re.search(r"(\d{1,2})/(\d{1,2})/(\d{4})(?:\s*-\s*(\d{1,2}):(\d{2}))?", s)
+            if not m:
+                return None
+            from zoneinfo import ZoneInfo
+            mo, dd, y, hh, mi = (int(x) if x else 0 for x in m.groups())
+            d = datetime(y, mo, dd, hh, mi, tzinfo=ZoneInfo("Europe/Brussels"))
     if d.tzinfo is None:
         d = d.replace(tzinfo=timezone.utc)
     return d.astimezone(timezone.utc)
