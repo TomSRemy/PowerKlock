@@ -1033,7 +1033,7 @@
         <div class="pkd-code" id="pkd-code" hidden><label class="pkd-field"><span>Code received by e-mail</span>
           <input id="pkd-in-code" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="123456"></label>
           <button type="button" class="pk-btn-primary" id="pkd-code-go">Sign in</button></div>
-        <div class="pkd-form-foot"><button type="button" class="pk-btn-ghost" data-close>Cancel</button><button type="submit" class="pk-btn-primary" id="pkd-in-go">Sign in</button></div>
+        <div class="pkd-form-foot"><a class="pkd-link pkd-privacy" href="privacy.html" target="_blank" rel="noopener">Privacy</a><button type="button" class="pk-btn-ghost" data-close>Cancel</button><button type="submit" class="pk-btn-primary" id="pkd-in-go">Sign in</button></div>
       </form>`, root => {
       const msg = root.querySelector('#pkd-in-msg'), go = root.querySelector('#pkd-in-go');
       const mailEl = root.querySelector('#pkd-in-email'), pwEl = root.querySelector('#pkd-in-pw');

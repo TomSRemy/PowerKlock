@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0a0d12">
+<title>PowerKlock · Confidentialité / Privacy</title>
+<meta name="description" content="Données personnelles enregistrées par PowerKlock, pourquoi, où et comment les supprimer.">
+<link rel="icon" href="assets/logo-header.png">
+<script>
+  // French by default; English with ?lang=en or when the site was switched to English in this browser (pk-lang)
+  try { if (/[?&]lang=en/.test(location.search) || (!/[?&]lang=fr/.test(location.search) && localStorage.getItem('pk-lang') === 'en')) document.documentElement.lang = 'en'; } catch (_) {}
+</script>
+<style>
+  :root { --bg: #0a0d12; --bg2: #11161e; --text: #e6e9ef; --text2: #a9b1bf; --border: #232b37; --accent: #f5a524; }
+  @media (prefers-color-scheme: light) { :root { --bg: #f7f8fa; --bg2: #ffffff; --text: #141922; --text2: #4a5363; --border: #dde2ea; --accent: #b86e00; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.6 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 24px 16px 64px; }
+  header { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+  header img { height: 28px; }
+  header .sp { flex: 1; }
+  a { color: var(--accent); }
+  .lang a { margin-left: 10px; font-size: 13px; }
+  h1 { font-size: 26px; line-height: 1.25; margin: 0 0 6px; }
+  h2 { font-size: 17px; margin: 28px 0 8px; }
+  p, li { color: var(--text2); overflow-wrap: anywhere; }
+  ul { padding-left: 20px; }
+  .date { font-size: 13px; color: var(--text2); }
+  .box { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; }
+  html[lang="fr"] [lang="en"], html[lang="en"] [lang="fr"] { display: none; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <a href="./"><img src="assets/logo-header.png" alt="PowerKlock" translate="no"></a>
+    <span class="sp"></span>
+    <span class="lang"><a href="?lang=fr">FR</a><a href="?lang=en">EN</a></span>
+  </header>
+
+  <div lang="fr">
+    <h1>Confidentialité</h1>
+    <p class="date">Mise à jour : 23 novembre 2026</p>
+    <p class="box"><span translate="no">PowerKlock</span> est un tableau de bord des marchés français et européens de l’électricité. Les données de marché sont publiques. Cette page décrit les seules données personnelles que le site enregistre : celles de votre compte et de votre usage du site.</p>
+
+    <h2>Ce qui est enregistré</h2>
+    <ul>
+      <li><b>Votre compte :</b> votre adresse e-mail, la date de création et l’état du compte (en attente, validé, refusé), les rubriques auxquelles vous avez accès. Avec « Continuer avec Google » : votre nom, votre adresse e-mail et votre photo de profil Google, rien d’autre (aucun accès à Gmail, à votre agenda ni à vos fichiers). Un mot de passe n’est jamais conservé en clair.</li>
+      <li><b>Ce que vous créez :</b> vos tableaux de bord, alertes, préférences de newsletter, mots-clés, votes sur les articles, liens que vous partagez et notes envoyées avec le bouton « Note ».</li>
+      <li><b>Mesure d’audience :</b> pour chaque page ouverte, un identifiant aléatoire propre à votre navigateur, la page, le site d’où vous venez, le type d’appareil et, si vous êtes connecté, votre compte. Ces lignes sont gardées 13 mois.</li>
+      <li><b>Dans votre navigateur :</b> votre session de connexion et vos préférences d’affichage (langue, thème, dernier e-mail saisi). Ni publicité, ni traceur tiers, ni revente.</li>
+    </ul>
+
+    <h2>Pourquoi</h2>
+    <p>Pour vous connecter, garder vos réglages d’un appareil à l’autre, vous envoyer les e-mails que vous avez choisis (newsletter, alertes, code de connexion) et améliorer le site. Base légale : l’exécution du service que vous demandez en créant un compte, et l’intérêt légitime pour la mesure d’audience.</p>
+
+    <h2>Où</h2>
+    <p>Les comptes et vos contenus sont hébergés par Supabase dans l’Union européenne (Irlande). Le site est servi par Cloudflare. Les e-mails passent par Gmail. Seul l’administrateur du site peut voir la liste des comptes ; chaque utilisateur ne voit que ses propres données.</p>
+
+    <h2>Vos droits</h2>
+    <p>Vous pouvez consulter, corriger ou supprimer vos données, et fermer votre compte, à tout moment : envoyez une note avec le bouton « Note » du site, ou répondez à un e-mail de <span translate="no">PowerKlock</span>. Les newsletters se désactivent dans votre compte. Vous pouvez aussi saisir la CNIL (cnil.fr).</p>
+  </div>
+
+  <div lang="en">
+    <h1>Privacy</h1>
+    <p class="date">Updated: 23 November 2026</p>
+    <p class="box"><span translate="no">PowerKlock</span> is a dashboard of the French and European power markets. Market data is public. This page describes the only personal data the site keeps: that of your account and of your use of the site.</p>
+
+    <h2>What is kept</h2>
+    <ul>
+      <li><b>Your account:</b> your e-mail address, when the account was created and its status (pending, approved, refused), and the sections you can open. With « Continue with Google »: your Google name, e-mail address and profile picture, nothing else (no access to Gmail, your calendar or your files). A password is never stored in clear.</li>
+      <li><b>What you create:</b> your dashboards, alerts, newsletter choices, keywords, votes on articles, links you share and notes sent with the « Note » button.</li>
+      <li><b>Audience:</b> for each page opened, a random identifier of your browser, the page, the site you came from, the kind of device and, when you are signed in, your account. These rows are kept 13 months.</li>
+      <li><b>In your browser:</b> your sign-in session and display choices (language, theme, last e-mail typed). No advertising, no third-party tracker, nothing sold.</li>
+    </ul>
+
+    <h2>Why</h2>
+    <p>To sign you in, keep your settings across devices, send the e-mails you chose (newsletter, alerts, sign-in code) and improve the site. Legal basis: providing the service you ask for when you create an account, and legitimate interest for audience measurement.</p>
+
+    <h2>Where</h2>
+    <p>Accounts and your content are hosted by Supabase in the European Union (Ireland). The site is served by Cloudflare. E-mails go through Gmail. Only the site’s administrator can see the list of accounts; each user sees only their own data.</p>
+
+    <h2>Your rights</h2>
+    <p>You can see, correct or delete your data, and close your account, at any time: send a note with the site’s « Note » button, or reply to a <span translate="no">PowerKlock</span> e-mail. Newsletters are switched off in your account. You may also contact the CNIL, the French data protection authority (cnil.fr).</p>
+  </div>
+</main>
+</body>
+</html>
