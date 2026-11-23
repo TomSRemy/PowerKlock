@@ -397,6 +397,72 @@
         "power"
       ],
       "require": "électri|electricit|photovolta|solaire|éolien|eolien|offshore|nucléaire|nucleaire|\\bedf\\b|engie|totalenergies|\\brte\\b|\\bcre\\b|enedis|hydrogène|batterie|stockage|renouvelable|pompe à chaleur|\\bppa\\b|énergie|energie|réseau électrique|gaz|agrivolta|biogaz|biométhane|biomethane|méthanis|ombrière|ombriere|hydroélectri|géotherm|chaleur renouvelable|\\bcee\\b|certificats d.économies"
+    },
+    {
+      "name": "ACER",
+      "cls": "official",
+      "url": "https://www.acer.europa.eu/rss.xml",
+      "tags": [
+        "regulation",
+        "markets",
+        "power"
+      ]
+    },
+    {
+      "name": "reNEWS",
+      "cls": "renews",
+      "url": "https://renews.biz/feed/",
+      "tags": [
+        "power",
+        "renewables"
+      ]
+    },
+    {
+      "name": "L'Écho du solaire",
+      "cls": "echosolaire",
+      "url": "https://www.lechodusolaire.fr/feed/",
+      "tags": [
+        "fr",
+        "renewables",
+        "power"
+      ]
+    },
+    {
+      "name": "Actu-Environnement",
+      "cls": "actuenv",
+      "url": "https://www.actu-environnement.com/flux/rss/energie/",
+      "tags": [
+        "fr",
+        "power"
+      ]
+    },
+    {
+      "name": "L'EnerGeek",
+      "cls": "energeek",
+      "url": "https://lenergeek.com/feed/",
+      "tags": [
+        "fr",
+        "power"
+      ],
+      "require": "électri|electricit|photovolta|solaire|éolien|eolien|offshore|nucléaire|nucleaire|\\bedf\\b|engie|totalenergies|\\brte\\b|\\bcre\\b|enedis|hydrogène|batterie|stockage|renouvelable|pompe à chaleur|\\bppa\\b|énergie|energie|réseau électrique|gaz"
+    },
+    {
+      "name": "La Tribune",
+      "cls": "latribune",
+      "url": "https://www.latribune.fr/feed.xml",
+      "tags": [
+        "fr"
+      ],
+      "require": "électri|electricit|photovolta|solaire|éolien|eolien|offshore|nucléaire|nucleaire|\\bedf\\b|engie|totalenergies|\\brte\\b|\\bcre\\b|enedis|hydrogène|batterie|stockage|renouvelable|pompe à chaleur|\\bppa\\b|énergie|energie|réseau électrique|gaz"
+    },
+    {
+      "name": "Energy Live News",
+      "cls": "energylive",
+      "url": "https://www.energylivenews.com/feed/",
+      "tags": [
+        "power"
+      ],
+      "require": "electricit|power|renewable|wind|solar|battery|storage|grid|nuclear|energy|gas|hydrogen|ppa|ofgem|neso|carbon|offshore|interconnect|capacity"
     }
   ],
   "pages": [
@@ -825,6 +891,117 @@
       ],
       "lang": "fr",
       "require": "électri|electricit|photovolta|solaire|éolien|eolien|offshore|nucléaire|nucleaire|\\bedf\\b|engie|totalenergies|\\brte\\b|\\bcre\\b|enedis|hydrogène|batterie|stockage|renouvelable|pompe à chaleur|\\bppa\\b|énergie|energie|réseau électrique|gaz"
+    },
+    {
+      "q": "site:auroraer.com",
+      "tags": [
+        "power",
+        "markets"
+      ],
+      "lang": "en"
+    },
+    {
+      "q": "site:iea.org electricity OR power OR renewables OR gas OR nuclear",
+      "tags": [
+        "power",
+        "markets"
+      ],
+      "lang": "en"
+    },
+    {
+      "q": "site:renewablesnow.com France OR French",
+      "tags": [
+        "fr",
+        "renewables"
+      ],
+      "lang": "en"
+    },
+    {
+      "q": "site:solarpowerportal.co.uk",
+      "tags": [
+        "renewables"
+      ],
+      "lang": "en"
+    },
+    {
+      "q": "site:current-news.co.uk",
+      "tags": [
+        "power",
+        "markets"
+      ],
+      "lang": "en"
+    },
+    {
+      "q": "site:euractiv.com electricity OR energy OR renewables OR power",
+      "tags": [
+        "regulation",
+        "power"
+      ],
+      "lang": "en"
+    },
+    {
+      "q": "site:euractiv.fr électricité OR énergie OR renouvelables",
+      "tags": [
+        "regulation",
+        "power"
+      ],
+      "lang": "fr"
+    },
+    {
+      "q": "site:lesechos.fr électricité OR énergie OR EDF OR renouvelables OR nucléaire",
+      "tags": [
+        "fr",
+        "power"
+      ],
+      "lang": "fr",
+      "require": "électri|electricit|photovolta|solaire|éolien|eolien|offshore|nucléaire|nucleaire|\\bedf\\b|engie|totalenergies|\\brte\\b|\\bcre\\b|enedis|hydrogène|batterie|stockage|renouvelable|pompe à chaleur|\\bppa\\b|énergie|energie|réseau électrique|gaz"
+    },
+    {
+      "q": "site:usinenouvelle.com électricité OR énergie OR renouvelables OR nucléaire OR batteries",
+      "tags": [
+        "fr",
+        "power"
+      ],
+      "lang": "fr",
+      "require": "électri|electricit|photovolta|solaire|éolien|eolien|offshore|nucléaire|nucleaire|\\bedf\\b|engie|totalenergies|\\brte\\b|\\bcre\\b|enedis|hydrogène|batterie|stockage|renouvelable|pompe à chaleur|\\bppa\\b|énergie|energie|réseau électrique|gaz"
+    },
+    {
+      "q": "site:techniques-ingenieur.fr électricité OR énergie OR renouvelables OR stockage",
+      "tags": [
+        "fr",
+        "power"
+      ],
+      "lang": "fr",
+      "require": "électri|electricit|photovolta|solaire|éolien|eolien|offshore|nucléaire|nucleaire|\\bedf\\b|engie|totalenergies|\\brte\\b|\\bcre\\b|enedis|hydrogène|batterie|stockage|renouvelable|pompe à chaleur|\\bppa\\b|énergie|energie|réseau électrique|gaz"
+    },
+    {
+      "q": "site:rechargenews.com",
+      "tags": [
+        "renewables"
+      ],
+      "lang": "en"
+    },
+    {
+      "q": "site:rystadenergy.com power OR electricity OR renewables OR battery OR solar OR wind",
+      "tags": [
+        "markets"
+      ],
+      "lang": "en"
+    },
+    {
+      "q": "site:lcp.com/en/insights energy",
+      "tags": [
+        "power",
+        "markets"
+      ],
+      "lang": "en"
+    },
+    {
+      "q": "site:contexte.com énergie",
+      "tags": [
+        "regulation"
+      ],
+      "lang": "fr"
     }
   ]
 }

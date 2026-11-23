@@ -604,7 +604,7 @@ def cluster_stories(out, threshold=0.42):
 # Paid outlets: for each of their recent articles, the same story at outlets readable for free (titles and links only).
 # First the outlets already collected (the story groups), else one press search on the title's key words; a result must
 # share two key words with the title. Cached in data/news_free.json, so an article is searched again at most once after 12 h.
-PAYWALL = re.compile(r"greenunivers|montel|wind ?power ?monthly", re.I)
+PAYWALL = re.compile(r"greenunivers|montel|wind ?power ?monthly|les echos|lesechos|contexte|recharge ?news|rechargenews", re.I)
 # words too common in energy news to tie two articles together, and words a search does not need
 GENERIC = set("wind power energy energie energetique solar solaire eolien eolienne eoliennes offshore france francais francaise french "
               "project projet projects projets prix price prices market marche marches electricite electricity says nouveau nouvelle "
