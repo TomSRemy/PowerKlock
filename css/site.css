@@ -4259,6 +4259,36 @@ span.nl-src { margin: 0; }
 .nl-me-help a { color: var(--accent); }
 .nl-ics p { margin: 6px 0; font-size: 12.5px; color: var(--text2); line-height: 1.5; } .nl-ics code { font-size: 12px; word-break: break-all; }
 .nl-tile .nl-sub { color: var(--text2); margin-top: 2px; }
+/* newsletter: tiles in the dark header, every tile the same height; a subject pill at the right of each article */
+.nl-head .nl-tiles { margin-top: 12px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.nl-head .nl-tile { background: #151c24; border-color: #243447; color: #B8C9D9; min-height: 88px; }
+.nl-head .nl-tile b { color: #FFFFFF; }
+.nl-head .nl-tile small { color: #7A93AB; }
+.nl-head .nl-tile i.up { color: #ED6965; }
+.nl-head .nl-tile i.dn { color: #14D3A9; }
+.nl-head .nl-tile .nl-sub { color: #B8C9D9; }
+.nl-head .nl-src { color: #7A93AB; }
+.nl-head .nl-tiles:has(.nl-sub) .nl-tile { min-height: 108px; }
+@media (max-width: 560px) { .nl-head .nl-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.nl-pill { display: inline-block; flex: none; font-size: 11px; font-weight: 600; line-height: 1; padding: 4px 8px; border-radius: 999px; background: var(--bg4); color: var(--text2); white-space: nowrap; }
+.nl-p-renewables { color: #14D3A9; } .nl-p-gas { color: #E8A33D; } .nl-p-regulation { color: #ED6965; } .nl-p-deal { color: #A78BFA; }
+.nl-p-markets, .nl-p-build { color: #6CB4F5; } .nl-p-power { color: #14D3A9; }
+.nl-ul li { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
+.nl-st-h { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
+.nl-st-h .nl-pill { margin-top: 3px; }
+.nl-cons td.nl-pc { text-align: right; width: 1%; white-space: nowrap; padding-left: 10px !important; }
+.pkd-code { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; }
+.pkd-code .pkd-field { flex: 1 1 160px; }
+.pkd-pw { display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; margin: 6px 0; }
+.pkd-pw .pkd-field { flex: 1 1 220px; }
+.pkd-link { background: none; border: 0; padding: 0; color: var(--accent); font: inherit; font-size: 12.5px; cursor: pointer; text-align: left; }
+.pkd-acc { margin-top: 14px; border-top: 1px solid var(--border); padding-top: 10px; display: flex; flex-direction: column; gap: 6px; max-height: 260px; overflow-y: auto; }
+.pkd-acc-t { font-size: 12px; font-weight: 600; color: var(--text2); }
+.pkd-acc-r { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 13px; padding: 4px 0; }
+.pkd-acc-e { display: flex; flex-direction: column; min-width: 0; overflow-wrap: anywhere; }
+.pkd-acc-e small { color: var(--text3); font-size: 11px; }
+.pkd-acc-b { display: flex; gap: 6px; flex: none; }
+.pkd-acc-s { font-size: 12px; color: var(--text2); margin: -2px 0 6px; } .pkd-acc-s summary { cursor: pointer; color: var(--accent); } .pkd-acc-s div { display: flex; flex-wrap: wrap; gap: 6px 12px; margin: 6px 0 4px; } .pkd-acc-s small { color: var(--text3); }
 /* Beta switch (js/beta.js): off by default; the owner compares the new page layout with the current one */
 .pk-beta-btn { width: auto; padding: 0 9px; font-size: 11px; font-weight: 600; letter-spacing: .02em; }
 .pk-beta-btn.on { color: var(--accent); border-color: var(--accent); background: rgba(20, 211, 169, .1); }
@@ -4267,6 +4297,53 @@ span.nl-src { margin: 0; }
 .pk-beta .pk-beta-read { margin: 0 0 14px; }
 .pr-breadcrumb-parent-beta { color: var(--text2); font-family: 'JetBrains Mono', monospace; }
 .pk-beta tr.zone-row.pk-beta-hl > td { background: rgba(20, 211, 169, .07); }
+/* newsletter tab, journal layout (as the e-mail) */
+.nl-tt { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; }
+.nl-wx { display: flex; align-items: center; gap: 6px; font-size: 12px; line-height: 1.25; color: var(--text2); }
+.nl-wx span { display: flex; flex-direction: column; } .nl-wx b { color: var(--text); } .nl-wx small { color: var(--text3); font-size: 11.5px; }
+.nl-img { display: block; width: 100%; height: auto; border-radius: 8px; background: #fff; }
+.nl-ct { margin: 0 0 8px; font-size: 16px; font-weight: 600; color: var(--text); }
+.nl-mark { margin: 6px 0 0; font-size: 13.5px; color: var(--text2); } .nl-mark b { display: inline-flex; width: 18px; height: 18px; border-radius: 50%; background: #B8322D; color: #fff; font-size: 11px; align-items: center; justify-content: center; margin-right: 4px; }
+.nl-hero-in { display: flex; gap: 18px; align-items: stretch; flex-wrap: wrap; }
+.nl-hero-ch { flex: 1 1 300px; min-width: 0; margin: 0; background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 6px; }
+.nl-hero-ch figcaption { font-size: 12.5px; font-weight: 600; color: var(--text2); }
+.nl-hero-t { flex: 1 1 280px; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.nl-hero-t h3 { margin: 0; font: 700 23px/1.22 Georgia, 'Times New Roman', serif; } .nl-hero-t h3 a { color: var(--text); text-decoration: none; }
+.nl-hero-t p { margin: 0; font-size: 14.5px; line-height: 1.55; color: var(--text2); }
+.nl-ret { border-left: 3px solid var(--accent); padding-left: 10px; color: var(--text) !important; } .nl-ret b { color: var(--accent); }
+.nl-th { display: block; font-size: 11.5px; font-weight: 700; margin-bottom: 3px; color: var(--text3); }
+.nl-sec h2 .nl-th { display: inline; margin-left: 4px; }
+.nl-fig { display: flex; align-items: center; gap: 16px; } .nl-fig > b { font: 700 32px 'JetBrains Mono', monospace; white-space: nowrap; } .nl-fig > b.dn { color: var(--up); } .nl-fig > b.up { color: var(--down); }
+.nl-fig h2 { margin-bottom: 4px; } .nl-fig p { margin: 0; font-size: 14.5px; color: var(--text2); }
+.nl-brief { margin: 0; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 14px; line-height: 1.45; } .nl-brief .nl-th { display: inline; margin-right: 4px; }
+.nl-brief a { color: var(--text); text-decoration: none; }
+.nl-ahead table { border-collapse: collapse; font-size: 13.5px; } .nl-ahead td { padding: 5px 12px 5px 0; vertical-align: top; color: var(--text2); } .nl-ahead td:first-child { font-weight: 700; color: var(--text); white-space: nowrap; }
+.nl-ahead a { color: var(--text); text-decoration: none; }
+.nl-src a, .nl-hero-ch a { color: var(--accent); text-decoration: none; }
+.news-card-f { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.news-row-f { display: flex; align-items: center; gap: 6px; }
+.news-pinb { font: inherit; font-size: 11.5px; padding: 4px 9px; border-radius: 999px; border: 1px solid var(--border2); background: transparent; color: var(--text3); cursor: pointer; white-space: nowrap; }
+.news-pinb:hover { color: var(--accent); border-color: var(--accent); }
+.news-pinb.on { background: var(--accent-dim); color: var(--accent); border-color: rgba(20,211,169,.4); }
+/* News › The feed, top « façon journal » */
+.news-une { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
+.news-une-lead { display: flex; background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; min-height: 300px; }
+.news-une-lead.nochart { min-height: 0; }
+.news-une-ch { flex: 0 0 50%; margin: 0; background: var(--bg3); border-right: 1px solid var(--border); padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+.news-une-ch figcaption { font-size: 12.5px; font-weight: 600; color: var(--text2); }
+.news-une-ch img { flex: 1; width: 100%; min-height: 0; object-fit: contain; background: #fff; border-radius: 8px; }
+.news-une-t { flex: 1; min-width: 0; padding: 18px 20px; display: flex; flex-direction: column; gap: 9px; }
+.news-une-k { font-size: 11.5px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--text3); }
+.news-une-th { margin-left: 4px; }
+.news-une-t h2 { margin: 0; font: 700 24px/1.22 Georgia, 'Times New Roman', serif; } .news-une-t h2 a { color: var(--text); text-decoration: none; }
+.news-une-t p { margin: 0; font-size: 15px; line-height: 1.55; color: var(--text2); }
+.news-une-t .nl-src { margin-top: auto; }
+.news-une-more { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.news-une-more article { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 5px; }
+.news-une-more h3 { margin: 0; font: 700 15.5px/1.3 Georgia, 'Times New Roman', serif; } .news-une-more h3 a { color: var(--text); text-decoration: none; }
+.news-une-more .news-une-th { margin: 0; font-size: 11.5px; font-weight: 700; }
+.news-mk { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+@media (max-width: 900px) { .news-une-lead { flex-direction: column; } .news-une-ch { flex-basis: auto; border-right: 0; border-bottom: 1px solid var(--border); } .news-une-more { grid-template-columns: 1fr; } }
 
 /* Clickable targets: 24 px at least (WCAG 2.5.8, STYLEGUIDE § 7). Period buttons were 19 px high, the sub-toggles of
    the sticky bar 23 px, "Edit" of the tools 22 px; link-like buttons keep their line and get the height by padding. */

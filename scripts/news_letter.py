@@ -27,7 +27,8 @@ from datetime import date, datetime, timedelta, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from morning_mail import load as dload, spot   # noqa: E402
-from news_digest import PARIS, PROXY, sid, similar, top_posts   # noqa: E402
+from news_digest import PARIS, PROXY, energy, focus, sid, similar, top_posts   # noqa: E402
+import news_charts   # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, "data", "newsletter.json")             # 7 O'Klock, every weekday at 7:00
@@ -87,7 +88,7 @@ def score(i, prof, now):
 
 
 def pick(items, prof, now, hours, n=3):
-    cands = [i for i in items if (age_h(i, now) or 1e9) <= hours and "official" not in (i.get("tags") or [])]   # texts have their own section
+    cands = [i for i in items if (age_h(i, now) or 1e9) <= hours and "official" not in (i.get("tags") or []) and energy(i)]   # texts have their own section
     cands.sort(key=lambda i: -score(i, prof, now))
     out, seen_src = [], set()
     for i in cands:
@@ -104,7 +105,7 @@ def pick(items, prof, now, hours, n=3):
     return out
 
 
-def ask(prof, stories, official):
+def ask(prof, stories, official, model=None):
     payload = {"sujets": [{"id": sid(i), "titre": i["title"], "medias": [i["source"]] + [o["source"] for o in i.get("other_sources") or []],
                            "extrait": (i.get("snippet") or "")[:320]} for i in stories],
                "textes_officiels": [o["title"] for o in official[:5]]}
@@ -112,7 +113,7 @@ def ask(prof, stories, official):
            "messages": [{"role": "user", "content": json.dumps(payload, ensure_ascii=False)}]}
     # a model of the proxy's list (Worker powerklock-ai). Qwen3 30B wrote the most useful « Pour vous » in a comparison
     # of the free models on the same stories (16 Nov. 2026); NEWS_MODEL overrides it
-    msg["model"] = os.environ.get("NEWS_MODEL") or MODEL
+    msg["model"] = model or os.environ.get("NEWS_MODEL") or MODEL
     req = urllib.request.Request(PROXY, data=json.dumps(msg).encode(), headers={"Content-Type": "application/json", "User-Agent": "PowerKlock-newsletter"})
     r = json.load(urllib.request.urlopen(req, timeout=150))
     parts = [b.get("text") for b in r.get("content", []) if b.get("type") == "text"]
@@ -238,6 +239,75 @@ def markets(today, days=1):
     return rows
 
 
+def pinned(now):
+    """the story the admin put at the top in the last 36 hours (public.news_pin, warehouse migration 027), or None"""
+    db = os.environ.get("SUPABASE_DB_URL")
+    if not db:
+        return None
+    try:
+        import psycopg
+        with psycopg.connect(db, connect_timeout=15, prepare_threshold=None) as conn, conn.cursor() as cur:
+            cur.execute("select link from public.news_pin where pinned_at >= %s order by pinned_at desc limit 1", (now - timedelta(hours=36),))
+            r = cur.fetchone()
+            return r[0] if r else None
+    except Exception as e:      # the newsletter must not depend on the database
+        print("  pin not read:", str(e)[:160])
+        return None
+
+
+def figure_of_day(today):
+    """the figure of the day: the spot's move on the day before when it is large (15 % or more), with how long since a
+    larger one; else the hours at 0 € or below of the day; else none"""
+    t, y = news_charts.day_avg(today), news_charts.day_avg(today - timedelta(days=1))
+    if t is not None and y:
+        pct = (t / y - 1) * 100
+        if abs(pct) >= 15:
+            k, since = 2, None
+            while k <= 365:
+                a, b = news_charts.day_avg(today - timedelta(days=k - 1)), news_charts.day_avg(today - timedelta(days=k))
+                if a is not None and b and abs(a / b - 1) * 100 >= abs(pct) and (a / b - 1) * pct > 0:
+                    since = k - 1
+                    break
+                k += 1
+            word = "baisse" if pct < 0 else "hausse"
+            when = (f"la plus forte {word} depuis {since} jours" if since and since > 7 else f"la plus forte {word} de la semaine" if since else f"la plus forte {word} depuis un an")
+            when_en = (f"the largest {'fall' if pct < 0 else 'rise'} in {since} days" if since and since > 7 else f"the largest {'fall' if pct < 0 else 'rise'} of the week" if since else f"the largest {'fall' if pct < 0 else 'rise'} in a year")
+            v = f"{'−' if pct < 0 else '+'}{abs(pct):.0f} %"
+            return {"value": v, "dir": "dn" if pct < 0 else "up",
+                    "text": f"Le spot France passe de {y:.0f} € à {t:.0f} € le MWh en 24 h : {when}.",
+                    "text_en": f"France spot moves from €{y:.0f} to €{t:.0f} per MWh in 24 h: {when_en}.", "src": "ENTSO-E", "page": "markets/spot"}
+    n = news_charts.day_neg(today)
+    if n:
+        return {"value": f"{n:.0f} h", "dir": "dn", "text": f"{n:.0f} heures à 0 € ou moins aujourd'hui en France.", "text_en": f"{n:.0f} hours at €0 or below today in France.",
+                "src": "ENTSO-E", "page": "markets/spot/negative"}
+    return None
+
+
+def weather(today):
+    """the market's weather, from the spot's move on the day before: clearing (prices down 10 % or more), storm (up 20 %
+    or more), cloudy otherwise"""
+    t, y = news_charts.day_avg(today), news_charts.day_avg(today - timedelta(days=1))
+    if t is None or not y:
+        return None
+    pct = (t / y - 1) * 100
+    if pct <= -10:
+        return {"kind": "sun", "label": ["Éclaircie", "Clearing"], "sub": ["prix en baisse", "prices down"]}
+    if pct >= 20:
+        return {"kind": "storm", "label": ["Orage", "Storm"], "sub": ["prix en forte hausse", "prices up sharply"]}
+    return {"kind": "cloud", "label": ["Nuageux", "Cloudy"], "sub": ["prix stables" if abs(pct) < 5 else "prix en hausse" if pct > 0 else "prix en baisse", "prices steady" if abs(pct) < 5 else "prices up" if pct > 0 else "prices down"]}
+
+
+def prune_images(keep_days=21):
+    """the images of past editions are kept three weeks (the site shows the latest edition only)"""
+    lim = (date.today() - timedelta(days=keep_days)).isoformat()
+    try:
+        for f in os.listdir(news_charts.IMG):
+            if f[:10] < lim:
+                os.remove(os.path.join(news_charts.IMG, f))
+    except OSError:
+        pass
+
+
 def main():
     force, use_ai, weekly = "--force" in sys.argv, "--no-ai" not in sys.argv, "--weekly" in sys.argv
     out_path = OUT_WEEK if weekly else OUT
@@ -247,7 +317,8 @@ def main():
     if (today.weekday() >= 5 or (weekly and today.weekday() != 0)) and not force:
         print("no edition today")
         return 0
-    if old.get("date") == today.isoformat() and not force:
+    built = datetime.fromisoformat(old["updated"]).astimezone(PARIS).hour if old.get("updated") else 0
+    if old.get("date") == today.isoformat() and built >= 5 and not force:   # an edition built in the night is rebuilt in the morning
         print("today's edition exists")
         return 0
     profiles = (load(PROFILES, {}) or {}).get("profiles") or {}
@@ -278,7 +349,8 @@ def main():
     digest = {"weekly": de is dg.get("weekly"), "items": [{k: x.get(k) for k in ("text", "text_en", "title", "link", "sources")} for x in (de or {}).get("items") or []]} if de else None
     # the main articles: the highest impact of the last 24 hours (72 on Monday), one per outlet, one per event
     top, srcs = [], set()
-    for i in sorted([i for i in items if (age_h(i, now) or 1e9) <= (7 * 24 if weekly else 72 if monday else 24) and "official" not in (i.get("tags") or [])], key=lambda i: -(i.get("impact") or 0)):
+    for i in sorted([i for i in items if (age_h(i, now) or 1e9) <= (7 * 24 if weekly else 72 if monday else 24) and "official" not in (i.get("tags") or []) and energy(i)],
+                    key=lambda i: -((i.get("impact") or 0) + focus(i))):
         if i["source"] in srcs or any(similar(i["title"], o["title"]) for o in top):
             continue
         top.append(i)
@@ -287,20 +359,51 @@ def main():
             break
     edition = {"date": t, "updated": now.isoformat(timespec="seconds"), "engine": "proxy" if use_ai else "none", "monday": monday,
                "weekly": weekly, "markets": markets(today, 7 if weekly else 1),
-               "official": [{"title": i["title"], "link": i["link"], "source": i["source"], "date": i["date"]} for i in official],
-               "pubs": [{"title": i["title"], "link": i["link"], "source": i["source"], "date": i["date"]} for i in pubs],
+               "official": [{"title": i["title"], "link": i["link"], "source": i["source"], "date": i["date"], "tags": i.get("tags") or []} for i in official],
+               "pubs": [{"title": i["title"], "link": i["link"], "source": i["source"], "date": i["date"], "tags": i.get("tags") or []} for i in pubs],
                "cons": [{k: c.get(k) for k in ("title", "link", "source", "deadline", "opened", "theme")} for c in cs],
                "agenda": agenda, "post": posts[0] if posts else None, "posts": posts if weekly else [], "digest": digest,
-               "top": [{"title": i["title"], "link": i["link"], "source": i["source"], "date": i["date"], "n": 1 + len(i.get("other_sources") or [])} for i in top],
+               "top": [{"title": i["title"], "link": i["link"], "source": i["source"], "date": i["date"], "n": 1 + len(i.get("other_sources") or []), "tags": i.get("tags") or []} for i in top],
                "profiles": {}}
+    edition["figure"] = None if weekly else figure_of_day(today)
+    edition["weather"] = weather(today)
+    soon = sorted([{"date": c["deadline"], "kind": "cons", "title": c["title"], "link": c["link"], "source": c.get("source")} for c in cons
+                   if c.get("deadline") and t <= c["deadline"] <= iso(today + timedelta(days=7 if not weekly else 14))]
+                  + [{"date": e["date"], "kind": "event", "title": (e.get("title") or [""])[0], "title_en": (e.get("title") or ["", ""])[-1], "link": None, "source": None}
+                     for e in events if t <= (e.get("date") or "") <= iso(today + timedelta(days=14 if not weekly else 21))], key=lambda x: x["date"])[:6]
+    edition["week_ahead"] = soon
+    prune_images()
+    if weekly:
+        # « Ce jour-là »: the spot the same day in past years (published daily averages)
+        past = []
+        for k in range(1, 6):
+            try:
+                d0 = today.replace(year=today.year - k)
+            except ValueError:
+                continue
+            v = news_charts.day_avg(d0)
+            if v is not None:
+                past.append({"year": d0.year, "value": round(v, 2)})
+        edition["on_this_day"] = {"today": news_charts.day_avg(today), "past": past} if past else None
+        w, marks = news_charts.week_chart(today, os.path.join(news_charts.IMG, f"{t}_week.png"))
+        edition["week_chart"] = dict(w, img=f"newsletter_img/{t}_week.png", path=None, marks=marks) if w else None
+    charts = {}
+    pin_link = pinned(now)
+    pin = next((i for i in items if i.get("link") == pin_link), None) if pin_link else None
+    edition["pinned"] = pin_link if pin else None
     for pid, prof in profiles.items():
         stories = pick(items, prof, now, hours, 5 if weekly else 3)
+        if pin:     # the admin's pinned story leads every profile's edition
+            stories = [pin] + [i for i in stories if i.get("link") != pin["link"]][:len(stories) - 1 if stories else 0]
         gen = {}
         if use_ai and stories:
-            try:
-                gen = ask(prof, stories, official)
-            except Exception as e:      # the edition still goes out, with the extracts
-                print(f"{pid}: AI text not written ({str(e)[:160]})")
+            for attempt in (1, 2):      # the free model sometimes answers without JSON: once more
+                try:
+                    # the second try on the proxy's default model (Llama 3.3 70B), when Qwen3 is down or answers badly
+                    gen = ask(prof, stories, official, None if attempt == 1 else "@cf/meta/llama-3.3-70b-instruct-fp8-fast")
+                    break
+                except Exception as e:  # the edition still goes out, with the extracts
+                    print(f"{pid}: AI text not written, attempt {attempt} ({str(e)[:160]})")
         by = {str(x.get("id")): x for x in (gen.get("items") or []) if isinstance(x, dict)}
         out = []
         for i in stories:
@@ -316,7 +419,17 @@ def main():
                         "sources": [i["source"]] + [o["source"] for o in i.get("other_sources") or []],
                         "what": clip(what, 360) or None, "what_en": (clip(g.get("what_en"), 360) or None) if what and what == g.get("what") else None,
                         "for_you": (clip(g.get("for_you"), 260) or None) if not EMPTY.search(g.get("for_you") or "") else None, "for_you_en": clip(g.get("for_you_en"), 260) or None})
-        edition["profiles"][pid] = {"name": prof["name"], "short": prof["short"], "order": prof["order"], "headline": clip(gen.get("headline"), 300) or None, "headline_en": clip(gen.get("headline_en"), 300) or None,
+        # the lead story's chart, chosen by its own words; one image per chart shared by the profiles
+        hero = None
+        if out:
+            spec = news_charts.pick(out[0]["title"] + " " + (out[0].get("what") or "") + " " + " ".join(i.get("snippet") or "" for i in stories[:1]), today)
+            if spec:
+                key = re.sub(r"[^a-z0-9]+", "-", spec["title"].lower())[:40]
+                if key not in charts:
+                    news_charts.draw(spec, os.path.join(news_charts.IMG, f"{t}_{key}.png"))
+                    charts[key] = {"img": f"newsletter_img/{t}_{key}.png", "title": spec["title"], "src": spec["src"], "page": spec["page"]}
+                hero = charts[key]
+        edition["profiles"][pid] = {"hero_chart": hero, "name": prof["name"], "short": prof["short"], "order": prof["order"], "headline": clip(gen.get("headline"), 300) or None, "headline_en": clip(gen.get("headline_en"), 300) or None,
                                     "stories": out, "ai": bool(by)}
         print(f"{pid}: {len(out)} stories, AI text for {len(by)}")
     with open(out_path, "w") as f:

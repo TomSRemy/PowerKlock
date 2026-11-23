@@ -386,6 +386,16 @@
         "power",
         "regulation"
       ]
+    },
+    {
+      "name": "Gossement Avocats",
+      "cls": "gossement",
+      "url": "https://www.gossement-avocats.com/feed/",
+      "tags": [
+        "fr",
+        "regulation",
+        "power"
+      ]
     }
   ],
   "pages": [
@@ -790,6 +800,33 @@
         "regulation",
         "power",
         "assoc"
+      ],
+      "lang": "fr"
+    },
+    {
+      "q": "site:gossement-avocats.com",
+      "tags": [
+        "fr",
+        "regulation",
+        "power"
+      ],
+      "lang": "fr"
+    },
+    {
+      "q": "site:boursier.com électricité OR énergie OR solaire OR éolien OR \"prix de l'électricité\" OR EDF OR Engie OR TotalEnergies",
+      "tags": [
+        "fr",
+        "markets",
+        "power"
+      ],
+      "lang": "fr"
+    },
+    {
+      "q": "site:lejournaldesentreprises.com énergie OR électricité OR solaire OR photovoltaïque OR éolien OR batterie",
+      "tags": [
+        "fr",
+        "power",
+        "build"
       ],
       "lang": "fr"
     }

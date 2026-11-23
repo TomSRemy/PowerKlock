@@ -47,6 +47,33 @@ def load(path, default=None):
         return default
 
 
+NOISE = re.compile(r"\b(black friday|cyber monday|code promo|promo\w*|bon plan|soldes|accessoires|portraits?|bénévole|webinaire|webinar|offre spéciale|meilleur prix|comparatif)\b")
+
+
+def energy(i):
+    """an article about energy by its own words (title and extract), not by the tags of the outlet that published it:
+    a Watts Else article on a Russian polypropylene plant carried « power » from its feed (17 Nov. 2026)"""
+    from fetch_news import KEYWORDS
+    if "official" in (i.get("tags") or []):
+        return True
+    b = (i.get("title", "") + " " + (i.get("snippet") or "")).lower()
+    return any(re.search(KEYWORDS[k], b) for k in ("power", "renewables", "gas", "carbon"))
+
+
+def focus(i):
+    """the digest and the newsletter are about the French power market first: France +1.5, elsewhere −2.5, and a
+    geopolitical story that does not name electricity, renewables or gas −1.5; consumer offers and portraits −4"""
+    from fetch_news import COUNTRIES, KEYWORDS
+    b = (i.get("title", "") + " " + (i.get("snippet") or "")).lower()
+    fr = "FR" in (i.get("countries") or []) and re.search(COUNTRIES["FR"], b)
+    s = 1.5 if fr else -2.5
+    if NOISE.search(b):
+        s -= 4                                      # consumer deals and portraits: not market news
+    if "geopolitics" in (i.get("tags") or []) and not any(re.search(KEYWORDS[k], b) for k in ("power", "renewables")):
+        s -= 1.5
+    return s
+
+
 def stories(items, now, hours):
     """The candidate stories of the last `hours`, ranked like the News page: relevance, more outlets, fresher, varied."""
     keep = []
@@ -55,9 +82,9 @@ def stories(items, now, hours):
             age = (now - datetime.fromisoformat(i["date"])).total_seconds() / 3600
         except (KeyError, TypeError, ValueError):
             continue
-        if 0 <= age <= hours:
+        if 0 <= age <= hours and energy(i):
             n = 1 + len(i.get("other_sources") or [])
-            keep.append(((i.get("impact") or 0) + 0.5 * math.log2(n) - 0.3 * age / 24, n, i))
+            keep.append(((i.get("impact") or 0) + focus(i) + 0.5 * math.log2(n) - 0.3 * age / 24, n, i))
     keep.sort(key=lambda x: -x[0])
     out, per, chosen = [], {}, []
     for _, n, i in keep:

@@ -10,7 +10,7 @@ async function loadNews() {
     window._newsAcctWired = true;
     PKAccount.onChange(async () => { await _newsLoadPersonal(); _newsApplyConfig(); _newsRefreshKwUI(); renderNewsPosts(); renderNews(newsData); if (_nlData !== undefined) { await _nlLoadMe(); renderNewsLetter(); } });
   }
-  await Promise.all([_newsLoadSections(), _newsLoadPersonal(), _newsLoadDigest(), _newsLoadCons()]);
+  await Promise.all([_newsLoadSections(), _newsLoadPersonal(), _newsLoadDigest(), _newsLoadCons(), _newsLoadPins()]);
   try {
     const r = await fetch(DATA_BASE + 'news.json?t=' + Date.now());
     if (!r.ok) throw new Error(r.status);
@@ -35,6 +35,7 @@ async function loadNews() {
   renderNewsSources();
   renderNewsAdd();
   _newsWireViews();
+  renderNewsUne();
   renderNewsConsMini();
   renderNewsOfficial();
   renderNewsCover();
@@ -122,7 +123,7 @@ function renderNewsOfficial() {
 // ── Newsletter (data/newsletter.json, scripts/news_letter.py): one edition per reading profile (config/news_profiles.json),
 // the profile chosen here is kept in this browser; the morning e-mail sends the same edition ──
 let _nlData, _nlWeek, _nlEd = 'daily', _nlMe;
-const _NL_INTERESTS = [['renewables', 'Renouvelables, PPA, garanties d’origine', 'Renewables, PPAs, guarantees of origin'], ['markets', 'Marchés et prix', 'Markets and prices'],
+const _NL_INTERESTS = [['power', 'Électricité : prix, réseau, nucléaire', 'Electricity: prices, grid, nuclear'], ['renewables', 'Renouvelables, PPA, garanties d’origine', 'Renewables, PPAs, guarantees of origin'], ['markets', 'Marchés et prix', 'Markets and prices'],
   ['regulation', 'Régulation', 'Regulation'], ['gas', 'Gaz', 'Gas'], ['carbon', 'Carbone', 'Carbon'], ['deal', 'Transactions', 'Deals'], ['build', 'Nouvelles capacités', 'New capacity'],
   ['geopolitics', 'Géopolitique', 'Geopolitics'], ['report', 'Rapports', 'Reports'], ['assoc', 'Associations', 'Associations']];   // _nlMe: this reader's row of public.news_profile (warehouse migration 024), when signed in
 async function _nlLoadMe() {
@@ -140,6 +141,16 @@ async function _nlSave(patch, msgEl) {
   if (msgEl) { msgEl.textContent = error ? _newsT('Non enregistré : ', 'Not saved: ') + error.message : _newsT('Enregistré.', 'Saved.'); msgEl.className = 'news-add-msg ' + (error ? 'ko' : 'ok'); }
   if (!error) _nlMe = row;
 }
+// the subject of an article, in a pill at its right (same choice as the e-mail, scripts/morning_mail.py)
+const _NL_TH = [['renewables', 'Renouvelables', 'Renewables'], ['gas', 'Gaz', 'Gas'], ['carbon', 'Carbone', 'Carbon'], ['deal', 'Transactions', 'Deals'], ['build', 'Projets', 'Projects'],
+  ['regulation', 'Régulation', 'Regulation'], ['markets', 'Marchés', 'Markets'], ['power', 'Électricité', 'Power'], ['geopolitics', 'Géopolitique', 'Geopolitics']];
+function _nlPill(tags, official) {
+  tags = tags || [];
+  if (official) tags = tags.filter(t => ['renewables', 'gas', 'carbon'].includes(t)).length ? tags.filter(t => ['renewables', 'gas', 'carbon'].includes(t)) : ['regulation'];
+  const t = _NL_TH.find(x => tags.includes(x[0]));
+  return t ? `<span class="nl-pill nl-p-${t[0]}">${_newsT(t[1], t[2])}</span>` : '';
+}
+const _nlConsPill = k => { const t = _NEWS_CONS_THEMES[k || 'other'] || _NEWS_CONS_THEMES.other; return `<span class="nl-pill">${_newsEsc(_newsT(t[0], t[1]))}</span>`; };
 const _NL_SEC = { markets: ['Marchés en 30 secondes', 'Markets in 30 seconds'], digest: ['L’essentiel', 'The essentials'], top: ['Les articles principaux', 'Main articles'], stories: ['Les sujets du jour', 'Today’s stories'], official: ['Textes officiels', 'Official texts'],
   cons: ['Consultations : à vos réponses', 'Consultations: time to reply'], pubs: ['Publications et rapports', 'Publications and reports'], agenda: ['Agenda', 'Agenda'], post: ['À lire : le post de la semaine', 'Worth reading: post of the week'] };
 async function renderNewsLetter() {
@@ -159,32 +170,53 @@ async function renderNewsLetter() {
   const ddm = d => new Date(String(d).slice(0, 10) + 'T12:00:00Z').toLocaleDateString(en ? 'en-GB' : 'fr-FR', { day: 'numeric', month: 'short', timeZone: 'UTC' });
   const sec = {
     markets: () => (E.markets || []).length ? `<div class="nl-tiles">${E.markets.map(r => { const c = r.chg || 0, up = c > 0, dn = c < 0, red = r.hours ? dn : up, green = r.hours ? up : dn;   // more hours at 0 € or below: lower prices, in green
-      const ch = r.hours ? (r.chg == null ? '' : (up ? '▲ +' : dn ? '▼ −' : '= ') + num(Math.abs(c), 0) + ' h') : r.show === 'abs' ? (r.chg == null ? '' : (up ? '▲ +' : dn ? '▼ −' : '= ') + num(Math.abs(c), 1) + ' €') : r.pct == null ? '' : (up ? '▲ +' : dn ? '▼ −' : '') + num(Math.abs(r.pct), 1) + ' %';
-      return `<a class="nl-tile" href="#${_newsEsc(r.page || 'today')}"><span>${_newsEsc(L(r.label))}</span><b>${num(r.value, r.hours ? (Number.isInteger(r.value) ? 0 : 1) : 2)}</b><small>${_newsEsc(r.unit)} <i class="${red ? 'up' : green ? 'dn' : ''}">${ch}</i></small>${r.sub ? `<small class="nl-sub">${_newsEsc(L(r.sub))}</small>` : ''}</a>`; }).join('')}</div>
+      const ch = r.hours ? (r.chg == null ? '' : !c ? _newsT('stable', 'unchanged') : (up ? '▲ +' : '▼ −') + num(Math.abs(c), 0) + ' h') : r.show === 'abs' ? (r.chg == null ? '' : (up ? '▲ +' : dn ? '▼ −' : '= ') + num(Math.abs(c), 1) + ' €') : r.pct == null ? '' : (up ? '▲ +' : dn ? '▼ −' : '') + num(Math.abs(r.pct), 1) + ' %';
+      return `<a class="nl-tile" href="#${_newsEsc(r.page || 'today')}"><span>${_newsEsc(L(r.label))}</span><b>${num(r.value, r.hours ? (Number.isInteger(r.value) ? 0 : 1) : 2)}${r.hours ? ' h' : ''}</b><small>${r.hours ? '' : _newsEsc(r.unit)} <i class="${red ? 'up' : green ? 'dn' : ''}">${ch}</i></small>${r.sub ? `<small class="nl-sub">${_newsEsc(L(r.sub))}</small>` : ''}</a>`; }).join('')}</div>
       <div class="nl-src">${_newsT('Sources', 'Sources')} : ${[...new Set(E.markets.map(r => r.src).filter(Boolean))].join(', ')}. ${E.weekly ? _newsT('Variation sur la semaine.', 'Change over the week.') : _newsT('Variation sur la séance précédente.', 'Change on the previous session.')}</div>` : '',
     digest: () => E.digest && (E.digest.items || []).length ? `<ol class="nl-dg">${E.digest.items.map(x => `<li>${_newsEsc((en && x.text_en) || x.text || x.title)} <a href="${_newsEsc(x.link)}" target="_blank" rel="noopener noreferrer">${_newsEsc((x.sources || []).slice(0, 2).join(' · '))} ↗</a></li>`).join('')}</ol>` : '',
     top: () => { const shown = new Set(ed.stories.map(x => x.link).concat(((E.digest || {}).items || []).map(x => x.link))), T = (E.top || []).filter(o => !shown.has(o.link));
-      return T.length ? `<ul class="nl-ul">${T.map(o => `<li>${a(o.link, o.title)} <span class="nl-src">· ${_newsEsc(o.source)}${o.n > 1 ? ' +' + (o.n - 1) : ''}</span></li>`).join('')}</ul>` : ''; },
-    stories: () => ed.stories.length ? ed.stories.map((s, k) => `<article class="nl-story"><h3>${k + 1}. ${a(s.link, s.title)}</h3>
+      return T.length ? `<ul class="nl-ul">${T.map(o => `<li><span>${a(o.link, o.title)} <span class="nl-src">· ${_newsEsc(o.source)}${o.n > 1 ? ' +' + (o.n - 1) : ''}</span></span>${_nlPill(o.tags)}</li>`).join('')}</ul>` : ''; },
+    stories: () => ed.stories.length ? ed.stories.map((s, k) => `<article class="nl-story"><div class="nl-st-h"><h3>${k + 1}. ${a(s.link, s.title)}</h3>${_nlPill(s.tags)}</div>
       ${(en ? s.what_en : s.what) || s.what ? `<p><b>${_newsT('Ce qui s’est passé.', 'What happened.')}</b> ${_newsEsc((en && s.what_en) || s.what)}</p>` : ''}
-      ${s.for_you ? `<p class="nl-for"><b>${_newsT('Pour vous', 'For you')}, ${_newsEsc(L(prof.short).toLowerCase())}.</b> ${_newsEsc((en && s.for_you_en) || s.for_you)}</p>` : ''}
+      ${s.for_you ? `<p class="nl-for"><b>${_newsT('À retenir', 'Takeaway')} ·</b> ${_newsEsc((en && s.for_you_en) || s.for_you)}</p>` : ''}
       <div class="nl-src">${s.sources.slice(0, 4).map(_newsEsc).join(' · ')}${s.sources.length > 4 ? ' +' + (s.sources.length - 4) : ''}</div></article>`).join('') : '',
-    official: () => (E.official || []).length ? `<ul class="nl-ul">${E.official.map(o => `<li>${a(o.link, o.title)} <span class="nl-src">· ${_newsEsc(o.source)}, ${ddm(o.date)}</span></li>`).join('')}</ul>` : '',
+    official: () => (E.official || []).length ? `<ul class="nl-ul">${E.official.map(o => `<li><span>${a(o.link, o.title)} <span class="nl-src">· ${_newsEsc(o.source)}, ${ddm(o.date)}</span></span>${_nlPill(o.tags, true)}</li>`).join('')}</ul>` : '',
     cons: () => (E.cons || []).length ? `<table class="nl-cons"><tbody>${E.cons.map(c => { const n = c.deadline ? _newsLeft(c.deadline) : null;
-      return `<tr><td class="nl-num ${n != null && n <= 7 ? 'dn' : ''}">${n == null ? '' : n === 0 ? _newsT('auj.', 'today') : 'J-' + n}</td><td>${a(c.link, c.title)} <span class="nl-src">· ${_newsEsc(c.source)}</span></td></tr>`; }).join('')}</tbody></table>` : '',
-    pubs: () => (E.pubs || []).length ? `<ul class="nl-ul">${E.pubs.map(o => `<li>${a(o.link, o.title)} <span class="nl-src">· ${_newsEsc(o.source)}</span></li>`).join('')}</ul>` : '',
+      return `<tr><td class="nl-num ${n != null && n <= 7 ? 'dn' : ''}">${n == null ? '' : n === 0 ? _newsT('auj.', 'today') : 'J-' + n}</td><td>${a(c.link, c.title)} <span class="nl-src">· ${_newsEsc(c.source)}</span></td><td class="nl-pc">${_nlConsPill(c.theme)}</td></tr>`; }).join('')}</tbody></table>` : '',
+    pubs: () => (E.pubs || []).length ? `<ul class="nl-ul">${E.pubs.map(o => `<li><span>${a(o.link, o.title)} <span class="nl-src">· ${_newsEsc(o.source)}</span></span>${_nlPill(o.tags)}</li>`).join('')}</ul>` : '',
     agenda: () => (E.agenda || []).length ? `<ul class="nl-ul">${E.agenda.map(e => `<li><b>${ddm(e.date)}</b> · ${_newsEsc(L(e.title))}</li>`).join('')}</ul>` : '',
     post: () => E.post ? `<ul class="nl-ul">${((E.posts || []).length ? E.posts : [E.post]).map(p => `<li>${a(p.url, (p.author || 'LinkedIn') + (p.note ? ' · ' + p.note : ''))}</li>`).join('')}</ul>` : '',
   };
   const WK = { digest: ['La semaine en 5 sujets', 'The week in 5 stories'], stories: ['Les sujets de la semaine', 'The week’s stories'], top: ['Les articles de la semaine', 'The week’s articles'], post: ['Les posts de la semaine', 'The week’s posts'] };
   const title = k => _newsT(...(E.weekly && WK[k] ? WK[k] : _NL_SEC[k]));
-  const body = (prof.order || Object.keys(sec)).map(k => { const h = sec[k] ? sec[k]() : ''; return h ? `<section class="nl-sec"><h2>${title(k)}</h2>${h}</section>` : ''; }).join('');
+  // the journal layout of the e-mail (scripts/morning_mail.py, journal()): week's chart, lead story with its chart, figure
+  // of the day, the other stories, in brief, the days ahead, this day in past years
+  const jours = en ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] : ['lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.', 'dim.'];
+  const wd = d => jours[(new Date(d + 'T12:00:00Z').getUTCDay() + 6) % 7];
+  const thL = tags => { const t = _NL_TH.find(x => (tags || []).includes(x[0])); return t ? `<span class="nl-th nl-p-${t[0]}">${_newsT(t[1], t[2])}</span>` : ''; };
+  const S = ed.stories || [], parts = [];
+  const wc = E.week_chart;
+  if (E.weekly && wc) parts.push(`<section class="nl-sec"><h2>${_newsT('Le graphique de la semaine', 'The week’s chart')}</h2><p class="nl-ct">${_newsT('Spot France', 'France spot')} : ${wc.pct < 0 ? '−' : '+'}${num(Math.abs(wc.pct || 0), 0)} % ${_newsT('sur la semaine', 'over the week')}</p>
+    <img class="nl-img" src="${DATA_BASE + _newsEsc(wc.img)}" alt="">${(wc.marks || []).map(m => `<p class="nl-mark"><b>${m.n}</b> ${wd(m.date)} ${ddm(m.date)} · ${_newsEsc(en ? m.title_en || m.title : m.title)}</p>`).join('')}
+    <div class="nl-src">${_newsT('Moyennes journalières publiées (ENTSO-E).', 'Published daily averages (ENTSO-E).')}${(wc.marks || []).length ? ' ' + _newsT('Les repères situent les événements de la semaine ; ils n’expliquent pas à eux seuls le prix.', 'The markers place the week’s events; they do not explain the price on their own.') : ''}</div></section>`);
+  if (S[0]) { const h = S[0], ch = ed.hero_chart;
+    parts.push(`<section class="nl-sec nl-hero"><h2>${E.weekly ? _newsT('Le sujet de la semaine', 'Story of the week') : _newsT('À la une', 'Lead story')} ${thL(h.tags)}</h2>
+      <div class="nl-hero-in">${ch ? `<figure class="nl-hero-ch"><figcaption>${_newsEsc(ch.title)}</figcaption><img class="nl-img" src="${DATA_BASE + _newsEsc(ch.img)}" alt="${_newsEsc(ch.title)}"><div class="nl-src">${_newsT('Source', 'Source')} : ${_newsEsc(ch.src)} · <a href="#${_newsEsc(ch.page)}">${_newsT('voir sur PowerKlock', 'see on PowerKlock')}</a></div></figure>` : ''}
+      <div class="nl-hero-t"><h3>${a(h.link, h.title)}</h3>${(en && h.what_en) || h.what ? `<p>${_newsEsc((en && h.what_en) || h.what)}</p>` : ''}
+      ${h.for_you ? `<p class="nl-ret"><b>${_newsT('À retenir.', 'Takeaway.')}</b> ${_newsEsc((en && h.for_you_en) || h.for_you)}</p>` : ''}<div class="nl-src">${h.sources.slice(0, 3).map(_newsEsc).join(' · ')}</div></div></div></section>`); }
+  if (E.figure && !E.weekly) parts.push(`<section class="nl-sec nl-fig"><b class="${E.figure.dir === 'dn' ? 'dn' : 'up'}">${_newsEsc(E.figure.value)}</b><div><h2>${_newsT('Le chiffre du jour', 'Figure of the day')}</h2><p>${_newsEsc(en ? E.figure.text_en : E.figure.text)}</p></div></section>`);
+  if (S.length > 1) parts.push(`<section class="nl-sec">${S.slice(1).map(h => `<article class="nl-story">${thL(h.tags)}<h3>${a(h.link, h.title)}</h3>${h.for_you ? `<p class="nl-ret"><b>${_newsT('À retenir.', 'Takeaway.')}</b> ${_newsEsc((en && h.for_you_en) || h.for_you)}</p>` : ''}<div class="nl-src">${h.sources.slice(0, 3).map(_newsEsc).join(' · ')}</div></article>`).join('')}</section>`);
+  const shownL = new Set(S.map(x => x.link)), brief = (E.top || []).filter(o => !shownL.has(o.link)).slice(0, E.weekly ? 6 : 4);
+  if (brief.length) parts.push(`<section class="nl-sec"><h2>${E.weekly ? _newsT('La semaine en bref', 'The week in brief') : _newsT('En bref', 'In brief')}</h2>${brief.map(o => `<p class="nl-brief">${thL(o.tags)} ${a(o.link, o.title)} <span class="nl-src">${_newsEsc(o.source)}</span></p>`).join('')}</section>`);
+  if ((E.week_ahead || []).length) parts.push(`<section class="nl-sec nl-ahead"><h2>${E.weekly ? _newsT('La semaine qui vient', 'The week ahead') : _newsT('Cette semaine', 'This week')}</h2><table>${E.week_ahead.map(x => `<tr><td>${wd(x.date)} ${new Date(x.date + 'T12:00:00Z').getUTCDate()}</td><td>${x.kind === 'cons' ? _newsT('Fin de consultation : ', 'Consultation closes: ') : ''}${x.link ? a(x.link, en && x.title_en ? x.title_en : x.title) : _newsEsc(en && x.title_en ? x.title_en : x.title)}</td></tr>`).join('')}</table></section>`);
+  if (E.weekly && E.on_this_day && (E.on_this_day.past || []).length) parts.push(`<section class="nl-sec"><h2>${_newsT('Ce jour-là', 'This day')}</h2><p>${_newsT('Le spot France ce jour-là, année après année', 'France spot on this day, year after year')} : ${E.on_this_day.past.slice().sort((x, y) => x.year - y.year).map(x => `${x.year} : <b>${num(x.value, 0)} €</b>`).join(' · ')}${E.on_this_day.today != null ? ' · ' + _newsT('cette année', 'this year') + ` : <b>${num(E.on_this_day.today, 0)} €</b>` : ''}</p></section>`);
+  const body = parts.join('');
+  const W = E.weather, wx = W ? `<span class="nl-wx"><img src="${DATA_BASE}newsletter_img/icon_${W.kind}.png" alt="" width="28" height="28"><span><b>${_newsEsc(L(W.label))}</b><small>${_newsEsc(L(W.sub))}</small></span></span>` : '';
   const head = (en && ed.headline_en) || ed.headline;
   const eds = _nlWeek ? `<div class="nl-profiles">${[['daily', '7 O’Klock'], ['weekly', 'PowerBrunch']].map(([k, l]) => `<button type="button" class="tab-btn${(k === 'weekly') === !!E.weekly ? ' active' : ''}" data-nle="${k}" translate="no">${l}</button>`).join('')}</div>` : '';
   host.innerHTML = eds + `<div class="nl-profiles" role="group" aria-label="${_newsT('Profil', 'Profile')}">${Object.keys(P).filter(k => E.profiles[k]).map(k => `<button type="button" class="filter-btn${k === pid ? ' active' : ''}" data-nlp="${k}">${_newsEsc(L(P[k].name))}</button>`).join('')}</div>
     <div class="nl-paper"><header class="nl-head"><div><span translate="no" class="nl-brand">PowerKlock</span><span>${_newsEsc(day)}</span></div>
-      <h1 translate="no">${E.weekly ? 'PowerBrunch' : '7 O’Klock'}</h1><div>${E.weekly ? _newsT('La semaine servie à point : ce qu’il fallait retenir, à lire au calme', 'Last week, well done: what mattered, to read at leisure') : _newsT('Marchés, régulation, énergie : l’essentiel à 7 h', 'Markets, regulation, energy: what matters at 7:00')}</div><div>${_newsT('Édition', 'Edition')} <b>${_newsEsc(L(prof.name))}</b>${E.monday ? ' · ' + _newsT('depuis vendredi', 'since Friday') : ''}</div></header>
-      ${head ? `<section class="nl-sec nl-one"><h2>${_newsT('En une phrase', 'In one sentence')}</h2><p>${_newsEsc(head)}</p></section>` : ''}
+      <div class="nl-tt"><h1 translate="no">${E.weekly ? 'PowerBrunch' : '7 O’Klock'}</h1>${wx}</div><div>${E.weekly ? _newsT('La semaine servie à point : ce qu’il fallait retenir, à lire au calme', 'Last week, well done: what mattered, to read at leisure') : _newsT('Marchés, régulation, énergie : l’essentiel à 7 h', 'Markets, regulation, energy: what matters at 7:00')}</div>${sec.markets()}</header>
       ${body}
       <footer class="nl-foot">${_newsT('Sujets choisis selon le profil ; résumés rédigés automatiquement à partir des titres et extraits, chaque sujet renvoie à ses articles. Le même contenu part par e-mail chaque matin de semaine à 7 h.', 'Stories chosen for the profile; summaries written automatically from the titles and extracts, each story links to its articles. The same content goes out by e-mail every weekday at 7:00.')}</footer></div>`;
   const A = window.PKAccount, me = _nlMe;
@@ -211,6 +243,43 @@ async function renderNewsLetter() {
   });
   host.querySelectorAll('[data-nle]').forEach(b => b.addEventListener('click', () => { _nlEd = b.dataset.nle; renderNewsLetter(); }));
   host.querySelectorAll('[data-nlp]').forEach(b => b.addEventListener('click', () => { _newsStore('pk-nl-profile', b.dataset.nlp); renderNewsLetter(); }));
+}
+
+// ── The feed's top, « façon journal » (approved 19 Nov. 2026): the lead story of the morning's newsletter with its
+// chart on the left, three more stories, and beside the feed the price tiles and the figure of the day. Same choice
+// as the newsletter (data/newsletter.json, the profile chosen in the Newsletter tab, else Origination); a story the
+// admin pinned comes first. ──
+async function renderNewsUne() {
+  const host = document.getElementById('news-une'); if (!host) return;
+  if (_nlData === undefined) { try { const r = await fetch(DATA_BASE + 'newsletter.json?t=' + Date.now()); _nlData = r.ok ? await r.json() : null; } catch (_) { _nlData = null; } }
+  const E = _nlData, P = (E && E.profiles) || {};
+  if (!E || !Object.keys(P).length) { host.hidden = true; return; }
+  const en = window.PKI18n && PKI18n.lang === 'en', L = a => Array.isArray(a) ? (en ? a[1] : a[0]) : (a || '');
+  let pid = _newsStore('pk-nl-profile'); if (!P[pid]) pid = P.origination ? 'origination' : Object.keys(P)[0];
+  const ed = P[pid], S = (ed.stories || []).slice();
+  const pinItem = [...(_newsPins || [])].map(l => (newsData || []).find(i => i.link === l)).find(Boolean);
+  let lead = S[0], chart = ed.hero_chart;
+  if (pinItem && (!lead || lead.link !== pinItem.link)) { lead = { title: pinItem.title, link: pinItem.link, what: pinItem.snippet, tags: pinItem.tags, sources: [pinItem.source].concat((pinItem.other_sources || []).map(o => o.source)) }; chart = null; }
+  if (!lead) { host.hidden = true; return; }
+  const num = (v, d = 2) => v == null ? '–' : v.toLocaleString(en ? 'en-GB' : 'fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d });
+  const a = (u, t) => `<a href="${_newsEsc(u)}" target="_blank" rel="noopener noreferrer">${_newsEsc(t)}</a>`;
+  const th = tags => { const t = _NL_TH.find(x => (tags || []).includes(x[0])); return t ? `<span class="news-une-th nl-p-${t[0]}">${_newsT(t[1], t[2])}</span>` : ''; };
+  const others = S.filter(x => x.link !== lead.link).concat((E.top || []).filter(o => !S.some(x => x.link === o.link) && o.link !== lead.link)).slice(0, 3);
+  host.hidden = false;
+  host.innerHTML = `<article class="news-une-lead${chart ? '' : ' nochart'}">${chart ? `<figure class="news-une-ch"><figcaption>${_newsEsc(chart.title)}</figcaption><img src="${DATA_BASE + _newsEsc(chart.img)}" alt="${_newsEsc(chart.title)}"><div class="nl-src">${_newsT('Source', 'Source')} : ${_newsEsc(chart.src)} · <a href="#${_newsEsc(chart.page)}">${_newsT('voir sur PowerKlock', 'see on PowerKlock')}</a></div></figure>` : ''}
+    <div class="news-une-t"><span class="news-une-k">${pinItem && lead.link === pinItem.link ? _newsT('À la une · choisi par la rédaction', 'Lead story · editor’s pick') : _newsT('À la une', 'Lead story')} ${th(lead.tags)}</span>
+      <h2>${a(lead.link, lead.title)}</h2>${(en && lead.what_en) || lead.what ? `<p>${_newsEsc((en && lead.what_en) || lead.what)}</p>` : ''}
+      ${lead.for_you ? `<p class="nl-ret"><b>${_newsT('À retenir.', 'Takeaway.')}</b> ${_newsEsc((en && lead.for_you_en) || lead.for_you)}</p>` : ''}
+      <span class="nl-src">${(lead.sources || []).slice(0, 3).map(_newsEsc).join(' · ')}${_newsAdmin ? ' · ' + _newsPinBtn({ link: lead.link }) : ''}</span></div></article>
+    <div class="news-une-more">${others.map(o => `<article>${th(o.tags)}<h3>${a(o.link, o.title)}</h3><span class="nl-src">${_newsEsc((o.sources || [o.source]).slice(0, 2).join(' · '))}</span></article>`).join('')}</div>`;
+  const dg = document.getElementById('hs-news-digest'); if (dg) dg.hidden = true;     // the lead replaces « L'essentiel » on top of the feed
+  const mk = document.getElementById('news-mk'), mkBox = document.getElementById('news-side-mk');
+  if (mk && (E.markets || []).length) { mkBox.hidden = false;
+    mk.innerHTML = `<div class="news-mk">${E.markets.map(r => { const c = r.chg || 0, up = c > 0, dn = c < 0, red = r.hours ? dn : up, green = r.hours ? up : dn;
+      const ch = r.hours ? (r.chg == null ? '' : !c ? _newsT('stable', 'unchanged') : (up ? '▲ +' : '▼ −') + num(Math.abs(c), 0) + ' h') : r.show === 'abs' ? (r.chg == null ? '' : (up ? '▲ +' : dn ? '▼ −' : '= ') + num(Math.abs(c), 1) + ' €') : r.pct == null ? '' : (up ? '▲ +' : dn ? '▼ −' : '') + num(Math.abs(r.pct), 1) + ' %';
+      return `<a class="nl-tile" href="#${_newsEsc(r.page || 'today')}"><span>${_newsEsc(L(r.label))}</span><b>${num(r.value, r.hours ? (Number.isInteger(r.value) ? 0 : 1) : 2)}${r.hours ? ' h' : ''}</b><small>${r.hours ? '' : _newsEsc(r.unit)} <i class="${red ? 'up' : green ? 'dn' : ''}">${ch}</i></small></a>`; }).join('')}</div>`; }
+  const fg = document.getElementById('news-fig'), fgBox = document.getElementById('news-side-fig');
+  if (fg && E.figure) { fgBox.hidden = false; fg.innerHTML = `<div class="nl-fig"><b class="${E.figure.dir === 'dn' ? 'dn' : 'up'}">${_newsEsc(E.figure.value)}</b><p>${_newsEsc(en ? E.figure.text_en : E.figure.text)}</p></div>`; }
 }
 
 // what the last run read, beside the feed
@@ -308,6 +377,34 @@ async function _newsSaveKw(value, team) {
   _newsRefreshKwUI();
   renderNews(newsData);
 }
+
+// « Mettre à la une »: the admin pins a story (public.news_pin, warehouse migration 027); the newsletter and the News page
+// lead with it for 36 hours. Others only see which one is pinned.
+let _newsAdmin = false, _newsPins = new Set();
+async function _newsLoadPins() {
+  const A = window.PKAccount; _newsAdmin = false; _newsPins = new Set();
+  if (!A || !A.configured) return;
+  try {
+    await A.ready(); if (!A.user) return;
+    const cl = A.client();
+    const [adm, pins] = await Promise.all([cl.rpc('is_news_admin'), cl.from('news_pin').select('link, pinned_at').gte('pinned_at', new Date(Date.now() - 36 * 3600e3).toISOString())]);
+    _newsAdmin = !!(adm && adm.data);
+    _newsPins = new Set(((pins && pins.data) || []).map(r => r.link));
+  } catch (e) { console.warn('[news] pins not read:', e); }
+}
+const _newsPinBtn = item => _newsAdmin ? `<button type="button" class="news-pinb${_newsPins.has(item.link) ? ' on' : ''}" data-pin="${_newsEsc(item.link)}" title="${_newsPins.has(item.link) ? _newsT('Retirer de la une', 'Remove from the top') : _newsT('Mettre à la une (newsletter et page Veille, 36 h)', 'Put at the top (newsletter and News page, 36 h)')}">${_newsPins.has(item.link) ? _newsT('À la une ✓', 'At the top ✓') : _newsT('Mettre à la une', 'Put at the top')}</button>`
+  : (_newsPins.has(item.link) ? `<span class="news-pinb on">${_newsT('À la une', 'At the top')}</span>` : '');
+document.addEventListener('click', async e => {
+  const b = e.target.closest && e.target.closest('[data-pin]'); if (!b) return;
+  e.preventDefault(); e.stopPropagation();
+  const cl = window.PKAccount && PKAccount.client && PKAccount.client(), link = b.dataset.pin; if (!cl) return;
+  const item = (newsData || []).find(i => i.link === link) || {};
+  b.disabled = true;
+  const r = _newsPins.has(link) ? await cl.from('news_pin').delete().eq('link', link) : await cl.from('news_pin').upsert({ link, title: String(item.title || '').slice(0, 400) }, { onConflict: 'link' });
+  if (r.error) { b.disabled = false; b.textContent = _newsT('Non enregistré : ', 'Not saved: ') + r.error.message; return; }
+  if (_newsPins.has(link)) _newsPins.delete(link); else _newsPins.add(link);
+  renderNews(newsData); if (typeof renderNewsUne === 'function') renderNewsUne();
+}, true);
 
 // most relevant first, but a fresh article beats an old one and one outlet cannot fill the top of the list:
 // impact, minus 0.3 per day of age, minus 0.6 for each article of the same outlet already placed above
@@ -580,7 +677,7 @@ function renderNews(items) {
       return `<a class="news-row${mine ? ' mine' : ''}" href="${_newsEsc(link)}" target="_blank" rel="noopener noreferrer"><span class="news-row-d">${recent ? t.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' }) : _newsDay(t)}</span>
         <span class="news-row-b"><span class="news-row-t">${mine ? '<span class="news-star">★</span>' : ''}${(item.tags || []).includes('official') ? `<span class="news-off">${_newsT('Texte officiel', 'Official text')}</span>` : ''}${_newsEsc(item.title)}</span>
         <small>${_newsEsc(item.source)}${more ? ` +${more}` : ''} · ${(item.tags || []).filter(x => !['official', 'fr', 'watch'].includes(x)).slice(0, 2).map(x => _newsEsc(_newsTagL(x))).join(' · ')}</small></span>
-        <span class="news-vote" data-link="${_newsEsc(item.link)}">${_newsVoteBtns(item.link)}</span></a>`;
+        <span class="news-row-f">${_newsPinBtn(item)}<span class="news-vote" data-link="${_newsEsc(item.link)}">${_newsVoteBtns(item.link)}</span></span></a>`;
     }).join('');
     return;
   }
@@ -598,7 +695,7 @@ function renderNews(items) {
       <div class="news-snippet">${_newsEsc(item.snippet)}</div>
       <div>${tagsHtml}${item.query ? ` <span class="news-q">search: ${_newsEsc(item.query)}</span>` : ''}${(item.countries || []).length ? ` <span class="news-q">${_newsEsc(item.countries.join(' · '))}</span>` : ''}</div>
       ${also}
-      <div class="news-vote" data-link="${_newsEsc(item.link)}">${_newsVoteBtns(item.link)}</div>
+      <div class="news-card-f"><div class="news-vote" data-link="${_newsEsc(item.link)}">${_newsVoteBtns(item.link)}</div>${_newsPinBtn(item)}</div>
     </a>`;
   }).join('');
 }

@@ -987,39 +987,115 @@
     });
   }
 
-  function openAccount() {
+  function openAccount(hint) {
     const A = window.PKAccount;
+    if (typeof hint !== 'string') hint = '';
     if (A.user) {
       modal(`
         <div class="pkd-modal-head"><div><div class="pkd-modal-title">Account</div><div class="pkd-modal-sub">${esc(A.user.email || '')}</div></div>
           <button class="pkd-ic" data-close type="button" title="Close">✕</button></div>
-        <div class="pkd-form"><p class="pkd-p">Your dashboards are saved to this account and follow you on every device.</p>
+        <div class="pkd-form"><p class="pkd-p">Your dashboards are saved to this account and follow you on every device. You stay signed in on this browser until you sign out.</p>
+          <form id="pkd-pw-form" class="pkd-pw"><label class="pkd-field"><span>Password (optional): sign in with it next time, no e-mail needed</span>
+            <input id="pkd-pw" type="password" minlength="8" autocomplete="new-password" placeholder="8 characters or more"></label>
+            <button type="submit" class="pk-btn-ghost">Set password</button></form>
+          <div class="pkd-msg" id="pkd-pw-msg" role="status">${hint ? esc(hint) : ''}</div>
+          <div id="pkd-admin"></div>
           <div class="pkd-form-foot"><button type="button" class="pk-btn-ghost" data-close>Close</button><button type="button" class="pk-btn-primary" id="pkd-out">Sign out</button></div></div>`, root => {
         root.querySelector('#pkd-out').addEventListener('click', () => { A.signOut().then(() => { closeModal(); renderAccount(); toast('Signed out'); }); });
+        root.querySelector('#pkd-pw-form').addEventListener('submit', ev => {
+          ev.preventDefault();
+          const pw = root.querySelector('#pkd-pw').value, msg = root.querySelector('#pkd-pw-msg');
+          if (pw.length < 8) { msg.textContent = 'At least 8 characters.'; return; }
+          A.setPassword(pw).then(() => { msg.textContent = 'Password set: next time, sign in with your e-mail and this password.'; root.querySelector('#pkd-pw').value = ''; })
+            .catch(e => { msg.textContent = 'Not saved: ' + (e.message || e); });
+        });
+        if (hint) setTimeout(() => root.querySelector('#pkd-pw').focus(), 30);
+        adminAccounts(root.querySelector('#pkd-admin'));
       });
       return;
     }
     modal(`
       <div class="pkd-modal-head"><div><div class="pkd-modal-title">Sign in</div>
-        <div class="pkd-modal-sub">Keep your dashboards on every device. No password: we e-mail you a sign-in link.</div></div>
+        <div class="pkd-modal-sub">Keep your dashboards on every device. You stay signed in on this browser.</div></div>
         <button class="pkd-ic" data-close type="button" title="Close">✕</button></div>
       <form class="pkd-form" id="pkd-in-form">
         <label class="pkd-field"><span>E-mail</span><input id="pkd-in-email" type="email" required autocomplete="email" placeholder="you@company.com"></label>
+        <label class="pkd-field"><span>Password (if you set one)</span><input id="pkd-in-pw" type="password" autocomplete="current-password" placeholder="leave empty to receive a code by e-mail"></label>
+        <button type="button" class="pkd-link" id="pkd-forgot">Forgot your password? Receive a code by e-mail</button>
         <div class="pkd-msg" id="pkd-in-msg" role="status"></div>
-        <div class="pkd-form-foot"><button type="button" class="pk-btn-ghost" data-close>Cancel</button><button type="submit" class="pk-btn-primary" id="pkd-in-go">Send link</button></div>
+        <div class="pkd-code" id="pkd-code" hidden><label class="pkd-field"><span>Code received by e-mail</span>
+          <input id="pkd-in-code" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="123456"></label>
+          <button type="button" class="pk-btn-primary" id="pkd-code-go">Sign in</button></div>
+        <div class="pkd-form-foot"><button type="button" class="pk-btn-ghost" data-close>Cancel</button><button type="submit" class="pk-btn-primary" id="pkd-in-go">Continue</button></div>
       </form>`, root => {
+      const msg = root.querySelector('#pkd-in-msg'), go = root.querySelector('#pkd-in-go');
+      const done = () => { closeModal(); renderAccount(); toast('Signed in'); };
       root.querySelector('#pkd-in-form').addEventListener('submit', ev => {
         ev.preventDefault();
-        const email = root.querySelector('#pkd-in-email').value.trim();
-        const msg = root.querySelector('#pkd-in-msg');
-        const go = root.querySelector('#pkd-in-go');
-        go.disabled = true; msg.textContent = 'Sending…';
+        const email = root.querySelector('#pkd-in-email').value.trim(), pw = root.querySelector('#pkd-in-pw').value;
+        go.disabled = true;
+        if (pw) {
+          msg.textContent = 'Signing in…';
+          A.signInPassword(email, pw).then(done).catch(e => { msg.textContent = 'Not signed in: ' + (e.message || e); go.disabled = false; });
+          return;
+        }
+        msg.textContent = 'Sending…';
         A.signIn(email).then(() => {
-          msg.textContent = 'Link sent to ' + email + '. Open it on this device to finish signing in. The dashboards in this browser will be copied to your account.';
-        }).catch(e => { msg.textContent = 'Could not send the link: ' + (e.message || e); go.disabled = false; });
+          msg.textContent = 'E-mail sent to ' + email + '. Type the code it contains below, or open its link on this device.';
+          root.querySelector('#pkd-code').hidden = false;
+          setTimeout(() => root.querySelector('#pkd-in-code').focus(), 30);
+        }).catch(e => { msg.textContent = 'Could not send the e-mail: ' + (e.message || e); go.disabled = false; });
+      });
+      root.querySelector('#pkd-forgot').addEventListener('click', () => {
+        root.querySelector('#pkd-in-pw').value = '';
+        if (!root.querySelector('#pkd-in-email').value.trim()) { msg.textContent = 'Type your e-mail first.'; root.querySelector('#pkd-in-email').focus(); return; }
+        root.querySelector('#pkd-in-form').requestSubmit();
+      });
+      root.querySelector('#pkd-code-go').addEventListener('click', () => {
+        const email = root.querySelector('#pkd-in-email').value.trim(), code = root.querySelector('#pkd-in-code').value.trim();
+        if (!code) return;
+        msg.textContent = 'Checking…';
+        A.verifyCode(email, code).then(() => { closeModal(); renderAccount(); openAccount('Signed in. Choose a password now: next time, no code needed.'); }).catch(e => { msg.textContent = 'Code not accepted: ' + (e.message || e); });
       });
       setTimeout(() => root.querySelector('#pkd-in-email').focus(), 30);
     });
+  }
+
+  // Accounts, for the admin (public.news_admin): approve a new account, refuse it, close or reopen one
+  // (public.user_access, warehouse migration 022: the admin may read and update every row). Closing keeps the account's
+  // data; it only takes the site and the newsletter away.
+  const SECS = [['dashboards', 'My dashboards'], ['markets', 'Markets'], ['renewables', 'Renewables'], ['power-system', 'Power system'], ['tools', 'Tools'], ['intelligence', 'Intelligence'], ['games', 'Games']];
+  async function adminAccounts(host) {
+    const A = window.PKAccount, cl = A.client && A.client();
+    if (!host || !cl) return;
+    const { data: isAdmin } = await cl.rpc('is_news_admin');
+    if (!isAdmin) return;
+    const draw = async () => {
+      let { data, error } = await cl.from('user_access').select('user_id, email, status, requested_at, sections').order('requested_at', { ascending: false });
+      if (error && /sections/.test(error.message)) ({ data, error } = await cl.from('user_access').select('user_id, email, status, requested_at').order('requested_at', { ascending: false }));
+      if (error) { host.innerHTML = `<p class="pkd-p">Accounts not read: ${esc(error.message)}</p>`; return; }
+      const lab = { pending: 'Waiting', approved: 'Approved', refused: 'Closed' };
+      const btn = (r, to, txt, cls) => `<button type="button" class="${cls}" data-u="${r.user_id}" data-s="${to}">${txt}</button>`;
+      host.innerHTML = `<div class="pkd-acc"><div class="pkd-acc-t">Accounts (admin) · ${data.filter(r => r.status === 'pending').length} waiting</div>` +
+        data.map(r => `<div class="pkd-acc-r"><span class="pkd-acc-e">${esc(r.email || '')}<small>${lab[r.status] || r.status} · ${esc(String(r.requested_at || '').slice(0, 10))}</small></span>
+          <span class="pkd-acc-b">${r.status !== 'approved' ? btn(r, 'approved', 'Approve', 'pk-btn-primary') : ''}${r.status === 'pending' ? btn(r, 'refused', 'Refuse', 'pk-btn-ghost') : ''}${r.status === 'approved' && r.user_id !== A.user.id ? btn(r, 'refused', 'Close', 'pk-btn-ghost') : ''}</span></div>` +
+          (r.status === 'approved' && r.user_id !== A.user.id && 'sections' in r ? `<details class="pkd-acc-s"><summary>Access: ${r.sections ? r.sections.length + ' of ' + SECS.length + ' sections' : 'whole site'}</summary>
+            <div>${SECS.map(([k, l]) => `<label><input type="checkbox" data-sec="${k}" data-uid="${r.user_id}"${!r.sections || r.sections.includes(k) ? ' checked' : ''}> ${l}</label>`).join('')}</div>
+            <small>Today is always shown. Untick a section to hide it from this account.</small></details>` : '')).join('') + '</div>';
+      host.querySelectorAll('[data-sec]').forEach(cb => cb.addEventListener('change', async () => {
+        const boxes = [...host.querySelectorAll('[data-uid="' + cb.dataset.uid + '"]')], on = boxes.filter(x => x.checked).map(x => x.dataset.sec);
+        const { error: e } = await cl.from('user_access').update({ sections: on.length === SECS.length ? null : on }).eq('user_id', cb.dataset.uid);
+        if (e) { toast('Not saved: ' + e.message); cb.checked = !cb.checked; return; }
+        toast('Access saved');
+      }));
+      host.querySelectorAll('[data-u]').forEach(b => b.addEventListener('click', async () => {
+        b.disabled = true;
+        const { error: e } = await cl.from('user_access').update({ status: b.dataset.s, decided_at: new Date().toISOString() }).eq('user_id', b.dataset.u);
+        if (e) { toast('Not saved: ' + e.message); b.disabled = false; return; }
+        draw();
+      }));
+    };
+    draw();
   }
 
   // ── Modal shell ──────────────────────────────────────────────────

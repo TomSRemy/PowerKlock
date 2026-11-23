@@ -62,6 +62,30 @@
     if (error) throw error;
   }
 
+  // the 6-digit code of the same e-mail, typed in this browser: signs in here even when the e-mail opens elsewhere
+  // (a phone's mail app opens links in its own browser). Needs {{ .Token }} in the Magic Link e-mail template.
+  async function verifyCode(email, code) {
+    await ready();
+    if (!client) throw new Error('Accounts are not configured yet.');
+    const { error } = await client.auth.verifyOtp({ email, token: String(code).replace(/\s+/g, ''), type: 'email' });
+    if (error) throw error;
+  }
+
+  // e-mail and password, once a password has been set from the account dialog (setPassword)
+  async function signInPassword(email, password) {
+    await ready();
+    if (!client) throw new Error('Accounts are not configured yet.');
+    const { error } = await client.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+  }
+
+  async function setPassword(password) {
+    await ready();
+    if (!client || !user) throw new Error('Sign in first.');
+    const { error } = await client.auth.updateUser({ password });
+    if (error) throw error;
+  }
+
   async function signOut() {
     await ready();
     if (client) await client.auth.signOut();
@@ -115,7 +139,7 @@
 
   window.PKAccount = {
     configured,
-    ready, signIn, signOut, load, save,
+    ready, signIn, verifyCode, signInPassword, setPassword, signOut, load, save,
     sharedCreate, sharedUpdate, sharedGet,
     get user() { return user; },
     client: () => client,   // supabase-js client (RLS applies), null until ready()
