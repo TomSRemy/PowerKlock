@@ -102,7 +102,10 @@ def load_years():
                 a[c + '_' + k] = np.array([[x or 0 for x in rg[c][k].get(d, [0] * 24)] for d in days], float)
         pu = pumping_hours(y)
         a['fr_pump'] = np.array([pu.get(d, [0] * 24) for d in days], float)
-        a['complete'] = len(days) >= 340
+        # complete = the year is over and nearly all its days are there. Until 21 Nov. 2026 a running year counted as
+        # complete from its 340th day (about 8 December): it then became the reference year with three weeks of December
+        # missing and, for France, Belgium and Spain, no installed capacity published yet
+        a['complete'] = len(days) >= 340 and y < date.today().year
         Y[y] = a
     return Y, caps
 
@@ -150,31 +153,71 @@ def cap_guess(c, t, Y, last):
 
 
 def cap_future(c, t, Y):
-    """forecast capacity: France its last yearly pace, never below the PPE3 path; neighbours their last yearly pace"""
-    ys = [y for y in range(2010, 2040) if cap(c, t, y) and (c != 'DE' or y <= date.today().year)]
+    """forecast capacity: France its last yearly pace, never below the PPE3 path; neighbours their last yearly pace, never
+    beyond the line to their official target while that target is ahead. A forecast fleet never shrinks."""
+    # completed years only (PPA review, 21 Nov. 2026): Energy-Charts gives Germany's running year as a year-to-date fleet,
+    # which was read as a year-end figure and slowed the pace; the running year is extrapolated like the years after it
+    ys = [y for y in range(2010, date.today().year) if cap(c, t, y)]
     last = ys[-1]
     if Y <= last:
         return cap(c, t, Y)
+    g0_ = cap(c, t, last)
     if c == 'FR':
         # the last year's pace, never below the PPE3 path (as js/tool-ppa.js capPath; the test bench's own pace)
-        pts = [(last, cap(c, t, last))] + [(y, g) for y, g in PPE3[t].items() if y > last]
+        pts = [(last, g0_)] + [(y, g) for y, g in sorted(PPE3[t].items()) if y > last]
         ppe = None
         for (y0, g0), (y1, g1) in zip(pts, pts[1:]):
             if Y <= y1:
                 ppe = g0 + (g1 - g0) * (Y - y0) / (y1 - y0)
                 break
-        if ppe is None:
+        if ppe is None and len(pts) >= 2:
             (ya, ga), (yb, gb) = pts[-2], pts[-1]
             ppe = gb + (gb - ga) / (yb - ya) * (Y - yb)
-        return max(ppe, cap_guess(c, t, Y, last) or 0)
+        elif ppe is None:
+            # every PPE3 point is behind the last observed year: the path's last pace (between its two last points),
+            # carried on from the last observed fleet
+            (ya, ga), (yb, gb) = sorted(PPE3[t].items())[-2:]
+            ppe = g0_ + (gb - ga) / (yb - ya) * (Y - last)
+        return max(ppe, cap_guess(c, t, Y, last) or 0, g0_)
     g = cap_guess(c, t, Y, last)
+    if g is None:
+        return None
     tg = TARGETS.get(c, {}).get(t)
-    if g is not None and tg and Y > last:
-        # never beyond the straight line from the last known year to the official target (then its slope)
+    if tg and last < tg[0] and g0_ < tg[1]:
+        # never beyond the straight line from the last known year to the official target (then its slope). Once the
+        # target is reached or its year has passed, the line would point down: the last observed pace is carried on
         ty, tv = tg
-        slope = (tv - cap(c, t, last)) / max(1, ty - last)
-        g = min(g, cap(c, t, last) + slope * (Y - last))
-    return g
+        g = min(g, g0_ + (tv - g0_) / (ty - last) * (Y - last))
+    # a fleet that shrank last year is held flat, never extrapolated downwards
+    return max(g, g0_)
+
+
+HORIZON_MIN = 5   # forecast at least this many years past the running year
+
+
+def last_quoted_cal():
+    """the last French Cal year quoted (data/fr_market.json's curve, else the Cal chain), None when neither is readable"""
+    ys = []
+    try:
+        for e in json.load(open(os.path.join(ROOT, 'data', 'fr_market.json'))).get('forwardCurve') or []:
+            c = str(e.get('contract') or '')
+            if e.get('value') is not None and 'Cal' in c:
+                ys += [int(w[3:7]) for w in c.split() if w.startswith('Cal') and w[3:7].isdigit()]
+    except (OSError, ValueError):
+        pass
+    try:
+        ys += [int(y) for y in json.load(open(os.path.join(ROOT, 'data', 'history', 'fr_market_calchain.json')))['FR'].get('years', {})]
+    except (OSError, ValueError, KeyError):
+        pass
+    return max(ys) if ys else None
+
+
+def horizon(today=None):
+    """the delivery years forecast, from the running year to the last quoted Cal, at least HORIZON_MIN years ahead.
+    Until 21 Nov. 2026 (PPA review) this stopped at a fixed 2030: from January 2028 the pricer's default tenor (next
+    year to the last quoted Cal) would have reached a year with no forecast"""
+    y0 = (today or date.today()).year
+    return list(range(y0, max(last_quoted_cal() or 0, y0 + HORIZON_MIN) + 1))
 
 
 # ── regional price model ─────────────────────────────────────────────────────
@@ -625,7 +668,105 @@ def make_pm(Y, st):
 
 
 # ── actuals ──────────────────────────────────────────────────────────────────
+# The realised the model is judged against, anchored on and whose errors make the model-risk premium. France's day-ahead
+# market settles each quarter-hour since 1 Oct. 2025, and a contract (and the site's realised capture,
+# scripts/build_fr_capture.py) stops the park per quarter-hour, strictly below the threshold: the quarter-hour realised
+# (actual_qh) prices each quarter-hour of RTE's output at its own price. The hourly one (actual_hourly) stops the park on
+# the mean of the hour's four prices: an hour mixing 0 € and negative quarter-hours dissolves its zeros (solar output
+# settled at exactly 0 € in 2026: 9.8 % on quarter-hours, 6.2 % on hourly means) and its value is too high (solar Oct.
+# 2025 – Nov. 2026, value per MWh of potential output 54.97 hourly against 54.23 €). Before Oct. 2025 the four prices
+# of an hour are equal and both give the same. PK_QH_REALISED=1 makes actual() and ppa_scenarios.actual_T() the
+# quarter-hour one (Lot 2, 22 Nov. 2026; on in the PPA jobs since 22 Nov. 2026, Tom: it moves wind's anchoring and the model-risk premium)
+QH_REALISED = os.environ.get('PK_QH_REALISED') == '1'
+_QH = {}
+
+
+def _rte_qh(y):
+    """{Paris day: {'s': [96], 'w': [96]}} from RTE éCO2mix (data/history/rte/YYYY-MM.json): consolidated data ('def')
+    come every 30 minutes (each value repeated on its two quarter-hours), real-time data ('tr', the last months) every
+    15 minutes"""
+    out = {}
+    for m in range(1, 13):
+        try:
+            d = json.load(open(os.path.join(ROOT, 'data', 'history', 'rte', f'{y}-{m:02d}.json')))['days']
+        except (OSError, ValueError, KeyError):
+            continue
+        for day, v in d.items():
+            s, w = v.get('solar') or [], v.get('wind') or []
+            if len(s) == 96 and len(w) == 96:
+                out[day] = {'s': s, 'w': w}
+    return out
+
+
+def qh(y):
+    """year y's quarter-hours, aligned on DATA[y]['days']: {'p', 's', 'w': days × 96, 'avg': days, 'qhOut': days (bool)}.
+    Prices from data/history/daily/<D>.json (France, 96 a day, the hourly price repeated before Oct. 2025, as
+    build_fr_capture reads them; a quarter-hour the day does not have, as on the spring clock change, is NaN); the day's
+    base is its published average 'avg' (a 25-hour day keeps 96 quarter-hours in its series: its mean is not its base).
+    Output from RTE éCO2mix (_rte_qh); a day without it takes the hourly output on its four quarter-hours ('qhOut' False)"""
+    if y in _QH:
+        return _QH[y]
+    a = DATA[y]
+    days = a['days']
+    n = len(days)
+    P, S, W = np.full((n, 96), np.nan), np.empty((n, 96)), np.empty((n, 96))
+    avg, has = np.full(n, np.nan), np.zeros(n, bool)
+    rte = _rte_qh(y)
+    for i, d in enumerate(days):
+        try:
+            z = (json.load(open(os.path.join(ROOT, 'data', 'history', 'daily', f'{d}.json'))).get('zones') or {}).get('FR') or {}
+        except (OSError, ValueError):
+            z = {}
+        h = z.get('hourly')
+        if isinstance(h, list) and len(h) in (24, 96):
+            h = [x for x in h for _ in range(4)] if len(h) == 24 else h
+            P[i] = [np.nan if x is None else x for x in h]
+        else:
+            P[i] = np.repeat(a['fr_p'][i], 4)
+        avg[i] = z['avg'] if isinstance(z.get('avg'), (int, float)) else np.nanmean(P[i])
+        r = rte.get(d)
+        if r:
+            S[i] = [max(0.0, x or 0.0) for x in r['s']]; W[i] = [max(0.0, x or 0.0) for x in r['w']]; has[i] = True
+        else:
+            S[i] = np.repeat(a['fr_s'][i], 4); W[i] = np.repeat(a['fr_w'][i], 4)
+    _QH[y] = {'p': P, 's': S, 'w': W, 'avg': avg, 'qhOut': has}
+    return _QH[y]
+
+
+def actual_qh(t, Y, T=0.0, V=None):
+    """actual() on quarter-hours: each quarter-hour of France's output of technology t priced at its own price, the park
+    stopped strictly below T €/MWh (an output at T or above is produced and paid), the month's base the mean of its
+    days' published averages; 'mwh' in MWh (a quarter-hour of 1 MW = 0.25 MWh), 'negH' in hours (4 quarter-hours = 1).
+    V: another output, days × 24 (repeated on its quarter-hours) or days × 96, in place of the national one"""
+    a, q = DATA[Y], qh(Y)
+    P = q['p']
+    V = q[t] if V is None else (np.repeat(V, 4, axis=1) if V.shape[1] == 24 else V)
+    ok = np.isfinite(P)
+    Pz, Vz = np.where(ok, P, 0.0), np.where(ok, V, 0.0)
+    out = {}
+    for m in range(1, 13):
+        k = a['month'] == m
+        if k.sum() < 20:
+            continue
+        Pm, Vm = Pz[k], Vz[k]
+        base = float(q['avg'][k].mean())
+        pos = ok[k] & (Pm >= T)
+        e = Vm.sum()
+        ep = (Vm * pos).sum()
+        out[m] = {'all': float((Vm * Pm).sum() / e / base), 'curt': float((Vm * Pm * pos).sum() / ep / base) if ep > 0 else None,
+                  'paid': float(ep / e), 'negH': int(round((ok[k] & (Pm < 0)).sum() / 4)), 'base': base, 'mwh': float(e / 4),
+                  'days': int(k.sum())}
+    return out
+
+
 def actual(t, Y):
+    """the realised month by month, the park stopped strictly below 0 €/MWh: quarter-hourly with PK_QH_REALISED=1, else
+    hourly (see QH_REALISED)"""
+    return actual_qh(t, Y) if QH_REALISED else actual_hourly(t, Y)
+
+
+def actual_hourly(t, Y):
+    """the realised on hourly means of price and output (fr_hourly), the park stopped when the hour's mean price is < 0"""
     a = DATA[Y]
     P, V = a['fr_p'], a['fr_' + t]
     out = {}
@@ -1005,7 +1146,7 @@ def ensemble(res):
 
 
 def forecast(res, choice, sims):
-    """monthly capture rates for the pricer: every month from next month to the end of 2030, both conventions"""
+    """monthly capture rates for the pricer: every month from next month to the end of the horizon (horizon()), both conventions"""
     this = date.today()
     past = [y for y in DATA if DATA[y]['complete']]
     last = max(past)
@@ -1016,7 +1157,7 @@ def forecast(res, choice, sims):
         pm = PriceModel([y for y in past if st['with2022'] or y != 2022][-st['window']:], st['regional'], 'mean', st['level'] != 'none')
         train = [y for y in past if y != 2022]
         V = B.S if t == 's' else B.W
-        for Y in range(this.year, 2031):
+        for Y in horizon(this):
             capY = {c: {tt: cap_future(c, tt, Y) for tt in 'sw'} for c in ('FR',) + NEIGH}
             lv = forward_levels(Y) if st['level'] == 'forward' else levels_for(last + 1, 'lastyear') if st['level'] == 'lastyear' else None
             m4, m5, dist = regional(t, Y, past, pm, last, capY, max(60, sims // 2), lv, st['regional'])

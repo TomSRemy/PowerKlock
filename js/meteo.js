@@ -115,7 +115,9 @@ async function loadWeather() {
       `<td>${wMax.length ? (wMax.reduce((a, b) => a + b, 0) / wMax.length).toFixed(1) : '–'}</td>` +
       `<td>${d.shortwave_radiation_sum[di] == null ? '–' : (d.shortwave_radiation_sum[di] / 3.6).toFixed(2)}</td><td>${f1(d.precipitation_sum[di])}</td><td>${f1(_hdd(mean))}</td></tr>`;
   }).join('');
-  document.getElementById('wx-note').textContent = 'Weights = metro-area population of each city. Wind = daily mean at 100 m (hub height). Radiation = daily shortwave sum. HDD base 18 °C on the daily mean. Model: Open-Meteo best match (ECMWF / DWD ICON / Météo-France blend).';
+  document.getElementById('wx-note').textContent = !window.PKI18n || PKI18n.lang !== 'en'
+    ? 'Poids = population de l’aire urbaine de chaque ville. Vent = moyenne journalière à 100 m (hauteur de moyeu). Rayonnement = somme journalière du rayonnement solaire. DJU base 18 °C sur la moyenne journalière. Modèle : meilleur modèle Open-Meteo (mélange ECMWF / DWD ICON / Météo-France).'
+    : 'Weights = metro-area population of each city. Wind = daily mean at 100 m (hub height). Radiation = daily shortwave sum. HDD base 18 °C on the daily mean. Model: Open-Meteo best match (ECMWF / DWD ICON / Météo-France blend).';
 }
 
 // ── Weather charts (page + dashboard) ───────────────────────────────

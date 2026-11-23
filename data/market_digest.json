@@ -1,51 +1,51 @@
 {
- "updated": "2026-11-19T15:55:46+00:00",
- "asof": "2026-11-19",
+ "updated": "2026-11-21T09:40:03+00:00",
+ "asof": "2026-11-21",
  "notes": 2,
  "engine": "proxy",
  "context": [
   {
    "topic": "France",
    "topic_en": "France",
-   "text": "La disponibilité du nucléaire en France est en baisse de 2,4% avec 45579,79 MW, ce qui pousse les prix à la hausse. La consommation d'électricité est également en baisse, avec des prix spot à 60,4 €/MWh",
-   "text_en": "French nuclear availability is down 2.4% at 45579.79 MW, pushing prices up. Electricity consumption is also down, with spot prices at 60.4 €/MWh",
-   "tone": "up"
+   "text": "La disponibilité nucléaire en France augmente, avec une production de 47 001,18 MW, ce qui pousse les prix à la baisse. La CRE a également approuvé un contrat commun d'accès au réseau pour les petites installations électriques.",
+   "text_en": "Nuclear availability in France increases, with production at 47,001.18 MW, which pushes prices down. The CRE also approved a common contract for access to the network for small electrical installations.",
+   "tone": "down"
   },
   {
    "topic": "Golfe",
    "topic_en": "Gulf",
-   "text": "Les tensions dans le Golfe et les risques liés au détroit d'Hormuz font augmenter les prix du pétrole, ce qui a un impact sur les prix de l'électricité",
-   "text_en": "Tensions in the Gulf and risks related to the Strait of Hormuz are increasing oil prices, which affects electricity prices",
-   "tone": "up"
+   "text": "Les tensions entre les États-Unis et l'Iran dans le détroit d'Ormuz font planer un risque géopolitique sur les prix du pétrole, mais les exportations en hausse du Moyen-Orient et de la Russie ainsi que la production américaine en hausse compensent ce risque.",
+   "text_en": "Tensions between the US and Iran in the Strait of Hormuz pose a geopolitical risk to oil prices, but rising exports from the Middle East and Russia, as well as increased US production, offset this risk.",
+   "tone": "flat"
   },
   {
    "topic": "Norvège",
    "topic_en": "Norway",
-   "text": "La Norvège a augmenté sa production de gaz, ce qui fait baisser les prix du gaz, mais les livraisons norvégiennes ont baissé légèrement ces derniers jours",
-   "text_en": "Norway has increased its gas production, which is lowering gas prices, but Norwegian deliveries have fallen slightly in recent days",
+   "text": "L'augmentation de l'offre norvégienne, la hausse des livraisons de GNL et la baisse de la demande de gaz pour la production d'électricité exercent une pression à la baisse sur les prix du gaz.",
+   "text_en": "The increase in Norwegian supply, the rise in LNG deliveries, and the fall in demand for gas for electricity generation are putting downward pressure on gas prices.",
    "tone": "down"
   }
  ],
  "outlook": {
   "oil": {
-   "tone": "down",
-   "text": "Les prix du pétrole devraient baisser en raison de la hausse de la production",
-   "text_en": "Oil prices are expected to fall due to increased production"
+   "tone": "flat",
+   "text": "Les prix du pétrole devraient rester stables en raison de l'équilibre entre les risques géopolitiques et l'augmentation de la production.",
+   "text_en": "Oil prices are expected to remain stable due to the balance between geopolitical risks and increased production."
   },
   "gas": {
    "tone": "down",
-   "text": "Les prix du gaz devraient baisser en raison de la hausse de la production norvégienne",
-   "text_en": "Gas prices are expected to fall due to increased Norwegian production"
+   "text": "Les prix du gaz devraient continuer à baisser en raison de l'augmentation de l'offre norvégienne et de la hausse des livraisons de GNL.",
+   "text_en": "Gas prices are expected to continue to fall due to the increase in Norwegian supply and the rise in LNG deliveries."
   },
   "power": {
-   "tone": "flat",
-   "text": "Les prix de l'électricité devraient rester stables en raison de la baisse de la consommation",
-   "text_en": "Electricity prices are expected to remain stable due to decreased consumption"
+   "tone": "down",
+   "text": "Les prix de l'électricité devraient baisser en raison de l'augmentation de la disponibilité nucléaire en France.",
+   "text_en": "Electricity prices are expected to fall due to the increase in nuclear availability in France."
   },
   "carbon": {
    "tone": "flat",
-   "text": "Les prix du carbone devraient rester stables en raison de la réglementation",
-   "text_en": "Carbon prices are expected to remain stable due to regulation"
+   "text": "Les prix du carbone devraient rester stables en raison de l'absence de facteurs significatifs pouvant les faire varier.",
+   "text_en": "Carbon prices are expected to remain stable due to the absence of significant factors that could cause them to fluctuate."
   }
  }
 }

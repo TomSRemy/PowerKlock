@@ -22,6 +22,16 @@ from datetime import date
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 H = os.path.join(ROOT, 'data', 'history')
+def hours(k):
+    """delivery hours of month 'YYYY-MM' in Paris time (the clock change makes March 743 and October 745)"""
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+    y, m = int(k[:4]), int(k[5:7])
+    a = datetime(y, m, 1, tzinfo=ZoneInfo('Europe/Paris'))
+    b = datetime(y + (m == 12), m % 12 + 1, 1, tzinfo=ZoneInfo('Europe/Paris'))
+    return round((b.timestamp() - a.timestamp()) / 3600)   # timestamps: a difference in one zone ignores the clock change
+
+
 MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
 
@@ -148,8 +158,10 @@ def main():
             free = [x for x in ks if x not in fixed]
             if not free:
                 continue
-            target = price * len(ks) - sum(months[x]['value'] for x in ks if x in fixed)
-            cur = sum(months[x]['value'] for x in free)
+            # a contract's price is the mean of its hours (a quarter: its months weighted by their hours, 743 in March,
+            # 745 in October in Paris time), not the plain mean of its months (Q2 2027: 74.53 against 74.63 €, 22 Nov. 2026)
+            target = price * sum(hours(x) for x in ks) - sum(months[x]['value'] * hours(x) for x in ks if x in fixed)
+            cur = sum(months[x]['value'] * hours(x) for x in free)
             if cur > 0 and target > 0:
                 f = target / cur
                 for x in free:

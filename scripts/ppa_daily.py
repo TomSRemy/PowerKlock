@@ -19,9 +19,12 @@ Writes data/history/ppa_benchmark.json:
    lo / hi = the capacity trend's price at 10 % and 90 % of 10,000 simulated futures (P10–P90) whose capture drift is
              the measured spread of the published average's errors (since 28 Oct. 2026: tool-ppa.js o.mcBand), moved by
    ppa − build so the band sits around the published price,
-   ref = forward baseload of the tenor, go = guarantee of origin, imb = imbalance)
+   ref = forward baseload of the tenor, go = guarantee of origin, imb = imbalance,
+   genLo / genHi = the generator's own P10–P90 (o.ppaGenLo / o.ppaGenHi; stored from 21 Nov. 2026, not published yet))
+  Since 21 Nov. 2026 ppa is the generator's price (int) or nothing: a technology without it is not published that day
+  (exit 1, so the job's e-mail on failure goes out); the reference methods may be missing (a warning only).
 
-    python scripts/ppa_daily.py            # today (Paris), overwrites the day if run again
+    python scripts/ppa_daily.py            # the day of the forwards priced (data/fr_market.json), overwritten if run again
     python scripts/ppa_daily.py --redefine
     python scripts/ppa_daily.py --recompute-all   (after a change of method: every day with the current model)
         once, on the switch day: every past day without blend4 is recomputed (that day's Cal settlements, today's
@@ -80,8 +83,11 @@ def run(rebuild=None):
                 // generator (scripts/ppa_generator.py); 29 Oct. the anchored European model mix
                 const it = o.ppaGen;
                 return { wx: r(o.ppaWx), eu: r(o.ppaEu), int: r(it), blend: m.length ? r(m.reduce((a, b) => a + b, 0) / m.length) : null,
-                         // the published average: the four methods with their weights (inverse of their past error for solar)
-                         blend4: m4.length === 4 ? r(PKPpa.avg4Of ? PKPpa.avg4Of(o) : m4.reduce((a, b) => a + b, 0) / 4) : null, lo: r(lo), hi: r(hi) };
+                         // the published average as the page computes it (the generator alone since 31 Oct. 2026); no longer
+                         // conditioned on the four reference methods being there (PPA review, 21 Nov. 2026)
+                         blend4: r(PKPpa.avg4Of ? PKPpa.avg4Of(o) : m4.length === 4 ? m4.reduce((a, b) => a + b, 0) / 4 : null), lo: r(lo), hi: r(hi),
+                         // the generator's own P10-P90 (stored only: the published lo / hi stay the capacity trend's band for now)
+                         genLo: r(o.ppaGenLo), genHi: r(o.ppaGenHi) };
               }; }""")
             for name, over in CASES.items():
                 got[name] = p.evaluate("""async over => {
@@ -133,15 +139,47 @@ NOTE = ('PowerKlock PPA benchmark: the price of the site\'s pricer, default sett
         'the current model.')
 
 
-def headline(x):
-    """the published price = the 4-method average; the capacity trend's P10-P90 band moved around it"""
-    if not x or x.get('blend4') is None or x.get('build') is None:
-        return
-    shift = x['blend4'] - x['build']
-    x['ppa'] = x['blend4']
+REFS = ('build', 'fpc', 'wx', 'eu')
+
+
+def headline(x, tech='', day=''):
+    """the published price = the scenario generator's (int, o.ppaGen); the capacity trend's P10-P90 band moved around it.
+    Returns None when done, else what was missing: that technology's day must then not be published. Until 21 Nov. 2026
+    (PPA review) a day without the 4-method average kept the capacity trend's price under the published label"""
+    if not x or x.get('int') is None:
+        return f'{tech} {day}: no scenario-generator price (int / o.ppaGen is null)'.strip()
+    gone = [k for k in REFS if x.get(k) is None]
+    if gone:
+        # the reference methods may fail without blocking the published price, but it is said
+        print(f'::warning::PPA benchmark {tech} {day}: reference method(s) without a price: {", ".join(gone)}')
+    x['ppa'] = x['int']
     for k in ('lo', 'hi'):
         if x.get(k) is not None:
-            x[k] = round(x[k] + shift, 2)
+            x[k] = round(x[k] + x['int'] - x['build'], 2) if x.get('build') is not None else None
+    return None
+
+
+def forwards_day():
+    """the Paris date of the forwards the pricer read (data/fr_market.json, or the Cal chain when newer, as js/tool-ppa.js D.fwdDate). The job runs at
+    14:15 UTC but has started as late as 22:16 UTC, after midnight in Paris in summer: the run's own date then named the
+    wrong session (PPA review, 21 Nov. 2026). None when the file gives no date"""
+    try:
+        with open(os.path.join(ROOT, 'data', 'fr_market.json')) as f:
+            fc = json.load(f).get('forwardCurve') or []
+        d = fc[0].get('date') if fc else None
+        d = d[:10] if d and len(d) >= 10 else None
+    except (OSError, ValueError, AttributeError):
+        d = None
+    # the pricer takes a Cal chain's close when it is newer than the snapshot's (js/tool-ppa.js, 22 Nov. 2026): same date
+    try:
+        with open(os.path.join(ROOT, 'data', 'history', 'fr_market_calchain.json')) as f:
+            ch = json.load(f)['FR']['years']
+        last = max((v['dates'][-1] for v in ch.values() if v.get('dates')), default=None)
+        if last and (d is None or last > d):
+            d = last
+    except (OSError, ValueError, KeyError, TypeError):
+        pass
+    return d
 
 
 def recompute_all():
@@ -164,14 +202,20 @@ def recompute_all():
             days.append([d, last])
     print('recomputing', len(days), 'of', len(j['days']), 'days')
     got, errs = run(days)
+    missing = []
     for d, v in (got.get('rebuilt') or {}).items():
-        for t in ('solar', 'wind'):
-            headline(v.get(t))
+        miss = [m for t in ('solar', 'wind') for m in [headline(v.get(t), t, d)] if m]
+        if miss:
+            missing += miss          # that day keeps its record as it was
+            continue
         j['days'][d].update({'rebuilt': True, 'solar': v['solar'], 'wind': v['wind'], 'def': 'blend4'})
     j['note'] = NOTE
     with open(OUT, 'w') as f:
         json.dump(j, f, separators=(',', ':'))
     print('recomputed', len(got.get('rebuilt') or {}), 'days · JS errors:', len(errs))
+    for m in missing:
+        print('::error::PPA benchmark not recomputed:', m)
+    return 1 if missing else 0
 
 
 def redefine():
@@ -235,33 +279,52 @@ def main():
     if '--recompute-all' in sys.argv:
         return recompute_all()
     got, errs = run(rebuild)
+    day = forwards_day()
+    if not day:
+        day = datetime.now(ZoneInfo('Europe/Paris')).date().isoformat()
+        print('::warning::data/fr_market.json gives no forward date: the record is stamped with the run date', day)
+    # a technology without the generator's price is not published that day under another method: its record stays as it
+    # was (a new day is written only when both technologies have their price, as the readers expect both), and the job
+    # fails at the end so the e-mail on failure goes out
+    missing = []
+    ok = {}
     for k in ('solar', 'wind'):
-        headline(got.get(k))
-    for v in (got.get('rebuilt') or {}).values():
-        for k in ('solar', 'wind'):
-            headline(v.get(k))
-    if not got.get('solar') or got['solar'].get('ppa') is None or not got.get('wind') or got['wind'].get('ppa') is None:
-        print('pricer gave no price', got, errs[:3])
+        m = headline(got.get(k), k, day)
+        ok[k] = m is None
+        if m:
+            missing.append(m)
+    if not any(ok.values()):
+        print('pricer gave no published price', {k: {x: (got.get(k) or {}).get(x) for x in ('int', 'blend4', 'build')} for k in ('solar', 'wind')}, errs[:3])
+        for m in missing:
+            print('::error::PPA benchmark not published:', m)
         return 1
-    day = datetime.now(ZoneInfo('Europe/Paris')).date().isoformat()
     try:
         with open(OUT) as f:
             j = json.load(f)
     except (OSError, ValueError):
         j = {'days': {}}
-    tenor = got['solar'].pop('tenor', '')
-    got['wind'].pop('tenor', None)
-    j['days'][day] = {'tenor': tenor, 'def': 'blend4', 'solar': got['solar'], 'wind': got['wind']}
+    tenor = (got.get('solar') or {}).pop('tenor', '') or (got.get('wind') or {}).pop('tenor', '')
+    (got.get('wind') or {}).pop('tenor', None)
+    if all(ok.values()):
+        j['days'][day] = {'tenor': tenor, 'def': 'blend4', 'solar': got['solar'], 'wind': got['wind']}
+    elif day in j['days']:
+        # a run again on a day already published: only the technology that has its price is refreshed
+        j['days'][day].update({k: got[k] for k in ok if ok[k]})
     for d, v in (got.get('rebuilt') or {}).items():
-        if d != day:
+        miss = [m for t in ('solar', 'wind') for m in [headline(v.get(t), t, d)] if m]
+        if miss:
+            missing += miss
+        elif d != day:
             j['days'][d] = {'tenor': tenor, 'rebuilt': True, 'def': 'blend4', 'solar': v['solar'], 'wind': v['wind']}
     j['days'] = dict(sorted(j['days'].items()))
     j['updated'] = datetime.now(ZoneInfo('UTC')).strftime('%Y-%m-%dT%H:%M:%SZ')
     j['note'] = NOTE
     with open(OUT, 'w') as f:
         json.dump(j, f, separators=(',', ':'))
-    print(day, tenor, 'solar', got['solar']['ppa'], 'wind', got['wind']['ppa'], '· JS errors:', len(errs))
-    return 0
+    print(day, tenor, 'solar', (got.get('solar') or {}).get('ppa'), 'wind', (got.get('wind') or {}).get('ppa'), '· JS errors:', len(errs))
+    for m in missing:
+        print('::error::PPA benchmark not published:', m)
+    return 1 if missing else 0
 
 
 if __name__ == '__main__':

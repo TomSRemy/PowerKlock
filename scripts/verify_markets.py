@@ -7,12 +7,12 @@ Second sources beyond the day-ahead prices (those are in scripts/verify_prices.p
               figures are estimates RTE revises later (30 Oct. 2026: solar 4 282 MW real-time against 4 104 MW at
               Energy-Charts, 4.3 %, on a dull day), and a later run compares them again; a missing or broken day
               still shows at once.
-  brent       Brent (PowerKlock cockpit, ICE front month) against the Brent spot of the US EIA via FRED
+  brent       Brent (PowerKlock, ICE front month) against the Brent spot of the US EIA via FRED
               (DCOILBRENTEU). Different instruments: the gap is usually within 5 % but the physical spot
               ran 10 to 25 % above the futures in Apr and Sep-Oct 2026. So only what a second source can
               prove is flagged: a gap above 30 % (unit error, wrong contract) and a series that stays
               flat 5 days while FRED moves (stale feed). The monthly mean gap is written as information.
-  eurusd      EUR/USD (PowerKlock cockpit) against the ECB-based FRED series DEXUSEU, tolerance 0.5 %.
+  eurusd      EUR/USD (PowerKlock) against the ECB-based FRED series DEXUSEU, tolerance 0.5 %.
 Forwards, TTF, EUA, coal: no free second source.
 
     python scripts/verify_markets.py [--days 45]

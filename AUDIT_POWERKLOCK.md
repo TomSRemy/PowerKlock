@@ -98,7 +98,7 @@ Statut : **fait** = dans les commits de cette nuit ; **reste** = non fait, avec 
 | A-09 | P1 | Évolutions, Aujourd'hui | Liens au bleu du navigateur `rgb(0,0,238)` (2:1) | `.reg-nl a`, `.mrn-reel-open` aux couleurs du site | S | fait |
 | A-10 | P1 | Méthodologie | Page de 1 324 px à 1 024 à 1 280 px (tableau `.meth-table` de 793 px) | `.meth-table { display:block; max-width:100%; overflow-x:auto }` | S | fait |
 | A-11 | P1 | Analyse de marché | 1 285 px après rétrécissement de la fenêtre (colonne `1fr` gardait la largeur du canvas) | `.ma-panel-row { grid-template-columns: 136px minmax(0,1fr) }` | S | fait |
-| A-12 | P1 | Aujourd'hui › Expert, Rejouer, Méthodologie (390 px) | Tableaux coupés à 491 px, bouton Exporter à 422 px | sous 700 px : boîte du tableau défilante, `.rp-bar { flex-wrap: wrap }` | S | en partie : Rejouer corrigé ; Expert (439 px) et Méthodologie (471 px, mots longs dans `.meth-p`) débordent encore, cause relevée, correctif au prochain lot |
+| A-12 | P1 | Aujourd'hui › Expert, Rejouer, Méthodologie (390 px) | Tableaux coupés à 491 px, bouton Exporter à 422 px | sous 700 px : boîte du tableau défilante, `.rp-bar { flex-wrap: wrap }` | S | fait (20 nov.) : Rejouer corrigé le 1er nov. ; Expert et Méthodologie mesurés à 390 px le 20 nov. : page à 390 px, les tableaux défilent dans leur boîte |
 | A-13 | P2 | Global | Texte à 8, 8,5, 9 et 9,5 px (bandeau, M0, point marché, analyse, puces du pricer) | plancher 10 px dans `css/site.css` (23 règles) | S | fait |
 | A-14 | P2 | Global | Sous-titres et notes à 10,5 px (42 000 caractères) | `.fuel-card-sub`, `.fuel-note`, tuiles BOA : 11 px | S | fait |
 | A-15 | P2 | Aujourd'hui, Bilan | Rayons 10 et 12 px au lieu de 8 | `.mrn2-tile`, `.bl-k`, `.bl-blk` : 8 px | S | fait |
@@ -109,22 +109,23 @@ Statut : **fait** = dans les commits de cette nuit ; **reste** = non fait, avec 
 | A-20 | P2 | 7 pages | 11 champs de date sans libellé accessible | `aria-label` From / To / Delivery day (traduits) | S | fait |
 | A-21 | P2 | Prévision › Quelle fiabilité | Lignes « Solar · Occitanie » en anglais | `TT('Solaire','Solar')` dans `js/tool-forecast.js` | S | fait |
 | A-22 | P2 | Production (Mix, Historique, multi-zones) | « Market read : Geographic dispersion structural… » : 35 verdicts en anglais | verdict dans son propre élément (`js/genmix.js`) + 22 textes et 13 modèles au dictionnaire | M | fait |
-| A-23 | P2 | Capture, M0, Prévision, Analyse | 7 notes longues générées avec chiffres (m0.js, capture-forward.js, tool-forecast.js x2, meteo.js `wx-note`, news.js, note « Data sources » d'Analyse) | branche fr/en à la source | M | reste |
+| A-23 | P2 | Capture, M0, Prévision, Analyse | 7 notes longues générées avec chiffres (m0.js, capture-forward.js, tool-forecast.js x2, meteo.js `wx-note`, news.js, note « Data sources » d'Analyse) | branche fr/en à la source | M | fait (20 nov.) : les 7 notes ont leur version française écrite à la source (`M0_FR`, `TT`, `_newsT`, bloc `.pk-fr-only` / `.pk-en-only` pour Analyse) |
 | A-24 | P2 | Prévision | Statut « Solar · 49,44, 1,10 · 10,0 MW · average of 3 weather models… » en anglais | branche fr/en `js/tool-forecast.js` (statut du site et historique du parc) | S | fait |
 | A-25 | P2 | Sources de graphiques | 45 graphiques sans badge source sous le titre ; « Market data » ne nomme pas la source (Gaz, carbone, pétrole) | nommer le flux réel (voir `scripts/fetch_commodities.py`) | S | reste : nom du fournisseur à confirmer par Tom |
-| A-26 | P2 | Global | 326 cibles cliquables < 24 px (boutons de période `.pk-gf-btn` 22 px, étoiles, ↓, ⤢) | hauteur 24 px minimum | S | reste : touche toutes les barres d'outils, à valider visuellement |
-| A-27 | P2 | Tableaux | 14 tableaux hors norme (marges 5 à 7 px, 11 à 13 px) | appliquer la norme du STYLEGUIDE § 4 | M | reste |
+| A-26 | P2 | Global | 326 cibles cliquables < 24 px (boutons de période `.pk-gf-btn` 22 px, étoiles, ↓, ⤢) | hauteur 24 px minimum | S | fait (20 nov.) : 334 → 17 cibles sous 24 px à 1 440 px avant les derniers correctifs (boutons de période 19 → 24 px, bascules de barre, puces de zone, « Dernier ») ; ★ ↓ ⤢ déjà à 28 × 26 px ; barres vérifiées sur captures à 1 440 px, passe 390 / 1 024 px à refaire |
+| A-27 | P2 | Tableaux | 14 tableaux hors norme (marges 5 à 7 px, 11 à 13 px) | appliquer la norme du STYLEGUIDE § 4 | M | fait (20 nov.) : en-têtes 10 px, marges 10 px 12 px / 9 px 12 px sur Bilan, Aujourd'hui, Production, Comparaison de zones, Prix négatifs, Batteries, Intensité carbone, Méthodologie, pricer ; 18 styles mesurés → 2 (13 px et 11 px dense) hors tableaux vides |
 | A-28 | P3 | H1 | 3 tailles de H1 (22, 24, 26 px), H3 en 5 variantes | `.meth-h1`, `.reg-h1`, `.bl-h1` à 22 px ; H3 non traités | S | fait pour H1 |
-| A-29 | P3 | Graphiques | 22 canvas sans description ; GO : 7 axes sans unité | `js/align-rows.js` décrit aussi les cartes du Bilan, de l'Analyse et d'Aujourd'hui (22 → 13) ; axes GO non traités | S | en partie |
-| A-30 | P3 | Requêtes | 404 attendus et répétés : fichier du lendemain (`daily/2026-11-02.json`) et du mois neuf (`rte/2026-11.json`, `monthly/2026-11.json`) demandés avant publication, sur Prévision, État, API, Méthodologie, Rejouer | lire d'abord l'index (`data/history/index`) au lieu de sonder | S | reste : pas un bug visible, bruit dans la console |
+| A-29 | P3 | Graphiques | 22 canvas sans description ; GO : 7 axes sans unité | `js/align-rows.js` décrit aussi les cartes du Bilan, de l'Analyse et d'Aujourd'hui (22 → 13) ; axes GO non traités | S | fait (20 nov.) : axes GO titrés `€/MWh` ou `MWh` (9 → 0 hors barres horizontales) ; canvas sans description 22 → 5 avant la dernière passe (reste Open-Meteo muet en local et la Spirale, traités par la passe différée, à remesurer) |
+| A-30 | P3 | Requêtes | 404 attendus et répétés : fichier du lendemain (`daily/2026-11-02.json`) et du mois neuf (`rte/2026-11.json`, `monthly/2026-11.json`) demandés avant publication, sur Prévision, État, API, Méthodologie, Rejouer | lire d'abord l'index (`data/history/index`) au lieu de sonder | S | en partie (20 nov.) : `js/net.js` ne demande plus un jour, un mois ou une année de livraison qui ne peut pas exister (avant 12 h 45 à Paris pour le lendemain) : 5 → 0 réponses 404 le matin ; de 12 h 45 à la publication la demande part encore ; archive de prévision arrêtée à son premier mois ; `rte/<mois>` du 1er du mois et `news_digest.json` restent (il faudrait un index écrit par les jobs : changement de pipeline, à proposer) |
 | A-31 | P3 | Carte d'Europe | Bouton de zoom Leaflet « Zoom in » non traduit | entrée de dictionnaire ajoutée (A-01) | S | fait |
 
-Total sur 31 : 23 faits, 3 en partie (A-12, A-28, A-29), 5 restent (A-23, A-25 en attente d'une information de Tom, A-26, A-27, A-30).
+Total sur 31 (mis à jour le 20 novembre) : 28 faits, 2 en partie (A-28, A-30), 1 reste (A-25, en attente d'une information de Tom).
 
-Problèmes relevés dans le **pricer PPA** (non touché, travail en cours en parallèle) : 3 liens `href="#"` par onglet ;
-bouton `.pp-chip-reset` sans libellé ; tuiles `pp-mcard` à 10 px de rayon et fond `#151c24` ; 2 courbes encore
-lissées (`tension: .35`, `js/tool-ppa.js` l. 1387-1388) et 5 dans `js/ppa-fan.js` ; 25 info-bulles des réglages en
-anglais (traduites cette nuit par le dictionnaire, sans toucher au code).
+Pricer PPA (20 novembre) : les 3 liens `href="#"` par onglet sont des boutons (`.pk-linkbtn`) ; le bouton
+`.pp-chip-reset` a son libellé ; tuiles `pp-mcard` au gabarit KPI (rayon 8 px, fond `#1c242e`) ; plus aucune courbe
+lissée (`tension: 0` dans `js/tool-ppa.js` et `js/ppa-fan.js`, profil journalier de Cannibalisation compris) ; les
+info-bulles des réglages (aide « i », valeur automatique, décote par année, part à prix négatifs) sont écrites en
+français dans le code. Aucun calcul de prix touché (`tests/test_ppa_frozen.py` inchangé).
 
 ## 4. Tableau B. À VALIDER (modifications fortes, rien n'est fait)
 

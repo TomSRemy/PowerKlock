@@ -18,10 +18,24 @@
   // the same data file asked for by several modules (Today asked for commodities_series.json 4 times) is
   // downloaded once: requests for one file within a minute share the answer, each caller reading its own copy.
   // Cache-busting parameters (?t=, ?v=) are ignored for this; a request with cache 'no-store' or 'reload' goes out.
+  // A delivery day that cannot be published yet is not asked for (it answered 404 on every page, several times a day):
+  // data/history/daily/<D>.json is written after the day-ahead auction of D-1 (results from 12:45 in Paris), and
+  // history/monthly/<YYYY-MM>.json and history/fr_hourly/<YYYY>.json with their first day. Before that the answer is
+  // known: 404, no request sent.
+  // From 12:45 until the file is there the request goes out as before (only the server knows).
+  const parisNow = () => { const p = {}; new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+    .formatToParts(new Date()).forEach(x => { p[x.type] = x.value; }); return { day: p.year + '-' + p.month + '-' + p.day, hm: +p.hour * 100 + +p.minute }; };
+  const nextDay = iso => { const a = iso.split('-').map(Number); return new Date(Date.UTC(a[0], a[1] - 1, a[2] + 1)).toISOString().slice(0, 10); };
+  const notYet = url => {
+    const m = /(?:^|\/)data\/history\/(daily\/(\d{4}-\d{2}-\d{2})|monthly\/(\d{4}-\d{2})|fr_hourly\/(\d{4}))\.json(?:\?|$)/.exec(url); if (!m) return false;
+    try { const now = parisNow(), last = now.hm >= 1245 ? nextDay(now.day) : now.day;   // the latest delivery day that can exist
+      return m[2] ? m[2] > last : m[3] ? m[3] > last.slice(0, 7) : m[4] > last.slice(0, 4); } catch (_) { return false; }
+  };
   const timed = window.fetch, SHARE = new Map(), TTL = 60000;
   if (timed) window.fetch = function (input, init) {
     const url = typeof input === 'string' ? input : input && input.url;
     const method = (init && init.method) || (input && input.method) || 'GET';
+    if (url && (method === 'GET' || method === 'HEAD') && notYet(url)) return Promise.resolve(new Response('', { status: 404, statusText: 'Not published yet' }));
     if (!url || method !== 'GET' || (init && (init.cache === 'no-store' || init.cache === 'reload' || init.body)) || !(/(^|\/)data\/[^?]+\.(json|csv)(\?|$)/.test(url) || /opendatasoft\.com\/api\//.test(url))) return timed(input, init);
     const key = /opendatasoft/.test(url) ? url : url.replace(/[?&](t|v|_)=[^&]*/g, '').replace(/\?$/, '');
     const hit = SHARE.get(key);

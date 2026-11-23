@@ -1,6 +1,6 @@
 -- requires: auth, 021_news_personalize.sql, 022_account_access.sql
 -- ════════════════════════════════════════════════════════════════════
--- PowerKlock · 027 · « Mettre à la une »: the admin pins a story
+-- PowerKlock · 030 · « Mettre à la une »: the admin pins a story
 -- The newsletter (scripts/news_letter.py) and the News page lead with the
 -- story the admin pinned in the last 36 hours, for every profile; without
 -- a pin, the lead story is chosen automatically. Only the news admin pins

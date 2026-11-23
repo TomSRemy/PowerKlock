@@ -112,10 +112,10 @@ async function _renDay(zone, day) {
   const j = await _renDaily(day);
   const z = j && j.zones && j.zones[zone];
   const st = _renDayStats(z);
-  if (!st || (!st.wind && !st.solar)) return { day, z: null };
   // Day-ahead forecast: only renewables.json has it, for its own day.
   const live = window._renData && window._renData[zone];
   const liveDay = window._renUpdated ? new Date(window._renUpdated).toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' }) : null;
+  if (!st || (!st.wind && !st.solar)) return { day, z: null, liveDay, priceGap: !(z && z.avg != null) };   // priceGap: the zone not in the day's file yet
   const fc = (live && liveDay === day) ? live : null;
   const n = (st.solar || st.wind).length;
   return { day, z, st, fc, liveDay, n, lbls: makeTimeLabels(n) };
@@ -217,6 +217,12 @@ _renReg({
     // no day asked and the forecast of the newest day not stored yet: show the latest day that has one
     if (!hasFc(D) && !p.day && D.liveDay && D.liveDay !== D.day) D = await _renDay(p.zone, D.liveDay);
     const fc = D.fc;
+    if (!hasFc(D) && D.priceGap && D.day === D.liveDay) {   // the zone's data for the forecast day not received yet: a data gap
+      noDataMsg(cid, PK.gapText(D.day, p.zone), PK.fr() ? 'La prévision et la production du jour s’afficheront avec ces données.' : 'The day’s forecast and output will show with this data.');
+      const c = document.getElementById(cid), m = c && c.parentNode.querySelector('.no-data-msg');
+      PK.markGap(m, D.day, p.zone);
+      return null;
+    }
     if (!hasFc(D)) {
       noDataMsg(cid, 'Day-ahead forecast not stored for this day', `The forecast is kept for the latest fetched day${D.liveDay ? ' (' + _renFmtDay(D.liveDay) + ')' : ''}.`);
       return null;

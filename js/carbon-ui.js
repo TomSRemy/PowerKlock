@@ -238,9 +238,9 @@
     }).join('');
     return `<table style="width:100%;font-size:11px;border-collapse:collapse">
       <thead><tr>
-        <th style="text-align:left;padding:4px 8px;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Technology</th>
-        <th style="text-align:right;padding:4px 8px;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Part</th>
-        <th style="text-align:right;padding:4px 8px;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">gCO2/kWh</th>
+        <th style="text-align:left;padding:10px 12px;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Technology</th>
+        <th style="text-align:right;padding:10px 12px;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Part</th>
+        <th style="text-align:right;padding:10px 12px;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">gCO2/kWh</th>
       </tr></thead><tbody>${rows}</tbody></table>`;
   }
   function _flowsTable(r){
@@ -255,9 +255,9 @@
     }).join('');
     return `<table style="width:100%;font-size:11px;border-collapse:collapse;margin-bottom:10px">
       <thead><tr>
-        <th style="text-align:left;padding:4px 8px;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Border</th>
-        <th style="text-align:right;padding:4px 8px;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Direction</th>
-        <th style="text-align:right;padding:4px 8px;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Net MW</th>
+        <th style="text-align:left;padding:10px 12px;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Border</th>
+        <th style="text-align:right;padding:10px 12px;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Direction</th>
+        <th style="text-align:right;padding:10px 12px;color:var(--tx3);font-weight:600;border-bottom:1px solid var(--bd)">Net MW</th>
       </tr></thead><tbody>${rows}</tbody></table>`;
   }
   function _residualBlock(r, res){

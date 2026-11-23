@@ -42,4 +42,43 @@
     }
   };
   window.addEventListener('load', () => { ready = true; });
+
+  // ── A missing day-ahead price is a data gap, not a broken chart ──
+  // ENTSO-E sometimes publishes a zone hours late (21 Nov 2026: France and the Netherlands). The gap is tracked in
+  // data/data_gaps.json and on Data status; the widgets say so in plain words and show the latest delivery day
+  // that has the price, with its date. The element carries data-pk-gap="<day>:<zones>" (and data-pk-shown="<day>"
+  // when an earlier day is drawn): tests/smoke.py accepts that state only when the daily files confirm the gap.
+  //   PK.fr()                          true when the page is in French (the default)
+  //   PK.dayLbl(iso)                   21 nov. / 21 Nov
+  //   await PK.lastPriceDay(zone, iso, back)  { day, z } of the latest delivery day ≤ iso with the zone's price (7 days back)
+  //   PK.gapText(day, zones, shown)    the sentence, French or English
+  //   PK.markGap(el, day, zones, shown)  puts the marker on an element
+  PK.fr = () => !(window.PKI18n && PKI18n.lang === 'en');
+  PK.dayLbl = iso => new Date(iso + 'T12:00:00Z').toLocaleDateString(PK.fr() ? 'fr-FR' : 'en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
+  const days = new Map();
+  const dayFile = iso => {
+    if (!days.has(iso)) days.set(iso, fetch(((typeof DATA_BASE !== 'undefined' && DATA_BASE) || './data/') + 'history/daily/' + iso + '.json').then(r => r.ok ? r.json() : null).catch(() => null));
+    return days.get(iso);
+  };
+  const addDay = (iso, n) => { const [y, m, d] = iso.split('-').map(Number); return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10); };
+  PK.lastPriceDay = async (zone, iso, back) => {
+    for (let i = 0; i <= (back == null ? 7 : back); i++) {
+      const day = addDay(iso || PK.today(), -i), j = await dayFile(day), z = j && j.zones && j.zones[zone];
+      if (z && z.avg != null) return { day, z };
+    }
+    return null;
+  };
+  PK.gapText = (day, zones, shown) => {
+    const zs = [].concat(zones).join(', ');
+    return PK.fr()
+      ? `Prix day-ahead ${zs} du ${PK.dayLbl(day)} pas encore reçu d’ENTSO-E` + (shown ? ` : voici celui du ${PK.dayLbl(shown)}.` : '. Il s’affichera à la prochaine mise à jour des données (voir État des données).')
+      : `${zs} day-ahead price for ${PK.dayLbl(day)} not received from ENTSO-E yet` + (shown ? `: showing ${PK.dayLbl(shown)}.` : '. It will show with the next data update (see Data status).');
+  };
+  PK.markGap = (el, day, zones, shown) => {
+    if (!el) return el;
+    el.dataset.pkGap = day + ':' + [].concat(zones).join(',');
+    if (shown) el.dataset.pkShown = shown; else delete el.dataset.pkShown;
+    el.setAttribute('translate', 'no');   // already in the reader's language
+    return el;
+  };
 })();

@@ -70,14 +70,12 @@ def build():
     today = datetime.now(PARIS).date()
     rows, lines = [], []
     t, tm = spot(today), spot(today + timedelta(days=1))
-    neg = (load('neg_forecast.json') or {}).get('days', {}).get((today + timedelta(days=1)).isoformat())
     if t:
         rows.append(('Spot France aujourd’hui', f'{n(t["base"])} €/MWh', f'pointe {n(t["peak"])} · min {n(t["min"])} · max {n(t["max"])}' + (f' · {t["neg"]} h à 0 € ou moins' if t['neg'] else '')))
     if tm:
         rows.append(('Spot France demain', f'{n(tm["base"])} €/MWh', (s(tm['base'] - t['base']) + ' € vs aujourd’hui') if t else ''))
-    elif neg and neg.get('price'):
-        pv = [x for x in neg['price'] if x is not None]
-        rows.append(('Demain (prévision)', f'≈ {n(sum(pv) / len(pv), 0)} €/MWh', f'{n(neg.get("expected_hours"), 1)} h à 0 € ou moins attendues · prix publié vers 13 h'))
+    else:   # no forecast figure: only published prices are announced
+        rows.append(('Spot France demain', 'publié vers 13 h', ''))
     ch = load('history', 'fr_market_calchain.json') or {}
     y1 = str(today.year + 1)
     cy = ((ch.get('FR') or {}).get('years') or {}).get(y1)

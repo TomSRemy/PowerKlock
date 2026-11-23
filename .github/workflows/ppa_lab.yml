@@ -17,6 +17,9 @@ concurrency:
 jobs:
   lab:
     runs-on: ubuntu-latest
+    env:   # the quarter-hour market (since 1 Oct. 2025): realised per quarter-hour, solar's 0 € split as observed (Tom, 22 Nov. 2026)
+      PK_QH_REALISED: '1'
+      PK_QH_SPLIT: c2
     timeout-minutes: 240
     permissions:
       contents: write
@@ -59,6 +62,9 @@ jobs:
           echo "::error::scenario generator failed twice: last week's results put back"
           python scripts/ppa_generator_restore.py /tmp/ppa_forecast_prev.json || true
           echo "GEN_FAILED=1" >> "$GITHUB_ENV"
+      - name: Checks on what the published price stands on (ages, completeness, plausibility; scripts/ppa_guard.py)
+        # a failed check does not hold back this week's data: it is committed, then the job fails at the end (e-mail)
+        run: python scripts/ppa_guard.py --prev /tmp/ppa_forecast_prev.json || echo "PPA_GUARD_FAILED=1" >> "$GITHUB_ENV"
       - name: Walk-forward test, year by year
         run: python scripts/ppa_walkforward.py || echo "::warning::walk-forward not updated"
       - name: Capture fan
@@ -87,6 +93,11 @@ jobs:
           if git diff --staged --quiet; then echo "No change"; exit 0; fi
           git commit -m "data: PPA test bench $(date -u '+%Y-%m-%d')"
           for i in 1 2 3 4 5; do git pull -q --rebase -X theirs origin main && git push && exit 0; git rebase --abort 2>/dev/null || true; sleep 5; done
+          exit 1
+      - name: Fail when a check of the published price failed (the e-mail on failure names it)
+        if: env.PPA_GUARD_FAILED == '1'
+        run: |
+          echo "::error::PPA guard: ${PPA_GUARD:-see the step 'Checks on what the published price stands on'}"
           exit 1
 
       - name: E-mail when the Journal officiel has a new text on the stop obligations
@@ -129,4 +140,5 @@ jobs:
           GO_GMAIL_APP_PASSWORD: ${{ secrets.GO_GMAIL_APP_PASSWORD }}
           WORKFLOW: ${{ github.workflow }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          BODY: "${{ env.PPA_GUARD != '' && format('Contrôle du prix PPA publié en échec (scripts/ppa_guard.py) : {0}. Les données de la semaine ont été enregistrées. Détail : {1}/{2}/actions/runs/{3}', env.PPA_GUARD, github.server_url, github.repository, github.run_id) || '' }}"
         run: python3 scripts/notify_failure.py || true

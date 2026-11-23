@@ -344,7 +344,9 @@ async function _mrnFacts() {
   k.today = _mrnHourly(fr(a)); k.tomorrow = _mrnHourly(fr(b)); k.yday = _mrnHourly(fr(c));
   k.zones = a && a.zones;   // every bidding zone of today, for the stories' Europe ranking
   k.bess = await bessP; k.dgAsof = dgFresh ? dg.asof : null;
-  k.fc = neg && neg.days && neg.days[tm] ? neg.days[tm] : null;
+  // the brief announces only published prices: no forecast figure for tomorrow (not reliable enough to announce;
+  // it stays on its own chart with its record, js/pk-forecast.js)
+  k.fc = null;
   // usual error: the live record of the published forecasts once it has 14 days, else the replay (labelled)
   { const lv = neg && neg.live && neg.live.models ? neg.live.models[neg.live.current] : null;
     k.skill = lv && lv.days >= 14 ? { mae: lv.mae, live: true } : (neg && neg.price_skill ? { mae: neg.price_skill.mae, live: false } : null); }
@@ -374,7 +376,7 @@ function _mrnSpot(k, el) {
     out.push(`<div class="mrn3-day fcst"><div class="mrn3-day-h"><span>${_mT('Demain · ', 'Tomorrow · ') + _mDay(k.tm)}</span><span class="mrn3-chip fc">${_mT('prévision', 'forecast')}</span></div>
       <div><span class="mrn3-big fc">≈ ${_mN(fb, 0)}<small>€/MWh base</small></span> <span class="mrn3-kv">${_mT('prix publié vers 13 h', 'price out around 13:00')}</span></div>
       <div class="mrn3-kv">${k.fc.expected_hours != null ? B('≈ ' + _mN(k.fc.expected_hours, 0) + ' h') + ' ' + _mT('de prix négatif probables', 'of likely negative prices') : ''}${k.skill ? ' · ' + (k.skill.live ? _mT('erreur constatée ± ', 'observed error ± ') : _mT('erreur en rejeu ± ', 'replay error ± ')) + _mN(k.skill.mae, 0) + ' €' : ''}</div></div>`);
-  } else out.push(`<div class="mrn3-day fcst"><div class="mrn3-day-h"><span>${_mT('Demain · ', 'Tomorrow · ') + _mDay(k.tm)}</span><span class="mrn3-chip fc">${_mT('prévision', 'forecast')}</span></div><div class="mrn3-kv">${_mT('Prévision au prochain passage du modèle ; prix publié vers 13 h.', 'Forecast at the model’s next run; price out around 13:00.')}</div></div>`);
+  } else out.push(`<div class="mrn3-day fcst"><div class="mrn3-day-h"><span>${_mT('Demain · ', 'Tomorrow · ') + _mDay(k.tm)}</span><span class="mrn3-chip fc">${_mT('à venir', 'coming')}</span></div><div class="mrn3-kv">${_mT('Prix de demain publiés vers 13 h.', 'Tomorrow’s prices out around 13:00.')}</div></div>`);
   const d7 = k.spotDays.slice(-7), p7 = k.spotDays.slice(-14, -7), m7 = _mrnMean(d7.map(r => r.avg)), mp = _mrnMean(p7.map(r => r.avg));
   const r30 = _mrnMean(k.spotDays.slice(-30).map(r => r.avg));
   if (m7 != null) out.push(`<div class="mrn3-day"><div class="mrn3-day-h"><span>${_mT('7 derniers jours', 'Last 7 days')}</span><span class="mrn3-chip av">${_mT('moyenne', 'average')}</span></div>
@@ -947,9 +949,19 @@ function _mrnLearn(k, o) {
   if (c && c7 != null) { const why = [t7 != null && Math.abs(t7) >= 2 ? (t7 > 0 ? _mT('le gaz monte', 'gas is rising') : _mT('le gaz baisse', 'gas is falling')) : null, nucLow ? _mT('il y a moins de nucléaire disponible que prévu', 'less nuclear is available than planned') : null].filter(Boolean);
     p2 = _mT('Pour ' + c.y + ', le prix ', 'For ' + c.y + ', the price ') + (c7 > 1 ? _mT('<b class="mrn-up">monte</b>', '<b class="mrn-up">is rising</b>') : c7 < -1 ? _mT('<b class="mrn-dn">baisse</b>', '<b class="mrn-dn">is falling</b>') : _mT('est stable', 'is steady')) + (why.length ? _mT(' parce que ', ' because ') + why.join(_mT(' et qu’', ' and ')) : '') + '.'; }
   if (sent) sent.innerHTML = p1 + p2;
-  // today hour by hour, coloured: 0 € or below, normal, expensive
-  const tod = (k.today || []).slice(0, 24);
+  // today hour by hour, coloured: 0 € or below, normal, expensive. Today's price not received yet (a data gap,
+  // data/data_gaps.json): yesterday's, dated, and the reader is told (PK.gapText)
+  const gap = !k.today && o.day, tod = (k.today || k.yday || []).slice(0, 24), sD = k.today ? sT : sY;
+  if (gap && !tod.length) {   // nothing to show: the message instead of an empty chart
+    const c = document.getElementById(o.day);
+    if (c && c.parentElement) { c.style.display = 'none'; let m = c.parentElement.querySelector('.no-data-msg');
+      if (!m) { m = document.createElement('div'); m.className = 'no-data-msg'; m.style.cssText = 'display:flex;align-items:center;justify-content:center;height:100%;min-height:120px;color:var(--text3);font-size:12px;padding:20px;text-align:center'; c.parentElement.appendChild(m); }
+      m.textContent = PK.gapText(k.t, 'FR'); PK.markGap(m, k.t, 'FR'); }
+    if (o.note) o.note.textContent = '';
+  }
   if (o.day && tod.length && window._fuelChart) {
+    const sT = sD;   // the figures of the day drawn
+    { const c = document.getElementById(o.day), m = c && c.parentElement && c.parentElement.querySelector('.no-data-msg[data-pk-gap]'); if (m) { m.remove(); c.style.display = ''; } }
     const hi = sT ? sT.base * 1.5 : Infinity, top = Math.max(...tod.filter(v => v != null), 1);
     _fuelChart(o.day, { type: 'bar', data: { labels: tod.map((_, h) => _mrnFr() ? h + ' h' : h + ':00'), datasets: [
       { label: _mT('Prix, €/MWh', 'Price, €/MWh'), data: tod.map(v => v == null ? null : Math.round(v * 10) / 10), backgroundColor: tod.map(v => v != null && v > hi ? 'rgba(237,105,101,.8)' : 'rgba(127,200,248,.6)'), borderWidth: 0, order: 1 },
@@ -957,6 +969,11 @@ function _mrnLearn(k, o) {
       { label: _mT('Heures à 0 € ou moins', 'Hours at 0 € or below'), data: tod.map(v => v != null && v <= 0.1 ? top * 1.05 : null), backgroundColor: 'rgba(20,211,169,.22)', borderWidth: 0, barPercentage: 1, categoryPercentage: 1, order: 9 }] },
       options: _fuelOpts({ plugins: { legend: { display: false } }, scales: { x: Object.assign(_fuelXAxis(), { stacked: true }), y: _fuelAxis('€/MWh', { stacked: false }) } }) }, 'today-hours');
     const n = o.note;
+    // the gap line above the chart (the note under it keeps its height)
+    { const c = document.getElementById(o.day), box = c && c.parentElement; let g = box && box.parentElement.querySelector(':scope > .pk-gap-note');
+      if (gap && box) { if (!g) { g = document.createElement('div'); g.className = 'pk-gap-note'; g.style.cssText = 'font-size:11px;color:var(--text3);margin:0 0 4px'; box.before(g); }
+        g.textContent = PK.gapText(k.t, 'FR', k.y); PK.markGap(g, k.t, 'FR', k.y); }
+      else if (g) g.remove(); }
     if (n && sT) n.innerHTML = (sT.zero ? _mT(`<b>En vert</b> : ${sT.zero} h à 0 € ou moins, quand le vent et le soleil produisent plus que la France ne consomme. `, `<b>Green</b>: ${sT.zero} h at 0 € or below, when wind and sun produce more than France consumes. `) : '') +
       _mT(`<b>En rouge</b> : plus de 1,5 fois la moyenne du jour. Le plus cher : ${sT.maxH} h (${_mN(sT.max, 0)} €)` + (sT.maxH >= 17 && sT.maxH <= 21 ? ', quand le soleil se couche et que la demande monte.' : '.'), `<b>Red</b>: above 1.5 times the day’s average. The most expensive: ${sT.maxH}:00 (${_mN(sT.max, 0)} €)` + (sT.maxH >= 17 && sT.maxH <= 21 ? ', when the sun sets and demand rises.' : '.'));
   }
@@ -1256,9 +1273,9 @@ document.addEventListener('click', e => {   // a tile opens its chart full size 
   .mrn-neg{color:#7FC8F8}
   .mrn-movers{list-style:none;margin:0;padding:0} .mrn-movers li{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px;padding:5px 0;border-bottom:1px solid var(--bd);font-size:12.5px} .mrn-movers a{color:var(--tx);text-decoration:none;flex:1 1 60%;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis} .mrn-movers a:hover{color:var(--acc)} .mrn-cat{width:18px;text-align:center;color:var(--tx3)} .mrn-vote{margin:0 0 0 auto}
   .mrn-fwd{width:100%;border-collapse:collapse;font-size:12px}
-  .mrn-fwd th{font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3);font-weight:600;text-align:right;padding:6px 8px;border-bottom:1px solid var(--bd);white-space:nowrap}   /* headers on one line (note 80) */
+  .mrn-fwd th{font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3);font-weight:600;text-align:right;padding:10px 12px;border-bottom:1px solid var(--bd);white-space:nowrap}   /* headers on one line (note 80) */
   .mrn-fwd th:first-child,.mrn-fwd td:first-child{text-align:left}
-  .mrn-fwd td{padding:5px 8px;text-align:right;font-family:'IBM Plex Mono',monospace;color:var(--tx2);border-bottom:1px solid rgba(255,255,255,.03);white-space:nowrap}
+  .mrn-fwd td{padding:9px 12px;text-align:right;font-family:'IBM Plex Mono',monospace;color:var(--tx2);border-bottom:1px solid rgba(255,255,255,.03);white-space:nowrap}
   .mrn-fwd td:first-child{font-family:inherit;color:var(--tx)} .mrn-fwd td small{color:var(--tx3);font-size:10px}
   .mrn-fwd .mrn-fwd-p{color:var(--tx);font-weight:600}
   .mrn-fwd .mrn-up{color:var(--down,#ED6965)} .mrn-fwd .mrn-down{color:var(--up,#14D3A9)}

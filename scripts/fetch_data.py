@@ -3,7 +3,7 @@ PowerDesk — ENTSO-E Data Fetcher
 Runs daily via GitHub Actions. Writes JSON files to /data/
 """
 
-import os, json, requests
+import os, re, json, requests
 from datetime import datetime, timedelta
 from xml.etree import ElementTree as ET
 
@@ -385,7 +385,9 @@ def fetch_prices(offset=0):
             xml  = fetch({'documentType':'A44','in_Domain':eic,'out_Domain':eic,
                            'periodStart':today,'periodEnd':tomorrow})
             pts  = parse_prices(xml, today, tomorrow)
-            if not pts:
+            if not pts:   # say what ENTSO-E answered (21 Nov 2026: France and the Netherlands left out for hours, silently)
+                why = re.search(r'<text>([^<]*)</text>', xml or '')
+                print(f"  {code}: no price yet — {why.group(1).strip()[:160] if why else (xml or '')[:160].strip()}")
                 continue
             prices = [p['price'] for p in pts if p['price'] is not None]
             if not prices:

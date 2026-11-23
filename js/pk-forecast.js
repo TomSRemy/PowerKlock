@@ -207,19 +207,43 @@
         let j = null; try { const r = await fetch(DATA_BASE + 'neg_forecast.json?t=' + Math.floor(Date.now() / 6e5)); j = r.ok ? await r.json() : null; } catch (_) {}
         const ds0 = j && j.days ? Object.keys(j.days).sort().slice(-2) : [];
         if (!ds0.length) { noDataMsg(cid, _fT('Pas encore de prévision de prix négatifs', 'No negative-price forecast yet'), _fT('Construite avec les prévisions de la veille, plusieurs fois par jour', 'Built with the day-ahead forecasts, several times a day')); return null; }
-        const lbl = [], pr = [], act = [], pf = [];
+        // shown only once the live record of the forecasts published the day before proves it works (data/history/neg_forecast_rex.json):
+        //   price: ≥ 30 days scored and a mean error at least 15 % below « tomorrow = today »;
+        //   negative hours: ≥ 10 real negative days, ≥ 70 % of them flagged, ≤ 30 % false alarms
+        const n1 = v => _fT(String(v).replace('.', ','), String(v));
+        const lv = j.live && j.live.models ? j.live.models[j.live.current] : null;
+        const priceOk = !!(lv && lv.days >= 30 && lv.naive_mae && lv.mae <= 0.85 * lv.naive_mae);
+        const negOk = !!(lv && lv.days_negative >= 10 && lv.caught / lv.days_negative >= 0.7 && lv.days_flagged && lv.false_alarms / lv.days_flagged <= 0.3);
+        const rec = lv ? _fT(`bilan réel : ${lv.days} jour(s) depuis le ${lv.from}, erreur moyenne ${n1(lv.mae)} €/MWh contre ${n1(lv.naive_mae)} pour « demain = aujourd’hui », ${lv.days_negative} jour(s) réellement négatif(s), ${lv.false_alarms} fausse(s) alerte(s) sur ${lv.days_flagged}`,
+                                `live record: ${lv.days} day(s) since ${lv.from}, mean error ${lv.mae} €/MWh vs ${lv.naive_mae} for « tomorrow = today », ${lv.days_negative} real negative day(s), ${lv.false_alarms} false alarm(s) out of ${lv.days_flagged}`)
+                       : _fT('bilan réel : pas encore de jour noté (nouveau modèle depuis le 20 nov. 2026)', 'live record: no day scored yet (new model since 20 Nov 2026)');
+        if (!priceOk && !negOk) {
+          const why = _fT('Prévision en test : elle s’affichera quand son bilan réel le justifiera (prix : 30 jours et 15 % mieux que « demain = aujourd’hui » ; heures négatives : 10 jours négatifs, 70 % repérés, au plus 30 % de fausses alertes).',
+                          'Forecast on trial: it will show once its live record justifies it (price: 30 days and 15 % better than « tomorrow = today »; negative hours: 10 negative days, 70 % flagged, at most 30 % false alarms).');
+          noDataMsg(cid, _fT('Prévision en test', 'Forecast on trial'), why);
+          // a deliberate state, not missing data: marked so that tests/smoke.py can tell the two apart (it checks the record itself)
+          const tm = document.getElementById(cid) && document.getElementById(cid).parentNode.querySelector('.no-data-msg'); if (tm) tm.dataset.pkTrial = 'fc-neg';
+          return { sub: why + ' · ' + rec };
+        }
+        const lbl = [], pr = [], act = [], pf = [], plo = [], phi = [];
         ds0.forEach(d => { const x = j.days[d]; for (let h = 0; h < 24; h++) { lbl.push(h === 0 ? new Date(d + 'T12:00:00Z').toLocaleDateString(_fT('fr-FR', 'en-GB'), { weekday: 'short', day: '2-digit', timeZone: 'UTC' }) : String(h).padStart(2, '0') + 'h');
-          pr.push(x.prob[h] == null ? null : Math.round(x.prob[h] * 100)); act.push(x.actual && x.actual[h] != null ? +(+x.actual[h]).toFixed(1) : null); pf.push(x.price && x.price[h] != null ? x.price[h] : null); } });
+          pr.push(x.prob[h] == null ? null : Math.round(x.prob[h] * 100)); act.push(x.actual && x.actual[h] != null ? +(+x.actual[h]).toFixed(1) : null); pf.push(x.price && x.price[h] != null ? x.price[h] : null);
+          plo.push(x.price_lo && x.price_lo[h] != null ? x.price_lo[h] : null); phi.push(x.price_hi && x.price_hi[h] != null ? x.price_hi[h] : null); } });
+        if (!priceOk) { pf.fill(null); plo.fill(null); phi.fill(null); }   // only the part that has proved itself is drawn
+        if (!negOk) pr.fill(null);
         _fuelChart(cid, { type: 'bar', data: { labels: lbl, datasets: [
           { label: _fT('Probabilité de prix négatif (%)', 'Chance of a negative price (%)'), data: pr, backgroundColor: pr.map(v => v == null ? 'transparent' : v >= 50 ? 'rgba(237,105,101,.8)' : v >= 20 ? 'rgba(251,191,36,.7)' : 'rgba(127,200,248,.45)'), borderRadius: 2, yAxisID: 'y' },
           { type: 'line', label: _fT('Prix day-ahead, quand il est connu (€/MWh)', 'Day-ahead price, when known (€/MWh)'), data: act, borderColor: '#E6EDF3', borderWidth: 1.6, pointRadius: 0, spanGaps: false, yAxisID: 'y1' },
+          // error band: 8 times out of 10 the price fell inside it over the last twelve replayed months (P10–P90 of the error, hour by hour)
+          { type: 'line', label: '', data: plo, borderWidth: 0, pointRadius: 0, spanGaps: false, yAxisID: 'y1', fill: false },
+          { type: 'line', label: _fT('Marge d’erreur, 8 fois sur 10 (€/MWh)', 'Error margin, 8 times out of 10 (€/MWh)'), data: phi, borderWidth: 0, pointRadius: 0, spanGaps: false, yAxisID: 'y1', fill: '-1', backgroundColor: 'rgba(251,191,36,.16)' },
           { type: 'line', label: _fT('Prévision de prix (€/MWh)', 'Price forecast (€/MWh)'), data: pf, borderColor: '#FBBF24', borderDash: [5, 4], borderWidth: 1.4, pointRadius: 0, spanGaps: false, yAxisID: 'y1' }] },
           options: _fuelOpts({ scales: { x: Object.assign(_fuelXAxis(), { ticks: { color: C_TX3, font: { size: 10 }, autoSkip: false, maxRotation: 0, callback: (v, i) => i % 6 === 0 ? lbl[i] : '' } }), y: _fuelAxis(_fT('% de probabilité', '% chance'), { min: 0, max: 100 }), y1: _fuelAxis('€/MWh', { position: 'right', grid: { display: false } }) },
-            plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 8 } } } }) }, 'forecast-negative-prices');
+            plugins: { legend: { display: true, position: 'bottom', labels: { color: C_TX2, font: { size: 10 }, boxWidth: 10, padding: 8, filter: it => !!it.text } } } }) }, 'forecast-negative-prices');
         const k = j.skill || {}, exp = ds0.map(d => new Date(d + 'T12:00:00Z').toLocaleDateString(_fT('fr-FR', 'en-GB'), { weekday: 'short', timeZone: 'UTC' }) + ' ≈ ' + _fT(String(j.days[d].expected_hours).replace('.', ','), String(j.days[d].expected_hours)) + ' h').join(' · ');
         const ps = j.price_skill; const n0 = v => _fT(String(v).replace('.', ','), String(v));
         // live record: forecasts published before 11:00 the day before, against the real prices (data/history/neg_forecast_rex.json)
-        const lv = j.live && j.live.models ? j.live.models[j.live.current] : null, old = j.live && j.live.models ? j.live.models.v1 : null;
+        const old = j.live && j.live.models ? j.live.models.v1 : null;
         const liveTxt = lv && lv.days >= 7
           ? _fT(` · bilan réel des prévisions publiées la veille (${lv.days} jours depuis le ${lv.from}) : erreur moyenne ${n0(lv.mae)} €/MWh, contre ${n0(lv.naive_mae)} pour « demain = aujourd’hui » ; ${lv.false_alarms} fausse(s) alerte(s) sur ${lv.days_flagged} jour(s) annoncé(s) avec des prix négatifs`,
                 ` · live record of the forecasts published the day before (${lv.days} days since ${lv.from}): mean error ${lv.mae} €/MWh vs ${lv.naive_mae} for « tomorrow = today »; ${lv.false_alarms} false alarm(s) out of ${lv.days_flagged} day(s) flagged with negative prices`)
@@ -227,6 +251,7 @@
             + (old ? _fT(` (l’ancien modèle, avec l’Allemagne absente le matin, se trompait de ${n0(old.mae)} €/MWh sur ${old.days} jours, contre ${n0(old.naive_mae)} pour « demain = aujourd’hui »)`, ` (the former model, with Germany missing in the morning, was off by ${old.mae} €/MWh over ${old.days} days vs ${old.naive_mae} for « tomorrow = today »)`) : '');
         return { sub: _fT('Heures négatives attendues : ', 'Expected negative hours: ') + exp
           + (ps ? _fT(` · rejeu avec la météo réelle depuis ${ps.from} (cas le plus favorable) : erreur moyenne sur le prix ${n0(ps.mae)} €/MWh, contre ${n0(ps.naive_mae)} pour le prix de la veille`, ` · replay with the real weather since ${ps.from} (best case): mean price error ${ps.mae} €/MWh vs ${ps.naive_mae} for the day-before price`) : '')
+          + (ps && ps.band_by_hour ? _fT(' ; la zone jaune est la marge d’erreur : sur les 12 derniers mois rejoués, le prix est tombé dedans 8 fois sur 10 (sans compter l’erreur de la prévision météo, donc un peu trop étroite)', '; the yellow area is the error margin: over the last 12 replayed months the price fell inside it 8 times out of 10 (weather forecast error not included, so slightly too narrow)') : '')
           + (k.caught != null ? _fT(', ', ', ') + Math.round(k.caught * 100) + _fT(' % des jours à prix négatifs repérés', ' % of the days with negative prices flagged') : '')
           + (k.false_alarms != null ? ', ' + Math.round(k.false_alarms * 100) + _fT(' % de fausses alertes', ' % false alarms') : '')
           + liveTxt };
@@ -277,6 +302,69 @@
     });
   }
 
+  // forecast error history: how far off the TSO day-ahead forecast was, day by day, from data/history/forecast/<YYYY-MM>.json
+  //   error (WAPE) = Σ|forecast − actual| ÷ Σ actual over the hours of the delivery day; bias = Σ(forecast − actual) ÷ Σ actual
+  const histP = {};
+  function histMonth(ym) {
+    if (!histP[ym]) histP[ym] = fetch(base() + 'history/forecast/' + ym + '.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : null).catch(() => null);
+    return histP[ym];
+  }
+  const prevYm = ym => { const [y, m] = ym.split('-').map(Number); return new Date(Date.UTC(y, m - 2, 1)).toISOString().slice(0, 7); };
+  async function errorSeries(zone, kind) {
+    const out = [];
+    let ym = today().slice(0, 7);
+    for (let i = 0; i < 36; i++) {                       // back month by month until the archive stops
+      const j = await histMonth(ym);
+      if (!j || !j.days) break;
+      Object.keys(j.days).forEach(d => {
+        const k = j.days[d][zone] && j.days[d][zone][kind];
+        if (!k || !k.fc || !k.act) return;
+        let e = 0, a = 0, b = 0, n = 0;
+        k.fc.forEach((f, h) => { const v = k.act[h]; if (f == null || v == null) return; e += Math.abs(f - v); b += f - v; a += v; n++; });
+        if (n >= 20 && a > 0) out.push({ d, err: e / a, bias: b / a });   // a day still in progress (hours missing) is left out
+      });
+      // a month whose file starts after its first days is the month the archive began: nothing before it to ask for
+      const first = Object.keys(j.days).sort()[0]; if (first && first.slice(0, 7) === ym && +first.slice(8) > 5) break;
+      ym = prevYm(ym);
+    }
+    return out.sort((x, y) => x.d < y.d ? -1 : 1);
+  }
+  const KIND_NAME = { solar: 'Solar', wind: 'Wind', load: 'Load' };
+
+  if (window.PKW) {
+    PKW.register({
+      id: 'fc-error', title: 'Forecast error · day by day', category: 'renewables', page: 'analysis', pageCanvas: 'ma-fc-err',
+      source: 'TSO day-ahead forecasts and actual output (ENTSO-E, via Energy-Charts)', size: { w: 6, h: 5 },
+      desc: 'How far off the grid operators’ day-ahead forecast was, day by day, as a share of actual output (error = Σ|forecast − actual| ÷ Σ actual over the hours of the day), with its 7-day average. Solar, wind or load.',
+      params: [{ key: 'zone', label: 'Zone', inTitle: true, options: Object.entries(ZONES) }, { key: 'kind', label: 'Series', options: [['solar', 'Solar'], ['wind', 'Wind'], ['load', 'Load']] }], defaults: { zone: 'FR', kind: 'solar' },
+      titleFn: p => (ZONES[p.zone] || p.zone) + ' · ' + (KIND_NAME[p.kind] || 'Solar').toLowerCase() + ' forecast error',
+      async draw(cid, p) {
+        const zone = p.zone || 'FR', kind = KIND_NAME[p.kind] ? p.kind : 'solar';
+        const acc = await accuracy(zone);
+        if (acc[kind] && acc[kind].note) { noDataMsg(cid, 'Error not measurable', 'Actual output is reported for only part of the fleet'); return null; }
+        const ser = await errorSeries(zone, kind);
+        if (ser.length < 3) { noDataMsg(cid, 'Not enough history yet', 'The forecast archive is still short'); return null; }
+        const lbl = ser.map(r => new Date(r.d + 'T12:00:00Z').toLocaleDateString('en-GB', { day: '2-digit', month: 'short', timeZone: 'UTC' }));
+        const pc = v => Math.round(v * 1000) / 10;
+        const daily = ser.map(r => pc(r.err));
+        const roll = ser.map((_, i) => { const w = ser.slice(Math.max(0, i - 6), i + 1); return w.length >= 4 ? pc(w.reduce((s, r) => s + r.err, 0) / w.length) : null; });
+        _fuelChart(cid, { type: 'line', data: { labels: lbl, datasets: [
+          _fuelLineDs('Daily error', daily, COL[kind], { borderWidth: 1, pointRadius: 2, borderColor: COL[kind] + '99' }),
+          _fuelLineDs('7-day average', roll, COL[kind], { borderWidth: 2.4, spanGaps: false }),
+        ] }, options: _fuelOpts({
+          scales: { x: Object.assign(_fuelXAxis(), { ticks: { color: C_TX3, font: { size: 10 }, maxTicksLimit: 8, maxRotation: 0 } }),
+                    y: _fuelAxis('% of actual output', { beginAtZero: true, ticks: { color: C_TX3, font: { size: 10 }, callback: v => v + ' %' } }) },
+          plugins: { tooltip: { callbacks: { label: c => c.dataset.label + ': ' + (c.parsed.y == null ? '–' : c.parsed.y.toFixed(1)) + ' %' } } } }) }, 'forecast-error-' + kind + '-' + zone);
+        const mean = ser.reduce((s, r) => s + r.err, 0) / ser.length, bias = ser.reduce((s, r) => s + r.bias, 0) / ser.length;
+        const bt = Math.abs(bias) < 0.01 ? '' : ', bias ' + pc(Math.abs(bias)) + ' % ' + (bias > 0 ? 'high' : 'low');
+        return {
+          finding: KIND_NAME[kind] + ' forecast error: ' + pc(mean) + ' % on average over ' + ser.length + ' days' + bt,
+          sub: 'Day-ahead forecast against actual output, hourly · error = Σ|forecast − actual| ÷ Σ actual',
+        };
+      },
+    });
+  }
+
   // key figures for tomorrow (falls back to today when tomorrow is not published yet)
   async function tiles(host, zone) {
     if (!host) return;
@@ -303,5 +391,5 @@
     }).join('') + '</div><div class="pkf-note">' + chip() + ' TSO day-ahead forecast · <b>' + (ZONES[zone] || zone) + '</b> · fetched ' + (await published()) + (b ? '' : ' · tomorrow\u2019s forecast is not published yet (usually by midday): today shown') + '</div>';
   }
 
-  window.PKF = { get, day, accuracy, accText, published, bias, chip, tiles, nowSlot, today, zonePlugin, ZONES };
+  window.PKF = { get, day, accuracy, errorSeries, accText, published, bias, chip, tiles, nowSlot, today, zonePlugin, ZONES };
 })();

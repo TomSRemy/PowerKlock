@@ -1,7 +1,15 @@
 // ════════════════════════════════════════════════════════════════════
 // TOOLS › PPA PRICER (France, solar or wind, pay-as-produced)
-// Two methods, same data:
-//  · Step by step (default) — every chart of the page is a step of the price:
+// The published price (since 31 Oct. 2026, solar and wind) is the single scenario generator's ('int', o.ppaGen):
+//      value        Σ weight × Cal forward × the generator's capture of each delivery year (scripts/ppa_generator.py,
+//                   data/history/ppa_forecast.json: months, stop threshold, quoted month shape)
+//      risk premium the buyer's risks, each measured (compute, 'dynamic premium'): model error (the replay's 75th
+//                   percentile, growing as √ of the lead beyond the replay's), hedge, volume, liquidity, balancing,
+//                   hedging cost, credit (optional), joined as the root of the sum of squares; the hedge at the ratio
+//                   that minimises the premium unless one is entered; the captured price a share of the spot
+//      PPA price    = value − premium − additional discount − imbalance + GO − margin
+// The other methods, same data, are references next to it:
+//  · Capacity trend ('build', step by step) — every chart of the page is a step of its price:
 //      1 forwards       France Cal baseload (market data), editable
 //      2 cannibalisation shape discount = 1 − capture price ÷ baseload, per
 //                       year (national RTE × day-ahead, or the asset curve ×
@@ -9,10 +17,11 @@
 //                       by default from installed capacity (log fit, PPE3 path)
 //      3 capture value  Σ forward × k × (1 − projected discount), k = quoted-month factor, weighted by the
 //                       expected production and a discount factor
-//      4 risk premium   Monte Carlo (10,000 trajectories: forward path,
+//      4 risk premium   its own Monte Carlo (10,000 trajectories: forward path,
 //                       production, cannibalisation drift, correlated): the
 //                       price whose chance of loss equals the risk accepted
 //      5 PPA price      = value at risk − imbalance + GO − margin
+//  · Forward shape, weather simulation, European model: their own tabs (js/ppa-fpc.js, js/ppa-wx.js, euYears)
 //  · PPA Dashboard — the team's Streamlit formula: Forward − Forward × (shape
 //      discount at a percentile of history + add. discount + volume risk +
 //      price risk) − imbalance + GO − margin (the Streamlit tool added it; deducted here like every method)
@@ -26,7 +35,7 @@
   const thisYear = () => +(typeof pkTodayISO === 'function' ? pkTodayISO() : new Date().toISOString()).slice(0, 4);
   const nowFrac = () => { const d = new Date(); const y = d.getUTCFullYear(); return y + (d - Date.UTC(y, 0, 1)) / (365.25 * 864e5); };
   // null = automatic value
-  const S = { stopEq: false, curtPct: 50, tech: 'solar', years: null, pct: 74, pdMode: 'projected', pdYears: 3, tenorStart: null, tenorEnd: null, m0: 1, m1: 12, fwd: {}, method: 'build', model: 'capacity', conv: 'curt', hedge: 'hedged', hedgePct: 100, inclHedge: true, inclVol: true, inclBal: true, pd: 0, rr: 40,
+  const S = { stopEq: false, curtPct: 50, tech: 'solar', years: null, pct: 74, pdMode: 'projected', pdYears: 3, tenorStart: null, tenorEnd: null, m0: 1, m1: 12, fwd: {}, method: 'build', model: 'capacity', conv: 'curt', hedge: 'hedged', hedgePct: null, inclHedge: true, inclVol: true, inclBal: true, pd: 0, rr: 40,
     mw: null, volume: null, degr: null, alpha: null, imb: null, go: null, margin: null, disc: null, add: null, volRisk: null, priceRisk: null,
     mcVol: null, mcFwd: null, mcSd: null, rho: null, volStress: null, spotStress: null, asset: null, assetName: '', basis: 'asset' };
   let D = null;   // reference data
@@ -57,6 +66,14 @@
     const [cap, mkt, goCsv, capa, chain, imbc, ccap, hcan, fcst, fwm, pbias, errR] = await Promise.all([get('history/fr_capture.json'), get('fr_market.json'), fetch(DATA_BASE + 'go_prices.csv').then(r => r.ok ? r.text() : '').catch(() => ''), get('history/capacity.json'), get('history/fr_market_calchain.json'), get('history/fr_imbalance_cost.json'), get('history/country_capture.json'), get('history/hourly_cannib.json'), get('history/ppa_forecast.json'), get('history/fr_forward_monthly.json'), get('history/ppa_bias.json'), get('history/ppa_error_replay.json')]);
     const fwd = {};
     ((mkt && mkt.forwardCurve) || []).forEach(r => { const m = /Cal\s?(\d{4})/.exec(r.contract || ''); if (m && r.value != null) fwd[+m[1]] = r.value; });
+    // the newest close of each Cal: the snapshot (fr_market.json) carries the previous session's settlement until the
+    // next morning, while the Cal chain already holds the day's close by the evening, and the monthly curve reads it:
+    // the newer of the two, so the level and the monthly shape stand on the same session (22 Nov. 2026)
+    let fwdDate = mkt && mkt.forwardCurve && mkt.forwardCurve[0] && mkt.forwardCurve[0].date;
+    const cy = chain && chain.FR && chain.FR.years;
+    if (cy) Object.keys(fwd).forEach(y => { const c = cy[y]; if (!c || !c.dates || !c.dates.length) return;
+      const i = c.dates.length - 1, d = c.dates[i];
+      if (c.values[i] != null && (!fwdDate || d > String(fwdDate).slice(0, 10))) { fwd[+y] = c.values[i]; fwdDate = d; } });
     // GO: latest Commerg mid per production year (AIB renewable)
     const go = {};
     goCsv.split(/\r?\n/).slice(1).forEach(l => { const c = l.split(','); if (c.length < 8 || !/Renewable/i.test(c[4])) return; const bid = parseFloat(c[6]), ask = parseFloat(c[7]); const mid = isFinite(bid) && isFinite(ask) ? (bid + ask) / 2 : isFinite(bid) ? bid : null; if (mid != null && (!go[c[5]] || c[1] >= go[c[5]].d)) go[c[5]] = { d: c[1], v: mid }; });
@@ -89,7 +106,7 @@
         imbCost[k].sdYear = Math.sqrt(v1 / (nEff * 12 / l24.length)); imbCost[k].nSd = l24.length;
       } });
     const fwdRows = ((mkt && mkt.forwardCurve) || []).filter(r => r.value != null).map(r => ({ contract: r.contract, value: r.value }));
-    D = { hc: hcan || null, cc: (ccap && ccap.countries) || null, fwdRows, imbCost, cap: (cap && cap.days) || [], ix, profile: (cap && cap.profile) || {}, capGW, fwd, fwdDate: mkt && mkt.forwardCurve && mkt.forwardCurve[0] && mkt.forwardCurve[0].date, go, fwdVol, fwdVolN, volTerm,
+    D = { hc: hcan || null, cc: (ccap && ccap.countries) || null, fwdRows, imbCost, cap: (cap && cap.days) || [], ix, profile: (cap && cap.profile) || {}, capGW, fwd, fwdDate, go, fwdVol, fwdVolN, volTerm,
       fcst: fcst || null, fwRatio: (fwm && fwm.ratios && fwm.ratios.year) || null, fwM: (fwm && fwm.months) || null, bias: pbias || null, errR: errR || null };
     D.weights = await pwts;
     // hours with a day-ahead price at or below zero, per year (YTD annualised): the hours the PPA Dashboard convention leaves unpaid
@@ -103,11 +120,15 @@
   const FRDOC = () => !window.PKI18n || PKI18n.lang !== 'en';
   // ISO day → '6 Nov 2026' (translated to '6 nov. 2026' by the page); dates on screen are never ISO (STYLEGUIDE § 8)
   const dLongPP = iso => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); return m ? +m[3] + ' ' + ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+m[2] - 1] + ' ' + m[1] : iso; };
+  // the methods whose past bias is measured but no longer taken off their capture (see biasOf): keys of the test bench
+  const BIAS_OFF = { step: true, fpc: true };
   // one sentence on the method's past-bias correction (scripts/ppa_bias.py), in the page's language
   function biasLine(o, k) {
     if (!o || !o.biasOf) return '';
     const v = o.tenor.map(y => [y, o.biasOf(k, y)]).filter(([, b]) => b);
     const fr = FRDOC(), p = b => (b > 0 ? '−' : '+') + (Math.abs(b) * 100).toFixed(1).replace('.', fr ? ',' : '.') + (fr ? ' pt' : ' pts');
+    if (BIAS_OFF[k]) return fr ? ' Pas de correction de biais pour cette méthode : ses erreurs passées à 2 et 3 ans partaient toutes d’une dernière année connue antérieure à la chute de la capture solaire de 2024 ; rejouée sur 2026 depuis 2024 et 2025, la correction dégradait son prix (scripts/ppa_bias.py la mesure toujours).'
+      : ' No bias correction for this method: its past errors 2 and 3 years ahead were all made from a last known year before the 2024 fall of the solar capture; replayed on 2026 from 2024 and 2025, the correction made its price worse (scripts/ppa_bias.py still measures it).';
     if (!v.length) return fr ? ' Pas de correction de biais pour cette méthode ici : sur les erreurs passées, elle n’améliorait pas ses prix (scripts/ppa_bias.py).' : ' No bias correction for this method here: on its past errors it did not improve its prices (scripts/ppa_bias.py).';
     return fr ? ` Correction de biais : sa capture est corrigée de son erreur moyenne passée, à la même distance du dernier exercice complet (années livrées 2018–2025 hors 2022, pricées avec les seules années connues alors) : ${v.map(([y, b]) => y + ' ' + p(b)).join(', ')} ; au rejeu 2024–2026, cette correction réduit son erreur moyenne sur 1 à 3 ans (scripts/ppa_bias.py).`
       : ` Bias correction: its capture is corrected by its mean past error at the same distance from the last complete year (delivery years 2018–2025 without 2022, priced with only the years known then): ${v.map(([y, b]) => y + ' ' + p(b)).join(', ')}; on the 2024–2026 replay this lowers its mean error over 1 to 3 years (scripts/ppa_bias.py).`;
@@ -230,9 +251,11 @@
   // how much the technology's captured price moves when the baseload moves by 1 € (Tom 1 Nov. 2026): the same calendar
   // month a year apart, BOTH years within the last two complete years and the running one (pairs that reach back into
   // the 2021–2023 crisis read 0.96 for solar, when its capture rate was near 1), national, in the pricer's convention.
-  // Measured since 2024: solar 0.80 (capture rate 0.73), wind 0.97 (0.89): a little more than the share. On whole years
-  // the share holds better than a discount fixed in euros (replay 2023–2025: 5.2 against 29.5 pts for solar), so the
-  // central capture stays a share; only the Monte Carlo's moves around it use this sensitivity
+  // It reads about 0.88 for solar and 0.86 for wind on the data of 21 Nov. 2026, inflated by the winter months (high
+  // baseload and high capture rate move together) and by the running incomplete month. Used only by the capacity
+  // trend's own Monte Carlo (its price, 'build', is frozen as it is); the published price (the generator) does not use
+  // it: an elasticity study (21 Nov. 2026, PPA review) found the captured price moving as a SHARE of the baseload
+  // (elasticity ≈ 1.09 solar, 1.00 wind), so its € pass-through is each year's capture rate (simulate, r.cg)
   function captureBeta(st) {
     const t = st.tech === 'solar' ? 's' : 'w', c = cols(st), M = {};
     D.cap.forEach(r => { const k = r[0].slice(0, 7), m = M[k] || (M[k] = [0, 0, 0, 0]); m[0] += r[c.P]; m[1] += r[c.N]; m[2] += r[c.R]; m[3] += r[c.E]; });
@@ -242,6 +265,23 @@
     if (xs.length < 9) return null;
     const r = linreg(xs, ys);
     return { beta: clamp(r.sl, 0.3, 1.3), n: xs.length, r2: r.r2, from: y0 };
+  }
+  // the same sensitivity as a diagnostic only, shown in the Hedging section (not used by any price): complete months
+  // only (the running month left out) and each pair weighted by the month's output, so that a month that produces little
+  // weighs little; also the output-weighted capture rate of the same months, the share model's € pass-through
+  function captureBetaDiag(st) {
+    const c = cols(st), M = {};
+    D.cap.forEach(r => { const k = r[0].slice(0, 7), m = M[k] || (M[k] = [0, 0, 0, 0, 0]); m[0] += r[c.P]; m[1] += r[c.N]; m[2] += r[c.R]; m[3] += r[c.E]; m[4]++; });
+    const last = D.cap.length ? D.cap[D.cap.length - 1][0] : null;
+    const full = k => { const y = +k.slice(0, 4), mo = +k.slice(5, 7), dn = new Date(Date.UTC(y, mo, 0)).getUTCDate(); return M[k][4] >= dn && !(last && last.slice(0, 7) === k && +last.slice(8, 10) < dn); };
+    const y0 = thisYear() - 2, P = [];
+    Object.keys(M).forEach(k => { const y = +k.slice(0, 4), pk = (y - 1) + k.slice(4), p = M[pk], m = M[k]; if (y - 1 < y0 || !p || !full(k) || !full(pk) || !m[3] || !p[3]) return;
+      P.push({ x: m[0] / m[1] - p[0] / p[1], y: m[2] / m[3] - p[2] / p[3], w: m[3] + p[3] }); });
+    if (P.length < 9) return null;
+    const W = P.reduce((a, q) => a + q.w, 0), mx = P.reduce((a, q) => a + q.w * q.x, 0) / W, my = P.reduce((a, q) => a + q.w * q.y, 0) / W;
+    let sxy = 0, sxx = 0; P.forEach(q => { sxy += q.w * (q.x - mx) * (q.y - my); sxx += q.w * (q.x - mx) ** 2; });
+    let R = 0, E = 0, B = 0; Object.keys(M).forEach(k => { if (+k.slice(0, 4) < y0 || !full(k) || !M[k][1]) return; R += M[k][2]; E += M[k][3]; B += M[k][3] * M[k][0] / M[k][1]; });
+    return { beta: sxx > 0 ? sxy / sxx : null, n: P.length, from: y0, share: B > 0 ? R / B : null };
   }
   function euYears(o, st, fld = 'regional') {   // fld: 'regional' (central), 'p10' / 'p90' (the simulated weather's spread), 'anchored' (the integrated method, no bias correction)
     const conv = st.conv === 'all' ? 'all' : 'curt';
@@ -496,8 +536,13 @@
     const kq = shapeFactors({ tenor }, st);
     // each method's past bias, learnt on its own errors (scripts/ppa_bias.py): taken off its capture where the test
     // showed it helps (data/history/ppa_bias.json 'adopt'); the delivery year's horizon after the last complete year, 1 to 3
+    // Not taken off the two methods anchored on the last complete year (BIAS_OFF: capacity trend, forward shape; audit of
+    // 21 Nov. 2026): their past errors at 2 and 3 years were all made from a last known year before the 2024 fall of the
+    // solar capture, and the pricer now starts from 2025 with a slope that has seen it. Replayed on 2026 (10 complete
+    // months, the pricer's stop rule) from 2024 and 2025, the correction made both worse, solar and wind (8 cases in 8:
+    // solar capacity trend −2.6 → −3.6 and +0.3 → −3.6 €/MWh, forward shape −8.1 → −11.5 and −1.1 → −8.0)
     const biasOf = (k, y) => { const B = D.bias, conv = st.conv === 'all' ? 'all' : st.conv === 'curt' ? 'curt' : null;
-      if (!B || !B.bias || !conv || !((B.adopt[st.tech] || {})[conv] || []).includes(k)) return 0;
+      if (BIAS_OFF[k] || !B || !B.bias || !conv || !((B.adopt[st.tech] || {})[conv] || []).includes(k)) return 0;
       const e = ((B.bias[st.tech] || {})[k] || {})[conv], v = e && e[String(Math.min(3, Math.max(1, y - B.lastYear)))]; return v ? v.value : 0; };
     // a year delivered only in part: its share of the year's output, and its months' value against the whole year's
     const part = partFactors(tenor, monthsOf, st);
@@ -519,7 +564,7 @@
     const wavg = k => years.reduce((a, r) => a + r.wt * r[k], 0);
     const refW = wavg('fwd'), fair = wavg('cp'), goW = wavg('go'), sdW = wavg('fsd');
     const o = { st, stAt: { tech: st.tech, conv: st.conv }, biasOf, nat, ast, hist, useAsset, complete, monthsOf, m0, m1, sel: fitRows.map(x => x.year), histSd, reg, lastYr, anchor, proj, fitLine, model, cfit, capOff, capPath: cp, excluded, sig0, sigT,
-      sigL: LIQ && LIQ.sigStep ? LIQ.sigStep : 0, lastQ, liq: LIQ, capBeta: BETA,
+      sigL: LIQ && LIQ.sigStep ? LIQ.sigStep : 0, lastQ, liq: LIQ, capBeta: BETA, capBetaDiag: st.conv === 'pos' ? null : captureBetaDiag(st),
       tenor, negHours, negShare, nhReg, nhFitYears, shLast, fwds, fwdAuto, ref, refW, goVal, goMkt, goW, fair, sdW, volume, mw, lf, degr, disc, imb, margin, add, volRisk, priceRisk, alpha, volStress, spotStress, sigV, sigF, rho, years, auto };
     // Monte Carlo: the realised value of one MWh of the contract, 10,000 trajectories
     if (!st.noMC) o.mc = simulate(o, st);
@@ -588,14 +633,14 @@
     // 2026, only 44 % for solar and 67 % for wind: scripts/ppa_band_stop_test.py); since 3 Nov. 2026 the dynamic premium below replaces it where the error replay exists
     const BAND = D.fcst && D.fcst.generator && D.fcst.generator.band && D.fcst.generator.band[st.tech];
     o.premiumGen = null; o.sigGen = null; o.premVolGen = null; o.liqRisk = null; o.premNoPrice = null;
+    // at a stop threshold other than 0 the full Monte Carlo's band at that threshold ('bandT', read between two grid
+    // points), so the band is the threshold's own; at 0 (or without bandT) the band at 0
+    const BTg = stopTeff(st) && D.fcst && D.fcst.generator && D.fcst.generator.bandT && D.fcst.generator.bandT[st.tech];
+    const bandOf = y => { const B = BTg && BTg[String(y)]; if (!B) return BAND && BAND[String(y)]; const T = stopTeff(st), g = Object.keys(B).map(Number).sort((a, b) => a - b);
+      if (g.length < 2) return BAND && BAND[String(y)]; const t = clamp(T, g[0], g[g.length - 1]); let i = 0; while (i < g.length - 2 && g[i + 1] < t) i++;
+      const w = (t - g[i]) / (g[i + 1] - g[i]), a = B[String(g[i])], b = B[String(g[i + 1])], ip = k => a[k] == null || b[k] == null ? null : a[k] * (1 - w) + b[k] * w;
+      return { p10: ip('p10'), p25: ip('p25'), p50: ip('p50'), p90: ip('p90') }; };
     if (o.gen && BAND && o.mc) {
-      // at a stop threshold other than 0 the full Monte Carlo's band at that threshold ('bandT', read between two grid
-      // points), so the premium is the threshold's own
-      const BT = stopTeff(st) && D.fcst.generator.bandT && D.fcst.generator.bandT[st.tech];
-      const bandOf = y => { const B = BT && BT[String(y)]; if (!B) return BAND[String(y)]; const T = stopTeff(st), g = Object.keys(B).map(Number).sort((a, b) => a - b);
-        if (g.length < 2) return BAND[String(y)]; const t = clamp(T, g[0], g[g.length - 1]); let i = 0; while (i < g.length - 2 && g[i + 1] < t) i++;
-        const w = (t - g[i]) / (g[i + 1] - g[i]), a = B[String(g[i])], b = B[String(g[i + 1])];
-        return { p25: a.p25 * (1 - w) + b.p25 * w, p50: a.p50 * (1 - w) + b.p50 * w }; };
       const sg = years.map(r => { const b = bandOf(r.y); return b && b.p50 != null && b.p25 != null && b.p50 > b.p25 ? (b.p50 - b.p25) / 0.6745 / Math.sqrt(Math.max(1, r.y - o.lastYr)) : null; }).filter(v => v != null);
       if (sg.length) {
         o.sigGen = mean(sg); const mg = simulate(Object.assign({}, o, { sig0: o.sigGen }), st); o.premiumGen = fair - qtl(mg.Us, alpha / 100);
@@ -619,18 +664,37 @@
     o.modelRiskDyn = null;
     if (ER && o.gen && o.mc) {
       const Tq = stopTeff(st), Ts = Object.keys(ER).map(Number).sort((a, b) => a - b), now = new Date().getUTCFullYear() + new Date().getUTCMonth() / 12;
-      // the quantile over all horizons: by horizon it rests on 46 overlapping cases and is not smooth (h kept for later)
-      const at = (T, h, k) => { const e = ER[String(T)]; const x = e && e.all; return x && x[k] != null ? x[k] : null; };
-      const q = (h, k = 'q75_pts') => { const t = clamp(Tq, Ts[0], Ts[Ts.length - 1]); let i = 0; while (i < Ts.length - 2 && Ts[i + 1] < t) i++;
-        const w = (t - Ts[i]) / (Ts[i + 1] - Ts[i]), a = at(Ts[i], h, k), b = at(Ts[i + 1], h, k); return a == null || b == null ? null : a * (1 - w) + b * w; };
-      // each delivery year at the horizon of its middle, in the replay's buckets (beyond 12 months: the 12-month one)
-      const hz = r => { const M = monthsOf(r.y), mid = r.y + ((M[0] - 1) + M[M.length - 1]) / 24, mo = (mid - now) * 12; return mo <= 4.5 ? 3 : mo <= 7.5 ? 6 : mo <= 10.5 ? 9 : 12; };
-      const parts = years.map(r => { const v = q(hz(r)); return v == null ? null : r.wt * r.fwd * Math.max(0, v) / 100; });
+      // the quantile over all the replay's horizons together ('all'): by horizon it rests on 46 overlapping cases and is
+      // not smooth, so the horizon enters through hGrow below
+      const at = (T, k) => { const e = ER[String(T)]; const x = e && e.all; return x && x[k] != null ? x[k] : null; };
+      const q = (k = 'q75_pts') => { const t = clamp(Tq, Ts[0], Ts[Ts.length - 1]); let i = 0; while (i < Ts.length - 2 && Ts[i + 1] < t) i++;
+        const w = (t - Ts[i]) / (Ts[i + 1] - Ts[i]), a = at(Ts[i], k), b = at(Ts[i + 1], k); return a == null || b == null ? null : a * (1 - w) + b * w; };
+      // the replay's own mean lead to the MIDDLE of delivery: it prices 12-month deliveries 3 to 12 months before their
+      // start, so its pooled error sits about 13.5 months before their middle (read from the replay's rows: horizon +
+      // half the months delivered; else its horizons + 6; else 13.5)
+      const RWh = D.errR.rows && D.errR.rows[st.tech], HZ = D.errR.horizons;
+      const lead0 = RWh && RWh.length ? mean(RWh.map(r => (+r.h || 0) + (+r.months || 12) / 2))
+        : HZ && HZ.length ? mean(HZ.map(Number)) + 6 : 13.5;
+      // beyond that lead the spread of the error grows as the square root of the lead to the middle of each delivery year
+      // (21 Nov. 2026, PPA review); its mean (the bias) is not scaled. The replay 1 to 3 years ahead (scripts/
+      // ppa_model_risk.py, 9 cases a technology) supports it for solar (×1.24 at 2 years, ×1.53 at 3) but not clearly
+      // for wind (×2.02 at 2 years, ×0.90 at 3: too few cases to read a shape); √time is kept for both, an assumption
+      // for wind, neither the prudent nor the lenient side there
+      const hGrow = r => { const M = monthsOf(r.y), mid = r.y + ((M[0] - 1) + M[M.length - 1]) / 24; return Math.sqrt(Math.max(lead0, (mid - now) * 12) / lead0); };
+      o.modelHz = years.map(r => ({ y: r.y, grow: hGrow(r) })); o.modelLead0 = lead0;
+      // the risk level (21 Nov. 2026, PPA review): every line of the premium follows the chance of loss accepted (alpha,
+      // 25 % by default). The market lines are quantiles of the draws at alpha; the replay file stores only the model
+      // error's 75th percentile (with its mean and mean absolute error), and the balancing line is a spread, so their
+      // spread part is scaled by z(1 − alpha) ÷ z(0.75), as if the spread were normal: × 1 at the default 25 %, so the
+      // default price does not move; × 1.9 at 10 %, × 0.38 at 40 %, nothing at 50 % and above
+      const zK = Math.max(0, zq(1 - alpha / 100) / zq(0.75)); o.zK = zK;
+      const parts = years.map(r => { const v = q(), bq = q('bias_pts'); if (v == null) return null; const b0 = bq == null ? 0 : bq;
+        return r.wt * r.fwd * Math.max(0, b0 + Math.max(0, v - b0) * zK * hGrow(r)) / 100; });
       if (parts.every(v => v != null)) {
         const wsum = years.reduce((a, r) => a + r.wt, 0) || 1;
         o.modelRiskDyn = parts.reduce((a, b) => a + b, 0) / wsum;
         // its mean (the bias: the model prices too high on average) is a correction, not a risk; only the rest spreads
-        const bparts = years.map(r => { const v = q(hz(r), 'bias_pts'); return v == null ? 0 : r.wt * r.fwd * v / 100; });
+        const bparts = years.map(r => { const v = q('bias_pts'); return v == null ? 0 : r.wt * r.fwd * v / 100; });
         o.biasDyn = bparts.reduce((a, b) => a + b, 0) / wsum;
         // the risks the aggregator carries (Tom 3 Nov. 2026), each measured, most of them with a box to leave them out:
         //  · hedge: prices move after signing; the share left unhedged rides the spot and the captured price does not
@@ -645,25 +709,30 @@
         const e0 = VG && VG.elastPrice != null ? VG.elastPrice : 0, se0 = VG && VG.elastPriceSe != null ? VG.elastPriceSe : 0;
         const nat_ = volBeta ? volBeta.beta * sigNat ** 2 / (o.sigV ** 2) : o.useAsset && astFull.length >= 8 ? sigNat ** 2 / (o.sigV ** 2) : 1;
         o.elP = e0 ? e0 * Math.max(0, 1 - (se0 * se0) / (e0 * e0)) * Math.min(1, nat_) : 0;
-        const run_ = x => simulate(Object.assign({}, o, { sig0: 0 }, x), st), P = m => fair - qtl(m.Us, alpha / 100);
-        const pN = P(run_({ noPriceRisk: true, sigV: 0, sigL: 0 })), pL = P(run_({ noPriceRisk: true, sigV: 0 })), pH = P(run_({ sigV: 0 })), mA = run_({}), pA = P(mA);
-        o.premBase = pN;   // the draws with no risk at all: ≈ 0 (a check)
-        o.liqRisk = years.some(r => r.liqK > 0) && o.sigL > 0 ? Math.max(0, pL - pN) : 0;
-        // hedge and volume share the price moves, so the step each makes depends on which comes first: each gets the
-        // mean of its two steps (Shapley), and the two still add up to the joint premium
-        const pV = P(run_({ noPriceRisk: true }));
-        o.hedgeRisk = Math.max(0, ((pH - pL) + (pA - pV)) / 2);
-        o.premVolGen = Math.max(0, ((pA - pH) + (pV - pL)) / 2);
-        o.sigGen = 0;
+        // the draws stand on the generator's own capture of each year, not the capacity trend's (21 Nov. 2026, PPA review:
+        // each method is independent, its premium too), and its captured price moves as a share of the spot: forward ×
+        // the generator's capture of that year (cg, the months delivered and the stop threshold included) × spot ÷
+        // forward, no fitted sensitivity and none of the capacity trend's factors (kq, g, sr: simulate)
+        // A year delivered in part is hedged with the baseload forward of its months (hq: their forward ÷ the Cal, weighted
+        // by their hours; the month quoted, else the day-ahead's history), not the Cal of the whole year: a summer strip is
+        // hedged with summer. 1 on a whole year
+        const hqOf = y => { const M = monthsOf(y); if (M.length === 12 || !D.fwRatio) return 1; const q = quotedShape(y), ratio = D.fwRatio;
+          let rn = 0, hn = 0, a = 0, h = 0; for (let m = 1; m <= 12; m++) { const dm = new Date(Date.UTC(y, m, 0)).getUTCDate(); if (ratio[m] == null) return 1; rn += ratio[m] * dm; hn += dm; } rn /= hn;
+          M.forEach(m => { const dm = new Date(Date.UTC(y, m, 0)).getUTCDate(); a += dm * (q ? q[m - 1] : ratio[m] / rn); h += dm; }); return h > 0 ? a / h : 1; };
+        const yG = years.map((r, i) => Object.assign({}, r, { cg: o.gen[i].capture, hq: hqOf(r.y) }));
+        o.yearsGen = yG;
+        // every run gives, draw by draw, what one MWh earns without the hedge (UA) and the hedge's result per unit of hedge
+        // ratio (UH): the same draws serve every hedge ratio (common random numbers), U = UA + ratio × UH
+        const run_ = x => simulate(Object.assign({}, o, { sig0: 0, years: yG }, x), st);
+        const PAt = (m, h) => { const u = new Float64Array(m.N); for (let i = 0; i < m.N; i++) u[i] = m.UA[i] + h * m.UH[i]; return o.genFair - qtl(u.sort(), alpha / 100); };
+        const mN = run_({ noPriceRisk: true, sigV: 0, sigL: 0 }), mL = run_({ noPriceRisk: true, sigV: 0 }), mH = run_({ sigV: 0 }), mA = run_({}), mV = run_({ noPriceRisk: true });
+        const hedged = st.hedge !== 'open';
         o.inclHedge = st.inclHedge !== false; o.inclVol = st.inclVol !== false; o.inclBal = st.inclBal !== false;
         //  · balancing: the imbalance cost of a year strays from the last 12 months' (its P75, from the monthly costs)
-        o.balRisk = ic && ic.sdYear ? 0.6745 * ic.sdYear : 0;
+        o.balRisk = ic && ic.sdYear ? 0.6745 * zK * ic.sdYear : 0;
         //  · hedging cost: the bid–ask paid on the MWh sold forward (entered in the Hedging section)
         const ba = window.PKPpaHedge && PKPpaHedge.bidask != null ? PKPpaHedge.bidask : 0.10;
-        o.hedgeCost = (st.hedge === 'open' ? 0 : (st.hedgePct != null ? st.hedgePct : 100) / 100) * ba;
-        // diversification (Pexapark): the model's error, the market risks and the balancing are nearly independent, so
-        // their premiums add as the root of the sum of squares, not one on top of the other…
-        const B = o.liqRisk + (o.inclHedge ? o.hedgeRisk : 0) + (o.inclVol ? o.premVolGen : 0), Bal = o.inclBal ? o.balRisk : 0;
+        const Bal = o.inclBal ? o.balRisk : 0;
         const dM = Math.max(0, o.modelRiskDyn - o.biasDyn);
         // …except the model's error and the market: in the replay the generator overprices the capture when the realised
         // price turns out low (correlation of its error with the realised baseload, at this threshold). That adds to the
@@ -678,15 +747,42 @@
           if (ok.length >= 24) o.corrErrBase = corr(ok.map(r => r.pts[jT]), ok.map(r => r.eur[jT] / r.pts[jT] * 100));
         }
         const spD = Array.from({ length: mA.N }, (_, i) => years.reduce((a, r, t) => a + r.df * r.ev * mA.spM[t][i], 0));
-        o.corrUSpot = corr(Array.from(mA.U), spD);
-        o.rhoMM = Math.max(0, -o.corrErrBase * o.corrUSpot);
-        let prem = Math.max(0, o.biasDyn + Math.sqrt(dM * dM + B * B + Bal * Bal + 2 * o.rhoMM * dM * B)) + o.hedgeCost;
+        // the premium at a hedge ratio h (0 to 1): each risk line on the same draws, then their sum as below
+        const premAt = h => {
+          const pN = PAt(mN, h), pL = PAt(mL, h), pH = PAt(mH, h), pA = PAt(mA, h), pV = PAt(mV, h);
+          const liq = years.some(r => r.liqK > 0) && o.sigL > 0 ? Math.max(0, pL - pN) : 0;
+          // hedge and volume share the price moves, so the step each makes depends on which comes first: each gets the
+          // mean of its two steps (Shapley), and the two still add up to the joint premium
+          const hR = Math.max(0, ((pH - pL) + (pA - pV)) / 2), vR = Math.max(0, ((pA - pH) + (pV - pL)) / 2);
+          // diversification (Pexapark): the model's error, the market risks and the balancing are nearly independent, so
+          // their premiums add as the root of the sum of squares, not one on top of the other…
+          const B = liq + (o.inclHedge ? hR : 0) + (o.inclVol ? vR : 0);
+          const u = new Float64Array(mA.N); for (let i = 0; i < mA.N; i++) u[i] = mA.UA[i] + h * mA.UH[i];
+          const cUS = corr(Array.from(u), spD), rho = Math.max(0, -o.corrErrBase * cUS), cost = h * ba;
+          return { h, pN, liq, hR, vR, B, cUS, rho, cost, prem: Math.max(0, o.biasDyn + Math.sqrt(dM * dM + B * B + Bal * Bal + 2 * rho * dM * B)) + cost };
+        };
+        // the hedge ratio that minimises the premium, 0 to 100 % in steps of 5 % on the same draws (21 Nov. 2026, PPA
+        // review): with the captured price a share of the spot, a solar park's value moves with about its capture rate
+        // of the baseload, so a 100 % baseload hedge over-hedges it (about 60 % for solar, near 100 % for wind). The
+        // published price uses that ratio by default (a desk hedges at the delta); a ratio entered overrides it
+        const grid = hedged ? Array.from({ length: 21 }, (_, k) => premAt(k / 20)) : [premAt(0)];
+        const best = grid.reduce((b, x) => x.prem < b.prem - 1e-9 ? x : b, grid[0]);
+        o.hedgeBest = { pct: Math.round(best.h * 100), prem: best.prem };
+        o.hedgeAuto = hedged && st.hedgePct == null;
+        o.hedgeUsed = !hedged ? 0 : st.hedgePct != null ? clamp(+st.hedgePct, 0, 100) : o.hedgeBest.pct;
+        const R_ = premAt(o.hedgeUsed / 100);
+        o.premBase = R_.pN;   // the draws with no risk at all: ≈ 0 (a check)
+        o.liqRisk = R_.liq; o.hedgeRisk = R_.hR; o.premVolGen = R_.vR; o.hedgeCost = R_.cost; o.sigGen = 0;
+        o.corrUSpot = R_.cUS; o.rhoMM = R_.rho;
+        const B = R_.B;
+        let prem = R_.prem;
         //  · credit (optional): the producer defaults; the buyer loses the contract's value to it, to replace at market.
         //    Expected loss = default probability × the exposure in the draws × (1 − recovery), year by year
         o.creditRisk = 0;
         const pd = (st.pd || 0) / 100, rr = (st.rr != null ? st.rr : 40) / 100;
         if (pd > 0) {
-          const P0 = fair - prem - imb + goW - margin, T_ = years.length; let el = 0;
+          // the contract price before credit: the published price's own (the generator's value, its additional discount)
+          const P0 = o.genFair - prem - refW * add / 100 - imb + goW - margin, T_ = years.length; let el = 0;
           for (let t = 0; t < T_; t++) {
             let ex = 0;
             for (let i = 0; i < mA.N; i++) { let v = 0; for (let u = t; u < T_; u++) v += years[u].df * mA.prod[u][i] * (mA.cpM[u][i] - imb + goW - P0); ex += Math.max(0, v); }
@@ -697,12 +793,28 @@
         }
         o.premiumGen = prem;
         o.diversif = prem - (o.modelRiskDyn + B + Bal + o.hedgeCost + o.creditRisk);
-        o.premNoPrice = o.premiumGen;
+        // the premium once the price level is no longer the buyer's (Cal- and month-indexed products, js/ppa-products.js:
+        // the index is fixed at a date and the buyer hedges at that same price): the hedge and liquidity lines go, the
+        // volume line is read on the draws without forward price moves (its price still moves with the weather), the
+        // rest unchanged
+        const vN = Math.max(0, PAt(mV, o.hedgeUsed / 100) - R_.pN), BN = o.inclVol ? vN : 0;
+        o.premNoPrice = Math.max(0, o.biasDyn + Math.sqrt(dM * dM + BN * BN + Bal * Bal)) + o.hedgeCost + o.creditRisk;
       }
     }
     o.modelRisk = o.premiumGen != null ? 0 : mrT && mrT.qPts > 0 ? refW * mrT.qPts / 100 : 0;
     o.modelRiskInfo = mrT ? { level: MR.level, n: mrT.n, qPts: mrT.qPts, meanEur: mrT.meanEur, maeEur: mrT.maeEur, byH: mrT.byH, anchorMae: mrT.anchorMae } : null;
     o.ppaGen = o.gen ? o.genFair - (o.premiumGen != null ? o.premiumGen : o.premium) - o.modelRisk - refW * add / 100 - imb + goW - margin : null;
+    // the published price's own range (21 Nov. 2026, PPA review): the generator's capture at its P10 and P90 of each
+    // delivery year (its full Monte Carlo: weather, fleet growth, nuclear, export limit, load), the rest of the price
+    // unchanged; until then the benchmark borrowed the capacity trend's range. The years' extremes are added as if they
+    // came together: the wide side. A capture-risk range only: the forward price, the volume and the model's own error
+    // are not in it. At a stop threshold other than 0, the band at that threshold (bandT)
+    o.ppaGenLo = null; o.ppaGenHi = null;
+    if (o.gen && BAND && o.ppaGen != null) {
+      const bq = (k) => years.reduce((a, r, i) => { const B_ = bandOf(r.y); return a == null || !B_ || !(B_.p50 > 0) || B_[k] == null ? null : a + r.wt * r.fwd * o.gen[i].capture * B_[k] / B_.p50; }, 0);
+      const lo = bq('p10'), hi = bq('p90');
+      if (lo != null && hi != null) { o.ppaGenLo = o.ppaGen - o.genFair + lo; o.ppaGenHi = o.ppaGen - o.genFair + hi; }
+    }
     o.method = st.method;
     // asset-specific FPC method (three pricings): js/ppa-fpc.js
     o.capPathFor = capPath;
@@ -768,21 +880,34 @@
   // Per trajectory and year: the forward moves as one path to delivery (σ·√τ),
   // production varies around its expectation, the shape discount drifts away
   // from its projection (random walk, σ per √year, as in the projection band),
-  // with a correlation between production and that drift. Hedged: the
-  // expected volume is sold forward at the Cal price, so only the volume and
-  // shape risks remain. U = Σ df × (production × spot × (1 − shape discount)
+  // with a correlation between production and that drift. Hedged: a share of
+  // the expected volume (the ratio entered, 100 % by default for the capacity
+  // trend; the generator's runs take every ratio from UA + ratio × UH) is sold
+  // forward at the Cal price, or at the forward of the months delivered for a
+  // part year in the generator's runs. U = Σ df × (production × captured price
   // + hedge result) ÷ Σ df × production: what one MWh of the contract earned.
   function rng(seed) { let a = seed >>> 0; return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
   const qtl = (sorted, q) => { const r = q * (sorted.length - 1), lo = Math.floor(r); return sorted[lo] + (sorted[Math.min(sorted.length - 1, lo + 1)] - sorted[lo]) * (r - lo); };
   // 90th percentile of Student's t with df degrees of freedom (Cornish–Fisher; within 1 % for df ≥ 2)
+  // the standard normal's quantile (Acklam's rational approximation, relative error below 1.2e-9)
+  function zq(p) {
+    if (!(p > 0 && p < 1)) return p >= 1 ? Infinity : -Infinity;
+    const a = [-3.969683028665376e+01, 2.209460984245205e+02, -2.759285104469687e+02, 1.383577518672690e+02, -3.066479806614716e+01, 2.506628277459239e+00],
+      b = [-5.447609879822406e+01, 1.615858368580409e+02, -1.556989798598866e+02, 6.680131188771972e+01, -1.328068155288572e+01],
+      c = [-7.784894002430293e-03, -3.223964580411365e-01, -2.400758277161838e+00, -2.549732539343734e+00, 4.374664141464968e+00, 2.938163982698783e+00],
+      d = [7.784695709041462e-03, 3.224671290700398e-01, 2.445134137142996e+00, 3.754408661907416e+00], pl = 0.02425;
+    if (p < pl) { const q = Math.sqrt(-2 * Math.log(p)); return (((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) / ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1); }
+    if (p > 1 - pl) { const q = Math.sqrt(-2 * Math.log(1 - p)); return -(((((c[0] * q + c[1]) * q + c[2]) * q + c[3]) * q + c[4]) * q + c[5]) / ((((d[0] * q + d[1]) * q + d[2]) * q + d[3]) * q + 1); }
+    const q = p - 0.5, r = q * q; return (((((a[0] * r + a[1]) * r + a[2]) * r + a[3]) * r + a[4]) * r + a[5]) * q / (((((b[0] * r + b[1]) * r + b[2]) * r + b[3]) * r + b[4]) * r + 1);
+  }
   const t90 = df => { const z = 1.2816; return z + (z ** 3 + z) / (4 * df) + (5 * z ** 5 + 16 * z ** 3 + 3 * z) / (96 * df * df); };
   function simulate(o, st) {
     const N = 10000, Y = o.years, T = Y.length, R = rng(42);
     let spare = null; const gauss = () => { if (spare != null) { const v = spare; spare = null; return v; } let u = 0, v = 0; while (!u) u = R(); v = R(); const m = Math.sqrt(-2 * Math.log(u)); spare = m * Math.sin(2 * Math.PI * v); return m * Math.cos(2 * Math.PI * v); };
     const now = nowFrac(), tau = Y.map(r => Math.max(0.05, r.y + 0.5 - now)), hedged = st.hedge !== 'open', hr = hedged ? (st.hedgePct != null ? st.hedgePct : 100) / 100 : 0, rc = Math.sqrt(1 - o.rho * o.rho);
-    const U = new Float64Array(N), prod = Y.map(() => new Float32Array(N)), val = Y.map(() => new Float32Array(N)), sdM = Y.map(() => new Float32Array(N)), cpM = Y.map(() => new Float32Array(N)), spM = Y.map(() => new Float32Array(N));
+    const U = new Float64Array(N), UA = new Float64Array(N), UH = new Float64Array(N), prod = Y.map(() => new Float32Array(N)), val = Y.map(() => new Float32Array(N)), sdM = Y.map(() => new Float32Array(N)), cpM = Y.map(() => new Float32Array(N)), spM = Y.map(() => new Float32Array(N));
     for (let i = 0; i < N; i++) {
-      let w = 0, tp = 0, rw = 0, num = 0, den = 0;
+      let w = 0, tp = 0, rw = 0, num = 0, den = 0, nA = 0, nH = 0;
       for (let t = 0; t < T; t++) {
         const r = Y[t];
         w += Math.sqrt(tau[t] - tp) * gauss(); tp = tau[t];
@@ -797,17 +922,22 @@
         const dt = t === 0 ? Math.max(1, r.y - o.lastYr) : 1;
         rw += Math.sqrt(dt) * o.sig0 * (o.rho * zv + rc * gauss());
         const sd = clamp(r.fsd + rw, 0, 0.95);
-        // the captured price: its expected level (forward × capture rate) moved by the measured sensitivity to the spot
-        // (captureBeta); without it, as before, a share of the spot
-        const cap = (o.capBeta ? Math.max(0, r.fwd * (1 - sd) + o.capBeta.beta * (sLW - r.fwd)) : sLW * (1 - sd)) * (r.kq || 1) * (r.g || 1) * (r.sr || 1);
-        const v = pr * cap + hr * r.ev * (r.fwd - spotW);   // the share hedged of the expected volume, sold at the Cal
+        // the captured price. The generator's draws (r.cg, the published price): a share of the spot, exactly the
+        // generator's capture of the year × the spot (its drift, when there is one, taken off that share). The capacity
+        // trend's own draws: its expected level (forward × capture rate) moved by the measured sensitivity to the spot
+        // (captureBeta), × its quoted-month, part-year and stop factors
+        const cap = r.cg != null ? sLW * Math.max(0, r.cg - rw)
+          : (o.capBeta ? Math.max(0, r.fwd * (1 - sd) + o.capBeta.beta * (sLW - r.fwd)) : sLW * (1 - sd)) * (r.kq || 1) * (r.g || 1) * (r.sr || 1);
+        // the share hedged of the expected volume, sold at the Cal (a year delivered in part, in the generator's draws: at
+        // the forward of its months, hq × the Cal, settled on their spot)
+        const hq = r.hq || 1, hv = hedged ? r.ev * hq * (r.fwd - spotW) : 0, v = pr * cap + hr * hv;
         prod[t][i] = pr; val[t][i] = v; sdM[t][i] = sd; cpM[t][i] = cap; spM[t][i] = sLW;
-        num += r.df * v; den += r.df * pr;
+        num += r.df * v; den += r.df * pr; nA += r.df * pr * cap; nH += r.df * hv;
       }
-      U[i] = num / den;
+      U[i] = num / den; UA[i] = nA / den; UH[i] = nH / den;
     }
     const Us = Float64Array.from(U).sort();
-    return { N, U, Us, prod, val, sdM, cpM, spM, hedged, mean: mean(Array.from(U)) };
+    return { N, U, UA, UH, Us, prod, val, sdM, cpM, spM, hedged, mean: mean(Array.from(U)) };
   }
   // the simulated P&L at a given price, k€
   function mcEval(o, price) {
@@ -844,7 +974,7 @@
     'pp-pct': 'Past-discount method only: which percentile of the past discounts is used. Projected mode: the trend is shifted by this percentile minus the median. Higher = more cautious.',
     'pp-stopt': 'The park stops when the day-ahead price is below this value (or at it and below, with “at or below”): 0 by default, an hour at exactly 0 produced and paid 0, as the CRE does. At another value, to 0.1 €, the generator gives each month’s capture and paid output at that threshold from its own cells.',
     'pp-conv': 'Curtailed: the asset stops when the price is < 0 €; that output is neither produced nor paid, and the forward (Cal) still settles on every hour. No curtailment: every hour is produced and paid, negative prices included. Partial stop: only the share entered stops (for instance the parks under the stop obligation), the rest runs and is paid the negative price. PPA Dashboard convention: the team’s former rule, kept to compare.',
-    'pp-alpha': 'The chance of losing money you accept. Lower = a more cautious price and a bigger risk premium.',
+    'pp-alpha': 'The chance of losing money you accept. Lower = a more cautious price and a bigger risk premium. Every line of the published price’s premium follows it: the market lines as quantiles of the draws, the model error and the balancing by scaling their measured spread as if it were normal (as measured at 25 %).',
     'pp-hedge': 'Whether the expected volume is sold forward at the Cal price. Hedged: only the volume and profile risks remain.',
     'pp-imb': 'Cost of forecast errors per MWh produced. Default: national estimate (error of the site\u2019s combined forecast or the TSO\u2019s, whichever erred less over 12 months, × gap between imbalance and spot prices).',
     'pp-go': 'Value of the guarantees of origin per MWh, from market prices.',
@@ -855,11 +985,55 @@
     'pp-mcsd': 'How far the discount can drift from its projection each year.', 'pp-rho': 'Link between a high-production year and a deeper discount (0 = none, 1 = full).',
     'pp-vs': 'Size of the volume and cannibalisation shocks in the stress scenarios.', 'pp-ss': 'Size of the spot price shocks in the stress scenarios.',
   };
+  // the same help in French, written here (a data-tip is not reached by the page dictionary)
+  const HELP_FR = {
+    'pp-tech': 'Solaire ou éolien : le profil de production national, la capacité installée et l’historique utilisés.',
+    'pp-t0': 'Première année calendaire de livraison.', 'pp-t1': 'Dernière année calendaire de livraison. Par défaut, la dernière année qui a un prix de marché (Cal).',
+    'pp-mw': 'Puissance installée de l’actif. Sert à estimer sa production annuelle quand aucune courbe n’est chargée.',
+    'pp-volume': 'Production attendue par an. Fixe le P&L en k€ et le poids de chaque année.',
+    'pp-degr': 'Perte de production annuelle (vieillissement des panneaux) : les dernières années pèsent un peu moins.',
+    'pp-file': 'Production de l’actif à l’heure ou au quart d’heure (CSV ou Excel). Le prix reflète alors cet actif ; sans courbe, le profil national est utilisé.',
+    'pp-model': 'Comment la décote est portée dans le futur : avec la capacité installée (objectifs PPE3), à plat sur la dernière année, ou selon une tendance.',
+    'pp-pct': 'Méthode Décote passée seulement : le centile des décotes passées utilisé. Mode projeté : la tendance est décalée de ce centile moins la médiane. Plus haut = plus prudent.',
+    'pp-stopt': 'Le parc s’arrête quand le prix day-ahead est sous cette valeur (ou à cette valeur et en dessous, avec « inférieur ou égal ») : 0 par défaut, une heure à exactement 0 est produite et payée 0, comme le fait la CRE. À une autre valeur, à 0,1 € près, le générateur donne la capture et la production payée de chaque mois à ce seuil, à partir de ses propres cellules.',
+    'pp-conv': 'Écrêté : l’actif s’arrête quand le prix est < 0 € ; cette production n’est ni produite ni payée, et le forward (Cal) se règle toujours sur toutes les heures. Sans écrêtement : chaque heure est produite et payée, prix négatifs compris. Arrêt partiel : seule la part saisie s’arrête (par exemple les parcs soumis à l’obligation d’arrêt), le reste produit et reçoit le prix négatif. Convention PPA Dashboard : l’ancienne règle de l’équipe, gardée pour comparer.',
+    'pp-alpha': 'Le risque de perte que vous acceptez. Plus bas = un prix plus prudent et une prime de risque plus forte. Chaque ligne de la prime du prix publié le suit : les lignes de marché comme quantiles des tirages, l’erreur du modèle et l’équilibrage en mettant à l’échelle leur dispersion mesurée comme si elle était normale (telle que mesurée à 25 %).',
+    'pp-hedge': 'Le volume attendu est-il vendu à terme au prix Cal ? Couvert : seuls restent les risques de volume et de profil.',
+    'pp-imb': 'Coût des erreurs de prévision par MWh produit. Par défaut : estimation nationale (erreur de la prévision combinée du site ou de celle du GRT, la plus juste des deux sur 12 mois, × écart entre prix de déséquilibre et spot).',
+    'pp-go': 'Valeur des garanties d’origine par MWh, d’après les prix de marché.',
+    'pp-margin': 'Ce que l’acheteur garde par MWh. Déduit du prix payé au producteur, dans toutes les méthodes.',
+    'pp-disc': 'Taux d’actualisation appliqué aux années suivantes (0 = aucun).', 'pp-add': 'Une décote supplémentaire en % du forward, si vous en voulez une.',
+    'pp-volrisk': 'Méthode Décote passée : marge de risque volume, en % du forward, saisie à la main.', 'pp-pricerisk': 'Méthode Décote passée : marge de risque prix, en % du forward, saisie à la main.',
+    'pp-mcvol': 'De combien la production annuelle peut varier (1 écart-type).', 'pp-mcfwd': 'De combien le prix forward peut bouger d’ici la livraison (volatilité annuelle).',
+    'pp-mcsd': 'De combien la décote peut s’écarter de sa projection chaque année.', 'pp-rho': 'Lien entre une année de forte production et une décote plus profonde (0 = aucun, 1 = total).',
+    'pp-vs': 'Taille des chocs de volume et de cannibalisation dans les scénarios de stress.', 'pp-ss': 'Taille des chocs de prix spot dans les scénarios de stress.',
+    'pp-yearsel': 'Années passées utilisées pour mesurer la cannibalisation et la forme des prix. 2022 (crise du gaz) est exclue par défaut. Avec une courbe d’actif, seulement ses années complètes.',
+  };
+  // where an automatic value comes from, in French (the English text is written with the calculation)
+  const AUTO_FR = [
+    [/^spread of the years used around their trend, 3 to 8 pts$/, 'dispersion des années utilisées autour de leur tendance, 3 à 8 pts'],
+    [/^next calendar year$/, 'prochaine année calendaire'], [/^last Cal year quoted$/, 'dernière année Cal cotée'], [/^five years$/, 'cinq ans'],
+    [/^Commerg mid, AIB renewable, tenor years$/, 'milieu de fourchette Commerg, AIB renouvelable, années du contrat'], [/^default$/, 'valeur par défaut'],
+    [/^peak of the curve$/, 'pointe de la courbe'], [/^enter it to size the production$/, 'à saisir pour dimensionner la production'],
+    [/^asset curve, average year$/, 'courbe de l’actif, année moyenne'], [/^example: enter the capacity or a curve$/, 'exemple : saisissez la puissance ou une courbe'],
+    [/^([\d.]+) MW × national load factor ([\d.]+) %$/, (m, a, b) => `${fnum(a)} MW × facteur de charge national ${fnum(b)} %`],
+    [/^typical PV panel ageing$/, 'vieillissement habituel des panneaux'], [/^none for wind$/, 'aucune pour l’éolien'], [/^none: values in today’s money$/, 'aucune : valeurs en euros d’aujourd’hui'],
+    [/^national forecast error \((our combined forecast|the TSO day-ahead forecast)\) × \(imbalance − spot\), (\d+) months$/, (m, w, n) => `erreur de la prévision nationale (${w[0] === 'o' ? 'notre prévision combinée' : 'la prévision J-1 du GRT'}) × (déséquilibre − spot), ${n} mois`],
+    [/^past-discount default \(national estimate not computed yet\)$/, 'valeur par défaut de la Décote passée (estimation nationale pas encore calculée)'],
+    [/^past-discount default$/, 'valeur par défaut de la Décote passée'], [/^none$/, 'aucune'], [/^one chance in four$/, 'une chance sur quatre'], [/^Past discount$/, 'Décote passée'],
+    [/^spread of the national load factor, 6 years$/, 'dispersion du facteur de charge national, 6 ans'], [/^spread of the asset’s yearly output$/, 'dispersion de la production annuelle de l’actif'],
+    [/^asset’s (\d+) years against the national spread \(×([\d.]+)\) plus its own \(([\d.]+) %\)$/, (m, n, b, i) => `${n} années de l’actif face à la dispersion nationale (×${fnum(b)}) plus la sienne (${fnum(i)} %)`],
+    [/^France Cal\+1, (\d+) sessions$/, (m, n) => `France Cal+1, ${n} séances`], [/^assumption$/, 'hypothèse'],
+    [/^generator weather scenarios \((\d+) draws\)$/, (m, n) => `scénarios météo du générateur (${n} tirages)`],
+    [/^assumption: a sunnier \/ windier year cannibalises more$/, 'hypothèse : une année plus ensoleillée ou plus ventée cannibalise davantage'],
+  ];
+  const fnum = v => String(v).replace('.', ',');
+  const autoSrc = src => { if (!FRDOC() || src == null) return src; for (const [re, fr] of AUTO_FR) if (re.test(src)) return String(src).replace(re, fr); return src; };
   function addHelp() {
-    Object.entries(HELP).forEach(([id, tip]) => { const el = $(id); const f = el && el.closest('.cf-field'); const lab = f && f.querySelector(':scope > span'); if (!lab || lab.querySelector('.pp-help')) return;
+    Object.entries(HELP).forEach(([id, tip]) => { if (FRDOC() && HELP_FR[id]) tip = HELP_FR[id]; const el = $(id); const f = el && el.closest('.cf-field'); const lab = f && f.querySelector(':scope > span'); if (!lab || lab.querySelector('.pp-help')) return;
       const i = document.createElement('i'); i.className = 'pp-help'; i.tabIndex = 0; i.textContent = 'i'; i.dataset.tip = tip; i.setAttribute('aria-label', tip); lab.appendChild(i); });
     const ys = $('pp-yearsel'), lab = ys && ys.closest('.cf-field') && ys.closest('.cf-field').querySelector(':scope > span');
-    if (lab && !lab.querySelector('.pp-help')) { const i = document.createElement('i'); i.className = 'pp-help'; i.tabIndex = 0; i.textContent = 'i'; i.dataset.tip = 'Past years used to measure cannibalisation and the price shape. 2022 (gas crisis) is left out by default. With an asset curve, only its complete years.'; lab.appendChild(i); }
+    if (lab && !lab.querySelector('.pp-help')) { const i = document.createElement('i'); i.className = 'pp-help'; i.tabIndex = 0; i.textContent = 'i'; i.dataset.tip = FRDOC() ? HELP_FR['pp-yearsel'] : 'Past years used to measure cannibalisation and the price shape. 2022 (gas crisis) is left out by default. With an asset curve, only its complete years.'; i.setAttribute('aria-label', i.dataset.tip); lab.appendChild(i); }
   }
   const INTRO = {
     pct: '<b>Past discount</b> (formerly “PPA Dashboard”): the team’s original formula. By default, as in the tool’s projection: each delivery year’s discount = the linear trend of the last 3 years + (chosen percentile − median) of the past discounts; price = Σ forward × (1 − that discount), weighted by output, − risk margins entered by hand. Option: the percentile of the past years alone (the tool’s single headline price), which assumes the delivery years look like the past.',
@@ -877,7 +1051,7 @@
       const v = a[0];
       inp.placeholder = v == null ? '' : String(v);
       if (S[k] == null && document.activeElement !== inp) inp.value = '';
-      if (tag) { const man = S[k] != null; tag.className = 'pp-auto' + (man ? ' man' : ''); tag.textContent = man ? `↺ auto${v != null ? ' ' + v : ''}` : 'auto'; tag.title = man ? 'Back to the automatic value: ' + a[1] : 'Automatic: ' + a[1]; tag.dataset.k = k; }
+      if (tag) { const man = S[k] != null; tag.className = 'pp-auto' + (man ? ' man' : ''); tag.textContent = man ? `↺ auto${v != null ? ' ' + v : ''}` : 'auto'; tag.title = FRDOC() ? (man ? 'Revenir à la valeur automatique : ' : 'Automatique : ') + autoSrc(a[1]) : man ? 'Back to the automatic value: ' + a[1] : 'Automatic: ' + a[1]; tag.dataset.k = k; }
     });
     const steps = document.querySelector('.pp-steps'); if (steps) steps.className = 'pp-steps m-' + (S.view === 'compare' ? 'all' : S.method);
     const pg = $('page-ppapricer'); if (pg) pg.dataset.m = S.view === 'compare' ? 'all' : S.method;
@@ -898,7 +1072,7 @@
 
   function renderYears(o) {
     const host = $('pp-yearsel'); if (!host) return;
-    host.innerHTML = o.hist.map(x => `<button type="button" class="pp-chip${o.sel.includes(x.year) ? ' on' : ''}" data-y="${x.year}" title="Shape discount ${pc(x.sd)}${x.complete ? '' : ' · incomplete year'}">${x.year}${x.complete ? '' : ' YTD'}<em>${pc(x.sd)}</em></button>`).join('') +
+    host.innerHTML = o.hist.map(x => `<button type="button" class="pp-chip${o.sel.includes(x.year) ? ' on' : ''}" data-y="${x.year}" title="${FRDOC() ? 'Décote de profil' : 'Shape discount'} ${pc(x.sd)}${x.complete ? '' : FRDOC() ? ' · année incomplète' : ' · incomplete year'}">${x.year}${x.complete ? '' : ' YTD'}<em>${pc(x.sd)}</em></button>`).join('') +
       `<button type="button" class="pp-chip pp-chip-reset" data-y="reset">All but 2022</button>`;
     host.querySelectorAll('.pp-chip').forEach(b => b.addEventListener('click', () => {
       if (b.dataset.y === 'reset') S.years = null;
@@ -926,11 +1100,11 @@
   }
   // a method left out of the published price for this technology by the weekly leave-one-out check (scripts/ppa_weights.py
   // 'exclude': the replayed average is closer to the realised without it; on 29 Oct. 2026 the forward shape for solar)
-  // the published price of a technology set by the single scenario generator alone (Tom, 30 Oct. 2026: solar; replay
-  // 2020–2025 1–3 years ahead, no correction: 0.87 €/MWh mean error against 1.84 for the average of the methods). Wind
-  // keeps the average until the generator is right for it (it overvalues wind by about 2.4 €/MWh)
-  // (only when the generator's months are there: without them the average of the methods sets it, as before)
-  const GEN_ONLY = () => !!(D && D.fcst && D.fcst.generator);   // since 31 Oct. 2026 for wind too (solar since 30 Oct.)
+  // the published price of a technology set by the single scenario generator alone (Tom, 30 Oct. 2026 for solar: replay
+  // 2020–2025 1–3 years ahead, no correction, 0.87 €/MWh mean error against 1.84 for the average of the methods; since
+  // 31 Oct. 2026 for wind too); only when the generator's months are there: without them the average of the methods
+  // sets it, as before
+  const GEN_ONLY = () => !!(D && D.fcst && D.fcst.generator);
   function outOf(k, st) {
     if (GEN_ONLY(st)) return k !== 'pct' && k !== 'int';
     const X = D && D.weights && D.weights.exclude, t = (st || S).tech === 'wind' ? 'wind' : 'solar';
@@ -945,7 +1119,7 @@
     return W > 0 ? its.reduce((a, m) => a + wOf(m.k, st) * m[f], 0) / W : null;
   }
   // the integrated method (since 30 Oct. 2026): the single scenario generator, the same for both technologies, no
-  // bias correction (scripts/ppa_generator.py); shown as a test, never in the published price until wind is right
+  // bias correction (scripts/ppa_generator.py); it sets the published price whenever its months are there (GEN_ONLY)
   function integrated(o) {
     return o.ppaGen == null ? { k: 'int', v: null } : { k: 'int', v: o.ppaGen, fair: o.genFair, ref: o.refW };
   }
@@ -1000,11 +1174,12 @@
           ? (anMode === 'none' ? 'sans ancrage' : `ancré sur la capture réalisée de ${anY || 'la dernière année complète'}${anMode === 'season' ? ', un facteur pour l’hiver (octobre–mars) et un pour l’été (avril–septembre)' : ' (un facteur sur l’année)'}`) + (anErr ? ` : le choix qui se trompait le moins en rejeu, écart moyen ${anErr} €/MWh` : '')
           : (anMode === 'none' ? 'not anchored' : `anchored on the realised capture of ${anY || 'the last complete year'}${anMode === 'season' ? ', one factor for winter (October–March) and one for summer (April–September)' : ' (one factor on the year)'}`) + (anErr ? `: the choice that erred least in the replay, mean gap ${anErr} €/MWh` : '');
         el.innerHTML = spread + bfTxt + ' ' + (fr ? `Prix publié = le générateur de scénarios (deux régimes : la France couplée à ses voisins ou coupée par sa limite d’export du couplage Core, JAO), ${anTxt}, sans correction de biais.` : `Published price = the scenario generator (two regimes: France coupled to its neighbours or cut off by its Core export limit, JAO), ${anTxt}, no bias correction.`) + mrTxt + (o.modelRiskDyn != null ? (() => {
-          const hp = S.hedgePct != null ? S.hedgePct : 100, F = fr ? n2 : f2, inT = fr ? 'dans le prix' : 'in the price', outT = fr ? 'retiré du prix' : 'left out of the price';
+          const hp = o.hedgeUsed != null ? o.hedgeUsed : 100, F = fr ? n2 : f2, inT = fr ? 'dans le prix' : 'in the price', outT = fr ? 'retiré du prix' : 'left out of the price';
           const icS = D.imbCost[S.tech === 'wind' ? 'wind' : 'solar'];
+          const grT = (o.modelHz || []).filter(x => x.grow > 1.0005).map(x => `${x.y} ×${F(x.grow)}`).join(', ');
           return fr
-            ? ` Le prix ne garde que les risques que porte l’acheteur, chacun mesuré : erreur du modèle <b>${F(o.modelRiskDyn)}</b> (75e centile des erreurs passées du générateur pour ce seuil d’arrêt, dont un biais moyen de ${F(o.biasDyn)} ; rejeu chaque semaine des livraisons commençant chaque mois depuis 2023, pricées 3 à 12 mois avant) ; couverture <b>${F(o.hedgeRisk)}</b> (${o.inclHedge ? inT : outT}) pour ${hp} % du volume attendu vendu au Cal de chaque année : la part non couverte suit le spot et le prix capté ne suit pas la couverture un pour un ; volume <b>${F(o.premVolGen)}</b> (${o.inclVol ? inT : outT}) : la production qui s’écarte du volume couvert, rachetée ou revendue à un prix qui bouge avec elle (élasticité du prix à la production dans les scénarios du générateur : ${o.elP ? F(o.elP) : 'non mesurée'}) ; équilibrage <b>${F(o.balRisk)}</b> (${o.inclBal ? inT : outT}) : l’écart possible du coût des écarts d’une année, mesuré sur ${icS && icS.nSd ? icS.nSd : '–'} mois ; coût de couverture ${F(o.hedgeCost)} (écart achat-vente de la section Couverture)${o.liqRisk ? ` ; liquidité des années non cotées ${F(o.liqRisk)}` : ''}${o.creditRisk ? ` ; crédit ${F(o.creditRisk)}` : ''}. Ces risques étant presque indépendants, ils s’ajoutent comme la racine de la somme des carrés (diversification ${F(-o.diversif)}), pas l’un sur l’autre ; le biais s’ajoute en entier. Seule exception : le générateur surestime la capture quand le prix réalisé est bas (corrélation ${F(o.corrErrBase)} en rejeu), donc son erreur s’ajoute au risque de marché quand l’acheteur perd si les prix baissent${o.rhoMM ? ` : comptées corrélées à ${F(o.rhoMM)} ici` : ' ; ici il perd plutôt si les prix montent, aucune corrélation comptée'}. Total <b>${F(o.premiumGen)} €/MWh</b>.<span id="pp-best-hedge"></span>`
-            : ` The price keeps only the risks the buyer carries, each measured: model error <b>${F(o.modelRiskDyn)}</b> (75th percentile of the generator's past errors for this stop threshold, of which a mean bias of ${F(o.biasDyn)}; replay every week of the deliveries starting every month since 2023, priced 3 to 12 months ahead); hedge <b>${F(o.hedgeRisk)}</b> (${o.inclHedge ? inT : outT}) for ${hp} % of the expected volume sold at each year's Cal: the unhedged share follows the spot and the captured price does not follow the hedge one for one; volume <b>${F(o.premVolGen)}</b> (${o.inclVol ? inT : outT}): the output away from the volume hedged, bought back or sold at a price that moves with it (elasticity of the price to the output in the generator's scenarios: ${o.elP ? F(o.elP) : 'not measured'}); balancing <b>${F(o.balRisk)}</b> (${o.inclBal ? inT : outT}): how far a year's imbalance cost can stray, measured on ${icS && icS.nSd ? icS.nSd : '–'} months; hedging cost ${F(o.hedgeCost)} (bid–ask of the Hedging section)${o.liqRisk ? `; liquidity of unquoted years ${F(o.liqRisk)}` : ''}${o.creditRisk ? `; credit ${F(o.creditRisk)}` : ''}. Being nearly independent, these risks add as the root of the sum of squares (diversification ${F(-o.diversif)}), not one on top of the other; the bias adds in full. One exception: the generator overprices the capture when the realised price is low (correlation ${F(o.corrErrBase)} in the replay), so its error adds to the market risk when the buyer loses as prices fall${o.rhoMM ? `: counted correlated at ${F(o.rhoMM)} here` : '; here it rather loses as prices rise, no correlation counted'}. Total <b>${F(o.premiumGen)} €/MWh</b>.<span id="pp-best-hedge"></span>`;
+            ? ` Le prix ne garde que les risques que porte l’acheteur, chacun mesuré : erreur du modèle <b>${F(o.modelRiskDyn)}</b> (75e centile des erreurs passées du générateur pour ce seuil d’arrêt${Math.abs(o.zK - 1) > 1e-9 ? `, sa dispersion mise à l’échelle du risque accepté de ${o.alpha} % comme si elle était normale (×${F(o.zK)}, de même pour l’équilibrage)` : ''}, dont un biais moyen de ${F(o.biasDyn)} ; rejeu chaque semaine des livraisons commençant chaque mois depuis 2023, pricées 3 à 12 mois avant${grT ? `, en moyenne ${o.modelLead0.toFixed(1).replace('.', ',')} mois avant le milieu de la livraison ; au-delà, sa dispersion croît comme la racine du délai : ${grT}.${S.tech === 'wind' ? ' Pour l’éolien, c’est une hypothèse : le rejeu à 1, 2 et 3 ans ne montre pas de forme nette (×2,02 à 2 ans, ×0,90 à 3, sur 9 cas)' : ' Le rejeu à 1, 2 et 3 ans le soutient pour le solaire (×1,24 à 2 ans, ×1,53 à 3, sur 9 cas)'}` : ''}) ; couverture <b>${F(o.hedgeRisk)}</b> (${o.inclHedge ? inT : outT}) pour <b>${hp} %</b> du volume attendu vendu à terme (${o.hedgeAuto ? 'le ratio qui minimise la prime, au pas de 5 % : on couvre au delta, pas à 100 %' : `ratio saisi ; ${o.hedgeBest ? o.hedgeBest.pct : '–'} % minimiserait la prime, ${F(o.hedgeBest ? o.hedgeBest.prem : null)} €/MWh`}) au Cal de chaque année, ou au forward des mois livrés pour une année partielle : la part non couverte suit le spot et le prix capté ne suit pas la couverture un pour un ; volume <b>${F(o.premVolGen)}</b> (${o.inclVol ? inT : outT}) : la production qui s’écarte du volume couvert, rachetée ou revendue à un prix qui bouge avec elle (élasticité du prix à la production dans les scénarios du générateur : ${o.elP ? F(o.elP) : 'non mesurée'}) ; équilibrage <b>${F(o.balRisk)}</b> (${o.inclBal ? inT : outT}) : l’écart possible du coût des écarts d’une année, mesuré sur ${icS && icS.nSd ? icS.nSd : '–'} mois ; coût de couverture ${F(o.hedgeCost)} (écart achat-vente de la section Couverture)${o.liqRisk ? ` ; liquidité des années non cotées ${F(o.liqRisk)}` : ''}${o.creditRisk ? ` ; crédit ${F(o.creditRisk)}` : ''}. Ces risques étant presque indépendants, ils s’ajoutent comme la racine de la somme des carrés (diversification ${F(-o.diversif)}), pas l’un sur l’autre ; le biais s’ajoute en entier. Seule exception : le générateur surestime la capture quand le prix réalisé est bas (corrélation ${F(o.corrErrBase)} en rejeu), donc son erreur s’ajoute au risque de marché quand l’acheteur perd si les prix baissent${o.rhoMM ? ` : comptées corrélées à ${F(o.rhoMM)} ici` : ' ; ici il perd plutôt si les prix montent, aucune corrélation comptée'}. Total <b>${F(o.premiumGen)} €/MWh</b>.<span id="pp-best-hedge"></span>`
+            : ` The price keeps only the risks the buyer carries, each measured: model error <b>${F(o.modelRiskDyn)}</b> (75th percentile of the generator's past errors for this stop threshold${Math.abs(o.zK - 1) > 1e-9 ? `, its spread scaled to the risk accepted of ${o.alpha} % as if it were normal (×${F(o.zK)}, the balancing likewise)` : ''}, of which a mean bias of ${F(o.biasDyn)}; replay every week of the deliveries starting every month since 2023, priced 3 to 12 months ahead${grT ? `, on average ${o.modelLead0.toFixed(1)} months before the middle of delivery; beyond that its spread grows as the square root of the lead: ${grT}.${S.tech === 'wind' ? ' For wind this is an assumption: the replay 1, 2 and 3 years ahead shows no clear shape (×2.02 at 2 years, ×0.90 at 3, on 9 cases)' : ' The replay 1, 2 and 3 years ahead supports it for solar (×1.24 at 2 years, ×1.53 at 3, on 9 cases)'}` : ''}); hedge <b>${F(o.hedgeRisk)}</b> (${o.inclHedge ? inT : outT}) for <b>${hp} %</b> of the expected volume sold forward (${o.hedgeAuto ? 'the ratio that minimises the premium, in steps of 5 %: the hedge is at the delta, not at 100 %' : `ratio entered; ${o.hedgeBest ? o.hedgeBest.pct : '–'} % would minimise the premium, ${F(o.hedgeBest ? o.hedgeBest.prem : null)} €/MWh`}) at each year's Cal, or at the forward of the months delivered for a part year: the unhedged share follows the spot and the captured price does not follow the hedge one for one; volume <b>${F(o.premVolGen)}</b> (${o.inclVol ? inT : outT}): the output away from the volume hedged, bought back or sold at a price that moves with it (elasticity of the price to the output in the generator's scenarios: ${o.elP ? F(o.elP) : 'not measured'}); balancing <b>${F(o.balRisk)}</b> (${o.inclBal ? inT : outT}): how far a year's imbalance cost can stray, measured on ${icS && icS.nSd ? icS.nSd : '–'} months; hedging cost ${F(o.hedgeCost)} (bid–ask of the Hedging section)${o.liqRisk ? `; liquidity of unquoted years ${F(o.liqRisk)}` : ''}${o.creditRisk ? `; credit ${F(o.creditRisk)}` : ''}. Being nearly independent, these risks add as the root of the sum of squares (diversification ${F(-o.diversif)}), not one on top of the other; the bias adds in full. One exception: the generator overprices the capture when the realised price is low (correlation ${F(o.corrErrBase)} in the replay), so its error adds to the market risk when the buyer loses as prices fall${o.rhoMM ? `: counted correlated at ${F(o.rhoMM)} here` : '; here it rather loses as prices rise, no correlation counted'}. Total <b>${F(o.premiumGen)} €/MWh</b>.<span id="pp-best-hedge"></span>`;
         })() : '');
         { const bh = document.getElementById('pp-best-hedge'); if (bh && window.PKPpaHedge && PKPpaHedge.best) bh.innerHTML = PKPpaHedge.best; }
         return;
@@ -1057,6 +1232,7 @@
     const gen = use.length === 1 && use[0].k === 'int' && o.genProf != null && o.premVolGen != null;
     // a stop threshold other than 0: the change of value against the same park stopping at 0 €
     const thrFx = gen && o.genFair0 != null ? fair - o.genFair0 : 0;
+    const addE = gen ? (o.refW || 0) * (o.add || 0) / 100 : 0;
     const st = gen
       ? [['Cal forward', ref, 1], ['Monthly profile', o.genProf - ref], ['Hourly cannibalisation', fair - o.genProf - thrFx],
         ...(thrFx ? [['Stop threshold effect', thrFx]] : []),
@@ -1067,7 +1243,9 @@
             ...(o.liqRisk ? [['Liquidity risk', -o.liqRisk]] : []), ...(o.inclBal && o.balRisk ? [['Balancing risk', -o.balRisk]] : []),
             ...(o.hedgeCost ? [['Hedging cost', -o.hedgeCost]] : []), ...(o.creditRisk ? [['Credit risk', -o.creditRisk]] : []),
             ['Diversification', -o.diversif]]
-          : [['Volume risk', -o.premVolGen], ...(o.liqRisk != null ? [['Liquidity risk', -o.liqRisk]] : []), ['Price & capture risk', risk + o.premVolGen + (o.liqRisk || 0)]]),
+          : [['Volume risk', -o.premVolGen], ...(o.liqRisk != null ? [['Liquidity risk', -o.liqRisk]] : []), ['Price & capture risk', risk + o.premVolGen + (o.liqRisk || 0) + addE]]),
+        // the additional discount (% of the forward), its own bar so the bars close on the price
+        ...(addE ? [['Additional discount', -addE]] : []),
         ['Imbalance cost', -o.imb], ['GO', o.goW], ['Margin', -o.margin], ['PPA price', price, 1]]
       : [['Cal forward', ref, 1], [S.tech === 'wind' ? 'Wind profile' : 'Solar profile', fair - ref], ['Risk', risk], ['Imbalance', -o.imb], ['GO', o.goW], ['Margin', -o.margin], ['PPA price', price, 1]];
     const sub = $('pp-sum-wf-sub'), subT = gen ? '€/MWh · the published price, line by line' : '€/MWh · average of the methods ticked';
@@ -1273,7 +1451,7 @@
     const cur = S.view === 'compare' ? null : S.method;
     let rel = '';
     if (BT && BT.rows) { const rs = BT.rows.filter(r => r.tech === S.tech && r.year !== 2022), m = {}; RB.forEach(r => { if (rs.length && r[3]) m[r[3]] = mean(rs.map(x => Math.abs(x[r[3]] - x.actual))); }); const best = RB.filter(r => m[r[3]] != null).sort((a, b) => m[a[3]] - m[b[3]])[0];
-      if (best) rel = `<span class="rel" title="Historical replay ${BT.targets ? BT.targets[0] + '–' + BT.targets[BT.targets.length - 1] : ''}, 2022 left out: average gap between the capture rate each method predicted and the real one">Among the reference methods, most reliable in the replay (${S.tech}): <b>${best[1]}</b>, ${(m[best[3]] * 100).toFixed(1)} pts average error · <a href="#" data-rb-tab="Compare">see the replay</a></span>`; }
+      if (best) rel = `<span class="rel" title="Historical replay ${BT.targets ? BT.targets[0] + '–' + BT.targets[BT.targets.length - 1] : ''}, 2022 left out: average gap between the capture rate each method predicted and the real one">Among the reference methods, most reliable in the replay (${S.tech}): <b>${best[1]}</b>, ${(m[best[3]] * 100).toFixed(1)} pts average error · <button type="button" class="pk-linkbtn" data-rb-tab="Compare">see the replay</button></span>`; }
     else if (!BT) get('history/ppa_backtest.json').then(j => { if (j) { BT = j; renderResBar(S.last); } });
     // the published price first (the scenario generator, Tom 31 Oct. 2026); the five methods after it are references only
     const pub = GEN_ONLY() && o.ppaGen != null ? `<span class="pp-rb pp-rb-pub" title="The price the site publishes: the scenario generator (v2), its risk premium from the full Monte Carlo">Published price <b>${f2(o.ppaGen)}</b></span><span class="lbl">Reference methods</span>` : '';
@@ -1289,7 +1467,7 @@
     const e = $('pp-adv-n'); if (e) e.textContent = n ? n + ' changed' : '';
   }
   // long notes fold to two lines; a click opens them
-  function clampNotes() { document.querySelectorAll('#page-ppapricer .fuel-note').forEach(n => { if (!n.dataset.clamp) { n.dataset.clamp = '1'; n.classList.add('pp-clamp'); n.title = 'Click to read the whole note'; n.addEventListener('click', () => { n.classList.toggle('pp-clamp'); n.title = n.classList.contains('pp-clamp') ? 'Click to read the whole note' : ''; }); } }); }
+  function clampNotes() { document.querySelectorAll('#page-ppapricer .fuel-note').forEach(n => { if (!n.dataset.clamp) { n.dataset.clamp = '1'; n.classList.add('pp-clamp'); n.title = FRDOC() ? 'Cliquer pour lire toute la note' : 'Click to read the whole note'; n.addEventListener('click', () => { n.classList.toggle('pp-clamp'); n.title = n.classList.contains('pp-clamp') ? 'Click to read the whole note' : ''; }); } }); }
   // the inputs in one line, readable when the section is folded
   function inSummary(o) {
     const sum = $('pp-in-sum');
@@ -1327,13 +1505,13 @@
       _fuelKpi('Capture value', f2(o.fair), '€/MWh', 'forward × quoted-month factor × (1 − projected shape discount), no risk'),
       _fuelKpi('Risk premium', f2(o.premium), '€/MWh', `${o.alpha} % chance of loss accepted · Monte Carlo`),
       _fuelKpi('Chance of loss', mcA ? (mcA.prob * 100).toFixed(1) : '–', '%', 'at the PPA price, margin included', mcA && mcA.prob > 0.5 ? 'down' : 'up'),
-      _fuelKpi('Production', f0(o.volume), 'MWh/yr', o.auto.volume && S.volume == null ? o.auto.volume[1] : 'entered'),
+      _fuelKpi('Production', f0(o.volume), 'MWh/yr', o.auto.volume && S.volume == null ? autoSrc(o.auto.volume[1]) : FRDOC() ? 'saisie' : 'entered'),
     ] : [
       _fuelKpi('PPA price', f2(o.ppa), '€/MWh', `${tech} · ${T0}–${T1} · ${(o.ppa / o.ref * 100).toFixed(1)} % of forward`, ''),
       _fuelKpi('Reference forward', f2(o.ref), '€/MWh', 'average of the tenor Cal contracts'),
       _fuelKpi('Shape discount used', pc(o.sdCh), '', `${o.pdMode === 'past' ? 'P' + S.pct + ' of the past' : 'projected, trend + P' + S.pct + ' offset'} (${o.useAsset ? 'asset' : 'national'})`),
       _fuelKpi('Break-even', o.be ? 'P' + o.be : '> P100', '', 'percentile where the P&L turns negative', o.be && o.be <= S.pct ? 'down' : 'up'),
-      _fuelKpi('Production', f0(o.volume), 'MWh/yr', o.auto.volume && S.volume == null ? o.auto.volume[1] : 'entered'),
+      _fuelKpi('Production', f0(o.volume), 'MWh/yr', o.auto.volume && S.volume == null ? autoSrc(o.auto.volume[1]) : FRDOC() ? 'saisie' : 'entered'),
     ]).join('');
     // the price, step by step: each step points to the chart it comes from
     const first = o.years[0], last = o.years[o.years.length - 1];
@@ -1384,7 +1562,7 @@
         scales: { x: Object.assign(_fuelXAxis(), { grid: { display: false }, ticks: { color: C_TX2, font: { size: 10 }, autoSkip: false, maxRotation: 0 } }), y: _fuelAxis('€/MWh', { beginAtZero: true }) } }) }, 'ppa-waterfall');
     // year table
     $('pp-years').innerHTML = `<div style="overflow-x:auto"><table class="fuel-table pp-ptab"><thead><tr><th style="text-align:left">Year</th><th>Forward</th><th>Shape disc.</th><th>Capture</th><th>Neg. hours</th><th>MWh${S.conv === 'pos' ? ' paid' : ''}</th><th>P&L k€</th></tr></thead><tbody>` +
-      o.years.map(r => `<tr><td style="text-align:left">${r.y}</td><td>${f2(r.fwd)}</td><td>${pc(r.fsd)} <span class="pp-hint">± ${(r.sig * 100).toFixed(1)}</span></td><td>${f2(r.cp)}</td><td title="${r.negShare != null ? (r.negShare * 100).toFixed(1) + ' % of the output at prices < 0' : ''}">${f0(r.negH)}</td><td>${f0(r.ev)}</td><td class="${r.pnlK >= 0 ? 'pp-pos' : 'pp-neg'}">${sgn(r.pnlK)}</td></tr>`).join('') +
+      o.years.map(r => `<tr><td style="text-align:left">${r.y}</td><td>${f2(r.fwd)}</td><td>${pc(r.fsd)} <span class="pp-hint">± ${(r.sig * 100).toFixed(1)}</span></td><td>${f2(r.cp)}</td><td title="${r.negShare != null ? (FRDOC() ? (r.negShare * 100).toFixed(1).replace('.', ',') + ' % de la production à des prix < 0' : (r.negShare * 100).toFixed(1) + ' % of the output at prices < 0') : ''}">${f0(r.negH)}</td><td>${f0(r.ev)}</td><td class="${r.pnlK >= 0 ? 'pp-pos' : 'pp-neg'}">${sgn(r.pnlK)}</td></tr>`).join('') +
       `</tbody></table></div><div class="fuel-note">${o.years.some(r => r.kq != null && Math.abs(r.kq - 1) > 0.0005) ? (FRDOC() ? `Facteur des mois cotés k (le niveau lu mois par mois, comme le reste de l’outil) : ${o.years.map(r => r.y + ' ' + (r.kq || 1).toFixed(3)).join(', ')} ; valeur captée = forward × k × capture. ` : `Quoted-month factor k (the level read month by month, as the rest of the tool does): ${o.years.map(r => r.y + ' ' + (r.kq || 1).toFixed(3)).join(', ')}; capture value = forward × k × capture. `) : ''}Shape discount ${MODEL_T[o.model]}, from ${o.lastYr} (${pc(o.proj(o.lastYr))}, ${o.useAsset ? 'asset' : 'national'}); ± = 1 σ of the projection. Negative hours projected with the solar build-out${S.conv === 'pos' ? '; with the PPA Dashboard convention the output at prices < 0 is not paid, so the volume paid shrinks as they grow' : ''}. P&L = production × (capture − imbalance + GO − PPA price), central case.</div>`;
     // P&L vs percentile
     _fuelChart('pp-pnl', { type: 'line', data: { labels: o.pcts.map(p => 'P' + p), datasets: [
@@ -2267,7 +2445,9 @@ ${FRDOC() ? `<p>RTE éCO2mix (production nationale, 15 min) · prix day-ahead EN
     // the hedge ratio priced and the two risks the aggregator can leave out of the price
     // credit (optional): the producer's default probability and the share recovered (no public source: entered)
     [['pp-pd', 'pd', 0, 20, 0], ['pp-rr', 'rr', 0, 100, 40]].forEach(([id, k, lo, hi, d0]) => { const e = $(id); if (e) { e.value = S[k]; e.addEventListener('change', ev => { const v = parseFloat(ev.target.value); S[k] = isFinite(v) ? Math.min(hi, Math.max(lo, v)) : d0; e.value = S[k]; run(); }); } });
-    { const e = $('pp-hedgepct'); if (e) { e.value = S.hedgePct; e.addEventListener('change', ev => { const v = parseFloat(ev.target.value); S.hedgePct = isFinite(v) ? Math.min(100, Math.max(0, v)) : 100; e.value = S.hedgePct; run(); }); } }
+    // the hedge ratio priced: empty = automatic, the ratio that minimises the premium (shown as placeholder after each run)
+    { const e = $('pp-hedgepct'); if (e) { e.value = S.hedgePct != null ? S.hedgePct : ''; e.addEventListener('change', ev => { const v = parseFloat(ev.target.value); S.hedgePct = isFinite(v) ? Math.min(100, Math.max(0, v)) : null; e.value = S.hedgePct != null ? S.hedgePct : ''; run(); });
+      document.addEventListener('pk-ppa-run', () => { const o = S.last; if (o && o.hedgeBest) e.placeholder = 'auto ' + o.hedgeBest.pct; }); } }
     [['pp-incl-hedge', 'inclHedge'], ['pp-incl-vol', 'inclVol'], ['pp-incl-bal', 'inclBal']].forEach(([id, k]) => { const e = $(id); if (e) { e.checked = S[k]; e.addEventListener('change', ev => { S[k] = ev.target.checked; run(); }); } });
     { const e = $('pp-stopeq'); if (e) { e.value = S.stopEq ? 'le' : 'lt'; e.addEventListener('change', ev => { S.stopEq = ev.target.value === 'le'; run(); }); } }
     $('pp-pct').addEventListener('change', e => { S.pct = +e.target.value; run(); });
@@ -2292,7 +2472,7 @@ ${FRDOC() ? `<p>RTE éCO2mix (production nationale, 15 min) · prix day-ahead EN
     renderScen();
     const file = $('pp-file');
     file.addEventListener('change', async () => { const f = file.files[0]; if (f) await loadAsset(f, f.name); file.value = ''; });
-    page.querySelectorAll('a[data-sample]').forEach(a => a.addEventListener('click', async e => {
+    page.querySelectorAll('[data-sample]').forEach(a => a.addEventListener('click', async e => {
       e.preventDefault();
       const r = await fetch(a.dataset.sample); if (!r.ok) { $('pp-status').textContent = 'Test curve not found'; return; }
       const name = a.dataset.sample.split('/').pop(), f = new File([await r.blob()], name, { type: 'text/csv' });

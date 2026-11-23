@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-13",
+ "updated": "2026-11-23",
  "about": "Events that explain the French and European power markets, past and upcoming: regulation, market, gas and geopolitics, nuclear, grid, weather. Each date is checked against its source. kind: reg | marche | gaz | geo | nucleaire | reseau | meteo. importance 1-3: 3 = shown as an explanatory block on the charts first. short: the block text. tags: the charts it concerns.",
  "kinds": {
   "reg": [
@@ -1247,6 +1247,35 @@
    ]
   },
   {
+   "id": "cr-echelonnement",
+   "date": "2026-05-01",
+   "scope": "FR",
+   "theme": "enr",
+   "tags": [
+    "neg",
+    "balancing",
+    "enr"
+   ],
+   "title": [
+    "Prix négatifs : arrêts des parcs en complément de rémunération échelonnés (arrêté « échelonnement »)",
+    "Negative prices: staggered curtailment of feed-in-premium plants (“staggering” order)"
+   ],
+   "text": [
+    "Arrêté du 16 avril 2026 (JO du 19 avril), en vigueur le 1er mai : le complément de rémunération et la prime pour prix négatifs passent au quart d’heure ; un quart d’heure négatif ou positif isolé donne droit à la prime sans condition d’arrêt ; en entrée et en sortie de période de prix négatifs, les arrêts et les reprises sont recentrés sur le changement de pas de temps et répartis en deux groupes, comme pour l’obligation d’achat. Objectif : limiter les déséquilibres de plusieurs GW relevés par RTE quand tous les parcs s’arrêtent en même temps.",
+    "Order of 16 April 2026 (Official Journal of 19 April), in force on 1 May: the feed-in premium and the negative-price premium move to quarter-hours; an isolated negative or positive quarter-hour earns the premium with no curtailment condition; at the start and end of negative-price periods, stops and restarts are centred on the change of time step and split into two groups, as for feed-in tariffs. Aim: limit the multi-GW imbalances RTE saw when all plants stop at once."
+   ],
+   "source": [
+    "Légifrance (JORF n° 0093) ; avis CRE n° 2026-78",
+    "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000053911181"
+   ],
+   "kind": "reg",
+   "importance": 2,
+   "short": [
+    "Arrêts CR échelonnés",
+    "Staggered FiP curtailment"
+   ]
+  },
+  {
    "id": "capa-auction",
    "date": "2026-07-06",
    "scope": "FR",
@@ -1385,6 +1414,33 @@
    "short": [
     "RTE acheteur unique capacité",
     "RTE sole capacity buyer"
+   ]
+  },
+  {
+   "id": "cr-prix-seuil",
+   "date": "2026-11-04",
+   "scope": "FR",
+   "theme": "enr",
+   "tags": [
+    "enr"
+   ],
+   "title": [
+    "Complément de rémunération : prix seuils du déplafonnement fixés",
+    "Feed-in premium: threshold prices for uncapped clawbacks set"
+   ],
+   "text": [
+    "Arrêté du 27 octobre 2026 (JO du 4 novembre) : trajectoires de prix seuil 2022-2050 par filière (photovoltaïque, éolien, autres) pour les contrats de complément de rémunération dont les reversements à EDF OA étaient plafonnés ; si le prix de marché de référence dépasse le seuil de l’année, le producteur reverse l’écart. En 2026 : 66,03 €/MWh (PV), 69,15 (éolien), 82,68 (autres). Selon la CRE, 1 072 contrats (8,3 GW) sont concernés.",
+    "Order of 27 October 2026 (Official Journal of 4 November): threshold-price paths for 2022-2050 by technology (solar, wind, other) for feed-in premium contracts whose repayments to EDF OA were capped; when the reference market price is above the year’s threshold, the producer pays back the difference. In 2026: 66.03 €/MWh (solar), 69.15 (wind), 82.68 (other). According to CRE, 1,072 contracts (8.3 GW) are concerned."
+   ],
+   "source": [
+    "Légifrance (JORF n° 0258)",
+    "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000055053477"
+   ],
+   "kind": "reg",
+   "importance": 1,
+   "short": [
+    "CR : prix seuils fixés",
+    "Feed-in premium: thresholds set"
    ]
   },
   {

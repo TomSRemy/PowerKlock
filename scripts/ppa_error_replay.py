@@ -20,6 +20,10 @@ delivery (28 days or more of data), against the realised capture at the same T, 
 × its paid share × the month's baseload. A delivery that runs past the last complete month is scored on the months it
 has (the latest starts therefore weigh their first months only).
 
+The realised is the hourly one (the park stopped on the hour's mean price) unless PK_QH_REALISED=1: then each
+quarter-hour of RTE's output at its own price, as a contract and scripts/build_fr_capture.py stop the park (from Oct.
+2025, when the day-ahead became quarter-hourly; ppa_lab.actual_qh). The file says which ('realised').
+
 Error of a case = central capture value − realised capture value, in €/MWh and in capture points of the realised
 baseload (pts = € ÷ base × 100; the pricer applies the points to the forwards). Positive = the model priced too high.
 Every case weighs the same. Per technology, T and horizon h (3, 6, 9, 12 months, and 'all' pooled): n, bias (mean),
@@ -34,7 +38,8 @@ deliveries starting each quarter only (a third of the pricing dates) for a quick
 Writes data/history/ppa_error_replay.json
     {"asOf", "protocol", "level", "lastMonth", "starts": [first, last], "thresholds", "horizons",
      "solar" | "wind": {"<T>": {"<h>" | "all": {"n", "bias_pts", "mae_pts", "q75_pts", "bias_eur", "mae_eur", "q75_eur"}}},
-     "rows": {"solar" | "wind": [{"S", "h", "months", "pts": [per T], "eur": [per T]}]}}   (rows kept while small)
+     "rows": {"solar" | "wind": [{"S", "h", "months", "pts": [per T], "eur": [per T]}]}, "rowsFrom"}   (every row while the file
+     is small, else the deliveries starting in the last ROWS_YEARS years)
     python scripts/ppa_error_replay.py [--step 1] [--jobs N] [--out path]
 """
 import argparse
@@ -63,7 +68,8 @@ FIRST = date(2023, 1, 1)
 HORIZONS = (3, 6, 9, 12)
 TS = (-20.0, -5.0, -1.0, -0.5, -0.1, 0.0, 0.01, 0.1, 1.0, 5.0)
 SIMS, SEED = 30, 7
-ROWS_MAX = 200_000   # bytes: the per-case rows are kept in the file while it stays this small
+ROWS_MAX = 200_000   # bytes: the per-case rows are kept in the file while it stays this small...
+ROWS_YEARS = 5       # ...beyond it, the rows of the deliveries starting in the last 5 years (about 125 kB), never none
 # the generator's grid of stop thresholds (as scripts/ppa_generator.py sets it); TS is a subset
 GRID = (-500.0, -200.0, -100.0, -50.0, -20.0, -10.0, -5.0, -2.0, -1.0, -0.5, -0.2, -0.1, 0.0, 0.01, 0.1, 0.2, 0.5,
         1.0, 2.0, 5.0, 10.0, 20.0, 50.0)
@@ -166,7 +172,8 @@ def main():
             print(TECH[t], D, f'{time.time() - T0:.0f}s', flush=True)
     out = {'asOf': date.today().isoformat(), 'protocol': __doc__.split('Writes')[0].strip(), 'level': LEVEL,
            'lastMonth': f'{last[0]}-{last[1]:02d}', 'starts': [starts[0].isoformat(), starts[-1].isoformat()], 'step': a.step,
-           'thresholds': [f'{T:g}' for T in TS], 'horizons': list(HORIZONS), 'rows': {}}
+           'thresholds': [f'{T:g}' for T in TS], 'horizons': list(HORIZONS), 'rows': {},
+           'realised': 'quarter-hour' if L.QH_REALISED else 'hourly'}
     for t, tech in TECH.items():
         act = complete_months(t)
         rows = []
@@ -201,8 +208,17 @@ def main():
         print(tech, len(rows), 'cases;', '  '.join(f"T{T}: q75 {v['all']['q75_pts']:+.2f} pts / {v['all']['q75_eur']:+.2f} €"
                                                   for T, v in res.items() if 'all' in v), flush=True)
     out['runtime'] = round(time.time() - T0)
-    if len(json.dumps(out, separators=(',', ':'))) > ROWS_MAX:
-        out.pop('rows')
+    # the pricer reads the rows (the correlation of the model's error with the realised price, js/tool-ppa.js): until
+    # 21 Nov. 2026 (PPA review) they were all dropped once the file passed ROWS_MAX (about 2031), which moved the premium
+    # without a word. Now only the deliveries starting before the last ROWS_YEARS years go, and 'rowsFrom' says where the rows start
+    size = lambda: len(json.dumps(out, separators=(',', ':')))
+    years = sorted({r['S'][:4] for rows in out['rows'].values() for r in rows})
+    if size() > ROWS_MAX and len(years) > ROWS_YEARS:
+        out['rows'] = {tech: [r for r in rows if r['S'][:4] >= years[-ROWS_YEARS]] for tech, rows in out['rows'].items()}
+        if size() > ROWS_MAX:
+            print(f'::warning::model-error replay: {size()} bytes with the rows of the last {ROWS_YEARS} years only')
+    if years:
+        out['rowsFrom'] = min(r['S'] for rows in out['rows'].values() for r in rows)
     with open(a.out, 'w') as f:
         json.dump(out, f, separators=(',', ':'))
     print('wrote', a.out, f'{out["runtime"]}s')

@@ -66,7 +66,9 @@
   const range = pts => { const s = since(pts, 60).map(p => p[1]); if (s.length < 10) return ''; const v = s[s.length - 1], lo = Math.min(...s), hi = Math.max(...s);
     return v >= hi - 1e-9 ? ', au plus haut sur 60 jours' : v <= lo + 1e-9 ? ', au plus bas sur 60 jours' : (v - lo) / ((hi - lo) || 1) > 0.85 ? ', près du plus haut sur 60 jours' : (v - lo) / ((hi - lo) || 1) < 0.15 ? ', près du plus bas sur 60 jours' : ''; };
   // the market notes received in the last 10 days (signed-in users only for the e-mailed one; the daily report is public):
-  // per market, the tone of what each said — never their text, only rising / easing / neutral
+  // per market, the tone of what each said — never their text, only rising / easing / neutral. The daily report's tone is
+  // scored by its fetch job with these same word lists (scripts/fetch_fr_market.py, tone_score: data/fr_market.json
+  // marketInsightsTone), which keeps no text; the e-mailed note is scored here
   const UPW = /\b(tight\w*|tense|tension\w*|ris(e|es|ing)|higher|increas\w*|support\w*|firm\w*|bullish|pressure\w*|spik\w*|jump\w*|surg\w*|climb\w*|strong\w*|gain\w*|deteriorat\w*|disrupt\w*|risk\w*)\b/gi;
   const DNW = /\b(eas(e|es|ed|ing)|fall\w*|fell|lower\w*|declin\w*|drop\w*|bearish|weak\w*|loosen\w*|relief|soft\w*|improv\w*|calm\w*|resilient|ample|comfortable|down\w*)\b/gi;
   const tone = t => (String(t).match(UPW) || []).length - (String(t).match(DNW) || []).length;
@@ -74,8 +76,8 @@
     const out = { ctx: [], brent: [], ttf: [], eua: [], cal: [] }, add = (name, txt) => {
       const n = String(name).toLowerCase(), k = /context|macro|geopol/.test(n) ? 'ctx' : /oil|brent/.test(n) ? 'brent' : /gas/.test(n) ? 'ttf' : /co2|co₂|carbon/.test(n) ? 'eua' : /electric|power/.test(n) ? 'cal' : null;
       if (k && txt) out[k].push(tone(txt)); };
-    try { const fm = await get('fr_market.json'), mi = fm && fm.marketInsights, d = (fm && (fm.marketInsightsDate || fm.lastUpdate) || '').slice(0, 10);
-      if (mi && d && Date.now() - Date.parse(d) < 10 * 864e5) { const plain = h => String(h || '').replace(/<[^>]+>/g, ' '); add('gas', plain(mi.gas)); add('power', plain(mi.power)); } } catch (_) {}
+    try { const fm = await get('fr_market.json'), mt = fm && fm.marketInsightsTone, d = (mt && mt.date || '').slice(0, 10);
+      if (mt && d && Date.now() - Date.parse(d) < 10 * 864e5) { if (typeof mt.gas === 'number') out.ttf.push(mt.gas); if (typeof mt.power === 'number') out.cal.push(mt.power); } } catch (_) {}
     try { const cl = window.PKAccount && PKAccount.user && PKAccount.client && PKAccount.client();
       if (cl) { const r = await cl.from('market_note').select('note_date, sections').order('note_date', { ascending: false }).limit(1), n = r.data && r.data[0];
         if (n && Date.now() - Date.parse(n.note_date) < 10 * 864e5) (n.sections || []).forEach(x => add(x.name, (x.headline || '') + ' ' + (x.points || []).join(' '))); } } catch (_) {}

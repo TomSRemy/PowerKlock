@@ -179,14 +179,16 @@
       const Mo = o.monthsOf ? o.monthsOf(y) : null;   // a year delivered in part: its months only
       const pts = F.pts.filter(p => +p.d.slice(0, 4) === y && (!Mo || Mo.includes(+p.d.slice(5, 7))));
       const V = pts.map(p => pAt(p.d, p.h)), P = pts.map(p => p.v);
-      const cal = mean(P), f = profileCost(V, P, null);
+      // (2) stops strictly below 0 on its own curve, as (1) and (3) do on theirs (until 21 Nov. 2026 every hour of the
+      // FPC was paid, so (2) did not give back (3) on the reference year: solar −37.7 % against −30.8 %)
+      const cal = mean(P), f = profileCost(V, P, pos ? P.map(p => p != null && p >= 0) : null, baseAll);
       // the year's cannibalisation: each season's term weighted by the value of the output in that season
       let c = 0, ws = 0;
       SEASONS.forEach(([sn, inS]) => { const cs = seasonOf(y, sn); let w = 0;
         pts.forEach((p, i) => { if (inS(+p.d.slice(5, 7))) w += V[i] * p.v; });   // the output's value in the season, hour by hour
         if (cs == null || !(w > 0)) return; c += w * cs; ws += w; });
       c = ws > 0 ? c / ws : cannibOf(y);
-      const bias = o.biasOf ? o.biasOf('fpc', y) : 0;   // the method's past bias (scripts/ppa_bias.py), where it helps
+      const bias = o.biasOf ? o.biasOf('fpc', y) : 0;   // the method's past bias (scripts/ppa_bias.py): 0 since 21 Nov. 2026 (js/tool-ppa.js BIAS_OFF)
       return { y, cal, fwdCost: f, cannib: c, bias, capture: cal * (1 + f + c - bias), rate: 1 + f + c - bias,
         months: Array.from({ length: 12 }, (_, m) => mean(pts.filter(p => +p.d.slice(5, 7) === m + 1).map(p => p.v))) };
     });

@@ -13,6 +13,8 @@ Checks (each issue has a stable id, so it is followed run after run):
   commodities Brent, TTF, EUA, API2 coal, EU storage: two business days or more missing in a row
               (last 120 days), or the last close older than 4 business days
   forwards    France Cal+1 settlement older than 4 business days
+  drivers     What drives the price (data/drivers/frames.json): last final spot day older than 4 days, or last
+              forward week older than 4 business days
   cr          ODRÉ output of the parks under complément de rémunération: months up to M-2
   activation  mFRR activation prices, last 60 days
   pricecheck  days whose day-ahead average differs from Energy-Charts by more than 0.5 €/MWh
@@ -141,6 +143,20 @@ def _check_forwards(add):
         add('forwards', 'cal1', 'France calendar forwards: no file', 'flagged: market job (daily)')
 
 
+def _check_drivers(add):
+    """What drives the price (scripts/build_drivers.py): the last week of the spot and of the forwards"""
+    j = load('data/drivers/frames.json') or {}
+    for k, lab, limit in (('spot', 'spot', None), ('cal', 'forward', 4)):
+        w = (j.get(k) or {}).get('w') or []
+        if not w:
+            add('drivers', k, f'What drives the price: no {lab} frames', 'flagged: warehouse sync job (after each data fetch)'); continue
+        # the spot's latest days can be provisional frames (forecasts, estimated nuclear): watch the last final one
+        lastd = date.fromisoformat((j.get(k) or {}).get('firm') or w[-1]['d'])
+        late = bdays_between(lastd, TODAY) > limit if limit else (TODAY - lastd).days > 4
+        if late:
+            add('drivers', k + ':stale', f'What drives the price: last {lab} week ends on {lastd.isoformat()}', 'flagged: warehouse sync job (after each data fetch)')
+
+
 def _check_cr(add):
     """output of the parks under complément de rémunération"""
     # CR parks' output (ODRÉ, monthly, about six weeks late)
@@ -189,7 +205,7 @@ def _check_market_second_sources(add):
         if (mc.get(k) or {}).get('error'):   # a check that compared nothing is a problem, not a pass
             add('mktcheck', f'{k}:error', f"{lab}: second source not compared ({mc[k]['error']})", 'flagged: market job, next run')
         if (mc.get(k) or {}).get('stale_since'):
-            add('mktcheck', f'{k}:stale', f"{lab}: same value every day since {mc[k]['stale_since']} while FRED moves (feed stuck?)", 'flagged: check the PowerKlock cockpit feed')
+            add('mktcheck', f'{k}:stale', f"{lab}: same value every day since {mc[k]['stale_since']} while FRED moves (feed stuck?)", 'flagged: check the PowerKlock feed')
         for row in ((mc.get(k) or {}).get('days') or [])[-10:]:
             add('mktcheck', f"{row['day']}:{k}", f"{row['day']}: {lab} {row['ours']} here vs {row['ref']} (FRED), {row['pct']} %", 'flagged: market job')
     try:
@@ -247,7 +263,7 @@ def checks():
     """every hole and disagreement, one function per kind of data (same order as before the split)"""
     out = []
     add = lambda dataset, key, what, repair: out.append({'id': f'{dataset}:{key}', 'dataset': dataset, 'what': what, 'repair': repair})
-    for check in (_check_daily_files, _check_rte, _check_commodities, _check_forwards, _check_cr,
+    for check in (_check_daily_files, _check_rte, _check_commodities, _check_forwards, _check_drivers, _check_cr,
                   _check_price_second_source, _check_market_second_sources, _check_storage, _check_activation):
         check(add)
     return out

@@ -169,7 +169,7 @@ def ridge(A, Y):
 
 def price_model(data, hist):
     cs = json.load(open(CS))['series']; fuel = (cs['ttf']['points'], cs['eua']['points'])
-    X, Y, K = [], [], []
+    X, Y, K, HR = [], [], [], []
     for d, r in data:
         if d < '2023-01-01':
             continue
@@ -180,12 +180,12 @@ def price_model(data, hist):
             f = price_feats(hist, fuel, d, h, r['s'][h], r['w'][h], r['l'][h], nav, r['de'])
             if f is None or r['p'][h] is None:
                 continue
-            X.append(f); Y.append(r['p'][h]); K.append(d)
-    X, Y = np.array(X), np.array(Y)
-    err, naive = [], []
+            X.append(f); Y.append(r['p'][h]); K.append(d); HR.append(h)
+    X, Y, HR = np.array(X), np.array(Y), np.array(HR)
+    err, naive, res = [], [], []   # res: (hour, real − forecast) of the replay, for the error band
     for m in sorted({k[:7] for k in K if k >= '2025-01'}):
         tr = np.array([m + '-01' > k >= str(int(m[:4]) - 2) + m[4:] for k in K]); te = np.array([k[:7] == m for k in K])
-        b = ridge(X[tr], Y[tr]); err += list(np.abs(X[te] @ b - Y[te]))
+        b = ridge(X[tr], Y[tr]); e = Y[te] - X[te] @ b; err += list(np.abs(e)); res += list(zip(HR[te], e))
     for d, r in data:
         if d >= '2025-01':
             p1 = hist.get((date.fromisoformat(d) - timedelta(days=1)).isoformat())   # naive: tomorrow = today
@@ -193,8 +193,12 @@ def price_model(data, hist):
                 naive += [abs(a - b) for a, b in zip(r['p'], p1['p']) if a is not None and b is not None]
     last = K[-1]
     b = ridge(X[[k >= str(int(last[:4]) - 2) + last[4:] for k in K]], Y[[k >= str(int(last[:4]) - 2) + last[4:] for k in K]])
+    # error band: the 10th and 90th percentiles of (real − forecast) by hour over the last twelve replayed months
+    recent = res[-24 * 365:]
+    band = {h: (round(float(np.percentile([e for hh, e in recent if hh == h], 10)), 1), round(float(np.percentile([e for hh, e in recent if hh == h], 90)), 1)) for h in range(24)}
     skill = {'mae': round(float(np.mean(err)), 2), 'naive_mae': round(float(np.mean(naive)), 2), 'from': '2025-01', 'naive': 'day before',
-             'replay': 'actual French weather, Germany never used'}
+             'replay': 'actual French weather, Germany never used',
+             'band': 'P10–P90 of the replay error by hour, last 12 months', 'band_by_hour': [band[h] for h in range(24)]}
     return b, fuel, skill
 
 
@@ -347,7 +351,10 @@ def main():
         pr = [None if None in (s_[h], w_[h], l_[h]) or not l_[h] else round(float(predict(b, np.array([feats(d, h, s_[h], w_[h], l_[h], nav, de)]))[0]), 3) for h in range(24)]
         pp = [None if None in (s_[h], w_[h], l_[h]) else price_feats(hist, PF[1], d, h, s_[h], w_[h], l_[h], nav, de) for h in range(24)]
         price = [None if f is None else round(float(np.array(f) @ PF[0]), 1) for f in pp]
-        out_days[d] = {'prob': pr, 'expected_hours': round(sum(x or 0 for x in pr), 1), 'nuclear_available': round(nav), 'price': price, 'inputs': src,
+        bnd = PF[2]['band_by_hour']
+        price_lo = [None if v is None else round(v + bnd[h][0], 1) for h, v in enumerate(price)]
+        price_hi = [None if v is None else round(v + bnd[h][1], 1) for h, v in enumerate(price)]
+        out_days[d] = {'prob': pr, 'expected_hours': round(sum(x or 0 for x in pr), 1), 'nuclear_available': round(nav), 'price': price, 'price_lo': price_lo, 'price_hi': price_hi, 'inputs': src,
                        'actual': rawp.get(d)}
     out = {'updated': fc.get('updated'), 'method': __doc__.split('\n\n')[1].replace('\n', ' '),
            'source': 'RTE éCO2mix (history) · ENTSO-E day-ahead forecasts via Energy-Charts · ENTSO-E day-ahead prices',

@@ -21,7 +21,7 @@ from email.header import decode_header, make_header
 from email.utils import parsedate_to_datetime
 
 SOURCES = [{"name": "ENGIE Energy Market News", "from": "e-news.engie.be", "subject": "Energy Market News"}]
-# PowerKlock's daily commentaries come from its public cockpit with the forwards (scripts/fetch_fr_market.py, marketInsights)
+# PowerKlock's daily commentaries come from its public cockpit with the forwards (scripts/fetch_fr_market.py keeps only their tone score, marketInsightsTone)
 SECTIONS = ["Global context", "Oil", "Gas", "Electricity", "Power", "CO2", "CO₂", "Carbon", "Coal", "Renewables"]
 END = re.compile(r"^(Follow the evolution|Do you find this e-mail|Register your colleagues|©)", re.I)
 

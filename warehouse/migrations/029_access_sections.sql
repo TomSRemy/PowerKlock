@@ -1,6 +1,6 @@
 -- requires: auth, 022_account_access.sql
 -- ════════════════════════════════════════════════════════════════════
--- PowerKlock · 026 · What each approved account sees
+-- PowerKlock · 029 · What each approved account sees
 -- The admin chooses, per account, the menu sections it gets (null = the
 -- whole site). Today stays for everyone. The site hides the other
 -- sections and sends their addresses back to Today (js/gate.js). It keeps

@@ -510,8 +510,17 @@
         scales: { x: { ticks: Object.assign({ maxTicksLimit: 8 }, tx), grid }, y: { stacked: true, beginAtZero: true, ticks: tx, grid, title: { display: true, text: 'GW', color: '#7A93AB', font: { size: 9 } } },
           y2: { position: 'right', ticks: tx, grid: { display: false }, title: { display: true, text: '€/MWh', color: '#7A93AB', font: { size: 9 } } } } } });
     const pc = document.getElementById('pm-chart-price');
-    if (pc && Array.isArray(d.price)) S.charts.price = new Chart(pc, { type: 'line', data: { labels, datasets: [
-        { label: 'Day-ahead', data: d.price.map(v => v == null ? null : Math.round(v * 10) / 10), borderColor: '#14D3A9', backgroundColor: 'rgba(20,211,169,.12)', fill: true, borderWidth: 1.8, pointRadius: 0, tension: 0 },
+    // the day's price not received yet (a data gap, data/data_gaps.json): the previous day, dated, and the reader is told
+    if (pc && !Array.isArray(d.price) && PRICE_ZONES[c]) {
+      const prev = addDays(S.data.date, -1), shown = Array.isArray(d.pricePrev) ? prev : null, box = pc.parentElement;
+      let m = box.parentElement.querySelector('.pm-gap');
+      if (!m) { m = document.createElement('div'); m.className = 'pm-gap'; m.style.cssText = 'font-size:11px;color:var(--text3);padding:6px 2px'; box.before(m); }
+      m.textContent = PK.gapText(S.data.date, PRICE_ZONES[c], shown); PK.markGap(m, S.data.date, PRICE_ZONES[c], shown);
+      box.style.display = shown ? '' : 'none';
+    }
+    const pcSeries = Array.isArray(d.price) ? d.price : null;
+    if (pc && (pcSeries || Array.isArray(d.pricePrev))) S.charts.price = new Chart(pc, { type: 'line', data: { labels, datasets: [
+        pcSeries ? { label: 'Day-ahead', data: pcSeries.map(v => v == null ? null : Math.round(v * 10) / 10), borderColor: '#14D3A9', backgroundColor: 'rgba(20,211,169,.12)', fill: true, borderWidth: 1.8, pointRadius: 0, tension: 0 } : null,
         Array.isArray(d.pricePrev) ? { label: 'Previous day', data: d.pricePrev.map(v => v == null ? null : Math.round(v * 10) / 10), borderColor: 'rgba(148,163,184,.8)', borderDash: [4, 3], borderWidth: 1.2, pointRadius: 0, fill: false, tension: 0 } : null,
       ].filter(Boolean) }, plugins: [marker],
       options: { responsive: true, maintainAspectRatio: false, animation: false, interaction: { mode: 'index', intersect: false }, plugins: { legend: { display: false } },

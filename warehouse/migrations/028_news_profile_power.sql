@@ -1,6 +1,6 @@
 -- requires: auth, 024_news_profile.sql
 -- ════════════════════════════════════════════════════════════════════
--- PowerKlock · 025 · « Électricité » among the subjects a reader ticks
+-- PowerKlock · 028 · « Électricité » among the subjects a reader ticks
 -- The interests of public.news_profile (024) had renewables, markets,
 -- regulation, gas… but not electricity itself (prices, grid, nuclear).
 -- ════════════════════════════════════════════════════════════════════

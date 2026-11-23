@@ -311,7 +311,21 @@ def potential(y, t):
 
 def actual_T(t, Y, T, pot=False):
     """L.actual at stop threshold T (output stopped strictly below T €/MWh), weighted by the national output or (pot) by
-    the output without stops at negative prices"""
+    the output without stops at negative prices: quarter-hourly with PK_QH_REALISED=1 (L.QH_REALISED), else hourly"""
+    if L.QH_REALISED:
+        return actual_T_qh(t, Y, T, pot)
+    return actual_T_hourly(t, Y, T, pot)
+
+
+def actual_T_qh(t, Y, T, pot=False):
+    """actual_T on quarter-hours (L.actual_qh): each quarter-hour's output at its own price; pot: the hourly output
+    without stops (potential) on its four quarter-hours"""
+    r = L.actual_qh(t, Y, T, potential(Y, t) if pot else None)
+    return {m: {k: v[k] for k in ('curt', 'paid', 'base', 'mwh', 'days')} for m, v in r.items()}
+
+
+def actual_T_hourly(t, Y, T, pot=False):
+    """actual_T on hourly means of price and output (fr_hourly)"""
     a = L.DATA[Y]
     P, V = a['fr_p'], (potential(Y, t) if pot else a['fr_' + t])
     out = {}
@@ -339,8 +353,10 @@ def _year(y):
     for c in CS:
         p = PRE[c]
         for t in 'sw':
-            c1 = L.cap(c, t, y) or 1.0
-            c0 = L.cap(c, t, y - 1) or c1
+            # a year-end fleet not published yet (the running year; France's until RTE's yearly figure, in spring): the
+            # last known pace carried on, never 1 GW (which made the output per GW of that year several times too high)
+            c1 = L.cap(c, t, y) or L.cap_guess(c, t, y, y) or 1.0
+            c0 = L.cap(c, t, y - 1) or L.cap_guess(c, t, y - 1, y - 1) or c1
             gw = (c0 + (c1 - c0) * frac)[:, None] * 1000
             out[f'{c}_{t}'] = np.clip((_addback(y, t) if c == 'FR' else a[p + t]) / gw, 0, 1.2)
             if c == 'FR':
@@ -641,6 +657,130 @@ STOP_POT = os.environ.get('PK_STOP_POT') == '1'   # with STOP_GRID: also 'curtTp
 # −1 € 1.46 → 1.42 €/MWh mean absolute error, solar 3.05 → 3.01: little gain, not taken
 
 
+QH_SPLIT = os.environ.get('PK_QH_SPLIT') or None   # Lot 2, 22 Nov. 2026; 'c2' on for solar since 22 Nov. 2026 (Tom): the split of a park's output
+# between "paid at 0 €" and "stopped below 0 €" at the stop thresholds near 0, which the cells learn on hourly prices
+# while a contract stops the park per quarter-hour (France's day-ahead is quarter-hourly since 1 Oct. 2025). Measured on
+# the quarter-hours, the share of solar output at or below 0 that settles at exactly 0 € is 0.34 in 2024, 2025 and 2026;
+# the generator's 2027 cells give 0.24. Two ways, compared on the error replay against the quarter-hour realised:
+#   'c1' the threshold statistics of every cell (its chance of a price ≥ T, its value part at T, its positive part and
+#        its negative part) learnt on the hour's four quarter-hours, weighted within the hour by the technology's
+#        quarter-hour output (RTE éCO2mix), the merit-order layer's band split on quarter-hours too; the cell keys and
+#        the price level stay hourly. Only the learning months from Oct. 2025 differ from the hourly rule
+#   'c2' the hourly rule kept for the price level and the share paid at ≥ 0.01 €; the output at or below 0 split as
+#        observed: paid(T) = paid(0.01) + ρ_T × (1 − paid(0.01)) for −1 ≤ T ≤ 0, ρ_T the share of the output below
+#        0.01 € that settled at T or above on the last 12 complete months of quarter-hours before the pricing date
+#        (ρ_0 = κ, the "exactly 0" share), and the value of that output at its observed mean price; measured again at
+#        every run, so it follows the obligation to stop at negative prices reaching smaller parks (1 Dec. 2026, 1 Mar.
+#        2027)
+QH = {'t': None}   # the technology simulated (simulate sets it): its quarter-hour output weighs the quarter-hours (c1)
+QH_LO, QH_HI = -1.0, 0.0   # the thresholds c2 corrects
+
+
+def _qh_feats(y, t, grid):
+    """'c1': year y's quarter-hour threshold statistics hour by hour (days × 24), the four quarter-hours weighted by the
+    output of technology t (equal where it produces nothing): 'ppos' share ≥ 0, 'mposE' € part above 0, 'negE' the
+    hourly price less mposE (so the level stays the hour's), and per T of the grid (days × 24 × K) 'tk' share ≥ T and 'tvE' the € part (T ≤ 0: price between T and 0;
+    T > 0: price ≥ T)"""
+    a, q = L.DATA[y], L.qh(y)
+    n = len(a['days'])
+    P = q['p'].reshape(n, 24, 4)
+    P = np.where(np.isfinite(P), P, a['fr_p'][:, :, None])
+    V = (q[t] if t in ('s', 'w') else np.ones((n, 96))).reshape(n, 24, 4)
+    sv = V.sum(-1, keepdims=True)
+    u = np.where(sv > 0, V / np.where(sv > 0, sv, 1.0), 0.25)
+    out = {'ppos': (u * (P >= 0)).sum(-1), 'mposE': (u * np.maximum(P, 0)).sum(-1)}
+    # the rest of the hour's price, so the positive and negative parts still add up to the hourly price (the level)
+    out['negE'] = a['fr_p'] - out['mposE']
+    K = len(grid)
+    tk, tvE = np.empty((n, 24, K)), np.empty((n, 24, K))
+    for i, T in enumerate(grid):
+        k = P >= T
+        tk[..., i] = (u * k).sum(-1)
+        tvE[..., i] = (u * P * (k & (P < 0))).sum(-1) if T <= 0 else (u * P * k).sum(-1)
+    out['tk'], out['tvE'] = tk, tvE
+    return out
+
+
+_qh_feats = by_days(_qh_feats)
+_QF = {}
+
+
+def qh_feats(y, t):
+    key = (y, t, STOP_GRID)
+    if key not in _QF:
+        _QF[key] = _qh_feats(y, t, STOP_GRID or (0.0,))
+    return _QF[key]
+
+
+def _qh_prices(y):
+    """year y's quarter-hour prices, days × 24 × 4 (the hour's price where a quarter-hour is missing)"""
+    a = L.DATA[y]
+    P = L.qh(y)['p'].reshape(len(a['days']), 24, 4)
+    return np.where(np.isfinite(P), P, a['fr_p'][:, :, None])
+
+
+_qh_prices = by_days(_qh_prices)
+
+
+def _tcell_q(tk, tvE, c, w):
+    """_tcell from quarter-hour statistics (c1): tk, tvE hours × K, c the hours' fuel cost, w their weights"""
+    w = np.asarray(w, float); s = w.sum()
+    G_ = np.array(STOP_GRID)
+    tp = (w[:, None] * tk).sum(0) / s
+    tv = (w[:, None] * np.where(G_[None, :] <= 0, tvE, tvE / c[:, None])).sum(0) / s
+    return tv, tp
+
+
+_QS = {}
+
+
+def qh_split_obs(t, D):
+    """'c2': {T: (ρ_T, ν_T)} for the thresholds QH_LO ≤ T ≤ QH_HI of the grid, measured on France's quarter-hours of
+    the last 12 complete months before D, weighted by the output of technology t: ρ_T the share of the output below
+    0.01 € that settled at T or above, ν_T the € value of the output between T and 0, per MWh of output below 0.01 €"""
+    key = (t, D, STOP_GRID)
+    if key in _QS:
+        return _QS[key]
+    lo, hi = _add_months(D, -12).isoformat(), D.isoformat()
+    num = {T: [0.0, 0.0] for T in STOP_GRID if QH_LO <= T <= QH_HI}
+    den = 0.0
+    for y in sorted(y for y in L.DATA if not isinstance(y, Period)):
+        if not (lo[:4] <= str(y) <= hi[:4]):
+            continue
+        a, q = L.DATA[y], L.qh(y)
+        sel = np.array([lo <= str(d)[:10] < hi for d in a['days']])
+        if not sel.any():
+            continue
+        P, V = q['p'][sel], q[t][sel]
+        low = np.isfinite(P) & (P < 0.01)
+        den += float(V[low].sum())
+        for T in num:
+            k = low & (P >= T)
+            num[T][0] += float(V[k].sum()); num[T][1] += float((V * P)[k & (P < 0)].sum())
+    _QS[key] = {T: (v[0] / den, v[1] / den) for T, v in num.items()} if den > 0 else None
+    return _QS[key]
+
+
+def qh_split_apply(e, obs, base):
+    """'c2' on one month's rates e ('curtT', 'paidT' by T, 'curt', 'paid'), base its mean price (€, the scale of its
+    capture): the output below 0.01 € split as observed (qh_split_obs) between paid (−1 ≤ T ≤ 0) and stopped; above
+    0.01 € and below −1 € the cells as they are (a lower T never pays less than −1)"""
+    cT, pT = e.get('curtT'), e.get('paidT')
+    if not cT or not pT or obs is None or cT.get(0.01) is None or pT.get(0.01) is None or base <= 0:
+        return
+    q1 = pT[0.01]; s = 1 - q1; V1 = cT[0.01] * q1
+    for T, (rho, nu) in obs.items():
+        p = q1 + rho * s
+        pT[T] = p
+        cT[T] = (V1 + nu * s / base) / p if p > 0 else None
+    if QH_LO in pT:
+        for T in STOP_GRID:
+            if T < QH_LO and pT.get(T) is not None and pT[T] < pT[QH_LO]:
+                pT[T], cT[T] = pT[QH_LO], cT[QH_LO]
+    if 0.0 in pT:
+        e['curt'], e['paid'] = cT[0.0], pT[0.0]
+
+
 def _tcell(p, r, w):
     """one cell's stop-grid stats over its hours: price p €, price ÷ cost r, weights w. Per T: (value part, chance
     p ≥ T); the value part is the € price between T and 0 for T ≤ 0 (0 at T = 0), the ratio paid at p ≥ T above 0"""
@@ -766,10 +906,15 @@ class PriceModelFuel:
         self._costs = []
         self.G = 2 * self.BLOCKS * (2 if self.DAYKIND else 1)
         xs, gs, rs, es, ps, cs, yrs, ms, wws = [], [], [], [], [], [], [], [], []
+        qf = {k: [] for k in ('ppos', 'mposE', 'negE', 'tk', 'tvE')} if QH_SPLIT == 'c1' else None
         for y in years:
             a = L.DATA[y]
             c = np.array([F.get(str(d)[:10], np.nan) for d in a['days']])
             ok = np.isfinite(c) & (c > 5)
+            if qf is not None:
+                f_ = qh_feats(y, QH['t'])
+                for k_ in qf:
+                    qf[k_].append(f_[k_][ok].reshape((-1,) + f_[k_].shape[2:]))
             wws.append(_wt(a)[ok].ravel())
             x = year_share(y, region, self.HYDRO)
             g = self.groups(a['month'], [L.day_kind(d) for d in a['days']])
@@ -781,6 +926,8 @@ class PriceModelFuel:
         e = np.concatenate(es); pe_, ce_, ye_ = np.concatenate(ps), np.concatenate(cs), np.concatenate(yrs)
         mk = np.concatenate(ms); wv = np.concatenate(wws)
         x, g, r, e, pe_, ce_, ye_, wv = (v[mk] for v in (x, g, r, e, pe_, ce_, ye_, wv))
+        if qf is not None:
+            qf = {k_: np.concatenate(v_)[mk] for k_, v_ in qf.items()}
         self._costs = [np.concatenate(self._costs)[mk]]
         self.lo = int(np.floor(x.min() / L.BIN)) - 1
         self.nb = int(np.ceil(x.max() / L.BIN)) - self.lo + 2
@@ -805,6 +952,12 @@ class PriceModelFuel:
                     neg[gi, bi] = _wm(e[k], ww)
                     if K_:
                         tv[gi, bi], tp[gi, bi] = _tcell(pe_[k], v, ww)
+                    if qf is not None:
+                        # c1: the threshold statistics on the hour's quarter-hours (the level, mean, stays hourly)
+                        mpos[gi, bi], ppos[gi, bi] = _wm(qf['mposE'][k] / ce_[k], ww), _wm(qf['ppos'][k], ww)
+                        neg[gi, bi] = _wm(qf['negE'][k], ww)
+                        if K_:
+                            tv[gi, bi], tp[gi, bi] = _tcell_q(qf['tk'][k], qf['tvE'][k], ce_[k], ww)
                     if self.MO_EUR:
                         eur[gi, bi], me[gi, bi], mpe[gi, bi] = self._pick(pe_[k], ce_[k], ye_[k])
                     if bi <= self._lowbin.get(gi, 10 ** 6) + 2:
@@ -947,10 +1100,15 @@ class PriceModelFuel:
         """a second input: France's own residual share, in cells of 0.05 (region) × 0.10 (France), 20 hours or more"""
         F = fuel_cost()
         ks, rs, es, ps, cs, yrs, zs, gg, mm, wws = [], [], [], [], [], [], [], [], [], []
+        qf = {k: [] for k in ('ppos', 'mposE', 'negE', 'tk', 'tvE')} if QH_SPLIT == 'c1' else None
         for y in years:
             a = L.DATA[y]
             c = np.array([F.get(str(d)[:10], np.nan) for d in a['days']])
             ok = np.isfinite(c) & (c > 5)
+            if qf is not None:
+                f_ = qh_feats(y, QH['t'])
+                for k_ in qf:
+                    qf[k_].append(f_[k_][ok].reshape((-1,) + f_[k_].shape[2:]))
             wws.append(_wt(a)[ok].ravel())
             x, g = year_share(y, self.region, self.HYDRO), self.groups(a['month'], [L.day_kind(d) for d in a['days']])
             xf = year_fr_gw(y, self.HYDRO) if FR_GW['on'] else year_share(y, False, self.HYDRO)
@@ -970,15 +1128,21 @@ class PriceModelFuel:
         pe_, ce_, ye_ = np.concatenate(ps), np.concatenate(cs), np.concatenate(yrs)
         mk = np.concatenate(mm); wv = np.concatenate(wws)
         k, r, e, z_, g_, pe_, ce_, ye_, wv = (v[mk] for v in (k, r, e, z_, g_, pe_, ce_, ye_, wv))
+        if qf is not None:
+            qf = {k_: np.concatenate(v_)[mk] for k_, v_ in qf.items()}
         self.tab2, self.tab2T = {}, {}
         for kk in np.unique(k):
             sel = k == kk
             if sel.sum() >= 20:
                 v = r[sel]; ww = wv[sel]
-                self.tab2[int(kk)] = (_wm(v, ww), _wm(v * (v > 0), ww), _wm(v >= 0, ww), _wm(e[sel], ww)) + \
-                    (self._pick(pe_[sel], ce_[sel], ye_[sel]) if self.MO_EUR else (False, 0.0, 0.0))
+                if qf is not None:
+                    # c1: the threshold statistics on the hour's quarter-hours (the level, mean, stays hourly)
+                    st_ = (_wm(v, ww), _wm(qf['mposE'][sel] / ce_[sel], ww), _wm(qf['ppos'][sel], ww), _wm(qf['negE'][sel], ww))
+                else:
+                    st_ = (_wm(v, ww), _wm(v * (v > 0), ww), _wm(v >= 0, ww), _wm(e[sel], ww))
+                self.tab2[int(kk)] = st_ + (self._pick(pe_[sel], ce_[sel], ye_[sel]) if self.MO_EUR else (False, 0.0, 0.0))
                 if STOP_GRID:
-                    self.tab2T[int(kk)] = _tcell(pe_[sel], v, ww)
+                    self.tab2T[int(kk)] = _tcell(pe_[sel], v, ww) if qf is None else _tcell_q(qf['tk'][sel], qf['tvE'][sel], ce_[sel], ww)
         if CELL_W and not getattr(self, 'DAY2', False):
             # test: the French wind share as a third input of the cells (bins of CELL_W), where a cell has CELL_MIN hours
             wsh_ = np.concatenate([(L.DATA[y]['fr_w'] / L.DATA[y]['fr_l'])[np.isfinite(np.array([F.get(str(d)[:10], np.nan) for d in L.DATA[y]['days']])) & (np.array([F.get(str(d)[:10], np.nan) for d in L.DATA[y]['days']]) > 5)].ravel() for y in years])
@@ -1987,6 +2151,11 @@ class MeritLayer:
             U, nb, F = merit_drivers(S, W, a['fr_l'], fr_avail(y), fr_jmax(y), nS, nW, nL, fs, fw, bde, bfr)
             p = a['fr_p']
             dw = np.ones(p.shape) * (a['_dw'][:, None] if '_dw' in a else 1.0)
+            if QH_SPLIT == 'c1':
+                # c1: every quarter-hour a learning row of its hour's drivers, at its own price (a quarter of the weight)
+                p = _qh_prices(y)
+                U, nb, F = (np.repeat(v_[..., None], 4, -1) for v_ in (U, nb, F))
+                dw = np.repeat(dw[..., None], 4, -1) / 4
             ok = np.isfinite(p) & np.isfinite(U) & np.isfinite(nb) & np.isfinite(F)
             lo = p < MERIT_BAND
             X1.append(np.column_stack([U[ok], nb[ok], F[ok]])); Y1.append(lo[ok].astype(float)); WT.append(dw[ok])
@@ -2032,7 +2201,7 @@ _ML = {}
 
 
 def merit_layer(years, D):
-    key = (tuple(id(y) if isinstance(y, Period) else y for y in years), D, STOP_GRID)
+    key = (tuple(id(y) if isinstance(y, Period) else y for y in years), D, STOP_GRID, QH_SPLIT)
     if key not in _ML:
         _ML[key] = MeritLayer(years, D)
     return _ML[key]
@@ -2107,6 +2276,7 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
     pm2 = PriceModel2(tr, st['level'] != 'none') if rule == '2d' else None
     pmf = pmf_b = None
     WTECH['t'] = t if os.environ.get('PK_WTECH') == '1' else None
+    QH['t'] = t
     if rule == 'fuel':
         fy = train or [y for y in known if L.DATA[y]['complete'] and y >= 2019][-fuel_window:]
         cm_ = cells_mode()
@@ -2489,6 +2659,13 @@ def simulate(t, Y, known, st, demand_year, capY, levels, n=60, amp=0.0, seed=Non
                             if isinstance(m_, int) and m_ in mT:
                                 mr[m_].setdefault('curtT' + key_, {})[T_] = mT[m_]['curt']
                                 mr[m_].setdefault('paidT' + key_, {})[T_] = mT[m_]['paid']
+                if QH_SPLIT == 'c2' and t == 's':   # solar only: on wind the replay error grew (q75 1.89 → 2.06)
+                    # c2: the output at or below 0 split between paid at 0 € and stopped as the last 12 months of
+                    # quarter-hours did (before the base-rule rescaling below, which carries it like every T)
+                    obs_ = qh_split_obs(t, roll_date())
+                    for m_ in mr:
+                        if isinstance(m_, int):
+                            qh_split_apply(mr[m_], obs_, float((f1 * cday)[month == m_].mean()))
             if pmf_b is not None:
                 fb, _, _ = pmf_b.phi(x, gg, xfr, cday, None, need, share(S, W, Lo, N, H, False))
                 for m_, e_ in mr.items():
