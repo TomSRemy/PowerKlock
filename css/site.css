@@ -4372,3 +4372,10 @@ span.nl-src { margin: 0; }
   .topbar .topbar-right > * { margin-left: 0; margin-right: 0; }
   .topbar .topbar-right .pkd-acc:not([title]) { white-space: normal; line-height: 1.1; letter-spacing: 0; max-width: 76px; padding: 2px 6px; text-align: center; }
 }
+
+/* « Aussi en accès libre »: a paid outlet's story at free outlets (js/news.js _newsFree) */
+.news-free { margin-top: 6px; font-size: 12px; color: var(--text2); line-height: 1.5; }
+.news-free > span:first-child { color: var(--text3, var(--text2)); }
+.news-free-a { color: var(--accent); cursor: pointer; white-space: nowrap; }
+.news-free-a:hover, .news-free-a:focus-visible { text-decoration: underline; outline: none; }
+.news-free-row { margin-top: 2px; font-size: 11.5px; }

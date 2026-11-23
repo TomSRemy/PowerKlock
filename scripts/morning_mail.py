@@ -288,6 +288,9 @@ def journal(today, E, ed, wk, mine):
         body.append(row(kick('Le graphique de la semaine') + f'<p style="{f};margin:0 0 10px;font-size:18px;font-weight:600;color:#121212">{esc(ttl)}</p>' + img(wc['img'], ttl) + legend +
                         f'<p style="{f};margin:8px 0 0;font-size:12.5px;color:#6B6B6B">Moyennes journalières publiées, jours de livraison (ENTSO-E).' + (" Les repères situent les événements de la semaine ; ils n'expliquent pas à eux seuls le prix." if wc.get('marks') else '') + f' <a href="{SITE}#markets/spot" style="{green}">Voir sur PowerKlock</a></p>'))
     # ── the lead story with its chart ──
+    def free(h):   # a paid outlet's story: the same at outlets free to read
+        return (f'<p style="{f};margin:4px 0 0;font-size:12.5px;color:#6B6B6B">Aussi en accès libre : ' +
+                ' · '.join(f'<a href="{esc(o["link"])}" style="{green}">{esc(o["source"])}</a>' for o in h["free"]) + '</p>') if h.get('free') else ''
     st = list(ed.get('stories') or [])
     if st:
         h = st[0]
@@ -299,7 +302,7 @@ def journal(today, E, ed, wk, mine):
                         f'<p style="{serif};margin:0 0 8px;font-size:25px;line-height:1.22;font-weight:700">{a(h["link"], h["title"])}</p>' +
                         (f'<p style="{f};margin:0;font-size:16px;line-height:1.55;color:#383838">{esc(h["what"])}</p>' if h.get('what') else '') + chart +
                         (f'<p style="{f};margin:{0 if chart else 12}px 0 0;font-size:15.5px;line-height:1.5;color:#121212;border-left:3px solid #0B7A62;padding-left:12px"><b style="{green}">À retenir.</b> {esc(h["for_you"])}</p>' if h.get('for_you') else '') +
-                        f'<p style="{f};margin:10px 0 0;font-size:12.5px;color:#6B6B6B">{esc(" · ".join(h["sources"][:3]))} · <a href="{esc(h["link"])}" style="{green};font-weight:600">Lire l\'article</a></p>'))
+                        f'<p style="{f};margin:10px 0 0;font-size:12.5px;color:#6B6B6B">{esc(" · ".join(h["sources"][:3]))} · <a href="{esc(h["link"])}" style="{green};font-weight:600">Lire l\'article</a></p>' + free(h)))
     # ── the figure of the day ──
     fig = E.get('figure')
     if fig and not wk:
@@ -311,7 +314,7 @@ def journal(today, E, ed, wk, mine):
         body.append(row((f'<p style="{f};margin:0 0 4px;font-size:12px;font-weight:700;color:{col}">{lab}</p>' if lab else '') +
                         f'<p style="{serif};margin:0 0 6px;font-size:19px;line-height:1.28;font-weight:700">{a(h["link"], h["title"])}</p>' +
                         (f'<p style="{f};margin:0 0 6px;font-size:14.5px;line-height:1.5;color:#383838"><b style="{green}">À retenir.</b> {esc(h["for_you"])}</p>' if h.get('for_you') else '') +
-                        f'<p style="{f};margin:0;font-size:12.5px;color:#6B6B6B">{esc(" · ".join(h["sources"][:3]))}</p>'))
+                        f'<p style="{f};margin:0;font-size:12.5px;color:#6B6B6B">{esc(" · ".join(h["sources"][:3]))}</p>' + free(h)))
     # ── your keywords ──
     if mine:
         body.append(row(kick('Vos mots-clés') + ''.join(f'<p style="{f};margin:0;padding:7px 0;border-bottom:1px solid #F2F2F2;font-size:14.5px;line-height:1.4">{a(o["link"], o["title"])} <span style="color:#6B6B6B;font-size:12px">· {esc(o["source"])}</span></p>' for o in mine)))
