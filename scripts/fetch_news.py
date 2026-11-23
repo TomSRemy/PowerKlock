@@ -68,15 +68,15 @@ KEYWORDS = {
     "deal": r"\b(acqui\w*|rachat|rachète|rachete|cède|cede|cession|cèdent|takeover|buys?|bought|sells?|sold|stake|participation|merger|fusion|divest\w*|portfolio sale|deal|transaction|refinanc\w*|financing|financement|lève|raises? \S+ (m|bn)|joint venture|coentreprise)\b",
     "build": r"\b(commission(ed|ing)|mise en service|mis en service|inaugur\w*|energi[sz]ed|connected to the grid|raccord\w*|groundbreaking|first stone|première pierre|construction start\w*|starts? construction|breaks ground|enters? (commercial )?operation|comes? online|COD\b|repowering|permis de construire|building permit|consent\w* granted|approved|autoris\w*)\b",
 
-    "gas": r"\b(gas|lng|ttf|pipeline|regasification|storage level|nbp|peg)\b",
+    "gas": r"\b(gas|gaz|lng|gnl|ttf|pipeline|gazoduc|regasification|regazéification|storage level|stockages? de gaz|nbp|peg|grtgaz|terega|biométhane|biomethane)\b",
     "carbon": r"\b(carbon|co2|ets|eua|emission|decarboni[sz]|net[- ]zero|climate)\b",
-    "regulation": r"\b(regulat\w*|réglement\w*|directive|commission|acer|cre|tariff|tarif\w*|law|loi|décret|decree|arrêté|bill|consultation|policy|ministry|ministère|government|gouvernement|auction design|appel d'offres|tender|ppe|arenh|vnu|turpe|accise|capacity mechanism|mécanisme de capacité|cfd|complément de rémunération)\b",
-    "markets": r"\b(price[sd]?|market[s]?|trading|futures|forward|auction|spot|day-ahead|ppa|contract[s]?)\b",
+    "regulation": r"\b(regulat\w*|réglement\w*|directive|commission de régulation|commission européenne|european commission|acer|cre|network code|code de réseau|tarifs? réglementés?|trve|tarif d.achat|tarif d.utilisation|loi|décret|decree|arrêté|consultation publique|public consultation|ministère de l.(énergie|économie)|auction design|appel d'offres|tender|ppe\d?|arenh|vnu|turpe|accise|capacity mechanism|mécanisme de capacité|cfd|complément de rémunération|remit|ofgem|bundesnetzagentur)\b",
+    "markets": r"\b(wholesale|prix de gros|marché de gros|trading|futures|forward|spot|day-ahead|intraday|ppas?|power purchase|prix (de l.électricité|du gaz|négatifs?)|negative prices?|power prices?|gas prices?|eex|epex|ttf|peg|cal(endar)? 2\d|baseload)\b",
     # reference reports: periodic studies, barometers, observatories, outlooks, residual mix
     # a published report, not any article with « report » in it (« -report » wire titles, « reported »): a report noun with
     # a publishing word or a publisher, or the named reference series
     "report": r"\b((publie|publient|publishes?|published|releases?|annual|annuel|nouveau|new|latest|dernier) (un |une |son |sa |its |a |the )?(rapport|report|étude|study)|(rapport|report|étude) (annuel|annual|de la CRE|de RTE|de l.ADEME|of the IEA|de l.AIE)|baromètres?|barometers?|observatoires?|panorama|bilan (électrique|prévisionnel)|bulletin trimestriel|(energy|electricity|gas) outlook|residual mix(es)?|mix résiduel|économie du système|[eé]clairage sur)\b",
-    "power": r"\b(power|electricity|grid|solar|wind|nuclear|hydro|battery|batteries|renewable[s]?|tso|électricité|électrique\w*|réseau|nucléaire|centrale\w*|batterie\w*)\b",
+    "power": r"\b(power (price|market|grid|plant|station|demand|supply)\w*|electricity|grid|nuclear|hydro|battery|batteries|bess|tso|électricité|(réseau|raccordement|mix|système|parc|production|consommation|demande) électrique|réseau (électrique|de transport|de distribution|public)|nucléaire|centrales? (nucléaire|électrique|à gaz|à charbon|solaire)\w*|batterie\w*|rte|enedis|edf)\b",
     # renewables: production, support schemes, PPAs, guarantees of origin, storage beside them (English and French)
     "renewables": r"\b(renewable\w*|renouvelable\w*|enr|solar|solaire\w*|photovolta\w*|pv|wind\w*|éolien\w*|offshore wind|agrivolta\w*|biométhane|biogas|biogaz|méthanisation|hydrogène vert|green hydrogen|hydroélectri\w*|ppas?|garanties? d.origine|guarantees? of origin|complément de rémunération|obligation d.achat|appel d.offres (cre|ppe\w*)|repowering|autoconsommation|self-consumption|agrégat\w*|aggregat\w*|capture (price|rate)|prix de capture|cannibali\w*)\b",
 }
@@ -93,6 +93,8 @@ COUNTRIES = {
     "NL": r"\b(netherlands|dutch|pays-bas|néerlandais\w*|tennet)\b",
     "EU": r"\b(eu|europe\w*|européen\w*|brussels|bruxelles|acer|entso-e|commission)\b",
 }
+# the subjects shown on the News page, most telling first (an article about a CfD tender is « Régulation » before « Électricité »)
+TOPIC_ORDER = ["regulation", "renewables", "markets", "gas", "deal", "build", "geopolitics", "carbon", "power"]
 # how much a category moves prices or the renewable business; readers' votes add to it (data/news_prefs.json)
 CAT_W = {"geopolitics": 3.0, "regulation": 2.0, "deal": 2.0, "build": 1.5, "gas": 1.5, "renewables": 1.5, "markets": 1.0, "carbon": 1.0, "power": 0.5}
 PREFS = Path(__file__).resolve().parent.parent / "data" / "news_prefs.json"
@@ -550,12 +552,16 @@ def add_items(out, items, src, now, limit, extra=None):
         # general-interest feeds ("require": a regex on the title, in config): keep only the energy-market articles
         if src.get("require") and not re.search(src["require"], it["title"].lower()):
             continue
-        tags = list(dict.fromkeys(src.get("tags", []) + [t for t, rx in KEYWORDS.items() if re.search(rx, blob)]))
+        found = [t for t, rx in KEYWORDS.items() if re.search(rx, blob)]
+        tags = list(dict.fromkeys(src.get("tags", []) + found))
         countries = [c for c, rx in COUNTRIES.items() if re.search(rx, blob)]
         if "fr" in src.get("tags", []) and "FR" not in countries:
             countries.insert(0, "FR")
         rec = {"source": it.get("domain") or src["name"], "cls": src.get("cls", "search"), "title": it["title"], "link": it["link"],
-               "snippet": it["snippet"], "date": it["date"].isoformat(timespec="seconds"), "tags": tags, "countries": countries}
+               "snippet": it["snippet"], "date": it["date"].isoformat(timespec="seconds"), "tags": tags, "countries": countries,
+               # the article's own subjects, from its words only (not the outlet's), most telling first: the subject pills
+               # and the sections of the News page
+               "topics": sorted((t for t in found if t in TOPIC_ORDER), key=TOPIC_ORDER.index)}
         if extra:
             rec.update(extra)
         out.append(rec)

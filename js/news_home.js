@@ -1,0 +1,256 @@
+// ── News › Top stories (« À la une ») and the live feed's filter bar ──
+// Top stories reads the articles (data/news.json) and today's newsletter (data/newsletter.json: lead story, the reader's
+// profile stories, markets, figure of the day, the week ahead). Its sections follow the reader's choices: the newsletter
+// profile and interests (public.news_profile, when signed in) and the layout kept in this browser (pk-news-home).
+// Clicking a section title or a subject pill opens the live feed filtered on it.
+
+const NH_RUBS = [
+  { id: 'renewables', fr: 'Renouvelables et stockage', en: 'Renewables and storage', topics: ['renewables', 'build'], tag: 'renewables' },
+  { id: 'power', fr: 'Électricité et marchés', en: 'Power and markets', topics: ['power', 'markets'], tag: 'power' },
+  { id: 'regulation', fr: 'Régulation', en: 'Regulation', topics: ['regulation'], tag: 'regulation' },
+  { id: 'gas', fr: 'Gaz et carbone', en: 'Gas and carbon', topics: ['gas', 'carbon'], tag: 'gas' },
+  { id: 'deal', fr: 'Transactions', en: 'Deals', topics: ['deal'], tag: 'deal' },
+  { id: 'intl', fr: 'Europe et international', en: 'Europe and international', intl: true },
+  { id: 'mine', fr: 'Mes mots-clés', en: 'My keywords', mine: true, tag: 'mine' },
+];
+const NH_DEFAULT = ['renewables', 'power', 'regulation', 'intl', 'mine'];
+
+function _nhPrefs() {
+  let p = null; try { p = JSON.parse(localStorage.getItem('pk-news-home') || 'null'); } catch (_) {}
+  p = Object.assign({ rubs: null, custom: [], france: true, aside: { mk: true, cons: true, fig: true }, asideOff: false, closed: {} }, p || {});
+  if (!p.rubs) {   // first visit: the sections follow the newsletter interests, else the default set
+    const ints = (typeof _nlMe !== 'undefined' && _nlMe && _nlMe.interests) || [];
+    const fromInts = NH_RUBS.filter(r => r.topics && r.topics.some(t => ints.includes(t))).map(r => r.id);
+    p.rubs = fromInts.length ? fromInts.concat(['intl', 'mine'].filter(x => !fromInts.includes(x))) : NH_DEFAULT.slice();
+  }
+  return p;
+}
+function _nhSave(p) { try { localStorage.setItem('pk-news-home', JSON.stringify(p)); } catch (_) {} }
+const _nhAgo = d => {
+  const h = (Date.now() - d) / 36e5;
+  if (h < 1) return _newsT('il y a ' + Math.max(1, Math.round(h * 60)) + ' min', Math.max(1, Math.round(h * 60)) + ' min ago');
+  if (h < 20) return _newsT('il y a ' + Math.round(h) + ' h', Math.round(h) + ' h ago');
+  if (h < 44) return _newsT('hier', 'yesterday');
+  return _newsDay(d);
+};
+const _nhClock = d => (Date.now() - d < 864e5) ? new Date(d).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' }) : _newsDay(d);
+const _nhSnip = (s, title) => { s = (s || '').trim(); if (!s || /^the post |appeared first on/i.test(s) || s.length < 40) return ''; return s.toLowerCase().startsWith((title || '').toLowerCase().slice(0, 30)) ? '' : s; };
+const _nhA = (url, inner, cls) => `<a${cls ? ` class="${cls}"` : ''} href="${_newsEsc(/^https?:\/\//.test(url || '') ? url : '#')}" target="_blank" rel="noopener noreferrer">${inner}</a>`;
+
+// the reader's edition of today's newsletter: first profile ticked, else the one chosen in the Newsletter tab
+function _nhProfile(E) {
+  const P = (E && E.profiles) || {};
+  const mine = ((_nlMe && _nlMe.profiles) || []).find(k => P[k]);
+  let pid = mine || _newsStore('pk-nl-profile'); if (!P[pid]) pid = P.supplier ? 'supplier' : P.origination ? 'origination' : Object.keys(P)[0];
+  return pid ? Object.assign({ id: pid }, P[pid]) : null;
+}
+
+async function renderNewsHome() {
+  const host = document.getElementById('nh'); if (!host || typeof newsData === 'undefined' || !newsData) return;
+  if (_nlData === undefined) { try { const r = await fetch(DATA_BASE + 'newsletter.json?t=' + Date.now()); _nlData = r.ok ? await r.json() : null; } catch (_) { _nlData = null; } }
+  if (_nlMe === undefined && typeof _nlLoadMe === 'function') await _nlLoadMe();
+  const E = _nlData || {}, pref = _nhPrefs(), en = window.PKI18n && PKI18n.lang === 'en', L = a => Array.isArray(a) ? (en ? a[1] : a[0]) : (a || '');
+  const items = newsData || [], byLink = l => items.find(i => i.link === l), seen = new Set(), kw = _newsKw();
+  const prof = _nhProfile(E);
+  // ── the lead: the admin's pick, else the reader's first story, else the most important article ──
+  const pin = [...(_newsPins || [])].map(byLink).find(Boolean);
+  const st = ((prof && prof.stories) || []).filter(s => s && s.title);
+  let lead = pin ? { title: pin.title, link: pin.link, what: '', tags: pin.topics || pin.tags, sources: [pin.source] } : st[0];
+  if (!lead && items[0]) lead = { title: items[0].title, link: items[0].link, tags: items[0].topics || items[0].tags, sources: [items[0].source] };
+  const leadItem = lead && byLink(lead.link);
+  if (lead) seen.add(lead.link);
+  const leadWhat = lead ? ((en && lead.what_en) || lead.what || _nhSnip(leadItem && leadItem.snippet, lead.title)) : '';
+  const th = tags => { const t = _NL_TH.find(x => (tags || []).includes(x[0])); return t ? _newsT(t[1], t[2]) : ''; };
+  const leadH = lead ? `<section class="nh-lead"><span class="nh-k nh-k-lead">${pin && pin.link === lead.link ? _newsT('À la une · choisi par la rédaction', 'Top story · editor’s pick') : _newsT('À la une', 'Top story')}${th(lead.tags) ? ' · ' + _newsEsc(th(lead.tags)) : ''}</span>
+    <h2>${_nhA(lead.link, _newsEsc(lead.title))}</h2>${leadWhat ? `<p class="nh-chapo">${_newsEsc(leadWhat)}</p>` : ''}
+    ${lead.for_you ? `<p class="nh-ret"><b>${_newsT('À retenir.', 'Takeaway.')}</b> ${_newsEsc((en && lead.for_you_en) || lead.for_you)}</p>` : ''}
+    <span class="nh-src">${_newsEsc((lead.sources || []).slice(0, 2).join(' · '))}${leadItem ? ' · ' + _nhAgo(leadItem.date) : ''} · ${_nhA(lead.link, _newsT('Lire l’article', 'Read the article'), 'nh-read')}${_newsPinBtn({ link: lead.link })}</span>
+    ${_newsFree(leadItem || lead)}</section>` : '';
+  // ── the essentials: the reader's other stories of the day ──
+  let ess = st.filter(s => !seen.has(s.link)).slice(0, 5);
+  if (ess.length < 3) ess = ess.concat(items.filter(i => !seen.has(i.link) && !ess.some(s => s.link === i.link) && (i.impact || 0) >= 3).slice(0, 5 - ess.length).map(i => ({ title: i.title, link: i.link, sources: [i.source] })));
+  ess.forEach(s => seen.add(s.link));
+  const essH = ess.length ? `<section class="nh-ess"><div class="nh-k">${_newsT('L’essentiel du jour', 'Today’s essentials')}${prof && prof.name ? ` <span class="nh-prof">· ${_newsT('profil', 'profile')} ${_newsEsc(L(prof.short || prof.name))}</span>` : ''}</div>
+    <ol>${ess.map(s => `<li><span>${_nhA(s.link, _newsEsc(s.title))} <span class="nh-src">· ${_newsEsc((s.sources || [])[0] || '')}</span></span></li>`).join('')}</ol></section>` : '';
+  // ── the sections, in the reader's order; one article appears once, in its first section ──
+  const now = Date.now(), fresh = i => now - i.date < 7 * 864e5;
+  const score = i => (i.impact || 0) - 0.35 * (now - i.date) / 864e5 + (pref.france && _newsIsFr(i) ? 1.2 : 0);
+  const pick = (pred, n) => { const out = items.filter(i => !seen.has(i.link) && fresh(i) && pred(i)).sort((a, b) => score(b) - score(a)).slice(0, n); out.forEach(i => seen.add(i.link)); return out; };
+  const rubDef = id => NH_RUBS.find(r => r.id === id) || (pref.custom || []).find(c => c.id === id);
+  const rubs = (pref.rubs || []).map(rubDef).filter(Boolean).filter(r => !r.mine || kw.length);
+  const secH = rubs.map(r => {
+    const pred = r.mine ? i => _newsMine(i, kw) : r.intl ? i => !_newsIsFr(i) : r.f ? i => _nhMatch(i, r.f) : i => _newsSubj(i).some(t => r.topics.includes(t));
+    const its = pick(pred, 4); if (!its.length) return '';
+    return `<section class="nh-sec"><h3><button type="button" class="nh-sec-t" data-rub="${_newsEsc(r.id)}" title="${_newsT('Voir tout le fil de cette rubrique', 'See the whole feed of this section')}">${_newsEsc(r.label || _newsT(r.fr, r.en))} <span aria-hidden="true">→</span></button></h3>
+      ${its.map(i => `<div class="nh-it">${_nhA(i.link, `<span class="nh-it-t">${_newsEsc(i.title)}</span>`)}<span class="nh-it-m"><span class="nh-src">${_newsEsc(i.source)} · ${_nhAgo(i.date)}</span>${_newsPills(i)}</span>${_newsFree(i, 'news-free-row')}</div>`).join('')}</section>`;
+  }).join('');
+  // ── the latest, a teaser of the live feed ──
+  const latest = items.filter(i => !seen.has(i.link) && (!pref.france || _newsIsFr(i))).sort((a, b) => b.date - a.date).slice(0, 7);
+  const contH = `<section class="nh-cont"><div class="nh-k">${_newsT('En continu', 'Live feed')}</div>${latest.map(i => `<div class="nh-row"><span class="nh-h">${_nhClock(i.date)}</span><span>${_nhA(i.link, _newsEsc(i.title))} <span class="nh-src">· ${_newsEsc(i.source)}</span></span></div>`).join('')}
+    <button type="button" class="nh-more" data-rub="all">${_newsT('Tout le fil, avec recherche et filtres', 'The whole feed, with search and filters')} →</button></section>`;
+  // ── the side column: markets, what not to miss, figure of the day; each block folds, the column hides ──
+  const blk = (id, title, body) => body ? `<section class="nh-blk${pref.closed[id] ? ' closed' : ''}" data-blk="${id}"><button type="button" class="nh-blk-h" aria-expanded="${!pref.closed[id]}"><span class="nh-k">${title}</span><span class="nh-chev" aria-hidden="true">▾</span></button><div class="nh-blk-b">${body}</div></section>` : '';
+  const num = (v, d = 2) => v == null ? '–' : v.toLocaleString(en ? 'en-GB' : 'fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d });
+  const mkB = (E.markets || []).length ? `<table class="nh-mk">${E.markets.map(r => {
+    const c = r.chg || 0, up = c > 0, dn = c < 0, red = r.hours ? dn : up, green = r.hours ? up : dn;
+    const ch = r.hours ? (r.chg == null ? '' : !c ? '=' : (up ? '+' : '−') + num(Math.abs(c), 0) + ' h') : r.show === 'abs' ? (r.chg == null ? '' : (up ? '+' : dn ? '−' : '= ') + num(Math.abs(c), 1)) : r.pct == null ? '' : (up ? '+' : dn ? '−' : '') + num(Math.abs(r.pct), r.pct && Math.abs(r.pct) >= 100 ? 0 : 1) + ' %';
+    return `<tr><td><a href="#${_newsEsc(r.page || 'today')}">${_newsEsc(L(r.label).replace(/ aujourd.hui$| today$/i, ''))}</a></td><td class="nh-v" title="${_newsEsc(r.unit || '')}">${num(r.value, r.hours ? 0 : 2)}${r.hours ? ' h' : ''}</td><td class="nh-c ${red ? 'up' : green ? 'dn' : ''}">${ch}</td></tr>`; }).join('')}</table><div class="nh-note">${_newsT('Sources', 'Sources')} : ${_newsEsc([...new Set(E.markets.map(r => r.src).filter(Boolean))].join(', '))}</div>` : '';
+  const today = _newsToday();
+  const wk = (E.week_ahead || []).filter(w => w.date >= today).slice(0, 5);
+  const consB = wk.length ? wk.map(w => { const n = _newsLeft(w.date), t = Array.isArray(w.title) ? L(w.title) : (en && w.title_en) || w.title;
+    const lab = n === 0 ? _newsT('auj.', 'today') : n <= 14 ? 'J-' + n : _newsDay(w.date + 'T12:00:00Z');
+    return `<div class="nh-due"><b class="${n <= 3 ? 'soon' : ''}">${lab}</b>${w.link ? _nhA(w.link, _newsEsc(t)) : `<span>${_newsEsc(t)}</span>`}</div>`; }).join('') +
+    `<button type="button" class="nh-more" data-view="official">${_newsT('Toutes les consultations', 'All consultations')} →</button>` : '';
+  const figB = E.figure ? `<div class="nh-fig"><b class="${E.figure.dir === 'dn' ? 'dn' : 'up'}">${_newsEsc(E.figure.value)}</b><p>${_newsEsc(en ? E.figure.text_en : E.figure.text)}</p></div>` : '';
+  const aside = [pref.aside.mk && blk('mk', _newsT('Marchés ce matin', 'Markets this morning'), mkB), pref.aside.cons && blk('cons', _newsT('À ne pas rater', 'Not to miss'), consB), pref.aside.fig && blk('fig', _newsT('Le chiffre du jour', 'Figure of the day'), figB)].filter(Boolean).join('');
+  host.innerHTML = `<div class="nh-tools"><span class="nh-date">${(d => d.charAt(0).toUpperCase() + d.slice(1))(new Date().toLocaleDateString(en ? 'en-GB' : 'fr-FR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/Paris' }))}</span>
+      <button type="button" class="nh-btn" id="nh-perso">⚙ ${_newsT('Personnaliser', 'Customise')}</button>
+      ${aside ? `<button type="button" class="nh-btn" id="nh-aside-t">${pref.asideOff ? _newsT('Afficher la colonne', 'Show the column') + ' ⇤' : _newsT('Masquer la colonne', 'Hide the column') + ' ⇥'}</button>` : ''}</div>
+    <div class="nh-grid${pref.asideOff || !aside ? ' noaside' : ''}"><div class="nh-main">${leadH}${essH}<div class="nh-secs">${secH}</div>${contH}</div>${aside && !pref.asideOff ? `<aside class="nh-aside">${aside}</aside>` : ''}</div>`;
+  _nhWire(host);
+}
+window.renderNewsHome = renderNewsHome;
+
+function _nhWire(host) {
+  host.querySelectorAll('.nh-blk-h').forEach(b => b.addEventListener('click', () => {
+    const sec = b.closest('.nh-blk'), id = sec.dataset.blk, p = _nhPrefs(); p.closed[id] = !p.closed[id]; _nhSave(p);
+    sec.classList.toggle('closed', !!p.closed[id]); b.setAttribute('aria-expanded', String(!p.closed[id])); }));
+  const at = host.querySelector('#nh-aside-t'); if (at) at.addEventListener('click', () => { const p = _nhPrefs(); p.asideOff = !p.asideOff; _nhSave(p); renderNewsHome(); });
+  const pe = host.querySelector('#nh-perso'); if (pe) pe.addEventListener('click', _nhCustomise);
+  host.querySelectorAll('[data-rub]').forEach(b => b.addEventListener('click', () => _nhOpenFeed(b.dataset.rub)));
+  host.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => { newsSetView(b.dataset.view); window.scrollTo({ top: 0 }); }));
+}
+
+// does an article match a section saved from the feed's filters?
+function _nhMatch(i, f) {
+  if (f.tag && f.tag !== 'all' && !(f.tag === 'mine' ? _newsMine(i, _newsKw()) : _NEWS_TOPICS.includes(f.tag) ? _newsSubj(i).includes(f.tag) : (i.tags || []).includes(f.tag))) return false;
+  if (f.q && !(i.title + ' ' + i.snippet + ' ' + i.source).toLowerCase().includes(f.q)) return false;
+  if (f.src && i.source !== f.src) return false;
+  if (f.cty && !(i.countries || []).includes(f.cty)) return false;
+  if (f.fr && !_newsIsFr(i)) return false;
+  return true;
+}
+
+// the live feed, filtered on a section of the home page (or on a saved filter)
+function _nhOpenFeed(id) {
+  const p = _nhPrefs(), r = NH_RUBS.find(x => x.id === id) || (p.custom || []).find(c => c.id === id);
+  _nfResetAll(true);
+  if (r && r.f) {
+    const f = r.f, set = (k, v) => { const el = document.getElementById(k); if (el) el.value = v || ''; };
+    set('news-search', f.q); set('news-src', f.src); set('news-cty', f.cty); set('news-per', f.per);
+    const fr = document.getElementById('news-fr'); if (fr) { fr.checked = !!f.fr; try { localStorage.setItem('pk-news-fr', f.fr ? '1' : '0'); } catch (_) {} }
+    _nfFilter(f.tag || 'all');
+  } else if (r && r.intl) {
+    const fr = document.getElementById('news-fr'); if (fr) { fr.checked = false; try { localStorage.setItem('pk-news-fr', '0'); } catch (_) {} }
+    _nfFilter('all');
+  } else _nfFilter(r && r.tag ? r.tag : 'all');
+  newsSetView('feed');
+  window.scrollTo({ top: 0 });
+}
+function _nfFilter(tag) {
+  const b = document.querySelector(`.news-filters .filter-btn[data-tag="${tag}"]`) || document.querySelector('.news-filters .filter-btn[data-tag="all"]');
+  if (b) filterNews(b.dataset.tag, b);
+}
+
+// ── the « Customise » panel: the newsletter profile, the sections and their order, France first, the side column ──
+function _nhCustomise() {
+  const p = _nhPrefs(), E = _nlData || {}, P = E.profiles || {}, en = window.PKI18n && PKI18n.lang === 'en', L = a => Array.isArray(a) ? (en ? a[1] : a[0]) : (a || '');
+  const signed = !!(window.PKAccount && PKAccount.user);
+  let profs = ((_nlMe && _nlMe.profiles) || []).filter(k => P[k]); if (!profs.length) { const k = _newsStore('pk-nl-profile'); if (P[k]) profs = [k]; }
+  const all = NH_RUBS.map(r => r.id).concat((p.custom || []).map(c => c.id)), order = p.rubs.concat(all.filter(x => !p.rubs.includes(x)));
+  const name = id => { const r = NH_RUBS.find(x => x.id === id) || (p.custom || []).find(c => c.id === id); return r ? (r.label || _newsT(r.fr, r.en)) : id; };
+  const ov = document.createElement('div'); ov.className = 'nh-ov'; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-label', _newsT('Personnaliser ma Veille', 'Customise my News'));
+  const draw = () => {
+    ov.innerHTML = `<div class="nh-panel"><div class="nh-ph"><b>${_newsT('Personnaliser ma Veille', 'Customise my News')}</b><button type="button" class="nh-x" aria-label="${_newsT('Fermer', 'Close')}">✕</button></div>
+      <p class="nh-note">${signed ? _newsT('Le profil et la priorité France sont ceux de votre newsletter : les changer ici les change aussi pour le mail.', 'The profile and France first are those of your newsletter: changing them here changes the e-mail too.') : _newsT('Connectez-vous pour retrouver ces choix partout et dans votre newsletter. Sans compte, ils restent dans ce navigateur.', 'Sign in to keep these choices everywhere and in your newsletter. Without an account, they stay in this browser.')}</p>
+      <div class="nh-k">${_newsT('Mon profil de lecture', 'My reading profile')}</div>
+      <div class="nh-chips">${Object.keys(P).map(k => `<button type="button" class="nh-chip${profs.includes(k) ? ' on' : ''}" data-prof="${_newsEsc(k)}">${profs.includes(k) ? '✓ ' : ''}${_newsEsc(L(P[k].name))}</button>`).join('')}</div>
+      <div class="nh-k">${_newsT('Rubriques de ma page À la une', 'Sections of my Top stories page')}</div>
+      <div class="nh-rl">${order.map((id, k) => { const on = p.rubs.includes(id), cus = (p.custom || []).some(c => c.id === id);
+        return `<div class="nh-r${on ? ' on' : ''}"><label><input type="checkbox" data-rshow="${_newsEsc(id)}"${on ? ' checked' : ''}> ${_newsEsc(name(id))}</label><span>
+          <button type="button" class="nh-mv" data-mv="${k}" data-d="-1" aria-label="${_newsT('Monter', 'Move up')}"${k ? '' : ' disabled'}>▲</button><button type="button" class="nh-mv" data-mv="${k}" data-d="1" aria-label="${_newsT('Descendre', 'Move down')}"${k < order.length - 1 ? '' : ' disabled'}>▼</button>${cus ? `<button type="button" class="nh-mv" data-del="${_newsEsc(id)}" aria-label="${_newsT('Supprimer', 'Delete')}">✕</button>` : ''}</span></div>`; }).join('')}</div>
+      <p class="nh-note">${_newsT('Pour ajouter une rubrique : dans En continu, choisissez vos filtres puis « ☆ Ajouter à ma page d’accueil ». « Mes mots-clés » apparaît quand vous en avez saisi (En continu › Outils).', 'To add a section: in the Live feed, choose your filters, then « ☆ Add to my home page ». « My keywords » shows once you have typed some (Live feed › Tools).')}</p>
+      <div class="nh-k">${_newsT('Priorité', 'Priority')}</div>
+      <label class="nh-cb"><input type="checkbox" id="nh-fr"${p.france ? ' checked' : ''}> ${_newsT('La France d’abord', 'France first')}</label>
+      <div class="nh-k">${_newsT('Colonne de droite', 'Side column')}</div>
+      ${[['mk', _newsT('Marchés ce matin', 'Markets this morning')], ['cons', _newsT('À ne pas rater', 'Not to miss')], ['fig', _newsT('Le chiffre du jour', 'Figure of the day')]].map(([k, l]) => `<label class="nh-cb"><input type="checkbox" data-aside="${k}"${p.aside[k] ? ' checked' : ''}> ${l}</label>`).join('')}
+      <div class="nh-pf"><span class="news-add-msg" id="nh-msg"></span><button type="button" class="pk-btn-ghost" id="nh-cancel">${_newsT('Annuler', 'Cancel')}</button><button type="button" class="nh-save" id="nh-ok">${_newsT('Enregistrer', 'Save')}</button></div></div>`;
+    ov.querySelectorAll('[data-prof]').forEach(b => b.addEventListener('click', () => { const k = b.dataset.prof; profs = profs.includes(k) ? profs.filter(x => x !== k) : profs.concat(k); draw(); }));
+    ov.querySelectorAll('[data-rshow]').forEach(c => c.addEventListener('change', () => { const id = c.dataset.rshow; p.rubs = c.checked ? order.filter(x => x === id || p.rubs.includes(x)) : p.rubs.filter(x => x !== id); draw(); }));
+    ov.querySelectorAll('[data-mv]').forEach(b => b.addEventListener('click', () => { const k = +b.dataset.mv, j = k + +b.dataset.d; [order[k], order[j]] = [order[j], order[k]]; p.rubs = order.filter(x => p.rubs.includes(x)); draw(); }));
+    ov.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', () => { const id = b.dataset.del; p.custom = p.custom.filter(c => c.id !== id); p.rubs = p.rubs.filter(x => x !== id); order.splice(order.indexOf(id), 1); draw(); }));
+    const fr = ov.querySelector('#nh-fr'); fr.addEventListener('change', () => { p.france = fr.checked; });
+    ov.querySelectorAll('[data-aside]').forEach(c => c.addEventListener('change', () => { p.aside[c.dataset.aside] = c.checked; }));
+    const close = () => { ov.remove(); document.removeEventListener('keydown', esc); };
+    ov.querySelector('.nh-x').addEventListener('click', close); ov.querySelector('#nh-cancel').addEventListener('click', close);
+    ov.querySelector('#nh-ok').addEventListener('click', async () => {
+      _nhSave(p);
+      if (profs[0]) _newsStore('pk-nl-profile', profs[0]);
+      if (signed && typeof _nlSave === 'function' && profs.length) await _nlSave({ profiles: profs, france: p.france }, ov.querySelector('#nh-msg'));
+      close(); renderNewsHome();
+    });
+  };
+  const esc = e => { if (e.key === 'Escape') { ov.remove(); document.removeEventListener('keydown', esc); } };
+  document.addEventListener('keydown', esc);
+  ov.addEventListener('click', e => { if (e.target === ov) { ov.remove(); document.removeEventListener('keydown', esc); } });
+  draw(); document.body.appendChild(ov);
+  const first = ov.querySelector('.nh-x'); if (first) first.focus();
+}
+
+// ── the live feed's bar: the filters panel, the active filters as removable labels, « add to my home page » ──
+const _nfVal = id => ((document.getElementById(id) || {}).value || '');
+const _nfChk = id => !!(document.getElementById(id) || {}).checked;
+function _nfTokens(n) {
+  const host = document.getElementById('nf-tokens'); if (!host) return;
+  const toks = [], tagBtn = document.querySelector(`.news-filters .filter-btn[data-tag="${newsFilter}"]`);
+  if (newsFilter && newsFilter !== 'all') toks.push(['tag', tagBtn ? tagBtn.textContent.trim() : newsFilter]);
+  if (_nfVal('news-search').trim()) toks.push(['q', '« ' + _nfVal('news-search').trim() + ' »']);
+  if (_newsFr()) toks.push(['fr', 'France']);
+  const sel = id => { const el = document.getElementById(id); return el && el.value ? el.options[el.selectedIndex].text.replace(/ \(\d+\)$/, '') : ''; };
+  if (_nfVal('news-per')) toks.push(['per', sel('news-per')]);
+  if (_nfVal('news-cty')) toks.push(['cty', sel('news-cty')]);
+  if (_nfVal('news-src')) toks.push(['src', sel('news-src')]);
+  if (_nfChk('news-offonly')) toks.push(['off', _newsT('Textes officiels', 'Official texts')]);
+  if (_nfChk('news-freeonly')) toks.push(['free', _newsT('Accès libre', 'Free to read')]);
+  host.innerHTML = toks.map(([k, l]) => `<button type="button" class="nf-tok" data-tok="${k}" title="${_newsT('Retirer ce filtre', 'Remove this filter')}">${_newsEsc(l)} ✕</button>`).join('');
+  const cnt = ['per', 'cty', 'src', 'off', 'free', 'fr'].filter(k => toks.some(t => t[0] === k)).length, b = document.getElementById('nf-n');
+  if (b) { b.hidden = !cnt; b.textContent = cnt; }
+}
+function _nfResetAll(quiet) {
+  ['news-search', 'news-per', 'news-cty', 'news-src'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  ['news-offonly', 'news-freeonly'].forEach(id => { const el = document.getElementById(id); if (el) el.checked = false; });
+  if (!quiet) _nfFilter('all');
+}
+document.addEventListener('click', e => {
+  const tok = e.target.closest && e.target.closest('[data-tok]');
+  if (tok) {
+    const k = tok.dataset.tok, clr = id => { const el = document.getElementById(id); if (el) { if (el.type === 'checkbox') el.checked = false; else el.value = ''; } };
+    if (k === 'tag') _nfFilter('all'); else if (k === 'q') clr('news-search'); else if (k === 'per') clr('news-per'); else if (k === 'cty') clr('news-cty'); else if (k === 'src') clr('news-src');
+    else if (k === 'off') clr('news-offonly'); else if (k === 'free') clr('news-freeonly');
+    else if (k === 'fr') { clr('news-fr'); try { localStorage.setItem('pk-news-fr', '0'); } catch (_) {} }
+    renderNews(newsData); return;
+  }
+  const fb = e.target.closest && e.target.closest('#nf-fbtn');
+  const pop = document.getElementById('nf-pop');
+  if (fb && pop) { pop.hidden = !pop.hidden; fb.setAttribute('aria-expanded', String(!pop.hidden)); return; }
+  if (e.target.closest && e.target.closest('#nf-done') && pop) { pop.hidden = true; document.getElementById('nf-fbtn').setAttribute('aria-expanded', 'false'); return; }
+  if (e.target.closest && e.target.closest('#nf-reset')) { _nfResetAll(); return; }
+  if (pop && !pop.hidden && !(e.target.closest && e.target.closest('#nf-pop'))) { pop.hidden = true; const f = document.getElementById('nf-fbtn'); if (f) f.setAttribute('aria-expanded', 'false'); }
+  if (e.target.closest && e.target.closest('#nf-save')) {
+    const tagBtn = document.querySelector(`.news-filters .filter-btn[data-tag="${newsFilter}"]`);
+    const f = { tag: newsFilter, q: _nfVal('news-search').trim().toLowerCase(), src: _nfVal('news-src'), cty: _nfVal('news-cty'), per: _nfVal('news-per'), fr: _newsFr() };
+    const label = [newsFilter !== 'all' && tagBtn ? tagBtn.textContent.trim() : '', f.q ? '« ' + f.q + ' »' : '', f.src].filter(Boolean).join(' · ') || _newsT('Mon fil', 'My feed');
+    const p = _nhPrefs(), id = 'c' + Date.now(); p.custom = (p.custom || []).concat({ id, label, f }); p.rubs = [id].concat(p.rubs); _nhSave(p);
+    const b = e.target.closest('#nf-save'), old = b.textContent; b.textContent = '✓ ' + _newsT('Ajouté à votre page À la une', 'Added to your Top stories page');
+    setTimeout(() => { b.textContent = old; }, 2600);
+  }
+}, false);
+// a subject pill (inside a link) filters the feed on its subject
+const _nfPill = e => {
+  const b = e.target.closest && e.target.closest('[data-ftag]'); if (!b || (e.type === 'keydown' && e.key !== 'Enter')) return;
+  e.preventDefault(); e.stopPropagation();
+  _nhOpenFeed(NH_RUBS.find(r => r.tag === b.dataset.ftag) ? NH_RUBS.find(r => r.tag === b.dataset.ftag).id : null);
+  _nfFilter(b.dataset.ftag);
+};
+document.addEventListener('click', _nfPill, true);
+document.addEventListener('keydown', _nfPill, true);
