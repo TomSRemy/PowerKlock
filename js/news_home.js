@@ -60,7 +60,9 @@ async function renderNewsHome() {
   const dig = ((E.digest && (E.digest.items || E.digest)) || []);
   const textOf = s => { if (!s) return ''; const it = byLink(s.link), d = Array.isArray(dig) ? dig.find(x => x && x.link === s.link) : null;
     return (en && s.what_en) || s.what || (d && ((en && d.text_en) || d.text)) || _nhSnip(it && it.snippet, s.title) || ''; };
-  let lead = pin ? { title: pin.title, link: pin.link, what: '', tags: pin.topics || pin.tags, sources: [pin.source] } : (st.find(s => textOf(s)) || st[0]);
+  // a story one can read leads: it has a text, and its article is free or has a free equivalent
+  const readable = s => { const it = byLink(s.link); return !_NEWS_PAID.test(((s.sources || [])[0] || '') + ' ' + (it ? it.source : '')) || (s.free || (it && it.free) || []).length; };
+  let lead = pin ? { title: pin.title, link: pin.link, what: '', tags: pin.topics || pin.tags, sources: [pin.source] } : (st.find(s => textOf(s) && !s.ctx && readable(s)) || st.find(s => textOf(s) && readable(s)) || st.find(s => textOf(s)) || st[0]);
   if (!lead && items[0]) lead = { title: items[0].title, link: items[0].link, tags: items[0].topics || items[0].tags, sources: [items[0].source] };
   const leadItem = lead && byLink(lead.link);
   if (lead) seen.add(lead.link);

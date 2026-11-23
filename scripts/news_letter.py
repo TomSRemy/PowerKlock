@@ -107,7 +107,7 @@ def pick(items, prof, now, hours, n=3):
 
 def ask(prof, stories, official, model=None):
     payload = {"sujets": [{"id": sid(i), "titre": i["title"], "medias": [i["source"]] + [o["source"] for o in i.get("other_sources") or []],
-                           "extrait": (i.get("snippet") or "")[:320]} for i in stories],
+                           "extrait": ((i.get("snippet") or "") if len(i.get("snippet") or "") >= 80 else best_text(i, 900) or i.get("snippet") or "")[:900]} for i in stories],
                "textes_officiels": [o["title"] for o in official[:5]]}
     msg = {"max_tokens": 2000, "system": SYSTEM.format(reader=prof["reader"]),
            "messages": [{"role": "user", "content": json.dumps(payload, ensure_ascii=False)}]}
@@ -124,6 +124,82 @@ def ask(prof, stories, official, model=None):
             raise ValueError("no JSON in the answer")
         out = json.loads(m.group(0))
     return out
+
+
+CONTEXT = """Tu écris pour la newsletter du matin de PowerKlock (marché français de l'électricité). Pour chaque sujet reçu
+(id, titre, médias, extrait : le début de l'article quand il a pu être lu), résume ce que dit l'article et pourquoi cela
+compte pour le marché de l'électricité en France. 2 phrases, 45 mots au plus.
+N'invente aucun fait, chiffre, date ni citation absents du titre ou de l'extrait ; sans extrait, explique le cadre général
+(le mécanisme, l'acteur, l'enjeu) plutôt que des détails. Pas de média cité.
+Réponds en JSON seulement : {"items": [{"id": "<id>", "what": "<français>", "what_en": "<anglais>"}]}"""
+
+
+PAID = re.compile(r"greenunivers|montel|windpowermonthly|lesechos|contexte\.com|rechargenews|carbon-pulse", re.I)
+_robots = {}
+_pages = {}
+
+
+def page_text(url, limit=1500):
+    """the start of an article (its description and first paragraphs), read only to write a summary of a story that has
+    no extract: never kept, never shown. Paid outlets, Google News redirects and sites whose robots.txt refuses are not read."""
+    import html as _h
+    import urllib.robotparser
+    from urllib.parse import urlparse
+    if url in _pages:
+        return _pages[url]
+    _pages[url] = ""
+    if not url or PAID.search(url) or "news.google." in url or len(_pages) > 24:
+        return ""
+    UA = "PowerKlock-newsletter (+https://github.com/TomSRemy/PowerKlock)"
+    host = "{0.scheme}://{0.netloc}".format(urlparse(url))
+    if host not in _robots:
+        rp = urllib.robotparser.RobotFileParser()
+        try:
+            r = urllib.request.urlopen(urllib.request.Request(host + "/robots.txt", headers={"User-Agent": UA}), timeout=10)
+            rp.parse(r.read().decode("utf-8", "ignore").splitlines())
+        except urllib.error.HTTPError as e:
+            rp.parse([] if 400 <= e.code < 500 else ["User-agent: *", "Disallow: /"])   # RFC 9309: missing file allows, a server error does not
+        except Exception:
+            rp.parse(["User-agent: *", "Disallow: /"])
+        _robots[host] = rp
+    if not _robots[host].can_fetch(UA, url):
+        return ""
+    try:
+        b = urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": UA}), timeout=15).read(600_000).decode("utf-8", "ignore")
+    except Exception:
+        return ""
+    desc = re.search(r'<meta[^>]+(?:property="og:description"|name="description")[^>]+content="([^"]+)"', b) or re.search(r'<meta[^>]+content="([^"]+)"[^>]+(?:property="og:description"|name="description")', b)
+    body = re.sub(r"(?s)<(script|style|nav|header|footer|aside)[^>]*>.*?</\1>", " ", b)
+    paras = [re.sub(r"\s+", " ", _h.unescape(re.sub(r"<[^>]+>", " ", p))).strip() for p in re.findall(r"(?s)<p[^>]*>(.*?)</p>", body)]
+    paras = [p for p in paras if len(p) > 60 and not re.search(r"cookie|abonn|newsletter|subscribe|©|tous droits", p, re.I)]
+    txt = " ".join(([_h.unescape(desc.group(1))] if desc else []) + paras)
+    _pages[url] = clip(txt, limit)
+    return _pages[url]
+
+
+def best_text(i, limit=1500):
+    """the best readable article of a story: its own page, else the other outlets on it, else the free ones of a paid
+    story (« Aussi en accès libre »); the first that gives a text"""
+    urls = [i.get("link")] + [o.get("link") for o in i.get("other_sources") or []] + [f.get("link") for f in i.get("free") or []]
+    for u in urls:
+        t = page_text(u, limit)
+        if t:
+            return t
+    return ""
+
+
+def ask_context(items, model=None):
+    """a context text for the stories that have none (no extract, a summary that only repeated the title)"""
+    payload = [{"id": sid(i), "titre": i["title"], "medias": [i["source"]] + [o["source"] for o in i.get("other_sources") or []],
+                "extrait": ((i.get("snippet") or "") if len(i.get("snippet") or "") >= 80 else best_text(i) or i.get("snippet") or "")[:1500]} for i in items]
+    msg = {"max_tokens": 1500, "system": CONTEXT, "messages": [{"role": "user", "content": json.dumps(payload, ensure_ascii=False)}],
+           "model": model or os.environ.get("NEWS_MODEL") or MODEL}
+    req = urllib.request.Request(PROXY, data=json.dumps(msg).encode(), headers={"Content-Type": "application/json", "User-Agent": "PowerKlock-newsletter"})
+    r = json.load(urllib.request.urlopen(req, timeout=150))
+    txt = "".join(b.get("text") for b in r.get("content", []) if b.get("type") == "text" and isinstance(b.get("text"), str))
+    m = re.search(r"\{.*\}", txt, re.S)
+    out = json.loads(m.group(0)) if m else {}
+    return {str(x.get("id")): x for x in out.get("items") or [] if isinstance(x, dict) and x.get("what") and not EMPTY.search(x.get("what"))}
 
 
 def clip(s, n):
@@ -387,6 +463,7 @@ def main():
         edition["on_this_day"] = {"today": news_charts.day_avg(today), "past": past} if past else None
         edition["week_chart"] = None   # no chart any more (the owner's choice, 23 Nov. 2026)
     charts = {}
+    ctx_cache = {}
     pin_link = pinned(now)
     pin = next((i for i in items if i.get("link") == pin_link), None) if pin_link else None
     edition["pinned"] = pin_link if pin else None
@@ -419,6 +496,20 @@ def main():
                         "free": [{"source": o["source"], "link": o["link"]} for o in i.get("free") or []] or None,   # paid outlet: the story at free ones
                         "what": clip(what, 360) or None, "what_en": (clip(g.get("what_en"), 360) or None) if what and what == g.get("what") else None,
                         "for_you": (clip(g.get("for_you"), 260) or None) if not EMPTY.search(g.get("for_you") or "") else None, "for_you_en": clip(g.get("for_you_en"), 260) or None})
+        # a story without a text gets a context written by the model (the owner's wish: always a text under a title),
+        # marked « ctx » so the site and the mail can say so; one call per edition, shared by the profiles
+        missing = [i for i in stories if not next((o for o in out if o["id"] == sid(i)), {}).get("what") and sid(i) not in ctx_cache]
+        if use_ai and missing:
+            for attempt in (1, 2):
+                try:
+                    ctx_cache.update(ask_context(missing, None if attempt == 1 else "@cf/meta/llama-3.3-70b-instruct-fp8-fast"))
+                    break
+                except Exception as e:
+                    print(f"{pid}: context not written, attempt {attempt} ({str(e)[:160]})")
+        for o in out:
+            c = ctx_cache.get(o["id"])
+            if not o.get("what") and c and not similar(c["what"], o["title"]):
+                o["what"], o["what_en"], o["ctx"] = clip(c["what"], 360), clip(c.get("what_en"), 360) or None, True
         # no chart any more (the owner's choice, 23 Nov. 2026): the lead story is text only
         hero = None
         if False:
