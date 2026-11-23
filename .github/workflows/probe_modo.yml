@@ -1,0 +1,21 @@
+name: Probe Modo Energy (temporary)
+# Temporary: checks which public lists of Modo Energy articles exist (feed, sitemap, robots.txt). Removed after reading.
+on:
+  push:
+    branches: [claude/brave-dijkstra-0b04zg]
+    paths: ['.github/workflows/probe_modo.yml']
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - run: |
+          UA="Mozilla/5.0 (PowerKlock news fetcher; +https://github.com/TomSRemy/PowerKlock)"
+          for u in https://modoenergy.com/robots.txt https://modoenergy.com/research https://modoenergy.com/rss.xml https://modoenergy.com/research/rss.xml https://modoenergy.com/feed https://modoenergy.com/research/feed https://modoenergy.com/sitemap.xml https://modoenergy.com/research/en/sitemap.xml; do
+            echo "=== $u"; curl -sL -m 20 -A "$UA" -o /tmp/p -w '%{http_code} %{content_type} %{size_download}\n' "$u" || true
+            head -c 1500 /tmp/p | tr -s '\n' | head -40; echo
+            grep -oiE '<link[^>]+(rss|atom)[^>]*>' /tmp/p | head -5 || true
+            grep -oE 'https://modoenergy\.com/[^"<> ]*sitemap[^"<> ]*' /tmp/p | sort -u | head -20 || true
+            grep -oE 'https://modoenergy\.com/research/[^"<> ]*' /tmp/p | grep -iE 'france|french|/fr' | sort -u | head -15 || true
+            grep -oE 'href="/research/[^"]*"' /tmp/p | sort -u | head -40 || true
+          done
