@@ -105,10 +105,11 @@
   async function start() {
     button();
     document.documentElement.lang = lang === 'fr' ? 'fr' : 'en';   // the page is declared French (the default); English when chosen
-    if (lang !== 'fr') return;
-    const get = u => fetch(u).then(r => r.ok ? r.json() : null).catch(() => null);
+    const show = () => document.documentElement.classList.remove('pk-tr');   // the page was hidden until now (index.html head)
+    if (lang !== 'fr') { show(); return; }
+    const get = u => fetch(u, { mode: 'cors', credentials: 'same-origin' }).then(r => r.ok ? r.json() : null).catch(() => null);
     [D, T] = await Promise.all([get('assets/i18n_fr.json'), get('assets/i18n_fr_tpl.json')]);
-    if (!D) return;
+    if (!D) { show(); return; }
     EN = new Map();
     for (const src of [D, T || {}]) for (const [en, fr] of Object.entries(src)) if (!/\{[nmd]\}/.test(en)) EN.set(fr, en);
     if (window.Chart) {
@@ -116,6 +117,7 @@
       if (Chart.register) { try { Chart.register(plugin); } catch (_) {} }
     }
     walk(document.body);
+    show();
     obs.observe(document.body, { childList: true, subtree: true, characterData: true });
     window.PKI18n = { tr, lang, num: fmtText, walk };   // walk(el): translate a block at once, before it is painted
   }

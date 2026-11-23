@@ -19,7 +19,15 @@
     if (!/access_token=|error_description=|[?&]code=/.test(location.hash + pkQ) && !/^#today(\?|$)/.test(location.hash)) history.replaceState(null, '', location.pathname + pkQ + '#today?v=2');
   }
   if (!pkPublic && (pkBare && pkTh ? pkTh === 'light' : localStorage.getItem('pk-theme') === 'light')) document.documentElement.setAttribute('data-theme', 'light');
+  // French (the default): the page stays hidden until js/i18n.js has translated it once, so English never shows; the two
+  // dictionaries are asked for now, beside the rest of the page, instead of after it (js/i18n.js reads them from the cache)
+  if (localStorage.getItem('pk-lang') !== 'en') {
+    document.documentElement.classList.add('pk-tr');
+    ['assets/i18n_fr.json', 'assets/i18n_fr_tpl.json'].forEach(function (u) { var l = document.createElement('link'); l.rel = 'preload'; l.as = 'fetch'; l.href = u; l.crossOrigin = 'anonymous'; document.head.appendChild(l); });
+    setTimeout(function () { document.documentElement.classList.remove('pk-tr'); }, 2500);   // never longer than that, whatever happens
+  }
 } catch (_) {}</script>
+<style>html.pk-tr body { visibility: hidden; } html.pk-tr { background: #0a0d12; } html.pk-tr[data-theme="light"] { background: #F3F6F9; }</style>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#0a0d12">
@@ -430,6 +438,11 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
             <div class="pr-home-kpi-label">EU spread</div>
             <div class="pr-home-kpi-value" id="pr-home-kpi-spread-v">--<span class="pr-home-kpi-unit"> €/MWh</span></div>
             <div class="pr-home-kpi-meta" id="pr-home-kpi-spread-meta">--</div>
+          </div>
+          <div class="pr-home-kpi pk-beta-only">
+            <div class="pr-home-kpi-label">DE · today</div>
+            <div class="pr-home-kpi-value" id="pr-home-kpi-de-v">--<span class="pr-home-kpi-unit"> €/MWh</span></div>
+            <div class="pr-home-kpi-meta" id="pr-home-kpi-de-meta">--</div>
           </div>
         </div>
         <div id="pr-home-market-read" style="margin-top:14px"></div>

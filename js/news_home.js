@@ -245,6 +245,15 @@ document.addEventListener('click', e => {
     setTimeout(() => { b.textContent = old; }, 2600);
   }
 }, false);
+// « +n » beside the pills (inside a link) unfolds the other subjects, each then clickable
+const _nfMore = e => {
+  const b = e.target.closest && e.target.closest('.nf-pmore'); if (!b || (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ')) return;
+  e.preventDefault(); e.stopPropagation();
+  const box = b.closest('.nf-pills'); box.classList.add('open'); b.setAttribute('aria-expanded', 'true');
+  const first = box.querySelector('.nf-extra'); if (first) first.focus();
+};
+document.addEventListener('click', _nfMore, true);
+document.addEventListener('keydown', _nfMore, true);
 // a subject pill (inside a link) filters the feed on its subject
 const _nfPill = e => {
   const b = e.target.closest && e.target.closest('[data-ftag]'); if (!b || (e.type === 'keydown' && e.key !== 'Enter')) return;

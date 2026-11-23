@@ -72,15 +72,17 @@
     if (sub && r) sub.textContent = r.pageSub;
   }
 
-  async function heatmapInto(host, zone, end) {
+  // open: a click on a cell opens that delivery day in Day-ahead with the zone unfolded (not in shared dashboards)
+  async function heatmapInto(host, zone, end, open) {
     end = end || window._currentPriceDate || pkTodayISO();
     const days = Array.from({ length: 14 }, (_, i) => _renAdd(end, i - 13));
     const files = await Promise.all(days.map(d => fetch(DATA_BASE + 'history/daily/' + d + '.json').then(r => r.ok ? r.json() : null).catch(() => null)));
     const rows = days.map((d, k) => {
       const z = files[k] && files[k].zones && files[k].zones[zone];
-      if (!z || !z.hourly) return { d, h: null };
+      if (!z || !z.hourly) return { d, h: null, avg: null };
       const h = z.hourly, per = h.length / 24;
-      return { d, h: Array.from({ length: 24 }, (_, i) => { const v = h.slice(i * per, (i + 1) * per).filter(x => x != null); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; }) };
+      // the row's average is the published daily average (a 25-hour day keeps 96 quarter-hours: never the mean of the cells)
+      return { d, avg: z.avg, h: Array.from({ length: 24 }, (_, i) => { const v = h.slice(i * per, (i + 1) * per).filter(x => x != null); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null; }) };
     });
     const all = rows.flatMap(r => r.h || []).filter(v => v != null).sort((a, b) => a - b);
     if (!all.length) { host.innerHTML = '<div class="fuel-note">No ' + zone + ' history.</div>'; return; }
@@ -101,8 +103,8 @@
       const dt = new Date(r.d + 'T12:00:00Z'), wk = [0, 6].includes(dt.getUTCDay());
       html += `<div style="color:${wk ? 'var(--text2)' : 'var(--tx3)'};white-space:nowrap">${dt.toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short', timeZone: 'UTC' })}</div>`;
       if (!r.h) { html += `<div style="grid-column:span 24;color:var(--tx3);font-style:italic;padding-left:6px">no data</div><div></div>`; return; }
-      r.h.forEach((v, i) => { html += `<div title="${r.d} ${String(i).padStart(2, '0')}:00 · ${v == null ? '–' : v.toFixed(2) + ' €/MWh'}" style="height:16px;border-radius:2px;background:${color(v)}"></div>`; });
-      const avg = r.h.filter(v => v != null).reduce((a, b, _, arr) => a + b / arr.length, 0);
+      r.h.forEach((v, i) => { html += `<div data-d="${r.d}" title="${r.d} ${String(i).padStart(2, '0')}:00 · ${v == null ? '–' : v.toFixed(2) + ' €/MWh'}" style="height:16px;border-radius:2px;background:${color(v)}${open ? ';cursor:pointer' : ''}"></div>`; });
+      const avg = r.avg != null ? r.avg : r.h.filter(v => v != null).reduce((a, b, _, arr) => a + b / arr.length, 0);
       html += `<div style="text-align:right;color:var(--text)">${avg.toFixed(1)}</div>`;
     });
     html += '</div>';
@@ -111,6 +113,27 @@
       <span style="display:inline-block;width:160px;height:10px;border-radius:2px;background:linear-gradient(90deg,rgba(20,211,169,.85),rgba(251,191,36,.85),rgba(237,105,101,.85))"></span>
       <span>${lo.toFixed(0)} → ${hi.toFixed(0)} €/MWh (P5–P95 of the window)</span><span>· hourly averages of 15-min prices, CET/CEST</span></div>`;
     host.innerHTML = html;
+    if (open && !host.dataset.pkOpen) {
+      host.dataset.pkOpen = '1';
+      host.title = (window.PKI18n && PKI18n.lang === 'en') ? 'Click a cell to open that day in Day-ahead' : 'Cliquer une case pour ouvrir ce jour dans Day-ahead';
+      host.addEventListener('click', e => {
+        const c = e.target.closest('[data-d]'); if (!c || !window.PKNav) return;
+        const day = c.dataset.d;
+        PKNav.go('markets/spot');
+        if (typeof dpSelect === 'function') dpSelect(day);
+        // unfold the zone's row once that day's table is drawn
+        let n = 40;
+        const unfold = () => {
+          const rows = window._pricesSorted || [], i = rows.findIndex(z => z.code === zone);
+          const tr = i >= 0 && document.querySelector('#prices-tbody tr.zone-row[data-row-idx="' + i + '"]');
+          if (window._currentPriceDate === day && tr && typeof togglePriceRow === 'function') {
+            if (!tr.classList.contains('is-open')) togglePriceRow(i);
+            tr.scrollIntoView({ block: 'center', behavior: 'smooth' });
+          } else if (n-- > 0) setTimeout(unfold, 250);
+        };
+        setTimeout(unfold, 300);
+      });
+    }
   }
 
   if (window.PKW) PKW.register({
@@ -122,7 +145,7 @@
   });
   async function renderHeatmap() {
     const host = document.getElementById('pr-home-heatmap');
-    if (host) await heatmapInto(host, 'FR');
+    if (host) await heatmapInto(host, 'FR', null, true);
   }
 
   window.prRenderHomeExtra = function (data) {
