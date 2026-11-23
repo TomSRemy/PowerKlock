@@ -479,7 +479,51 @@ def eex_news(now):
     return items
 
 
-PUBLISHERS = {"rte": ("RTE", "rte", rte_news, ["fr", "power", "markets"]), "eex": ("EEX", "eex", eex_news, ["markets"])}
+MODO_SITEMAP = "https://modoenergy.com/research/sitemap.xml"
+MODO_CACHE = Path("data/news_modo.json")
+# Modo Energy's research articles about France and the rest of Europe (their slug names the market); US, Australian and
+# other markets are left out. robots.txt allows every reader; their terms forbid copying or framing the content, so only
+# the title (from the page's <title>) and the link are kept, as for every outlet.
+MODO_EUROPE = re.compile(r"france|french|europe|european|germany|german|spain|spanish|iberia|italy|italian|belgium|belgian|netherlands|dutch|"
+                         r"nordic|poland|polish|austria|switzerland|swiss|\bgb\b|great-britain|britain|entso|\beu\b", re.I)
+
+
+def modo_news(now, days=21, max_pages=12):
+    """Modo Energy research: the research sitemap (every article with its last change), the French version of each recent
+    European article; the page is read once for its title and publication date (cached in data/news_modo.json)."""
+    try:
+        cache = json.loads(MODO_CACHE.read_text())
+    except (OSError, ValueError):
+        cache = {}
+    r = requests.get(MODO_SITEMAP, headers=UA, timeout=40)
+    r.raise_for_status()
+    since = (now - timedelta(days=days)).isoformat()
+    recent = []
+    for loc, mod in re.findall(r"<loc>(https://modoenergy\.com/research/fr/[^<]+)</loc>\s*<lastmod>([^<]+)</lastmod>", r.text):
+        slug = loc.rsplit("/", 1)[-1]
+        if mod >= since and MODO_EUROPE.search(slug.replace("-", " ")):
+            recent.append((mod, loc))
+    items, fetched = [], 0
+    for mod, loc in sorted(recent, reverse=True):
+        c = cache.get(loc)
+        if not c and fetched < max_pages:
+            fetched += 1
+            time.sleep(1)
+            try:
+                page = requests.get(loc, headers=UA, timeout=30).text
+                title = html.unescape((re.search(r"<title>([^<]+)</title>", page) or [None, ""])[1]).split(" - Research | Modo")[0].strip()
+                pub = (re.search(r'article:published_time" content="([^"]+)"', page) or [None, mod])[1]
+                c = cache[loc] = {"title": title, "date": pub}
+            except requests.RequestException:
+                continue
+        if c and c.get("title"):
+            items.append({"title": clean(c["title"], 220), "link": loc, "date": parse_date(c["date"]), "snippet": ""})
+    MODO_CACHE.write_text(json.dumps({k: v for k, v in cache.items() if any(k == x[1] for x in recent)}, ensure_ascii=False, separators=(",", ":")))
+    return items
+
+
+PUBLISHERS = {"rte": ("RTE", "rte", rte_news, ["fr", "power", "markets"]), "eex": ("EEX", "eex", eex_news, ["markets"]),
+              "modo": ("Modo Energy", "modo", modo_news, ["power", "markets"])}
 
 
 OFFICIAL = {"jorf": ("Journal officiel", jorf, ["fr", "regulation", "official"]), "eurlex": ("EUR-Lex", eurlex, ["regulation", "official"])}
