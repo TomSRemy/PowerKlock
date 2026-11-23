@@ -1,9 +1,9 @@
 {
- "lastUpdate": "2026-11-23T06:00:54.997901+00:00",
+ "lastUpdate": "2026-11-23T19:11:06.311289+00:00",
  "spot": {
-  "value": 239.56,
+  "value": 245.27,
   "unit": "EUR/MWh",
-  "date": "2026-11-22"
+  "date": "2026-11-23"
  },
  "forwardCurve": [
   {
@@ -132,8 +132,8 @@
  },
  "generationMixDate": null,
  "marketInsightsTone": {
-  "gas": 3,
-  "power": 10,
+  "gas": 6,
+  "power": 7,
   "date": "2026-11-23"
  },
  "countries": {
@@ -141,9 +141,9 @@
    "label": "France",
    "currency": "EUR",
    "spot": {
-    "value": 239.56,
+    "value": 245.27,
     "unit": "EUR/MWh",
-    "date": "2026-11-22"
+    "date": "2026-11-23"
    },
    "forwardCurve": [
     {
@@ -276,9 +276,9 @@
    "label": "United Kingdom",
    "currency": "GBP",
    "spot": {
-    "value": 209,
+    "value": 195.11,
     "unit": "GBP/MWh",
-    "date": "2026-11-22"
+    "date": "2026-11-23"
    },
    "forwardCurve": [
     {
@@ -396,23 +396,23 @@
    "nuclearCapacity": null,
    "nuclearCapacityDate": null,
    "generationMix": {
-    "gas": null,
-    "wind": null,
-    "solar": null,
-    "nuclear": null,
-    "hydro": null,
-    "biomass": null,
-    "other": null
+    "gas": 8.28,
+    "wind": 10.73,
+    "solar": 1.52,
+    "nuclear": 5.13,
+    "hydro": 0.27,
+    "biomass": 2.24,
+    "other": 0.98
    },
-   "generationMixDate": null
+   "generationMixDate": "2026-11-22"
   },
   "DE": {
    "label": "Germany",
    "currency": "EUR",
    "spot": {
-    "value": 240.42,
+    "value": 254.15,
     "unit": "EUR/MWh",
-    "date": "2026-11-22"
+    "date": "2026-11-23"
    },
    "forwardCurve": [
     {
@@ -544,9 +544,9 @@
    "label": "Netherlands",
    "currency": "EUR",
    "spot": {
-    "value": 240.24,
+    "value": 249.45,
     "unit": "EUR/MWh",
-    "date": "2026-11-22"
+    "date": "2026-11-23"
    },
    "forwardCurve": [
     {

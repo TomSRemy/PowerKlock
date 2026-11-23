@@ -1,8 +1,22 @@
 {
  "date": "2026-11-23",
  "marketInsightsTone": {
-  "gas": 3,
-  "power": 10,
+  "gas": 6,
+  "power": 7,
   "date": "2026-11-23"
+ },
+ "countries": {
+  "FR": {
+   "spot": 245.27
+  },
+  "UK": {
+   "spot": 195.11
+  },
+  "DE": {
+   "spot": 254.15
+  },
+  "NL": {
+   "spot": 249.45
+  }
  }
 }
