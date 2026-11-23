@@ -911,7 +911,6 @@
     {
       "q": "site:renewablesnow.com France OR French",
       "tags": [
-        "fr",
         "renewables"
       ],
       "lang": "en"

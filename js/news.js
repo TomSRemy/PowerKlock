@@ -35,20 +35,21 @@ async function loadNews() {
   renderNewsSources();
   renderNewsAdd();
   _newsWireViews();
-  renderNewsUne();
-  renderNewsConsMini();
+  if (typeof renderNewsHome === 'function') renderNewsHome();
   renderNewsOfficial();
   renderNewsCover();
 }
 
 // ── Two views (The feed / Official texts) and, in the feed, two displays (by story / all articles) and two orders ──
-let _newsMode = 'topics', _newsSort = 'important', _newsOffSrc = '';
+let _newsMode = 'list', _newsSort = 'recent', _newsOffSrc = '';
 const _newsStore = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (_) {} return null; };
 function newsSetView(v) {
-  v = ['official', 'letter'].includes(v) ? v : 'feed';
+  v = ['feed', 'official', 'letter'].includes(v) ? v : 'home';
   document.querySelectorAll('#news-tabs .tab-btn').forEach(b => b.classList.toggle('active', b.dataset.nv === v));
   const f = document.getElementById('news-v-feed'), o = document.getElementById('news-v-official');
   if (f) f.hidden = v !== 'feed'; if (o) o.hidden = v !== 'official';
+  const h = document.getElementById('news-v-home'); if (h) h.hidden = v !== 'home';
+  if (v === 'home' && typeof renderNewsHome === 'function') renderNewsHome();
   const l = document.getElementById('news-v-letter'); if (l) l.hidden = v !== 'letter';
   if (v === 'letter') renderNewsLetter();
   _newsStore('pk-news-view', v);
@@ -59,9 +60,9 @@ function _newsWireViews() {
   if (tabs && !tabs.dataset.wired) {
     tabs.dataset.wired = '1';
     tabs.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => newsSetView(b.dataset.nv)));
-    newsSetView(_newsStore('pk-news-view') || 'feed');
-    _newsMode = _newsStore('pk-news-mode') === 'list' ? 'list' : 'topics';
-    _newsSort = _newsStore('pk-news-sort') === 'recent' ? 'recent' : 'important';
+    newsSetView(_newsStore('pk-news-view') || 'home');
+    _newsMode = _newsStore('pk-news-mode') === 'topics' ? 'topics' : 'list';
+    _newsSort = _newsStore('pk-news-sort') === 'important' ? 'important' : 'recent';
     const sync = () => {
       document.querySelectorAll('[data-nm]').forEach(b => b.classList.toggle('active', b.dataset.nm === _newsMode));
       document.querySelectorAll('[data-ns]').forEach(b => b.classList.toggle('active', b.dataset.ns === _newsSort));
@@ -71,7 +72,7 @@ function _newsWireViews() {
     sync();
     const sb = document.getElementById('news-src-btn');
     if (sb) sb.addEventListener('click', () => { const sec = document.getElementById('hs-news-src'); if (sec) { sec.classList.remove('collapsed'); const h = sec.querySelector('.hist-section-header'), bd = document.getElementById('hs-body-news-src'); if (h) h.classList.add('open'); if (bd) bd.classList.add('open'); sec.scrollIntoView({ behavior: 'smooth', block: 'start' }); } });
-    if (_newsMode !== 'topics' || _newsSort !== 'important') renderNews(newsData);
+    if (_newsMode !== 'list' || _newsSort !== 'recent') renderNews(newsData);
   }
 }
 
@@ -345,7 +346,7 @@ function _newsApplyConfig() {
           b.classList.add('active');
           renderNews(newsData);
         });
-        host.insertBefore(b, adv);
+        host.appendChild(b);
       });
     }
   }
@@ -665,14 +666,19 @@ function renderNews(items) {
   const frOnly = _newsFr();
   _newsFillSelects(items || []);
   const src = (document.getElementById('news-src') || {}).value || '', cty = (document.getElementById('news-cty') || {}).value || '';
+  const per = +((document.getElementById('news-per') || {}).value || 0), since = per ? Date.now() - per * 864e5 : 0;
+  const offOnly = !!(document.getElementById('news-offonly') || {}).checked, freeOnly = !!(document.getElementById('news-freeonly') || {}).checked;
   let filtered = (items || []).filter(i => (!frOnly || _newsIsFr(i)) &&
     (newsFilter === 'all' || newsFilter === 'movers' || (newsFilter === 'mine' ? _newsMine(i, kw) :
-      newsFilter === 'section' ? (i.tags || []).some(t => (_newsSectionTags || []).includes(t)) : (i.tags || []).includes(newsFilter))) &&
+      newsFilter === 'section' ? _newsSubj(i).some(t => (_newsSectionTags || []).includes(t)) || (i.tags || []).some(t => (_newsSectionTags || []).includes(t) && !_NEWS_TOPICS.includes(t)) :
+      _NEWS_TOPICS.includes(newsFilter) ? _newsSubj(i).includes(newsFilter) : (i.tags || []).includes(newsFilter))) &&
+    (!since || i.date >= since) && (!offOnly || (i.tags || []).includes('official')) && (!freeOnly || !_NEWS_PAID.test(i.source)) &&
     (!src || i.source === src) && (!cty || (i.countries || []).includes(cty) || (cty === 'FR' && _newsIsFr(i))) &&   // France: same rule as the France focus
     (!q || (i.title + ' ' + i.snippet + ' ' + i.source).toLowerCase().includes(q)));
   // market movers: what moves prices or the renewable business, last 72 h, highest impact first (readers' votes count)
   if (newsFilter === 'movers') filtered = filtered.filter(i => (i.impact || 0) >= 3 && Date.now() - i.date < 72 * 3600e3).sort((a, b) => (b.impact || 0) - (a.impact || 0));
   else if (_newsSort === 'recent') filtered = filtered.slice().sort((a, b) => b.date - a.date);
+  if (typeof _nfTokens === 'function') _nfTokens(filtered.length);
   const cnt = document.getElementById('news-count');
   if (cnt) cnt.textContent = items && items.length ? filtered.length + ' ' + (_newsMode === 'list' ? _newsT('articles', 'articles') : _newsT('sujets', 'stories')) : '';
   const grid = document.getElementById('news-grid');
@@ -691,8 +697,8 @@ function renderNews(items) {
       const t = new Date(item.date), recent = Date.now() - t < 864e5;
       return `<a class="news-row${mine ? ' mine' : ''}" href="${_newsEsc(link)}" target="_blank" rel="noopener noreferrer"><span class="news-row-d">${recent ? t.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' }) : _newsDay(t)}</span>
         <span class="news-row-b"><span class="news-row-t">${mine ? '<span class="news-star">★</span>' : ''}${(item.tags || []).includes('official') ? `<span class="news-off">${_newsT('Texte officiel', 'Official text')}</span>` : ''}${_newsEsc(item.title)}</span>
-        <small>${_newsEsc(item.source)}${more ? ` +${more}` : ''} · ${(item.tags || []).filter(x => !['official', 'fr', 'watch'].includes(x)).slice(0, 2).map(x => _newsEsc(_newsTagL(x))).join(' · ')}</small>${_newsFree(item, 'news-free-row')}</span>
-        <span class="news-row-f">${_newsPinBtn(item)}<span class="news-vote" data-link="${_newsEsc(item.link)}">${_newsVoteBtns(item.link)}</span></span></a>`;
+        <small>${_newsEsc(item.source)}${more ? ` +${more}` : ''}</small>${_newsFree(item, 'news-free-row')}</span>
+        <span class="news-row-f">${_newsPills(item)}${_newsPinBtn(item)}<span class="news-vote" data-link="${_newsEsc(item.link)}">${_newsVoteBtns(item.link)}</span></span></a>`;
     }).join('');
     return;
   }
@@ -713,6 +719,17 @@ function renderNews(items) {
       <div class="news-card-f"><div class="news-vote" data-link="${_newsEsc(item.link)}">${_newsVoteBtns(item.link)}</div>${_newsPinBtn(item)}</div>
     </a>`;
   }).join('');
+}
+
+// the article's own subjects (scripts/fetch_news.py « topics », from its words); older files: its tags
+const _NEWS_TOPICS = ['regulation', 'renewables', 'markets', 'gas', 'deal', 'build', 'geopolitics', 'carbon', 'power'];
+const _NEWS_PAID = /greenunivers|montel|wind ?power ?monthly|les echos|contexte|recharge/i;
+const _newsSubj = i => i.topics || (i.tags || []).filter(t => _NEWS_TOPICS.includes(t)).sort((a, b) => _NEWS_TOPICS.indexOf(a) - _NEWS_TOPICS.indexOf(b));
+// up to two subject pills, then « +n »; a pill filters the feed on its subject
+function _newsPills(item) {
+  const t = _newsSubj(item); if (!t.length) return '';
+  const lab = k => { const x = _NL_TH.find(y => y[0] === k); return x ? _newsT(x[1], x[2]) : _newsTagL(k); };
+  return `<span class="nf-pills">${t.slice(0, 2).map(k => `<span class="nl-pill nl-p-${k} nf-pill" role="button" tabindex="0" data-ftag="${k}" title="${_newsT('Voir tous les articles de ce sujet', 'See every article on this subject')}">${_newsEsc(lab(k))}</span>`).join('')}${t.length > 2 ? `<span class="nf-pmore" title="${_newsEsc(t.slice(2).map(lab).join(' · '))}">+${t.length - 2}</span>` : ''}</span>`;
 }
 
 // selects of the sources and countries present in the feed
