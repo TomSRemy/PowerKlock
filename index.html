@@ -2,6 +2,10 @@
 <html lang="fr">
 <head>
 <script>try {
+  // one address: www, the GitHub Pages copy and the Worker's own address open powerklock.com instead (a sign-in is kept
+  // per address, so several addresses meant signing in again). Pull-request previews (<id>-powerklock.….workers.dev) stay.
+  if (/^(www\.powerklock\.com|tomsremy\.github\.io|powerklock\.[^.]+\.workers\.dev)$/i.test(location.hostname))
+    location.replace('https://powerklock.com' + location.pathname.replace(/^\/PowerKlock(?=\/|$)/i, '') + location.search + location.hash);
   // a bare shared widget (index.html?bare#solo=…, for an iframe on another site): transparent, its theme chosen by &theme=light|dark
   var pkQ = location.search, pkBare = /^#solo=/.test(location.hash) && /[?&]bare(=|&|$)/.test(pkQ), pkTh = (pkQ.match(/[?&]theme=(light|dark)/) || [])[1];
   if (pkBare) document.documentElement.classList.add('pk-bare');
