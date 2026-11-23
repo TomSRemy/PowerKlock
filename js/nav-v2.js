@@ -16,6 +16,14 @@
   'use strict';
   const nav = document.getElementById('sidebar');
   if (!nav) return;
+  // beta (js/beta.js, off by default): its style sheet loads here, before anything paints, and its site map has an address
+  let beta = false; try { beta = localStorage.getItem('pk-beta') === '1'; } catch (_) {}
+  const betaQ = /[?&]beta=([01])/.exec(location.search); if (betaQ) beta = betaQ[1] === '1';
+  // not on the public page, nor on a shared dashboard (#solo=): those keep their own bare layout
+  const de = document.documentElement;
+  if (beta && (de.classList.contains('pk-public') || de.classList.contains('pk-bare') || document.body.classList.contains('pk-solo'))) beta = false;
+  window.pkBetaShell = beta;
+  if (beta) { de.classList.add('pk-beta'); const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = 'css/beta.css'; l.id = 'pk-beta-css'; document.head.appendChild(l); }
 
   // icons of the old menu, reused by page id
   const icon = {};
@@ -90,6 +98,8 @@
     'about': { page: 'about' },
     'games': { page: 'games' },
   };
+  if (beta) R.sitemap = { page: 'sitemap' };   // the page is added by js/beta-shell.js
+  if (beta) R.infographics = { page: 'infographics' };   // the page is added by js/beta-shell.js
 
   // the menu: [section, [[route, label, icon, group bar?]]]
   const MENU = [
