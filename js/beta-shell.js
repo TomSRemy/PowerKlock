@@ -182,12 +182,16 @@
     'system/weather': 'wxcities', 'system/weather/hdd': 'wxhdd', 'system/carbon': 'carbonintensity', 'system/replay': 'replay', 'tools/ppa': 'ppapricer', 'tools/boa': 'boa',
     'tools/forecast': 'fcst', 'tools/carbon': 'carbonfoot', 'tools/compare': 'compare', 'tools/converter': 'converter', 'intel/news': 'news', 'intel/regulation': 'regulation',
     'system/bilan': 'bilan', 'intel/analysis': 'analysis', 'status': 'status', 'api': 'api', 'methodology': 'methodology', 'about': 'about' };
-  const TPL = { dash: ['Tableau de bord', 'Dashboard'], ana: ['Analyse', 'Analysis'], tool: ['Outil / référence', 'Tool / reference'] };
+  // five page types (owner, 23 Nov. 2026; docs/ETAT_DES_LIEUX_STRUCTURES.md § 3): S1 dashboard, S2 analysis, S3 list,
+  // S4 tool, S5 reference
+  const TPL = { dash: ['S1 · Tableau de bord', 'S1 · Dashboard'], ana: ['S2 · Analyse', 'S2 · Analysis'], list: ['S3 · Liste', 'S3 · List'], tool: ['S4 · Outil', 'S4 · Tool'], ref: ['S5 · Référence', 'S5 · Reference'] };
+  const TPL_OF = { 'system/generation/outages': 'list', 'intel/news': 'list', 'intel/regulation': 'list', 'status': 'list', 'methodology': 'ref', 'api': 'ref', 'about': 'ref' };
 
   const L = o => T(o.fr, o.en), LL = s => T(s.lfr || s.fr, s.len || s.en), D = o => T(o.dfr, o.den);
   const byRoute = {}, secOf = {}, groupOf = {};
   IA.forEach(s => s.items.filter(it => !it.ext).forEach(it => (it.group ? it.pages : [it]).forEach(p => { byRoute[p.r] = p; secOf[p.r] = s; if (it.group) groupOf[p.r] = it; })));
   HIDDEN.forEach(p => { byRoute[p.r] = p; secOf[p.r] = IA[IA.length - 1]; });
+  Object.keys(TPL_OF).forEach(r => { if (byRoute[r]) byRoute[r].tpl = TPL_OF[r]; });
   const pagesOf = s => s.items.filter(it => !it.ext).reduce((a, it) => a.concat(it.group ? it.pages : [it]), []);
   const link = (p, cls, label) => '<a class="' + cls + '" href="#' + p.r + '" data-route="' + p.r + '">' + esc(label || L(p)) + '</a>';
 
@@ -277,8 +281,8 @@
   sm.className = 'page'; sm.id = 'page-sitemap';
   sm.innerHTML = '<div class="pr-tabs-sticky"><div class="pr-tabs-bar"></div></div>' +
     '<div class="pkb-sm-top"><div class="pkb-head-main"><h1 class="pkb-head-t">' + T('Plan du site', 'Site map') + '</h1><p class="pkb-head-d">' +
-    T('Toutes les pages de PowerKlock, rangées par métier. Chaque page suit l’un des trois gabarits : tableau de bord, analyse, outil ou référence.',
-      'Every page of PowerKlock, arranged by job. Each page follows one of three templates: dashboard, analysis, tool or reference.') + '</p></div>' +
+    T('Toutes les pages de PowerKlock, rangées par métier. Chaque page suit l’une des cinq structures : tableau de bord, analyse, liste, outil, référence.',
+      'Every page of PowerKlock, arranged by job. Each page follows one of five structures: dashboard, analysis, list, tool, reference.') + '</p></div>' +
     '<input type="search" class="pkb-sm-filter" id="pkb-sm-filter" autocomplete="off" placeholder="' + T('Filtrer les pages…', 'Filter the pages…') + '" aria-label="' + T('Filtrer les pages', 'Filter the pages') + '"></div>' +
     '<div class="pkb-sm-grid" id="pkb-sm-grid"></div>';
   main.appendChild(sm);
