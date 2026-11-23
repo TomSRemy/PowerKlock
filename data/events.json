@@ -1247,6 +1247,35 @@
    ]
   },
   {
+   "id": "cr-echelonnement",
+   "date": "2026-05-01",
+   "scope": "FR",
+   "theme": "enr",
+   "tags": [
+    "neg",
+    "balancing",
+    "enr"
+   ],
+   "title": [
+    "Prix négatifs : arrêts des parcs en complément de rémunération échelonnés (arrêté « échelonnement »)",
+    "Negative prices: staggered curtailment of feed-in-premium plants (“staggering” order)"
+   ],
+   "text": [
+    "Arrêté du 16 avril 2026 (JO du 19 avril), en vigueur le 1er mai : le complément de rémunération et la prime pour prix négatifs passent au quart d’heure ; un quart d’heure négatif ou positif isolé donne droit à la prime sans condition d’arrêt ; en entrée et en sortie de période de prix négatifs, les arrêts et les reprises sont recentrés sur le changement de pas de temps et répartis en deux groupes, comme pour l’obligation d’achat. Objectif : limiter les déséquilibres de plusieurs GW relevés par RTE quand tous les parcs s’arrêtent en même temps.",
+    "Order of 16 April 2026 (Official Journal of 19 April), in force on 1 May: the feed-in premium and the negative-price premium move to quarter-hours; an isolated negative or positive quarter-hour earns the premium with no curtailment condition; at the start and end of negative-price periods, stops and restarts are centred on the change of time step and split into two groups, as for feed-in tariffs. Aim: limit the multi-GW imbalances RTE saw when all plants stop at once."
+   ],
+   "source": [
+    "Légifrance (JORF n° 0093) ; avis CRE n° 2026-78",
+    "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000053911181"
+   ],
+   "kind": "reg",
+   "importance": 2,
+   "short": [
+    "Arrêts CR échelonnés",
+    "Staggered FiP curtailment"
+   ]
+  },
+  {
    "id": "capa-auction",
    "date": "2026-07-06",
    "scope": "FR",
