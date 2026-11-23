@@ -9,5 +9,8 @@
   "assets": {
     "directory": ".",
     "not_found_handling": "404-page"
-  }
+  },
+  // Cloudflare builds every other branch than `site` with `wrangler preview` (a preview link on each pull request);
+  // that command needs this block, even empty. The live site stays on the `site` branch.
+  "previews": {}
 }
