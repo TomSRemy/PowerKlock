@@ -119,7 +119,9 @@
   (function today() {
     const mrn2 = $('mrn2'), kpis = $('mrn-kpis'), drivers = $('mrn-q-drivers'), learn = $('mrn-learn'), last = $('hs-morning-idx');
     if (!mrn2 || !learn || !last) return;
-    if (drivers && kpis) kpis.after(drivers);
+    // same order as Quick look: tiles, the three spot days, then the four driver cards
+    const days = mrn2.querySelector('.mrn-3d');
+    if (drivers && (days || kpis)) (days || kpis).after(drivers);
     // Quick look's « what moved » list goes along; its tiles and negative-price banner repeat Expert's and stay hidden
     const moved = $('mrn-q-moved'), movedSec = moved && moved.closest('section');
     if (movedSec && drivers) drivers.after(movedSec);
