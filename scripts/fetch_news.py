@@ -23,7 +23,7 @@ import requests
 
 OUT = Path("data/news.json")
 PER_SOURCE = 15
-MAX_ITEMS = 300
+MAX_ITEMS = 450   # about 50 outlets and 60 press searches: 300 pushed out articles only a few days old
 UA = {"User-Agent": "Mozilla/5.0 (PowerKlock news fetcher; +https://github.com/TomSRemy/PowerKlock)"}
 
 CONFIG = Path("config/news_sources.json")
