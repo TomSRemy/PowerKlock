@@ -85,8 +85,8 @@ async function renderNewsHome() {
       ${its.map(i => `<div class="nh-it">${_nhA(i.link, `<span class="nh-it-t">${_newsEsc(i.title)}</span>`)}<span class="nh-it-m"><span class="nh-src">${_newsEsc(i.source)} · ${_nhAgo(i.date)}</span>${_newsPills(i)}</span>${_newsFree(i, 'news-free-row')}</div>`).join('')}</section>`;
   }).join('');
   // ── the latest, a teaser of the live feed ──
-  const latest = items.filter(i => !seen.has(i.link) && (!pref.france || _newsIsFr(i))).sort((a, b) => b.date - a.date).slice(0, 7);
-  const contH = `<section class="nh-cont"><div class="nh-k">${_newsT('En continu', 'Live feed')}</div>${latest.map(i => `<div class="nh-row"><span class="nh-h">${_nhClock(i.date)}</span><span>${_nhA(i.link, _newsEsc(i.title))} <span class="nh-src">· ${_newsEsc(i.source)}</span></span></div>`).join('')}
+  const latest = items.filter(i => !seen.has(i.link) && (!pref.france || _newsIsFr(i))).sort((a, b) => b.date - a.date).slice(0, 10);
+  const contH = `<section class="nh-cont"><div class="nh-k">${_newsT('En continu', 'Live feed')}</div><div class="nh-rows">${latest.map(i => `<div class="nh-row"><span class="nh-h">${_nhClock(i.date)}</span><span>${_nhA(i.link, _newsEsc(i.title))} <span class="nh-src">· ${_newsEsc(i.source)}</span></span></div>`).join('')}</div>
     <button type="button" class="nh-more" data-rub="all">${_newsT('Tout le fil, avec recherche et filtres', 'The whole feed, with search and filters')} →</button></section>`;
   // ── the side column: markets, what not to miss, figure of the day; each block folds, the column hides ──
   const blk = (id, title, body) => body ? `<section class="nh-blk${pref.closed[id] ? ' closed' : ''}" data-blk="${id}"><button type="button" class="nh-blk-h" aria-expanded="${!pref.closed[id]}"><span class="nh-k">${title}</span><span class="nh-chev" aria-hidden="true">▾</span></button><div class="nh-blk-b">${body}</div></section>` : '';
@@ -106,7 +106,7 @@ async function renderNewsHome() {
   host.innerHTML = `<div class="nh-tools"><span class="nh-date">${(d => d.charAt(0).toUpperCase() + d.slice(1))(new Date().toLocaleDateString(en ? 'en-GB' : 'fr-FR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/Paris' }))}</span>
       <button type="button" class="nh-btn" id="nh-perso">⚙ ${_newsT('Personnaliser', 'Customise')}</button>
       ${aside ? `<button type="button" class="nh-btn" id="nh-aside-t">${pref.asideOff ? _newsT('Afficher la colonne', 'Show the column') + ' ⇤' : _newsT('Masquer la colonne', 'Hide the column') + ' ⇥'}</button>` : ''}</div>
-    <div class="nh-grid${pref.asideOff || !aside ? ' noaside' : ''}"><div class="nh-main">${leadH}${essH}<div class="nh-secs">${secH}</div>${contH}</div>${aside && !pref.asideOff ? `<aside class="nh-aside">${aside}</aside>` : ''}</div>`;
+    <div class="nh-grid${pref.asideOff || !aside ? ' noaside' : ''}"><div class="nh-main"><div class="nh-top">${leadH}${essH}</div><div class="nh-secs">${secH}</div>${contH}</div>${aside && !pref.asideOff ? `<aside class="nh-aside">${aside}</aside>` : ''}</div>`;
   _nhWire(host);
 }
 window.renderNewsHome = renderNewsHome;
