@@ -395,7 +395,8 @@
         "fr",
         "regulation",
         "power"
-      ]
+      ],
+      "require": "électri|electricit|photovolta|solaire|éolien|eolien|offshore|nucléaire|nucleaire|\\bedf\\b|engie|totalenergies|\\brte\\b|\\bcre\\b|enedis|hydrogène|batterie|stockage|renouvelable|pompe à chaleur|\\bppa\\b|énergie|energie|réseau électrique|gaz|agrivolta|biogaz|biométhane|biomethane|méthanis|ombrière|ombriere|hydroélectri|géotherm|chaleur renouvelable|\\bcee\\b|certificats d.économies"
     }
   ],
   "pages": [
@@ -810,7 +811,8 @@
         "regulation",
         "power"
       ],
-      "lang": "fr"
+      "lang": "fr",
+      "require": "électri|electricit|photovolta|solaire|éolien|eolien|offshore|nucléaire|nucleaire|\\bedf\\b|engie|totalenergies|\\brte\\b|\\bcre\\b|enedis|hydrogène|batterie|stockage|renouvelable|pompe à chaleur|\\bppa\\b|énergie|energie|réseau électrique|gaz|agrivolta|biogaz|biométhane|biomethane|méthanis|ombrière|ombriere|hydroélectri|géotherm|chaleur renouvelable|\\bcee\\b|certificats d.économies"
     },
     {
       "q": "site:boursier.com électricité OR énergie OR solaire OR éolien OR \"prix de l'électricité\" OR EDF OR Engie OR TotalEnergies",
@@ -819,7 +821,8 @@
         "markets",
         "power"
       ],
-      "lang": "fr"
+      "lang": "fr",
+      "require": "électri|electricit|photovolta|solaire|éolien|eolien|offshore|nucléaire|nucleaire|\\bedf\\b|engie|totalenergies|\\brte\\b|\\bcre\\b|enedis|hydrogène|batterie|stockage|renouvelable|pompe à chaleur|\\bppa\\b|énergie|energie|réseau électrique|gaz"
     },
     {
       "q": "site:lejournaldesentreprises.com énergie OR électricité OR solaire OR photovoltaïque OR éolien OR batterie",
@@ -828,7 +831,8 @@
         "power",
         "build"
       ],
-      "lang": "fr"
+      "lang": "fr",
+      "require": "électri|electricit|photovolta|solaire|éolien|eolien|offshore|nucléaire|nucleaire|\\bedf\\b|engie|totalenergies|\\brte\\b|\\bcre\\b|enedis|hydrogène|batterie|stockage|renouvelable|pompe à chaleur|\\bppa\\b|énergie|energie|réseau électrique|gaz"
     }
   ]
 }

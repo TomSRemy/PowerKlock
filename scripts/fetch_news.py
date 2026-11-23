@@ -577,7 +577,7 @@ def main():
             continue
         time.sleep(3)
         try:
-            n = add_items(out, gnews(s["q"], s.get("lang", "fr")), {"name": "Search", "cls": "search", "tags": s.get("tags", []) + ["watch"]}, now, PER_SEARCH, {"query": s["q"]})
+            n = add_items(out, gnews(s["q"], s.get("lang", "fr")), {"name": "Search", "cls": "search", "tags": s.get("tags", []) + ["watch"], "require": s.get("require")}, now, PER_SEARCH, {"query": s["q"]})
             status.append({"name": s["q"], "kind": "search", "ok": True, "n": n, "added": bool(s.get("added"))})
         except Exception as e:
             status.append({"name": s["q"], "kind": "search", "ok": False, "error": str(e)[:120], "added": bool(s.get("added"))})
