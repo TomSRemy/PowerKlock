@@ -1,5 +1,5 @@
 name: Probe news sources (temporary)
-# Temporary: which candidate outlets publish a feed or a sitemap, how fresh, and what robots.txt says. Removed after reading.
+# Temporary: what robots.txt says for each feed the collection reads, and Aurora's sitemap. Removed after reading.
 on:
   push:
     branches: [claude/brave-dijkstra-0b04zg]
@@ -9,58 +9,36 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      - uses: actions/checkout@v5
       - run: |
           cat > /tmp/p.py <<'PY'
-          import re, urllib.request, urllib.robotparser
+          import json, urllib.request, urllib.robotparser
           from urllib.parse import urlparse
           UA = "Mozilla/5.0 (PowerKlock news fetcher; +https://github.com/TomSRemy/PowerKlock)"
-          C = {
-            "Aurora": ["https://auroraer.com/feed/", "https://auroraer.com/insights/feed/", "https://auroraer.com/sitemap_index.xml", "https://auroraer.com/insights/"],
-            "Cornwall Insight": ["https://www.cornwall-insight.com/feed/"],
-            "Energy Brainpool": ["https://blog.energybrainpool.com/en/feed/"],
-            "Agora Energiewende": ["https://www.agora-energiewende.org/rss.xml", "https://www.agora-energiewende.org/en/rss"],
-            "Ember": ["https://ember-energy.org/feed/", "https://ember-energy.org/latest-insights/feed/"],
-            "Rystad": ["https://www.rystadenergy.com/rss", "https://www.rystadenergy.com/sitemap.xml"],
-            "EnAppSys": ["https://www.enappsys.com/feed/"],
-            "LCP Delta": ["https://www.lcp.com/en/feed"],
-            "ACER": ["https://www.acer.europa.eu/rss.xml", "https://www.acer.europa.eu/news-and-events/news/rss.xml"],
-            "IEA": ["https://www.iea.org/api/rss/news", "https://www.iea.org/rss/news.xml"],
-            "Euractiv energy": ["https://www.euractiv.com/sections/energy-environment/feed/", "https://www.euractiv.com/section/energy/feed/"],
-            "Renewables Now": ["https://renewablesnow.com/news/rss/", "https://renewablesnow.com/rss/"],
-            "reNEWS": ["https://renews.biz/rss/", "https://renews.biz/feed/"],
-            "Recharge": ["https://www.rechargenews.com/rss"],
-            "Current+-": ["https://www.current-news.co.uk/feed/"],
-            "Solar Power Portal": ["https://www.solarpowerportal.co.uk/feed"],
-            "Energy Live News": ["https://www.energylivenews.com/feed/"],
-            "L'Echo du solaire": ["https://www.lechodusolaire.fr/feed/"],
-            "L'EnerGeek": ["https://lenergeek.com/feed/"],
-            "Techniques de l'ingenieur": ["https://www.techniques-ingenieur.fr/actualite/energies-thematique_6/feed/", "https://www.techniques-ingenieur.fr/actualite/feed/"],
-            "Usine Nouvelle energie": ["https://www.usinenouvelle.com/rss/energie/", "https://www.usinenouvelle.com/rss/"],
-            "Actu-Environnement energie": ["https://www.actu-environnement.com/flux/rss/energie/"],
-            "Le Journal de l'eolien": ["https://www.journal-eolien.org/feed/"],
-            "Les Echos energie": ["https://services.lesechos.fr/rss/les-echos-energie-environnement.xml"],
-            "La Tribune energie": ["https://www.latribune.fr/feed.xml", "https://www.latribune.fr/rss/rubriques/entreprises-finance/industrie/energie-environnement.html"],
-            "Contexte": ["https://www.contexte.com/feed/"],
-            "Energy-Storage.news (have)": ["https://www.energy-storage.news/feed/"],
-          }
-          def get(u):
-              r = urllib.request.urlopen(urllib.request.Request(u, headers={"User-Agent": UA}), timeout=20)
-              return r.status, r.headers.get("content-type", ""), r.read(3_000_000).decode("utf-8", "ignore")
-          for name, urls in C.items():
-              host = urlparse(urls[0]).scheme + "://" + urlparse(urls[0]).netloc
-              rp = urllib.robotparser.RobotFileParser(host + "/robots.txt")
-              try: rp.read(); rob = "ok" if all(rp.can_fetch(UA, u) for u in urls) else "DISALLOWED"
-              except Exception as e: rob = "robots?"
-              for u in urls:
-                  try:
-                      st, ct, b = get(u)
-                      items = len(re.findall(r"<item[ >]|<entry[ >]", b)); locs = len(re.findall(r"<loc>", b))
-                      dates = re.findall(r"<pubDate>([^<]+)</pubDate>|<updated>([^<]+)</updated>|<lastmod>([^<]+)</lastmod>", b)[:2]
-                      t = re.findall(r"<item[^>]*>.*?<title>(?:<!\[CDATA\[)?([^<\]]+)", b, re.S)[:3]
-                      print(f"{name:28s} {st} {ct[:22]:22s} items={items:3d} locs={locs:4d} robots={rob} {u}")
-                      if dates: print("      latest:", [x for d in dates for x in d if x][:2])
-                      for x in t: print("      -", x.strip()[:100])
-                  except Exception as e:
-                      print(f"{name:28s} ERR {str(e)[:60]:60s} robots={rob} {u}")
+          cfg = json.load(open("config/news_sources.json"))
+          urls = [(f["name"], f["url"]) for f in cfg["feeds"]] + [("ACER", "https://www.acer.europa.eu/rss.xml"), ("reNEWS", "https://renews.biz/feed/"), ("Echo du solaire", "https://www.lechodusolaire.fr/feed/")]
+          for name, u in urls:
+              host = urlparse(u).scheme + "://" + urlparse(u).netloc
+              try:
+                  txt = urllib.request.urlopen(urllib.request.Request(host + "/robots.txt", headers={"User-Agent": UA}), timeout=15).read().decode("utf-8", "ignore")
+              except Exception as e:
+                  print(f"{name:26s} robots unreadable ({str(e)[:40]}) -> allowed  {u}"); continue
+              rp = urllib.robotparser.RobotFileParser(); rp.parse(txt.splitlines())
+              ok = rp.can_fetch(UA, u)
+              print(f"{name:26s} {'ok        ' if ok else 'DISALLOWED'} {u}")
+              if not ok:
+                  grp, out = None, []
+                  for line in txt.splitlines():
+                      l = line.strip()
+                      if l.lower().startswith("user-agent"): grp = l
+                      elif l.lower().startswith("disallow") and grp and ("*" in grp):
+                          out.append(l)
+                  print("      group * :", out[:12])
+          for u in ["https://auroraer.com/robots.txt", "https://auroraer.com/sitemap.xml", "https://auroraer.com/insight-sitemap.xml", "https://auroraer.com/post-sitemap.xml"]:
+              try:
+                  b = urllib.request.urlopen(urllib.request.Request(u, headers={"User-Agent": UA}), timeout=15).read().decode("utf-8", "ignore")
+                  print("==", u, len(b)); print(b[:900])
+              except Exception as e:
+                  print("==", u, "ERR", str(e)[:60])
           PY
           python3 /tmp/p.py
