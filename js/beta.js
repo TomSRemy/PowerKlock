@@ -3,6 +3,9 @@
 // the choice is kept in this browser, and the page reloads so each layout starts from a clean state.
 // The beta only MOVES existing blocks (charts, tables, KPI strips) and renames sections: every chart keeps its
 // own code, data and interactions, and nothing is removed. Pages are added one by one once validated.
+// Since 20 Nov. 2026 the beta also carries a new shell (js/beta-shell.js, css/beta.css, loaded only when it is on):
+// menu by job, search field, path and header on every page, site map, origination line on Today, one chart grid.
+// scripts/inventory_site.py and scripts/inventory_diff.py prove that every chart, table and figure is still there.
 (function () {
   let on = false;
   try { on = localStorage.getItem('pk-beta') === '1'; } catch (e) { /* storage blocked: beta stays off */ }
@@ -31,6 +34,12 @@
   }
   addButton();
   if (!on) return;
+  // the shell: its style sheet is asked for by js/nav-v2.js before the first paint (never on the public page or a
+  // shared dashboard); its script comes here, in order
+  if (window.pkBetaShell) {
+    if (document.readyState === 'loading') document.write('<script src="js/beta-shell.js"><\/script>');
+    else { const sc = document.createElement('script'); sc.src = 'js/beta-shell.js'; document.body.appendChild(sc); }
+  }
 
   const $ = id => document.getElementById(id);
   const crumbBar = parts => {
@@ -63,10 +72,12 @@
     if (labels.length !== 5 || !head || !sub || !intra || !grid || !anom || !kpi || !read || !fuels) return;   // layout changed: leave it as is
     const [subL, snapL, fuelsL, intraL, anomL] = labels;
     head.style.display = 'none';
-    subL.textContent = T('Aller plus loin', 'Go further');
+    subL.textContent = T('Les pages de la rubrique', 'Pages in this section');
+    intraL.textContent = T('Prix day-ahead du jour, au quart d’heure', 'Today’s day-ahead prices, by quarter-hour');
     const bar = crumbBar([T('Marchés', 'Markets'), T('Électricité spot', 'Power spot'), T('Vue d’ensemble', 'Overview')]);
     read.style.marginTop = '0';
-    [bar, read, snapL, kpi, intraL, intra, fuelsL, fuels, grid, anomL, anom, subL, sub].forEach(n => p.appendChild(n));
+    // (owner, 23 Nov.: the plan of the pages belongs at the top, not at the bottom)
+    [bar, subL, sub, read, snapL, kpi, intraL, intra, fuelsL, fuels, grid, anomL, anom].forEach(n => p.appendChild(n));
   })();
 
   // ── Électricité spot › Day-ahead › Quotidien (structure S2 Analyse) ──
@@ -100,6 +111,30 @@
       new MutationObserver(mark).observe(tb, { childList: true });
       mark();
     }
+  })();
+
+  // ── Today (structure S1): one view (owner, 23 Nov. 2026: keep the expert view only). Its first screen already holds
+  // the six tiles and the three spot days of Quick look; the four "what drives the price" cards of Quick look join it,
+  // and Discovery (story, quiz, one sentence, glossary) stays whole in a folded section at the bottom ──
+  (function today() {
+    const mrn2 = $('mrn2'), kpis = $('mrn-kpis'), drivers = $('mrn-q-drivers'), learn = $('mrn-learn'), last = $('hs-morning-idx');
+    if (!mrn2 || !learn || !last) return;
+    // same order as Quick look: tiles, the three spot days, then the four driver cards
+    const days = mrn2.querySelector('.mrn-3d');
+    if (drivers && (days || kpis)) (days || kpis).after(drivers);
+    // Quick look's « what moved » list goes along; its tiles and negative-price banner repeat Expert's and stay hidden
+    const moved = $('mrn-q-moved'), movedSec = moved && moved.closest('section');
+    if (movedSec && drivers) drivers.after(movedSec);
+    const quick = $('mrn-quick'); if (quick) quick.style.display = 'none';
+    const sec = document.createElement('div');
+    sec.className = 'hist-section hist-section-strong collapsed'; sec.id = 'hs-morning-learn';
+    sec.innerHTML = '<div class="hist-section-header open" onclick="toggleStrongSection(\'hs-morning-learn\')"><div class="hist-section-title">' +
+      T('Découverte · le marché du jour expliqué', 'Discovery · today’s market explained') + '<span class="pk-hs-meta">' +
+      T('l’histoire du jour, le quiz, la phrase à retenir, le glossaire', 'the story of the day, the quiz, the one sentence, the glossary') +
+      '</span></div><svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div><div class="hist-section-body open"></div>';
+    sec.lastChild.appendChild(learn);
+    last.after(sec);
+    window.PKBeta.views = Object.assign(window.PKBeta.views || {}, { morning: [['Expert', ['mrn2', 'hs-morning-2', 'hs-morning-fund', 'hs-morning-3', 'hs-morning-4', 'hs-morning-fc', 'hs-morning-idx', 'hs-morning-learn']]] });
   })();
 
   // ── Beta notice ──

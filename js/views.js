@@ -102,7 +102,9 @@
   // two hidden views never show stacked while the data loads (8 Nov 2026: CLS 1,44 on a phone, 0,36 on a desktop).
   // The other pages keep the window load, as before (setup() is idempotent).
   const EARLY = ['morning'];
-  const early = () => EARLY.forEach(k => { if (VIEWS[k]) setup(k, VIEWS[k]); });
+  // the beta (js/beta.js) may give a page another set of views (Today: one view)
+  const def = k => (window.PKBeta && PKBeta.on && PKBeta.views && PKBeta.views[k]) || VIEWS[k];
+  const early = () => EARLY.forEach(k => { if (VIEWS[k]) setup(k, def(k)); });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', early); else early();
-  window.addEventListener('load', () => setTimeout(() => Object.entries(VIEWS).forEach(([k, d]) => setup(k, d)), 0));
+  window.addEventListener('load', () => setTimeout(() => Object.keys(VIEWS).forEach(k => setup(k, def(k))), 0));
 })();
