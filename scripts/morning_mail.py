@@ -8,7 +8,7 @@ data files: no call to any service except the mail server.
 
 Environment (GitHub secrets)
   SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, ALERT_FROM   the same mail server as the alerts
-  MORNING_TO        recipients, comma-separated; without it (or without SMTP) the mail is only printed
+  MORNING_TO        no longer used: only the readers who asked for it in the site get the newsletter
   MORNING_DRY_RUN=1 print the mail, send nothing
 
     python scripts/morning_mail.py
@@ -280,7 +280,7 @@ def journal(today, E, ed, wk, mine):
             f'<p style="{f};font-size:11px;color:#8A8A8A;margin:6px 0 0">Sources : {esc(srcs)}. {"Variation sur la semaine" if wk else "Variation sur la séance précédente"}. Chaque tuile ouvre sa page sur le site.</p></td></tr>')
     body = []
     # ── PowerBrunch: the week's chart first ──
-    wc = E.get('week_chart')
+    wc = None   # no chart any more (the owner's choice, 23 Nov. 2026)
     if wk and wc:
         pct = wc.get('pct')
         ttl = f'Spot France : {"−" if (pct or 0) < 0 else "+"}{abs(pct or 0):.0f} % sur la semaine' + (f', {len(wc["marks"])} événement{"s" if len(wc["marks"]) > 1 else ""} repéré{"s" if len(wc["marks"]) > 1 else ""}' if wc.get('marks') else '')
@@ -295,7 +295,7 @@ def journal(today, E, ed, wk, mine):
     if st:
         h = st[0]
         lab, col = theme_of(h.get('tags'))
-        ch = ed.get('hero_chart')
+        ch = None   # no chart any more (the owner's choice, 23 Nov. 2026)
         chart = (f'<div style="margin:12px 0;padding:10px;border:1px solid #EBEBEB;border-radius:10px"><p style="{f};margin:0 0 6px;font-size:12.5px;font-weight:600;color:#383838">{esc(ch["title"])}</p>{img(ch["img"], ch["title"])}'
                  f'<p style="{f};margin:6px 0 0;font-size:11.5px;color:#6B6B6B">Source : {esc(ch["src"])} · <a href="{SITE}#{esc(ch["page"])}" style="{green}">voir sur PowerKlock</a></p></div>') if ch else ''
         body.append(row(kick(('Le sujet de la semaine' if wk else 'À la une') + (f' · <span style="color:{col}">{lab}</span>' if lab else '')) +
@@ -436,7 +436,7 @@ def main():
     pid = os.environ.get('MORNING_PROFILE') or 'origination'
     if has_letter and pid in E['profiles']:
         subject, text, html = render_letter(today, E, pid)
-    # each reader who chose it in the site gets the edition of their profile; the team list (MORNING_TO) the default one
+    # each reader who asked for it in the site gets the edition of their profile(s); nobody else
     personal = []
     if has_letter:
         for r in readers(today, weekly):
@@ -458,9 +458,9 @@ def main():
         else:
             print('::warning::preview not sent: the SMTP_HOST, SMTP_USER and SMTP_PASS secrets are not set')
         return 0
-    seen = {m[0][0].lower() for m in personal}
-    to = [x.strip() for x in (os.environ.get('MORNING_TO') or '').split(',') if x.strip() and x.strip().lower() not in seen]
-    mails = ([(to, subject, text, html)] if to else []) + personal
+    # only the readers who asked for it in the site (public.news_profile): no list, no automatic sending (the owner, 23 Nov. 2026)
+    to = []
+    mails = personal
     ready = all(os.environ.get(k) for k in ('SMTP_HOST', 'SMTP_USER', 'SMTP_PASS')) and mails
     if os.environ.get('MORNING_DRY_RUN') == '1' or not ready:
         print(subject + '\n\n' + text + ('' if ready else '\n(not sent: SMTP_* or recipients missing)'))
@@ -469,7 +469,7 @@ def main():
         print(f'{len(personal)} personal edition(s) prepared')
         return 0
     send(mails)
-    print('sent:', len(to), 'on the team list,', len(personal), 'personal edition(s)')
+    print('sent:', len(personal), 'edition(s), to the readers who asked for it')
     return 0
 
 

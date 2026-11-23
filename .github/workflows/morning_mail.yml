@@ -3,15 +3,16 @@ name: Morning e-mail
 # The newsletters by e-mail (scripts/news_letter.py writes them, scripts/morning_mail.py sends them):
 #   7 O'Klock    every weekday at 07:00 Paris: the last 36 hours (84 on Monday)
 #   PowerBrunch  Monday at 10:00 Paris: the week before, larger
-# Each reader who chose it in the site (public.news_profile) gets their own edition; MORNING_TO (comma-separated) the
-# default one (MORNING_PROFILE). Needs the SMTP_* secrets (as the alerts); without them it only prints.
+# Only the readers who asked for it in the site (public.news_profile: 7 O'Klock and/or PowerBrunch ticked, account
+# approved) get it, each their own edition; nothing is sent to anyone else. Needs the SMTP_* secrets (as the alerts); without them it only prints.
 
 on:
+  # GitHub starts scheduled runs late, sometimes by hours (23 Nov. 2026: the 07:00 run started at 16:35), and least late
+  # off the hour: several tries every quarter of an hour, at :12 :27 :42 :57; the first one after 07:00 (10:00 for
+  # PowerBrunch) in Paris writes and sends the edition, the next ones see it sent (data/newsletter_sent.json) and stop
   schedule:
-    - cron: '0 5 * * 1-5'    # 05:00 UTC = 07:00 Paris in winter (06:00 UTC in summer, after the morning data)
-    - cron: '0 6 * * 1-5'
-    - cron: '0 8 * * 1'      # PowerBrunch: 10:00 Paris in summer
-    - cron: '0 9 * * 1'      # PowerBrunch: 10:00 Paris in winter
+    - cron: '12,27,42,57 4,5,6 * * 1-5'   # 7 O'Klock: from 05:12 to 08:57 Paris in winter, 06:12 to 09:57 in summer
+    - cron: '12,27,42,57 7,8,9 * * 1'     # PowerBrunch: from 08:12 to 11:57 Paris in winter, 09:12 to 12:57 in summer
   workflow_dispatch:
     inputs:
       edition:
@@ -38,13 +39,21 @@ jobs:
       - name: Which edition
         id: ed
         run: |
-          H=$(TZ=Europe/Paris date +%H)
+          # a scheduled run sends the edition once a day: from 07:00 (PowerBrunch: 10:00 on Monday) in Paris, if not sent yet;
+          # after 12:00 (PowerBrunch: 14:00) an edition still late is written for the site but not mailed
+          H=$((10#$(TZ=Europe/Paris date +%H))); D=$(TZ=Europe/Paris date +%F); W=$(TZ=Europe/Paris date +%u)
+          SENT_D=$(python3 -c "import json;print((json.load(open('data/newsletter_sent.json')) if __import__('os').path.exists('data/newsletter_sent.json') else {}).get('daily',''))")
+          SENT_W=$(python3 -c "import json;print((json.load(open('data/newsletter_sent.json')) if __import__('os').path.exists('data/newsletter_sent.json') else {}).get('weekly',''))")
+          M=none; MAIL=yes
           if [ "${{ github.event_name }}" = "schedule" ]; then
-            if [ "$H" = "07" ]; then echo "mode=daily" >> "$GITHUB_OUTPUT"
-            elif [ "$H" = "10" ]; then echo "mode=weekly" >> "$GITHUB_OUTPUT"
-            else echo "mode=none" >> "$GITHUB_OUTPUT"; echo "Not 07:00 or 10:00 in Paris"; fi
-          elif [ "${{ inputs.edition }}" = "PowerBrunch" ]; then echo "mode=weekly" >> "$GITHUB_OUTPUT"
-          else echo "mode=daily" >> "$GITHUB_OUTPUT"; fi
+            if [ "$W" = "1" ] && [ "$H" -ge 10 ] && [ "$SENT_W" != "$D" ]; then M=weekly; [ "$H" -ge 14 ] && MAIL=no
+            elif [ "$W" -le 5 ] && [ "$H" -ge 7 ] && [ "$SENT_D" != "$D" ]; then M=daily; [ "$H" -ge 12 ] && MAIL=no
+            else echo "Nothing to do: before 07:00 in Paris, or today's edition already sent"; fi
+          elif [ "${{ inputs.edition }}" = "PowerBrunch" ]; then M=weekly
+          else M=daily; fi
+          echo "mode=$M" >> "$GITHUB_OUTPUT"; echo "mail=$MAIL" >> "$GITHUB_OUTPUT"
+          [ "$MAIL" = "no" ] && echo "::notice::started too late ($H h in Paris): edition written for the site, no e-mail"
+          true
       - name: Write the edition (digest, then one newsletter per reading profile)
         if: steps.ed.outputs.mode != 'none'
         # scripts/news_digest.py: the essentials (daily, and the week on Monday); scripts/news_letter.py: the newsletter
@@ -64,18 +73,24 @@ jobs:
           git commit -q -m "data: newsletter $(TZ=Europe/Paris date +%F)"
           for i in 1 2 3 4 5; do git pull -q --rebase -X theirs origin main && git push -q && exit 0; git rebase --abort 2>/dev/null || true; sleep 5; done
           echo "::warning::edition not pushed"
-      - name: Send
-        if: steps.ed.outputs.mode != 'none'
+      - name: Send (only to the readers who asked for it in the site)
+        if: steps.ed.outputs.mode != 'none' && steps.ed.outputs.mail == 'yes'
         env:
           SMTP_HOST: ${{ secrets.SMTP_HOST || 'smtp.gmail.com' }}   # else the Gmail account already used for the GO prices and failure mails
           SMTP_PORT: ${{ secrets.SMTP_PORT || '587' }}
           SMTP_USER: ${{ secrets.SMTP_USER || secrets.GO_GMAIL_USER }}
           SMTP_PASS: ${{ secrets.SMTP_PASS || secrets.GO_GMAIL_APP_PASSWORD }}
           ALERT_FROM: ${{ secrets.ALERT_FROM || secrets.GO_GMAIL_USER }}
-          MORNING_TO: ${{ secrets.MORNING_TO }}
-          MORNING_PROFILE: ${{ vars.MORNING_PROFILE }}   # profile of the team list's e-mail: regulatory, legal, supplier, origination (default), markets, commercial
+          MORNING_PROFILE: ${{ vars.MORNING_PROFILE }}   # profile used when a reader ticked none: regulatory, legal, supplier, origination (default), markets, commercial
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}   # readers who chose a newsletter in the site (public.news_profile) get their own edition
           MORNING_PREVIEW: ${{ inputs.preview && '1' || '' }}
         run: |
-          W=""; if [ "${{ steps.ed.outputs.mode }}" = "weekly" ]; then W="--weekly"; fi
+          W=""; K=daily; if [ "${{ steps.ed.outputs.mode }}" = "weekly" ]; then W="--weekly"; K=weekly; fi
           python scripts/morning_mail.py $W
+          if [ "${{ inputs.preview }}" = "true" ]; then exit 0; fi
+          # today's edition is sent: the next scheduled tries stop (data/newsletter_sent.json)
+          python3 -c "import json,os,sys;p='data/newsletter_sent.json';d=json.load(open(p)) if os.path.exists(p) else {};d[sys.argv[1]]=sys.argv[2];json.dump(d,open(p,'w'))" "$K" "$(TZ=Europe/Paris date +%F)"
+          git config user.name "PowerDesk Bot"; git config user.email "bot@powerdesk.local"
+          git add data/newsletter_sent.json; git commit -q -m "data: newsletter sent $(TZ=Europe/Paris date +%F) ($K)" || exit 0
+          for i in 1 2 3 4 5; do git pull -q --rebase -X theirs origin main && git push -q && exit 0; git rebase --abort 2>/dev/null || true; sleep 5; done
+          echo "::warning::sent marker not pushed: a later try may send again"
