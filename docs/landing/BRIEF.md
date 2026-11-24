@@ -59,3 +59,10 @@ Elle remplace la vue publique actuelle (Aujourd'hui › Expert sous la barre de 
 1. Lire la maquette, `js/gate.js`, `index.html` (tête), `css/site.css`, `js/i18n.js`.
 2. Proposer en une page l'intégration (où vit le code, comment la barre de connexion actuelle disparaît) et attendre l'accord de Tom (changement de structure de la vue publique).
 3. Construire sur une branche, aperçu de la PR à Tom avant fusion.
+
+## Ajouts après revue (24 nov.)
+- Graphiques identiques à ceux des outils : Chart.js 4.4.1 avec les réglages de `js/pk-chart-system.js` ; les tuiles du tableau de bord viennent du catalogue (`js/widgets.js`, chiffres clés de `js/widgets-kpi.js`), rien d'inventé (pas de compte à rebours).
+- Pas de cases autour des graphiques des rubriques : pleine largeur, texte posé là où les données laissent de la place.
+- Courbe de fond du haut de page et carte du prix sur le même quart d'heure.
+- Dépôts conseillés : chartjs-chart-geo (carte d'Europe en Chart.js), chartjs-chart-matrix (carte de chaleur), NumberFlow (chiffres qui roulent), GSAP + Lenis (déjà utilisés), OGL en bonus pour le fond.
+- Vérifié à 390, 768, 1024, 1180 et 1280 px : à refaire sur la version finale.
