@@ -404,7 +404,7 @@ document.addEventListener('click', async e => {
   const r = _newsPins.has(link) ? await cl.from('news_pin').delete().eq('link', link) : await cl.from('news_pin').upsert({ link, title: String(item.title || '').slice(0, 400) }, { onConflict: 'link' });
   if (r.error) { b.disabled = false; b.textContent = _newsT('Non enregistré : ', 'Not saved: ') + r.error.message; return; }
   if (_newsPins.has(link)) _newsPins.delete(link); else _newsPins.add(link);
-  renderNews(newsData); if (typeof renderNewsUne === 'function') renderNewsUne();
+  renderNews(newsData); if (typeof renderNewsUne === 'function') renderNewsUne(); if (typeof renderNewsHome === 'function') renderNewsHome();
 }, true);
 
 // most relevant first, but a fresh article beats an old one and one outlet cannot fill the top of the list:

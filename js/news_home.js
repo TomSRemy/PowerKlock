@@ -105,7 +105,7 @@ async function renderNewsHome() {
     const pred = r.research ? base : i => !isR(i) && base(i);   // papers only in their own section
     const its = pick(pred, 4); if (!its.length) return '';
     return `<section class="nh-sec"><h3><button type="button" class="nh-sec-t" data-rub="${_newsEsc(r.id)}" title="${_newsT('Voir tout le fil de cette rubrique', 'See the whole feed of this section')}">${_newsEsc(r.label || _newsT(r.fr, r.en))} <span aria-hidden="true">→</span></button></h3>
-      ${its.map(i => { const sum = sumOf(i); return `<div class="nh-it">${_nhA(i.link, `<span class="nh-it-t">${_newsEsc(i.title)}</span>`)}${sum ? `<p class="nh-it-s">${_newsEsc(sum)}</p>` : ''}<span class="nh-it-m"><span class="nh-src">${_newsEsc(i.source)} · ${_nhAgo(i.date)}</span>${_newsPills(i)}</span>${_newsFree(i, 'news-free-row')}</div>`; }).join('')}</section>`;
+      ${its.map(i => { const sum = sumOf(i); return `<div class="nh-it">${_nhA(i.link, `<span class="nh-it-t">${_newsEsc(i.title)}</span>`)}${sum ? `<p class="nh-it-s">${_newsEsc(sum)}</p>` : ''}<span class="nh-it-m"><span class="nh-src">${_newsEsc(i.source)} · ${_nhAgo(i.date)}</span>${_newsPills(i)}${_newsPinBtn(i)}</span>${_newsFree(i, 'news-free-row')}</div>`; }).join('')}</section>`;
   }).join('');
   // ── the latest, a teaser of the live feed ──
   const latest = items.filter(i => !seen.has(i.link) && !(i.tags || []).includes('research') && (!pref.france || _newsIsFr(i))).sort((a, b) => b.date - a.date).slice(0, 10);
