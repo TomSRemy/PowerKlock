@@ -27,6 +27,8 @@ Environment
   SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, ALERT_FROM
       mail server; without it alerts are recorded (sent_at null), not sent.
   ALERTS_DRY_RUN=1   evaluate and print, write nothing.
+  Notifications: each new alert also goes to the member's devices that turned notifications on
+  (public.push_subscription, Web Push signed with the site's key in vault.secrets, scripts/push_keys.py; migration 040).
   ALERTS_DAYS=2026-10-17,2026-10-18   evaluate these days instead (tests).
 """
 import json
@@ -214,6 +216,57 @@ def send(to, items):
         s.send_message(msg)
 
 
+def push(conn, new):
+    """the new alerts as notifications on the members' devices (Web Push); a device that is gone is forgotten"""
+    try:
+        from pywebpush import WebPushException, webpush
+    except ImportError:
+        print('pywebpush not installed: no notifications')
+        return
+    with conn.cursor() as cur:
+        cur.execute("select to_regclass('public.push_subscription') is not null")
+        if not cur.fetchone()[0]:
+            return
+        cur.execute("select decrypted_secret from vault.decrypted_secrets where name = 'pk_vapid_private'")
+        row = cur.fetchone()
+        if not row:
+            print('no push key yet (Actions › Push keys): no notifications')
+            return
+        key = row[0]
+        users = sorted({r['user_id'] for _, r, _ in new})
+        cur.execute('select endpoint, user_id, p256dh, auth from public.push_subscription where user_id = any(%s)', (users,))
+        subs = defaultdict(list)
+        for ep, uid, p, a in cur.fetchall():
+            subs[uid].append((ep, p, a))
+    sent, gone = 0, []
+    for uid in users:
+        items = [d for _, r, d in new if r['user_id'] == uid]
+        if not subs.get(uid):
+            continue
+        body = items[0] if len(items) == 1 else f'{len(items)} alertes : ' + ' · '.join(x[:60] for x in items[:3])
+        data = json.dumps({'title': 'PowerKlock · ' + ('alerte' if len(items) == 1 else f'{len(items)} alertes'), 'body': body[:220],
+                           'tag': 'pk-alert', 'url': '/?app=1#app/alerts', 'count': len(items)}, ensure_ascii=False)
+        for ep, p, a in subs[uid]:
+            try:
+                webpush({'endpoint': ep, 'keys': {'p256dh': p, 'auth': a}}, data, vapid_private_key=key,
+                        vapid_claims={'sub': 'mailto:powerklock.tool@gmail.com'}, ttl=6 * 3600, timeout=20)
+                sent += 1
+            except WebPushException as e:
+                code = getattr(e.response, 'status_code', None)
+                if code in (404, 410):
+                    gone.append(ep)
+                else:
+                    print(f'  ! push failed ({code})')
+            except Exception as e:
+                print(f'  ! push failed: {str(e)[:80]}')
+    with conn.cursor() as cur:
+        if gone:
+            cur.execute('delete from public.push_subscription where endpoint = any(%s)', (gone,))
+        cur.execute('update public.push_subscription set last_ok = now() where user_id = any(%s)', (users,))
+    conn.commit()
+    print(f'{sent} notification(s) sent, {len(gone)} device(s) gone')
+
+
 def main():
     db = os.environ.get('SUPABASE_DB_URL') or os.environ.get('WAREHOUSE_DB_URL')
     if not db:
@@ -256,6 +309,7 @@ def main():
         print(f'{len(new)} new alerts')
         if not new:
             return 0
+        push(conn, new)
         if not smtp_ready():
             print('SMTP not configured: alerts recorded, not e-mailed.')
             return 0

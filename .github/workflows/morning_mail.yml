@@ -89,7 +89,7 @@ jobs:
           SMTP_PORT: ${{ secrets.SMTP_PORT || '587' }}
           SMTP_USER: ${{ secrets.SMTP_USER || secrets.GO_GMAIL_USER }}
           SMTP_PASS: ${{ secrets.SMTP_PASS || secrets.GO_GMAIL_APP_PASSWORD }}
-          ALERT_FROM: ${{ secrets.ALERT_FROM || secrets.GO_GMAIL_USER }}
+          ALERT_FROM: ${{ secrets.ALERT_FROM || secrets.SMTP_USER || secrets.GO_GMAIL_USER }}
           MORNING_PROFILE: ${{ vars.MORNING_PROFILE }}   # profile used when a reader ticked none: regulatory, legal, supplier, origination (default), markets, commercial
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}   # readers who chose a newsletter in the site (public.news_profile) get their own edition
           MORNING_PREVIEW: ${{ inputs.preview && '1' || '' }}

@@ -1,0 +1,26 @@
+# Push keys: makes the site's key pair for alert notifications once (scripts/push_keys.py); the private key goes into the
+# database's vault and is never printed. Run by hand; « rotate » replaces the keys.
+name: Push keys
+on:
+  workflow_dispatch:
+    inputs:
+      rotate:
+        description: Replace the keys (every device turns notifications on again)
+        type: boolean
+        default: false
+permissions:
+  contents: read
+jobs:
+  keys:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install "psycopg[binary]" cryptography
+      - name: Make the keys
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: python scripts/push_keys.py ${{ inputs.rotate && '--rotate' || '' }}

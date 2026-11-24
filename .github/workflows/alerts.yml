@@ -38,7 +38,7 @@ jobs:
           python-version: '3.12'
       - name: Install dependencies
         if: steps.secret.outputs.ok == 'true'
-        run: pip install -q 'psycopg[binary]==3.3.2'
+        run: pip install -q 'psycopg[binary]==3.3.2' 'pywebpush==2.0.3'
       - name: Evaluate and send
         if: steps.secret.outputs.ok == 'true'
         env:
@@ -47,7 +47,7 @@ jobs:
           SMTP_PORT: ${{ secrets.SMTP_PORT || '587' }}
           SMTP_USER: ${{ secrets.SMTP_USER || secrets.GO_GMAIL_USER }}
           SMTP_PASS: ${{ secrets.SMTP_PASS || secrets.GO_GMAIL_APP_PASSWORD }}
-          ALERT_FROM: ${{ secrets.ALERT_FROM || secrets.GO_GMAIL_USER }}
+          ALERT_FROM: ${{ secrets.ALERT_FROM || secrets.SMTP_USER || secrets.GO_GMAIL_USER }}
         run: python scripts/alerts.py
       - name: New accounts to approve
         if: steps.secret.outputs.ok == 'true'
@@ -57,7 +57,7 @@ jobs:
           SMTP_PORT: ${{ secrets.SMTP_PORT || '587' }}
           SMTP_USER: ${{ secrets.SMTP_USER || secrets.GO_GMAIL_USER }}
           SMTP_PASS: ${{ secrets.SMTP_PASS || secrets.GO_GMAIL_APP_PASSWORD }}
-          ALERT_FROM: ${{ secrets.ALERT_FROM || secrets.GO_GMAIL_USER }}
+          ALERT_FROM: ${{ secrets.ALERT_FROM || secrets.SMTP_USER || secrets.GO_GMAIL_USER }}
         run: python scripts/notify_signups.py
 
       - name: E-mail on failure

@@ -294,6 +294,37 @@
     document.body.appendChild(ov);
   }
 
+  // ── alert notifications on this device (Web Push, warehouse migration 040; sent by scripts/alerts.py, shown by sw.js) ──
+  const PKPush = {
+    async state() {
+      const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+      const ok = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window && location.protocol === 'https:';
+      if (!ok) return { supported: false, iosHint: ios && !standalone() };
+      let sub = null; try { const r = await navigator.serviceWorker.getRegistration(); sub = r && await r.pushManager.getSubscription(); } catch (_) {}
+      return { supported: true, on: !!sub && Notification.permission === 'granted', blocked: Notification.permission === 'denied' };
+    },
+    async on() {
+      const cl = PKAccount.client();
+      const { data } = await cl.from('push_config').select('v').eq('k', 'vapid_public').maybeSingle();
+      if (!data || !data.v) throw new Error(T('les notifications ne sont pas encore ouvertes sur le site', 'notifications are not open on the site yet'));
+      if (await Notification.requestPermission() !== 'granted') throw new Error(T('autorisation refusée', 'permission refused'));
+      const reg = await navigator.serviceWorker.register('sw.js'); await navigator.serviceWorker.ready;
+      const raw = atob(data.v.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((data.v.length + 3) % 4));
+      const key = Uint8Array.from(raw, c => c.charCodeAt(0));
+      const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
+      const j = sub.toJSON();
+      const { data: ok, error } = await cl.rpc('push_save', { p_endpoint: j.endpoint, p_p256dh: j.keys.p256dh, p_auth: j.keys.auth, p_ua: navigator.userAgent.slice(0, 200) });
+      if (error || !ok) { await sub.unsubscribe(); throw error || new Error(T('non enregistré', 'not saved')); }
+    },
+    async off() {
+      const r = await navigator.serviceWorker.getRegistration(), sub = r && await r.pushManager.getSubscription();
+      if (!sub) return;
+      try { await PKAccount.client().rpc('push_drop', { p_endpoint: sub.endpoint }); } catch (_) {}
+      await sub.unsubscribe();
+    },
+  };
+  window.PKPush = PKPush;
+
   // the icon's badge: the alerts of today and tomorrow (installed app)
   document.addEventListener('pk-alerts', e => {
     const n = (e.detail && e.detail.n) || 0, b = document.getElementById('pa-badge');
