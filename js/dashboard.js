@@ -1017,67 +1017,100 @@
       });
       return;
     }
-    // e-mail and password first (Chrome fills both once saved); the address is remembered in this browser. A code by
-    // e-mail stays for a first sign-in or a forgotten password; Google shows once the provider is on (PKAccount.googleEnabled)
-    let last = '';
-    try { last = localStorage.getItem('pk-last-email') || ''; } catch (_) {}
+    authModal('in');
+  }
+
+  // Sign in, create an account, forgotten password: one classic card, one step at a time. An account is an e-mail and a
+  // password; the e-mail only confirms the address (a link back to the site). A forgotten password: a link by e-mail,
+  // back on the site with ?pk=reset, where the new password is chosen (view 'pw'). Google shows once the provider is on.
+  function authModal(view, email, kind) {
+    const A = window.PKAccount;
+    let last = email || '';
+    if (!last) { try { last = localStorage.getItem('pk-last-email') || ''; } catch (_) {} }
+    const remember = e => { try { localStorage.setItem('pk-last-email', e); } catch (_) {} };
+    const eye = `<button type="button" class="pkd-eye" data-eye title="Show the password" aria-label="Show the password">👁</button>`;
+    const google = `<div class="pkd-google" id="pkd-google" hidden><button type="button" class="pkd-auth-btn pkd-auth-google" id="pkd-google-go"><svg viewBox="0 0 48 48" width="18" height="18" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg><span>Continue with Google</span></button>
+        <div class="pkd-or"><span>or with your e-mail</span></div></div>`;
+    const mail = `<label class="pkd-field"><span>E-mail address</span><input id="pkd-in-email" name="username" type="email" required autocomplete="username" placeholder="you@company.com" value="${esc(last)}"></label>`;
+    const V = {
+      in: { title: 'Sign in', sub: 'Welcome back to PowerKlock.', body: google + mail +
+        `<label class="pkd-field"><span class="pkd-field-row">Password<button type="button" class="pkd-link" data-go="forgot">Forgot password?</button></span>
+          <span class="pkd-pw-wrap"><input id="pkd-in-pw" name="password" type="password" required autocomplete="current-password">${eye}</span></label>`,
+        btn: 'Sign in', foot: `New to PowerKlock? <button type="button" class="pkd-link" data-go="up">Create an account</button>` },
+      up: { title: 'Create an account', sub: 'Free. Once your address is confirmed, your access opens after approval.', body: google + mail +
+        `<label class="pkd-field"><span>Password</span>
+          <span class="pkd-pw-wrap"><input id="pkd-up-pw" name="new-password" type="password" required minlength="8" autocomplete="new-password" placeholder="8 characters or more">${eye}</span></label>`,
+        btn: 'Create my account', foot: `Already have an account? <button type="button" class="pkd-link" data-go="in">Sign in</button>` },
+      forgot: { title: 'Reset your password', sub: 'Type your e-mail address: we send you a link to choose a new password.', body: mail,
+        btn: 'Send the link', foot: `<button type="button" class="pkd-link" data-go="in">Back to sign in</button>` },
+      sent: { title: 'Check your inbox', sub: kind === 'reset' ? 'We sent a link to choose a new password to:' : 'To finish, confirm your address with the link we sent to:',
+        body: `<div class="pkd-auth-to">${esc(last)}</div><p class="pkd-auth-note">Nothing after a few minutes? Look in your spam folder.</p>`,
+        btn: kind === 'reset' ? 'Send the link again' : 'Send the e-mail again', foot: `<button type="button" class="pkd-link" data-go="in">Back to sign in</button>` },
+      pw: { title: 'Choose a new password', sub: 'You will sign in with your e-mail and this password.', body: `<input type="email" name="username" autocomplete="username" value="${esc(last)}" hidden>
+        <label class="pkd-field"><span>New password</span><span class="pkd-pw-wrap"><input id="pkd-new-pw" name="new-password" type="password" minlength="8" required autocomplete="new-password" placeholder="8 characters or more">${eye}</span></label>`,
+        btn: 'Save the password', foot: '' },
+    }[view];
     modal(`
-      <div class="pkd-modal-head"><div><div class="pkd-modal-title">Sign in</div>
-        <div class="pkd-modal-sub">You stay signed in on this browser until you sign out.</div></div>
-        <button class="pkd-ic" data-close type="button" title="Close">✕</button></div>
-      <form class="pkd-form" id="pkd-in-form">
-        <div class="pkd-google" id="pkd-google" hidden><button type="button" class="pk-btn-ghost pkd-google-btn" id="pkd-google-go"><svg viewBox="0 0 48 48" width="16" height="16" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>Continue with Google</button>
-          <div class="pkd-or"><span>or</span></div></div>
-        <label class="pkd-field"><span>E-mail</span><input id="pkd-in-email" name="username" type="email" required autocomplete="username" placeholder="you@company.com" value="${esc(last)}"></label>
-        <label class="pkd-field"><span>Password</span><input id="pkd-in-pw" name="password" type="password" autocomplete="current-password"></label>
-        <button type="button" class="pkd-link" id="pkd-forgot">No password yet, or forgotten? Receive a code by e-mail</button>
-        <div class="pkd-msg" id="pkd-in-msg" role="status"></div>
-        <div class="pkd-code" id="pkd-code" hidden><label class="pkd-field"><span>Code received by e-mail</span>
-          <input id="pkd-in-code" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="123456"></label>
-          <button type="button" class="pk-btn-primary" id="pkd-code-go">Sign in</button></div>
-        <div class="pkd-form-foot"><a class="pkd-link pkd-privacy" href="privacy.html" target="_blank" rel="noopener">Privacy</a><button type="button" class="pk-btn-ghost" data-close>Cancel</button><button type="submit" class="pk-btn-primary" id="pkd-in-go">Sign in</button></div>
-      </form>`, root => {
+      <div class="pkd-auth">
+        <button class="pkd-ic pkd-auth-x" data-close type="button" title="Close">✕</button>
+        <img class="pkd-auth-logo" src="assets/logo-header.png" alt="PowerKlock" translate="no">
+        <div class="pkd-auth-title">${V.title}</div>
+        <div class="pkd-auth-sub">${V.sub}</div>
+        <form class="pkd-auth-form" id="pkd-auth-form" novalidate>${V.body}
+          <div class="pkd-msg" id="pkd-in-msg" role="status"></div>
+          <button type="submit" class="pkd-auth-btn pkd-auth-main" id="pkd-in-go">${V.btn}</button>
+        </form>
+        ${V.foot ? `<div class="pkd-auth-foot">${V.foot}</div>` : ''}
+        <a class="pkd-auth-privacy" href="privacy.html" target="_blank" rel="noopener">Privacy</a>
+      </div>`, root => {
+      root.classList.add('pkd-modal-auth');
       const msg = root.querySelector('#pkd-in-msg'), go = root.querySelector('#pkd-in-go');
-      const mailEl = root.querySelector('#pkd-in-email'), pwEl = root.querySelector('#pkd-in-pw');
-      const remember = email => { try { localStorage.setItem('pk-last-email', email); } catch (_) {} };
-      const done = () => { closeModal(); renderAccount(); toast('Signed in'); };
-      const sendCode = email => {
-        go.disabled = true;
-        msg.textContent = 'Sending…';
-        A.signIn(email).then(() => {
-          msg.textContent = 'E-mail sent to ' + email + '. Type the code it contains below.';
-          root.querySelector('#pkd-code').hidden = false;
-          setTimeout(() => root.querySelector('#pkd-in-code').focus(), 30);
-        }).catch(e => { msg.textContent = 'Could not send the e-mail: ' + (e.message || e); go.disabled = false; });
-      };
-      root.querySelector('#pkd-in-form').addEventListener('submit', ev => {
+      const fail = (t, e) => { msg.textContent = ''; const x = document.createElement('span'); x.textContent = t; msg.append(x); if (e) msg.append(' ' + (e.message || e)); msg.className = 'pkd-msg pkd-msg-err'; go.disabled = false; };
+      const ok = t => { msg.textContent = t; msg.className = 'pkd-msg pkd-msg-ok'; go.disabled = false; };
+      const busy = t => { msg.className = 'pkd-msg'; msg.textContent = t; go.disabled = true; };
+      const mailOk = () => { const el = root.querySelector('#pkd-in-email'); if (el && el.value.trim() && el.checkValidity()) return el.value.trim(); fail('Type a valid e-mail address.'); if (el) el.focus(); return ''; };
+      const pwOk = id => { const el = root.querySelector(id), v = el ? el.value : ''; if (v.length >= 8) return v; fail(v ? 'The password needs 8 characters or more.' : 'Type a password.'); if (el) el.focus(); return ''; };
+      root.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => { const el = root.querySelector('#pkd-in-email'); authModal(b.dataset.go, (el && el.value.trim()) || last); }));
+      root.querySelectorAll('[data-eye]').forEach(b => b.addEventListener('click', () => { const i = b.parentNode.querySelector('input'); i.type = i.type === 'password' ? 'text' : 'password'; i.focus(); }));
+      root.querySelector('#pkd-auth-form').addEventListener('submit', ev => {
         ev.preventDefault();
-        const email = mailEl.value.trim(), pw = pwEl.value;
-        remember(email);
-        if (!pw) { msg.textContent = 'Type your password, or receive a code by e-mail (link above).'; pwEl.focus(); return; }
-        go.disabled = true;
-        msg.textContent = 'Signing in…';
-        A.signInPassword(email, pw).then(done).catch(e => { msg.textContent = 'Not signed in: ' + (e.message || e); go.disabled = false; });
+        if (view === 'in') {
+          const e = mailOk(); if (!e) return;
+          const pw = root.querySelector('#pkd-in-pw').value;
+          if (!pw) { fail('Type your password.'); root.querySelector('#pkd-in-pw').focus(); return; }
+          remember(e); busy('Signing in…');
+          A.signInPassword(e, pw).then(() => { closeModal(); renderAccount(); toast('Signed in'); }).catch(x => {
+            if (/confirm/i.test(x && x.message || '')) { fail('Your address is not confirmed yet: click the link in the e-mail we sent you.'); return; }
+            fail('Wrong e-mail or password. First time here with a password? Use « Forgot password? » to choose one.');
+          });
+        } else if (view === 'up') {
+          const e = mailOk(); if (!e) return; const pw = pwOk('#pkd-up-pw'); if (!pw) return;
+          remember(e); busy('Creating the account…');
+          A.signUp(e, pw).then(r => {
+            if (r.exists) { fail('This address already has an account: sign in, or use « Forgot password? ».'); return; }
+            if (r.session) { closeModal(); renderAccount(); toast('Account created'); return; }
+            authModal('sent', e, 'confirm');
+          }).catch(x => fail('The account was not created.', x));
+        } else if (view === 'forgot') {
+          const e = mailOk(); if (!e) return;
+          remember(e); busy('Sending…');
+          A.resetPassword(e).then(() => authModal('sent', e, 'reset')).catch(x => fail('The e-mail could not be sent.', x));
+        } else if (view === 'sent') {
+          busy('Sending…');
+          (kind === 'reset' ? A.resetPassword(last) : A.resendConfirm(last)).then(() => ok('Sent again.')).catch(x => fail('The e-mail could not be sent.', x));
+        } else if (view === 'pw') {
+          const pw = pwOk('#pkd-new-pw'); if (!pw) return;
+          busy('Saving…');
+          A.setPassword(pw).then(() => { try { sessionStorage.removeItem('pk-reset'); } catch (_) {} closeModal(); renderAccount(); toast('Password saved'); }).catch(x => fail('Not saved.', x));
+        }
       });
-      root.querySelector('#pkd-forgot').addEventListener('click', () => {
-        pwEl.value = '';
-        const email = mailEl.value.trim();
-        if (!email || !mailEl.checkValidity()) { msg.textContent = 'Type your e-mail first.'; mailEl.focus(); return; }
-        remember(email);
-        sendCode(email);
-      });
-      root.querySelector('#pkd-code-go').addEventListener('click', () => {
-        const email = mailEl.value.trim(), code = root.querySelector('#pkd-in-code').value.trim();
-        if (!code) return;
-        msg.textContent = 'Checking…';
-        A.verifyCode(email, code).then(() => { closeModal(); renderAccount(); openAccount('Signed in. Choose a password now: next time, no code needed.'); }).catch(e => { msg.textContent = 'Code not accepted: ' + (e.message || e); });
-      });
-      root.querySelector('#pkd-google-go').addEventListener('click', () => {
-        msg.textContent = 'Opening Google…';
-        A.signInGoogle().catch(e => { msg.textContent = 'Google sign-in failed: ' + (e.message || e); });
-      });
-      if (A.googleEnabled) A.googleEnabled().then(on => { const g = root.querySelector('#pkd-google'); if (g) g.hidden = !on; });
-      setTimeout(() => (last ? pwEl : mailEl).focus(), 30);
+      const gg = root.querySelector('#pkd-google-go');
+      if (gg) {
+        gg.addEventListener('click', () => { busy('Opening Google…'); A.signInGoogle().catch(x => fail('Google sign-in failed.', x)); });
+        if (A.googleEnabled) A.googleEnabled().then(on => { const g = root.querySelector('#pkd-google'); if (g) g.hidden = !on; });
+      }
+      const first = { in: last ? '#pkd-in-pw' : '#pkd-in-email', up: last ? '#pkd-up-pw' : '#pkd-in-email', forgot: '#pkd-in-email', pw: '#pkd-new-pw' }[view];
+      setTimeout(() => { const f = first && root.querySelector(first); if (f) f.focus(); }, 30);
     });
   }
 
@@ -1089,15 +1122,15 @@
     if (!host || !cl) return;
     const { data: st, error } = await cl.rpc('mcp_status');
     if (error) return;   // not approved yet, or the database is not ready: nothing to show
-    const how = `<ol class="pkd-mcp-how"><li>In Claude: Settings › Connectors › Add custom connector.</li><li>Name it PowerKlock and paste the link.</li><li>Then ask Claude, for instance: « What moved on the French spot this week and why? », « Open consultations on grid connection? ».</li></ol>`;
+    const how = open => `<details class="pkd-mcp-guide"${open ? ' open' : ''}><summary>How to add PowerKlock to Claude</summary><p class="pkd-p">What you need: a paid Claude plan (Pro, Max, Team or Enterprise) and your approved PowerKlock account.</p><div class="pkd-mcp-h">On a computer</div><ol class="pkd-mcp-how"><li>Make your link below, then Copy it.</li><li>On claude.ai: Settings › Connectors › Add custom connector.</li><li>Name: PowerKlock. URL: paste your link. Then Add.</li><li>In a conversation, turn PowerKlock on in the tools menu (the « + » or sliders button under the message box).</li></ol><p class="pkd-p">On a phone: add the connector once on claude.ai in the phone’s browser (the app may not offer it yet); it then works in the Claude app too.</p><div class="pkd-mcp-h">To try</div><ul class="pkd-mcp-how"><li>« What was the average French spot price this week, and why? »</li><li>« The open consultations on grid connection, with their deadlines »</li><li>« Solar capture rate in France, 2025 against 2024, month by month »</li><li>« Everything said about negative prices since October »</li></ul><div class="pkd-mcp-h">If it does not work</div><ul class="pkd-mcp-how"><li>« Link not valid »: make a new link here and replace it in Claude (Settings › Connectors).</li><li>Your link is personal: keep it to yourself; a new link cancels the old one. 400 calls a day.</li></ul></details>`;
     const draw = (link) => {
       host.innerHTML = `<div class="pkd-mcp"><div class="pkd-acc-t">Connector for Claude</div>
         <p class="pkd-p">Add PowerKlock to your own Claude (paid plan): Claude then reads the site's prices, forwards, reservoirs, guarantees of origin, news, official texts and consultations, and queries the SQL warehouse (full history), answering with their sources. Read only, 400 calls a day.</p>
         ${link ? `<div class="pkd-mcp-link"><input type="text" readonly value="${esc(link)}" aria-label="Your personal link"><button type="button" class="pk-btn-primary" id="pkd-mcp-copy">Copy</button></div>
-          <p class="pkd-p pkd-mcp-warn">Personal link: shown only now, keep it to yourself. A new link cancels this one.</p>${how}`
+          <p class="pkd-p pkd-mcp-warn">Personal link: shown only now, keep it to yourself. A new link cancels this one.</p>`
         : st && st.active ? `<p class="pkd-p">Your link is active since ${esc(String(st.created_at || '').slice(0, 10))}.</p>` : ''}
         <div class="pkd-mcp-b"><button type="button" class="pk-btn-ghost" id="pkd-mcp-new">${st && st.active ? 'Make a new link' : 'Make my link'}</button>${st && st.active ? '<button type="button" class="pk-btn-ghost" id="pkd-mcp-del">Remove my link</button>' : ''}</div>
-        <div class="pkd-msg" id="pkd-mcp-msg" role="status"></div></div>`;
+        <div class="pkd-msg" id="pkd-mcp-msg" role="status"></div>${how(!!link)}</div>`;
       const msg = host.querySelector('#pkd-mcp-msg');
       const cp = host.querySelector('#pkd-mcp-copy'); if (cp) cp.addEventListener('click', () => { const i = host.querySelector('.pkd-mcp-link input'); i.select(); (navigator.clipboard ? navigator.clipboard.writeText(i.value) : Promise.reject()).then(() => { msg.textContent = 'Copied.'; }).catch(() => { document.execCommand('copy'); msg.textContent = 'Copied.'; }); });
       host.querySelector('#pkd-mcp-new').addEventListener('click', async () => {
@@ -1427,12 +1460,24 @@
     }
     if (window.PKAccount && PKAccount.configured) {
       // Coming back from the e-mail link: open My Dashboard once signed in.
+      // back from an e-mail link: ?pk=reset (forgotten password) asks for the new password once signed in, even after the
+      // page reloads into the full site (js/gate.js); ?pk=confirmed says the address is confirmed
+      const pkq = (location.search.match(/[?&]pk=(reset|confirmed)/) || [])[1];
+      if (pkq === 'reset') { try { sessionStorage.setItem('pk-reset', '1'); } catch (_) {} }
+      const resetDue = () => { try { return sessionStorage.getItem('pk-reset') === '1'; } catch (_) { return false; } };
+      const afterLink = u => {
+        if (!u) return;
+        if (resetDue()) { authModal('pw', u.email || ''); return; }
+        if (pkq === 'confirmed') toast('Address confirmed');
+      };
+      if (pkq) { try { history.replaceState(null, '', location.pathname + location.hash); } catch (_) {} }
       const fromLink = /access_token=|[?&]code=|error_description=/.test(location.hash + location.search);
       const linkError = (location.hash.match(/error_description=([^&]+)/) || [])[1];
       PKAccount.onChange(u => { renderAccount(); if (u) syncFromCloud(); });
       PKAccount.ready().then(u => {
         renderAccount();
         if (u) syncFromCloud();
+        setTimeout(() => afterLink(u), 600);
         if (fromLink) {
           const tab = document.querySelector('.nav-tab[data-dash="mydash"]');
           if (typeof switchDashboard === 'function') switchDashboard('mydash', tab);
@@ -1453,7 +1498,7 @@
     b.items.push(Object.assign({ i: uid(), t: 'w', wid, w: w.size.w * FINE, h: w.size.h * FINE }, p ? { p } : {}));
     toast('Added to “' + b.name + '”'); save(); if (isOpen()) render();
   }
-  window.PKDash = { init, open, refresh, has, toggleWidget, addWidget, addCard, addSection, addNote, TEMPLATES, boards, soloLink, openAccount };
+  window.PKDash = { init, open, refresh, has, toggleWidget, addWidget, addCard, addSection, addNote, TEMPLATES, boards, soloLink, openAccount, openAuth: v => (window.PKAccount && PKAccount.user) ? openAccount() : authModal(v || 'in') };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
 })();

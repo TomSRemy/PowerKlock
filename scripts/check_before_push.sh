@@ -15,6 +15,7 @@ changed=$(git diff --name-only origin/main...HEAD 2>/dev/null; git diff --name-o
 echo "▸ Python lint";        ruff check scripts tests warehouse
 if command -v node >/dev/null; then
   echo "▸ JavaScript syntax (node)"; for f in js/*.js js/*/*.js; do case "$f" in js/vendor/*) continue;; esac; node --check "$f"; done
+  echo "▸ Workers syntax (ES modules, as Cloudflare builds them)"; for f in workers/*/index.js; do node --input-type=module --check < "$f" || { echo "$f"; exit 1; }; done
 else
   echo "▸ JavaScript syntax (browser)"; python3 tests/js_syntax.py
 fi
