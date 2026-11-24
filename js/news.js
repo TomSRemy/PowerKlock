@@ -44,7 +44,7 @@ async function loadNews() {
 let _newsMode = 'list', _newsSort = 'recent', _newsOffSrc = '', _offQ = '', _offTopic = '';
 const _newsStore = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (_) {} return null; };
 function newsSetView(v) {
-  v = ['feed', 'official', 'letter', 'posts', 'sources'].includes(v) ? v : 'home';
+  v = ['feed', 'official', 'letter', 'posts', 'sources', 'ask'].includes(v) ? v : 'home';
   document.querySelectorAll('#news-tabs .tab-btn').forEach(b => b.classList.toggle('active', b.dataset.nv === v));
   const f = document.getElementById('news-v-feed'), o = document.getElementById('news-v-official');
   if (f) f.hidden = v !== 'feed'; if (o) o.hidden = v !== 'official';
@@ -56,6 +56,8 @@ function newsSetView(v) {
   const ps = document.getElementById('news-v-posts'); if (ps) ps.hidden = v !== 'posts';
   if (v === 'posts' && typeof renderNewsPosts === 'function') renderNewsPosts();
   const sr = document.getElementById('news-v-sources'); if (sr) sr.hidden = v !== 'sources';
+  const ak = document.getElementById('news-v-ask'); if (ak) ak.hidden = v !== 'ask';
+  if (v === 'ask') renderNewsAsk();
   _newsStore('pk-news-view', v);
 }
 window.newsSetView = newsSetView;
@@ -162,6 +164,68 @@ function renderNewsOfficial() {
     pub.innerHTML = p.length ? `<ul class="news-pub">${p.map(i => `<li><span class="news-off-d">${_newsDay(i.date)}</span><a href="${_newsEsc(i.link)}" target="_blank" rel="noopener noreferrer">${_newsEsc(i.title)}</a><small>${_newsEsc(i.source)}${(i.other_sources || []).length ? ' · +' + i.other_sources.length + ' ' + _newsT('médias', 'outlets') : ''}</small><span class="off-pills">${major(i)}${_offThPill(_offTheme(i))}${_offPills(i)}</span>${_newsFree(i)}</li>`).join('')}</ul>`
       : `<div class="news-src-help">${_newsT('Aucune publication dans les 30 derniers jours collectés.', 'No publication in the last 30 days collected.')}</div>`;
   }
+}
+
+// ── Ask PowerKlock (workers/ask): a question answered from the site's own content, each sentence with its source;
+// approved accounts only, 15 questions a day each; the answers stay in this page only ──
+const ASK_URL = 'https://powerklock-ask.tom-s-remy.workers.dev';
+let _askLog = [], _askLeft = null;
+async function renderNewsAsk() {
+  const host = document.getElementById('news-ask'); if (!host) return;
+  const A = window.PKAccount;
+  if (A && A.configured) await A.ready();
+  const token = await _askToken();   // the reader's Supabase session: the Worker checks it with the database
+  if (!token) { host.innerHTML = `<div class="news-src-help">${_newsT('Connectez-vous avec un compte validé pour poser une question à PowerKlock.', 'Sign in with an approved account to ask PowerKlock a question.')}</div>`; return; }
+  const hints = [_newsT('Qu’est-ce qui a changé sur le complément de rémunération ?', 'What changed on the contracts for difference?'), _newsT('Où en est l’arrêt aux prix négatifs ?', 'Where does the stop at negative prices stand?'),
+    _newsT('Ce que dit le World Energy Outlook sur le nucléaire', 'What the World Energy Outlook says on nuclear'), _newsT('Les appels d’offres biométhane', 'The biomethane tenders')];
+  if (!host.dataset.on) {
+    host.dataset.on = '1';
+    host.innerHTML = `<form class="ask-f"><input type="text" id="ask-q" maxlength="300" autocomplete="off" placeholder="${_newsT('Posez une question sur l’actualité, les textes, les consultations…', 'Ask about the news, the texts, the consultations…')}" aria-label="${_newsT('Votre question', 'Your question')}"><button type="submit" class="pk-btn-primary">${_newsT('Demander', 'Ask')}</button></form>
+      <div class="ask-hints">${hints.map(h => `<button type="button" class="ask-hint">${_newsEsc(h)}</button>`).join('')}</div>
+      <div class="ask-meta" id="ask-meta"></div><div class="ask-log" id="ask-log"></div>`;
+    host.querySelector('.ask-f').addEventListener('submit', e => { e.preventDefault(); const q = host.querySelector('#ask-q').value.trim(); if (q.length > 2) _askGo(q); });
+    host.querySelectorAll('.ask-hint').forEach(b => b.addEventListener('click', () => { host.querySelector('#ask-q').value = b.textContent; _askGo(b.textContent); }));
+    try { const r = await fetch(ASK_URL, { headers: { Authorization: 'Bearer ' + token } }); const j = await r.json(); if (j && j.ok === false) _askLeft = -1; else if (j && j.left != null) _askLeft = j.left; } catch (_) { _askLeft = null; }
+  }
+  _askDraw();
+}
+async function _askToken() {
+  try { const cl = window.PKAccount && PKAccount.client && PKAccount.client(); const { data } = cl ? await cl.auth.getSession() : { data: null }; return data && data.session ? data.session.access_token : null; } catch (_) { return null; }
+}
+function _askDraw() {
+  const meta = document.getElementById('ask-meta'), log = document.getElementById('ask-log'); if (!meta || !log) return;
+  meta.textContent = _askLeft === -1 ? _newsT('Votre compte attend validation : les questions s’ouvrent une fois l’accès validé.', 'Your account is waiting for approval: questions open once access is approved.')
+    : _newsT('Cherche dans les articles, textes officiels, consultations, publications et papiers des 45 derniers jours, la newsletter et notre analyse de marché', 'Searches the articles, official texts, consultations, publications and papers of the last 45 days, the newsletter and our market analysis')
+      + (_askLeft != null ? ' · ' + _newsT(`${_askLeft} question${_askLeft > 1 ? 's' : ''} restante${_askLeft > 1 ? 's' : ''} aujourd’hui`, `${_askLeft} question${_askLeft === 1 ? '' : 's'} left today`) : '');
+  log.innerHTML = _askLog.map(x => {
+    const src = (x.sources || []).filter(s => s.used || !(x.sources || []).some(t => t.used));
+    const body = x.wait ? `<div class="ask-a ask-wait"><span class="spinner"></span> ${_newsT('Je cherche dans le site…', 'Searching the site…')}</div>`
+      : x.err ? `<div class="ask-no">${_newsEsc(x.err)}</div>`
+      : x.none || !x.answer ? `<div class="ask-no">${_newsT('Rien sur ce sujet dans les contenus du site des 45 derniers jours. Essayez d’autres mots, ou le fil En continu.', 'Nothing on this in the site’s content of the last 45 days. Try other words, or the Live feed.')}</div>`
+      : `<div class="ask-a">${_newsEsc(x.answer).replace(/\[(\d+)\]/g, '<sup>$1</sup>')}</div>
+        <div class="ask-src">${src.map(s => `<a href="${_newsEsc(s.link)}" target="_blank" rel="noopener noreferrer"><b>${s.n}</b><span>${_newsEsc(s.title)}<small>${_newsEsc(s.source)}${s.date ? ' · ' + _newsEsc(s.date) : ''} · ${_newsEsc(s.kind)}</small></span></a>`).join('')}</div>
+        <div class="ask-m">${_newsT('Réponse écrite à partir des sources ci-dessus seulement', 'Answer written from the sources above only')} · ${_newsT('modèle', 'model')} ${_newsEsc(x.model || '')}</div>`;
+    return `<div class="ask-qa"><div class="ask-q">${_newsEsc(x.q)}</div>${body}</div>`;
+  }).join('');
+}
+async function _askGo(q) {
+  const token = await _askToken();
+  if (!token) return renderNewsAsk();
+  const x = { q, wait: true }; _askLog.unshift(x); _askDraw();
+  try {
+    const r = await fetch(ASK_URL, { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify({ q }) });
+    const j = await r.json().catch(() => ({}));
+    x.wait = false;
+    if (r.ok) Object.assign(x, j);
+    else x.err = j.error === 'quota' ? _newsT('Vous avez posé vos 15 questions du jour : la suite demain.', 'You have asked your 15 questions of the day: more tomorrow.')
+      : j.error === 'day' ? _newsT('Le quota gratuit du jour est atteint pour tout le monde : réessayez demain.', 'Today’s free allowance is used up for everyone: try again tomorrow.')
+      : j.error === 'not approved' ? _newsT('Votre compte attend validation.', 'Your account is waiting for approval.')
+      : _newsT('Pas de réponse pour l’instant (le service d’IA est indisponible) : réessayez plus tard.', 'No answer for now (the AI service is unavailable): try again later.');
+    if (j.left != null) _askLeft = j.left;
+  } catch (_) {
+    x.wait = false; x.err = _newsT('Le service n’est pas joignable pour l’instant.', 'The service cannot be reached for now.');
+  }
+  _askDraw();
 }
 
 // ── Newsletter (data/newsletter.json, scripts/news_letter.py): one edition per reading profile (config/news_profiles.json),

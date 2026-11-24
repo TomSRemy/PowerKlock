@@ -4586,3 +4586,15 @@ html.pk-beta #prices-table th:first-child, html.pk-beta #prices-table tr.zone-ro
 .nh-to { display: flex; flex-direction: column; gap: 5px; margin-top: 4px; font-size: 13px; color: var(--text2); }
 .nh-to input { width: 100%; }
 .nh-to small { font-size: 12px; color: var(--text2); }
+
+/* Ask PowerKlock (News › Ask) */
+.ask-f { display: flex; gap: 8px; margin: 8px 0 8px; } .ask-f input { flex: 1; min-width: 0; height: 46px; border-radius: 10px; border: 1px solid var(--accent); background: var(--bg2); color: var(--text); padding: 0 14px; font: 15.5px Inter, sans-serif; }
+.ask-f button { height: 46px; padding: 0 18px; }
+.ask-hints { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; } .ask-hint { font: 12.5px Inter, sans-serif; padding: 4px 10px; border: 1px solid var(--border); border-radius: 999px; background: none; color: var(--text2); cursor: pointer; } .ask-hint:hover { color: var(--accent); border-color: var(--accent); }
+.ask-meta { font-size: 12px; color: var(--text3); margin-bottom: 14px; }
+.ask-qa { border-top: 1px solid var(--border); padding: 16px 0; } .ask-q { font-weight: 600; font-size: 16px; margin-bottom: 10px; color: var(--text); }
+.ask-a { font-size: 16px; line-height: 1.65; color: var(--text); } .ask-a sup { color: var(--accent); font-size: 11px; font-weight: 700; margin-left: 1px; }
+.ask-src { margin-top: 12px; display: grid; gap: 6px; } .ask-src a { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 6px; text-decoration: none; color: var(--text2); font-size: 13.5px; padding: 7px 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg2); }
+.ask-src a b { color: var(--accent); } .ask-src a small { display: block; color: var(--text3); font-size: 12px; } .ask-src a:hover { border-color: var(--accent); }
+.ask-m { margin-top: 8px; font-size: 12px; color: var(--text3); } .ask-no { color: var(--text2); background: var(--bg3); border-radius: 10px; padding: 12px 14px; }
+@media (max-width: 600px) { .ask-f { flex-direction: column; } .ask-f button { width: 100%; } }
