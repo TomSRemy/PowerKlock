@@ -215,7 +215,7 @@
     const items = (N && N.items) || [], mine = E && typeof _nlMine === 'function' ? _nlMine(E) : null;
     const left = await askLeft();
     const out = [`<h2 class="pa-h">${T('Veille', 'News')}</h2><div class="pa-date">${mine && (mine.interests || []).length ? T('selon vos ' + mine.interests.length + ' sujets', 'from your ' + mine.interests.length + ' subjects') : T('édition générale', 'general edition')}</div>`,
-      `<button type="button" class="pa-ask" id="pa-ask">✦ ${T('Posez une question à PowerKlock…', 'Ask PowerKlock a question…')}${left != null ? `<span>${left} / 30</span>` : ''}</button>`,
+      `<button type="button" class="pa-ask" id="pa-ask"><span>✦ ${T('Posez une question à PowerKlock…', 'Ask PowerKlock a question…')}</span>${left != null ? `<span class="pa-left">${left} / 30</span>` : ''}</button>`,
       `<div class="pa-seg">${[['une', T('À la une', 'Top')], ['live', T('En continu', 'Live')], ['off', T('Textes officiels', 'Official texts')], ['posts', T('Posts LinkedIn', 'LinkedIn posts')]].map(([k, l]) => `<button type="button" data-nv="${k}" class="${k === nv ? 'on' : ''}">${l}</button>`).join('')}</div>`];
     const a = (u, t) => `<a href="${esc(/^https?:\/\//.test(u || '') ? u : '#')}" target="_blank" rel="noopener noreferrer">${esc(t)}</a>`;
     const when = d => { const h = (Date.now() - new Date(d)) / 36e5; return h < 1 ? T('à l’instant', 'just now') : h < 24 ? T('il y a ' + Math.round(h) + ' h', Math.round(h) + ' h ago') : dayName(String(d).slice(0, 10)); };
@@ -281,6 +281,61 @@
       <button type="button" class="pa-li pa-out" data-act="out"><span><b>${T('Se déconnecter', 'Sign out')}</b></span></button></div>`;
   }
 
+  // ── sharing (the phone's own share sheet, Web Share): the morning brief as text, a chart as an image with its title,
+  // source and link, an article as its title and link; nothing leaves without the reader's choice in the sheet ──
+  const SHARE_IC = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v13"/></svg>';
+  const canShare = () => !!navigator.share;
+  const appUrl = t => location.origin + '/?app=1#app/' + (t || cur);
+  async function shareText(title, text, url) { try { await navigator.share({ title, text, url }); } catch (_) {} }
+  // a chart card as a 1080 × 1080 picture: PowerKlock, the title, the figure, the chart, the source and the address
+  async function chartImage(sec) {
+    const W = 1080, H = 1080, c = document.createElement('canvas'); c.width = W; c.height = H;
+    const g = c.getContext('2d'), css = getComputedStyle(document.documentElement);
+    const bg = css.getPropertyValue('--bg').trim() || '#0a0e13', tx = css.getPropertyValue('--text').trim() || '#E8EEF4', t2 = css.getPropertyValue('--text2').trim() || '#9FB0C0';
+    g.fillStyle = bg; g.fillRect(0, 0, W, H);
+    // the logo, as everywhere the brand stands alone (the light one on a light theme)
+    const logo = new Image(); logo.src = document.documentElement.getAttribute('data-theme') === 'light' ? 'assets/logo-header-light.png' : 'assets/logo-header.png';
+    await new Promise(r => { logo.onload = r; logo.onerror = r; });
+    if (logo.naturalWidth) { const lh = 56, lw = logo.naturalWidth * lh / logo.naturalHeight; g.drawImage(logo, 60, 52, lw, lh); }
+    const h3 = (sec.querySelector('.pa-k') || {}).textContent || '', ch = sec.querySelector('.pa-ch');
+    g.fillStyle = t2; g.font = '600 30px Inter, sans-serif'; g.fillText(h3.toUpperCase().slice(0, 48), 60, 170);
+    if (ch) { const sp = ch.querySelector('span'), b = ch.querySelector('b');
+      g.fillStyle = tx; g.font = '500 34px Inter, sans-serif'; g.fillText((sp ? sp.textContent : '').slice(0, 46), 60, 228);
+      g.font = '700 54px "JetBrains Mono", Menlo, monospace'; g.fillStyle = b && b.classList.contains('up') ? '#ED6965' : b && b.classList.contains('dn') ? '#14D3A9' : tx; g.fillText((b ? b.textContent : '').slice(0, 30), 60, 300); }
+    const X = 60, Y = 360, CW = 960, CH = 520;
+    const bars = sec.querySelector('.pa-bars'), svg = sec.querySelector('svg.pa-line');
+    if (bars) { const is = [...bars.children], w = CW / is.length;
+      is.forEach((i, k) => { const h = parseFloat(i.style.height) / 100 * CH; g.fillStyle = i.classList.contains('neg') ? '#6CB4F5' : i.classList.contains('lo') ? '#14D3A9' : '#ED6965'; g.fillRect(X + k * w + 3, Y + CH - h, w - 6, h); }); }
+    else if (svg) { const x = svg.cloneNode(true); x.setAttribute('width', CW); x.setAttribute('height', CH); x.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+      const img = new Image(); img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(new XMLSerializer().serializeToString(x));
+      await new Promise(r => { img.onload = r; img.onerror = r; }); try { g.drawImage(img, X, Y, CW, CH); } catch (_) {} }
+    const ax = sec.querySelector('.pa-axis'); if (ax) { const ls = [...ax.children]; g.fillStyle = t2; g.font = '400 26px Inter, sans-serif'; ls.forEach((l, k) => { const tw = g.measureText(l.textContent).width; g.fillText(l.textContent, Math.min(X + CW - tw, Math.max(X, X + k * CW / Math.max(1, ls.length - 1) - tw / 2)), Y + CH + 44); }); }
+    const src = (sec.querySelector('.pa-src') || {}).textContent || '';
+    g.fillStyle = t2; g.font = '400 26px Inter, sans-serif'; g.fillText((T('Source : ', 'Source: ') + src.replace(/^Sources?\s*:\s*/i, '')).slice(0, 70), 60, 1000);
+    g.fillStyle = '#14D3A9'; g.font = '600 28px Inter, sans-serif'; g.fillText('powerklock.com', 60, 1044);
+    return new Promise(r => c.toBlob(b => r(b), 'image/png'));
+  }
+  async function shareChart(sec) {
+    const title = 'Power.Klock · ' + ((sec.querySelector('.pa-k') || {}).textContent || '');
+    const blob = await chartImage(sec), file = blob && new File([blob], 'powerklock.png', { type: 'image/png' });
+    if (file && navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file], title, text: title + '\n' + appUrl() }); return; } catch (_) { return; } }
+    shareText(title, title, appUrl());
+  }
+  // a share button beside each chart's title, each article and the morning brief
+  function decorate(m) {
+    if (!canShare()) return;
+    m.querySelectorAll('.pa-sec').forEach(sec => { if (!sec.querySelector('.pa-bars, svg.pa-line')) return; const k = sec.querySelector('.pa-k'); if (!k || k.querySelector('.pa-shr-b')) return;
+      k.insertAdjacentHTML('beforeend', `<button type="button" class="pa-shr-b" aria-label="${T('Partager ce graphique', 'Share this chart')}">${SHARE_IC}</button>`);
+      k.querySelector('.pa-shr-b').addEventListener('click', () => shareChart(sec)); });
+    const br = m.querySelector('.pa-brief'); if (br && !br.querySelector('.pa-shr-b')) {
+      br.insertAdjacentHTML('beforeend', `<button type="button" class="pa-shr-b pa-shr-t">${SHARE_IC} ${T('Partager', 'Share')}</button>`);
+      br.querySelector('.pa-shr-b').addEventListener('click', () => { const t = br.cloneNode(true); t.querySelectorAll('button').forEach(x => x.remove());
+        shareText('Power.Klock · ' + T('le point du matin', 'the morning brief'), t.textContent.trim() + '\n\n' + dayName(paris(), true), appUrl('today')); }); }
+    m.querySelectorAll('.pa-feed > div, .pa-ol > li, .pa-lead').forEach(it => { const a = it.querySelector('a[href^="http"]'); if (!a || it.querySelector('.pa-shr-b')) return;
+      it.insertAdjacentHTML('beforeend', `<button type="button" class="pa-shr-b pa-shr-i" aria-label="${T('Partager l’article', 'Share the article')}">${SHARE_IC}</button>`);
+      it.querySelector('.pa-shr-b').addEventListener('click', () => shareText(a.textContent.trim(), a.textContent.trim() + (it.querySelector('p b') ? '\n' + it.querySelector('p').textContent.trim() : ''), a.href)); });
+  }
+
   // ── drawing and wiring ──
   let seq = 0;
   async function draw() {
@@ -290,7 +345,7 @@
     try { html = await ({ today, grid, news, boards, alerts, me }[cur] || today)(); } catch (e) { console.warn('[app]', e); html = `<p class="pa-note">${T('Données indisponibles pour l’instant.', 'Data unavailable for now.')}</p>`; }
     if (n !== seq) return;
     main.innerHTML = html; main.scrollTop = 0;
-    wire(main);
+    wire(main); decorate(main);
     const up = root.querySelector('#pa-up'); if (up) up.textContent = navigator.onLine === false ? T('hors ligne', 'offline') : '';
   }
   function wire(m) {
