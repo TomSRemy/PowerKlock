@@ -302,6 +302,7 @@ main, footer { position: relative; z-index: 1; }
 .stack { display: grid; gap: 16px; align-content: start; max-width: 500px; }
 .s-news .kicker { color: var(--fg3); }
 .h2 { font: 800 clamp(30px, 4.2vw, 52px)/1.03 var(--f-display); letter-spacing: -.03em; margin: 0; text-wrap: balance; }
+.h2 em { font-style: normal; color: var(--accent); }
 .lead2 { color: var(--fg2); margin: 0; max-width: 46ch; }
 .newslist { display: grid; gap: 10px; }
 .nl { display: inline-flex; gap: 10px; align-items: center; padding: 10px 14px; border-radius: 999px; background: var(--accent-dim); font-size: 13px; color: var(--fg2); justify-self: start; }
@@ -537,7 +538,7 @@ footer img { height: 22px; width: auto; opacity: .85; }
     <h2 class="h2" id="h-news"></h2>
     <p class="lead2" data-i="l-news"></p>
     <div class="newslist" id="newslist"></div>
-    <span class="nl"><b>07:00</b> <span data-i="nl">7 O'Klock, chaque jour ouvré</span></span>
+    <span class="nl"><b>07:00</b> <span data-i="nl">Votre veille de marché, chaque jour ouvré</span></span>
     <a class="more" href="#acces"><span data-i="open-news"></span> <span class="arr">→</span><span class="lock" data-i="lock"></span></a>
     <div class="src" id="s-newsd"></div>
   </div>
@@ -616,25 +617,25 @@ footer img { height: 22px; width: auto; opacity: .85; }
   // ── texts (French first, English ready) ──
   const I = {
     beta: ['bêta', 'beta'], eyebrow: ['Électricité · France et Europe', 'Power · France and Europe'], discover: ['Découvrir le site', 'Discover the site'], published: ['publié', 'published'],
-    note0: ['Gratuit, sur validation · mot de passe, Google ou code par e-mail', 'Free, on approval · password, Google or e-mail code'], 'b-ppa': ['PPA benchmark · France', 'PPA benchmark · France'], 'u-ppas': ['€/MWh solaire', '€/MWh solar'], 'u-ppaw': ['€/MWh éolien', '€/MWh wind'],
-    'k-news': ['Veille', 'Intelligence'], 'l-news': ['Presse, régulateurs, Journal officiel et consultations, triés par sujet. Chaque matin, 7 O\'Klock résume ce qui compte pour votre métier ; le lundi, PowerBrunch fait le récap de la semaine.', 'Press, regulators, the Official Journal and consultations, sorted by topic. Every morning 7 O\'Klock sums up what matters for your job; on Mondays PowerBrunch recaps the week.'],
-    nl: ['7 O\'Klock, chaque jour ouvré', '7 O\'Klock, every working day'], 'open-news': ['Ouvrir la veille', 'Open the news'], d30: ['30 j', '30 d'], d60: ['60 j', '60 d'], signin: ['Se connecter', 'Sign in'],
+    note0: ['Données publiques, recoupées avec une deuxième source, méthode publiée · accès gratuit sur validation', 'Public data, cross-checked with a second source, method published · free access on approval'], 'b-ppa': ['PPA benchmark · France', 'PPA benchmark · France'], 'u-ppas': ['€/MWh solaire', '€/MWh solar'], 'u-ppaw': ['€/MWh éolien', '€/MWh wind'],
+    'k-news': ['Veille', 'Intelligence'], 'l-news': ['Presse, réglementation, articles de recherche, consultations et leurs dates limites, triés par sujet et par impact. L\'essentiel arrive chaque matin dans votre boîte mail.', 'Press, regulation, research papers, consultations and their deadlines, sorted by topic and impact. What matters lands in your inbox every morning.'],
+    nl: ['Votre veille de marché, chaque jour ouvré', 'Your market brief, every working day'], 'open-news': ['Ouvrir la veille', 'Open the news'], d30: ['30 j', '30 d'], d60: ['60 j', '60 d'], signin: ['Se connecter', 'Sign in'],
     h1: ['Tout le marché de l\'électricité, <em>au même endroit</em>.', 'The whole power market, <em>in one place</em>.'],
-    lead0: ['Prix dans 30&nbsp;zones européennes, prix négatifs, renouvelables, outils de pricing PPA et M0, veille et newsletter. Des données publiques, recoupées avec une deuxième source et mises à jour toute la journée.', 'Prices in 30&nbsp;European zones, negative prices, renewables, M0, news and a newsletter. Public data, cross-checked and updated all day.'],
+    lead0: ['Les prix day-ahead et forward en Europe, ce qui les fait bouger et ce que valent vos actifs renouvelables. Chaque matin, en un coup d\'œil.', 'Day-ahead and forward prices across Europe, what drives them and what your renewable assets are worth. Every morning, at a glance.'],
     lo: ['Plus bas', 'Low'], hi: ['Plus haut', 'High'], pb: ['Pointe − base', 'Peak − base'], free: ['Gratuit, sur validation', 'Free, on approval'],
-    k1: ['Prix de l\'électricité · Europe', 'Power prices · Europe'], g1u: ['zones de prix', 'bidding zones'], g1u2: ['au quart d\'heure', 'by quarter-hour'],
-    'h2-1': ['La même journée, <em>vue d\'Europe</em>.', 'The same day, <em>seen from Europe</em>.'],
-    lead1: ['Rejouez la journée heure par heure, survolez un pays pour voir sa courbe. Le prix de demain arrive dès sa publication, vers 13&nbsp;h.', 'Replay the day hour by hour, hover a country to see its curve. Tomorrow\'s price lands as soon as it is published, around 1&nbsp;pm.'],
+    k1: ['Prix · Europe', 'Prices · Europe'], g1u: ['zones de prix', 'bidding zones'], g1u2: ['au quart d\'heure', 'by quarter-hour'],
+    'h2-1': ['Le prix de demain, <em>partout en Europe</em>.', 'Tomorrow\'s price, <em>across Europe</em>.'],
+    lead1: ['Les résultats day-ahead de 30&nbsp;zones de marché dès leur publication, vers 13&nbsp;h, et les courbes forward juste à côté. Rejouez la journée heure par heure, survolez un pays pour voir sa courbe.', 'Day-ahead results for 30&nbsp;bidding zones as soon as they are published, around 1&nbsp;pm, with the forward curves next to them. Replay the day hour by hour, hover a country to see its curve.'],
     open1: ['Ouvrir les prix', 'Open prices'], lock: ['après connexion', 'after sign-in'],
     k2: ['Ce qui fait le prix · France', 'What drives the price · France'], g2u: ['€/MWh, gaz TTF', '€/MWh, TTF gas'],
-    'h2-2': ['Gaz, nucléaire, vent : <em>ce qui fait bouger le prix</em>.', 'Gas, nuclear, wind: <em>what moves the price</em>.'],
+    'h2-2': ['Comprendre <em>pourquoi</em> le prix bouge.', 'Know <em>why</em> prices move.'],
     open2: ['Ouvrir Ce qui fait le prix', 'Open What drives the price'],
-    k3: ['Outils · M0 et PPA', 'Tools · M0 and PPA'],
-    'h2-3': ['Ce que le solaire et l\'éolien <em>captent vraiment</em>.', 'What solar and wind <em>really capture</em>.'],
-    lead3: ['La M0 du mois recalculée selon la méthode de la CRE, un prix de référence PPA rejoué sur le passé et la valeur d\'une batterie sur le day-ahead.', 'The monthly M0 recomputed with the CRE method, a PPA reference price replayed on the past and the value of a battery on the day-ahead.'],
+    k3: ['Outils · PPA, M0, BESS', 'Tools · PPA, M0, BESS'],
+    'h2-3': ['Valorisez vos <em>actifs renouvelables</em>.', 'Value your <em>renewable assets</em>.'],
+    lead3: ['Prix PPA de référence solaire et éolien, M0 du mois avant sa publication par la CRE, taux de capture, et un premier benchmark pour vos batteries (BESS). Des chiffres prêts pour la négociation.', 'Solar and wind PPA benchmarks, this month\'s M0 before the CRE publishes it, capture rates, and a first benchmark for your batteries (BESS). Figures you can take into a negotiation.'],
     open3: ['Ouvrir les outils', 'Open tools'],
     k4: ['Mes tableaux de bord', 'My dashboards'], g4: ['Votre dashboard.', 'Your dashboard.'],
-    lead4: ['Choisissez vos graphiques dans le catalogue du site et rangez-les comme vous voulez. Ajoutez vos alertes (prix négatifs, seuils de prix) et recevez 7 O\'Klock chaque matin à 7\u00a0h. Partagez un dashboard par lien ou affichez-le dans l\'open space.', 'Pick your charts from the site\'s catalogue and arrange them your way. Add your alerts (negative prices, price thresholds) and get 7 O\'Klock every morning at 7\u00a0am. Share a dashboard by link or put it on the office wall.'],
+    lead4: ['Composez votre dashboard, réglez vos alertes (prix négatifs, seuils de prix) et recevez votre veille de marché chaque matin à 7\u00a0h. Vous arrivez au bureau déjà briefé.', 'Build your dashboard, set your alerts (negative prices, price thresholds) and get your market brief every morning at 7\u00a0am. You walk into the office already briefed.'],
     open4: ['Créer mon tableau de bord', 'Build my dashboard'],
     hint: ['Faites défiler : la courbe change de forme', 'Scroll: the curve changes shape'],
     lead1b: ['', ''],
@@ -649,9 +650,9 @@ footer img { height: 22px; width: auto; opacity: .85; }
     'b-ttf': ['Gaz TTF · day-ahead', 'TTF gas · day-ahead'], 'b-spr': ['Rejouer une journée', 'Replay a day'],
     's-spr': ['Éolien et solaire (GW, empilés) et prix day-ahead (€/MWh), France. Source : ENTSO-E, via PowerKlock.', 'Wind and solar (GW, stacked) and day-ahead price (€/MWh), France. Source: ENTSO-E, via PowerKlock.'],
     'b-news': ['Veille · derniers titres', 'News · latest headlines'], 's-news': ['Titres et liens uniquement, jamais le texte des articles.', 'Headlines and links only, never the text of articles.'],
-    'b-nl2': ['newsletter', 'newsletter'], 'h-nl': ['Chaque jour ouvré, ce qui compte pour votre métier. Le lundi, PowerBrunch résume la semaine.', 'Every working day, what matters for your job. On Mondays, PowerBrunch sums up the week.'],
+    'b-nl2': ['newsletter', 'newsletter'], 'h-nl': ['Chaque jour ouvré, ce qui compte pour votre métier. Le lundi, le récap de la semaine.', 'Every working day, what matters for your job. On Mondays, the week in review.'],
     'b-pages': ['Tout le menu', 'The whole menu'],
-    fh: ['Le site complet, gratuit, <span class="n">ouvert après validation</span>.', 'The full site, free, <span class="n">open after approval</span>.'],
+    fh: ['Envie d\'explorer ? <span class="n">Connectez-vous et demandez votre accès gratuit</span>.', 'Want to explore? <span class="n">Sign in and ask for your free access</span>.'],
     'c-pages': ['pages', 'pages'], 'c-zones': ['zones de prix', 'bidding zones'], 'c-src': ['sources de veille', 'news sources'],
     fnote: ['Connexion par mot de passe, Google ou code par e-mail. Les nouveaux comptes sont ouverts après validation. Données hébergées dans l\'Union européenne.', 'Sign in with a password, Google or an e-mail code. New accounts are opened after approval. Data hosted in the European Union.'],
     stay: ['Vous restez connecté sur ce navigateur.', 'You stay signed in on this browser.'], google: ['Continuer avec Google', 'Continue with Google'], or: ['ou', 'or'],
@@ -667,7 +668,7 @@ footer img { height: 22px; width: auto; opacity: .85; }
     [['Renouvelables', 'Renewables'], [['Capture et cannibalisation', 'Capture & cannibalisation'], ['M0 et appels d\'offres CRE', 'M0 & CRE tenders'], ['Capacité installée', 'Installed capacity']]],
     [['Système électrique', 'Power system'], [['Carte d\'Europe', 'Europe map'], ['Mix de production', 'Generation mix'], ['Nucléaire', 'Nuclear'], ['Indisponibilités et REMIT', 'Outages & REMIT'], ['Consommation', 'Demand'], ['Flux transfrontaliers', 'Cross-border flows'], ['Régions', 'Regions'], ['Météo', 'Weather'], ['DJU', 'HDD / CDD'], ['Bilan de l\'année', 'Yearly review'], ['Intensité carbone', 'Carbon intensity']]],
     [['Outils', 'Tools'], [['Pricer PPA', 'PPA pricer'], ['Pricer BOA', 'BOA pricer'], ['Prévision de production', 'Production forecast'], ['Empreinte carbone', 'Carbon footprint'], ['Analyse de marché', 'Market analysis'], ['Rejouer une journée', 'Replay a day'], ['Comparateur', 'Compare'], ['Convertisseur', 'Converter']]],
-    [['Veille', 'Intelligence'], [['Actualités', 'News'], ['Réglementation', 'Regulation'], ['7 O\'Klock', '7 O\'Klock'], ['API', 'API'], ['Méthodologie', 'Methodology'], ['Jeux', 'Games']]],
+    [['Veille', 'Intelligence'], [['Actualités', 'News'], ['Réglementation', 'Regulation'], ['Veille de marché', 'Market brief'], ['API', 'API'], ['Méthodologie', 'Methodology'], ['Jeux', 'Games']]],
   ];
 
   // ── NumberFlow: figures roll digit by digit ──
@@ -901,7 +902,7 @@ footer img { height: 22px; width: auto; opacity: .85; }
     const e0 = D.eu[0], e9 = D.eu[D.eu.length - 1];
     const rkRow = z => `<div class="r${z[0] === 'FR' ? ' fr' : ''}"><span>${esc(zn(z))}</span><span><b>${fmt(z[2], 0)}</b> <i style="color:${z[5] > 0 ? 'var(--up)' : 'var(--down)'}">${z[5] > 0 ? '▲' : '▼'}</i></span></div>`;
     $('#rk').innerHTML = `<div><h4>${tr('Plus chères', 'Dearest')}</h4>${D.eu.slice(0, 3).map(rkRow).join('')}</div><div><h4>France · ${rankFR}/${D.eu.length}</h4>${rkRow(byZ.FR)}<div class="r"><span>${tr('vs hier', 'vs yesterday')}</span><b style="color:${chg > 0 ? 'var(--up)' : 'var(--down)'}">${sgn(byZ.FR[5], 1)}</b></div></div><div><h4>${tr('Moins chères', 'Cheapest')}</h4>${D.eu.slice(-3).map(rkRow).join('')}</div>`;
-    $('#lead2').innerHTML = tr('Le prix français suit le gaz, qui fixe le prix quand les centrales à gaz tournent, et la disponibilité du parc nucléaire. Chaque semaine, le site décompose la variation du spot entre ses moteurs : gaz, carbone, vent, soleil, consommation et nucléaire.', 'The French price follows gas, which sets the price when gas plants run, and the availability of the nuclear fleet. Every week the site splits the move of the spot between its drivers: gas, carbon, wind, sun, demand and nuclear.');
+    $('#lead2').innerHTML = tr('Gaz, disponibilité nucléaire, éolien et solaire : chaque semaine, PowerKlock décompose ce qui a fait monter ou baisser le spot français.', 'Gas, nuclear availability, wind and solar: every week PowerKlock breaks down what pushed the French spot up or down.');
     const wEnd = (() => { const d = new Date(DRV[DRV.length - 1][0] + 'T12:00:00'); d.setDate(d.getDate() + 6); return d.toISOString().slice(0, 10); })();
     $('#src2').textContent = tr(` Moyennes par semaine (lundi à dimanche), du ${day(DRV[0][0])} au ${day(wEnd)} : spot France (ENTSO-E, moyenne publiée du jour de livraison), gaz TTF day-ahead et puissance nucléaire disponible (RTE), via PowerKlock. Décomposition détaillée : Marchés › Ce qui fait le prix.`, ` Weekly means (Monday to Sunday), ${day(DRV[0][0])} to ${day(wEnd)}: France spot (ENTSO-E, published average of the delivery day), TTF day-ahead gas and available nuclear capacity (RTE), via PowerKlock. Full split: Markets › What drives the price.`);
     $('#src3').textContent = tr(`M0 mensuelles et prix base (€/MWh), France, 13 derniers mois complets : le graphique de Renouvelables › M0. M0 recalculée par PowerKlock (courbes RTE via ODRÉ, prix ENTSO-E). Prix PPA du pricer publiés le ${day(D.ppa.days[D.ppa.days.length - 1][0])}.`, `Monthly M0 and base price (€/MWh), France, last 13 complete months: the chart of Renewables › M0. M0 recomputed by PowerKlock (RTE curves via ODRÉ, ENTSO-E prices). PPA prices of the pricer published on ${day(D.ppa.days[D.ppa.days.length - 1][0])}.`);
@@ -916,7 +917,7 @@ footer img { height: 22px; width: auto; opacity: .85; }
     [0, 1, 2].forEach(i => { const p = mixd.slice(i * third, (i + 1) * third).map(([k, n]) => `<span class="pill"><b>${k}</b>${n}</span>`).join(''); $('#lane' + (i + 1)).innerHTML = p + p; });
     $('#b-ppa-t').textContent = 'Cal ' + (D.ppa.tenor || '').replace(/-/g, '–');
     $('#s-ppa').textContent = tr(`Prix PPA du pricer PowerKlock, réglages par défaut, moyenne des 4 méthodes (€/MWh), recalculé chaque jour ; pointillés : jours reconstruits. Le graphique « PPA benchmark · France » du site, dernier point ${day(D.ppa.days[D.ppa.days.length - 1][0])}.`, `PPA price of the PowerKlock pricer, default settings, average of the 4 methods (€/MWh), recomputed daily; dashed: rebuilt days. The site's "PPA benchmark · France" chart, last point ${day(D.ppa.days[D.ppa.days.length - 1][0])}.`);
-    $('#h-news').innerHTML = `<span class="num">${D.newsN}</span> ${tr('articles', 'articles')}, <span class="num">${D.srcN}</span> ${tr('sources, une newsletter à 7&nbsp;h.', 'sources, a newsletter at 7&nbsp;am.')}`;
+    $('#h-news').innerHTML = tr('Ne ratez rien <em>d\'important</em>.', 'Never miss <em>what matters</em>.');
     const item = ([s, t]) => `<div class="item"><span class="s">${esc(s)}</span><span class="t">${esc(t)}</span></div>`;
     $('#newslist').innerHTML = D.news.slice(0, 4).map(item).join('');
     $('#flow').innerHTML = [0, 1, 2].map(c => { const list = D.news.map((_, i) => D.news[(i + c * 2) % D.news.length]); const h = list.map(item).join(''); return `<div class="col">${h + h}</div>`; }).join('');
