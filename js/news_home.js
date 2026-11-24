@@ -46,13 +46,8 @@ const _nhClock = d => (Date.now() - d < 864e5) ? new Date(d).toLocaleTimeString(
 const _nhSnip = (s, title) => { s = (s || '').trim(); if (!s || /^the post |appeared first on/i.test(s) || s.length < 40) return ''; return s.toLowerCase().startsWith((title || '').toLowerCase().slice(0, 30)) ? '' : s; };
 const _nhA = (url, inner, cls) => `<a${cls ? ` class="${cls}"` : ''} href="${_newsEsc(/^https?:\/\//.test(url || '') ? url : '#')}" target="_blank" rel="noopener noreferrer">${inner}</a>`;
 
-// the reader's edition of today's newsletter: first profile ticked, else the one chosen in the Newsletter tab
-function _nhProfile(E) {
-  const P = (E && E.profiles) || {};
-  const mine = ((_nlMe && _nlMe.profiles) || []).find(k => P[k]);
-  let pid = mine || _newsStore('pk-nl-profile'); if (!P[pid]) pid = P.supplier ? 'supplier' : P.origination ? 'origination' : Object.keys(P)[0];
-  return pid ? Object.assign({ id: pid }, P[pid]) : null;
-}
+// the reader's edition of today's newsletter: the stories of their subjects (js/news.js › _nlMine)
+function _nhProfile(E) { return E && E.profiles && Object.keys(E.profiles).length ? _nlMine(E) : null; }
 
 async function renderNewsHome() {
   const host = document.getElementById('nh'); if (!host || typeof newsData === 'undefined' || !newsData) return;
@@ -95,7 +90,7 @@ async function renderNewsHome() {
     .sort((a, b) => ((b.impact || 0) - 0.35 * (Date.now() - b.date) / 864e5) - ((a.impact || 0) - 0.35 * (Date.now() - a.date) / 864e5))
     .slice(0, 5 - ess.length).map(i => ({ title: i.title, link: i.link, sources: [i.source] })));
   ess.forEach(s => seen.add(s.link));
-  const essH = ess.length ? `<section class="nh-ess"><div class="nh-k">${_newsT('L’essentiel du jour', 'Today’s essentials')}${prof && prof.name ? ` <span class="nh-prof">· ${_newsT('profil', 'profile')} ${_newsEsc(L(prof.short || prof.name))}</span>` : ''}</div>
+  const essH = ess.length ? `<section class="nh-ess"><div class="nh-k">${_newsT('L’essentiel du jour', 'Today’s essentials')}${prof && (prof.interests || []).length ? ` <span class="nh-prof">· ${_newsT('selon vos sujets', 'from your subjects')}</span>` : ''}</div>
     <ol>${ess.map(s => `<li><span>${_nhA(s.link, _newsEsc(s.title))} <span class="nh-src">· ${_newsEsc((s.sources || [])[0] || '')}</span></span></li>`).join('')}</ol></section>` : '';
   // ── the sections, in the reader's order; one article appears once, in its first section ──
   const now = Date.now(), fresh = i => now - i.date < ((i.tags || []).includes('research') ? 45 : 7) * 864e5;   // papers: the last 45 days
@@ -187,9 +182,9 @@ function _nfFilter(tag) {
 
 // ── the « Customise » panel: the newsletter profile, the sections and their order, France first, the side column ──
 function _nhCustomise() {
-  const p = _nhPrefs(), E = _nlData || {}, P = E.profiles || {}, en = window.PKI18n && PKI18n.lang === 'en', L = a => Array.isArray(a) ? (en ? a[1] : a[0]) : (a || '');
+  const p = _nhPrefs();
   const signed = !!(window.PKAccount && PKAccount.user);
-  let profs = ((_nlMe && _nlMe.profiles) || []).filter(k => P[k]); if (!profs.length) { const k = _newsStore('pk-nl-profile'); if (P[k]) profs = [k]; }
+  let ints = _nlInterests().interests.slice();
   const all = NH_RUBS.map(r => r.id).concat((p.custom || []).map(c => c.id)), order = p.rubs.concat(all.filter(x => !p.rubs.includes(x)));
   const name = id => { const r = NH_RUBS.find(x => x.id === id) || (p.custom || []).find(c => c.id === id); return r ? (r.label || _newsT(r.fr, r.en)) : id; };
   // the newsletter by e-mail (public.news_profile, signed in only): which editions, and to which address
@@ -201,9 +196,9 @@ function _nhCustomise() {
   const ov = document.createElement('div'); ov.className = 'nh-ov'; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-label', _newsT('Personnaliser ma Veille', 'Customise my News'));
   const draw = () => {
     ov.innerHTML = `<div class="nh-panel"><div class="nh-ph"><b>${_newsT('Personnaliser ma Veille', 'Customise my News')}</b><button type="button" class="nh-x" aria-label="${_newsT('Fermer', 'Close')}">✕</button></div>
-      <p class="nh-note">${signed ? _newsT('Le profil et la priorité France sont ceux de votre newsletter : les changer ici les change aussi pour le mail.', 'The profile and France first are those of your newsletter: changing them here changes the e-mail too.') : _newsT('Connectez-vous pour retrouver ces choix partout et dans votre newsletter. Sans compte, ils restent dans ce navigateur.', 'Sign in to keep these choices everywhere and in your newsletter. Without an account, they stay in this browser.')}</p>
-      <div class="nh-k">${_newsT('Mon profil de lecture', 'My reading profile')}</div>
-      <div class="nh-chips">${Object.keys(P).map(k => `<button type="button" class="nh-chip${profs.includes(k) ? ' on' : ''}" data-prof="${_newsEsc(k)}">${profs.includes(k) ? '✓ ' : ''}${_newsEsc(L(P[k].name))}</button>`).join('')}</div>
+      <p class="nh-note">${signed ? _newsT('Vos sujets et la priorité France sont ceux de votre newsletter : les changer ici les change aussi pour le mail.', 'Your subjects and France first are those of your newsletter: changing them here changes the e-mail too.') : _newsT('Connectez-vous pour retrouver ces choix partout et dans votre newsletter. Sans compte, ils restent dans ce navigateur.', 'Sign in to keep these choices everywhere and in your newsletter. Without an account, they stay in this browser.')}</p>
+      <div class="nh-k">${_newsT('Mes sujets', 'My subjects')}</div>
+      ${PK_INTERESTS.map(([gf, ge, list]) => `<div class="nh-g">${_newsT(gf, ge)}</div><div class="nh-chips">${list.map(([k, fr, en]) => `<button type="button" class="nh-chip${ints.includes(k) ? ' on' : ''}" data-int="${k}">${ints.includes(k) ? '✓ ' : ''}${_newsT(fr, en)}</button>`).join('')}</div>`).join('')}
       <div class="nh-k">${_newsT('Mes mots-clés', 'My keywords')}</div><div id="nh-kw-slot"></div>
       ${signed ? `<div class="nh-k">${_newsT('Recevoir par e-mail', 'Receive by e-mail')}</div>
       <label class="nh-cb"><input type="checkbox" id="nh-md"${mailD ? ' checked' : ''}> 7 O’Klock ${_newsT('(chaque matin de semaine, 7 h)', '(every weekday, 7:00)')}</label>
@@ -220,7 +215,7 @@ function _nhCustomise() {
       ${[['mk', _newsT('Marchés ce matin', 'Markets this morning')], ['cons', _newsT('À ne pas rater', 'Not to miss')], ['fig', _newsT('Le chiffre du jour', 'Figure of the day')]].map(([k, l]) => `<label class="nh-cb"><input type="checkbox" data-aside="${k}"${p.aside[k] ? ' checked' : ''}> ${l}</label>`).join('')}
       <div class="nh-pf"><span class="news-add-msg" id="nh-msg"></span><button type="button" class="pk-btn-ghost" id="nh-cancel">${_newsT('Annuler', 'Cancel')}</button><button type="button" class="nh-save" id="nh-ok">${_newsT('Enregistrer', 'Save')}</button></div></div>`;
     const slot = ov.querySelector('#nh-kw-slot'); if (slot && mine) slot.appendChild(mine);
-    ov.querySelectorAll('[data-prof]').forEach(b => b.addEventListener('click', () => { const k = b.dataset.prof; profs = profs.includes(k) ? profs.filter(x => x !== k) : profs.concat(k); draw(); }));
+    ov.querySelectorAll('[data-int]').forEach(b => b.addEventListener('click', () => { const k = b.dataset.int; ints = ints.includes(k) ? ints.filter(x => x !== k) : ints.concat(k); draw(); }));
     ov.querySelectorAll('[data-rshow]').forEach(c => c.addEventListener('change', () => { const id = c.dataset.rshow; p.rubs = c.checked ? order.filter(x => x === id || p.rubs.includes(x)) : p.rubs.filter(x => x !== id); draw(); }));
     ov.querySelectorAll('[data-mv]').forEach(b => b.addEventListener('click', () => { const k = +b.dataset.mv, j = k + +b.dataset.d; [order[k], order[j]] = [order[j], order[k]]; p.rubs = order.filter(x => p.rubs.includes(x)); draw(); }));
     ov.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', () => { const id = b.dataset.del; p.custom = p.custom.filter(c => c.id !== id); p.rubs = p.rubs.filter(x => x !== id); order.splice(order.indexOf(id), 1); draw(); }));
@@ -236,9 +231,9 @@ function _nhCustomise() {
       const msg = ov.querySelector('#nh-msg');
       if (mailTo && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(mailTo)) { msg.textContent = _newsT('Adresse e-mail invalide.', 'Invalid e-mail address.'); msg.className = 'news-add-msg ko'; return; }
       _nhSave(p);
-      if (profs[0]) _newsStore('pk-nl-profile', profs[0]);
+      try { localStorage.setItem('pk-nl-interests', JSON.stringify({ interests: ints, france: p.france })); } catch (_) {}
       if (signed && typeof _nlSave === 'function') {
-        await _nlSave(Object.assign(profs.length ? { profiles: profs } : {}, { france: p.france, daily: mailD, weekly: mailW, email_to: mailTo || null }), msg);
+        await _nlSave({ interests: ints, france: p.france, daily: mailD, weekly: mailW, email_to: mailTo || null }, msg);
         if (/ko/.test(msg.className)) return;   // not saved: the panel stays open with the reason
       }
       close(); renderNewsHome();

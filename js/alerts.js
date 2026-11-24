@@ -10,16 +10,28 @@
 (function () {
   'use strict';
   const LS = 'pk-alerts-v1';
+  // grouped in the panel's list: spot prices, RTE peak days, annual forwards, PPA and correlations
+  const GROUPS = [['Spot prices', ['neg_price', 'base_above', 'base_below']], ['RTE peak days (France)', ['pp1', 'pp2']],
+    ['Annual forwards (Cal)', ['cal_move', 'cal_above', 'cal_below']], ['PPA and correlations', ['ppa_move', 'corr_break']]];
   const KINDS = {
-    neg_price: { label: 'Negative prices', help: 'At least N hours of negative day-ahead price in one of the zones.' },
-    pp1: { label: 'PP1 day (France)', help: 'RTE signals a PP1 peak-period day (the day before, about 09:30).' },
-    pp2: { label: 'PP2 day (France)', help: 'RTE signals a PP2 peak-period day (the day before, 09:30 or 19:00).' },
-    base_above: { label: 'Baseload above', help: 'Daily baseload above a price.' },
-    base_below: { label: 'Baseload below', help: 'Daily baseload below a price.' },
+    neg_price: { label: 'Negative prices', help: 'Negative day-ahead prices in one of the zones, counted by the quarter-hour: 0.25 h means a single negative quarter-hour.' },
+    base_above: { label: 'Baseload above', help: 'The day’s average (baseload) above a price.' },
+    base_below: { label: 'Baseload below', help: 'The day’s average (baseload) below a price.' },
+    pp1: { label: 'PP1 day', help: 'RTE signals a PP1 peak-period day (the day before, about 09:30).' },
+    pp2: { label: 'PP2 day', help: 'RTE signals a PP2 peak-period day (the day before, 09:30 or 19:00).' },
+    cal_move: { label: 'Cal: big move', help: 'An annual contract moves by more than a threshold in one session or in a week, up or down.' },
+    cal_above: { label: 'Cal: above a price', help: 'An annual contract settles above a price.' },
+    cal_below: { label: 'Cal: below a price', help: 'An annual contract settles below a price.' },
     ppa_move: { label: 'PPA benchmark: weekly move', help: 'The PPA benchmark (solar or wind, recalculated every day by the pricer) moved by more than a threshold over 7 days, up or down.' },
     corr_break: { label: 'Correlation break', help: 'A watched pair (Cal FR / TTF, Cal FR / Cal DE, TTF / EUA…, Tools › Comparator) moves together much more or much less over the last 60 days than over a year.' },
-    fwd_fr: { label: 'Cal+1 France: French move', help: 'The part of the day’s French Cal+1 move that gas and CO₂ do not explain (Prices › Forward, analyst read) is above a threshold, up or down.' },
   };
+  const L = (fr, en) => (!window.PKI18n || PKI18n.lang !== 'en') ? fr : en;
+  const CAL_C = [['FR', '🇫🇷', 'France', 'France'], ['DE', '🇩🇪', 'Germany', 'Allemagne'], ['NL', '🇳🇱', 'Netherlands', 'Pays-Bas'], ['UK', '🇬🇧', 'United Kingdom', 'Royaume-Uni']];
+  const calName = c => { const x = CAL_C.find(y => y[0] === c) || [c, '', c, c]; return x[1] + ' ' + L(x[3], x[2]); };
+  const isCal = k => k === 'cal_move' || k === 'cal_above' || k === 'cal_below';
+  const noZones = k => k.startsWith('pp') || isCal(k) || k === 'ppa_move' || k === 'corr_break';
+  const calUnit = c => c === 'UK' ? '£/MWh' : '€/MWh';
+
   const esc = PK.esc;   // js/pk-core.js
   const zoneList = () => (typeof ZONES !== 'undefined' ? ZONES : []).slice().sort((a, b) => a.name.localeCompare(b.name));
   const zoneName = c => ((typeof ZONES !== 'undefined' ? ZONES : []).find(z => z.code === c) || {}).name || c;
@@ -47,7 +59,7 @@
         // first sign-in on this browser: move the local rules to the account
         const loc = local.get();
         if (loc.length) {
-          const ins = loc.map(r => ({ kind: r.kind, zones: r.zones, min_hours: r.min_hours, threshold: r.threshold, email: true, active: r.active !== false }));
+          const ins = loc.map(r => ({ kind: r.kind, zones: r.zones, min_hours: r.min_hours, threshold: r.threshold, params: r.params || {}, email: true, active: r.active !== false })).filter(r => KINDS[r.kind]);
           const res = await c.from('alert_rule').insert(ins).select('*');
           if (!res.error) { local.set([]); rules = (data || []).concat(res.data || []); return; }
         }
@@ -95,28 +107,36 @@
     for (const d of days) {
       const zones = await getDay(d);
       rules.filter(r => r.active !== false).forEach(r => {
-        if (r.kind === 'fwd_fr' || r.kind === 'ppa_move' || r.kind === 'corr_break') return;
+        if (isCal(r.kind) || r.kind === 'ppa_move' || r.kind === 'corr_break') return;
         if (r.kind === 'pp1' || r.kind === 'pp2') {
           const e = pp[d]; if (e && e[r.kind]) out.push({ d, z: 'FR', kind: r.kind, text: fmtDay(d) + ' is a ' + r.kind.toUpperCase() + ' day (RTE peak-period signal)' });
           return;
         }
         (r.zones || []).forEach(z => {
           const st = stats(zones, z); if (!st) return;
-          if (r.kind === 'neg_price' && st.negH >= (r.min_hours || 1)) out.push({ d, z, kind: r.kind, text: `${st.negH} h of negative prices on ${fmtDay(d)}, between ${st.span}, lowest ${st.min.toFixed(2)} €/MWh` });
+          if (r.kind === 'neg_price' && st.negH >= (r.min_hours || 0.25)) out.push({ d, z, kind: r.kind, text: `${st.negH} h of negative prices on ${fmtDay(d)}, between ${st.span}, lowest ${st.min.toFixed(2)} €/MWh` });
           else if (r.kind === 'base_above' && r.threshold != null && st.base > r.threshold) out.push({ d, z, kind: r.kind, text: `baseload ${st.base.toFixed(2)} €/MWh on ${fmtDay(d)}, above ${r.threshold}` });
           else if (r.kind === 'base_below' && r.threshold != null && st.base < r.threshold) out.push({ d, z, kind: r.kind, text: `baseload ${st.base.toFixed(2)} €/MWh on ${fmtDay(d)}, below ${r.threshold}` });
         });
       });
     }
-    // Cal+1 France: France-specific part of the latest daily move
-    const fr = rules.filter(r => r.active !== false && r.kind === 'fwd_fr' && r.threshold != null);
-    if (fr.length && window.PKFwdRead) {
-      try {
-        const o = await PKFwdRead.compute('1D');
-        if (o && o.resid != null && o.Z.d >= addDays(today(), -3)) fr.forEach(r => { if (Math.abs(o.resid) >= r.threshold) out.push({ d: o.Z.d, z: 'FR', kind: 'fwd_fr', text: `Cal ${o.k} ${(o.dP >= 0 ? '+' : '') + o.dP.toFixed(2)} € on ${fmtDay(o.Z.d)}: ${(o.resid >= 0 ? '+' : '') + o.resid.toFixed(2)} € France-specific, gas and CO₂ explain ${(o.fromFuel + o.fromCo2 >= 0 ? '+' : '') + (o.fromFuel + o.fromCo2).toFixed(2)} €` }); });
-      } catch (_) { /* forward data unavailable */ }
+    // annual forwards: the latest session against the one before, or a week before (same as scripts/alerts.py)
+    const cr = rules.filter(r => r.active !== false && isCal(r.kind) && r.threshold != null);
+    if (cr.length) {
+      const chain = await fetch(base() + 'history/fr_market_calchain.json').then(x => x.ok ? x.json() : null).catch(() => null);
+      cr.forEach(r => {
+        const p = r.params || {}, c = p.country || (r.zones || ['FR'])[0], n = +p.cal || 1;
+        const sr = chain && chain[c] && chain[c].rolling && chain[c].rolling['Cal+' + n]; if (!sr) return;
+        const pts = sr.dates.map((d, i) => [d, sr.values[i]]).filter(x => x[1] != null); if (pts.length < 2) return;
+        const [d, v] = pts[pts.length - 1]; if (d < addDays(today(), -3)) return;
+        const name = `Cal+${n} (${+d.slice(0, 4) + n})`, u = calUnit(c), f2 = x => L(x.toFixed(2).replace('.', ','), x.toFixed(2));
+        if (r.kind === 'cal_move') {
+          const prev = p.period === '1w' ? pts.filter(x => x[0] <= addDays(d, -7)).pop() : pts[pts.length - 2]; if (!prev) return;
+          const mv = v - prev[1], size = p.unit === 'pct' ? Math.abs(mv) / prev[1] * 100 : Math.abs(mv);
+          if (size >= r.threshold) out.push({ d, z: c, kind: r.kind, text: `${name} ${mv >= 0 ? '+' : '−'}${f2(Math.abs(mv))} ${u} (${mv >= 0 ? '+' : '−'}${L((Math.abs(mv) / prev[1] * 100).toFixed(1).replace('.', ','), (Math.abs(mv) / prev[1] * 100).toFixed(1))} %) ${p.period === '1w' ? L('sur une semaine', 'over a week') : L('en une séance', 'in one session')}, ${L('à', 'at')} ${f2(v)} ${u}` });
+        } else if (r.kind === 'cal_above' ? v > r.threshold : v < r.threshold) out.push({ d, z: c, kind: r.kind, text: `${name} ${L('à', 'at')} ${f2(v)} ${u}, ${r.kind === 'cal_above' ? L('au-dessus de', 'above') : L('en dessous de', 'below')} ${r.threshold}` });
+      });
     }
-    // PPA benchmark over 7 days, correlation breaks (same rules as scripts/alerts.py)
     const pm = rules.filter(r => r.active !== false && r.kind === 'ppa_move' && r.threshold != null);
     if (pm.length) try {
       const b = (await fetch(base() + 'history/ppa_benchmark.json').then(x => x.json())).days || {}, ks = Object.keys(b).sort(), last = ks[ks.length - 1];
@@ -156,9 +176,12 @@
   function close() { const m = document.getElementById('pk-alert-modal'); if (m) m.remove(); document.removeEventListener('keydown', escClose); }
   function escClose(e) { if (e.key === 'Escape') close(); }
   function ruleText(r) {
-    const k = KINDS[r.kind] || { label: r.kind };
-    const zs = r.kind === 'pp1' || r.kind === 'pp2' || r.kind === 'fwd_fr' || r.kind === 'ppa_move' ? 'France' : r.kind === 'corr_break' ? 'Watched pairs' : (r.zones || []).map(z => flagOf(z) + ' ' + z).join(', ');
-    const cond = r.kind === 'neg_price' ? ` · ≥ ${r.min_hours || 1} h` : r.kind.startsWith('base_') ? ` · ${r.threshold} €/MWh` : r.kind === 'fwd_fr' || r.kind === 'ppa_move' ? ` · ±${r.threshold} €/MWh` : r.kind === 'corr_break' ? ` · gap ≥ ${r.threshold}` : '';
+    const k = KINDS[r.kind] || { label: r.kind }, p = r.params || {};
+    const cc = CAL_C.find(x => x[0] === (p.country || (r.zones || [])[0])) || CAL_C[0];
+    const zs = r.kind === 'pp1' || r.kind === 'pp2' || r.kind === 'ppa_move' ? 'France' : isCal(r.kind) ? `${calName(cc[0])} · Cal+${p.cal || 1}` : r.kind === 'corr_break' ? 'Watched pairs' : (r.zones || []).map(z => flagOf(z) + ' ' + zoneName(z)).join(', ');
+    const cond = r.kind === 'neg_price' ? ` · ≥ ${r.min_hours || 0.25} h` : r.kind.startsWith('base_') ? ` · ${r.threshold} €/MWh`
+      : r.kind === 'cal_move' ? ` · ±${r.threshold} ${p.unit === 'pct' ? '%' : calUnit(cc[0])} ${p.period === '1w' ? L('sur une semaine', 'over a week') : L('en une séance', 'in one session')}`
+      : r.kind === 'cal_above' || r.kind === 'cal_below' ? ` · ${r.threshold} ${calUnit(cc[0])}` : r.kind === 'ppa_move' ? ` · ±${r.threshold} €/MWh` : r.kind === 'corr_break' ? ` · gap ≥ ${r.threshold}` : '';
     return `<div><b>${esc(k.label)}</b>${cond}</div><span>${esc(zs)}${r.email_to ? ' · → ' + esc(r.email_to) : ''}</span>`;
   }
   async function open() {
@@ -176,10 +199,14 @@
         <div class="pk-al-sec">My alerts</div>
         <div id="pk-al-rules"></div>
         <div class="pk-al-sec">New alert</div>
-        <label class="pkd-field"><span>Type</span><select id="pk-al-kind">${Object.entries(KINDS).map(([k, v]) => `<option value="${k}">${v.label}</option>`).join('')}</select></label>
+        <label class="pkd-field"><span>Type</span><select id="pk-al-kind">${GROUPS.map(([g, ks]) => `<optgroup label="${g}">${ks.map(k => `<option value="${k}">${KINDS[k].label}</option>`).join('')}</optgroup>`).join('')}</select></label>
         <div class="pk-al-help" id="pk-al-help"></div>
         <div id="pk-al-zones-wrap"><div class="pk-al-lbl">Zones</div><div class="pk-al-zones" id="pk-al-zones">${zoneList().map(z => `<label class="pk-al-z"><input type="checkbox" value="${z.code}"${z.code === 'FR' ? ' checked' : ''}><span>${z.flag} ${esc(z.name)}</span></label>`).join('')}</div></div>
-        <label class="pkd-field" id="pk-al-hours-wrap"><span>Minimum negative hours</span><input id="pk-al-hours" type="number" min="0.25" step="0.25" value="1"></label>
+        <div class="pk-al-cal" id="pk-al-cal-wrap"><label class="pkd-field"><span>Country</span><select id="pk-al-cc">${CAL_C.map(([c]) => `<option value="${c}">${calName(c)}</option>`).join('')}</select></label>
+          <label class="pkd-field"><span>Contract</span><select id="pk-al-cn">${[1, 2, 3].map(n => `<option value="${n}">Cal+${n} (${new Date().getFullYear() + n})</option>`).join('')}</select></label>
+          <label class="pkd-field" id="pk-al-per-wrap"><span>Over</span><select id="pk-al-per"><option value="1d">One session</option><option value="1w">One week</option></select></label>
+          <label class="pkd-field" id="pk-al-unit-wrap"><span>Unit</span><select id="pk-al-unit"><option value="eur">€/MWh</option><option value="pct">%</option></select></label></div>
+        <label class="pkd-field" id="pk-al-hours-wrap"><span>Minimum negative duration (hours, by quarter-hour)</span><input id="pk-al-hours" type="number" min="0.25" step="0.25" value="0.25"></label>
         <label class="pkd-field" id="pk-al-thr-wrap"><span>Price (€/MWh)</span><input id="pk-al-thr" type="number" step="1" value="150"></label>
         ${signed ? `<label class="pkd-field"><span>Send the e-mails to</span><input id="pk-al-to" type="email" autocomplete="email" placeholder="${esc(A.user.email || '')}"></label><div class="pk-al-help">Leave empty to receive them at your own address.</div>` : ''}
         <div class="pkd-msg" id="pk-al-msg" role="status"></div>
@@ -191,20 +218,27 @@
     const $ = s => bg.querySelector(s);
     const si = $('#pk-al-signin'); if (si) si.addEventListener('click', e => { e.preventDefault(); close(); if (window.PKDash && PKDash.openAccount) PKDash.openAccount(); });
     const sync = () => {
-      const k = $('#pk-al-kind').value;
+      const k = $('#pk-al-kind').value, cal = isCal(k);
       $('#pk-al-help').textContent = KINDS[k].help + (k.startsWith('pp') ? ' PP data need the RTE account to be connected.' : '');
-      $('#pk-al-zones-wrap').style.display = k.startsWith('pp') || k === 'fwd_fr' || k === 'ppa_move' || k === 'corr_break' ? 'none' : '';
+      $('#pk-al-zones-wrap').style.display = noZones(k) ? 'none' : '';
+      $('#pk-al-cal-wrap').style.display = cal ? '' : 'none';
+      $('#pk-al-per-wrap').style.display = $('#pk-al-unit-wrap').style.display = k === 'cal_move' ? '' : 'none';
       $('#pk-al-hours-wrap').style.display = k === 'neg_price' ? '' : 'none';
-      $('#pk-al-thr-wrap').style.display = k.startsWith('base_') || k === 'fwd_fr' || k === 'ppa_move' || k === 'corr_break' ? '' : 'none';
-      $('#pk-al-thr-wrap').querySelector('span').textContent = k === 'fwd_fr' ? 'French part of the move above (€/MWh, up or down)' : k === 'ppa_move' ? 'Move over 7 days above (€/MWh, up or down)' : k === 'corr_break' ? 'Gap in correlation above (0 to 1)' : 'Price (€/MWh)';
-      $('#pk-al-thr').step = k === 'corr_break' ? '0.05' : '1';
-      if (k === 'fwd_fr' && +$('#pk-al-thr').value > 20) $('#pk-al-thr').value = 2;
-      if (k === 'ppa_move' && +$('#pk-al-thr').value > 50) $('#pk-al-thr').value = 3;
-      if (k === 'corr_break' && +$('#pk-al-thr').value > 1) $('#pk-al-thr').value = 0.3;
+      $('#pk-al-thr-wrap').style.display = k.startsWith('base_') || cal || k === 'ppa_move' || k === 'corr_break' ? '' : 'none';
+      const u = calUnit($('#pk-al-cc').value);
+      $('#pk-al-thr-wrap').querySelector('span').textContent = k === 'cal_move' ? ($('#pk-al-unit').value === 'pct' ? 'Move above (%, up or down)' : `Move above (${u}, up or down)`)
+        : k === 'cal_above' || k === 'cal_below' ? `Price (${u})` : k === 'ppa_move' ? 'Move over 7 days above (€/MWh, up or down)' : k === 'corr_break' ? 'Gap in correlation above (0 to 2)' : 'Price (€/MWh)';
+      $('#pk-al-thr').step = k === 'corr_break' ? '0.05' : k === 'cal_move' ? '0.5' : '1';
+      const t = +$('#pk-al-thr').value;
+      if (k === 'cal_move' && t > 50) $('#pk-al-thr').value = 3;
+      if ((k === 'cal_above' || k === 'cal_below') && (t < 20 || t > 500)) $('#pk-al-thr').value = k === 'cal_above' ? 130 : 80;
+      if (k === 'ppa_move' && t > 50) $('#pk-al-thr').value = 3;
+      if (k === 'corr_break' && t > 2) $('#pk-al-thr').value = 0.3;
     };
+    ['#pk-al-cc', '#pk-al-unit'].forEach(id => $(id).addEventListener('change', sync));
     $('#pk-al-kind').addEventListener('change', sync); sync();
     const drawHits = () => {
-      $('#pk-al-hits').innerHTML = hits.length ? hits.map(h => `<div class="pk-al-hit"><span class="pk-al-dot ${h.kind}"></span><div><b>${h.kind.startsWith('pp') ? 'France' : flagOf(h.z) + ' ' + esc(zoneName(h.z))}</b> · ${esc(h.text)}</div></div>`).join('')
+      $('#pk-al-hits').innerHTML = hits.length ? hits.map(h => `<div class="pk-al-hit"><span class="pk-al-dot ${h.kind}"></span><div><b>${h.kind.startsWith('pp') ? 'France' : isCal(h.kind) ? calName(h.z) : flagOf(h.z) + ' ' + esc(zoneName(h.z))}</b> · ${esc(h.text)}</div></div>`).join('')
         : `<div class="pk-al-empty">${rules.length ? 'Nothing triggered for today and tomorrow.' : 'No alert yet: add one below.'}</div>`;
     };
     const drawRules = () => {
@@ -220,9 +254,10 @@
     drawHits(); drawRules();
     $('#pk-al-add').addEventListener('click', async () => {
       const k = $('#pk-al-kind').value, msg = $('#pk-al-msg');
-      const zones = k.startsWith('pp') || k === 'fwd_fr' || k === 'ppa_move' || k === 'corr_break' ? ['FR'] : Array.from(bg.querySelectorAll('#pk-al-zones input:checked')).map(i => i.value);
+      const zones = isCal(k) ? [$('#pk-al-cc').value] : noZones(k) ? ['FR'] : Array.from(bg.querySelectorAll('#pk-al-zones input:checked')).map(i => i.value);
       if (!zones.length) { msg.textContent = 'Choose at least one zone.'; return; }
-      const r = { kind: k, zones, min_hours: k === 'neg_price' ? +$('#pk-al-hours').value || 1 : null, threshold: k.startsWith('base_') || k === 'fwd_fr' || k === 'ppa_move' || k === 'corr_break' ? +$('#pk-al-thr').value : null, email: true, active: true };
+      const r = { kind: k, zones, min_hours: k === 'neg_price' ? Math.max(0.25, +$('#pk-al-hours').value || 0.25) : null, threshold: k.startsWith('base_') || isCal(k) || k === 'ppa_move' || k === 'corr_break' ? +$('#pk-al-thr').value : null, email: true, active: true };
+      if (isCal(k)) r.params = k === 'cal_move' ? { country: zones[0], cal: +$('#pk-al-cn').value, period: $('#pk-al-per').value, unit: $('#pk-al-unit').value } : { country: zones[0], cal: +$('#pk-al-cn').value };
       const to = (($('#pk-al-to') || {}).value || '').trim().toLowerCase();
       if (to && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)) { msg.textContent = 'Enter a valid e-mail address, or leave the field empty.'; return; }
       if (to && to !== (A.user.email || '').toLowerCase()) r.email_to = to;
@@ -249,7 +284,7 @@
   .pk-al-sec{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);font-weight:600;margin-top:4px}
   .pk-al-hit{display:flex;gap:8px;align-items:flex-start;font-size:12.5px;color:var(--text2);padding:6px 0;border-bottom:1px solid var(--border)}
   .pk-al-hit b{color:var(--text)}
-  .pk-al-dot{width:8px;height:8px;border-radius:50%;margin-top:5px;flex:none;background:#60A5FA} .pk-al-dot.pp1,.pk-al-dot.pp2{background:#ED6965} .pk-al-dot.base_above{background:#F97316} .pk-al-dot.base_below{background:#14D3A9} .pk-al-dot.fwd_fr{background:#C4A57B}
+  .pk-al-dot{width:8px;height:8px;border-radius:50%;margin-top:5px;flex:none;background:#60A5FA} .pk-al-dot.pp1,.pk-al-dot.pp2{background:#ED6965} .pk-al-dot.base_above{background:#F97316} .pk-al-dot.base_below{background:#14D3A9} .pk-al-dot.cal_move,.pk-al-dot.cal_above,.pk-al-dot.cal_below{background:#C4A57B} .pk-al-cal{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .pk-al-empty{font-size:12px;color:var(--text3)}
   .pk-al-rule{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)}
   .pk-al-rule.off{opacity:.5}

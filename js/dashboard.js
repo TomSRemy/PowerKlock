@@ -1008,19 +1008,22 @@
       spark: '<path d="M10 2.5 11.6 8.4 17.5 10l-5.9 1.6L10 17.5l-1.6-5.9L2.5 10l5.9-1.6Z"/>',
       shield: '<path d="M10 2.5 16 5v4.5c0 4-2.6 6.6-6 8-3.4-1.4-6-4-6-8V5Z"/><path d="m7.5 10 1.8 1.8L12.8 8"/>',
       out: '<path d="M8 4H4.5v12H8"/><path d="m12 6.5 3.5 3.5L12 13.5M15.5 10H7.5"/>',
+      gear: '<circle cx="10" cy="10" r="2.6"/><path d="M10 2.5v2M10 15.5v2M2.5 10h2M15.5 10h2M4.7 4.7l1.4 1.4M13.9 13.9l1.4 1.4M4.7 15.3l1.4-1.4M13.9 6.1l1.4-1.4"/>',
+      map: '<path d="M3 5.5 7.5 3.5l5 2 4.5-2v11l-4.5 2-5-2L3 16.5Z"/><path d="M7.5 3.5v11M12.5 5.5v11"/>',
     };
     const ic = k => `<svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${I[k]}</svg>`;
     const item = (k, label, sub, act) => `<button type="button" role="menuitem" class="pk-am-i" data-act="${act}">${ic(k)}<span><b>${label}</b><small>${sub}</small></span></button>`;
     const m = document.createElement('div');
     m.id = 'pk-acc-menu'; m.className = 'pk-acc-menu'; m.setAttribute('role', 'menu');
     m.innerHTML = `<div class="pk-am-head"><span class="pk-avatar-c pk-am-av">${esc(ini)}</span><span><b>${esc(mail)}</b><small id="pk-am-role">Member</small></span></div>
-      <div class="pk-am-sec">Settings</div>
+      ${item('gear', 'Settings', 'Subjects, newsletter, alerts, display', 'settings')}
       ${item('mail', 'My newsletter', 'Editions, subjects, address', 'letter')}
-      ${item('bell', 'My price alerts', 'Thresholds and e-mails', 'alerts')}
+      ${item('bell', 'My alerts', 'Prices, forwards, peak days', 'alerts')}
       ${item('grid', 'My dashboards', 'Your own pages of charts', 'boards')}
       ${item('spark', 'Connector for Claude', 'PowerKlock inside your Claude', 'mcp')}
       <div class="pk-am-sep"></div>
       ${item('user', 'My account', 'Password, delete the account', 'account')}
+      ${item('map', 'Guided tour', 'Where to find everything, in one minute', 'tour')}
       <div id="pk-am-admin"></div>
       <div class="pk-am-sep"></div>
       ${item('out', 'Sign out', '', 'out')}`;
@@ -1036,8 +1039,10 @@
     document.addEventListener('keydown', esc_);
     const scrollTo = sel => setTimeout(() => { const t = document.querySelector(sel); if (t) t.scrollIntoView({ block: 'start', behavior: 'smooth' }); }, 350);
     const go = {
-      letter: () => { location.hash = '#intel/news'; setTimeout(() => { if (typeof newsSetView === 'function') newsSetView('letter'); scrollTo('.nl-me'); }, 300); },
-      alerts: () => { if (window.PKAlerts) PKAlerts.open(); },
+      settings: () => { if (window.PKSetup) PKSetup.settings('subjects'); },
+      letter: () => { if (window.PKSetup) PKSetup.settings('newsletter'); },
+      alerts: () => { if (window.PKSetup) PKSetup.settings('alerts'); else if (window.PKAlerts) PKAlerts.open(); },
+      tour: () => { if (window.PKTour) PKTour.start(); },
       boards: () => { location.hash = '#dashboards'; },
       mcp: () => { openAccount(); scrollTo('#pkd-mcp'); },
       account: () => openAccount(),

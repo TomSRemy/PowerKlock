@@ -142,8 +142,10 @@ SEC = {'markets': 'Marchés en 30 secondes', 'digest': 'L’essentiel', 'top': '
 
 
 def tailor(E, pids, interests, france, n):
-    """a reader's own stories from every profile's (each already written by the AI): their profiles' stories first, then
-    +2 per ticked subject and +2 for France when they asked France first (−1.5 elsewhere); n stories, each once"""
+    """a reader's own stories, chosen among every profile's (each already written by the AI) by the subjects they ticked
+    (public.news_profile.interests, the owner's choice of 24 Nov. 2026: interests, not profiles): +3 per ticked subject,
+    the profile's own rank as a tie-break, +2 for France when they asked France first (−1.5 elsewhere); n stories, each once.
+    pids (the older profile choice) only breaks ties now."""
     pool, seen = [], set()
     for p in list(pids) + [p for p in E['profiles'] if p not in pids]:
         for k, st in enumerate(E['profiles'][p].get('stories') or []):
@@ -151,9 +153,11 @@ def tailor(E, pids, interests, france, n):
                 continue
             seen.add(st['link'])
             tags = set(st.get('tags') or [])
-            sc = (3 if p in pids else 0) - 0.3 * k + 2 * len(tags & set(interests))
+            sc = 3 * len(tags & set(interests)) - 0.3 * k + (0.5 if p in pids else 0)
             if france:
                 sc += 2 if 'fr' in tags else -1.5
+            if st['link'] == E.get('pinned'):
+                sc += 100       # the admin's pinned story leads every edition
             pool.append((sc, dict(st, short=E['profiles'][p]['short'][0])))
     return [st for _, st in sorted(pool, key=lambda x: -x[0])[:n]]
 
@@ -195,10 +199,10 @@ def render_letter(today, E, pid, mine=None, exclude=(), interests=(), france=Fal
                 stories.append(dict(st, short=E['profiles'][p]['short'][0]))
     ed['stories'] = stories
     if interests or france:     # ticked subjects or France first: the reader's own choice among every profile's stories
-        ed['stories'] = tailor(E, pids, interests, france, len(stories) or (5 if E.get('weekly') else 3))
+        ed['stories'] = tailor(E, pids, interests, france, 5 if E.get('weekly') else 3)
         seen = {st['link'] for st in ed['stories']}
-    if len(pids) > 1:
-        ed['name'] = [' + '.join(E['profiles'][p]['name'][0] for p in pids)] * 2
+    if interests or len(pids) > 1:
+        ed['name'] = ['Vos sujets', 'Your subjects']
     # an article shown once: the main articles leave out the stories and the essentials already in the e-mail
     shown = seen | {x.get('link') for x in ((E.get('digest') or {}).get('items') or [])}
     E = dict(E, top=[o for o in E.get('top') or [] if o['link'] not in shown])
@@ -493,7 +497,8 @@ def main():
     personal = []
     if has_letter:
         for r in readers(today, weekly):
-            ps = [p for p in r['profiles'] if p in E['profiles']] or [pid]
+            ps = [p for p in r['profiles'] if p in E['profiles']] or ([] if r['interests'] else [pid])   # interests: every profile's stories, the reader's subjects first
+            ps = ps or list(E['profiles'])
             mine = [o for o in mine_for(r['keywords'], r['exclude'], today.weekday() == 0)
                     if all(o['link'] not in {st['link'] for st in E['profiles'][p].get('stories') or []} for p in ps)]
             personal.append(([r['to']], *render_letter(today, E, ps, mine, r['exclude'], r['interests'], r['france'])))
