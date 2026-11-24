@@ -4657,3 +4657,28 @@ html.pk-beta #prices-table th:first-child, html.pk-beta #prices-table tr.zone-ro
 .pkd-google[hidden], .pkd-code[hidden] { display: none !important; }
 @media (max-width: 480px) { .pkd-auth { padding: 24px 18px 14px; } }
 html[data-theme="light"] .pkd-auth-logo { content: url(../assets/logo-header-light.png); }
+/* sign-in card, easier to read: larger type, labels in the text colour, a show-password eye */
+.pkd-auth { padding: 30px 30px 20px; }
+.pkd-auth-title { font: 700 23px 'Inter', sans-serif; letter-spacing: -.01em; }
+.pkd-auth-sub { font-size: 14.5px; color: var(--text); opacity: .82; }
+.pkd-auth .pkd-field { font-size: 14px; font-weight: 600; color: var(--text); }
+.pkd-auth .pkd-field input { font-size: 16px; padding: 12px 13px; background: var(--bg); border-color: var(--border2); color: var(--text); }
+.pkd-auth .pkd-link { font-size: 14px; font-weight: 600; }
+.pkd-auth-btn { font-size: 15.5px; padding: 12px 14px; }
+.pkd-auth-foot { font-size: 14.5px; color: var(--text); }
+.pkd-auth .pkd-or { font-size: 13px; }
+.pkd-auth .pkd-msg { font-size: 14px; line-height: 1.45; }
+.pkd-msg-ok { color: var(--accent); }
+.pkd-auth-note { margin: 0; text-align: center; font-size: 14px; color: var(--text); opacity: .75; }
+.pkd-pw-wrap { position: relative; display: block; }
+.pkd-pw-wrap input { width: 100%; box-sizing: border-box; padding-right: 44px !important; }
+.pkd-eye { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); background: none; border: 0; cursor: pointer; font-size: 16px; opacity: .6; padding: 6px; }
+.pkd-eye:hover { opacity: 1; }
+.pk-gate-up { font: 600 15px 'Inter', sans-serif; padding: 11px 20px; border-radius: 10px; cursor: pointer; white-space: nowrap; border: 1px solid var(--border2); background: transparent; color: var(--text); }
+.pk-gate-up:hover { border-color: var(--text3); }
+.pk-gate-m span { font-size: 12.5px; color: var(--text2); }
+@media (max-width: 700px) {
+  .pk-gate-m { display: none; }
+  .pk-gate-up, .pk-gate-go { font-size: 13px; padding: 9px 12px; }
+}
+@media (max-width: 420px) { .pk-gate-up, .pk-gate-go { padding: 8px 11px; font-size: 13px; } .pk-gate-in img { height: 18px; } }

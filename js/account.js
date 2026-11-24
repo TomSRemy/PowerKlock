@@ -97,6 +97,30 @@
     if (error) throw error;
   }
 
+  // classic accounts: an e-mail and a password; the e-mail only confirms the address (a link, back to the site)
+  const back = q => location.origin + location.pathname + (q || '');
+  async function signUp(email, password) {
+    await ready();
+    if (!client) throw new Error('Accounts are not configured yet.');
+    const { data, error } = await client.auth.signUp({ email, password, options: { emailRedirectTo: back('?pk=confirmed') } });
+    if (error) throw error;
+    // an address that already has an account comes back without identities (Supabase does not say it outright)
+    return { exists: !!(data && data.user && Array.isArray(data.user.identities) && !data.user.identities.length), session: !!(data && data.session) };
+  }
+  async function resendConfirm(email) {
+    await ready();
+    if (!client) throw new Error('Accounts are not configured yet.');
+    const { error } = await client.auth.resend({ type: 'signup', email, options: { emailRedirectTo: back('?pk=confirmed') } });
+    if (error) throw error;
+  }
+  // forgotten password: a link by e-mail, back to the site with ?pk=reset, where the new password is chosen
+  async function resetPassword(email) {
+    await ready();
+    if (!client) throw new Error('Accounts are not configured yet.');
+    const { error } = await client.auth.resetPasswordForEmail(email, { redirectTo: back('?pk=reset') });
+    if (error) throw error;
+  }
+
   async function setPassword(password) {
     await ready();
     if (!client || !user) throw new Error('Sign in first.');
@@ -157,7 +181,7 @@
 
   window.PKAccount = {
     configured,
-    ready, signIn, verifyCode, signInPassword, signInGoogle, googleEnabled, setPassword, signOut, load, save,
+    ready, signIn, verifyCode, signInPassword, signUp, resendConfirm, resetPassword, signInGoogle, googleEnabled, setPassword, signOut, load, save,
     sharedCreate, sharedUpdate, sharedGet,
     get user() { return user; },
     client: () => client,   // supabase-js client (RLS applies), null until ready()
