@@ -1,0 +1,26 @@
+# Account e-mails: sets, in Supabase, the mail server (the newsletter's), the PowerKlock e-mails of config/auth_emails/
+# and the site's return addresses (scripts/supabase_auth_emails.py). Run by hand once, and again after changing an e-mail
+# (also on its own when config/auth_emails/ changes on main). Needs the SUPABASE_ACCESS_TOKEN secret.
+name: Account e-mails
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['config/auth_emails/**', 'scripts/supabase_auth_emails.py']
+permissions:
+  contents: read
+jobs:
+  set:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set the account e-mails in Supabase
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST || 'smtp.gmail.com' }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT || '587' }}
+          SMTP_USER: ${{ secrets.SMTP_USER || secrets.GO_GMAIL_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS || secrets.GO_GMAIL_APP_PASSWORD }}
+          ALERT_FROM: ${{ secrets.ALERT_FROM }}
+        run: python scripts/supabase_auth_emails.py

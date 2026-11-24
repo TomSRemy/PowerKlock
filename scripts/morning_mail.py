@@ -246,6 +246,15 @@ def dark(html):
     return html.replace('<td style="', '<td style="color:#E8EEF4;').replace('<td>', '<td style="color:#E8EEF4">')
 
 
+BG = re.compile(r'<(td|table)\b((?:(?!bgcolor)[^>])*?)style="([^"]*?)background:(#[0-9A-Fa-f]{6})')
+
+
+def outlook(html):
+    """Outlook (and a mail forwarded from Gmail to Outlook) keeps a cell's colour only from the old bgcolor attribute:
+    every cell or table with a background in its style gets the same colour as bgcolor"""
+    return BG.sub(lambda m: f'<{m[1]} bgcolor="{m[4]}"{m[2]}style="{m[3]}background:{m[4]}', html)
+
+
 def journal(today, E, ed, wk, mine):
     """7 O'Klock and PowerBrunch « façon journal » (approved 19 Nov. 2026), a black band at the top and the stories on white (24 Nov.), the price tiles, the lead
     story with its chart, the figure of the day (or the week's chart on Monday), the other stories, in brief, the days
@@ -284,10 +293,15 @@ def journal(today, E, ed, wk, mine):
             ch = '' if r.get('pct') is None else ('▲ +' if c > 0 else '▼ −' if c < 0 else '') + n(abs(r['pct']), 1) + ' %'
         val = n(r['value'], 0 if r.get('hours') and float(r['value']).is_integer() else 1 if r.get('hours') else 2) + (' h' if r.get('hours') else '')
         sub = esc(r['sub'][0]) if r.get('sub') else '' if r.get('hours') else esc(r['unit'])
-        cells.append(f'<td width="33%" style="padding:3px;vertical-align:top"><a href="{SITE}#{esc(r.get("page") or "today")}" style="display:block;text-decoration:none;background:#0a0e13;border-radius:10px;padding:9px 11px;height:{84 if any(x.get("sub") for x in E["markets"]) else 70}px;overflow:hidden">'
-                     f'<span style="{f};display:block;font-size:11.5px;color:#B8C9D9;white-space:nowrap;overflow:hidden">{esc(r["label"][0])}</span>'
-                     f'<span style="{mono};display:block;font-size:18px;font-weight:700;color:#FFFFFF;margin:2px 0">{val}</span>'
-                     f'<span style="{f};font-size:11px;color:#7A93AB">{sub}</span> <span style="{mono};font-size:11.5px;color:{col};white-space:nowrap">{ch}</span></a></td>')
+        # Outlook (Word) ignores display:block, padding and background on a link: the tile is a cell of its own, its
+        # background given twice (bgcolor for Outlook, style for the others), each line its own link
+        href = f'{SITE}#{esc(r.get("page") or "today")}'
+        h = 84 if any(x.get("sub") for x in E["markets"]) else 70
+        cells.append(f'<td width="33%" style="padding:3px;vertical-align:top"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate"><tr>'
+                     f'<td height="{h}" style="background:#0a0e13;border-radius:10px;padding:9px 11px;vertical-align:top">'
+                     f'<div style="{f};font-size:11.5px;line-height:15px;color:#B8C9D9"><a href="{href}" style="color:#B8C9D9;text-decoration:none">{esc(r["label"][0])}</a></div>'
+                     f'<div style="{mono};font-size:18px;line-height:24px;font-weight:700;color:#FFFFFF;margin:2px 0"><a href="{href}" style="color:#FFFFFF;text-decoration:none">{val}</a></div>'
+                     f'<div style="{f};font-size:11px;line-height:15px;color:#7A93AB">{sub} <span style="{mono};font-size:11.5px;color:{col};white-space:nowrap">{ch}</span></div></td></tr></table></td>')
     tiles = ''.join('<tr>' + ''.join(cells[i:i + 3]) + '<td></td>' * (3 - len(cells[i:i + 3])) + '</tr>' for i in range(0, len(cells), 3))
     srcs = ', '.join(sorted({r.get('src') for r in E.get('markets') or [] if r.get('src')}))
     brief_sep = f'</p><p style="{f};margin:10px 0 0;font-size:15.5px;line-height:1.6;color:#121212">'   # the brief's second paragraph
@@ -379,8 +393,12 @@ def journal(today, E, ed, wk, mine):
     foot = (f'<tr><td style="padding:16px 22px 22px;background:#FFFFFF"><p style="{f};font-size:12px;color:#6B6B6B;line-height:1.6;margin:0;text-align:center">'
             f'Sujets choisis pour votre profil · résumés écrits automatiquement à partir des titres et extraits.<br>'
             f'<a href="{SITE}#intel/news" style="{green}">Voir en ligne</a> · <a href="{SITE}#intel/news" style="{green}">Changer de profil</a> · <a href="{SITE}#intel/news" style="{green}">Se désabonner</a></p></td></tr>')
-    html = ('<div style="background:#F1F1EF;padding:16px 6px"><table role="presentation" width="100%" style="max-width:680px;margin:0 auto;border-collapse:collapse;table-layout:fixed;word-wrap:break-word;overflow-wrap:anywhere;background:#FFFFFF;border-radius:12px">'
-            + dark(head) + ''.join(body) + foot + '</table></div>')
+    # tables only for the frame (Outlook drops a div's background and max-width): the grey page, then the 680 px column,
+    # held at 680 in Outlook by its own table (the comments are invisible elsewhere)
+    html = outlook('<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F1F1EF;border-collapse:collapse"><tr><td align="center" style="padding:16px 6px">'
+                   '<!--[if mso]><table role="presentation" width="680" align="center" cellpadding="0" cellspacing="0"><tr><td><![endif]-->'
+                   '<table role="presentation" width="100%" align="center" cellpadding="0" cellspacing="0" style="max-width:680px;margin:0 auto;border-collapse:collapse;table-layout:fixed;word-wrap:break-word;overflow-wrap:anywhere;background:#FFFFFF;border-radius:12px">'
+                   + dark(head) + ''.join(body) + foot + '</table><!--[if mso]></td></tr></table><![endif]--></td></tr></table>')
     text = f'{TITLE[wk]} · {frday(today)}\n\n' + '\n'.join(f'{r["label"][0]} : {n(r["value"])} {r["unit"]}' for r in E.get('markets') or []) + '\n\n' + \
         '\n'.join(f'• {h["title"]}\n  {h.get("what") or ""}\n  {h["link"]}' for h in st) + f'\n\n{SITE}#intel/news\n'
     subject = f'{TITLE[wk]} · {frday(today)}' if not wk else f'PowerBrunch · la semaine du {frday(today - timedelta(days=7))}'
