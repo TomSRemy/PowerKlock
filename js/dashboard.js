@@ -1092,7 +1092,7 @@
     const how = `<ol class="pkd-mcp-how"><li>In Claude: Settings › Connectors › Add custom connector.</li><li>Name it PowerKlock and paste the link.</li><li>Then ask Claude, for instance: « What moved on the French spot this week and why? », « Open consultations on grid connection? ».</li></ol>`;
     const draw = (link) => {
       host.innerHTML = `<div class="pkd-mcp"><div class="pkd-acc-t">Connector for Claude</div>
-        <p class="pkd-p">Add PowerKlock to your own Claude (paid plan): Claude then reads the site's prices, forwards, reservoirs, guarantees of origin, news, official texts and consultations, and answers with their sources. Read only, 400 calls a day.</p>
+        <p class="pkd-p">Add PowerKlock to your own Claude (paid plan): Claude then reads the site's prices, forwards, reservoirs, guarantees of origin, news, official texts and consultations, and queries the SQL warehouse (full history), answering with their sources. Read only, 400 calls a day.</p>
         ${link ? `<div class="pkd-mcp-link"><input type="text" readonly value="${esc(link)}" aria-label="Your personal link"><button type="button" class="pk-btn-primary" id="pkd-mcp-copy">Copy</button></div>
           <p class="pkd-p pkd-mcp-warn">Personal link: shown only now, keep it to yourself. A new link cancels this one.</p>${how}`
         : st && st.active ? `<p class="pkd-p">Your link is active since ${esc(String(st.created_at || '').slice(0, 10))}.</p>` : ''}
