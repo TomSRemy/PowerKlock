@@ -96,7 +96,7 @@ const TOOLS = [
   { name: 'warehouse_schema', description: 'The PowerKlock SQL warehouse: the tables and views this link may read (schemas analytics, market, meta, news) with their columns; news.article is the archive of every collected article, official text, report and paper (title, source, published, topics, theme, public summary, link) since the start. Read it before sql_query. analytics.* are ready-made views (day-ahead prices by 15 min, hour and day for every zone, capture prices, battery spreads, clean spark/dark, generation, French regions, cross-border flows, negative hours, installed capacity, PPA); meta.dictionary and meta.convention explain columns and units.',
     inputSchema: { type: 'object', properties: {} },
     run: async (env, a, token) => rpc(env, 'mcp_schema', { p_token: token }) },
-  { name: 'sql_query', description: 'Run one read-only SQL query (SELECT or WITH, PostgreSQL) on the PowerKlock warehouse: schemas analytics, market, meta and news only (see warehouse_schema; news.article for the news history, searched with tsv @@ plainto_tsquery('simple', 'words') or title ilike); 5 seconds and 2,000 rows at most. Dates are delivery days in Paris time; prices in €/MWh. A member link does not reach the forward contracts (use the forwards tool for the latest ones).',
+  { name: 'sql_query', description: 'Run one read-only SQL query (SELECT or WITH, PostgreSQL) on the PowerKlock warehouse: schemas analytics, market, meta and news only (see warehouse_schema; news.article for the news history, searched with tsv @@ plainto_tsquery(\'simple\', \'words\') or title ilike); 5 seconds and 2,000 rows at most. Dates are delivery days in Paris time; prices in €/MWh. A member link does not reach the forward contracts (use the forwards tool for the latest ones).',
     inputSchema: { type: 'object', properties: { query: { type: 'string', description: 'e.g. select delivery_date, base, peak, neg_hours from analytics.da_price_daily where zone = \'FR\' order by delivery_date desc limit 30' } }, required: ['query'] },
     run: async (env, a, token) => rpc(env, 'mcp_sql', { p_token: token, p_query: String(a.query || '') }) },
 ];
@@ -127,7 +127,7 @@ async function handle(env, token, m) {
     const c = await check(env, token);
     if (!c.ok) return fail(id, -32001, c.reason === 'quota' ? 'Daily limit reached (400 calls)' : 'This PowerKlock link is not valid: make a new one in the site (Account › Connector for Claude)');
     return ok(id, { protocolVersion: (m.params && m.params.protocolVersion) || PROTOCOL, capabilities: { tools: { listChanged: false } }, serverInfo: { name: 'PowerKlock', version: '1.0.0' },
-      instructions: 'PowerKlock: French and European power market data and news watch. Use search_news for news, regulation and consultations; day_ahead, forwards, market_snapshot, hydro_reservoirs and guarantees_of_origin for today's figures; warehouse_schema then sql_query for history and any other calculation. Cite the source and link given in each result.' });
+      instructions: 'PowerKlock: French and European power market data and news watch. Use search_news for news, regulation and consultations; day_ahead, forwards, market_snapshot, hydro_reservoirs and guarantees_of_origin for today’s figures; warehouse_schema then sql_query for history and any other calculation. Cite the source and link given in each result.' });
   }
   if (m.method === 'tools/list') return ok(id, { tools: TOOLS.map(({ run, ...t }) => t) });
   if (m.method === 'tools/call') {
