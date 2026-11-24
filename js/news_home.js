@@ -6,6 +6,7 @@
 
 const NH_RUBS = [
   { id: 'renewables', fr: 'Renouvelables et stockage', en: 'Renewables and storage', topics: ['renewables', 'build'], tag: 'renewables' },
+  { id: 'support', fr: 'Soutien aux renouvelables', en: 'Renewable support', topics: ['support'], tag: 'support' },   // CR, OA, tenders, negative prices
   { id: 'power', fr: 'Électricité et marchés', en: 'Power and markets', topics: ['power', 'markets'], tag: 'power' },
   { id: 'regulation', fr: 'Régulation', en: 'Regulation', topics: ['regulation'], tag: 'regulation' },
   { id: 'gas', fr: 'Gaz et carbone', en: 'Gas and carbon', topics: ['gas', 'carbon'], tag: 'gas' },
@@ -14,7 +15,7 @@ const NH_RUBS = [
   { id: 'research', fr: 'Recherche', en: 'Research', research: true, tag: 'research' },   // papers: OpenAlex, arXiv, HAL, e-mail alerts
   { id: 'mine', fr: 'Mes mots-clés', en: 'My keywords', mine: true, tag: 'mine' },
 ];
-const NH_DEFAULT = ['renewables', 'power', 'regulation', 'intl', 'research', 'mine'];
+const NH_DEFAULT = ['renewables', 'support', 'power', 'regulation', 'intl', 'research', 'mine'];
 
 function _nhPrefs() {
   let p = null; try { p = JSON.parse(localStorage.getItem('pk-news-home') || 'null'); } catch (_) {}
@@ -22,8 +23,12 @@ function _nhPrefs() {
   if (!p.rubs) {   // first visit: the sections follow the newsletter interests, else the default set
     const ints = (typeof _nlMe !== 'undefined' && _nlMe && _nlMe.interests) || [];
     const fromInts = NH_RUBS.filter(r => r.topics && r.topics.some(t => ints.includes(t))).map(r => r.id);
-    p.rubs = fromInts.length ? fromInts.concat(['intl', 'research', 'mine'].filter(x => !fromInts.includes(x))) : NH_DEFAULT.slice();
-  } else if (!p.research) {   // the Research section (Nov. 2026) appears once in layouts saved before it existed
+    p.rubs = fromInts.length ? fromInts.concat(['support', 'intl', 'research', 'mine'].filter(x => !fromInts.includes(x))) : NH_DEFAULT.slice();
+  } else if (!p.support) {   // Renewable support (Nov. 2026): after the first section in layouts saved before it existed
+    if (!p.rubs.includes('support')) p.rubs.splice(Math.min(1, p.rubs.length), 0, 'support');
+    p.support = 1; _nhSave(p);
+  }
+  if (!p.research) {   // the Research section (Nov. 2026) appears once in layouts saved before it existed
     if (!p.rubs.includes('research')) p.rubs.splice(Math.max(0, p.rubs.indexOf('mine')) || p.rubs.length, 0, 'research');
     p.research = 1; _nhSave(p);
   }
@@ -105,7 +110,9 @@ async function renderNewsHome() {
   const secH = rubs.map(r => {
     const isR = i => (i.tags || []).includes('research');
     const base = r.mine ? i => _newsMine(i, kw) : r.intl ? i => !_newsIsFr(i) : r.f ? i => _nhMatch(i, r.f) : r.research ? isR : i => _newsSubj(i).some(t => r.topics.includes(t));
-    const pred = r.research ? base : i => !isR(i) && base(i);   // papers only in their own section
+    const hasSup = rubs.some(x => x.id === 'support');
+    const pred = r.research ? base : r.id === 'renewables' && hasSup ? i => !isR(i) && base(i) && !_newsSubj(i).includes('support')   // support texts go to their own section
+      : i => !isR(i) && base(i);   // papers only in their own section
     const its = pick(pred, 4); if (!its.length) return '';
     return `<section class="nh-sec"><h3><button type="button" class="nh-sec-t" data-rub="${_newsEsc(r.id)}" title="${_newsT('Voir tout le fil de cette rubrique', 'See the whole feed of this section')}">${_newsEsc(r.label || _newsT(r.fr, r.en))} <span aria-hidden="true">→</span></button></h3>
       ${its.map(i => { const sum = sumOf(i); return `<div class="nh-it">${_nhA(i.link, `<span class="nh-it-t">${_newsEsc(i.title)}</span>`)}${sum ? `<p class="nh-it-s">${_newsEsc(sum)}</p>` : ''}<span class="nh-it-m"><span class="nh-src">${_newsEsc(i.source)} · ${_nhAgo(i.date)}</span>${_newsPills(i)}${_newsPinBtn(i)}</span>${_newsFree(i, 'news-free-row')}</div>`; }).join('')}</section>`;

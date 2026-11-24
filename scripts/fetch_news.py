@@ -64,6 +64,8 @@ def load_config():
 # Keyword tagging on title + summary (word-ish boundaries, case-insensitive).
 KEYWORDS = {
     # what moves prices or the renewable business (English and French)
+    # support for renewables: complément de rémunération, obligation d'achat, tenders, negative prices, curtailment (important, not first)
+    "support": r"\b(?:compl[ée]ments? de r[ée]mun[ée]ration|obligations? d.achat|contrats? d.achat|tarifs? d.achat|tarif de rachat|arr[êe]t[ée]s? tarifaires?|guichet ouvert|prix n[ée]gatifs?|heures? (à prix )?n[ée]gatives?|negative (power )?prices?|negative hours|[ée]cr[êe]tement|curtail\\w*|modulation (de (la )?production|à la baisse)|\\bs21\\b|contrats? (pour|de) diff[ée]rence|contracts? for difference|\\bcfds?\\b|m[ée]canismes? de soutien|dispositifs? de soutien|soutien (public )?aux (énergies |énergies renouvelables|renouvelables|enr)|renewable support|support scheme|feed-in (tariffs?|premiums?)|appels? d.offres? (de la )?(cre|ppe)|\\bao (ppe|cre)\\b|\\bppe ?[23]\\b|ench[èe]res? (renouvelables|enr)|renewable auctions?|edf oa\\b|\\boa\\b)",
     "geopolitics": r"\b(russia\w*|russie|ukrain\w*|gazprom|sanction\w*|iran\w*|israel\w*|middle east|moyen-orient|qatar\w*|strait|détroit|hormuz|ormuz|red sea|mer rouge|opec|opep|houthi\w*|war|guerre|conflict|conflit|attack\w*|attaque\w*|embargo|tariff war|trade war|blockade|blocus|geopolit\w*|géopolit\w*|norway outage|supply disruption|force majeure)\b",
     "deal": r"\b(acqui\w*|rachat|rachète|rachete|cède|cede|cession|cèdent|takeover|buys?|bought|sells?|sold|stake|participation|merger|fusion|divest\w*|portfolio sale|deal|transaction|refinanc\w*|financing|financement|lève|raises? \S+ (m|bn)|joint venture|coentreprise)\b",
     "build": r"\b(commission(ed|ing)|mise en service|mis en service|inaugur\w*|energi[sz]ed|connected to the grid|raccord\w*|groundbreaking|first stone|première pierre|construction start\w*|starts? construction|breaks ground|enters? (commercial )?operation|comes? online|COD\b|repowering|permis de construire|building permit|consent\w* granted|approved|autoris\w*)\b",
@@ -94,9 +96,9 @@ COUNTRIES = {
     "EU": r"\b(eu|europe\w*|européen\w*|brussels|bruxelles|acer|entso-e|commission)\b",
 }
 # the subjects shown on the News page, most telling first (an article about a CfD tender is « Régulation » before « Électricité »)
-TOPIC_ORDER = ["regulation", "renewables", "markets", "gas", "deal", "build", "geopolitics", "carbon", "power"]
+TOPIC_ORDER = ["regulation", "support", "renewables", "markets", "gas", "deal", "build", "geopolitics", "carbon", "power"]
 # how much a category moves prices or the renewable business; readers' votes add to it (data/news_prefs.json)
-CAT_W = {"geopolitics": 3.0, "regulation": 2.0, "deal": 2.0, "build": 1.5, "gas": 1.5, "renewables": 1.5, "markets": 1.0, "carbon": 1.0, "power": 0.5}
+CAT_W = {"geopolitics": 3.0, "support": 2.5, "regulation": 2.0, "deal": 2.0, "build": 1.5, "gas": 1.5, "renewables": 1.5, "markets": 1.0, "carbon": 1.0, "power": 0.5}
 PREFS = Path(__file__).resolve().parent.parent / "data" / "news_prefs.json"
 STOP = set("the a an of to in on for and with at by from is are was were be as its it this that new over after into more than les des une un du de la le et en au aux pour par sur dans avec est sont qui que plus son ses leur".split())
 
@@ -536,6 +538,7 @@ MIN_ENERGY = "https://www.consultations-publiques.developpement-durable.gouv.fr/
 
 # theme of a consultation from its title, the first that matches (energy savings first: their titles also say « tarif »)
 CONS_THEMES = [
+    ("support", r"compl[ée]ments? de r[ée]mun[ée]ration|obligations? d.achat|contrats? d.achat|tarifs? d.achat|arr[êe]t[ée]s? tarifaires?|guichet ouvert|prix n[ée]gatifs?|[ée]cr[êe]tement|\bS21\b|m[ée]canismes? de soutien|dispositifs? de soutien"),
     ("cee", r"certificats? d.économies d.énergie|\bCEE\b|fiches? d.opérations? standardisées?|bonification|audit énergétique|précarité énergétique|programme PRO-"),
     ("tariffs", r"TURPE|ATR[DT]|\btarifs?\b|TRVE|péréquation|\bFPE\b|CRCP|dotation|prestations annexes"),
     ("grid", r"raccordement|ligne électrique|poste électrique|liaison|réseau public|\bRP[DT]\b|accès au réseau|SDDR|interconnexion|gestionnaires? de réseau|contrat d.accès|schéma décennal"),

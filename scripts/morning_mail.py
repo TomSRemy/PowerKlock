@@ -159,7 +159,7 @@ def tailor(E, pids, interests, france, n):
 
 
 # the subject of an article, shown in a pill at its right: the most specific of its categories (scripts/fetch_news.py)
-THEMES = [('renewables', 'Renouvelables', '#E3F4EC', '#0B6B4F'), ('gas', 'Gaz', '#FCEFE0', '#9A5B12'), ('carbon', 'Carbone', '#ECEFF3', '#3F5468'),
+THEMES = [('support', 'Soutien EnR', '#FBF3DC', '#7A5B00'), ('renewables', 'Renouvelables', '#E3F4EC', '#0B6B4F'), ('gas', 'Gaz', '#FCEFE0', '#9A5B12'), ('carbon', 'Carbone', '#ECEFF3', '#3F5468'),
           ('deal', 'Transactions', '#EEE9F8', '#5B3FA0'), ('build', 'Projets', '#E6F0FA', '#1F5C99'), ('regulation', 'Régulation', '#FDECEC', '#A23B36'),
           ('markets', 'Marchés', '#E6F0FA', '#1F5C99'), ('power', 'Électricité', '#E8F6F3', '#0B7A62'), ('geopolitics', 'Géopolitique', '#F3EEE6', '#6B5530')]
 CONS_T = {'cee': 'Efficacité énergétique', 'tariffs': 'Tarifs', 'grid': 'Réseau', 'market': 'Marché', 'renewables': 'Renouvelables', 'gas': 'Gaz', 'other': 'Autre'}
@@ -212,7 +212,7 @@ def render_letter(today, E, pid, mine=None, exclude=(), interests=(), france=Fal
 
 
 # theme of a story: its most specific category, as a coloured word above the title
-TH = [('renewables', 'Renouvelables', '#0B6B4F'), ('gas', 'Gaz', '#9A5B12'), ('carbon', 'Carbone', '#3F5468'), ('deal', 'Transactions', '#5B3FA0'),
+TH = [('support', 'Soutien EnR', '#7A5B00'), ('renewables', 'Renouvelables', '#0B6B4F'), ('gas', 'Gaz', '#9A5B12'), ('carbon', 'Carbone', '#3F5468'), ('deal', 'Transactions', '#5B3FA0'),
       ('build', 'Projets', '#1F5C99'), ('regulation', 'Régulation', '#B8322D'), ('markets', 'Marchés', '#1F5C99'), ('power', 'Électricité', '#0B7A62'),
       ('geopolitics', 'Géopolitique', '#6B5530')]
 

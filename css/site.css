@@ -4275,7 +4275,7 @@ span.nl-src { margin: 0; }
 .nl-head .nl-tiles:has(.nl-sub) .nl-tile { min-height: 108px; }
 @media (max-width: 560px) { .nl-head .nl-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .nl-pill { display: inline-block; flex: none; font-size: 12px; font-weight: 600; line-height: 1; padding: 4px 8px; border-radius: 999px; background: var(--bg4); color: var(--text2); white-space: nowrap; }
-.nl-p-renewables { color: #14D3A9; } .nl-p-gas { color: #E8A33D; } .nl-p-regulation { color: #ED6965; } .nl-p-deal { color: #A78BFA; }
+.nl-p-support { color: #F2C14E; } .nl-p-renewables { color: #14D3A9; } .nl-p-gas { color: #E8A33D; } .nl-p-regulation { color: #ED6965; } .nl-p-deal { color: #A78BFA; }
 .nl-p-markets, .nl-p-build { color: #6CB4F5; } .nl-p-power { color: #14D3A9; }
 .nl-ul li { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
 .nl-st-h { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }

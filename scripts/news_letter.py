@@ -243,7 +243,7 @@ def takeaway(t, title, what):
 
 
 BRIEF = """Tu écris « Le point du matin » de PowerKlock, comme un analyste marché senior qui parle à des directeurs du secteur de
-l'électricité en France : un texte naturel et fluide, 4 ou 5 phrases, 130 mots au plus, sans liste ni titre.
+l'électricité en France : un texte naturel et fluide, 5 phrases environ, 150 mots au plus, sans liste ni titre.
 Tu reçois : les marchés du matin (valeur arrondie, variation), le contexte de marché (notre analyse de la veille : nucléaire,
 météo, géopolitique…), les tendances attendues pour la semaine par marché (celles de « Ce qui a bougé et pourquoi » sur le site :
 une attente, à écrire comme telle, « devrait », jamais comme un fait), la météo, les actualités de marché des dernières 36 h
@@ -251,10 +251,14 @@ une attente, à écrire comme telle, « devrait », jamais comme un fait), la m�
 Ce qu'on attend, c'est le POURQUOI, pas une liste de variations :
 - ce qui bouge sur les marchés et pourquoi, en reliant les mouvements entre eux, au contexte et aux actualités de marché
   (« le gaz monte avec les tensions sur Ormuz, par où transite une part du GNL » si le contexte ou un article le dit) ;
+- le lien entre consommation, production et prix (fondamentaux France : consommation, éolien, solaire, demande résiduelle,
+  et le nucléaire du contexte) et le lien gaz-électricité : quand la demande résiduelle monte, le gaz fixe plus souvent le prix,
+  donc un gaz plus cher se retrouve dans l'électricité ;
 - le contexte géopolitique expliqué en une phrase : ce qui se passe et en quoi cela touche les prix européens ;
 - si le mouvement du jour va contre la tendance attendue, dis-le simplement ;
-- pour finir, ce qu'il faut retenir de l'actualité du jour, en une phrase qui conclut.
-2 à 4 chiffres en tout, arrondis, jamais un chiffre seul sans ce qu'il veut dire. Une cause n'est écrite que si le contexte
+- la dernière phrase porte sur l'une des 3 histoires du jour (« Côté régulation, … », « À noter : … ») : un fait précis,
+  jamais une généralité sur les marchés (« les prix restent volatils », « influencés par des facteurs… » sont interdits).
+3 à 5 chiffres en tout, arrondis, jamais un chiffre seul sans ce qu'il veut dire. Une cause n'est écrite que si le contexte
 ou un article la donne : sinon, décris le mouvement sans l'expliquer. Aucun fait, chiffre, acteur ni date absent de ce qui
 est reçu. Pas de conseil, pas de formule creuse (« dans un contexte de… », « les acteurs du marché… »).
 Le ton seulement (un autre jour, d'autres faits : n'en reprends ni les mots ni les faits) : « Le solaire pèse sur les prix :
@@ -297,6 +301,35 @@ def direction_ok(text, markets):
     return True
 
 
+def fundamentals(day):
+    """France's consumption, wind and solar of the delivery day against the day before (TSO forecasts, data/forecast.json),
+    and the demand left to nuclear, hydro and gas (consumption minus wind and solar): what links power to gas"""
+    try:
+        days = json.load(open(os.path.join(ROOT, "data", "forecast.json")))["zones"]["FR"]["days"]
+    except (OSError, ValueError, KeyError):
+        return {}
+    prev = (date.fromisoformat(day) - timedelta(days=1)).isoformat()
+
+    def avg(d, k):
+        v = [x for x in ((days.get(d) or {}).get(k) or []) if x is not None]
+        return sum(v) / len(v) / 1000 if len(v) >= 80 else None     # GW, a whole day only
+    out = {}
+    for k, name in (("load", "consommation"), ("wind", "éolien"), ("solar", "solaire")):
+        a, b = avg(day, k), avg(prev, k)
+        if a is not None:
+            out[name] = {"moyenne_GW": round(a, 1), "veille_GW": round(b, 1) if b else None,
+                         "évolution": None if not b else ("en hausse de " if a > b else "en baisse de ") + f"{abs(round((a / b - 1) * 100))} %"}
+    if all(k in out for k in ("consommation", "éolien", "solaire")):
+        r = out["consommation"]["moyenne_GW"] - out["éolien"]["moyenne_GW"] - out["solaire"]["moyenne_GW"]
+        rb = [out[k].get("veille_GW") for k in ("consommation", "éolien", "solaire")]
+        out["demande_résiduelle"] = {"moyenne_GW": round(r, 1), "note": "consommation moins éolien et solaire : ce que nucléaire, hydraulique et gaz doivent fournir ; "
+                                     "plus elle monte, plus les centrales au gaz fixent le prix de l'électricité"}
+        if all(rb):
+            rr = rb[0] - rb[1] - rb[2]
+            out["demande_résiduelle"]["évolution"] = ("en hausse de " if r > rr else "en baisse de ") + f"{abs(round((r / rr - 1) * 100))} %"
+    return out
+
+
 def ask_brief(edition, model=None, items=None):
     """« Le point du matin »: the markets with their reasons (our market context of the evening before) and the day's news"""
     try:
@@ -325,7 +358,7 @@ def ask_brief(edition, model=None, items=None):
            and PRICE_NEWS.search(i["title"]) and not {"official", "research"} & set(i.get("tags") or []) and (age_h(i, now) or 1e9) <= 36]
     mkt = sorted(mkt, key=lambda i: -(i.get("impact") or 0))[:5]
     news = [{"id": f"n{k + 1}", "titre": i["title"], "extrait": clip(i.get("snippet"), 300), "média": i["source"]} for k, i in enumerate(mkt)]
-    payload = {"marchés": mk, "contexte": ctx, "tendances_semaine": trend, "actualités_marché": news, "météo": " · ".join(filter(None, [(w.get("label") or [""])[0], (w.get("sub") or [""])[0]])), "histoires": st}
+    payload = {"marchés": mk, "fondamentaux_france": fundamentals(edition["date"]), "contexte": ctx, "tendances_semaine": trend, "actualités_marché": news, "météo": " · ".join(filter(None, [(w.get("label") or [""])[0], (w.get("sub") or [""])[0]])), "histoires": st}
     msg = {"max_tokens": 700, "system": BRIEF, "messages": [{"role": "user", "content": json.dumps(payload, ensure_ascii=False)}],
            "model": model or os.environ.get("NEWS_MODEL") or MODEL}
     req = urllib.request.Request(PROXY, data=json.dumps(msg).encode(), headers={"Content-Type": "application/json", "User-Agent": "PowerKlock-newsletter"})
@@ -337,8 +370,9 @@ def ask_brief(edition, model=None, items=None):
     given += [float(v) for r_ in edition.get("markets") or [] for v in (r_.get("value"), r_.get("pct"), r_.get("chg")) if isinstance(v, (int, float))]
     given += [abs(g) for g in given]
     b, be = clip(out.get("brief"), 900), clip(out.get("brief_en"), 900)
-    many = len(re.findall(r"(?<![\w-])\d+(?:[.,]\d+)?", re.sub(r"\b(19|20)\d\d\b", "", b or ""))) > 5   # a note, not a table of figures (« Cal-27 » is a name)
-    if not b or many or not numbers_ok(b, given) or not direction_ok(b, edition.get("markets") or []):
+    many = len(re.findall(r"(?<![\w-])\d+(?:[.,]\d+)?", re.sub(r"\b(19|20)\d\d\b", "", b or ""))) > 7   # a note, not a table of figures (« Cal-27 » is a name)
+    hollow = re.search(r"(?i)restent volatils|reste volatil|influenc[ée]s par (des|les) facteurs|il faut retenir que les prix", b or "")
+    if not b or many or hollow or not numbers_ok(b, given) or not direction_ok(b, edition.get("markets") or []):
         raise ValueError(f"brief rejected: {b[:120]!r}")   # a figure that was not given: better no brief
     used = [mkt[int(x[1:]) - 1] for x in out.get("sources") or [] if isinstance(x, str) and re.fullmatch(r"n[1-5]", x) and int(x[1:]) <= len(mkt)]
     links = [{"title": i["title"], "source": i["source"], "link": i["link"]} for i in dict((i["link"], i) for i in used).values()][:3]

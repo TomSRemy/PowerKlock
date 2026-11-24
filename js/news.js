@@ -182,7 +182,7 @@ async function _nlSave(patch, msgEl) {
   if (!error) _nlMe = row;
 }
 // the subject of an article, in a pill at its right (same choice as the e-mail, scripts/morning_mail.py)
-const _NL_TH = [['renewables', 'Renouvelables', 'Renewables'], ['gas', 'Gaz', 'Gas'], ['carbon', 'Carbone', 'Carbon'], ['deal', 'Transactions', 'Deals'], ['build', 'Projets', 'Projects'],
+const _NL_TH = [['support', 'Soutien EnR', 'Renewable support'], ['renewables', 'Renouvelables', 'Renewables'], ['gas', 'Gaz', 'Gas'], ['carbon', 'Carbone', 'Carbon'], ['deal', 'Transactions', 'Deals'], ['build', 'Projets', 'Projects'],
   ['regulation', 'Régulation', 'Regulation'], ['markets', 'Marchés', 'Markets'], ['power', 'Électricité', 'Power'], ['geopolitics', 'Géopolitique', 'Geopolitics']];
 function _nlPill(tags, official) {
   tags = tags || [];
@@ -565,7 +565,7 @@ async function renderNewsPosts() {
 
 // ── Open consultations (data/consultations.json, scripts/fetch_news.py): the deadline to reply, the nearest first ──
 let _newsCons = null, _newsConsTheme = '';
-const _NEWS_CONS_THEMES = { cee: ['Efficacité énergétique', 'Energy efficiency'], tariffs: ['Tarifs', 'Tariffs'], grid: ['Réseau et raccordement', 'Grid and connection'],
+const _NEWS_CONS_THEMES = { support: ['Soutien aux renouvelables (CR, OA, prix négatifs)', 'Renewable support (CfD, feed-in, negative prices)'], cee: ['Efficacité énergétique', 'Energy efficiency'], tariffs: ['Tarifs', 'Tariffs'], grid: ['Réseau et raccordement', 'Grid and connection'],
   market: ['Marché et sécurité d’approvisionnement', 'Market and security of supply'], renewables: ['Renouvelables et appels d’offres', 'Renewables and tenders'], gas: ['Gaz', 'Gas'], other: ['Autres', 'Other'] };
 async function _newsLoadCons() {
   try { const r = await fetch(DATA_BASE + 'consultations.json?t=' + Date.now()); _newsCons = r.ok ? await r.json() : null; } catch (_) { _newsCons = null; }
