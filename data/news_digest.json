@@ -1,13 +1,13 @@
 {
  "daily": {
   "date": "2026-11-24",
-  "updated": "2026-11-24T07:24:38+00:00",
+  "updated": "2026-11-24T08:13:57+00:00",
   "engine": "proxy",
   "items": [
    {
     "id": "gimetransitoire48835php4",
-    "text": "La CRE précise les offres de tarification dynamique : les consommateurs pourront adapter leurs usages aux prix du marché",
-    "text_en": "The CRE clarifies dynamic pricing offers: consumers will be able to adapt their usage to market prices",
+    "text": "La CRE prolonge le régime transitoire de tarification dynamique : les fournisseurs doivent adapter leurs offres.",
+    "text_en": "The CRE extends the transitional dynamic pricing regime: suppliers must adapt their offers.",
     "title": "Tarification dynamique : la CRE précise les offres et prolonge le régime transitoire",
     "link": "https://www.actu-environnement.com/ae/news/cre-tarification-dynamique-offres-regime-transitoire-48835.php4",
     "sources": [
@@ -15,43 +15,44 @@
     ]
    },
    {
-    "id": "e3cahiercharges48832php4",
-    "text": "L'appel d'offres pour le biométhane injecté est lancé : les producteurs pourront répondre aux besoins croissants",
-    "text_en": "The call for tenders for injected biomethane is launched: producers will be able to respond to growing needs",
-    "title": "Biométhane injecté : place à l'appel d'offres",
-    "link": "https://www.actu-environnement.com/ae/news/biomethane-appel-offres-ppe3-cahier-charges-48832.php4",
+    "id": "zr2zzazlccmi1ejnsa3lroc5",
+    "text": "La CRE réduit le budget de résilience du réseau de RTE : les coûts de maintenance seront revus.",
+    "text_en": "The CRE reduces RTE's network resilience budget: maintenance costs will be revised.",
+    "title": "RTE : la CRE réduit de près de 4 millions d’euros le budget de résilience du réseau",
+    "link": "https://news.google.com/rss/articles/CBMibkFVX3lxTFBiTk95MHY0QWtpcEt6eFpNeTdseXRTVHlLdWZIa0ZwSndRdWhEVkdkM1d3a2o4U2xvQUdiX3VOUnVud0Nad3JJbmZYTk1wMjg2YlZIN3IzWld1NWFtX1QzR2ZzazlCcmI1ejNsa3lR?oc=5",
     "sources": [
-     "Actu-Environnement"
-    ]
-   },
-   {
-    "id": "tvhtehlu0fndwr6lu52dwoc5",
-    "text": "La Commission européenne adresse un avis motivé à la France sur les certificats de production de biogaz : la réglementation sera renforcée",
-    "text_en": "The European Commission sends a reasoned opinion to France on biogas production certificates: regulation will be strengthened",
-    "title": "Certificats de production de biogaz (CPB) : la Commission européenne hausse le ton et adresse un avis motivé à la France",
-    "link": "https://news.google.com/rss/articles/CBMi_gFBVV95cUxPbFAyNHZjV0dvT2tFUm1SMHh1UVpxdk9yR0o0enBlNEJQclU5S0JBdE9kNFNtdXlEU19EVWVyclRldnNBaF9FM1ZGTU4zaHNITUhfZmtHdldZY2xoakhYNjl2VHRKbld2czR0UFM0NDNVSFhKUE9QVWN0UlczcnRib1ZuTFBYSnRUT0t2NE9XMWVuM2dVRHNLOUR3SXIwa0hieTdLQWR2N29xS1FybV9wNVMzckRvMjV0OEEzdkRVQ1hQYlV2SlFSNnhOd3VXdzlMWC1yUUFiVkktdDJHZHI3ekVLWUI0d2Rta2pDOUdjMTVhTEhLU0FndWR6LU52dw?oc=5",
-    "sources": [
-     "Contexte"
-    ]
-   },
-   {
-    "id": "nedjudc1zs1ndqwzkdjdnoc5",
-    "text": "La commission des finances rejette les articles sur les équipements solaires : les projets de développement seront impactés",
-    "text_en": "The finance committee rejects articles on solar equipment: development projects will be impacted",
-    "title": "Loi de finances 2027 : La commission des finances rejette les articles 49 et 50 sur les équipements solaires",
-    "link": "https://news.google.com/rss/articles/CBMi7gFBVV95cUxQVW9XVU01aWNNN3lzVE1qQzRudTlkUFE0bjVBYTJsaV9wUmdlam1CaTFFTEJPYjRsel83VHUzdW5qS1d4S3h1OU9NWkpKRzM3WFJ6MXh2RG9BRlVtN1JfdG1nQXpRMHo1ZDZVNldaMGZnUTNMRVZtR09ZUmRqWktZT3R4a3lRb2otUWdOOW9zZ1hhUmJTckIyWUJZZEg1cHJxcG9VTkM2QUZSWDBmenlLNzUyWVR6bGdQcXczWk9qcEtTVjdJcmVWc3ZrcnNCRURkbzRkcmNuYURfMzNGTnRNeDJUdC1ZS1NDQWZKdjdn?oc=5",
-    "sources": [
-     "webdo"
+     "Les Smartgrids"
     ]
    },
    {
     "id": "ctriciteconsommeeenfranc",
-    "text": "Un indicateur horaire de la part des EnR dans l'électricité consommée en France est disponible : les consommateurs pourront suivre l'évolution du mix énergétique",
-    "text_en": "A hourly indicator of the share of renewables in electricity consumed in France is available: consumers will be able to track the evolution of the energy mix",
+    "text": "Un indicateur horaire de part des EnR est mis en place : les consommateurs peuvent suivre le mix énergétique.",
+    "text_en": "A hourly indicator of the share of renewables is implemented: consumers can monitor the energy mix.",
     "title": "Part des EnR et intensité en émissions de GES de l’électricité consommée en France en temps réel",
     "link": "https://wattselse.com/veille/article/4667/part-des-enr-et-intensite-en-emissions-de-ges-de-lelectricite-consommee-en-franc",
     "sources": [
      "Watts Else"
+    ]
+   },
+   {
+    "id": "kjpuhjxzhr6mtvht2phcwoc5",
+    "text": "Le Portugal renforce la sécurité de son approvisionnement en électricité : les importations seront mieux régulées.",
+    "text_en": "Portugal strengthens the security of its electricity supply: imports will be better regulated.",
+    "title": "Le Portugal va renforcer la sécurité de son approvisionnement en électricité",
+    "link": "https://news.google.com/rss/articles/CBMi1wFBVV95cUxPUFhwclRzejRFWFVFMzZ0Mnprcklad05kVzJjcGF1cFJLanZiUTdieE5PZ0xCd0ZYN1BJc3Ftc3J2MENuMHJPTkNkT3NyZ3AxeTFRM2xXV0g4ZGJ5dGo4eWlFV2g1dE1EMnJPbWV5WVR4bFJrMG9HNHFHczRLc19ldmYzYVhHNjFEV1VpUVZrOU9hMFE0T2J2UjMzY1BRVG1VbU96U24ySmRqX0tFNmJpLWdOeUdUck9nVlZRb1JaQmhUbHpLM091RkJpUHJXZHR6MTVHT2pHcw?oc=5",
+    "sources": [
+     "The Portugal News",
+     "Watts Else"
+    ]
+   },
+   {
+    "id": "aeld0zfmywgrfz1pxqljnoc5",
+    "text": "TotalEnergies rachète des participations dans des actifs amont de gaz naturel : la production de gaz sera renforcée.",
+    "text_en": "TotalEnergies buys stakes in upstream natural gas assets: gas production will be strengthened.",
+    "title": "TotalEnergies rachète à Continental Resources des participations dans des actifs amont de gaz naturel",
+    "link": "https://news.google.com/rss/articles/CBMi7gFBVV95cUxQVk83T2NzMHhjbXk1QnMyMlFXZHNaTHNxOWVDMFAwWHpYUURtUjduR29MMDhUQ2JJX200WWduMGpJS1JjLVMtV1JBYXVOcjFaTmM1RTNLV0J5M3Jlbm9lSWpqOWl4S1NickNIbC1USFpvbmlVUHA4d1JRZzcwd2NaR0NMbGdoREREVUw1dGx5OHFZdDRqNFhkUmgyZmdNUVZkYVpRNkRBeWxSTkFBbFRUSHNKZDJXQ3ZLS1hUZ1M3Mm01V2NnQ1MtWkV3YkxPT1JFX1FvVUw0Y05DckEzWmpaeld0ZFMyWGRfZ1pXQlJn?oc=5",
+    "sources": [
+     "Boursier.com"
     ]
    }
   ]
