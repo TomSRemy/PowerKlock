@@ -4432,7 +4432,7 @@ html.pk-beta #prices-table th:first-child, html.pk-beta #prices-table tr.zone-ro
 .nh-sec-t span { opacity: 0; transition: opacity .15s; }
 .nh-sec-t:hover span, .nh-sec-t:focus-visible span { opacity: 1; }
 .nh-it { padding: 12px 0; border-bottom: 1px solid var(--border); }
-.nh-brief { padding: 4px 0 18px; margin-bottom: 18px; border-bottom: 1px solid var(--border); } .nh-brief p { margin: 6px 0 0; font-size: clamp(16.5px, 0.95rem + 0.3vw, 19px); line-height: 1.6; color: var(--text); max-width: 75ch; }
+.nh-brief { padding: 4px 0 18px; margin-bottom: 18px; border-bottom: 1px solid var(--border); } .nh-brief p { margin: 6px 0 0; font-size: clamp(16.5px, 0.95rem + 0.3vw, 19px); line-height: 1.6; color: var(--text); }
 .nh-brief-a { font-size: 14px; color: var(--accent); text-decoration: none; white-space: nowrap; } .nh-brief-a:hover { text-decoration: underline; }
 .nh-brief-src { margin: 6px 0 0 !important; font-size: 13px !important; color: var(--text3) !important; } .nh-brief-src a { color: var(--text2); } .nh-brief-src a:hover { color: var(--accent); }
 .nl-brief p { font-size: 16.5px; line-height: 1.6; color: var(--text); margin: 6px 0 0; }

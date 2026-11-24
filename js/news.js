@@ -44,7 +44,7 @@ async function loadNews() {
 let _newsMode = 'list', _newsSort = 'recent', _newsOffSrc = '', _offQ = '', _offTopic = '';
 const _newsStore = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (_) {} return null; };
 function newsSetView(v) {
-  v = ['feed', 'official', 'letter'].includes(v) ? v : 'home';
+  v = ['feed', 'official', 'letter', 'posts', 'sources'].includes(v) ? v : 'home';
   document.querySelectorAll('#news-tabs .tab-btn').forEach(b => b.classList.toggle('active', b.dataset.nv === v));
   const f = document.getElementById('news-v-feed'), o = document.getElementById('news-v-official');
   if (f) f.hidden = v !== 'feed'; if (o) o.hidden = v !== 'official';
@@ -52,6 +52,10 @@ function newsSetView(v) {
   if (v === 'home' && typeof renderNewsHome === 'function') renderNewsHome();
   const l = document.getElementById('news-v-letter'); if (l) l.hidden = v !== 'letter';
   if (v === 'letter') renderNewsLetter();
+  // LinkedIn posts and the sources have their own tabs (the owner, 24 Nov. 2026)
+  const ps = document.getElementById('news-v-posts'); if (ps) ps.hidden = v !== 'posts';
+  if (v === 'posts' && typeof renderNewsPosts === 'function') renderNewsPosts();
+  const sr = document.getElementById('news-v-sources'); if (sr) sr.hidden = v !== 'sources';
   _newsStore('pk-news-view', v);
 }
 window.newsSetView = newsSetView;
@@ -71,7 +75,7 @@ function _newsWireViews() {
     document.querySelectorAll('[data-ns]').forEach(b => b.addEventListener('click', () => { _newsSort = b.dataset.ns; _newsStore('pk-news-sort', _newsSort); sync(); renderNews(newsData); }));
     sync();
     const sb = document.getElementById('news-src-btn');
-    if (sb) sb.addEventListener('click', () => { const sec = document.getElementById('hs-news-src'); if (sec) { sec.classList.remove('collapsed'); const h = sec.querySelector('.hist-section-header'), bd = document.getElementById('hs-body-news-src'); if (h) h.classList.add('open'); if (bd) bd.classList.add('open'); sec.scrollIntoView({ behavior: 'smooth', block: 'start' }); } });
+    if (sb) sb.addEventListener('click', () => { newsSetView('sources'); window.scrollTo({ top: 0, behavior: 'smooth' }); });
     if (_newsMode !== 'list' || _newsSort !== 'recent') renderNews(newsData);
   }
 }
@@ -528,9 +532,10 @@ const _newsAuthorOf = url => { const m = url.match(/linkedin\.com\/(?:posts|in)\
 async function renderNewsPosts() {
   const sec = document.getElementById('hs-news-posts'), host = document.getElementById('news-posts'); if (!sec || !host) return;
   const A = window.PKAccount;
-  if (!A || !A.configured) { sec.hidden = true; return; }
+  const off = msg => { sec.hidden = false; host.innerHTML = `<div class="news-src-help">${msg}</div>`; };
+  if (!A || !A.configured) { off(_newsT('Les posts partagés par l’équipe ne sont pas disponibles ici.', 'The posts shared by the team are not available here.')); return; }
   await A.ready();
-  if (!A.user) { sec.hidden = true; return; }
+  if (!A.user) { off(_newsT('Connectez-vous pour lire et partager les posts LinkedIn de l’équipe.', 'Sign in to read and share the team’s LinkedIn posts.')); return; }
   const cl = A.client();
   const { data, error } = await cl.from('news_post').select('id, url, author, note, added_by, created_at').order('created_at', { ascending: false }).limit(40);
   if (error) { sec.hidden = true; return; }
@@ -619,7 +624,7 @@ function _newsWireKw() {
     fr.addEventListener('change', () => { try { localStorage.setItem('pk-news-fr', fr.checked ? '1' : '0'); } catch (_) {} renderNews(newsData); }); }
   const add = document.getElementById('news-add-btn');
   if (add && !add.dataset.wired) { add.dataset.wired = '1'; add.addEventListener('click', () => {
-    const sec = document.getElementById('hs-news-src'); if (sec) { sec.classList.remove('collapsed'); sec.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+    newsSetView('sources'); window.scrollTo({ top: 0, behavior: 'smooth' });
     const f = document.getElementById('news-add-name'); if (f) setTimeout(() => f.focus(), 350); }); }
   const inp = document.getElementById('news-kw'); if (!inp || inp.dataset.wired) return;
   inp.dataset.wired = '1';
@@ -636,10 +641,10 @@ function renderNewsSources() {
   const rows = src ? src.map(s => `<tr><td>${_newsEsc(s.kind === 'search' ? 'search: ' + s.name : s.name)}${s.added ? ' <span class="news-q">added from the site</span>' : ''}</td><td>${s.kind === 'feed' ? 'RSS feed' : s.kind === 'page' ? 'web page' : s.kind === 'official' ? 'official texts (open data)' : 'press search (Google News)'}</td><td class="${s.ok ? 'ok' : 'ko'}">${s.ok ? s.n + ' articles' : 'failed: ' + _newsEsc(s.error || '')}</td></tr>`).join('') : '';
   host.innerHTML = (src ? `<div style="overflow-x:auto"><table class="news-src-t"><thead><tr><th>Source</th><th>Read as</th><th>Last run</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<div class="news-src-help">The source list appears after the next news run.</div>') +
     _newsT(`<div class="news-src-help"><b>Ajouter une source pour tout le monde</b> : utilisez le formulaire ci-dessus (connecté). Les sources de la liste de l’équipe restent dans <a href="${edit}" target="_blank" rel="noopener">config/news_sources.json</a> sur GitHub.<br>
-    <b>Suivre des sujets pour vous</b> : saisissez-les dans ★ Mes mots-clés ci-dessus ; les articles correspondants reçoivent une étoile et sont listés sous ★ Mes mots-clés (gardés dans ce navigateur seulement).<br>
+    <b>Suivre des sujets pour vous</b> : saisissez-les dans À la une › Personnaliser › Mes mots-clés ; les articles correspondants reçoivent une étoile et sont listés sous ★ Mes mots-clés (gardés dans ce navigateur seulement).<br>
     <b>Impossible</b> : LinkedIn (pas de flux public, et ses conditions interdisent la lecture automatique des pages) et les sites sur abonnement sans flux (Contexte, Montel) : leurs articles apparaissent quand la recherche de presse les trouve. RTE n’a pas de flux d’actualités : ses actualités arrivent par la recherche de presse.</div>`,
     `<div class="news-src-help"><b>Add a source for everyone</b>: use the form above (signed in). The sources of the team list stay in <a href="${edit}" target="_blank" rel="noopener">config/news_sources.json</a> on GitHub.<br>
-    <b>Follow subjects for yourself</b>: type them in ★ My keywords above; matching articles are starred and listed under ★ My keywords (kept in this browser only).<br>
+    <b>Follow subjects for yourself</b>: type them in Top stories › Customise › My keywords; matching articles are starred and listed under ★ My keywords (kept in this browser only).<br>
     <b>Not possible</b>: LinkedIn (no public feed, and its terms forbid reading pages automatically) and subscription sites without a feed (Contexte, Montel): their articles still appear when the press search finds them. RTE has no news feed: its news come through the press search.</div>`);
 }
 
