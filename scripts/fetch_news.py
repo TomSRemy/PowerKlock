@@ -297,7 +297,7 @@ def group_major(out):
                         seen.add(o["link"]); os_.append({"source": o["source"], "link": o["link"], "cls": o.get("cls", "")})
                 drop.add(id(r))
             primary["other_sources"] = list(primary.get("other_sources") or []) + [o for o in os_ if o["link"] not in {x["link"] for x in primary.get("other_sources") or []}]
-            primary["impact"] = round(max(r["impact"] for r in week) + 0.4 * math.log2(1 + len(primary["other_sources"])), 2)
+            primary["impact"] = round(max(r["impact"] for r in week) + 0.9 * math.log2(1 + len(primary["other_sources"])), 2)
     return [r for r in out if id(r) not in drop]
 
 
@@ -905,7 +905,7 @@ def cluster_stories(out, threshold=0.42):
         others = [r for r in recs if r is not primary]
         primary["tags"] = list(dict.fromkeys(primary["tags"] + [t for r in others for t in r["tags"]]))
         primary["countries"] = list(dict.fromkeys(primary["countries"] + [c for r in others for c in r["countries"]]))
-        primary["impact"] = round(primary["impact"] + 0.4 * math.log2(len(recs)), 2)   # covered by several outlets: a bit more relevant
+        primary["impact"] = round(primary["impact"] + 0.9 * math.log2(len(recs)), 2)   # covered by several outlets: the real story of the day (5 outlets: +2.1)
         primary["other_sources"] = [{"source": r["source"], "link": r["link"], "cls": r.get("cls", "")} for r in others]
         merged.append(primary)
     return merged
