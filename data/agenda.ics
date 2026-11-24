@@ -8,61 +8,8 @@ X-WR-TIMEZONE:Europe/Paris
 REFRESH-INTERVAL;VALUE=DURATION:PT6H
 X-PUBLISHED-TTL:PT6H
 BEGIN:VEVENT
-UID:cons-37af0577ea96bd23@powerklock.com
-DTSTAMP:20261124T174740Z
-DTSTART;VALUE=DATE:20261125
-DTEND;VALUE=DATE:20261126
-SUMMARY:Fin de consultation · Ministère · Énergies et climat · Projet 
- d’arrêté relatif au plan d’action établi sur la base des recommanda
- tions découlant de l’audit énergétique ou sur 
-DESCRIPTION:Projet d’arrêté relatif au plan d’action établi sur la b
- ase des recommandations découlant de l’audit énergétique ou sur la ba
- se du système de management de l’énergie\nDate limite de réponse. Sou
- rce : Ministère · Énergies et climat\nhttps://www.consultations-publiqu
- es.developpement-durable.gouv.fr/projet-d-arrete-relatif-au-plan-d-action-
- etabli-a3483.html
-URL:https://www.consultations-publiques.developpement-durable.gouv.fr/proje
- t-d-arrete-relatif-au-plan-d-action-etabli-a3483.html
-TRANSP:TRANSPARENT
-END:VEVENT
-BEGIN:VEVENT
-UID:cons-7557c4e0e82fe9e1@powerklock.com
-DTSTAMP:20261124T174740Z
-DTSTART;VALUE=DATE:20261201
-DTEND;VALUE=DATE:20261202
-SUMMARY:Fin de consultation · Ministère · Énergies et climat · Projet 
- d’arrêté portant la création de la fiche d’opération standardisée
-  IND-UT-142\, du référentiel de contrôle et de la
-DESCRIPTION:Projet d’arrêté portant la création de la fiche d’opéra
- tion standardisée IND-UT-142\, du référentiel de contrôle et de la bon
- ification associés\nDate limite de réponse. Source : Ministère · Éner
- gies et climat\nhttps://www.consultations-publiques.developpement-durable.
- gouv.fr/projet-d-arrete-portant-la-creation-de-la-fiche-d-a3487.html
-URL:https://www.consultations-publiques.developpement-durable.gouv.fr/proje
- t-d-arrete-portant-la-creation-de-la-fiche-d-a3487.html
-TRANSP:TRANSPARENT
-END:VEVENT
-BEGIN:VEVENT
-UID:cons-9f9d427373c71589@powerklock.com
-DTSTAMP:20261124T174740Z
-DTSTART;VALUE=DATE:20261205
-DTEND;VALUE=DATE:20261206
-SUMMARY:Fin de consultation · Ministère · Énergies et climat · Projet 
- d’arrêté portant modification des bonifications associées aux fiches 
- d’opérations standardisées portant les référ
-DESCRIPTION:Projet d’arrêté portant modification des bonifications asso
- ciées aux fiches d’opérations standardisées portant les références 
- BAR-TH-171 et BAR-TH-172 du dispositif des certificats d’économies d’
- énergie\nDate limite de réponse. Source : Ministère · Énergies et cli
- mat\nhttps://www.consultations-publiques.developpement-durable.gouv.fr/pro
- jet-d-arrete-portant-modification-des-a3490.html
-URL:https://www.consultations-publiques.developpement-durable.gouv.fr/proje
- t-d-arrete-portant-modification-des-a3490.html
-TRANSP:TRANSPARENT
-END:VEVENT
-BEGIN:VEVENT
 UID:cons-3cdc1ebef92fab48@powerklock.com
-DTSTAMP:20261124T174740Z
+DTSTAMP:20261124T184902Z
 DTSTART;VALUE=DATE:20270110
 DTEND;VALUE=DATE:20270111
 SUMMARY:Fin de consultation · RTE · La concertation préalable sur le pro
@@ -78,112 +25,8 @@ URL:https://www.rte-france.com/actualites/2026-10-12-lancement-concertation
 TRANSP:TRANSPARENT
 END:VEVENT
 BEGIN:VEVENT
-UID:cons-38e720743965ec45@powerklock.com
-DTSTAMP:20261124T174740Z
-DTSTART;VALUE=DATE:20261028
-DTEND;VALUE=DATE:20261029
-SUMMARY:Fin de consultation · Ministère · Énergies et climat · Projet 
- d’arrêté portant modification de fiches d’opérations standardisées
-  du dispositif des certificats d’économies d’én
-DESCRIPTION:Projet d’arrêté portant modification de fiches d’opérati
- ons standardisées du dispositif des certificats d’économies d’énerg
- ie\nDate limite de réponse. Source : Ministère · Énergies et climat\nh
- ttps://www.consultations-publiques.developpement-durable.gouv.fr/projet-d-
- arrete-portant-modification-de-fiches-d-a3446.html
-URL:https://www.consultations-publiques.developpement-durable.gouv.fr/proje
- t-d-arrete-portant-modification-de-fiches-d-a3446.html
-TRANSP:TRANSPARENT
-END:VEVENT
-BEGIN:VEVENT
-UID:cons-83ec6b7c1a77344e@powerklock.com
-DTSTAMP:20261124T174740Z
-DTSTART;VALUE=DATE:20261104
-DTEND;VALUE=DATE:20261105
-SUMMARY:Fin de consultation · Ministère · Énergies et climat · Projet 
- d’arrêté relatif à l’intégration des véhicules légers répondant
-  à la norme Euro 7 dans la nomenclature Crit’Air
-DESCRIPTION:Projet d’arrêté relatif à l’intégration des véhicules 
- légers répondant à la norme Euro 7 dans la nomenclature Crit’Air\nDat
- e limite de réponse. Source : Ministère · Énergies et climat\nhttps://
- www.consultations-publiques.developpement-durable.gouv.fr/projet-d-arrete-
- relatif-a-l-integration-des-a3453.html
-URL:https://www.consultations-publiques.developpement-durable.gouv.fr/proje
- t-d-arrete-relatif-a-l-integration-des-a3453.html
-TRANSP:TRANSPARENT
-END:VEVENT
-BEGIN:VEVENT
-UID:cons-951f62c43f7f5ad7@powerklock.com
-DTSTAMP:20261124T174740Z
-DTSTART;VALUE=DATE:20261107
-DTEND;VALUE=DATE:20261108
-SUMMARY:Fin de consultation · Ministère · Énergies et climat · Méthod
- e Label bas carbone « Enrichissement de régénérations naturelles vuln
- érables »
-DESCRIPTION:Méthode Label bas carbone « Enrichissement de régénération
- s naturelles vulnérables »\nDate limite de réponse. Source : Ministère
-  · Énergies et climat\nhttps://www.consultations-publiques.developpement
- -durable.gouv.fr/methode-label-bas-carbone-enrichissement-de-a3463.html
-URL:https://www.consultations-publiques.developpement-durable.gouv.fr/metho
- de-label-bas-carbone-enrichissement-de-a3463.html
-TRANSP:TRANSPARENT
-END:VEVENT
-BEGIN:VEVENT
-UID:cons-2114f462657fdf8a@powerklock.com
-DTSTAMP:20261124T174740Z
-DTSTART;VALUE=DATE:20261107
-DTEND;VALUE=DATE:20261108
-SUMMARY:Fin de consultation · Ministère · Énergies et climat · Projet 
- d’arrêté modifiant l’article 5-1 de l’arrêté du 29 décembre 201
- 4 relatif aux modalités d’application du dispositi
-DESCRIPTION:Projet d’arrêté modifiant l’article 5-1 de l’arrêté d
- u 29 décembre 2014 relatif aux modalités d’application du dispositif d
- es certificats d’économies d’énergie\, relatif à la bonification de
- s opérations spécifiques industrielles entrant dans le champ…\nDate li
- mite de réponse. Source : Ministère · Énergies et climat\nhttps://www.
- consultations-publiques.developpement-durable.gouv.fr/projet-d-arrete-modi
- fiant-l-article-5-1-de-l-a3459.html
-URL:https://www.consultations-publiques.developpement-durable.gouv.fr/proje
- t-d-arrete-modifiant-l-article-5-1-de-l-a3459.html
-TRANSP:TRANSPARENT
-END:VEVENT
-BEGIN:VEVENT
-UID:cons-675108acfa7563e9@powerklock.com
-DTSTAMP:20261124T174740Z
-DTSTART;VALUE=DATE:20261113
-DTEND;VALUE=DATE:20261114
-SUMMARY:Fin de consultation · Ministère · Énergies et climat · Arrêt
- é modifiant les critères d’éligibilité des bonifications associés a
- ux fiches d’opérations standardisées TRA-EQ-128 
-DESCRIPTION:Arrêté modifiant les critères d’éligibilité des bonifica
- tions associés aux fiches d’opérations standardisées TRA-EQ-128 et TR
- A-EQ-129\nDate limite de réponse. Source : Ministère · Énergies et cli
- mat\nhttps://www.consultations-publiques.developpement-durable.gouv.fr/arr
- ete-modifiant-les-criteres-d-eligibilite-des-a3472.html
-URL:https://www.consultations-publiques.developpement-durable.gouv.fr/arret
- e-modifiant-les-criteres-d-eligibilite-des-a3472.html
-TRANSP:TRANSPARENT
-END:VEVENT
-BEGIN:VEVENT
-UID:cons-0c44af30ac7228e5@powerklock.com
-DTSTAMP:20261124T174740Z
-DTSTART;VALUE=DATE:20261116
-DTEND;VALUE=DATE:20261117
-SUMMARY:Fin de consultation · Ministère · Énergies et climat · Projet 
- d’arrêté supprimant la fiche d’opération standardisée BAR-TH-159 
- « Pompe à chaleur hybride individuelle » du disp
-DESCRIPTION:Projet d’arrêté supprimant la fiche d’opération standard
- isée BAR-TH-159 « Pompe à chaleur hybride individuelle » du dispositif
-  des certificats d’économies d’énergie\nDate limite de réponse. Sou
- rce : Ministère · Énergies et climat\nhttps://www.consultations-publiqu
- es.developpement-durable.gouv.fr/projet-d-arrete-supprimant-la-fiche-d-ope
- ration-a3473.html
-URL:https://www.consultations-publiques.developpement-durable.gouv.fr/proje
- t-d-arrete-supprimant-la-fiche-d-operation-a3473.html
-TRANSP:TRANSPARENT
-END:VEVENT
-BEGIN:VEVENT
 UID:cons-f8d72c0940c2d364@powerklock.com
-DTSTAMP:20261124T174740Z
+DTSTAMP:20261124T184902Z
 DTSTART;VALUE=DATE:20261122
 DTEND;VALUE=DATE:20261123
 SUMMARY:Fin de consultation · RTE · Création d'une ligne électrique ent
@@ -198,7 +41,7 @@ TRANSP:TRANSPARENT
 END:VEVENT
 BEGIN:VEVENT
 UID:ev-decret-2026-997@powerklock.com
-DTSTAMP:20261124T174740Z
+DTSTAMP:20261124T184902Z
 DTSTART;VALUE=DATE:20261029
 DTEND;VALUE=DATE:20261030
 SUMMARY:Décret n° 2026-997 : résiliation\, prix négatifs et flexibilit
@@ -223,7 +66,7 @@ TRANSP:TRANSPARENT
 END:VEVENT
 BEGIN:VEVENT
 UID:ev-capa-new@powerklock.com
-DTSTAMP:20261124T174740Z
+DTSTAMP:20261124T184902Z
 DTSTART;VALUE=DATE:20261101
 DTEND;VALUE=DATE:20261102
 SUMMARY:Nouveau mécanisme de capacité : RTE acheteur unique
@@ -237,7 +80,7 @@ TRANSP:TRANSPARENT
 END:VEVENT
 BEGIN:VEVENT
 UID:ev-cr-prix-seuil@powerklock.com
-DTSTAMP:20261124T174740Z
+DTSTAMP:20261124T184902Z
 DTSTART;VALUE=DATE:20261104
 DTEND;VALUE=DATE:20261105
 SUMMARY:Complément de rémunération : prix seuils du déplafonnement fix
@@ -256,7 +99,7 @@ TRANSP:TRANSPARENT
 END:VEVENT
 BEGIN:VEVENT
 UID:ev-neg-5mw@powerklock.com
-DTSTAMP:20261124T174740Z
+DTSTAMP:20261124T184902Z
 DTSTART;VALUE=DATE:20261201
 DTEND;VALUE=DATE:20261202
 SUMMARY:Arrêt aux prix négatifs dès 5 MW
@@ -272,7 +115,7 @@ TRANSP:TRANSPARENT
 END:VEVENT
 BEGIN:VEVENT
 UID:ev-cbam-cert@powerklock.com
-DTSTAMP:20261124T174740Z
+DTSTAMP:20261124T184902Z
 DTSTART;VALUE=DATE:20270201
 DTEND;VALUE=DATE:20270202
 SUMMARY:Vente des certificats CBAM
@@ -284,7 +127,7 @@ TRANSP:TRANSPARENT
 END:VEVENT
 BEGIN:VEVENT
 UID:ev-neg-1mw-apply@powerklock.com
-DTSTAMP:20261124T174740Z
+DTSTAMP:20261124T184902Z
 DTSTART;VALUE=DATE:20270301
 DTEND;VALUE=DATE:20270302
 SUMMARY:Arrêt aux prix négatifs dès 1 MW
@@ -300,7 +143,7 @@ TRANSP:TRANSPARENT
 END:VEVENT
 BEGIN:VEVENT
 UID:ev-cfd-2way@powerklock.com
-DTSTAMP:20261124T174740Z
+DTSTAMP:20261124T184902Z
 DTSTART;VALUE=DATE:20270717
 DTEND;VALUE=DATE:20270718
 SUMMARY:Contrats pour différence bidirectionnels obligatoires
@@ -313,7 +156,7 @@ TRANSP:TRANSPARENT
 END:VEVENT
 BEGIN:VEVENT
 UID:ev-ets2@powerklock.com
-DTSTAMP:20261124T174740Z
+DTSTAMP:20261124T184902Z
 DTSTART;VALUE=DATE:20280101
 DTEND;VALUE=DATE:20280102
 SUMMARY:Démarrage de l’ETS2 (bâtiments\, transport)
