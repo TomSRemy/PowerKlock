@@ -10,5 +10,7 @@
   "compatibility_date": "2026-10-19",
   "observability": { "enabled": true },
   // every minute: the Worker starts the jobs due that minute (schedule.json); Paris times follow summer and winter time
-  "triggers": { "crons": ["* * * * *"] }
+  "triggers": { "crons": ["* * * * *"] },
+  // Cloudflare builds branches other than the production one with `wrangler preview`, which needs this block, even empty
+  "previews": {}
 }
