@@ -1,0 +1,18 @@
+{
+  "_about": "The model text of « Le point du matin » (scripts/news_letter.py gives it to the AI as the tone to follow; written by hand on 24 Nov. 2026 from that day's data). Its facts and figures are that day's: the AI is told to write with the day's own, and a figure it was not given is refused. Edit this file to change the tone.",
+  "date": "2026-11-24",
+  "fr": "Le froid s’installe et tend le marché : le spot français remonte à 245 €/MWh. Avec une consommation en hausse, la production bas-carbone ne suffit plus à couvrir les besoins, et le prix s’aligne davantage sur celui des centrales au gaz. Or le gaz lui-même se tend, porté par les tensions autour du détroit d’Ormuz et par des stocks européens plus bas qu’il y a un an. Le Cal 27 bouge à peine : le marché compte sur le retour d’une partie du parc nucléaire pour passer l’hiver.",
+  "en": "The cold is setting in and tightening the market: the French spot climbs back to 245 €/MWh. With consumption rising, low-carbon output no longer covers needs, and the price aligns more closely with that of gas plants. And gas itself is tightening, driven by tension around the Strait of Hormuz and by European storage lower than a year ago. Cal 27 barely moves: the market is counting on part of the nuclear fleet coming back to get through the winter.",
+  "links": [
+    {
+      "title": "Prix du gaz : le marché s'envole de 5,3 % ce lundi 23 novembre, ce qui a fait flamber le PEG",
+      "source": "Selectra",
+      "link": "https://news.google.com/rss/articles/CBMibEFVX3lxTE1wMnZKLWdhSU96VnlOcFJFNUNERXNiZ1kwZ0Z1SndOUk5rNl9xeDE0Nm9HN1ZIbHBoMkozakgyeDU4YzI2R2U2VFZtZmZuZHZOYWgzLVpqeXlBbk1DNHpPUjdKMjRXRF9EcDkwRg?oc=5"
+    },
+    {
+      "title": "Crise d'Ormuz 2026 : ce choc pire qu'en 1973 qui fait exploser votre facture de gaz",
+      "source": "Bourse Inside",
+      "link": "https://news.google.com/rss/articles/CBMi6wFBVV95cUxPbHV5am1YM2QwQVRndmNBdGNta1VoWGlWM2JHbXhuaTRIYmo3YndhczRFU2EzOUY1ZDEyOElYbnRNVFA1dXU2cVFxTFA4TFc0WUFDcHZTQnFiUHl6eTQ0REZvY2IzSVVGdmUzSlk0MjBiOWxvbTJLWUtucXRsWWM5aFVvdTBEakswNlRhMEZCTFhMZFlkZjdrTlctamdIaUdWQWlaTHJfMUd6d1hjZmd3S3pnLWdkVXNNbDd1Tm14ZzAxTFo3VjBkM2hKOHk1YmhZTWZ6QVRiLUpvcTgwMnB4RE5VUVo0UVpkbF80?oc=5"
+    }
+  ]
+}
