@@ -3,6 +3,8 @@ name: Morning e-mail
 # The newsletters by e-mail (scripts/news_letter.py writes them, scripts/morning_mail.py sends them):
 #   7 O'Klock    every weekday at 07:00 Paris: the last 36 hours (84 on Monday)
 #   PowerBrunch  Monday at 10:00 Paris: the week before, larger
+# The PowerKlock scheduler (workers/scheduler, a Cloudflare Worker) starts it on time with auto=true; the GitHub crons
+# below stay as a fallback.
 # Only the readers who asked for it in the site (public.news_profile: 7 O'Klock and/or PowerBrunch ticked, account
 # approved) get it, each their own edition; nothing is sent to anyone else. Needs the SMTP_* secrets (as the alerts); without them it only prints.
 
@@ -20,10 +22,19 @@ on:
         type: choice
         options: ['7 O''Klock', 'PowerBrunch']
         default: '7 O''Klock'
+      auto:
+        description: 'Started by the PowerKlock scheduler (workers/scheduler): same rules as a scheduled run, sent once a day'
+        type: boolean
+        default: false
       preview:
         description: 'Preview: write the edition now and send every profile to the admins only (nothing committed)'
         type: boolean
         default: false
+
+# one run at a time: a try that starts while another is writing or sending waits for it, then sees the edition sent
+concurrency:
+  group: morning-mail
+  cancel-in-progress: false
 
 jobs:
   mail:
@@ -33,6 +44,8 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v5
+        with:
+          ref: main   # the latest main, with the sent marker a run just before may have pushed
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
@@ -45,7 +58,7 @@ jobs:
           SENT_D=$(python3 -c "import json;print((json.load(open('data/newsletter_sent.json')) if __import__('os').path.exists('data/newsletter_sent.json') else {}).get('daily',''))")
           SENT_W=$(python3 -c "import json;print((json.load(open('data/newsletter_sent.json')) if __import__('os').path.exists('data/newsletter_sent.json') else {}).get('weekly',''))")
           M=none; MAIL=yes
-          if [ "${{ github.event_name }}" = "schedule" ]; then
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ inputs.auto }}" = "true" ]; then
             if [ "$W" = "1" ] && [ "$H" -ge 10 ] && [ "$SENT_W" != "$D" ]; then M=weekly; [ "$H" -ge 14 ] && MAIL=no
             elif [ "$W" -le 5 ] && [ "$H" -ge 7 ] && [ "$SENT_D" != "$D" ]; then M=daily; [ "$H" -ge 12 ] && MAIL=no
             else echo "Nothing to do: before 07:00 in Paris, or today's edition already sent"; fi
@@ -61,7 +74,7 @@ jobs:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}   # the posts the team voted for
         run: |
           pip install -q requests==2.33.1 scikit-learn==1.6.1 "psycopg[binary]==3.3.2" matplotlib==3.9.2   # matplotlib: the charts of the mail (scripts/news_charts.py)
-          F=""; if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then F="--force"; fi   # a run started by hand rebuilds the edition
+          F=""; if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.auto }}" != "true" ]; then F="--force"; fi   # a run started by hand rebuilds the edition
           W=""; if [ "${{ steps.ed.outputs.mode }}" = "weekly" ]; then W="--weekly"; fi
           python scripts/news_digest.py $F || echo "::warning::digest not written"
           python scripts/news_letter.py $F $W || echo "::warning::newsletter not written"
