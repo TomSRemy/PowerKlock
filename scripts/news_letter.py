@@ -242,6 +242,68 @@ def takeaway(t, title, what):
     return t
 
 
+BRIEF = """Tu écris « Le point du matin » de PowerKlock, comme un analyste marché senior qui parle à des directeurs du secteur de
+l'électricité en France : un texte naturel et fluide, 3 ou 4 phrases, 90 mots au plus, sans liste ni titre.
+Tu reçois : les marchés du matin (valeur, variation), le contexte de marché (notre analyse de la veille, avec sa tendance),
+les tendances attendues pour la semaine par marché (celles de « Ce qui a bougé et pourquoi » sur le site : une attente, à
+écrire comme telle, « devrait », jamais comme un fait), la météo, et les 3 histoires du jour (titre et résumé).
+Si le mouvement du jour va contre la tendance attendue (le gaz monte alors qu'on l'attend en baisse), dis-le simplement.
+Ce qu'on attend : d'abord ce qui bouge sur les marchés ET pourquoi, en reliant les mouvements entre eux et au contexte
+(« le spot remonte avec le gaz », « le froid annoncé soutient la pointe ») ; puis ce qu'il faut retenir de l'actualité.
+2 ou 3 chiffres au plus, arrondis, jamais un chiffre seul sans ce qu'il veut dire. Une cause n'est écrite que si le contexte
+ou une histoire la donne : sinon, décris le mouvement sans l'expliquer. Aucun fait, chiffre, acteur ni date absent de ce qui
+est reçu. Pas de conseil, pas de formule creuse (« dans un contexte de… », « les acteurs du marché… »).
+Le ton seulement (un autre jour, d'autres faits : n'en reprends ni les mots ni les faits) : « Le solaire pèse sur les prix :
+le spot recule de 8 % sous 60 €, avec deux heures négatives à la mi-journée. Le Cal-27 ne bouge pas, signe que le marché ne
+voit pas l'épisode durer. À noter : RTE ouvre sa consultation sur les règles de raccordement. »
+Réponds en JSON seulement : {"brief": "<français>", "brief_en": "<anglais>"}"""
+
+
+def numbers_ok(text, given):
+    """every figure of a generated text is one of the figures it was given (rounding allowed): nothing invented"""
+    nums = [float(x.replace("\u202f", "").replace(" ", "").replace(",", ".")) for x in re.findall(r"\d+(?:[ \u202f]\d{3})*(?:[.,]\d+)?", text or "")]
+    return all(any(abs(n - g) <= max(0.6, 0.012 * abs(g)) for g in given) for n in nums)
+
+
+def ask_brief(edition, model=None):
+    """« Le point du matin »: the markets with their reasons (our market context of the evening before) and the day's news"""
+    try:
+        md = json.load(open(os.path.join(ROOT, "data", "market_digest.json")))
+    except (OSError, ValueError):
+        md = {}
+    fresh = md.get("asof") and (date.fromisoformat(edition["date"]) - date.fromisoformat(md["asof"])).days <= 3
+    ctx = [{"sujet": c.get("topic"), "texte": c.get("text"), "tendance": c.get("tone")} for c in (md.get("context") or [])] if fresh else []
+    rnd = lambda v, d: None if not isinstance(v, (int, float)) else round(v) if abs(v) >= 20 or d == 0 else round(v, d)  # noqa: E731
+    # rounded as one says them (« vers 245 € », « +3 % »): the text then reads like a note, not a table
+    mk = [{"marché": r["label"][0], "valeur": rnd(r.get("value"), 1), "unité": r.get("unit"),
+           "variation": (f'{rnd(r.get("pct"), 0):+d} %' if isinstance(r.get("pct"), (int, float)) and r.get("show") != "abs" and not r.get("hours")
+                         else f'{rnd(r.get("chg"), 1):+} {"h" if r.get("hours") else "€"}' if isinstance(r.get("chg"), (int, float)) else None)}
+          for r in edition.get("markets") or []]
+    seen, st = set(), []
+    for p in sorted(edition["profiles"].values(), key=lambda p: p.get("order", 9)):
+        for x in (p.get("stories") or [])[:2]:
+            if x["link"] not in seen and len(st) < 3:
+                seen.add(x["link"]); st.append({"titre": x["title"], "résumé": x.get("what") or ""})
+    w = edition.get("weather") or {}
+    names = {"oil": "pétrole", "gas": "gaz", "power": "électricité", "carbon": "carbone"}
+    trend = {names.get(k, k): {"tendance": v.get("tone"), "texte": v.get("text")} for k, v in (md.get("outlook") or {}).items()} if fresh else {}
+    payload = {"marchés": mk, "contexte": ctx, "tendances_semaine": trend, "météo": " · ".join(filter(None, [(w.get("label") or [""])[0], (w.get("sub") or [""])[0]])), "histoires": st}
+    msg = {"max_tokens": 700, "system": BRIEF, "messages": [{"role": "user", "content": json.dumps(payload, ensure_ascii=False)}],
+           "model": model or os.environ.get("NEWS_MODEL") or MODEL}
+    req = urllib.request.Request(PROXY, data=json.dumps(msg).encode(), headers={"Content-Type": "application/json", "User-Agent": "PowerKlock-newsletter"})
+    r = json.load(urllib.request.urlopen(req, timeout=150))
+    txt = "".join(b.get("text") for b in r.get("content", []) if b.get("type") == "text" and isinstance(b.get("text"), str))
+    m = re.search(r"\{.*\}", txt, re.S)
+    out = json.loads(m.group(0)) if m else {}
+    given = [float(x.replace(",", ".")) for x in re.findall(r"\d+(?:[.,]\d+)?", json.dumps(payload, ensure_ascii=False).replace("\u202f", ""))]
+    given += [float(v) for r_ in edition.get("markets") or [] for v in (r_.get("value"), r_.get("pct"), r_.get("chg")) if isinstance(v, (int, float))]
+    given += [abs(g) for g in given]
+    b, be = clip(out.get("brief"), 700), clip(out.get("brief_en"), 700)
+    many = len(re.findall(r"(?<![\w-])\d+(?:[.,]\d+)?", re.sub(r"\b(19|20)\d\d\b", "", b or ""))) > 4   # a note, not a table of figures (« Cal-27 » is a name)
+    if not b or many or not numbers_ok(b, given):
+        raise ValueError(f"brief rejected: {b[:120]!r}")   # a figure that was not given: better no brief
+    return b, (be if be and numbers_ok(be, given) else None)
+
 def clip(s, n):
     s = re.sub(r"\s+", " ", str(s or "")).strip()
     return s if len(s) <= n else s[:n].rsplit(" ", 1)[0] + "…"
@@ -564,6 +626,14 @@ def main():
         edition["profiles"][pid] = {"hero_chart": hero, "name": prof["name"], "short": prof["short"], "order": prof["order"], "headline": clip(gen.get("headline"), 300) or None, "headline_en": clip(gen.get("headline_en"), 300) or None,
                                     "stories": out, "ai": bool(by)}
         print(f"{pid}: {len(out)} stories, AI text for {len(by)}")
+    edition["brief"] = edition["brief_en"] = None
+    if use_ai and edition["profiles"]:
+        for attempt in (1, 2, 3, 4):     # a text with too many figures, or one not given, is refused: a few tries
+            try:
+                edition["brief"], edition["brief_en"] = ask_brief(edition, None if attempt == 1 else "@cf/meta/llama-3.3-70b-instruct-fp8-fast")
+                break
+            except Exception as e:
+                print(f"brief not written, attempt {attempt} ({str(e)[:160]})")
     with open(out_path, "w") as f:
         json.dump(edition, f, ensure_ascii=False, indent=1)
     return 0

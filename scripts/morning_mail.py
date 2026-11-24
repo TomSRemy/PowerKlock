@@ -296,7 +296,9 @@ def journal(today, E, ed, wk, mine):
             f'<table role="presentation" width="100%" style="border-collapse:collapse;margin:8px 0 12px"><tr><td style="vertical-align:bottom"><p style="{serif};margin:0;font-size:32px;font-weight:700;color:#121212">{TITLE[wk]}</p>'
             f'<p style="{f};margin:3px 0 0;font-size:13.5px;color:#6B6B6B">{SUB[wk]}{" · semaine du " + frday(today - timedelta(days=7)) if wk else ""}</p></td>{wx}</tr></table>'
             f'<table role="presentation" width="100%" style="border-collapse:collapse;table-layout:fixed">{tiles}</table>'
-            f'<p style="{f};font-size:11px;color:#8A8A8A;margin:6px 0 0">Sources : {esc(srcs)}. {"Variation sur la semaine" if wk else "Variation sur la séance précédente"}. Chaque tuile ouvre sa page sur le site.</p></td></tr>')
+            f'<p style="{f};font-size:11px;color:#8A8A8A;margin:6px 0 0">Sources : {esc(srcs)}. {"Variation sur la semaine" if wk else "Variation sur la séance précédente"}. Chaque tuile ouvre sa page sur le site.</p>'
+            + (f'<p style="{f};margin:14px 0 0;font-size:15.5px;line-height:1.6;color:#121212"><b style="{green}">Le point du matin.</b> {esc(E["brief"])} <a href="{SITE}#today" style="{green};font-size:13.5px;white-space:nowrap">Le détail par marché →</a></p>' if E.get('brief') else '')
+            + '</td></tr>')
     body = []
     # ── PowerBrunch: the week's chart first ──
     wc = None   # no chart any more (the owner's choice, 23 Nov. 2026)

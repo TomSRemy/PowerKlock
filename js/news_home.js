@@ -132,7 +132,7 @@ async function renderNewsHome() {
   host.innerHTML = `<div class="nh-tools"><span class="nh-date">${(d => d.charAt(0).toUpperCase() + d.slice(1))(new Date().toLocaleDateString(en ? 'en-GB' : 'fr-FR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/Paris' }))}</span>
       <button type="button" class="nh-btn" id="nh-perso">⚙ ${_newsT('Personnaliser', 'Customise')}</button>
       ${aside ? `<button type="button" class="nh-btn" id="nh-aside-t">${pref.asideOff ? _newsT('Afficher la colonne', 'Show the column') + ' ⇤' : _newsT('Masquer la colonne', 'Hide the column') + ' ⇥'}</button>` : ''}</div>
-    <div class="nh-grid${pref.asideOff || !aside ? ' noaside' : ''}"><div class="nh-main"><div class="nh-top">${leadH}${essH}</div><div class="nh-secs">${secH}</div>${contH}</div>${aside && !pref.asideOff ? `<aside class="nh-aside">${aside}</aside>` : ''}</div>`;
+    <div class="nh-grid${pref.asideOff || !aside ? ' noaside' : ''}"><div class="nh-main">${(en && E.brief_en) || E.brief ? `<section class="nh-brief"><div class="nh-k">${_newsT('Le point du matin', 'The morning brief')}</div><p>${_newsEsc((en && E.brief_en) || E.brief)} <a class="nh-brief-a" href="#today">${_newsT('Ce qui a bougé et pourquoi, marché par marché', 'What moved and why, market by market')} →</a></p></section>` : ''}<div class="nh-top">${leadH}${essH}</div><div class="nh-secs">${secH}</div>${contH}</div>${aside && !pref.asideOff ? `<aside class="nh-aside">${aside}</aside>` : ''}</div>`;
   _nhWire(host);
 }
 window.renderNewsHome = renderNewsHome;
