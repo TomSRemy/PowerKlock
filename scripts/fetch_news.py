@@ -105,6 +105,21 @@ def words(t):
     return [w for w in re.findall(r"[a-zà-ÿ0-9]+", (t or "").lower()) if len(w) > 3 and w not in STOP]
 
 
+def followed(cfg_db, limit=30):
+    """the readers' keywords (public.news_keyword, « ★ Mots-clés »): each becomes a press search, so a subject a reader
+    follows is looked for across the press, not only in the outlets read; only the words, no reader identity"""
+    if not cfg_db:
+        return []
+    try:
+        import psycopg
+        with psycopg.connect(cfg_db, connect_timeout=15) as conn, conn.cursor() as cur:
+            cur.execute("select lower(trim(keyword)), count(*) from public.news_keyword where length(trim(keyword)) >= 3 group by 1 order by 2 desc, 1 limit %s", (limit,))
+            return [k for k, _ in cur.fetchall()]
+    except Exception as e:
+        print("  followed keywords not read:", str(e)[:160])
+        return []
+
+
 def learn_prefs(cfg_db):
     """readers' votes (public.news_vote) → weights of sources, categories and title words (no reader identity kept)"""
     if not cfg_db:
@@ -711,6 +726,17 @@ def main():
             status.append({"name": s["q"], "kind": "search", "ok": True, "n": n, "added": bool(s.get("added"))})
         except Exception as e:
             status.append({"name": s["q"], "kind": "search", "ok": False, "error": str(e)[:120], "added": bool(s.get("added"))})
+    # the subjects readers follow (their keywords): one press search each, titles and links only
+    have = {x["q"].lower() for x in cfg.get("searches", [])}
+    for kw in followed(os.environ.get("SUPABASE_DB_URL")):
+        if kw in have:
+            continue
+        time.sleep(3)
+        try:
+            n = add_items(out, gnews(f'"{kw}"', "fr"), {"name": "Search", "cls": "search", "tags": ["watch", "follow"]}, now, PER_SEARCH, {"query": kw})
+            status.append({"name": f"suivi : {kw}", "kind": "search", "ok": True, "n": n})
+        except Exception as e:
+            status.append({"name": f"suivi : {kw}", "kind": "search", "ok": False, "error": str(e)[:120]})
     for key, (name, cls, fn, tags) in PUBLISHERS.items():
         try:
             n = add_items(out, fn(now), {"name": name, "cls": cls, "tags": tags}, now, 20)
