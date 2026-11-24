@@ -170,6 +170,7 @@
     b.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>' + (n ? `<span class="pk-alert-n">${n}</span>` : '');
     b.classList.toggle('on', n > 0);
     b.title = n ? n + ' alert' + (n > 1 ? 's' : '') + ' for today and tomorrow' : 'Alerts';
+    document.dispatchEvent(new CustomEvent('pk-alerts', { detail: { n } }));   // the app's Alerts tab and the icon badge (js/app.js)
   }
 
   // ── panel ──
@@ -271,7 +272,8 @@
     await evaluate();
     if (window.PKAccount && window.PKAccount.onChange) window.PKAccount.onChange(async () => { await loadRules(); await evaluate(); });
   }
-  window.PKAlerts = { open, refresh: async () => { await loadRules(); await evaluate(); } };
+  window.PKAlerts = { open, refresh: async () => { await loadRules(); await evaluate(); }, hits: () => hits.slice(), rules: () => rules.slice(), label: k => (KINDS[k] || { label: k }).label, text: r => ruleText(r),
+    toggle: async id => { const r = rules.find(x => String(x.id) === String(id)); if (r) { await updateRule(r.id, { active: r.active === false }); await evaluate(); } } };
   window.addEventListener('load', () => setTimeout(boot, 300));
 
   const css = document.createElement('style');

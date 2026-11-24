@@ -1009,6 +1009,7 @@
       shield: '<path d="M10 2.5 16 5v4.5c0 4-2.6 6.6-6 8-3.4-1.4-6-4-6-8V5Z"/><path d="m7.5 10 1.8 1.8L12.8 8"/>',
       out: '<path d="M8 4H4.5v12H8"/><path d="m12 6.5 3.5 3.5L12 13.5M15.5 10H7.5"/>',
       gear: '<circle cx="10" cy="10" r="2.6"/><path d="M10 2.5v2M10 15.5v2M2.5 10h2M15.5 10h2M4.7 4.7l1.4 1.4M13.9 13.9l1.4 1.4M4.7 15.3l1.4-1.4M13.9 6.1l1.4-1.4"/>',
+      phone: '<rect x="5.5" y="2.5" width="9" height="15" rx="2"/><path d="M9 15h2"/>',
       map: '<path d="M3 5.5 7.5 3.5l5 2 4.5-2v11l-4.5 2-5-2L3 16.5Z"/><path d="M7.5 3.5v11M12.5 5.5v11"/>',
     };
     const ic = k => `<svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${I[k]}</svg>`;
@@ -1024,6 +1025,7 @@
       <div class="pk-am-sep"></div>
       ${item('user', 'My account', 'Password, delete the account', 'account')}
       ${item('map', 'Guided tour', 'Where to find everything, in one minute', 'tour')}
+      ${item('phone', 'PowerKlock on your phone', 'The app: open it, install it on the home screen', 'app')}
       <div id="pk-am-admin"></div>
       <div class="pk-am-sep"></div>
       ${item('out', 'Sign out', '', 'out')}`;
@@ -1043,6 +1045,7 @@
       letter: () => { if (window.PKSetup) PKSetup.settings('newsletter'); },
       alerts: () => { if (window.PKSetup) PKSetup.settings('alerts'); else if (window.PKAlerts) PKAlerts.open(); },
       tour: () => { if (window.PKTour) PKTour.start(); },
+      app: () => { if (window.PKApp) { PKApp.open('today'); if (!(matchMedia && matchMedia('(display-mode: standalone)').matches)) setTimeout(() => PKApp.install(), 500); } },
       boards: () => { location.hash = '#dashboards'; },
       mcp: () => { openAccount(); scrollTo('#pkd-mcp'); },
       account: () => openAccount(),
@@ -1588,7 +1591,7 @@
     b.items.push(Object.assign({ i: uid(), t: 'w', wid, w: w.size.w * FINE, h: w.size.h * FINE }, p ? { p } : {}));
     toast('Added to “' + b.name + '”'); save(); if (isOpen()) render();
   }
-  window.PKDash = { init, open, refresh, has, toggleWidget, addWidget, addCard, addSection, addNote, TEMPLATES, boards, soloLink, openAccount, openAuth: v => (window.PKAccount && PKAccount.user) ? openAccount() : authModal(v || 'in') };
+  window.PKDash = { select: id => { if (!state) init(); if (state.boards.some(b => b.id === id)) { state.active = id; save(); render(); } }, init, open, refresh, has, toggleWidget, addWidget, addCard, addSection, addNote, TEMPLATES, boards, soloLink, openAccount, openAuth: v => (window.PKAccount && PKAccount.user) ? openAccount() : authModal(v || 'in') };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
 })();
