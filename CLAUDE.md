@@ -24,14 +24,17 @@ Actions jobs that write JSON into `data/`. These rules come from the owner; foll
 - **Only useful sources that update automatically**: APIs, open-data portals (ODRÉ, ENTSO-E, RTE Data Portal,
   Energy-Charts, CRE open data, EEX…), or official files republished in the same form every year (parsed by a job
   each year). Official pages republished in the same form (CRE, ministry consultations…) may be read when they have
-  no feed. Never sites whose terms forbid automated collection (LinkedIn, paywalled press): titles and links only,
-  never an article's text. Free only: no paid API.
+  no feed. Paywalled press and sites that forbid automated collection (LinkedIn): titles, links and the page's public
+  summary (its description) only, never the article's text; a site whose robots.txt or server refuses scripts is not read. Free only: no paid API.
 - Every figure shown is traceable: the source is named under the chart, and Methodology describes the calculation.
 - Dates are **delivery days in Paris time** (`data/history/daily/<D>.json` = prices for delivery day D). A 25-hour
   day keeps 96 quarter-hours in its series: use the published daily average (`avg`), never the mean of the series.
 - A dated event (regulation, market, geopolitics, nuclear, grid, weather) goes into `data/events.json` only with a
   date checked against its source.
 - When two sources disagree (PowerKlock vs RTE, EEX, CRE…), find and write down the cause before showing both.
+
+- **When jobs run**: in `workers/scheduler/schedule.json` (a Cloudflare Worker starts them on time), never a GitHub
+  `schedule:` (late by hours, often dropped). A job reading its slot uses `inputs.cron`. `tests/test_scheduler.py` checks it.
 
 ## Secrets
 - No key, token or password in the repository, in a commit, in a log or in a chat. Secrets live in GitHub

@@ -18,3 +18,4 @@ wrangler.jsonc
 .assetsignore
 .gitignore
 .env*
+workers

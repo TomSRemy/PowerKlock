@@ -18,7 +18,8 @@ on:
       - 'tests/**'
       - 'scripts/**'
       - 'ruff.toml'
-      - '.github/workflows/site-tests.yml'
+      - '.github/workflows/**'
+      - 'workers/**'
   workflow_dispatch:
 
 jobs:
@@ -39,7 +40,7 @@ jobs:
       - name: JavaScript syntax
         run: for f in js/*.js js/*/*.js; do case "$f" in js/vendor/*) continue;; esac; node --check "$f" || exit 1; done
       - name: Calculations
-        run: pip install -q numpy==2.2.6 scipy==1.15.3 && python tests/test_calculations.py && python tests/test_prices_dst.py && python tests/test_bess_optim.py
+        run: pip install -q numpy==2.2.6 scipy==1.15.3 && python tests/test_calculations.py && python tests/test_prices_dst.py && python tests/test_bess_optim.py && python tests/test_scheduler.py
       - name: Site logic
         run: python tests/test_site_logic.py && python tests/test_ppa_frozen.py && python tests/test_consistency.py
       - name: Smoke tests (English and French)

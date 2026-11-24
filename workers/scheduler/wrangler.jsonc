@@ -1,0 +1,16 @@
+// PowerKlock scheduler: a small Cloudflare Worker that starts the GitHub jobs on time (workers/scheduler/schedule.json)
+// (GitHub's own scheduled runs start late, sometimes by hours, or not at all).
+// Deployed on its own (Workers Builds with root directory workers/scheduler), apart from the site.
+// Secret: GITHUB_TOKEN, a fine-grained token limited to TomSRemy/PowerKlock with "Actions: read and write";
+// set it in Cloudflare (Worker › Settings › Variables and secrets), never in this file.
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "powerklock-scheduler",
+  "main": "index.js",
+  "compatibility_date": "2026-10-19",
+  "observability": { "enabled": true },
+  // every minute: the Worker starts the jobs due that minute (schedule.json); Paris times follow summer and winter time
+  "triggers": { "crons": ["* * * * *"] },
+  // Cloudflare builds branches other than the production one with `wrangler preview`, which needs this block, even empty
+  "previews": {}
+}

@@ -1,0 +1,17 @@
+// The PowerKlock connector for Claude (index.js): a remote MCP server, deployed on its own (Workers Builds, root
+// directory workers/mcp). SUPABASE_KEY is the site's publishable key (public, already in js/account.js): the personal
+// links are checked by the database (public.mcp_check(), warehouse migration 033).
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "powerklock-mcp",
+  "main": "index.js",
+  "compatibility_date": "2026-10-19",
+  "observability": { "enabled": true },
+  // Cloudflare builds branches other than the production one with `wrangler preview`, which needs this block, even empty
+  "previews": {},
+  "vars": {
+    "SUPABASE_URL": "https://xtqeslyjtjrbjpffpixn.supabase.co",
+    "SUPABASE_KEY": "sb_publishable_mfgTs1zA6ZT69hU0DhXpnA_YmjpkRQ1",
+    "SITE": "https://www.powerklock.com"
+  }
+}

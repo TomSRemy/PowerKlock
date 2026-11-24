@@ -8,8 +8,7 @@ name: Reserves (FCR, aFRR) and debt rate
 # The last 21 days are fetched again each time (late corrections); the FCR auction for D is held on D-1 morning.
 
 on:
-  schedule:
-    - cron: '47 9 * * *'     # 09:47 UTC, after the D-1 FCR auction results
+  # when: workers/scheduler/schedule.json (the PowerKlock scheduler, a Cloudflare Worker, starts it on time)
   push:
     branches: [main]
     paths: ['scripts/fetch_reserves.py', '.github/workflows/fetch_reserves.yml']

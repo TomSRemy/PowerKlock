@@ -5,8 +5,7 @@ name: Fetch Core flow-based limits (JAO)
 # Writes data/history/jao_core/YYYY.json (scripts/fetch_jao_core.py).
 
 on:
-  schedule:
-    - cron: "47 12 * * *"      # every day, after JAO publishes the next day's coupling results
+  # when: workers/scheduler/schedule.json (the PowerKlock scheduler, a Cloudflare Worker, starts it on time)
   workflow_dispatch:
     inputs:
       since:

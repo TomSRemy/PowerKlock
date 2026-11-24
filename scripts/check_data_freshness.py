@@ -10,6 +10,7 @@ Exit 1 (so the run shows red in Actions) and e-mail (scripts/notify_failure.py) 
 older than its threshold. Never touches the data itself.
 """
 import json
+import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -55,6 +56,9 @@ def age_hours(j, field: str):
     return (datetime.now(timezone.utc) - u).total_seconds() / 3600
 
 
+DB_LIMIT_MB = 500   # Supabase free plan
+
+
 def main():
     stale = []
     for rel, field, max_age in WATCHED:
@@ -72,6 +76,22 @@ def main():
             stale.append(f'{rel}: {hrs:.1f} h old (limit {max_age} h)')
         else:
             print(f'  {rel}: {hrs:.1f} h old, OK')
+
+    # the warehouse's size: Supabase's free plan stops at 500 MB; a warning at 85 % leaves time to make room
+    # (public.db_size_mb(), warehouse migration 035; skipped without SUPABASE_DB_URL)
+    db = os.environ.get('SUPABASE_DB_URL')
+    if db:
+        try:
+            import psycopg
+            with psycopg.connect(db, connect_timeout=15, prepare_threshold=None) as conn, conn.cursor() as cur:
+                cur.execute('select public.db_size_mb()')
+                mb = float(cur.fetchone()[0])
+            if mb > DB_LIMIT_MB * 0.85:
+                stale.append(f'warehouse: {mb:.0f} MB of {DB_LIMIT_MB} MB ({mb / DB_LIMIT_MB:.0%}), make room (oldest quarter-hours to hourly)')
+            else:
+                print(f'  warehouse: {mb:.0f} MB of {DB_LIMIT_MB} MB ({mb / DB_LIMIT_MB:.0%}), OK')
+        except Exception as e:
+            print(f'  warehouse size not read: {str(e)[:120]}')
 
     if stale:
         print('STALE:')

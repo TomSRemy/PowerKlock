@@ -463,6 +463,52 @@
         "power"
       ],
       "require": "electricit|power|renewable|wind|solar|battery|storage|grid|nuclear|energy|gas|hydrogen|ppa|ofgem|neso|carbon|offshore|interconnect|capacity"
+    },
+    {
+      "name": "Transitions & Énergies",
+      "cls": "transitions",
+      "url": "https://www.transitionsenergies.com/feed/",
+      "tags": [
+        "fr",
+        "power"
+      ],
+      "require": "électri|electricit|photovolta|solaire|éolien|eolien|offshore|nucléaire|nucleaire|\\bedf\\b|engie|totalenergies|\\brte\\b|\\bcre\\b|enedis|hydrogène|batterie|stockage|renouvelable|pompe à chaleur|\\bppa\\b|énergie|energie|réseau électrique|gaz"
+    },
+    {
+      "name": "Énergies de la mer",
+      "cls": "edlm",
+      "url": "https://www.energiesdelamer.eu/feed/",
+      "tags": [
+        "fr",
+        "renewables"
+      ]
+    },
+    {
+      "name": "Gaz d'aujourd'hui",
+      "cls": "gazaujourdhui",
+      "url": "https://www.gazdaujourdhui.fr/feed/",
+      "tags": [
+        "fr",
+        "gas"
+      ]
+    },
+    {
+      "name": "Enviscope",
+      "cls": "enviscope",
+      "url": "https://www.enviscope.com/feed/",
+      "tags": [
+        "fr"
+      ],
+      "require": "électri|electricit|photovolta|solaire|éolien|eolien|offshore|nucléaire|nucleaire|\\bedf\\b|engie|totalenergies|\\brte\\b|\\bcre\\b|enedis|hydrogène|batterie|stockage|renouvelable|pompe à chaleur|\\bppa\\b|énergie|energie|réseau électrique|gaz"
+    },
+    {
+      "name": "SFEN",
+      "cls": "sfen",
+      "url": "https://www.sfen.org/feed/",
+      "tags": [
+        "fr",
+        "power"
+      ]
     }
   ],
   "pages": [
@@ -1001,6 +1047,22 @@
         "regulation"
       ],
       "lang": "fr"
+    },
+    {
+      "q": "site:banquedesterritoires.fr énergie OR électricité OR renouvelables",
+      "tags": [
+        "fr"
+      ],
+      "lang": "fr",
+      "require": "électri|electricit|photovolta|solaire|éolien|eolien|offshore|nucléaire|nucleaire|\\bedf\\b|engie|totalenergies|\\brte\\b|\\bcre\\b|enedis|hydrogène|batterie|stockage|renouvelable|pompe à chaleur|\\bppa\\b|énergie|energie|réseau électrique|gaz"
     }
-  ]
+  ],
+  "mail_alerts": [
+    {
+      "name": "Academia.edu",
+      "from": "academia",
+      "link": "academia\\.edu/\\d+"
+    }
+  ],
+  "_mail_alerts_about": "Paper alerts and newsletters received in the team mailbox (GO_GMAIL_USER): sender (part of the address), and the pattern of the links to keep. Titles and links only."
 }

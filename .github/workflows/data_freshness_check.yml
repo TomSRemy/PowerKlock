@@ -20,7 +20,9 @@ jobs:
         with:
           python-version: '3.12'
       - name: Check
-        run: python3 scripts/check_data_freshness.py
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}   # the warehouse's size (warning above 85 % of the free plan)
+        run: pip install -q "psycopg[binary]==3.3.2" && python3 scripts/check_data_freshness.py
       - name: E-mail on failure
         if: failure()
         env:

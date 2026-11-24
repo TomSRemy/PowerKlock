@@ -1,11 +1,19 @@
 {
-"run": "2026-11-23",
+"run": "2026-11-24",
 "log": [
 {
 "day": "2026-11-20",
 "zone": "NL",
 "result": "filled",
 "points": 96
+},
+{
+"day": "2026-11-20",
+"zone": "DE_LU",
+"result": "refetched",
+"was": 223.75,
+"now": 214.51,
+"second_source": 214.51
 }
 ]
 }

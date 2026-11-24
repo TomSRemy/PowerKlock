@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Demander à PowerKlock · maquette</title>
+<style>
+  :root { --bg:#0a0e13; --bg2:#121922; --bg3:#18212c; --border:#243447; --text:#E8EEF4; --text2:#B8C9D9; --text3:#7A93AB; --accent:#14D3A9; --red:#ED6965; --amber:#F2C14E; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font: 15px/1.55 Inter, system-ui, sans-serif; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 18px 16px 60px; }
+  .note { font-size:12.5px; color:var(--amber); border:1px dashed #5a4a1a; border-radius:8px; padding:8px 12px; margin-bottom:16px; }
+  .bar { display:flex; flex-wrap:wrap; align-items:center; gap:10px 18px; border:1px solid var(--border); border-radius:10px; padding:10px 14px; background:var(--bg2); }
+  .crumb { font-family: 'JetBrains Mono', monospace; font-size:13px; color:var(--text3); } .crumb b { color:var(--text); }
+  .tabs { display:flex; gap:4px; flex-wrap:wrap; } .tab { font-size:13.5px; padding:5px 10px; border-radius:7px; color:var(--text2); }
+  .tab.on { color:var(--accent); border:1px solid #1d5c4d; background:#0f2a23; }
+  .ask { margin:18px 0 8px; display:flex; gap:8px; }
+  .ask input { flex:1; min-width:0; height:46px; border-radius:10px; border:1px solid #1d5c4d; background:var(--bg2); color:var(--text); padding:0 14px; font-size:15.5px; }
+  .ask button { height:46px; padding:0 18px; border-radius:10px; border:0; background:var(--accent); color:#06231c; font-weight:700; font-size:14.5px; }
+  .hints { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:6px; }
+  .chip { font-size:12.5px; padding:4px 10px; border:1px solid var(--border); border-radius:999px; color:var(--text2); }
+  .quota { font-size:12px; color:var(--text3); margin-bottom:20px; }
+  .qa { border-top:1px solid var(--border); padding:18px 0; }
+  .q { font-weight:600; font-size:16px; margin-bottom:10px; } .q small { color:var(--text3); font-weight:400; margin-left:8px; }
+  .a { font-size:16px; line-height:1.65; max-width:80ch; }
+  .a sup { color:var(--accent); font-size:11px; font-weight:700; }
+  .src { margin-top:12px; display:grid; gap:6px; max-width:80ch; }
+  .src a { display:grid; grid-template-columns: 22px minmax(0,1fr); gap:6px; text-decoration:none; color:var(--text2); font-size:13.5px; padding:7px 10px; border:1px solid var(--border); border-radius:8px; background:var(--bg2); }
+  .src a b { color:var(--accent); } .src a span small { display:block; color:var(--text3); font-size:12px; }
+  .meta { margin-top:10px; font-size:12px; color:var(--text3); display:flex; flex-wrap:wrap; gap:6px 14px; }
+  .pill { font-size:11px; padding:2px 8px; border-radius:999px; background:#1B2430; color:var(--text2); }
+  .pill.sup { color:var(--amber); background:#2a2412; } .pill.reg { color:var(--red); background:#331A1C; }
+  .no { color:var(--text2); font-size:15px; background:var(--bg3); border-radius:10px; padding:12px 14px; max-width:80ch; }
+  .foot { margin-top:22px; font-size:12px; color:var(--text3); max-width:90ch; }
+  @media (max-width:600px) { .ask { flex-direction:column; } .ask button { width:100%; } }
+</style>
+</head>
+<body><div class="wrap">
+  <div class="note">Maquette (phase 1) · données et réponses d'exemple, rien n'est branché. À valider avant de coder.</div>
+
+  <div class="bar"><span class="crumb">Veille › <b>Actualités</b></span>
+    <div class="tabs"><span class="tab">À la une</span><span class="tab">En continu</span><span class="tab">Textes officiels</span><span class="tab">Newsletter</span><span class="tab on">Demander</span></div></div>
+
+  <div class="ask"><input value="Qu'est-ce qui a changé sur le complément de rémunération ce mois-ci ?" aria-label="Votre question"><button type="button">Demander</button></div>
+  <div class="hints"><span class="chip">Les dernières décisions de la CRE sur le TURPE ?</span><span class="chip">Où en est l'arrêt aux prix négatifs ?</span><span class="chip">Papiers récents sur les PPA</span><span class="chip">Ce que dit le World Energy Outlook sur le nucléaire</span></div>
+  <div class="quota">Cherche dans les articles, textes officiels, consultations, publications et papiers de recherche des 45 derniers jours, la newsletter et notre analyse de marché · 12 questions restantes aujourd'hui</div>
+
+  <div class="qa">
+    <div class="q">Qu'est-ce qui a changé sur le complément de rémunération ce mois-ci ? <small>il y a 1 min</small></div>
+    <div class="a">Deux évolutions ce mois-ci. Les prix seuils des nouveaux contrats de complément de rémunération ont été publiés, ce qui fixe le niveau au-delà duquel le producteur reverse la différence<sup>1</sup>. Côté biométhane, la CRE précise les règles de soutien applicables à partir de 2027 et ouvre la voie aux appels d'offres pour les grandes installations<sup>2 3</sup>. Aucun texte au Journal officiel ce mois-ci ne modifie encore les arrêtés tarifaires éolien ou solaire.</div>
+    <div class="src">
+      <a href="#"><b>1</b><span>Contrats de complément de rémunération : publication des prix seuils<small>Enerplan · 18 nov. · <span class="pill sup">Soutien EnR</span></small></span></a>
+      <a href="#"><b>2</b><span>Biométhane : la CRE précise les nouvelles règles de soutien aux producteurs à partir de 2027<small>Gaz d'aujourd'hui · 21 nov. · <span class="pill reg">Régulation</span></small></span></a>
+      <a href="#"><b>3</b><span>Biométhane injecté : place à l'appel d'offres<small>Actu-Environnement · 23 nov. · <span class="pill sup">Soutien EnR</span></small></span></a>
+    </div>
+    <div class="meta"><span>Réponse écrite à partir de 3 sources, chacune en lien</span><span>Modèle : Llama 4 Scout</span><span>👍 👎</span></div>
+  </div>
+
+  <div class="qa">
+    <div class="q">Prix moyen du spot France en octobre ? <small>il y a 5 min</small></div>
+    <div class="no">Je ne réponds pas encore aux questions de chiffres : elles arrivent en phase 2, avec des calculs vérifiés sur la base PowerKlock. En attendant : <a href="#" style="color:var(--accent)">Marchés › Day-ahead</a>.</div>
+  </div>
+
+  <div class="foot">Règles : réponses tirées uniquement des contenus du site, chaque phrase renvoie à sa source ; si rien ne répond, le dit plutôt que d'inventer. Comptes validés seulement, 15 questions par personne et par jour. Le modèle passe du plus précis au plus léger quand le quota gratuit du jour baisse (la newsletter garde sa part). Les questions ne sont pas conservées au-delà de la journée.</div>
+</div></body></html>

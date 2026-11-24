@@ -5,8 +5,7 @@ name: Fetch Great Britain (NESO, Elexon)
 # Writes data/history/gb_hourly/YYYY.json (scripts/fetch_gb.py).
 
 on:
-  schedule:
-    - cron: "23 6 * * 1"       # every Monday
+  # when: workers/scheduler/schedule.json (the PowerKlock scheduler, a Cloudflare Worker, starts it on time)
   workflow_dispatch:
     inputs:
       since:

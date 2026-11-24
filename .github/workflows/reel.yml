@@ -12,9 +12,7 @@ name: Morning reel
 # `site` branch in publish.yml — then read back from raw.githubusercontent.com.
 
 on:
-  schedule:
-    - cron: '0 7 * * *'      # 08:00 Paris in winter
-    - cron: '0 6 * * *'      # 08:00 Paris in summer (the step below keeps only the one that is 08:00 in Paris)
+  # when: workers/scheduler/schedule.json (the PowerKlock scheduler, a Cloudflare Worker, starts it on time)
   workflow_dispatch:
 
 concurrency:
@@ -28,11 +26,9 @@ jobs:
     permissions:
       contents: write   # to force-push the reel-public branch
     steps:
-      - name: The slot of the current Paris time? (winter UTC+1 → 07:00 UTC, summer UTC+2 → 06:00 UTC; a late start still runs once)
+      - name: Due (the scheduler starts it at 08:00 Paris; kept so the steps below need no change)
         id: due
-        run: |
-          [ "$(TZ=Europe/Paris date +%z)" = "+0100" ] && WANT="0 7 * * *" || WANT="0 6 * * *"
-          if [ "${{ github.event_name }}" = "schedule" ] && [ "${{ github.event.schedule }}" != "$WANT" ]; then echo "run=false" >> "$GITHUB_OUTPUT"; else echo "run=true" >> "$GITHUB_OUTPUT"; fi
+        run: echo "run=true" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@v5
         if: steps.due.outputs.run == 'true'
       - uses: actions/setup-python@v6

@@ -21,7 +21,8 @@
         "markets": 0.5,
         "deal": 0.3,
         "build": 0.3,
-        "geopolitics": 0.5
+        "geopolitics": 0.5,
+        "support": 2.5
       },
       "official": 3,
       "keywords": [
@@ -72,7 +73,8 @@
         "deal": 1,
         "markets": 0.3,
         "build": 0.3,
-        "geopolitics": 0.3
+        "geopolitics": 0.3,
+        "support": 2
       },
       "official": 3.5,
       "keywords": [
@@ -131,7 +133,8 @@
         "carbon": 1,
         "report": 1,
         "assoc": 1,
-        "geopolitics": 0.3
+        "geopolitics": 0.3,
+        "support": 2.5
       },
       "official": 2,
       "france": 3,
@@ -187,7 +190,8 @@
         "carbon": 1,
         "gas": 0.8,
         "assoc": 0.8,
-        "geopolitics": 0.5
+        "geopolitics": 0.5,
+        "support": 2.5
       },
       "official": 1.5,
       "keywords": [
@@ -238,7 +242,8 @@
         "build": 1,
         "report": 1,
         "deal": 0.5,
-        "assoc": 0.3
+        "assoc": 0.3,
+        "support": 2
       },
       "official": 0.5,
       "keywords": [
@@ -289,7 +294,8 @@
         "carbon": 0.5,
         "build": 0.5,
         "assoc": 0.5,
-        "report": 0.5
+        "report": 0.5,
+        "support": 1.5
       },
       "official": 1,
       "keywords": [

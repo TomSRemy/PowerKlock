@@ -4,8 +4,7 @@ name: FR balancing activation prices
 # day by day → data/history/fr_activation.json (scripts/fetch_fr_activation.py), for the Imbalance page.
 
 on:
-  schedule:
-    - cron: '15 7 * * *'     # every morning
+  # when: workers/scheduler/schedule.json (the PowerKlock scheduler, a Cloudflare Worker, starts it on time)
   push:
     branches: [main]
     paths: ['scripts/fetch_fr_activation.py', '.github/workflows/fetch_fr_activation.yml']

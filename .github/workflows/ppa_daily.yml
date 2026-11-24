@@ -4,8 +4,7 @@ name: PPA benchmark and correlation watch (daily)
 # → data/history/ppa_benchmark.json (scripts/ppa_daily.py). After the last forward refresh (12:53 UTC).
 
 on:
-  schedule:
-    - cron: '15 14 * * *'    # 14:15 UTC every day
+  # when: workers/scheduler/schedule.json (the PowerKlock scheduler, a Cloudflare Worker, starts it on time)
   push:                        # a change to this job runs it once, so a fix is checked the same day
     branches: [main]
     paths: ['.github/workflows/ppa_daily.yml']

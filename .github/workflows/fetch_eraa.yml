@@ -5,8 +5,7 @@ name: Fetch ENTSO-E adequacy projections (ERAA)
 # Writes data/history/eraa.json (scripts/fetch_eraa.py).
 
 on:
-  schedule:
-    - cron: "17 5 3 * *"       # the 3rd of each month (a new edition comes once a year)
+  # when: workers/scheduler/schedule.json (the PowerKlock scheduler, a Cloudflare Worker, starts it on time)
   workflow_dispatch:
 
 permissions:

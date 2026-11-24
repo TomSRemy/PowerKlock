@@ -6,13 +6,7 @@ name: Fetch forecasts (solar, wind, load · today and tomorrow)
 # (data/history/forecast/) and the usual error shown on the site.
 
 on:
-  schedule:
-    # off the :00/:15/:30 marks, where GitHub delays or drops scheduled runs most (26 Oct 2026: no morning run at all)
-    - cron: '13 6 * * *'     # morning: today + error over 30 days
-    - cron: '43 6 * * *'     # tomorrow's forecasts: from early morning on, so the price forecast shows well before the 13:00 auction
-    - cron: '7,37 7-11 * * *'
-    - cron: '41 16 * * *'
-    - cron: '47 19 * * *'    # late publishers
+  # when: workers/scheduler/schedule.json (the PowerKlock scheduler, a Cloudflare Worker, starts it on time)
   # GitHub's scheduler skips runs on busy days (26 Oct 2026: none at all from 22:56 to 14:00): the forecast also runs
   # after the frequent data jobs finish (events are not skipped), when it is due — see the "Due?" step
   workflow_run:
@@ -20,6 +14,10 @@ on:
     types: [completed]
   workflow_dispatch:
     inputs:
+      cron:
+        description: 'Slot that started it (set by the PowerKlock scheduler; empty when started by hand)'
+        type: string
+        default: ''
       accuracy:
         description: 'Also refresh the 30-day error'
         type: boolean
@@ -61,7 +59,8 @@ jobs:
         env:
           ENTSOE_TOKEN: ${{ secrets.ENTSOE_TOKEN }}   # France load forecast for tomorrow before Energy-Charts serves it
         run: |
-          if [ "${{ github.event.schedule }}" = "13 6 * * *" ] || [ "${{ inputs.accuracy }}" = "true" ]; then
+          SLOT="${{ github.event.schedule || inputs.cron }}"   # the 30-day error: the 06:13 slot, or a run started by hand with "accuracy" ticked
+          if [ "$SLOT" = "13 6 * * *" ] || { [ -z "$SLOT" ] && [ "${{ inputs.accuracy }}" = "true" ] && [ "${{ github.event_name }}" = "workflow_dispatch" ]; }; then
             python scripts/fetch_forecast.py --accuracy
           else
             python scripts/fetch_forecast.py
