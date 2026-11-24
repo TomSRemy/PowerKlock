@@ -250,8 +250,12 @@ Tu reçois : les marchés du matin (dont le spot du jour et le Cal 27, contrat d
 attendues de la semaine (une attente : « devrait ») et les actualités de marché des dernières 36 h (id, titre, extrait, média).
 Ce qu'on attend :
   - le spot ET le Cal 27, et ce que leur écart dit (le marché voit-il le mouvement durer ?) ;
-  - pourquoi : consommation et demande résiduelle, nucléaire, gaz ; une demande résiduelle en hausse ne change pas le prix du
-    gaz, elle fait que les centrales au gaz fixent plus souvent le prix de l'électricité ;
+  - une phrase sur la consommation et la demande résiduelle du jour face à la veille, qui explique le mouvement du spot
+    (« Cette hausse s'inscrit dans un contexte de consommation et de demande résiduelle en hausse ») ;
+  - pourquoi, dit simplement : quand il reste plus de demande à couvrir une fois l'éolien et le solaire déduits, il faut
+    appeler davantage de centrales au gaz, les plus chères ; ce sont elles qui fixent alors le prix, qui suit donc le gaz
+    (« il faut davantage de centrales au gaz pour passer la journée, et ce sont elles qui fixent le prix ») ; jamais
+    « la demande résiduelle pousse les centrales au gaz à fixer le prix », phrase obscure ; le nucléaire disponible joue en sens inverse ;
   - le gaz et son contexte géopolitique, dit simplement (ce qui se passe, en quoi cela touche les prix) ;
   - ce qu'on attend pour les jours qui viennent (météo, tendance de la semaine), au conditionnel.
 Varie les verbes : pas deux fois la même tournure. 4 à 6 chiffres, arrondis. Une cause n'est écrite que si le contexte ou un
@@ -371,10 +375,12 @@ def ask_brief(edition, model=None, items=None):
     b, be = para(out.get("brief")), para(out.get("brief_en"))
     market_par = re.split(r"\n\s*\n", b or "")[0]   # the market paragraph: a note, not a table of figures (« Cal-27 » is a name; the news keep theirs)
     many = len(re.findall(r"(?<![\w-])\d+(?:[.,]\d+)?", re.sub(r"\b(19|20)\d\d\b", "", market_par))) > 6
-    hollow = re.search(r"(?i)restent volatils|reste volatil|influenc[ée]s par (des|les) facteurs|il faut retenir que les prix", b or "")
+    hollow = re.search(r"(?i)restent volatils|reste volatil|influenc[ée]s par (des|les) facteurs|il faut retenir que les prix|pousse les centrales", b or "")
     hollow = hollow or len((b or "").split()) > 130
     hollow = hollow or len(re.findall(r"(?i)\ben hausse\b", b or "")) > 3      # the same words again and again
     hollow = hollow or "\n\n" in (b or "")                                                 # one paragraph: the market only
+    if payload.get("fondamentaux_france"):                                                  # consumption and residual demand always said
+        hollow = hollow or not (re.search(r"(?i)consommation", b or "") and re.search(r"(?i)demande r[ée]siduelle", b or ""))
     hollow = hollow or not re.search(r"(?i)\bcal", b or "")                                  # the year ahead says whether the move lasts
     if not b or many or hollow or not numbers_ok(b, given) or not direction_ok(b, edition.get("markets") or []):
         raise ValueError(f"brief rejected: {b[:120]!r}")   # a figure that was not given: better no brief
