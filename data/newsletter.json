@@ -1,6 +1,6 @@
 {
- "date": "2026-11-20",
- "updated": "2026-11-20T05:57:21+00:00",
+ "date": "2026-11-24",
+ "updated": "2026-11-24T06:47:31+00:00",
  "engine": "proxy",
  "monday": false,
  "weekly": false,
@@ -10,27 +10,27 @@
     "Spot France aujourd'hui",
     "France spot today"
    ],
-   "value": 123.54,
+   "value": 245.27,
    "unit": "€/MWh",
    "page": "markets/spot",
    "src": "ENTSO-E",
    "show": "pct",
    "hours": false,
-   "chg": 63.19,
-   "pct": 104.7
+   "chg": 5.72,
+   "pct": 2.4
   },
   {
    "label": [
     "Pointe − base aujourd'hui",
     "Peak − base today"
    ],
-   "value": 27.29,
+   "value": 19.26,
    "unit": "€/MWh",
    "page": "markets/spot",
    "src": "ENTSO-E",
    "show": "abs",
    "hours": false,
-   "chg": 22.4,
+   "chg": -5.74,
    "pct": null
   },
   {
@@ -38,13 +38,13 @@
     "Heures ≤ 0 € aujourd'hui",
     "Hours ≤ 0 € today"
    ],
-   "value": 1,
+   "value": 0,
    "unit": "h",
    "page": "markets/spot/negative",
    "src": "ENTSO-E",
    "show": "h",
    "hours": true,
-   "chg": -2,
+   "chg": 0,
    "pct": null
   },
   {
@@ -52,50 +52,50 @@
     "Cal 27 France",
     "Cal 27 France"
    ],
-   "value": 110.99,
+   "value": 114.6,
    "unit": "€/MWh",
    "page": "markets/forwards",
    "src": "EEX",
    "show": "pct",
    "hours": false,
-   "chg": 2.91,
-   "pct": 2.7
+   "chg": 0.48,
+   "pct": 0.4
   },
   {
    "label": [
     "Gaz PEG",
     "PEG gas"
    ],
-   "value": 83.09,
+   "value": 89.23,
    "unit": "€/MWh",
    "page": "markets/fuels",
    "src": "PowerKlock",
    "show": "pct",
    "hours": false,
-   "chg": 4.22,
-   "pct": 5.4
+   "chg": 2.67,
+   "pct": 3.1
   },
   {
    "label": [
     "Garanties d'origine 2027",
     "Guarantees of origin 2027"
    ],
-   "value": 1.85,
+   "value": 1.9,
    "unit": "€/MWh",
    "page": "markets/go",
    "src": "Commerg",
    "show": "pct",
    "hours": false,
-   "chg": -0.01,
-   "pct": -0.5
+   "chg": 0.05,
+   "pct": 2.7
   }
  ],
  "official": [
   {
-   "title": "Arrêté du 13 novembre 2026 portant agrément d'un organisme pour délivrer aux opérateurs les attestations de capacité mentionnées à l'article R. 543-99 du code de l'environnement",
-   "link": "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000055101653",
+   "title": "Arrêté du 20 novembre 2026 supprimant la fiche d'opération standardisée BAR-TH-159 « Pompe à chaleur hybride individuelle » du dispositif des certificats d'économies d'énergie",
+   "link": "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000055129394",
    "source": "Journal officiel",
-   "date": "2026-11-19T00:00:00+00:00",
+   "date": "2026-11-24T00:00:00+00:00",
    "tags": [
     "fr",
     "regulation",
@@ -103,84 +103,71 @@
    ]
   },
   {
-   "title": "Arrêté du 13 novembre 2026 portant agrément d'un organisme chargé de délivrer aux opérateurs les attestations de capacité mentionnées à l'article R. 543-99 du code de l'environnement",
-   "link": "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000055101755",
+   "title": "Arrêté du 9 novembre 2026 portant définition et fixant les conditions de délivrance du brevet de technicien supérieur « Froid, climatisation et transition énergétique »",
+   "link": "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000055119569",
    "source": "Journal officiel",
-   "date": "2026-11-19T00:00:00+00:00",
+   "date": "2026-11-22T00:00:00+00:00",
    "tags": [
     "fr",
     "regulation",
     "official"
+   ]
+  },
+  {
+   "title": "Délibération n° 2026-221 du 12 novembre 2026 portant approbation du modèle de contrat d'accès au réseau public de distribution d'électricité d'OYA Energies pour les clients en contrat unique",
+   "link": "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000055119927",
+   "source": "Journal officiel",
+   "date": "2026-11-22T00:00:00+00:00",
+   "tags": [
+    "fr",
+    "regulation",
+    "official",
+    "power"
+   ]
+  },
+  {
+   "title": "Délibération n° 2026-222 du 12 novembre 2026 portant approbation du modèle de contrat d'accès au réseau public de distribution de gaz naturel d'OYA Energies pour les clients en contrat unique",
+   "link": "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000055119937",
+   "source": "Journal officiel",
+   "date": "2026-11-22T00:00:00+00:00",
+   "tags": [
+    "fr",
+    "regulation",
+    "official",
+    "gas",
+    "power"
    ]
   }
  ],
  "pubs": [
   {
-   "title": "Energy crisis reinforces comeback of nuclear power, says IEA",
-   "link": "https://www.world-nuclear-news.org/articles/energy-crisis-reinforces-comeback-of-nuclear-power-says-iea",
-   "source": "World Nuclear News",
-   "date": "2026-11-19T16:39:51+00:00",
+   "title": "Executive summary - World Energy Outlook 2026",
+   "link": "https://news.google.com/rss/articles/CBMie0FVX3lxTE83dzR3Z1piODFrZl91c1FoQkh3S1RkS1NRSUhOUmNGdGs5M0tNZ3J6MGVUcnBWZUJmXy1fN2VuTWp2U2pFQ3FRSWF0cWFhdEdHbVVqU0FZX2wzVTFFUnptMm80bjVmOURCVG9fN3pJX24xUkxlNkFueEN5WQ?oc=5",
+   "source": "IEA - International Energy Agency",
+   "date": "2026-11-24T04:43:53+00:00",
    "tags": [
     "power",
-    "geopolitics",
+    "markets",
+    "watch",
     "report"
    ]
   },
   {
-   "title": "Solar PV to lead global electricity generation ‘across all scenarios’ by mid-2030s, says IEA",
-   "link": "https://www.pv-tech.org/solar-pv-lead-global-electricity-generation-across-all-scenarios-mid-2030s-iea/",
-   "source": "PV Tech",
-   "date": "2026-11-19T13:10:34+00:00",
-   "tags": [
-    "power",
-    "report",
-    "renewables"
-   ]
-  },
-  {
-   "title": "Le World Energy Outlook 2026 en 10 infographies",
-   "link": "https://www.connaissancedesenergies.org/le-world-energy-outlook-2026-en-10-infographies",
-   "source": "Connaissance des Énergies",
-   "date": "2026-11-19T00:00:00+00:00",
-   "tags": [
-    "fr",
-    "report"
-   ]
-  },
-  {
-   "title": "La réserve secondaire fait plonger les revenus d’octobre [Observatoire des batteries]",
-   "link": "https://www.greenunivers.com/2026/11/la-reserve-secondaire-fait-plonger-les-revenus-en-octobre-observatoire-des-batteries-438957/",
-   "source": "GreenUnivers",
-   "date": "2026-11-18T16:34:03+00:00",
-   "tags": [
-    "fr",
-    "power",
-    "report"
-   ]
-  },
-  {
-   "title": "Prix du gaz : le marché décroche de 7% mais voici le mécanisme qui va quand même faire grimper votre facture",
-   "link": "https://news.google.com/rss/articles/CBMi1gFBVV95cUxOREdKb3BNTExXVi1qbXgzS1FyR3F5emJyOHRaaTlCNV8wY2R5dVFsUmw0MDhVSkQwVjRZZ0xDU2tvcWlyU21ESVFUTWRpS3VaQlRWdkxjaDkwOThqNVNKb3ZjV1dFalAtbTl2RkM2M29YakxzaUc4aGtTSlo2dEN6b1BpX213eFVJV3FfMzV1Z2FZd1dmcFZpaWRNdnN2b1phTEd5dWd1aHFJQWxBS3BKVzBLcjd5Tl8wNF95a3ZsWjFhZzRJcmcwMUtLVlY5bWpTcVJWbDh3?oc=5",
-   "source": "Bourse Inside",
-   "date": "2026-11-18T04:28:30+00:00",
+   "title": "Si en France 55 % des foyers sont encore au tarif réglementé de l'électricité, ils sont 27 % en Espagne quand l'Allemagne n'en a même pas",
+   "link": "https://news.google.com/rss/articles/CBMiygFBVV95cUxQSUpPaE9OQzdXeE5qS0JkUEZQY0xSSWlFdTBMVWNIdGNHdGw4RzNwWmZiUkZ1MWgyYmlJbnZoQ0ZNSTZaT19GZlFhcnFTdEZnUTFvRk1nU1FvY2FkT2ZMU1hnZUo5WXJRNmM5TUlmT0VtVlhEdTJfNVVjMkpJd3pGMWpCZFBCQXNKNklTaWxnTFZzOUxoR1JuOWRVRjhoOVJmanphYmJVWkgyeU1nTFo5b2toYno4SWF5OFc1VG90WmJsTlVzamUwMnFB?oc=5",
+   "source": "JeChange",
+   "date": "2026-11-22T14:30:00+00:00",
    "tags": [
     "fr",
     "report",
     "markets",
     "regulation",
-    "watch"
+    "watch",
+    "power"
    ]
   }
  ],
  "cons": [
-  {
-   "title": "Création d'une ligne électrique entre Eguzon et Marmagne : RTE invite le public à s'exprimer sur le projet",
-   "link": "https://www.rte-france.com/actualites/2026-09-29-cp-eguzon-marmagne-concertation",
-   "source": "RTE",
-   "deadline": "2026-11-22",
-   "opened": "2026-09-30",
-   "theme": "grid"
-  },
   {
    "title": "Projet d’arrêté relatif au plan d’action établi sur la base des recommandations découlant de l’audit énergétique ou sur la base du système de management de l’énergie",
    "link": "https://www.consultations-publiques.developpement-durable.gouv.fr/projet-d-arrete-relatif-au-plan-d-action-etabli-a3483.html",
@@ -195,6 +182,14 @@
    "source": "Ministère · Énergies et climat",
    "deadline": "2026-12-01",
    "opened": "2026-11-10",
+   "theme": "cee"
+  },
+  {
+   "title": "Projet d’arrêté portant modification des bonifications associées aux fiches d’opérations standardisées portant les références BAR-TH-171 et BAR-TH-172 du dispositif des certificats d’économies d’énergie",
+   "link": "https://www.consultations-publiques.developpement-durable.gouv.fr/projet-d-arrete-portant-modification-des-a3490.html",
+   "source": "Ministère · Énergies et climat",
+   "deadline": "2026-12-05",
+   "opened": "2026-11-13",
    "theme": "cee"
   }
  ],
@@ -214,95 +209,135 @@
  ],
  "post": null,
  "posts": [],
- "digest": null,
+ "digest": {
+  "weekly": false,
+  "items": [
+   {
+    "text": "La CRE précise les offres à tarification dynamique : les consommateurs pourront adapter leurs usages aux prix du marché",
+    "text_en": "The CRE clarifies dynamic pricing offers: consumers will be able to adapt their usage to market prices",
+    "title": "Tarification dynamique : la CRE précise les offres et prolonge le régime transitoire",
+    "link": "https://www.actu-environnement.com/ae/news/cre-tarification-dynamique-offres-regime-transitoire-48835.php4",
+    "sources": [
+     "Actu-Environnement"
+    ]
+   },
+   {
+    "text": "L'appel d'offres pour le biométhane injecté est lancé : les producteurs pourront répondre aux périodes d'ouverture",
+    "text_en": "The call for tenders for injected biomethane is launched: producers will be able to respond to the opening periods",
+    "title": "Biométhane injecté : place à l'appel d'offres",
+    "link": "https://www.actu-environnement.com/ae/news/biomethane-appel-offres-ppe3-cahier-charges-48832.php4",
+    "sources": [
+     "Actu-Environnement"
+    ]
+   },
+   {
+    "text": "La Commission européenne adresse un avis motivé à la France sur les certificats de production de biogaz : la réglementation sera renforcée",
+    "text_en": "The European Commission sends a reasoned opinion to France on biogas production certificates: regulation will be strengthened",
+    "title": "Certificats de production de biogaz (CPB) : la Commission européenne hausse le ton et adresse un avis motivé à la France",
+    "link": "https://news.google.com/rss/articles/CBMi_gFBVV95cUxPbFAyNHZjV0dvT2tFUm1SMHh1UVpxdk9yR0o0enBlNEJQclU5S0JBdE9kNFNtdXlEU19EVWVyclRldnNBaF9FM1ZGTU4zaHNITUhfZmtHdldZY2xoakhYNjl2VHRKbld2czR0UFM0NDNVSFhKUE9QVWN0UlczcnRib1ZuTFBYSnRUT0t2NE9XMWVuM2dVRHNLOUR3SXIwa0hieTdLQWR2N29xS1FybV9wNVMzckRvMjV0OEEzdkRVQ1hQYlV2SlFSNnhOd3VXdzlMWC1yUUFiVkktdDJHZHI3ekVLWUI0d2Rta2pDOUdjMTVhTEhLU0FndWR6LU52dw?oc=5",
+    "sources": [
+     "Contexte"
+    ]
+   },
+   {
+    "text": "La commission des finances rejette les articles sur les équipements solaires : les projets de loi seront revus",
+    "text_en": "The finance committee rejects the articles on solar equipment: the law projects will be revised",
+    "title": "Loi de finances 2027 : La commission des finances rejette les articles 49 et 50 sur les équipements solaires",
+    "link": "https://news.google.com/rss/articles/CBMi7gFBVV95cUxQVW9XVU01aWNNN3lzVE1qQzRudTlkUFE0bjVBYTJsaV9wUmdlam1CaTFFTEJPYjRsel83VHUzdW5qS1d4S3h1OU9NWkpKRzM3WFJ6MXh2RG9BRlVtN1JfdG1nQXpRMHo1ZDZVNldaMGZnUTNMRVZtR09ZUmRqWktZT3R4a3lRb2otUWdOOW9zZ1hhUmJTckIyWUJZZEg1cHJxcG9VTkM2QUZSWDBmenlLNzUyWVR6bGdQcXczWk9qcEtTVjdJcmVWc3ZrcnNCRURkbzRkcmNuYURfMzNGTnRNeDJUdC1ZS1NDQWZKdjdn?oc=5",
+    "sources": [
+     "webdo"
+    ]
+   },
+   {
+    "text": "Un indicateur horaire sur la part EnR et l’intensité GES est créé : les consommateurs pourront suivre le mix énergétique",
+    "text_en": "A real-time indicator on the share of renewables and GHG intensity is created: consumers will be able to track the energy mix",
+    "title": "Part des EnR et intensité en émissions de GES de l’électricité consommée en France en temps réel",
+    "link": "https://wattselse.com/veille/article/4667/part-des-enr-et-intensite-en-emissions-de-ges-de-lelectricite-consommee-en-franc",
+    "sources": [
+     "Watts Else"
+    ]
+   }
+  ]
+ },
  "top": [
   {
-   "title": "« HoloSolis bénéficie d’une seconde chance » [Henri Poupart-Lafarge]",
-   "link": "https://www.greenunivers.com/2026/11/holosolis-beneficie-dune-seconde-chance-henri-poupart-lafarge-439076/",
-   "source": "GreenUnivers",
-   "date": "2026-11-19T14:18:10+00:00",
+   "title": "Poste électrique RTE ou poste source près de chez moi : distance, bruit, concertation, utilité publique et recours des riverains (Noyelles-sous-Bellonne, Landes de Gascogne, 2026)",
+   "link": "https://news.google.com/rss/articles/CBMi6gFBVV95cUxQby10TjR3bUYtUThFMVlFSmV1bDRIMWVyM3NTS0s2cnVDR3h6MXpaREU0TTR5czhGUU4tYmVHbHkzXzFYTmZrQzA5UmUwZEthV1lPMFJQSFVWUm53ZGp0YnA5eGVNZnBmWGNGN0dnWndtcG1mYlJobUNrTnFDWEJES2NYenU1dXJ1WXhGeDFjc2RPVWFKcHhScVZhWmdUT0dGLUI2OGF5RWxIVzRRU0pydmxfdURjc0o3ZndmRXhKYnhGYzBQTDl2YWd6ZC1kSWEzZ1dpN2hkSmNWcFVYV19NSFdiZ2NnM092aVE?oc=5",
+   "source": "Reda KOHEN",
+   "date": "2026-11-23T14:56:00+00:00",
+   "n": 1,
+   "tags": [
+    "fr",
+    "regulation",
+    "power",
+    "watch"
+   ]
+  },
+  {
+   "title": "Tarification dynamique : la CRE précise les offres et prolonge le régime transitoire",
+   "link": "https://www.actu-environnement.com/ae/news/cre-tarification-dynamique-offres-regime-transitoire-48835.php4",
+   "source": "Actu-Environnement",
+   "date": "2026-11-23T15:34:28+00:00",
    "n": 1,
    "tags": [
     "fr",
     "power",
-    "carbon",
-    "regulation",
-    "renewables"
-   ]
-  },
-  {
-   "title": "Prix de l’électricité : la CRE redéfinit les offres à tarification dynamique",
-   "link": "https://news.google.com/rss/articles/CBMiowFBVV95cUxQNHdXdHdKTFBIRFpWRWVWQVQ2TFRVMjgyZVlmQ09wWXhMWnpveUltakJETFlFOGcyLUhQcDlKaFliTXFWbVQ0QUZhNU4tRlhWVEdEYnJJUXMtOElEdkZPZG5CWVpJZjhMWnNxdkNjNzFIcl9WdHVsdE8zVTBkWE14T2ZsUmxxR04wYXYyWFZKSGU1V2VGSzNmdXpFOVhsTFNWeldR?oc=5",
-   "source": "L'Energeek",
-   "date": "2026-11-19T19:46:58+00:00",
-   "n": 1,
-   "tags": [
-    "fr",
-    "regulation",
-    "watch",
-    "power"
-   ]
-  },
-  {
-   "title": "Pourquoi la France adhère-t-elle au marché européen de l’électricité ?",
-   "link": "https://news.google.com/rss/articles/CBMiqgFBVV95cUxNcE1HYkFHSW8ySm9GalBpTE05OFBCdkhCQ0N2dGYzdVNJZGEzUEhsbTdmOHdfdTZSTEt0d0ZIcENENl9qbElIZk9STC00UVlTNjZtZUFyY2xCa0lMTXhMdFVzYld4WVRlcEJjdzhGSWZVOGRJbGFHTF9DMUpMbHVhTHQ2bDlTVy02QW9YRzVqQWxjaThJSkFWSGExRkl4aDJwWnRXZ0V0TWlKQQ?oc=5",
-   "source": "Le Courrier des Stratèges",
-   "date": "2026-11-19T08:31:41+00:00",
-   "n": 1,
-   "tags": [
-    "fr",
-    "regulation",
-    "watch",
-    "power"
-   ]
-  },
-  {
-   "title": "Le système de stockage d'énergie commercial TCL X5 est désormais disponible en Europe et peut être commandé auprès des distributeurs agrées TCL Solar en France et en Suisse dès aujourd'hui.",
-   "link": "https://news.google.com/rss/articles/CBMiqAFBVV95cUxPYThWYmUydFg0aTBDWGdiOU9nYkxUR29PNW9aQnhteGIxQ2NNSFdsdExjbHJQUno2cWREMmgwVWtTRkRMbjI4bDhWbkVwM3B0aUpKdFlDNGNTNHFrNGczRE9UZFRrV1hRcWdwWjc2VURNWTdFNl9BclltTE9VOXdiVVpjSFBpN0VMRXFtWU1PR2ZVV1c0b2dsRkwwbHhuRnF3QjRGWG9zMTM?oc=5",
-   "source": "Yahoo Finance France",
-   "date": "2026-11-19T08:45:00+00:00",
-   "n": 1,
-   "tags": [
-    "fr",
-    "power",
-    "watch",
-    "renewables"
-   ]
-  },
-  {
-   "title": "COP31: EU says it’s on track for 2030 climate target if planned measures delivered",
-   "link": "https://carbon-pulse.com/573706/",
-   "source": "Carbon Pulse",
-   "date": "2026-11-19T16:30:28+00:00",
-   "n": 1,
-   "tags": [
-    "carbon",
     "regulation"
    ]
   },
   {
-   "title": "Crise d’Ormuz : l’AIE prévoit jusqu’à 50 % de pointe électrique supplémentaire d’ici 2035",
-   "link": "https://news.google.com/rss/articles/CBMifkFVX3lxTE9zcl9Tbm5VZkRqUE9uTlRkdFlqMDUwWjVuemJzLVhZZHhtZkx2ZFctcHkxaHpLRUIxSkJ5eS1xOVdXMEpsZm56T3JkRkpjT0J1Z3N5Qmh1S09QenRKc1NsME1HR0dESTFKanZ2S0lkODIyZkFpOFh6eDB1R196QQ?oc=5",
-   "source": "Les Smartgrids",
-   "date": "2026-11-19T14:50:00+00:00",
+   "title": "L’ASNR n’est toujours pas convaincue par la solution d’EDF pour renforcer le sol d’implantation des EPR2 à Gravelines",
+   "link": "https://news.google.com/rss/articles/CBMi-gFBVV95cUxNc3lGNHJyYVVPVG5qclRBb2NkWDF4ZkRuYzJ4WXVieDRlcDJsZXZCMjR2S2x6aUU4TUpCblpEc0Z6WkpDUjQ1VVFzQ1pTWm92RXBJb2hhQlhMZExFYk9fcUJqS1FvN2RRNm9KZ1R3bWcwQnhpLUNrdFBOU1kxWHBJLWdLQUZSRlRXQ25kc21QSlk5MHA3bV9hVThCZHFGWVlJWU5OS2FKM1lkTFVMMC1XWXFYSGViVDFrXzIwWDNvR281dGdPWnpGWGhNLUwyUUJhSTRMMFVJMDVmeGRQU2ZrdExLNDNSRlpwckxuVWhBQ2lYUnFyTnlFN0Zn?oc=5",
+   "source": "Contexte",
+   "date": "2026-11-23T12:03:57+00:00",
+   "n": 1,
+   "tags": [
+    "regulation",
+    "watch",
+    "power"
+   ]
+  },
+  {
+   "title": "L’état-major d’Octopus Energy France",
+   "link": "https://www.greenunivers.com/2026/11/letat-major-doctopus-energy-france-2-439423/",
+   "source": "GreenUnivers",
+   "date": "2026-11-23T16:40:58+00:00",
    "n": 1,
    "tags": [
     "fr",
+    "power",
+    "gas"
+   ]
+  },
+  {
+   "title": "Inflation : pourquoi la hausse des cours de l’énergie tarde à se répercuter sur l’ensemble des prix en France",
+   "link": "https://www.lemonde.fr/economie/article/2026/11/24/inflation-pourquoi-la-hausse-des-cours-de-l-energie-tarde-a-se-repercuter-sur-l-ensemble-des-prix-en-france_6814604_3234.html",
+   "source": "Le Monde · Énergies",
+   "date": "2026-11-24T04:00:12+00:00",
+   "n": 1,
+   "tags": [
+    "fr",
+    "gas"
+   ]
+  },
+  {
+   "title": "Indicateur Mensuel Gaz Renouvelable des territoires par département",
+   "link": "https://wattselse.com/veille/article/4670/indicateur-mensuel-gaz-renouvelable-des-territoires-par-departement",
+   "source": "Watts Else",
+   "date": "2026-11-23T07:51:12+00:00",
+   "n": 1,
+   "tags": [
+    "fr",
+    "power",
     "regulation",
-    "watch",
-    "geopolitics",
-    "power"
+    "gas",
+    "renewables"
    ]
   }
  ],
  "profiles": {
   "regulatory": {
-   "hero_chart": {
-    "img": "newsletter_img/2026-11-20_spot-france-3-derni-res-semaines-moyenne.png",
-    "title": "Spot France, 3 dernières semaines (moyennes journalières)",
-    "src": "ENTSO-E",
-    "page": "markets/spot"
-   },
+   "hero_chart": null,
    "name": [
     "Réglementaire et affaires publiques",
     "Regulatory and public affairs"
@@ -322,74 +357,80 @@
     "agenda",
     "post"
    ],
-   "headline": null,
-   "headline_en": null,
+   "headline": "La CRE précise les offres de tarification dynamique",
+   "headline_en": "CRE clarifies dynamic pricing offers",
    "stories": [
     {
-     "id": "gsznmdxpfovhstfnweldroc5",
-     "title": "Prix de l’électricité : la CRE redéfinit les offres à tarification dynamique",
-     "link": "https://news.google.com/rss/articles/CBMiowFBVV95cUxQNHdXdHdKTFBIRFpWRWVWQVQ2TFRVMjgyZVlmQ09wWXhMWnpveUltakJETFlFOGcyLUhQcDlKaFliTXFWbVQ0QUZhNU4tRlhWVEdEYnJJUXMtOElEdkZPZG5CWVpJZjhMWnNxdkNjNzFIcl9WdHVsdE8zVTBkWE14T2ZsUmxxR04wYXYyWFZKSGU1V2VGSzNmdXpFOVhsTFNWeldR?oc=5",
+     "id": "gimetransitoire48835php4",
+     "title": "Tarification dynamique : la CRE précise les offres et prolonge le régime transitoire",
+     "link": "https://www.actu-environnement.com/ae/news/cre-tarification-dynamique-offres-regime-transitoire-48835.php4",
+     "tags": [
+      "fr",
+      "power",
+      "regulation"
+     ],
+     "sources": [
+      "Actu-Environnement"
+     ],
+     "free": null,
+     "what": null,
+     "what_en": null,
+     "for_you": "Analyser les offres de tarification dynamique",
+     "for_you_en": "Analyze dynamic pricing offers"
+    },
+    {
+     "id": "tvhtehlu0fndwr6lu52dwoc5",
+     "title": "Certificats de production de biogaz (CPB) : la Commission européenne hausse le ton et adresse un avis motivé à la France",
+     "link": "https://news.google.com/rss/articles/CBMi_gFBVV95cUxPbFAyNHZjV0dvT2tFUm1SMHh1UVpxdk9yR0o0enBlNEJQclU5S0JBdE9kNFNtdXlEU19EVWVyclRldnNBaF9FM1ZGTU4zaHNITUhfZmtHdldZY2xoakhYNjl2VHRKbld2czR0UFM0NDNVSFhKUE9QVWN0UlczcnRib1ZuTFBYSnRUT0t2NE9XMWVuM2dVRHNLOUR3SXIwa0hieTdLQWR2N29xS1FybV9wNVMzckRvMjV0OEEzdkRVQ1hQYlV2SlFSNnhOd3VXdzlMWC1yUUFiVkktdDJHZHI3ekVLWUI0d2Rta2pDOUdjMTVhTEhLU0FndWR6LU52dw?oc=5",
+     "tags": [
+      "regulation",
+      "watch",
+      "renewables",
+      "fr"
+     ],
+     "sources": [
+      "Contexte"
+     ],
+     "free": [
+      {
+       "source": "Cabinet Gossement AVOCATS",
+       "link": "https://news.google.com/rss/articles/CBMivAJBVV95cUxNT1JMbXlEU0MyM0laUTE4dlB3cF8zRHFXXzEwaUlGSHdpYUctWllYa25FX2h5enhzMVZXWF9ocXFLUHlQQ1lqOWk2TjJ3MDVkOVBHLUtQcU5qYzlLVGhuWks3S3hlTG5DYldLdnppeXJEZXRQMzdPbU5jMFhNdDVnd19YQmticEVqdWtGNWdTc0dEX0dwQW4ydlNmdHB0b0ROOC1qd0t5SFN1MmhFTlVGZ0MtbHpKYTdEcWNESEpXLXhsZDUzQUNMLV90d3pINnprV1FMenpTbHBjWnhNWXdsUTRZenpwZkNOS1NPcUIySW0xVXFVbUdGYTI1RlRaMjlGa2pQNVFmck9PNXdDVnZ6OHhYYVBKUHVWRzJqVEgwamxnZXQ0SXRjNHF6VHdxYW9mSUIwd0sxMnZrVVBm?oc=5"
+      },
+      {
+       "source": "L'Energeek",
+       "link": "https://news.google.com/rss/articles/CBMimgFBVV95cUxOOGlLcnh3dzZCbVdXdm83X1BaODlFUG82WUVncVZ5Z1cycHZBbFJXZW52MjZ3RnJMSW9SaldUS2ZWeUF2TjBkSEx1STBRbVBlalZwUjdxUGV2ZnA0TkwxUG92QTlOV0Z3Mk42d21iVTQ4YXJBNHp6Mk1qMWNTMlV4WGpJdjZwMGVEN082Qjg0U1RfUTFWRHdoTURR?oc=5"
+      }
+     ],
+     "what": null,
+     "what_en": null,
+     "for_you": null,
+     "for_you_en": null
+    },
+    {
+     "id": "zqy1wr054x1ffawitse5roc5",
+     "title": "Des économies sur le gaz et l’électricité, un bouclier tarifaire : le collectif paye à Saint-Quentin",
+     "link": "https://news.google.com/rss/articles/CBMi0wFBVV95cUxPU1dRZHlRUGdhcjhrN2pkRldQMEhIZ0xPZ2Z1ZHhwVTQ1enk1amhjX3lybXd3MGV4RjB6M1dtRzgxU0xOT1JDU0p2NFRWQjFFc2g1UjJCdXVEdlNlZVprVnlaOEJiUExvWno0Y0RkVUlyWHR6S2lQLWk3YWhwWXdicUZoUGdyZDZYazFxYUVlMmtnRUVQT3N6b2NWUkdJOERJLXdGdHVjYlBmcG1XcEl6dGZ2eWZXQU9MV0ZndllDYTNPejgzQy1wR054X1FFaWItSE5R?oc=5",
      "tags": [
       "fr",
       "regulation",
       "watch",
+      "gas",
       "power"
      ],
      "sources": [
-      "L'Energeek"
+      "L'Aisne nouvelle"
      ],
-     "what": null,
-     "what_en": null,
-     "for_you": null,
-     "for_you_en": null
-    },
-    {
-     "id": "entbientotremplace439200",
-     "title": "L’arrêté « échelonnement » bientôt remplacé",
-     "link": "https://www.greenunivers.com/2026/11/larrete-echelonnement-bientot-remplace-439200/",
-     "tags": [
-      "fr",
-      "power",
-      "regulation",
-      "renewables"
-     ],
-     "sources": [
-      "GreenUnivers"
-     ],
-     "what": null,
-     "what_en": null,
-     "for_you": null,
-     "for_you_en": null
-    },
-    {
-     "id": "publicationdesprixseuils",
-     "title": "Contrats de complément de rémunération : publication des prix seuils",
-     "link": "https://www.enerplan.asso.fr/contrats-de-complement-de-remuneration-publication-des-prix-seuils/",
-     "tags": [
-      "fr",
-      "regulation",
-      "power",
-      "assoc",
-      "renewables"
-     ],
-     "sources": [
-      "Enerplan"
-     ],
+     "free": null,
      "what": null,
      "what_en": null,
      "for_you": null,
      "for_you_en": null
     }
    ],
-   "ai": false
+   "ai": true
   },
   "legal": {
-   "hero_chart": {
-    "img": "newsletter_img/2026-11-20_spot-france-3-derni-res-semaines-moyenne.png",
-    "title": "Spot France, 3 dernières semaines (moyennes journalières)",
-    "src": "ENTSO-E",
-    "page": "markets/spot"
-   },
+   "hero_chart": null,
    "name": [
     "Juriste",
     "Legal"
@@ -409,55 +450,71 @@
     "markets",
     "post"
    ],
-   "headline": null,
-   "headline_en": null,
+   "headline": "Finances et réglementation énergétique évoluent",
+   "headline_en": "Energy finance and regulation updates",
    "stories": [
     {
-     "id": "gsznmdxpfovhstfnweldroc5",
-     "title": "Prix de l’électricité : la CRE redéfinit les offres à tarification dynamique",
-     "link": "https://news.google.com/rss/articles/CBMiowFBVV95cUxQNHdXdHdKTFBIRFpWRWVWQVQ2TFRVMjgyZVlmQ09wWXhMWnpveUltakJETFlFOGcyLUhQcDlKaFliTXFWbVQ0QUZhNU4tRlhWVEdEYnJJUXMtOElEdkZPZG5CWVpJZjhMWnNxdkNjNzFIcl9WdHVsdE8zVTBkWE14T2ZsUmxxR04wYXYyWFZKSGU1V2VGSzNmdXpFOVhsTFNWeldR?oc=5",
-     "tags": [
-      "fr",
-      "regulation",
-      "watch",
-      "power"
-     ],
-     "sources": [
-      "L'Energeek"
-     ],
-     "what": null,
-     "what_en": null,
-     "for_you": null,
-     "for_you_en": null
-    },
-    {
-     "id": "tesprevuesparlaloi439186",
-     "title": "Hydroélectricité : EY et Afry choisis pour calculer les indemnités prévues par la loi",
-     "link": "https://www.greenunivers.com/2026/11/hydroelectricite-ey-et-afry-choisis-pour-calculer-les-indemnites-prevues-par-la-loi-439186/",
+     "id": "nedjudc1zs1ndqwzkdjdnoc5",
+     "title": "Loi de finances 2027 : La commission des finances rejette les articles 49 et 50 sur les équipements solaires",
+     "link": "https://news.google.com/rss/articles/CBMi7gFBVV95cUxQVW9XVU01aWNNN3lzVE1qQzRudTlkUFE0bjVBYTJsaV9wUmdlam1CaTFFTEJPYjRsel83VHUzdW5qS1d4S3h1OU9NWkpKRzM3WFJ6MXh2RG9BRlVtN1JfdG1nQXpRMHo1ZDZVNldaMGZnUTNMRVZtR09ZUmRqWktZT3R4a3lRb2otUWdOOW9zZ1hhUmJTckIyWUJZZEg1cHJxcG9VTkM2QUZSWDBmenlLNzUyWVR6bGdQcXczWk9qcEtTVjdJcmVWc3ZrcnNCRURkbzRkcmNuYURfMzNGTnRNeDJUdC1ZS1NDQWZKdjdn?oc=5",
      "tags": [
       "fr",
       "power",
+      "watch",
       "regulation",
       "renewables"
      ],
      "sources": [
-      "GreenUnivers"
+      "webdo"
      ],
+     "free": null,
+     "what": null,
+     "what_en": null,
+     "for_you": "Suivi des textes législatifs",
+     "for_you_en": "Tracking legislative texts"
+    },
+    {
+     "id": "gimetransitoire48835php4",
+     "title": "Tarification dynamique : la CRE précise les offres et prolonge le régime transitoire",
+     "link": "https://www.actu-environnement.com/ae/news/cre-tarification-dynamique-offres-regime-transitoire-48835.php4",
+     "tags": [
+      "fr",
+      "power",
+      "regulation"
+     ],
+     "sources": [
+      "Actu-Environnement"
+     ],
+     "free": null,
+     "what": null,
+     "what_en": null,
+     "for_you": "Mise à jour des offres énergétiques",
+     "for_you_en": "Update on energy offers"
+    },
+    {
+     "id": "vyv19nsfdiz2nnm092aveoc5",
+     "title": "Poste électrique RTE ou poste source près de chez moi : distance, bruit, concertation, utilité publique et recours des riverains (Noyelles-sous-Bellonne, Landes de Gascogne, 2026)",
+     "link": "https://news.google.com/rss/articles/CBMi6gFBVV95cUxQby10TjR3bUYtUThFMVlFSmV1bDRIMWVyM3NTS0s2cnVDR3h6MXpaREU0TTR5czhGUU4tYmVHbHkzXzFYTmZrQzA5UmUwZEthV1lPMFJQSFVWUm53ZGp0YnA5eGVNZnBmWGNGN0dnWndtcG1mYlJobUNrTnFDWEJES2NYenU1dXJ1WXhGeDFjc2RPVWFKcHhScVZhWmdUT0dGLUI2OGF5RWxIVzRRU0pydmxfdURjc0o3ZndmRXhKYnhGYzBQTDl2YWd6ZC1kSWEzZ1dpN2hkSmNWcFVYV19NSFdiZ2NnM092aVE?oc=5",
+     "tags": [
+      "fr",
+      "regulation",
+      "power",
+      "watch"
+     ],
+     "sources": [
+      "Reda KOHEN"
+     ],
+     "free": null,
      "what": null,
      "what_en": null,
      "for_you": null,
      "for_you_en": null
     }
    ],
-   "ai": false
+   "ai": true
   },
   "supplier": {
-   "hero_chart": {
-    "img": "newsletter_img/2026-11-20_m0-publi-s-par-la-cre-12-derniers-mois.png",
-    "title": "M0 publiés par la CRE, 12 derniers mois",
-    "src": "CRE",
-    "page": "renewables/m0"
-   },
+   "hero_chart": null,
    "name": [
     "Fournisseur et agrégateur",
     "Supplier and aggregator"
@@ -477,74 +534,74 @@
     "agenda",
     "post"
    ],
-   "headline": null,
-   "headline_en": null,
+   "headline": "Nouvel appel d'offres biométhane et indicateurs gaz renouvelable",
+   "headline_en": "New biomethane call for tenders and renewable gas indicators",
    "stories": [
     {
-     "id": "publicationdesprixseuils",
-     "title": "Contrats de complément de rémunération : publication des prix seuils",
-     "link": "https://www.enerplan.asso.fr/contrats-de-complement-de-remuneration-publication-des-prix-seuils/",
+     "id": "e3cahiercharges48832php4",
+     "title": "Biométhane injecté : place à l'appel d'offres",
+     "link": "https://www.actu-environnement.com/ae/news/biomethane-appel-offres-ppe3-cahier-charges-48832.php4",
      "tags": [
       "fr",
-      "regulation",
       "power",
-      "assoc",
+      "gas",
+      "regulation",
       "renewables"
      ],
      "sources": [
-      "Enerplan"
+      "Actu-Environnement"
      ],
+     "free": null,
      "what": null,
      "what_en": null,
-     "for_you": null,
-     "for_you_en": null
+     "for_you": "Suivi des appels d'offres pour les producteurs",
+     "for_you_en": "Monitoring of calls for tenders for producers"
     },
     {
-     "id": "lalistedesfournisseursdu",
-     "title": "Zeevonk phase I : l’accord avec Siemens Gamesa, boucle la liste des fournisseurs du le parc éolien en mer Zeevonk pour la phase I",
-     "link": "https://wattselse.com/veille/article/4601/zeevonk-phase-i-laccord-avec-siemens-gamesa-boucle-la-liste-des-fournisseurs-du",
+     "id": "4qno4nnjqbvhuotd4x3hroc5",
+     "title": "Ellomay Capital Ltd. conclut des accords-cadres d’achat d’électricité et un bail foncier avec un acheteur pour sa centrale solaire de Mexia",
+     "link": "https://news.google.com/rss/articles/CBMi7gFBVV95cUxNZnpzbnlTZTd2ZnFMemducjBMR290bm1hbEhacGstcjhXZC0wTE5Qd0EyOENrdTRUVjUxQ05iUUJ6VUQwZTVUdFI3OTlhMGVpWE54UzduYkNtX2dDN2k1MWY2LV9hTUlBUVZHZUdLWTVuS0lSWWVoMHBIOU1jVVllMm5obllGQmZ3a3VfZGdlMktud0VEd0FfRmgtSnVmVnNIbHlvd1V1Qy1zc3FySWhOc0xYQVhPMlpXVE5xTHdFM3RLWEdsR1FKam9COEhPWUZLS2ZqeDhacTNDQWVHVk94Qno4NnJQbVhuOTd4X3hR?oc=5",
+     "tags": [
+      "markets",
+      "fr",
+      "watch",
+      "power",
+      "renewables"
+     ],
+     "sources": [
+      "Zonebourse Suisse"
+     ],
+     "free": null,
+     "what": null,
+     "what_en": null,
+     "for_you": "Négociation de contrats d'achat d'électricité",
+     "for_you_en": "Negotiation of electricity purchase contracts"
+    },
+    {
+     "id": "erritoirespardepartement",
+     "title": "Indicateur Mensuel Gaz Renouvelable des territoires par département",
+     "link": "https://wattselse.com/veille/article/4670/indicateur-mensuel-gaz-renouvelable-des-territoires-par-departement",
      "tags": [
       "fr",
       "power",
       "regulation",
+      "gas",
       "renewables"
      ],
      "sources": [
       "Watts Else"
      ],
-     "what": "La sélection d’un fournisseur de turbines engage la chaîne industrielle en amont de la réalisation : elle fige la classe de puissance (15 MW) et l’ordre de grandeur de la capacité électrique de la phase I, ce qui conditionne les besoins de…",
-     "what_en": null,
-     "for_you": null,
-     "for_you_en": null
-    },
-    {
-     "id": "lem9iuw9eswnzyxhkmhdnoc5",
-     "title": "Réseau électrique : la CRE encadre à 129,8 millions d’euros la résilience de RTE",
-     "link": "https://news.google.com/rss/articles/CBMijgFBVV95cUxOdXNseWZUZ0Z3QmJ0MWxMQmJpUFd5eWs5SW54V2JOdVB3b2U5cG1FOVlzYXhJamU3OUIyU1liSEhhNmVFWS1pZ3JUMVpkRWxLbjN4aUVWeUdhckF6MFpoajd1eXRxbFduSHdfNGN5MXhjd21fVURwUUJTcGxHR0llem9IUW9ESWNZYXhkMHdn?oc=5",
-     "tags": [
-      "fr",
-      "power",
-      "watch",
-      "regulation"
-     ],
-     "sources": [
-      "L'Energeek"
-     ],
+     "free": null,
      "what": null,
      "what_en": null,
      "for_you": null,
      "for_you_en": null
     }
    ],
-   "ai": false
+   "ai": true
   },
   "origination": {
-   "hero_chart": {
-    "img": "newsletter_img/2026-11-20_benchmark-ppa-france-solaire-et-olien-3-.png",
-    "title": "Benchmark PPA France, solaire et éolien, 3 derniers mois",
-    "src": "PowerKlock",
-    "page": "tools/ppa"
-   },
+   "hero_chart": null,
    "name": [
     "Origination",
     "Origination"
@@ -564,74 +621,73 @@
     "agenda",
     "post"
    ],
-   "headline": null,
-   "headline_en": null,
+   "headline": "ZE Energy acquiert un projet BESS, TotalEnergies des actifs gaz",
+   "headline_en": "ZE Energy acquires BESS project, TotalEnergies buys gas assets",
    "stories": [
     {
-     "id": "rchantbessdutchsolarsite",
-     "title": "Statkraft pairs PPA with part-tolled, part-merchant BESS contract at Dutch solar site",
-     "link": "https://www.energy-storage.news/statkraft-ppa-tolled-merchant-bess-dutch-solar-site/",
-     "tags": [
-      "power",
-      "deal",
-      "markets",
-      "renewables"
-     ],
-     "sources": [
-      "Energy-Storage.news"
-     ],
-     "what": null,
-     "what_en": null,
-     "for_you": null,
-     "for_you_en": null
-    },
-    {
-     "id": "ctriciteetvaplafonnerles",
-     "title": "En Allemagne, le gouvernement baisse la taxe sur l’électricité et va plafonner les prix des carburants",
-     "link": "https://wattselse.com/veille/article/4590/en-allemagne-le-gouvernement-baisse-la-taxe-sur-lelectricite-et-va-plafonner-les",
+     "id": "ljzdfhadtlvnedns0rkswoc5",
+     "title": "ZE Energy acquiert le projet de stockage de Magliano Alpi (59 MW), son 3ᵉ projet BESS en Italie",
+     "link": "https://news.google.com/rss/articles/CBMiyAFBVV95cUxNbDI2ZFEzb0pPWnZILVNUVElBOVVYT3dpNG44enlsNk9TRFBweHdHRUZSZmMxblBpUi05aUF2aUdUd2tDdTlmQzZqR3pDUVlTcF9TODk0ZlFkbzFIakNjYmRvbl9hd01SSHVhYVJZWTc0T1JRR01NWFM0LWxWZTlwU0I1UGp2ekJHSEdpa25nQ2h5WG1sTlduakJ5N3BGR0xlQy10UFJkdTFIMDloYjlfNDBOaXhSeF9wNlJZdFhadTlVNEdNS0RkSw?oc=5",
      "tags": [
       "fr",
       "power",
-      "regulation",
+      "watch",
       "deal"
      ],
      "sources": [
-      "Watts Else"
+      "Tecsol Quotidien"
      ],
-     "what": "Le signal porte moins sur le niveau de la taxe que sur le mode de financement : la mesure 2027 est adossée à des crédits EEG non consommés, ce qui lie le soutien au pouvoir d’achat à la marge budgétaire laissée par le soutien aux…",
+     "free": null,
+     "what": null,
+     "what_en": null,
+     "for_you": "Nouvelle opportunité de stockage",
+     "for_you_en": "New storage opportunity"
+    },
+    {
+     "id": "aeld0zfmywgrfz1pxqljnoc5",
+     "title": "TotalEnergies rachète à Continental Resources des participations dans des actifs amont de gaz naturel",
+     "link": "https://news.google.com/rss/articles/CBMi7gFBVV95cUxQVk83T2NzMHhjbXk1QnMyMlFXZHNaTHNxOWVDMFAwWHpYUURtUjduR29MMDhUQ2JJX200WWduMGpJS1JjLVMtV1JBYXVOcjFaTmM1RTNLV0J5M3Jlbm9lSWpqOWl4S1NickNIbC1USFpvbmlVUHA4d1JRZzcwd2NaR0NMbGdoREREVUw1dGx5OHFZdDRqNFhkUmgyZmdNUVZkYVpRNkRBeWxSTkFBbFRUSHNKZDJXQ3ZLS1hUZ1M3Mm01V2NnQ1MtWkV3YkxPT1JFX1FvVUw0Y05DckEzWmpaeld0ZFMyWGRfZ1pXQlJn?oc=5",
+     "tags": [
+      "fr",
+      "markets",
+      "power",
+      "watch",
+      "deal",
+      "gas"
+     ],
+     "sources": [
+      "Boursier.com"
+     ],
+     "free": null,
+     "what": null,
      "what_en": null,
      "for_you": null,
      "for_you_en": null
     },
     {
-     "id": "publicationdesprixseuils",
-     "title": "Contrats de complément de rémunération : publication des prix seuils",
-     "link": "https://www.enerplan.asso.fr/contrats-de-complement-de-remuneration-publication-des-prix-seuils/",
+     "id": "nybuysgasbelgiumbuysbess",
+     "title": "Capacity auctions: Germany buys gas, Belgium buys BESS",
+     "link": "https://timera-energy.com/blog/capacity-auctions-germany-buys-gas-belgium-buys-bess/",
      "tags": [
-      "fr",
-      "regulation",
+      "gas",
       "power",
-      "assoc",
-      "renewables"
+      "markets",
+      "deal"
      ],
      "sources": [
-      "Enerplan"
+      "Timera Energy"
      ],
-     "what": null,
-     "what_en": null,
-     "for_you": null,
-     "for_you_en": null
+     "free": null,
+     "what": "Allemagne achète du gaz, Belgique des batteries",
+     "what_en": "Germany buys gas, Belgium buys batteries",
+     "for_you": "Signaux de prix pour les investisseurs en stockage",
+     "for_you_en": "Price signals for storage investors"
     }
    ],
-   "ai": false
+   "ai": true
   },
   "markets": {
-   "hero_chart": {
-    "img": "newsletter_img/2026-11-20_nucl-aire-disponible-en-france-2-dernier.png",
-    "title": "Nucléaire disponible en France, 2 derniers mois",
-    "src": "PowerKlock",
-    "page": "system/generation/nuclear"
-   },
+   "hero_chart": null,
    "name": [
     "Expert marchés",
     "Market expert"
@@ -651,72 +707,74 @@
     "agenda",
     "post"
    ],
-   "headline": null,
-   "headline_en": null,
+   "headline": "Prix de l'énergie en hausse",
+   "headline_en": "Energy prices rising",
    "stories": [
     {
-     "id": "essousles50deremplissage",
-     "title": "Électricité cet hiver : RTE rassure, malgré des barrages sous les 50 % de remplissage",
-     "link": "https://wattselse.com/veille/article/4595/electricite-cet-hiver-rte-rassure-malgre-des-barrages-sous-les-50-de-remplissage",
+     "id": "aeld0zfmywgrfz1pxqljnoc5",
+     "title": "TotalEnergies rachète à Continental Resources des participations dans des actifs amont de gaz naturel",
+     "link": "https://news.google.com/rss/articles/CBMi7gFBVV95cUxQVk83T2NzMHhjbXk1QnMyMlFXZHNaTHNxOWVDMFAwWHpYUURtUjduR29MMDhUQ2JJX200WWduMGpJS1JjLVMtV1JBYXVOcjFaTmM1RTNLV0J5M3Jlbm9lSWpqOWl4S1NickNIbC1USFpvbmlVUHA4d1JRZzcwd2NaR0NMbGdoREREVUw1dGx5OHFZdDRqNFhkUmgyZmdNUVZkYVpRNkRBeWxSTkFBbFRUSHNKZDJXQ3ZLS1hUZ1M3Mm01V2NnQ1MtWkV3YkxPT1JFX1FvVUw0Y05DckEzWmpaeld0ZFMyWGRfZ1pXQlJn?oc=5",
      "tags": [
       "fr",
-      "power",
-      "regulation"
-     ],
-     "sources": [
-      "Watts Else"
-     ],
-     "what": "La marge hivernale française dépend d’une hypothèse de disponibilité nucléaire et des interconnexions, alors que le matelas hydraulique est à environ la moitié de sa référence décennale : le profil de risque tient à l’enchaînement météo et…",
-     "what_en": null,
-     "for_you": null,
-     "for_you_en": null
-    },
-    {
-     "id": "fylu5vqs1ucwr4vmhkrhcoc5",
-     "title": "POWERCHINA construira le parc éolien Amunet II d'AMEA Power sur la mer Rouge",
-     "link": "https://news.google.com/rss/articles/CBMinwFBVV95cUxPWUpYTF9nSVJyVXhkaUVBZ09Za0otamlxNHg3aEdEVUR4b3hvMjl2UURXdFdld3dmWER2YjVGOGJ2amVQSU5ybUoyd2JKRy1DUmRQWnFSc01yOGRoU3lOY3p0OU84RjdSa1JxR1lidFdHN0pUbkYzWGpDaHlUanVfQVhuZUg2YXkyQ3hYdWdDRHFYLU5vQS1UcWR4VmhkRHc?oc=5",
-     "tags": [
       "markets",
-      "fr",
-      "watch",
-      "geopolitics",
       "power",
-      "renewables"
+      "watch",
+      "deal",
+      "gas"
      ],
      "sources": [
-      "energynews.pro"
+      "Boursier.com"
      ],
+     "free": null,
      "what": null,
      "what_en": null,
-     "for_you": null,
-     "for_you_en": null
+     "for_you": "Nouvel acteur sur le marché du gaz",
+     "for_you_en": "New player in the gas market"
     },
     {
-     "id": "ttpscarbonpulsecom573440",
-     "title": "Euro Markets: EUA record modest gain as traders take a break after hectic Wednesday",
-     "link": "https://carbon-pulse.com/573440/",
+     "id": "courtedureemarches439371",
+     "title": "L’accalmie des prix de l’énergie aura été de courte durée [Marchés]",
+     "link": "https://www.greenunivers.com/2026/11/laccalmie-des-prix-de-lenergie-aura-ete-de-courte-duree-marches-439371/",
      "tags": [
-      "carbon",
+      "fr",
+      "power",
+      "gas",
       "markets"
      ],
      "sources": [
-      "Carbon Pulse"
+      "GreenUnivers"
      ],
-     "what": "EU carbon ended Thursday modestly higher, despite briefly dropping to a new three-month low after a European Parliament committee postponed a vote on market reforms, while UKAs declined to respond to reports that the UK and EU were looking…",
+     "free": null,
+     "what": "Prix de l'énergie en hausse",
+     "what_en": "Energy prices rising",
+     "for_you": "Augmentation des coûts pour les traders",
+     "for_you_en": "Increased costs for traders"
+    },
+    {
+     "id": "zaermvvnbukltrllpmkt6oc5",
+     "title": "Prix du gaz en chute de 7% : le détail caché dans le calcul du prix repère qui empêche votre facture de janvier de baisser",
+     "link": "https://news.google.com/rss/articles/CBMi6AFBVV95cUxNOXViRWIxd1V0MEVfU19fbkIyT1NydmpvSkV5Um4wYTJXalFyWlNxYmNzeGppVjl0bVNZRHJQX2RHQXlRS1NrYTB4QXhwX1RzV0tndDJES21hTmRuOGw1TWZ1dnFjdEpHQmtZZXRQNmd6N1Z2aDRvWTBZSl83Y3NCTl9oNUw0N2MxbFF5dlRGdXhDRTJKTE4ybklwWm9LckZxaGNFcGppWTAtT016eC1MbWNmTFItVWpCRy1sTlB4Z1BnSkxuWmtvZmxqZmJLak91dG1xa20wQ1MzaERmVVNBUkltRllPMkt6?oc=5",
+     "tags": [
+      "fr",
+      "regulation",
+      "watch",
+      "gas",
+      "markets"
+     ],
+     "sources": [
+      "Bourse Inside"
+     ],
+     "free": null,
+     "what": null,
      "what_en": null,
      "for_you": null,
      "for_you_en": null
     }
    ],
-   "ai": false
+   "ai": true
   },
   "commercial": {
-   "hero_chart": {
-    "img": "newsletter_img/2026-11-20_cal-27-france-3-derniers-mois-de-cotatio.png",
-    "title": "Cal 27 France, 3 derniers mois de cotation",
-    "src": "EEX",
-    "page": "markets/forwards"
-   },
+   "hero_chart": null,
    "name": [
     "Commercial",
     "Sales"
@@ -736,97 +794,96 @@
     "agenda",
     "post"
    ],
-   "headline": null,
-   "headline_en": null,
+   "headline": "Prix du gaz en chute, objectifs d'Octopus Energy",
+   "headline_en": "Gas price drop, Octopus Energy goals",
    "stories": [
     {
-     "id": "scherque2029200867202611",
-     "title": "Électricité des entreprises : 2027 cote presque deux fois plus cher que 2029",
-     "link": "https://www.enerzine.com/electricite-des-entreprises-2027-cote-presque-deux-fois-plus-cher-que-2029/200867-2026-11",
-     "tags": [
-      "fr",
-      "power"
-     ],
-     "sources": [
-      "Enerzine"
-     ],
-     "what": null,
-     "what_en": null,
-     "for_you": null,
-     "for_you_en": null
-    },
-    {
-     "id": "rlegouvernementapresenav",
-     "title": "Ces aides à la transition énergétique supprimées par le gouvernement après en avoir fait la promotion",
-     "link": "https://wattselse.com/veille/article/4609/ces-aides-a-la-transition-energetique-supprimees-par-le-gouvernement-apres-en-av",
-     "tags": [
-      "fr",
-      "power",
-      "regulation",
-      "renewables"
-     ],
-     "sources": [
-      "Watts Else"
-     ],
-     "what": "Le fonds chaleur est le guichet qui finance la chaleur renouvelable livrée par réseaux, segment dont la feuille de route vise un triplement d’ici 2035 : fermer les nouvelles demandes alors que le relais annoncé passe par les CEE, assis sur…",
-     "what_en": null,
-     "for_you": null,
-     "for_you_en": null
-    },
-    {
-     "id": "1fbcdzkmw9nr1rsmi01sqoc5",
-     "title": "Batteries de réseau : la CRE expérimente un tarif pour le stockage en basse tension",
-     "link": "https://news.google.com/rss/articles/CBMipwFBVV95cUxNaDhON3lha3kycVN0a0xoQkIwZUd0Wm1lQVgzcFNCZFVtekQ4S2doWXFVekVscjd1dmRJOVhiTVpBLWg4YXlQQlcwWGM5encyRU9zalRiaGJIMDZoMkwyV0Z3WndCWHpLOHU1cTVPSmJCdkQ5OTNIWFFZREt2VWxRNnhPRHJQbHFIMjExdWkzTllNVHNUano1V1FBcDZkMW9NR1RsMi01SQ?oc=5",
+     "id": "zaermvvnbukltrllpmkt6oc5",
+     "title": "Prix du gaz en chute de 7% : le détail caché dans le calcul du prix repère qui empêche votre facture de janvier de baisser",
+     "link": "https://news.google.com/rss/articles/CBMi6AFBVV95cUxNOXViRWIxd1V0MEVfU19fbkIyT1NydmpvSkV5Um4wYTJXalFyWlNxYmNzeGppVjl0bVNZRHJQX2RHQXlRS1NrYTB4QXhwX1RzV0tndDJES21hTmRuOGw1TWZ1dnFjdEpHQmtZZXRQNmd6N1Z2aDRvWTBZSl83Y3NCTl9oNUw0N2MxbFF5dlRGdXhDRTJKTE4ybklwWm9LckZxaGNFcGppWTAtT016eC1MbWNmTFItVWpCRy1sTlB4Z1BnSkxuWmtvZmxqZmJLak91dG1xa20wQ1MzaERmVVNBUkltRllPMkt6?oc=5",
      "tags": [
       "fr",
       "regulation",
       "watch",
+      "gas",
+      "markets"
+     ],
+     "sources": [
+      "Bourse Inside"
+     ],
+     "free": null,
+     "what": null,
+     "what_en": null,
+     "for_you": "Vos factures de gaz pourraient ne pas baisser",
+     "for_you_en": "Your gas bills may not decrease"
+    },
+    {
+     "id": "topusenergyfrance2439423",
+     "title": "L’état-major d’Octopus Energy France",
+     "link": "https://www.greenunivers.com/2026/11/letat-major-doctopus-energy-france-2-439423/",
+     "tags": [
+      "fr",
+      "power",
+      "gas"
+     ],
+     "sources": [
+      "GreenUnivers"
+     ],
+     "free": null,
+     "what": "Octopus Energy France veut alimenter 1 million de compteurs",
+     "what_en": "Octopus Energy France aims to supply 1 million meters",
+     "for_you": "Nouvel acteur sur le marché de l'énergie",
+     "for_you_en": "New player in the energy market"
+    },
+    {
+     "id": "zqy1wr054x1ffawitse5roc5",
+     "title": "Des économies sur le gaz et l’électricité, un bouclier tarifaire : le collectif paye à Saint-Quentin",
+     "link": "https://news.google.com/rss/articles/CBMi0wFBVV95cUxPU1dRZHlRUGdhcjhrN2pkRldQMEhIZ0xPZ2Z1ZHhwVTQ1enk1amhjX3lybXd3MGV4RjB6M1dtRzgxU0xOT1JDU0p2NFRWQjFFc2g1UjJCdXVEdlNlZVprVnlaOEJiUExvWno0Y0RkVUlyWHR6S2lQLWk3YWhwWXdicUZoUGdyZDZYazFxYUVlMmtnRUVQT3N6b2NWUkdJOERJLXdGdHVjYlBmcG1XcEl6dGZ2eWZXQU9MV0ZndllDYTNPejgzQy1wR054X1FFaWItSE5R?oc=5",
+     "tags": [
+      "fr",
+      "regulation",
+      "watch",
+      "gas",
       "power"
      ],
      "sources": [
-      "L'Energeek"
+      "L'Aisne nouvelle"
      ],
+     "free": null,
      "what": null,
      "what_en": null,
      "for_you": null,
      "for_you_en": null
     }
    ],
-   "ai": false
+   "ai": true
   }
  },
- "figure": {
-  "value": "+105 %",
-  "dir": "up",
-  "text": "Le spot France passe de 60 € à 124 € le MWh en 24 h : la plus forte hausse depuis 25 jours.",
-  "text_en": "France spot moves from €60 to €124 per MWh in 24 h: the largest rise in 25 days.",
-  "src": "ENTSO-E",
-  "page": "markets/spot"
- },
+ "figure": null,
  "weather": {
-  "kind": "storm",
+  "kind": "cloud",
   "label": [
-   "Orage",
-   "Storm"
+   "Nuageux",
+   "Cloudy"
   ],
   "sub": [
-   "prix en forte hausse",
-   "prices up sharply"
+   "prix stables",
+   "prices steady"
   ]
  },
  "week_ahead": [
-  {
-   "date": "2026-11-22",
-   "kind": "cons",
-   "title": "Création d'une ligne électrique entre Eguzon et Marmagne : RTE invite le public à s'exprimer sur le projet",
-   "link": "https://www.rte-france.com/actualites/2026-09-29-cp-eguzon-marmagne-concertation",
-   "source": "RTE"
-  },
   {
    "date": "2026-11-25",
    "kind": "cons",
    "title": "Projet d’arrêté relatif au plan d’action établi sur la base des recommandations découlant de l’audit énergétique ou sur la base du système de management de l’énergie",
    "link": "https://www.consultations-publiques.developpement-durable.gouv.fr/projet-d-arrete-relatif-au-plan-d-action-etabli-a3483.html",
+   "source": "Ministère · Énergies et climat"
+  },
+  {
+   "date": "2026-12-01",
+   "kind": "cons",
+   "title": "Projet d’arrêté portant la création de la fiche d’opération standardisée IND-UT-142, du référentiel de contrôle et de la bonification associés",
+   "link": "https://www.consultations-publiques.developpement-durable.gouv.fr/projet-d-arrete-portant-la-creation-de-la-fiche-d-a3487.html",
    "source": "Ministère · Énergies et climat"
   },
   {
