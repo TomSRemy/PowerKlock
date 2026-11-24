@@ -149,6 +149,10 @@ main, footer { position: relative; z-index: 1; }
 .tile.w2 { grid-column: span 2; }
 .tile.hide-s { display: none; }
 .tile.kpi { justify-content: center; }
+.tile .add { position: absolute; top: 8px; right: 10px; font: 600 9px var(--f-num); letter-spacing: .06em; text-transform: uppercase; color: #04211a; background: var(--accent); border-radius: 999px; padding: 2px 7px; opacity: 0; transform: translateY(-4px); transition: opacity .3s, transform .3s var(--ease); pointer-events: none; }
+.tile.fresh .add { opacity: 1; transform: none; }
+.tile .t span:last-child { transition: opacity .3s; } .tile.fresh .t span:last-child { opacity: 0; }
+.tile { position: relative; }
 
 /* progress rail + scroll hint */
 .rail { position: absolute; z-index: 5; left: 50%; bottom: 50px; transform: translateX(-50%); display: none; gap: 6px; }
@@ -822,6 +826,7 @@ footer img { height: 22px; width: auto; opacity: .85; }
       `<div class="tile w2 hide-s"><div class="t"><span>${tr('Heures négatives par mois', 'Negative hours by month')}</span><span>${T.date.slice(0, 4)}</span></div><div class="c"><canvas id="t-neg"></canvas></div></div>`,
       `<div class="tile w2 hide-s"><div class="t"><span>${tr('Nucléaire disponible · 30 j', 'Nuclear available · 30 d')}</span><span>GW</span></div><div class="c"><canvas id="t-nuc"></canvas></div></div>`,
     ].join('');
+    [...$('#tiles').children].forEach((t, i) => { t.dataset.key = ['kda', 'kttf', 'knuc', 'knet', 'wspot', 'wmix', 'wneg', 'wnuc'][i]; });
     const mini = { plugins: { legend: { display: false } }, animation: false };
     mk('t-spot', { type: 'line', data: { labels: QL, datasets: [{ data: H, borderColor: PAL.zone.FR, borderWidth: 1.8, fill: { target: 'start' }, backgroundColor: areaFill(PAL.zone.FR, .22) }] },
       options: { ...mini, interaction: { mode: 'index', intersect: false }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ` ${fmt(c.parsed.y)} €/MWh` } } }, scales: { x: { display: false }, y: { display: false } } } });
@@ -1027,9 +1032,47 @@ footer img { height: 22px; width: auto; opacity: .85; }
     stl.time(0); upd();
   }
 
+  // other catalogue tiles: now and then one replaces a tile of the board, to show it is built, not only rearranged
+  let swapN = 0;
+  const POOL = {
+    kpi: [
+      () => ({ key: 'kneg', html: `<div class="t"><span>${tr('Heures négatives', 'Negative hours')}</span><span>FR</span></div><b class="kv">${fmt(D.negYTD, 0)} h</b><small>${T.date.slice(0, 4)} · ${D.negDays} ${tr('jours', 'days')}</small>` }),
+      () => { const m = M0[M0.length - 1]; return { key: 'km0', html: `<div class="t"><span>${tr('M0 solaire', 'Solar M0')}</span><span>${mo(+m[0].slice(5) - 1)}</span></div><b class="kv">${fmt(m[2])}</b><small>€/MWh</small><span class="d" style="color:var(--solar)">${Math.round(100 * m[2] / m[1])} % ${tr('du prix base', 'of base')}</span>` }; },
+      () => { const l = D.ppa.days[D.ppa.days.length - 1]; return { key: 'kppa', html: `<div class="t"><span>${tr('PPA solaire', 'Solar PPA')}</span><span>${D.ppa.tenor.replace(/-/g, '–')}</span></div><b class="kv">${fmt(l[1])}</b><small>€/MWh · ${tr('éolien', 'wind')} ${fmt(l[2])}</small>` }; },
+      () => { const z = D.eu[0]; return { key: 'kzone', html: `<div class="t"><span>${tr('Zone la plus chère', 'Dearest zone')}</span><span>${dayS(T.date)}</span></div><b class="kv">${fmt(z[2])}</b><small>€/MWh · ${zn(z)}</small>` }; },
+    ],
+    w2: [
+      id => ({ key: 'wttf', html: `<div class="t"><span>${tr('Gaz TTF · 60 j', 'TTF gas · 60 d')}</span><span>€/MWh</span></div><div class="c"><canvas id="${id}"></canvas></div>`,
+        chart: () => mk(id, { type: 'line', data: { labels: D.ttf.map(x => dayS(x[0])), datasets: [{ data: D.ttf.map(x => x[1]), borderColor: PAL.fuel.gas, borderWidth: 1.8, fill: { target: 'start' }, backgroundColor: areaFill(PAL.fuel.gas, .22) }] }, options: { animation: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ` ${fmt(c.parsed.y)} €/MWh` } } }, interaction: { mode: 'index', intersect: false }, scales: { x: { display: false }, y: { display: false } } } }) }),
+      id => ({ key: 'wflow', html: `<div class="t"><span>${tr('Échanges nets · France', 'Net exchanges · France')}</span><span>GW</span></div><div class="c"><canvas id="${id}"></canvas></div>`,
+        chart: () => { const f = D.flows.slice().sort((a, b) => a.net - b.net); return mk(id, { type: 'bar', data: { labels: f.map(x => x.partner.split(' · ')[0].replace('_LU', '').replace('_NORD', '')), datasets: [{ data: f.map(x => -x.net / 1000), backgroundColor: alpha('#4AA3E0', .85), borderRadius: 3 }] }, options: { animation: false, indexAxis: 'y', plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ` ${fmt(c.parsed.x, 1)} GW` } } }, scales: { x: { display: false }, y: { grid: { display: false } } } } }); } }),
+      id => ({ key: 'wm0', html: `<div class="t"><span>M0 · ${tr('13 mois', '13 months')}</span><span>${tr('solaire · éolien', 'solar · wind')}</span></div><div class="c"><canvas id="${id}"></canvas></div>`,
+        chart: () => mk(id, { type: 'line', data: { labels: M0.map(m => m[0]), datasets: [{ data: M0.map(m => m[2]), borderColor: PAL.fuel.solar, borderWidth: 1.8 }, { data: M0.map(m => m[3]), borderColor: PAL.fuel.wind, borderWidth: 1.8 }, { data: M0.map(m => m[1]), borderColor: PAL.base, borderWidth: 1, borderDash: [4, 3] }] }, options: { animation: false, plugins: { legend: { display: false }, tooltip: { enabled: false } }, scales: { x: { display: false }, y: { display: false } } } }) }),
+      id => ({ key: 'wdrv', html: `<div class="t"><span>${tr('Spot France · 12 mois', 'France spot · 12 months')}</span><span>${tr('par semaine', 'weekly')}</span></div><div class="c"><canvas id="${id}"></canvas></div>`,
+        chart: () => mk(id, { type: 'line', data: { labels: DRV.map(w => w[0]), datasets: [{ data: DRV.map(w => w[1]), borderColor: PAL.zone.FR, borderWidth: 1.8, fill: { target: 'start' }, backgroundColor: areaFill(PAL.zone.FR, .2) }] }, options: { animation: false, plugins: { legend: { display: false }, tooltip: { enabled: false } }, scales: { x: { display: false }, y: { display: false } } } }) }),
+    ],
+  };
+  function swapTile() {
+    const box = $('#tiles'), kind = swapN % 2 ? 'w2' : 'kpi', tiles = [...box.querySelectorAll('.tile.' + kind)].filter(t => getComputedStyle(t).display !== 'none'); if (!tiles.length) return;
+    const shown = new Set([...box.querySelectorAll('.tile')].map(t => t.dataset.key)), cand = POOL[kind].map((f, i) => f('t-x' + swapN + '-' + i)).filter(x => !shown.has(x.key)); swapN++;
+    if (!cand.length) return;
+    const tl = tiles[Math.floor(Math.random() * tiles.length)], nx = cand[Math.floor(Math.random() * cand.length)], old = tl.querySelector('canvas');
+    gsap.to(tl, { autoAlpha: 0, scale: .94, duration: .35, ease: 'power2.in', onComplete: () => {
+      if (old && Chart.getChart(old)) Chart.getChart(old).destroy();
+      // the tile handed back to the pool keeps its markup so it can come back later
+      const back = { key: tl.dataset.key, html: tl.innerHTML.replace(/<span class="add">[^<]*<\/span>/, '') };
+      if (back.key && !/canvas/.test(back.html)) POOL[kind].push(() => back);
+      tl.dataset.key = nx.key; tl.innerHTML = nx.html + `<span class="add">${tr('Ajouté', 'Added')}</span>`;
+      if (nx.chart) nx.chart();
+      tl.classList.add('fresh'); setTimeout(() => tl.classList.remove('fresh'), 1600);
+      gsap.fromTo(tl, { autoAlpha: 0, scale: .94 }, { autoAlpha: 1, scale: 1, duration: .5, ease: 'power3.out' });
+    } });
+  }
+
   // dashboard tiles change places every second (GSAP Flip) while the board is on screen
   let shT = 0, dashVis = false;
-  function shuffle() { if (!dashVis || document.hidden || !window.Flip || innerWidth < 700 || (stageLive && (!stl || stl.time() < 3.98))) return; const box = $('#tiles'), st = Flip.getState('#tiles .tile'); const k = [...box.querySelectorAll('.tile.kpi')], w = [...box.querySelectorAll('.tile.w2')]; if (k.length > 1) box.insertBefore(k[k.length - 1], k[0]); if (w.length > 1) box.insertBefore(w[w.length - 1], w[0]); Flip.from(st, { duration: .55, ease: 'power2.inOut' }); }
+  let shK = 0;
+  function shuffle() { if (!dashVis || document.hidden || !window.Flip || innerWidth < 700 || (stageLive && (!stl || stl.time() < 3.98))) return; if (++shK % 4 === 0) return swapTile(); const box = $('#tiles'), st = Flip.getState('#tiles .tile'); const k = [...box.querySelectorAll('.tile.kpi')], w = [...box.querySelectorAll('.tile.w2')]; if (k.length > 1) box.insertBefore(k[k.length - 1], k[0]); if (w.length > 1) box.insertBefore(w[w.length - 1], w[0]); Flip.from(st, { duration: .55, ease: 'power2.inOut' }); }
   // ════════ boot ════════
   const motion = !reduce && HAS && !!window.gsap && !!window.ScrollTrigger;
   if (motion) gsap.registerPlugin(ScrollTrigger, window.Flip, window.SplitText);
