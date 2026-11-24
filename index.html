@@ -2435,7 +2435,9 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
             <button class="tab-btn active" data-nv="home" type="button">Top stories</button>
             <button class="tab-btn" data-nv="feed" type="button">Live feed</button>
             <button class="tab-btn" data-nv="official" type="button">Official texts <span class="news-tab-n" id="news-tab-off-n"></span></button>
+            <button class="tab-btn" data-nv="posts" type="button">LinkedIn posts</button>
             <button class="tab-btn" data-nv="letter" type="button">Newsletter</button>
+            <button class="tab-btn" data-nv="sources" type="button">Sources</button>
           </div>
           <div class="pr-tabs-bar-filters"><span class="updated-badge" id="news-updated">Loading...</span></div>
         </div>
@@ -2507,32 +2509,31 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
         </div>
       </div>
         </div>
-        <aside class="news-aside nf-tools" aria-label="Tools of the feed">
-      <div class="hist-section hist-section-strong" id="hs-news-posts" hidden>
+        <div id="news-kw-home" hidden>
+      <div class="news-mine"><label for="news-kw">★ My keywords</label><input type="text" id="news-kw" class="fuel-select" placeholder="e.g. PPA, prix négatifs, CRE, batteries — comma separated"><label class="news-kw-team" id="news-kw-team-wrap" title="Boost these keywords for every team member, not just you" style="display:none"><input type="checkbox" id="news-kw-team"> share with team</label><span class="news-mine-n" id="news-kw-n"></span></div>
+        </div>
+      </div>
+      </div>
+      <div class="news-view" id="news-v-posts" hidden>
+      <div class="hist-section hist-section-strong" id="hs-news-posts">
         <div class="hist-section-header open" onclick="toggleStrongSection('hs-news-posts')">
           <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 11v5M8 8v.01M12 16v-5M12 13a2 2 0 0 1 4 0v3"/></svg>Posts to read<span class="pk-hs-meta">LinkedIn posts shared by the team · the most useful go into Monday's digest</span></div>
           <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
         <div class="hist-section-body open" id="hs-body-news-posts"><div id="news-posts"></div></div>
       </div>
-          <div class="news-side">
-            <div class="news-side-t"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15 9 22 9 16.5 13.5 18.5 21 12 16.5 5.5 21 7.5 13.5 2 9 9 9"/></svg>My keywords</div>
-      <div class="news-mine"><label for="news-kw">★ My keywords</label><input type="text" id="news-kw" class="fuel-select" placeholder="e.g. PPA, prix négatifs, CRE, batteries — comma separated"><label class="news-kw-team" id="news-kw-team-wrap" title="Boost these keywords for every team member, not just you" style="display:none"><input type="checkbox" id="news-kw-team"> share with team</label><span class="news-mine-n" id="news-kw-n"></span></div>
-          </div>
-          <div class="news-side">
+      </div>
+      <div class="news-view" id="news-v-sources" hidden>
+        <div class="news-side news-src-cover">
             <div class="news-side-t"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11a9 9 0 0 1 9 9"/><path d="M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1"/></svg>Coverage</div>
             <div class="news-cover" id="news-cover"></div>
-            <div class="news-side-links"><button type="button" class="pk-btn-ghost" id="news-src-btn">Source status</button>
-            <button type="button" class="pk-btn-ghost" id="news-add-btn" title="Add an RSS feed or a press search for everyone">＋ Add a source</button></div>
-          </div>
-        </aside>
-      </div>
+        </div>
       <div class="hist-section hist-section-strong" id="hs-news-src">
-        <div class="hist-section-header" onclick="toggleStrongSection('hs-news-src')">
+        <div class="hist-section-header open" onclick="toggleStrongSection('hs-news-src')">
           <div class="hist-section-title"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11a9 9 0 0 1 9 9"/><path d="M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1"/></svg>Sources<span class="pk-hs-meta">Add a feed or a press search, what is read, what worked at the last run</span></div>
           <svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
-        <div class="hist-section-body" id="hs-body-news-src"><div id="news-add"></div><div id="news-sources"></div></div>
+        <div class="hist-section-body open" id="hs-body-news-src"><div id="news-add"></div><div id="news-sources"></div></div>
       </div>
       </div>
       <div class="news-view" id="news-v-letter" hidden>

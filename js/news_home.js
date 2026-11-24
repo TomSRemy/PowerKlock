@@ -195,12 +195,16 @@ function _nhCustomise() {
   // the newsletter by e-mail (public.news_profile, signed in only): which editions, and to which address
   let mailD = !!(_nlMe && _nlMe.daily), mailW = !!(_nlMe && _nlMe.weekly), mailTo = (_nlMe && _nlMe.email_to) || '';
   const acct = (window.PKAccount && PKAccount.user && PKAccount.user.email) || '';
+  // the keywords box (its input is wired by js/news.js) comes into the panel and goes back to its holder when it closes
+  const mine = document.querySelector('.news-mine');
+  const back = () => { const home = document.getElementById('news-kw-home'); if (mine && home) home.appendChild(mine); };
   const ov = document.createElement('div'); ov.className = 'nh-ov'; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-label', _newsT('Personnaliser ma Veille', 'Customise my News'));
   const draw = () => {
     ov.innerHTML = `<div class="nh-panel"><div class="nh-ph"><b>${_newsT('Personnaliser ma Veille', 'Customise my News')}</b><button type="button" class="nh-x" aria-label="${_newsT('Fermer', 'Close')}">✕</button></div>
       <p class="nh-note">${signed ? _newsT('Le profil et la priorité France sont ceux de votre newsletter : les changer ici les change aussi pour le mail.', 'The profile and France first are those of your newsletter: changing them here changes the e-mail too.') : _newsT('Connectez-vous pour retrouver ces choix partout et dans votre newsletter. Sans compte, ils restent dans ce navigateur.', 'Sign in to keep these choices everywhere and in your newsletter. Without an account, they stay in this browser.')}</p>
       <div class="nh-k">${_newsT('Mon profil de lecture', 'My reading profile')}</div>
       <div class="nh-chips">${Object.keys(P).map(k => `<button type="button" class="nh-chip${profs.includes(k) ? ' on' : ''}" data-prof="${_newsEsc(k)}">${profs.includes(k) ? '✓ ' : ''}${_newsEsc(L(P[k].name))}</button>`).join('')}</div>
+      <div class="nh-k">${_newsT('Mes mots-clés', 'My keywords')}</div><div id="nh-kw-slot"></div>
       ${signed ? `<div class="nh-k">${_newsT('Recevoir par e-mail', 'Receive by e-mail')}</div>
       <label class="nh-cb"><input type="checkbox" id="nh-md"${mailD ? ' checked' : ''}> 7 O’Klock ${_newsT('(chaque matin de semaine, 7 h)', '(every weekday, 7:00)')}</label>
       <label class="nh-cb"><input type="checkbox" id="nh-mw"${mailW ? ' checked' : ''}> PowerBrunch ${_newsT('(le lundi, 10 h)', '(Monday, 10:00)')}</label>
@@ -215,6 +219,7 @@ function _nhCustomise() {
       <div class="nh-k">${_newsT('Colonne de droite', 'Side column')}</div>
       ${[['mk', _newsT('Marchés ce matin', 'Markets this morning')], ['cons', _newsT('À ne pas rater', 'Not to miss')], ['fig', _newsT('Le chiffre du jour', 'Figure of the day')]].map(([k, l]) => `<label class="nh-cb"><input type="checkbox" data-aside="${k}"${p.aside[k] ? ' checked' : ''}> ${l}</label>`).join('')}
       <div class="nh-pf"><span class="news-add-msg" id="nh-msg"></span><button type="button" class="pk-btn-ghost" id="nh-cancel">${_newsT('Annuler', 'Cancel')}</button><button type="button" class="nh-save" id="nh-ok">${_newsT('Enregistrer', 'Save')}</button></div></div>`;
+    const slot = ov.querySelector('#nh-kw-slot'); if (slot && mine) slot.appendChild(mine);
     ov.querySelectorAll('[data-prof]').forEach(b => b.addEventListener('click', () => { const k = b.dataset.prof; profs = profs.includes(k) ? profs.filter(x => x !== k) : profs.concat(k); draw(); }));
     ov.querySelectorAll('[data-rshow]').forEach(c => c.addEventListener('change', () => { const id = c.dataset.rshow; p.rubs = c.checked ? order.filter(x => x === id || p.rubs.includes(x)) : p.rubs.filter(x => x !== id); draw(); }));
     ov.querySelectorAll('[data-mv]').forEach(b => b.addEventListener('click', () => { const k = +b.dataset.mv, j = k + +b.dataset.d; [order[k], order[j]] = [order[j], order[k]]; p.rubs = order.filter(x => p.rubs.includes(x)); draw(); }));
@@ -225,7 +230,7 @@ function _nhCustomise() {
     if (mw) mw.addEventListener('change', () => { mailW = mw.checked; });
     if (mt) mt.addEventListener('input', () => { mailTo = mt.value.trim(); });
     ov.querySelectorAll('[data-aside]').forEach(c => c.addEventListener('change', () => { p.aside[c.dataset.aside] = c.checked; }));
-    const close = () => { ov.remove(); document.removeEventListener('keydown', esc); };
+    const close = () => { back(); ov.remove(); document.removeEventListener('keydown', esc); };
     ov.querySelector('.nh-x').addEventListener('click', close); ov.querySelector('#nh-cancel').addEventListener('click', close);
     ov.querySelector('#nh-ok').addEventListener('click', async () => {
       const msg = ov.querySelector('#nh-msg');
@@ -239,9 +244,9 @@ function _nhCustomise() {
       close(); renderNewsHome();
     });
   };
-  const esc = e => { if (e.key === 'Escape') { ov.remove(); document.removeEventListener('keydown', esc); } };
+  const esc = e => { if (e.key === 'Escape') { back(); ov.remove(); document.removeEventListener('keydown', esc); } };
   document.addEventListener('keydown', esc);
-  ov.addEventListener('click', e => { if (e.target === ov) { ov.remove(); document.removeEventListener('keydown', esc); } });
+  ov.addEventListener('click', e => { if (e.target === ov) { back(); ov.remove(); document.removeEventListener('keydown', esc); } });
   draw(); document.body.appendChild(ov);
   const first = ov.querySelector('.nh-x'); if (first) first.focus();
 }
