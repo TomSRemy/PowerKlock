@@ -178,8 +178,7 @@ async function renderNewsLetter() {
     top: () => { const shown = new Set(ed.stories.map(x => x.link).concat(((E.digest || {}).items || []).map(x => x.link))), T = (E.top || []).filter(o => !shown.has(o.link));
       return T.length ? `<ul class="nl-ul">${T.map(o => `<li><span>${a(o.link, o.title)} <span class="nl-src">· ${_newsEsc(o.source)}${o.n > 1 ? ' +' + (o.n - 1) : ''}</span></span>${_nlPill(o.tags)}</li>`).join('')}</ul>` : ''; },
     stories: () => ed.stories.length ? ed.stories.map((s, k) => `<article class="nl-story"><div class="nl-st-h"><h3>${k + 1}. ${a(s.link, s.title)}</h3>${_nlPill(s.tags)}</div>
-      ${(en ? s.what_en : s.what) || s.what ? `<p><b>${_newsT('Ce qui s’est passé.', 'What happened.')}</b> ${_newsEsc((en && s.what_en) || s.what)}</p>` : ''}
-      ${s.for_you ? `<p class="nl-for"><b>${_newsT('À retenir', 'Takeaway')} ·</b> ${_newsEsc((en && s.for_you_en) || s.for_you)}</p>` : ''}
+      ${_newsKeep(s, en) ? `<p class="nl-for"><b>${_newsT('À retenir', 'Takeaway')} ·</b> ${_newsEsc(_newsKeep(s, en))}</p>` : ''}
       <div class="nl-src">${s.sources.slice(0, 4).map(_newsEsc).join(' · ')}${s.sources.length > 4 ? ' +' + (s.sources.length - 4) : ''}</div></article>`).join('') : '',
     official: () => (E.official || []).length ? `<ul class="nl-ul">${E.official.map(o => `<li><span>${a(o.link, o.title)} <span class="nl-src">· ${_newsEsc(o.source)}, ${ddm(o.date)}</span></span>${_nlPill(o.tags, true)}</li>`).join('')}</ul>` : '',
     cons: () => (E.cons || []).length ? `<table class="nl-cons"><tbody>${E.cons.map(c => { const n = c.deadline ? _newsLeft(c.deadline) : null;
@@ -203,10 +202,10 @@ async function renderNewsLetter() {
   if (S[0]) { const h = S[0], ch = null;
     parts.push(`<section class="nl-sec nl-hero"><h2>${E.weekly ? _newsT('Le sujet de la semaine', 'Story of the week') : _newsT('À la une', 'Lead story')} ${thL(h.tags)}</h2>
       <div class="nl-hero-in">${ch ? `<figure class="nl-hero-ch"><figcaption>${_newsEsc(ch.title)}</figcaption><img class="nl-img" src="${DATA_BASE + _newsEsc(ch.img)}" alt="${_newsEsc(ch.title)}"><div class="nl-src">${_newsT('Source', 'Source')} : ${_newsEsc(ch.src)} · <a href="#${_newsEsc(ch.page)}">${_newsT('voir sur PowerKlock', 'see on PowerKlock')}</a></div></figure>` : ''}
-      <div class="nl-hero-t"><h3>${a(h.link, h.title)}</h3>${(en && h.what_en) || h.what ? `<p>${_newsEsc((en && h.what_en) || h.what)}</p>` : ''}
-      ${h.for_you ? `<p class="nl-ret"><b>${_newsT('À retenir.', 'Takeaway.')}</b> ${_newsEsc((en && h.for_you_en) || h.for_you)}</p>` : ''}<div class="nl-src">${h.sources.slice(0, 3).map(_newsEsc).join(' · ')}</div>${_newsFree(h)}</div></div></section>`); }
+      <div class="nl-hero-t"><h3>${a(h.link, h.title)}</h3>
+      ${_newsKeep(h, en) ? `<p class="nl-ret"><b>${_newsT('À retenir.', 'Takeaway.')}</b> ${_newsEsc(_newsKeep(h, en))}</p>` : ''}<div class="nl-src">${h.sources.slice(0, 3).map(_newsEsc).join(' · ')}</div>${_newsFree(h)}</div></div></section>`); }
   if (E.figure && !E.weekly) parts.push(`<section class="nl-sec nl-fig"><b class="${E.figure.dir === 'dn' ? 'dn' : 'up'}">${_newsEsc(E.figure.value)}</b><div><h2>${_newsT('Le chiffre du jour', 'Figure of the day')}</h2><p>${_newsEsc(en ? E.figure.text_en : E.figure.text)}</p></div></section>`);
-  if (S.length > 1) parts.push(`<section class="nl-sec">${S.slice(1).map(h => `<article class="nl-story">${thL(h.tags)}<h3>${a(h.link, h.title)}</h3>${(en && h.what_en) || h.what ? `<p class="nl-what">${_newsEsc((en && h.what_en) || h.what)}</p>` : ''}${h.for_you ? `<p class="nl-ret"><b>${_newsT('À retenir.', 'Takeaway.')}</b> ${_newsEsc((en && h.for_you_en) || h.for_you)}</p>` : ''}<div class="nl-src">${h.sources.slice(0, 3).map(_newsEsc).join(' · ')}</div>${_newsFree(h)}</article>`).join('')}</section>`);
+  if (S.length > 1) parts.push(`<section class="nl-sec">${S.slice(1).map(h => `<article class="nl-story">${thL(h.tags)}<h3>${a(h.link, h.title)}</h3>${_newsKeep(h, en) ? `<p class="nl-ret"><b>${_newsT('À retenir.', 'Takeaway.')}</b> ${_newsEsc(_newsKeep(h, en))}</p>` : ''}<div class="nl-src">${h.sources.slice(0, 3).map(_newsEsc).join(' · ')}</div>${_newsFree(h)}</article>`).join('')}</section>`);
   const shownL = new Set(S.map(x => x.link)), brief = (E.top || []).filter(o => !shownL.has(o.link)).slice(0, E.weekly ? 6 : 4);
   if (brief.length) parts.push(`<section class="nl-sec"><h2>${E.weekly ? _newsT('La semaine en bref', 'The week in brief') : _newsT('En bref', 'In brief')}</h2>${brief.map(o => `<p class="nl-brief">${thL(o.tags)} ${a(o.link, o.title)} <span class="nl-src">${_newsEsc(o.source)}</span></p>`).join('')}</section>`);
   if ((E.week_ahead || []).length) parts.push(`<section class="nl-sec nl-ahead"><h2>${E.weekly ? _newsT('La semaine qui vient', 'The week ahead') : _newsT('Cette semaine', 'This week')}</h2><table>${E.week_ahead.map(x => `<tr><td>${wd(x.date)} ${new Date(x.date + 'T12:00:00Z').getUTCDate()}</td><td>${x.kind === 'cons' ? _newsT('Fin de consultation : ', 'Consultation closes: ') : ''}${x.link ? a(x.link, en && x.title_en ? x.title_en : x.title) : _newsEsc(en && x.title_en ? x.title_en : x.title)}</td></tr>`).join('')}</table></section>`);
@@ -270,8 +269,8 @@ async function renderNewsUne() {
   host.hidden = false;
   host.innerHTML = `<article class="news-une-lead${chart ? '' : ' nochart'}">${chart ? `<figure class="news-une-ch"><figcaption>${_newsEsc(chart.title)}</figcaption><img src="${DATA_BASE + _newsEsc(chart.img)}" alt="${_newsEsc(chart.title)}"><div class="nl-src">${_newsT('Source', 'Source')} : ${_newsEsc(chart.src)} · <a href="#${_newsEsc(chart.page)}">${_newsT('voir sur PowerKlock', 'see on PowerKlock')}</a></div></figure>` : ''}
     <div class="news-une-t"><span class="news-une-k">${pinItem && lead.link === pinItem.link ? _newsT('À la une · choisi par la rédaction', 'Lead story · editor’s pick') : _newsT('À la une', 'Lead story')} ${th(lead.tags)}</span>
-      <h2>${a(lead.link, lead.title)}</h2>${(en && lead.what_en) || lead.what ? `<p>${_newsEsc((en && lead.what_en) || lead.what)}</p>` : ''}
-      ${lead.for_you ? `<p class="nl-ret"><b>${_newsT('À retenir.', 'Takeaway.')}</b> ${_newsEsc((en && lead.for_you_en) || lead.for_you)}</p>` : ''}
+      <h2>${a(lead.link, lead.title)}</h2>
+      ${_newsKeep(lead, en) ? `<p class="nl-ret"><b>${_newsT('À retenir.', 'Takeaway.')}</b> ${_newsEsc(_newsKeep(lead, en))}</p>` : ''}
       <span class="nl-src">${(lead.sources || []).slice(0, 3).map(_newsEsc).join(' · ')}${_newsAdmin ? ' · ' + _newsPinBtn({ link: lead.link }) : ''}</span>${_newsFree(byLink(lead.link))}</div></article>
     <div class="news-une-more">${others.map(o => `<article>${th(o.tags)}<h3>${a(o.link, o.title)}</h3><span class="nl-src">${_newsEsc((o.sources || [o.source]).slice(0, 2).join(' · '))}</span>${_newsFree(byLink(o.link))}</article>`).join('')}</div>`;
   const dg = document.getElementById('hs-news-digest'); if (dg) dg.hidden = true;     // the lead replaces « L'essentiel » on top of the feed
@@ -460,6 +459,14 @@ function _newsCoverage(item) {
 
 // a paid outlet's article: the same story at outlets readable for free (scripts/fetch_news.py, free_coverage). Inside a card
 // that is itself a link, so each outlet is a span opened by the click handler below.
+// « À retenir »: the story's summary, then its concrete fact when it adds one (one block, the owner's choice)
+const _NEWS_GENERIC = /^\s*(l.|un |une |des |les |le |la )?(impacts?|int[ée]r[êe]ts?|enjeux?|opportunit[ée]s?|cons[ée]quences?|effets?|nouvel(le)?s?|analyser|[ée]tudier|pr[ée]voir|surveiller|suivre|à suivre|anticiper|v[ée]rifier|implications?|potentiel|impact|interest|opportunit|new|watch|monitor|consider)\b/i;
+function _newsKeep(h, en) {
+  const w = ((en && h.what_en) || h.what || '').trim();
+  let y = ((en && h.for_you_en) || h.for_you || '').trim();
+  if (_NEWS_GENERIC.test(y) || y.split(/\s+/).length < 4 || w.toLowerCase().includes(y.toLowerCase().slice(0, 40))) y = '';   // a generic line adds nothing
+  return w ? w + (y ? (/[.!?…]$/.test(w) ? ' ' : '. ') + y : '') : y;
+}
 function _newsFree(item, cls) {
   // a major publication (World Energy Outlook, Bilan prévisionnel…): a link to the report itself, on the publisher's site
   const rep = item && item.report_link ? `<div class="news-free news-report${cls ? ' ' + cls : ''}"><span>${_newsT('Le rapport', 'The report')} :</span> <span class="news-free-a" role="link" tabindex="0" data-open="${_newsEsc(item.report_link)}">${_newsEsc(item.report_name || _newsT('sur le site de l’éditeur', 'on the publisher’s site'))} ↗</span></div>` : '';

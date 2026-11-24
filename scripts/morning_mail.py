@@ -236,6 +236,9 @@ DARK = [('background:#0a0e13;border-radius:10px', 'background:#151c24;border:1px
         ('#EBEBEB', '#1e2d3d'), ('#F2F2F2', '#1a2532'), ('#F7F7F5', '#151c24')]
 
 
+GENERIC = re.compile(r"(?i)^\s*(l.|un |une |des |les |le |la )?(impacts?|int[ée]r[êe]ts?|enjeux?|opportunit[ée]s?|cons[ée]quences?|effets?|nouvel(le)?s?|"
+                     r"analyser|[ée]tudier|pr[ée]voir|surveiller|suivre|[àa] suivre|anticiper|v[ée]rifier|implications?|potentiel)\b")
+
 def dark(html):
     for a, b in DARK:
         html = html.replace(a, b)
@@ -308,6 +311,12 @@ def journal(today, E, ed, wk, mine):
         return (f'<p style="{f};margin:4px 0 0;font-size:12.5px;color:#6B6B6B">Aussi en accès libre : ' +
                 ' · '.join(f'<a href="{esc(o["link"])}" style="{green}">{esc(o["source"])}</a>' for o in h["free"]) + '</p>') if h.get('free') else ''
 
+    def keep(h):     # « À retenir »: the story's summary, then its concrete fact when it adds one
+        w, y = (h.get('what') or '').strip(), (h.get('for_you') or '').strip()
+        if GENERIC.search(y) or len(y.split()) < 4 or y.lower()[:40] in w.lower():
+            y = ''     # a generic line (« Intérêt pour les PPA ») adds nothing
+        return (w + ((' ' if w[-1:] in '.!?…' else '. ') + y if y else '')) if w else y
+
     def report(h):   # a major publication: the report itself, on the publisher's site
         return (f'<p style="{f};margin:4px 0 0;font-size:12.5px;color:#6B6B6B">Le rapport : <a href="{esc(h["report_link"])}" style="{green};font-weight:600">'
                 f'{esc(h.get("report_name") or "sur le site de l’éditeur")} ↗</a></p>') if h.get('report_link') else ''
@@ -320,8 +329,7 @@ def journal(today, E, ed, wk, mine):
                  f'<p style="{f};margin:6px 0 0;font-size:11.5px;color:#6B6B6B">Source : {esc(ch["src"])} · <a href="{SITE}#{esc(ch["page"])}" style="{green}">voir sur PowerKlock</a></p></div>') if ch else ''
         body.append(row(kick(('Le sujet de la semaine' if wk else 'À la une') + (f' · <span style="color:{col}">{lab}</span>' if lab else '')) +
                         f'<p style="{serif};margin:0 0 8px;font-size:25px;line-height:1.22;font-weight:700">{a(h["link"], h["title"])}</p>' +
-                        (f'<p style="{f};margin:0;font-size:16px;line-height:1.55;color:#383838">{esc(h["what"])}</p>' if h.get('what') else '') + chart +
-                        (f'<p style="{f};margin:{0 if chart else 12}px 0 0;font-size:15.5px;line-height:1.5;color:#121212;border-left:3px solid #0B7A62;padding-left:12px"><b style="{green}">À retenir.</b> {esc(h["for_you"])}</p>' if h.get('for_you') else '') +
+                        chart + (f'<p style="{f};margin:{12 if chart else 4}px 0 0;font-size:16px;line-height:1.55;color:#121212;border-left:3px solid #0B7A62;padding-left:12px"><b style="{green}">À retenir.</b> {esc(keep(h))}</p>' if keep(h) else '') +
                         f'<p style="{f};margin:10px 0 0;font-size:12.5px;color:#6B6B6B">{esc(" · ".join(h["sources"][:3]))} · <a href="{esc(h["link"])}" style="{green};font-weight:600">Lire l\'article</a></p>' + report(h) + free(h)))
     # ── the figure of the day ──
     fig = E.get('figure')
@@ -333,8 +341,7 @@ def journal(today, E, ed, wk, mine):
         lab, col = theme_of(h.get('tags'))
         body.append(row((f'<p style="{f};margin:0 0 4px;font-size:12px;font-weight:700;color:{col}">{lab}</p>' if lab else '') +
                         f'<p style="{serif};margin:0 0 6px;font-size:19px;line-height:1.28;font-weight:700">{a(h["link"], h["title"])}</p>' +
-                        (f'<p style="{f};margin:0 0 8px;font-size:15px;line-height:1.5;color:#383838">{esc(h["what"])}</p>' if h.get('what') else '') +
-                        (f'<p style="{f};margin:0 0 6px;font-size:14.5px;line-height:1.5;color:#121212"><b style="{green}">À retenir.</b> {esc(h["for_you"])}</p>' if h.get('for_you') else '') +
+                        (f'<p style="{f};margin:0 0 8px;font-size:15px;line-height:1.5;color:#383838"><b style="{green}">À retenir.</b> {esc(keep(h))}</p>' if keep(h) else '') +
                         f'<p style="{f};margin:0;font-size:12.5px;color:#6B6B6B">{esc(" · ".join(h["sources"][:3]))}</p>' + report(h) + free(h)))
     # ── your keywords ──
     if mine:

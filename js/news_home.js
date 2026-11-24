@@ -74,8 +74,9 @@ async function renderNewsHome() {
   }
   const th = tags => { const t = _NL_TH.find(x => (tags || []).includes(x[0])); return t ? _newsT(t[1], t[2]) : ''; };
   const leadH = lead ? `<section class="nh-lead"><span class="nh-k nh-k-lead">${pin && pin.link === lead.link ? _newsT('À la une · choisi par la rédaction', 'Top story · editor’s pick') : _newsT('À la une', 'Top story')}${th(lead.tags) ? ' · ' + _newsEsc(th(lead.tags)) : ''}</span>
-    <h2>${_nhA(lead.link, _newsEsc(lead.title))}</h2>${leadWhat ? `<p class="nh-chapo">${_newsEsc(leadWhat)}</p>` : ''}
-    ${lead.for_you ? `<p class="nh-ret"><b>${_newsT('À retenir.', 'Takeaway.')}</b> ${_newsEsc((en && lead.for_you_en) || lead.for_you)}</p>` : ''}
+    <h2>${_nhA(lead.link, _newsEsc(lead.title))}</h2>${lead.what || lead.for_you
+      ? `<p class="nh-ret"><b>${_newsT('À retenir.', 'Takeaway.')}</b> ${_newsEsc(_newsKeep(lead, en))}</p>`
+      : leadWhat ? `<p class="nh-chapo">${_newsEsc(leadWhat)}</p>` : ''}
     <span class="nh-src">${_newsEsc((lead.sources || []).slice(0, 2).join(' · '))}${leadItem ? ' · ' + _nhAgo(leadItem.date) : ''} · ${_nhA(lead.link, _newsT('Lire l’article', 'Read the article'), 'nh-read')}${_newsPinBtn({ link: lead.link })}</span>
     ${_newsFree(leadItem || lead)}</section>` : '';
   // ── the essentials: the reader's other stories of the day ──
