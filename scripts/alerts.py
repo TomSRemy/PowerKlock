@@ -7,7 +7,7 @@ it checks every active rule against the repository's data files, records
 each triggered alert once in public.alert_event and e-mails it.
 
 Rule kinds
-  neg_price   at least `min_hours` (default 1) hours of negative day-ahead
+  neg_price   at least `min_hours` (default 0.25, one quarter-hour) hours of negative day-ahead
               price in one of `zones`
   base_above  daily baseload above `threshold` €/MWh
   base_below  daily baseload below `threshold` €/MWh
@@ -16,9 +16,11 @@ Rule kinds
               (data/history/ppa_benchmark.json)
   corr_break  a watched pair's correlation moved by `threshold` or more between the last year and
               the last 60 days (data/corr_watch.json, scripts/corr_watch.py)
-  fwd_fr      the France-specific part of the day's French Cal+1 move (the part
-              gas and CO₂ do not explain, as on Prices › Forward) above
-              `threshold` €/MWh in absolute value
+  cal_move    an annual forward contract (params: country FR, DE, NL or UK; cal 1, 2 or 3 for Cal+1…+3;
+              period 1d or 1w; unit eur or pct) moved by `threshold` or more, up or down
+  cal_above   the contract's latest price above `threshold`
+  cal_below   the contract's latest price below `threshold`
+              (data/history/fr_market_calchain.json; the United Kingdom is quoted in £/MWh)
 
 Environment
   SUPABASE_DB_URL (or WAREHOUSE_DB_URL)   database (owner role)
@@ -68,49 +70,51 @@ def _load(path):
         return None
 
 
-def fwd_fr_move():
-    """Last daily move of the French Cal+1 split into gas and CO₂ (6-month
-    pass-through of the gas plant cost of the same delivery year, clean-spark
-    convention: TTF ÷ 49.13 % + EUA × 0.202 ÷ 0.4913) and the France-specific
-    rest. Same method as js/forward-read.js."""
-    chain, cs = _load('history/fr_market_calchain.json'), _load('history/commodities_series.json')
-    if not chain or not cs or 'FR' not in chain:
-        return None
-    y0 = datetime.now(PARIS).year
-    yrs = sorted(int(y) for y in chain['FR']['years'])
-    k = next((y for y in yrs if y > y0), yrs[0])
-    fr = chain['FR']['years'][str(k)]
-    gy = (cs.get('calYears') or {}).get('ttf', {}).get(str(k))
-    gas = list(zip(gy['dates'], gy['values'])) if gy else (cs['series']['ttf']['points'])
-    eua = cs['series']['eua']['points']
+CAL_NAME = {'FR': 'France', 'DE': 'Germany', 'NL': 'Netherlands', 'UK': 'United Kingdom'}
 
-    def as_of(pts, d):
-        v = None
-        for x, y in pts:
-            if x > d:
-                break
-            if y is not None:
-                v = y
-        return v
-    rows = []
-    for d, p in zip(fr['dates'], fr['values']):
-        g, e = as_of(gas, d), as_of(eua, d)
-        if p is not None:
-            rows.append((d, p, g / 0.4913 + e * 0.202 / 0.4913 if g is not None and e is not None else None))
-    if len(rows) < 30:
-        return None
-    pairs = [(b[2] - a[2], b[1] - a[1]) for a, b in zip(rows[-127:-1], rows[-126:]) if a[2] is not None and b[2] is not None]
-    if len(pairs) < 10:
-        return None
-    mx = sum(x for x, _ in pairs) / len(pairs)
-    my = sum(y for _, y in pairs) / len(pairs)
-    sxx = sum((x - mx) ** 2 for x, _ in pairs)
-    beta = max(0.0, min(1.2, sum((x - mx) * (y - my) for x, y in pairs) / sxx)) if sxx else 0.0
-    (_, p0, c0), (d1, p1, c1) = rows[-2], rows[-1]
-    if c0 is None or c1 is None:
-        return None
-    fc = beta * (c1 - c0)
-    return {'day': date.fromisoformat(d1), 'k': k, 'p': p1, 'dp': p1 - p0, 'fc': fc, 'resid': p1 - p0 - fc, 'beta': beta}
+
+def cal_series(chain, country, n):
+    """(dates, values) of the rolling Cal+n of a country, gaps removed"""
+    s = ((chain.get(country) or {}).get('rolling') or {}).get(f'Cal+{n}') or {}
+    pts = [(d, v) for d, v in zip(s.get('dates') or [], s.get('values') or []) if v is not None]
+    return [d for d, _ in pts], [v for _, v in pts]
+
+
+def cal_hits(rules, days):
+    """Cal alerts: the latest session of each watched contract against the session before, or a week before"""
+    out, chain = [], None
+    for r in rules:
+        if r['kind'] not in ('cal_move', 'cal_above', 'cal_below') or r['threshold'] is None:
+            continue
+        chain = chain if chain is not None else (_load('history/fr_market_calchain.json') or {})
+        p = r.get('params') or {}
+        c = p.get('country') or ((r['zones'] or ['FR'])[0])
+        n = int(p.get('cal') or 1)
+        ds, vs = cal_series(chain, c, n)
+        if len(ds) < 2:
+            continue
+        d = date.fromisoformat(ds[-1])
+        if d < min(days) - timedelta(days=3):     # the latest session, not an old one
+            continue
+        v, unit, name = vs[-1], ('£' if c == 'UK' else '€'), f'{CAL_NAME.get(c, c)} Cal+{n} ({d.year + n})'
+        key = f'{c} Cal+{n}'
+        if r['kind'] == 'cal_move':
+            if p.get('period') == '1w':
+                prev = [i for i, x in enumerate(ds) if x <= (d - timedelta(days=7)).isoformat()]
+                if not prev:
+                    continue
+                a, span = vs[prev[-1]], 'over a week'
+            else:
+                a, span = vs[-2], 'since the previous session'
+            move = v - a
+            size = abs(move) / a * 100 if p.get('unit') == 'pct' and a else abs(move)
+            if size >= r['threshold']:
+                out.append((r, d, key, f'{name} {move:+.2f} {unit}/MWh ({move / a * 100:+.1f} %) {span}, at {v:.2f} {unit}/MWh on {fmt_day(d)}.'))
+        elif r['kind'] == 'cal_above' and v > r['threshold']:
+            out.append((r, d, key, f'{name} at {v:.2f} {unit}/MWh on {fmt_day(d)}, above {r["threshold"]:g}.'))
+        elif r['kind'] == 'cal_below' and v < r['threshold']:
+            out.append((r, d, key, f'{name} at {v:.2f} {unit}/MWh on {fmt_day(d)}, below {r["threshold"]:g}.'))
+    return out
 
 
 def fmt_day(d):
@@ -137,12 +141,7 @@ def evaluate(rules, days):
     """→ list of (rule, day, zone, detail)."""
     out = []
     pp = pp_days()
-    fw = fwd_fr_move() if any(r['kind'] == 'fwd_fr' for r in rules) else None
-    if fw and fw['day'] >= min(days) - timedelta(days=3):     # the latest session, not an old one
-        for r in rules:
-            if r['kind'] == 'fwd_fr' and r['threshold'] is not None and abs(fw['resid']) >= r['threshold']:
-                out.append((r, fw['day'], 'FR', f'Cal {fw["k"]} France {fw["dp"]:+.2f} € on {fmt_day(fw["day"])} to {fw["p"]:.2f} €/MWh: '
-                                             f'{fw["resid"]:+.2f} € France-specific, gas and CO₂ explain {fw["fc"]:+.2f} € (pass-through {fw["beta"] * 100:.0f} %).'))
+    out += cal_hits(rules, days)
     # PPA benchmark: the latest run against the one 7 days before
     if any(r['kind'] == 'ppa_move' for r in rules):
         b = (_load('history/ppa_benchmark.json') or {}).get('days') or {}
@@ -176,7 +175,7 @@ def evaluate(rules, days):
         zones = day_file(d)
         for r in rules:
             kind = r['kind']
-            if kind in ('fwd_fr', 'ppa_move', 'corr_break'):
+            if kind in ('cal_move', 'cal_above', 'cal_below', 'ppa_move', 'corr_break'):
                 continue
             if kind in ('pp1', 'pp2'):
                 e = pp.get(d.isoformat())
@@ -188,7 +187,7 @@ def evaluate(rules, days):
                 st = zone_stats(zones, z)
                 if not st:
                     continue
-                if kind == 'neg_price' and st['negH'] >= (r['min_hours'] or 1):
+                if kind == 'neg_price' and st['negH'] >= (r['min_hours'] or 0.25):
                     out.append((r, d, z, f'{z}: {st["negH"]:g} h of negative day-ahead prices on {fmt_day(d)} '
                                          f'(between {st["span"].replace("–", " and ")}, lowest {st["min"]:.2f} €/MWh).'))
                 elif kind == 'base_above' and r['threshold'] is not None and st['base'] > r['threshold']:
@@ -233,9 +232,11 @@ def main():
                 return 0
             cur.execute("select exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'alert_rule' and column_name = 'email_to')")
             to = 'coalesce(r.email_to, u.email)' if cur.fetchone()[0] else 'u.email'   # migration 022: a rule can name its own address
-            cur.execute(f"""select r.id, r.user_id, r.kind, r.zones, r.min_hours, r.threshold, r.email, {to}
+            cur.execute("select exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'alert_rule' and column_name = 'params')")
+            params = 'r.params' if cur.fetchone()[0] else "'{}'::jsonb"   # migration 038: a rule's own settings (Cal alerts)
+            cur.execute(f"""select r.id, r.user_id, r.kind, r.zones, r.min_hours, r.threshold, r.email, {to}, {params}
                            from public.alert_rule r join auth.users u on u.id = r.user_id where r.active""")
-            cols = ['id', 'user_id', 'kind', 'zones', 'min_hours', 'threshold', 'want_email', 'address']
+            cols = ['id', 'user_id', 'kind', 'zones', 'min_hours', 'threshold', 'want_email', 'address', 'params']
             rules = [dict(zip(cols, row)) for row in cur.fetchall()]
         hits = evaluate(rules, days)
         print(f'{len(rules)} active rules, {len(hits)} conditions met for {days[0]} and {days[1]}')
