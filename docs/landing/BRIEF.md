@@ -66,3 +66,12 @@ Elle remplace la vue publique actuelle (Aujourd'hui › Expert sous la barre de 
 - Courbe de fond du haut de page et carte du prix sur le même quart d'heure.
 - Dépôts conseillés : chartjs-chart-geo (carte d'Europe en Chart.js), chartjs-chart-matrix (carte de chaleur), NumberFlow (chiffres qui roulent), GSAP + Lenis (déjà utilisés), OGL en bonus pour le fond.
 - Vérifié à 390, 768, 1024, 1180 et 1280 px : à refaire sur la version finale.
+
+## Nouvelle direction (24 nov., validée par Tom) : ultra moderne, pas un modèle de 2020
+La maquette v9 (`docs/landing/maquette_v4.html`, https://claude.ai/artifact/Wb4NGXCfSYmvWmWoFX47oy) fixe le contenu, les données, la palette et les règles. Sa mise en scène est jugée datée (rubriques empilées sur le même gabarit, animations décoratives, graphiques posés comme des images, halo et pastilles génériques). À refaire :
+1. **Un seul objet vivant qui se transforme au défilement** : la courbe des 96 quarts d'heure de J+1 reste épinglée et se transforme (carte d'Europe colorée par prix, heures négatives de l'année, M0, puis éclate en tuiles du tableau de bord). On suit une donnée qui change de forme, pas des rubriques.
+2. **Typographie animée** : très grands chiffres qui roulent (NumberFlow) et réagissent au défilement ; pas de titres de section à l'ancienne.
+3. **« Et bien plus » en grille bento** : tuiles de tailles différentes, chacune avec un mini-graphique vivant du catalogue, réaction au survol et au curseur.
+4. **Matière et profondeur** : grain léger, parallaxe, fond WebGL (OGL) où la courbe a du relief et réagit au curseur.
+5. **Micro-interactions** : valeurs au curseur, boutons magnétiques, vraie transition vers le site après connexion.
+Contraintes inchangées : vraies données de `data/` uniquement, aucun prix forward, graphiques au style du site (Chart.js + `js/pk-chart-system.js`, extensions chartjs-chart-geo / chartjs-chart-matrix), FR et EN, 390 à 1280 px impeccables (sur téléphone : titre avant graphique, rien qui se chevauche), `prefers-reduced-motion` respecté, poids raisonnable, 60 images/s.
