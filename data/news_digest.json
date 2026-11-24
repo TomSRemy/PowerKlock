@@ -1,13 +1,13 @@
 {
  "daily": {
   "date": "2026-11-24",
-  "updated": "2026-11-24T06:47:19+00:00",
+  "updated": "2026-11-24T07:04:03+00:00",
   "engine": "proxy",
   "items": [
    {
     "id": "gimetransitoire48835php4",
-    "text": "La CRE précise les offres à tarification dynamique : les consommateurs pourront adapter leurs usages aux prix du marché",
-    "text_en": "The CRE clarifies dynamic pricing offers: consumers will be able to adapt their usage to market prices",
+    "text": "La CRE précise les offres de tarification dynamique : les consommateurs pourront adapter leurs usages",
+    "text_en": "The CRE clarifies dynamic pricing offers: consumers will be able to adapt their usage",
     "title": "Tarification dynamique : la CRE précise les offres et prolonge le régime transitoire",
     "link": "https://www.actu-environnement.com/ae/news/cre-tarification-dynamique-offres-regime-transitoire-48835.php4",
     "sources": [
@@ -16,8 +16,8 @@
    },
    {
     "id": "e3cahiercharges48832php4",
-    "text": "L'appel d'offres pour le biométhane injecté est lancé : les producteurs pourront répondre aux périodes d'ouverture",
-    "text_en": "The call for tenders for injected biomethane is launched: producers will be able to respond to the opening periods",
+    "text": "L'appel d'offres pour le biométhane injecté est lancé : les producteurs pourront répondre",
+    "text_en": "The call for tenders for injected biomethane is launched: producers will be able to respond",
     "title": "Biométhane injecté : place à l'appel d'offres",
     "link": "https://www.actu-environnement.com/ae/news/biomethane-appel-offres-ppe3-cahier-charges-48832.php4",
     "sources": [
@@ -35,23 +35,23 @@
     ]
    },
    {
+    "id": "aeld0zfmywgrfz1pxqljnoc5",
+    "text": "TotalEnergies rachète des participations dans des actifs amont de gaz naturel : la concurrence sera renforcée",
+    "text_en": "TotalEnergies buys stakes in upstream natural gas assets: competition will be strengthened",
+    "title": "TotalEnergies rachète à Continental Resources des participations dans des actifs amont de gaz naturel",
+    "link": "https://news.google.com/rss/articles/CBMi7gFBVV95cUxQVk83T2NzMHhjbXk1QnMyMlFXZHNaTHNxOWVDMFAwWHpYUURtUjduR29MMDhUQ2JJX200WWduMGpJS1JjLVMtV1JBYXVOcjFaTmM1RTNLV0J5M3Jlbm9lSWpqOWl4S1NickNIbC1USFpvbmlVUHA4d1JRZzcwd2NaR0NMbGdoREREVUw1dGx5OHFZdDRqNFhkUmgyZmdNUVZkYVpRNkRBeWxSTkFBbFRUSHNKZDJXQ3ZLS1hUZ1M3Mm01V2NnQ1MtWkV3YkxPT1JFX1FvVUw0Y05DckEzWmpaeld0ZFMyWGRfZ1pXQlJn?oc=5",
+    "sources": [
+     "Boursier.com"
+    ]
+   },
+   {
     "id": "nedjudc1zs1ndqwzkdjdnoc5",
-    "text": "La commission des finances rejette les articles sur les équipements solaires : les projets de loi seront revus",
-    "text_en": "The finance committee rejects the articles on solar equipment: the law projects will be revised",
+    "text": "La commission des finances rejette les articles sur les équipements solaires : les producteurs seront impactés",
+    "text_en": "The finance committee rejects articles on solar equipment: producers will be affected",
     "title": "Loi de finances 2027 : La commission des finances rejette les articles 49 et 50 sur les équipements solaires",
     "link": "https://news.google.com/rss/articles/CBMi7gFBVV95cUxQVW9XVU01aWNNN3lzVE1qQzRudTlkUFE0bjVBYTJsaV9wUmdlam1CaTFFTEJPYjRsel83VHUzdW5qS1d4S3h1OU9NWkpKRzM3WFJ6MXh2RG9BRlVtN1JfdG1nQXpRMHo1ZDZVNldaMGZnUTNMRVZtR09ZUmRqWktZT3R4a3lRb2otUWdOOW9zZ1hhUmJTckIyWUJZZEg1cHJxcG9VTkM2QUZSWDBmenlLNzUyWVR6bGdQcXczWk9qcEtTVjdJcmVWc3ZrcnNCRURkbzRkcmNuYURfMzNGTnRNeDJUdC1ZS1NDQWZKdjdn?oc=5",
     "sources": [
      "webdo"
-    ]
-   },
-   {
-    "id": "ctriciteconsommeeenfranc",
-    "text": "Un indicateur horaire sur la part EnR et l’intensité GES est créé : les consommateurs pourront suivre le mix énergétique",
-    "text_en": "A real-time indicator on the share of renewables and GHG intensity is created: consumers will be able to track the energy mix",
-    "title": "Part des EnR et intensité en émissions de GES de l’électricité consommée en France en temps réel",
-    "link": "https://wattselse.com/veille/article/4667/part-des-enr-et-intensite-en-emissions-de-ges-de-lelectricite-consommee-en-franc",
-    "sources": [
-     "Watts Else"
     ]
    }
   ]

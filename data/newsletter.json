@@ -1,6 +1,6 @@
 {
  "date": "2026-11-24",
- "updated": "2026-11-24T06:47:31+00:00",
+ "updated": "2026-11-24T07:04:18+00:00",
  "engine": "proxy",
  "monday": false,
  "weekly": false,
@@ -213,8 +213,8 @@
   "weekly": false,
   "items": [
    {
-    "text": "La CRE précise les offres à tarification dynamique : les consommateurs pourront adapter leurs usages aux prix du marché",
-    "text_en": "The CRE clarifies dynamic pricing offers: consumers will be able to adapt their usage to market prices",
+    "text": "La CRE précise les offres de tarification dynamique : les consommateurs pourront adapter leurs usages",
+    "text_en": "The CRE clarifies dynamic pricing offers: consumers will be able to adapt their usage",
     "title": "Tarification dynamique : la CRE précise les offres et prolonge le régime transitoire",
     "link": "https://www.actu-environnement.com/ae/news/cre-tarification-dynamique-offres-regime-transitoire-48835.php4",
     "sources": [
@@ -222,8 +222,8 @@
     ]
    },
    {
-    "text": "L'appel d'offres pour le biométhane injecté est lancé : les producteurs pourront répondre aux périodes d'ouverture",
-    "text_en": "The call for tenders for injected biomethane is launched: producers will be able to respond to the opening periods",
+    "text": "L'appel d'offres pour le biométhane injecté est lancé : les producteurs pourront répondre",
+    "text_en": "The call for tenders for injected biomethane is launched: producers will be able to respond",
     "title": "Biométhane injecté : place à l'appel d'offres",
     "link": "https://www.actu-environnement.com/ae/news/biomethane-appel-offres-ppe3-cahier-charges-48832.php4",
     "sources": [
@@ -240,21 +240,21 @@
     ]
    },
    {
-    "text": "La commission des finances rejette les articles sur les équipements solaires : les projets de loi seront revus",
-    "text_en": "The finance committee rejects the articles on solar equipment: the law projects will be revised",
+    "text": "TotalEnergies rachète des participations dans des actifs amont de gaz naturel : la concurrence sera renforcée",
+    "text_en": "TotalEnergies buys stakes in upstream natural gas assets: competition will be strengthened",
+    "title": "TotalEnergies rachète à Continental Resources des participations dans des actifs amont de gaz naturel",
+    "link": "https://news.google.com/rss/articles/CBMi7gFBVV95cUxQVk83T2NzMHhjbXk1QnMyMlFXZHNaTHNxOWVDMFAwWHpYUURtUjduR29MMDhUQ2JJX200WWduMGpJS1JjLVMtV1JBYXVOcjFaTmM1RTNLV0J5M3Jlbm9lSWpqOWl4S1NickNIbC1USFpvbmlVUHA4d1JRZzcwd2NaR0NMbGdoREREVUw1dGx5OHFZdDRqNFhkUmgyZmdNUVZkYVpRNkRBeWxSTkFBbFRUSHNKZDJXQ3ZLS1hUZ1M3Mm01V2NnQ1MtWkV3YkxPT1JFX1FvVUw0Y05DckEzWmpaeld0ZFMyWGRfZ1pXQlJn?oc=5",
+    "sources": [
+     "Boursier.com"
+    ]
+   },
+   {
+    "text": "La commission des finances rejette les articles sur les équipements solaires : les producteurs seront impactés",
+    "text_en": "The finance committee rejects articles on solar equipment: producers will be affected",
     "title": "Loi de finances 2027 : La commission des finances rejette les articles 49 et 50 sur les équipements solaires",
     "link": "https://news.google.com/rss/articles/CBMi7gFBVV95cUxQVW9XVU01aWNNN3lzVE1qQzRudTlkUFE0bjVBYTJsaV9wUmdlam1CaTFFTEJPYjRsel83VHUzdW5qS1d4S3h1OU9NWkpKRzM3WFJ6MXh2RG9BRlVtN1JfdG1nQXpRMHo1ZDZVNldaMGZnUTNMRVZtR09ZUmRqWktZT3R4a3lRb2otUWdOOW9zZ1hhUmJTckIyWUJZZEg1cHJxcG9VTkM2QUZSWDBmenlLNzUyWVR6bGdQcXczWk9qcEtTVjdJcmVWc3ZrcnNCRURkbzRkcmNuYURfMzNGTnRNeDJUdC1ZS1NDQWZKdjdn?oc=5",
     "sources": [
      "webdo"
-    ]
-   },
-   {
-    "text": "Un indicateur horaire sur la part EnR et l’intensité GES est créé : les consommateurs pourront suivre le mix énergétique",
-    "text_en": "A real-time indicator on the share of renewables and GHG intensity is created: consumers will be able to track the energy mix",
-    "title": "Part des EnR et intensité en émissions de GES de l’électricité consommée en France en temps réel",
-    "link": "https://wattselse.com/veille/article/4667/part-des-enr-et-intensite-en-emissions-de-ges-de-lelectricite-consommee-en-franc",
-    "sources": [
-     "Watts Else"
     ]
    }
   ]
@@ -373,7 +373,7 @@
       "Actu-Environnement"
      ],
      "free": null,
-     "what": null,
+     "what": "La réglementation européenne prévoit la mise en place d'offres à tarification dynamique pour mieux refléter les prix du marché de l'électricité et permettre aux consommateurs d'adapter leurs usages au...",
      "what_en": null,
      "for_you": "Analyser les offres de tarification dynamique",
      "for_you_en": "Analyze dynamic pricing offers"
@@ -421,10 +421,11 @@
       "L'Aisne nouvelle"
      ],
      "free": null,
-     "what": null,
-     "what_en": null,
+     "what": "Un collectif réduit ses coûts énergétiques.",
+     "what_en": "A collective reduces its energy costs.",
      "for_you": null,
-     "for_you_en": null
+     "for_you_en": null,
+     "ctx": true
     }
    ],
    "ai": true
@@ -450,8 +451,8 @@
     "markets",
     "post"
    ],
-   "headline": "Finances et réglementation énergétique évoluent",
-   "headline_en": "Energy finance and regulation updates",
+   "headline": "Actualités en droit de l'énergie",
+   "headline_en": "Energy law news",
    "stories": [
     {
      "id": "nedjudc1zs1ndqwzkdjdnoc5",
@@ -468,10 +469,11 @@
       "webdo"
      ],
      "free": null,
-     "what": null,
-     "what_en": null,
-     "for_you": "Suivi des textes législatifs",
-     "for_you_en": "Tracking legislative texts"
+     "what": "Rejet des articles sur les équipements solaires, impact sur les énergies renouvelables",
+     "what_en": "Rejection of solar equipment articles, impact on renewable energies",
+     "for_you": "Suivi des dispositions fiscales pour les équipements solaires.",
+     "for_you_en": "Monitoring of tax provisions for solar equipment.",
+     "ctx": true
     },
     {
      "id": "gimetransitoire48835php4",
@@ -486,10 +488,10 @@
       "Actu-Environnement"
      ],
      "free": null,
-     "what": null,
+     "what": "La réglementation européenne prévoit la mise en place d'offres à tarification dynamique pour mieux refléter les prix du marché de l'électricité et permettre aux consommateurs d'adapter leurs usages au...",
      "what_en": null,
-     "for_you": "Mise à jour des offres énergétiques",
-     "for_you_en": "Update on energy offers"
+     "for_you": "Analyse des offres à tarification dynamique pour les consommateurs.",
+     "for_you_en": "Analysis of dynamic pricing offers for consumers."
     },
     {
      "id": "vyv19nsfdiz2nnm092aveoc5",
@@ -505,8 +507,8 @@
       "Reda KOHEN"
      ],
      "free": null,
-     "what": null,
-     "what_en": null,
+     "what": "Informations sur les postes électriques RTE et les recours des riverains.",
+     "what_en": "Information on RTE electrical posts and appeals from residents.",
      "for_you": null,
      "for_you_en": null
     }
@@ -534,8 +536,8 @@
     "agenda",
     "post"
    ],
-   "headline": "Nouvel appel d'offres biométhane et indicateurs gaz renouvelable",
-   "headline_en": "New biomethane call for tenders and renewable gas indicators",
+   "headline": "Appel d'offres biométhane, accords Ellomay, indicateurs gaz",
+   "headline_en": "Biomethane call, Ellomay agreements, gas indicators",
    "stories": [
     {
      "id": "e3cahiercharges48832php4",
@@ -552,10 +554,10 @@
       "Actu-Environnement"
      ],
      "free": null,
-     "what": null,
+     "what": "Le cahier des charges du nouvel appel d'offres, qui remplacera le guichet ouvert pour le biométhane injecté, est publié. Une première période est ouverte jusque fin décembre, une deuxième en juin, sans visibilité au-delà. Détails.",
      "what_en": null,
-     "for_you": "Suivi des appels d'offres pour les producteurs",
-     "for_you_en": "Monitoring of calls for tenders for producers"
+     "for_you": "Nouvelle opportunité d'achat",
+     "for_you_en": "New purchasing opportunity"
     },
     {
      "id": "4qno4nnjqbvhuotd4x3hroc5",
@@ -572,10 +574,11 @@
       "Zonebourse Suisse"
      ],
      "free": null,
-     "what": null,
-     "what_en": null,
-     "for_you": "Négociation de contrats d'achat d'électricité",
-     "for_you_en": "Negotiation of electricity purchase contracts"
+     "what": "Cela concerne l'expansion des producteurs d'électricité renouvelable en France.",
+     "what_en": "This relates to the expansion of renewable energy producers in France.",
+     "for_you": "Modèle pour vos propres accords",
+     "for_you_en": "Model for your own agreements",
+     "ctx": true
     },
     {
      "id": "erritoirespardepartement",
@@ -592,7 +595,7 @@
       "Watts Else"
      ],
      "free": null,
-     "what": null,
+     "what": "Un indicateur départemental de couverture gaz renouvelable rendrait comparable la pénétration locale du biométhane dans la consommation de gaz, à condition de connaître les valeurs et de traiter à part les territoires non publiés. Source :…",
      "what_en": null,
      "for_you": null,
      "for_you_en": null
@@ -638,10 +641,11 @@
       "Tecsol Quotidien"
      ],
      "free": null,
-     "what": null,
-     "what_en": null,
+     "what": "L'acquisition de ZE Energy impacte le marché italien",
+     "what_en": "ZE Energy's acquisition affects the Italian market",
      "for_you": "Nouvelle opportunité de stockage",
-     "for_you_en": "New storage opportunity"
+     "for_you_en": "New storage opportunity",
+     "ctx": true
     },
     {
      "id": "aeld0zfmywgrfz1pxqljnoc5",
@@ -680,8 +684,8 @@
      "free": null,
      "what": "Allemagne achète du gaz, Belgique des batteries",
      "what_en": "Germany buys gas, Belgium buys batteries",
-     "for_you": "Signaux de prix pour les investisseurs en stockage",
-     "for_you_en": "Price signals for storage investors"
+     "for_you": "Signaux de prix pour les investisseurs",
+     "for_you_en": "Price signals for investors"
     }
    ],
    "ai": true
@@ -707,8 +711,8 @@
     "agenda",
     "post"
    ],
-   "headline": "Prix de l'énergie en hausse",
-   "headline_en": "Energy prices rising",
+   "headline": "Prix énergie en rebond, TotalEnergies se renforce",
+   "headline_en": "Energy prices rebound, TotalEnergies strengthens",
    "stories": [
     {
      "id": "aeld0zfmywgrfz1pxqljnoc5",
@@ -728,8 +732,8 @@
      "free": null,
      "what": null,
      "what_en": null,
-     "for_you": "Nouvel acteur sur le marché du gaz",
-     "for_you_en": "New player in the gas market"
+     "for_you": "Suivi des acteurs gaz",
+     "for_you_en": "Monitor gas players"
     },
     {
      "id": "courtedureemarches439371",
@@ -745,10 +749,10 @@
       "GreenUnivers"
      ],
      "free": null,
-     "what": "Prix de l'énergie en hausse",
-     "what_en": "Energy prices rising",
-     "for_you": "Augmentation des coûts pour les traders",
-     "for_you_en": "Increased costs for traders"
+     "what": "Les indicateurs de prix de l’électricité, gaz et carbone étaient à la baisse une bonne partie de la semaine dernière mais sont remontés à l’approche du weekend et cela pourrait continuer : les jours à venir s’annoncent froids. Les…",
+     "what_en": null,
+     "for_you": "Ajuster les stratégies",
+     "for_you_en": "Adjust strategies"
     },
     {
      "id": "zaermvvnbukltrllpmkt6oc5",
@@ -765,10 +769,11 @@
       "Bourse Inside"
      ],
      "free": null,
-     "what": null,
-     "what_en": null,
+     "what": "La baisse du prix du gaz n'affecte pas directement la facture d'électricité",
+     "what_en": "The drop in gas prices does not directly impact the electricity bill",
      "for_you": null,
-     "for_you_en": null
+     "for_you_en": null,
+     "ctx": true
     }
    ],
    "ai": true
@@ -795,7 +800,7 @@
     "post"
    ],
    "headline": "Prix du gaz en chute, objectifs d'Octopus Energy",
-   "headline_en": "Gas price drop, Octopus Energy goals",
+   "headline_en": "Gas price drops, Octopus Energy targets",
    "stories": [
     {
      "id": "zaermvvnbukltrllpmkt6oc5",
@@ -812,10 +817,11 @@
       "Bourse Inside"
      ],
      "free": null,
-     "what": null,
-     "what_en": null,
-     "for_you": "Vos factures de gaz pourraient ne pas baisser",
-     "for_you_en": "Your gas bills may not decrease"
+     "what": "La baisse du prix du gaz n'affecte pas directement la facture d'électricité",
+     "what_en": "The drop in gas prices does not directly impact the electricity bill",
+     "for_you": "Baisse du prix du gaz pour vos clients",
+     "for_you_en": "Lower gas price for your clients",
+     "ctx": true
     },
     {
      "id": "topusenergyfrance2439423",
@@ -830,8 +836,8 @@
       "GreenUnivers"
      ],
      "free": null,
-     "what": "Octopus Energy France veut alimenter 1 million de compteurs",
-     "what_en": "Octopus Energy France aims to supply 1 million meters",
+     "what": "Octopus Energy veut alimenter 1 million de compteurs",
+     "what_en": "Octopus Energy aims to supply 1 million meters",
      "for_you": "Nouvel acteur sur le marché de l'énergie",
      "for_you_en": "New player in the energy market"
     },
@@ -850,10 +856,11 @@
       "L'Aisne nouvelle"
      ],
      "free": null,
-     "what": null,
-     "what_en": null,
+     "what": "Un collectif réduit ses coûts énergétiques.",
+     "what_en": "A collective reduces its energy costs.",
      "for_you": null,
-     "for_you_en": null
+     "for_you_en": null,
+     "ctx": true
     }
    ],
    "ai": true
