@@ -268,7 +268,8 @@ Ce qu'on attend :
     « la demande résiduelle pousse les centrales au gaz à fixer le prix », phrase obscure ; le nucléaire disponible joue en sens inverse ;
   - le gaz et son contexte géopolitique, dit simplement (ce qui se passe, en quoi cela touche les prix) ;
   - ce qu'on attend pour les jours qui viennent (météo, tendance de la semaine), au conditionnel.
-Varie les verbes : pas deux fois la même tournure. 2 ou 3 chiffres seulement (le spot, et un chiffre qui explique) : le lecteur ne doit pas être noyé ; les tuiles donnent les autres. Une cause n'est écrite que si le contexte ou un
+Évite les répétitions : pas deux fois la même tournure, et « gaz », « prix », « hausse », « marché » deux fois au plus
+chacun (le combustible, le prix de gros, renchérit, se tend…). 2 ou 3 chiffres seulement (le spot, et un chiffre qui explique) : le lecteur ne doit pas être noyé ; les tuiles donnent les autres. Une cause n'est écrite que si le contexte ou un
 article la donne. Aucun fait, chiffre, acteur ni date absent de ce qui est reçu. Interdits : « les prix restent volatils »,
 « influencés par des facteurs », tout conseil.
 {example}
@@ -480,6 +481,7 @@ def ask_brief(edition, model=None, items=None):
     hollow = re.search(r"(?i)restent volatils|reste volatil|influenc[ée]s par (des|les) facteurs|il faut retenir que les prix|pousse les centrales", b or "")
     hollow = hollow or len((b or "").split()) > 115
     hollow = hollow or len(re.findall(r"(?i)\ben hausse\b", b or "")) > 3      # the same words again and again
+    hollow = hollow or any(len(re.findall(rf"(?i)\b{w}\b", b or "")) > 2 for w in ("gaz", "prix", "hausse", "march[ée]", "[ée]lectricit[ée]"))
     hollow = hollow or "\n\n" in (b or "")                                                 # one paragraph: the market only
     if payload.get("fondamentaux_france"):                                                  # consumption and residual demand always said
         hollow = hollow or not (re.search(r"(?i)consommation", b or "") and re.search(r"(?i)demande r[ée]siduelle", b or ""))
