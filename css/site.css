@@ -4966,5 +4966,26 @@ html[data-theme="light"] .pa-logo { content: url(../assets/logo-header-light.png
 .pa-sheet li { padding: 5px 0; }
 .pa-shr { display: inline-block; border: 1px solid var(--border2); border-radius: 6px; padding: 0 6px; color: #4F9DDE; }
 html.pk-app #ask-drawer { z-index: 10003; }
-.pa-share { display: block; margin-top: 10px; background: none; border: 1px solid var(--border2); color: var(--accent); border-radius: 9px; padding: 7px 12px; font: 600 13px "Inter", sans-serif; cursor: pointer; }
 .pa-lgw { flex-wrap: wrap; gap: 6px 12px; }
+.pk-al-push { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border: 1px solid var(--accent); border-radius: 8px; background: rgba(20,211,169,.06); cursor: pointer; margin-bottom: 6px; }
+.pk-al-push input { margin-top: 3px; accent-color: var(--accent); }
+.pk-al-push b { display: block; font-size: 13.5px; }
+.pk-al-push small { color: var(--text2); font-size: 12.5px; }
+.pa-post b { display: block; margin-bottom: 8px; }
+.pa-in { width: 100%; box-sizing: border-box; padding: 11px 12px; border-radius: 8px; border: 1px solid var(--border2); background: var(--bg); color: var(--text); font: 16px 'Inter', sans-serif; margin-bottom: 8px; }
+.pa-pn { margin: 3px 0 0; font-size: 13.5px; color: var(--text2); font-weight: 400; }
+/* the app in PowerKlock's own look: the site's KPI cards (coloured left edge: up red, down green), section titles and tabs */
+html.pk-app #pk-app { font-family: 'Inter', sans-serif; }
+.pa-h { font-family: 'Outfit', 'Inter', sans-serif; font-size: 24px; letter-spacing: -.01em; }
+.pa-k { font-size: 11px; letter-spacing: .08em; color: var(--text2); }
+.pa-card { border-radius: 8px; background: var(--bg2); }
+.pa-tile { background: var(--bg3); border-radius: 6px; border-left: 4px solid var(--kpi-flat, #3a4a5c); padding: 12px 12px 10px; }
+.pa-tile.pa-up { border-left-color: #ED6965; }   /* a rising price: red (the site's --up is its green) */
+.pa-tile.pa-down { border-left-color: #14D3A9; }
+.pa-tile span { font-size: 10px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--text2); }
+.pa-tile b { font-size: 21px; letter-spacing: -.02em; }
+.pa-days div { border-radius: 6px; background: var(--bg3); }
+.pa-zones button.on, .pa-seg button.on { background: rgba(20,211,169,.12); color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.pa-zones, .pa-seg { border-radius: 8px; background: var(--bg2); border-color: var(--border); }
+.pa-tabs button.on::before { content: ''; position: absolute; top: -7px; left: 30%; right: 30%; height: 2px; border-radius: 2px; background: var(--accent); }
+.pa-brief { border-left: 3px solid var(--accent); }

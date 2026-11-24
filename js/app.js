@@ -94,11 +94,12 @@
     const [E, tmr, tdy, neg, wx, pp, md] = await Promise.all([get('newsletter.json'), get('history/daily/' + paris(1) + '.json'), get('history/daily/' + paris() + '.json'), get('neg_forecast.json'), get('weather_outlook.json'), get('rte_pp.json'), get('market_digest.json')]);
     const out = [`<h2 class="pa-h">${T('Aujourd’hui', 'Today')}</h2><div class="pa-date">${dayName(paris(), true)}</div>`];
     const brief = E && ((en() && E.brief_en) || E.brief);
-    if (brief) out.push(`<div class="pa-card pa-brief"><b>${T('Le point du matin.', 'The morning brief.')}</b> ${esc(String(brief).split(/\n\s*\n/)[0])}${navigator.share ? `<button type="button" class="pa-share" id="pa-share">${T('Partager', 'Share')} ↗</button>` : ''}</div>`);
+    if (brief) out.push(`<div class="pa-card pa-brief"><b>${T('Le point du matin.', 'The morning brief.')}</b> ${esc(String(brief).split(/\n\s*\n/)[0])}</div>`);
     const M = (E && E.markets) || [];
     if (M.length) out.push(sec(T('Les prix', 'Prices'), `<div class="pa-tiles">${M.map(r => { const c = r.chg || 0, h = r.hours;
       const ch = h ? (r.chg == null ? '' : !c ? T('stable', 'unchanged') : (c > 0 ? '+' : '−') + nf(Math.abs(c), 0) + ' h') : r.show === 'abs' ? (r.chg == null ? '' : (c > 0 ? '+' : '−') + nf(Math.abs(c), 1) + ' €') : r.pct == null ? '' : (c > 0 ? '+' : c < 0 ? '−' : '') + nf(Math.abs(r.pct), 1) + ' %';
-      return `<a class="pa-tile" href="#${esc(r.page || 'today')}" data-full><span>${esc(en() ? r.label[1] : r.label[0])}</span><b>${nf(r.value, h ? 0 : 2)}${h ? ' h' : ''}</b><small>${h ? '' : esc(r.unit)} ${arrow(c, h)} ${ch}</small></a>`; }).join('')}</div>${src(T('Sources : ', 'Sources: ') + esc([...new Set(M.map(r => r.src).filter(Boolean))].join(', ')) + '. ' + T('Variation sur la séance précédente.', 'Change on the previous session.'))}`));
+      const dir = !c ? 'flat' : (h ? c < 0 : c > 0) ? 'up' : 'down';
+      return `<a class="pa-tile pa-${dir}" href="#${esc(r.page || 'today')}" data-full><span>${esc(en() ? r.label[1] : r.label[0])}</span><b>${nf(r.value, h ? 0 : 2)}${h ? ' h' : ''}</b><small>${h ? '' : esc(r.unit)} ${arrow(c, h)} ${ch}</small></a>`; }).join('')}</div>${src(T('Sources : ', 'Sources: ') + esc([...new Set(M.map(r => r.src).filter(Boolean))].join(', ')) + '. ' + T('Variation sur la séance précédente.', 'Change on the previous session.'))}`));
     // tomorrow (or today when tomorrow is not out yet), hour by hour
     const fr = (tmr && tmr.zones && tmr.zones.FR) ? [paris(1), tmr.zones.FR] : (tdy && tdy.zones && tdy.zones.FR) ? [paris(), tdy.zones.FR] : null;
     if (fr && Array.isArray(fr[1].hourly)) { const hs = hourly(fr[1].hourly), v = hs.filter(x => x != null), mn = Math.min(...v), mx = Math.max(...v), lo = [...v].sort((a, b) => a - b)[Math.floor(v.length / 4)];
@@ -124,7 +125,7 @@
       if (k.length) { const a = k.reduce((x, y) => x + y, 0) / k.length; tiles.push([T('Températures, 2 semaines', 'Temperatures, 2 weeks'), (a > 0 ? '+' : '−') + nf(Math.abs(a), 1) + ' °C', a < -0.5 ? T('plus froid que la normale', 'colder than normal') : a > 0.5 ? T('plus doux que la normale', 'milder than normal') : T('proche de la normale', 'close to normal'), a < -0.5 ? 'up' : a > 0.5 ? 'dn' : '']); } }
     const P = pp && pp.days ? Object.keys(pp.days).filter(d => d >= paris() && (pp.days[d].pp1 || pp.days[d].pp2)).sort() : [];
     if (P.length) tiles.push([T('Jour de pointe RTE', 'RTE peak day'), pp.days[P[0]].pp1 ? 'PP1' : 'PP2', dayName(P[0]), 'up']);
-    if (tiles.length) out.push(sec(T('À surveiller', 'To watch'), `<div class="pa-tiles">${tiles.map(([l, v, s, c]) => `<div class="pa-tile"><span>${l}</span><b>${v}</b><small class="${c}">${esc(s)}</small></div>`).join('')}</div>${src(T('Prévisions PowerKlock (prix, heures négatives, nucléaire), Open-Meteo (températures), RTE (jours de pointe).', 'PowerKlock forecasts (prices, negative hours, nuclear), Open-Meteo (temperatures), RTE (peak days).'))}`));
+    if (tiles.length) out.push(sec(T('À surveiller', 'To watch'), `<div class="pa-tiles">${tiles.map(([l, v, s, c]) => `<div class="pa-tile pa-${c === 'up' ? 'up' : c === 'dn' ? 'down' : 'flat'}"><span>${l}</span><b>${v}</b><small class="${c}">${esc(s)}</small></div>`).join('')}</div>${src(T('Prévisions PowerKlock (prix, heures négatives, nucléaire), Open-Meteo (températures), RTE (jours de pointe).', 'PowerKlock forecasts (prices, negative hours, nuclear), Open-Meteo (temperatures), RTE (peak days).'))}`));
     // what moved and why (data/market_digest.json, the analyst notes of the Expert view)
     const ctx = md && md.context || [];
     if (ctx.length) out.push(sec(T('Ce qui a bougé et pourquoi', 'What moved and why'), `<div class="pa-card pa-why">${ctx.slice(0, 5).map(c => `<div><span class="${c.tone === 'up' ? 'up' : c.tone === 'down' ? 'dn' : ''}">${c.tone === 'up' ? '▲' : c.tone === 'down' ? '▼' : '•'}</span><p><b>${esc(en() ? c.topic_en || c.topic : c.topic)}</b> ${esc(en() ? c.text_en || c.text : c.text)}</p></div>`).join('')}</div>${src(T('Lectures d’analyste rédigées automatiquement à partir des données du site', 'Analyst reads written automatically from the site’s data') + (md.asof ? ' · ' + esc(dayName(md.asof)) : ''))}`));
@@ -133,11 +134,11 @@
   }
 
   // ── Grid: live mix, CO₂, consumption, flows, Europe's prices ──
-  // life-cycle emission factors, gCO₂eq/kWh (IPCC AR5 WGIII annex III medians, as Electricity Maps): an estimate of the
-  // mix's intensity, not a measure; storage discharge is left out (its charging was counted when it happened)
-  const EF = { B01: 230, B02: 820, B03: 820, B04: 490, B05: 820, B06: 650, B07: 650, B08: 820, B09: 38, B11: 24, B12: 24, B13: 24, B14: 12, B15: 230, B16: 45, B17: 230, B18: 12, B19: 11, B20: 700 };
-  const LOW = ['B09', 'B11', 'B12', 'B13', 'B14', 'B16', 'B18', 'B19'], REN = ['B01', 'B09', 'B11', 'B12', 'B13', 'B15', 'B16', 'B18', 'B19'];
-  const FUEL = [['nuclear', T('Nucléaire', 'Nuclear'), '#E7B25C'], ['hydro', T('Hydraulique', 'Hydro'), '#4F9DDE'], ['wind', T('Éolien', 'Wind'), '#7BD3C0'], ['solar', T('Solaire', 'Solar'), '#F4D35E'], ['fossil', T('Gaz, charbon et fioul', 'Gas, coal and oil'), '#9AA5B1'], ['biomass', T('Bioénergies', 'Bioenergy'), '#8BC34A'], ['other', T('Autres', 'Other'), '#5C6B7A']];
+  // the mix's CO₂ intensity, renewable and low-carbon shares: the factors and colours of the site's Generation mix page
+  // (js/genmix.js › GM_FUEL_META), so both give the same figure (Methodology)
+  const META = () => window.GM_FUEL_META || { nuclear: { co2: 12, color: '#9B6BC4' }, wind: { co2: 11, color: '#14D3A9' }, solar: { co2: 45, color: '#FBBF24' }, hydro: { co2: 24, color: '#5CB2F5' }, biomass: { co2: 230, color: '#4E8A2C' }, fossil: { co2: 650, color: '#ED6965' }, other: { co2: 400, color: '#8D99AE' } };
+  const FUEL = [['nuclear', T('Nucléaire', 'Nuclear')], ['hydro', T('Hydraulique', 'Hydro')], ['wind', T('Éolien', 'Wind')], ['solar', T('Solaire', 'Solar')], ['fossil', T('Fossile (gaz, charbon, fioul)', 'Fossil (gas, coal, oil)')], ['biomass', T('Biomasse', 'Biomass')], ['other', T('Autres', 'Other')]]
+    .map(([k, l]) => [k, l, (META()[k] || {}).color || '#8D99AE']);
   const ZN = { FR: ['🇫🇷', 'France', 'France'], DE_LU: ['🇩🇪', 'Allemagne', 'Germany'], ES: ['🇪🇸', 'Espagne', 'Spain'], BE: ['🇧🇪', 'Belgique', 'Belgium'], NL: ['🇳🇱', 'Pays-Bas', 'Netherlands'], GB: ['🇬🇧', 'Grande-Bretagne', 'Great Britain'], PT: ['🇵🇹', 'Portugal', 'Portugal'],
     IT_NORD: ['🇮🇹', 'Italie Nord', 'Italy North'], CH: ['🇨🇭', 'Suisse', 'Switzerland'], AT: ['🇦🇹', 'Autriche', 'Austria'], DK_W: ['🇩🇰', 'Danemark Ouest', 'Denmark West'], DK_E: ['🇩🇰', 'Danemark Est', 'Denmark East'],
     PL: ['🇵🇱', 'Pologne', 'Poland'], CZ: ['🇨🇿', 'Tchéquie', 'Czechia'], NO_2: ['🇳🇴', 'Norvège Sud', 'Norway South'], SE_4: ['🇸🇪', 'Suède Sud', 'Sweden South'], LU: ['🇱🇺', 'Luxembourg', 'Luxembourg'], IE_SEM: ['🇮🇪', 'Irlande', 'Ireland'] };
@@ -158,16 +159,17 @@
     }
     const tot = D.map((_, i) => FUEL.reduce((a, [k]) => a + (R[k][i] || 0), 0)), mx = Math.max(...tot) || 1, w = 300 / D.length;
     const bars = D.map((_, i) => { let y0 = 120; return FUEL.map(([k, , col]) => { const h = (R[k][i] || 0) / mx * 116; y0 -= h; return h > 0 ? `<rect x="${(i * w).toFixed(2)}" y="${y0.toFixed(1)}" width="${Math.max(0.6, w - 0.6).toFixed(2)}" height="${h.toFixed(1)}" fill="${col}"/>` : ''; }).join(''); }).join('');
-    const low = D.map((_, i) => tot[i] ? ((R.nuclear[i] || 0) + (R.hydro[i] || 0) + (R.wind[i] || 0) + (R.solar[i] || 0)) / tot[i] * 100 : null);
+    const low = D.map((_, i) => tot[i] ? ((R.nuclear[i] || 0) + (R.hydro[i] || 0) + (R.wind[i] || 0) + (R.solar[i] || 0) + (R.biomass[i] || 0)) / tot[i] * 100 : null);
     const lv = low.filter(x => x != null), avg = lv.reduce((a, b) => a + b, 0) / (lv.length || 1);
     return sec(rng === '1y' ? T('Production, 12 derniers mois (moyennes hebdomadaires)', 'Generation, last 12 months (weekly means)') : T('Production, 30 derniers jours', 'Generation, last 30 days'),
       `<div class="pa-card"><div class="pa-ch"><span>${T('Part bas-carbone moyenne', 'Average low-carbon share')}</span><b>${nf(avg, 0)} %</b></div>
       <svg class="pa-line" viewBox="0 0 300 120" preserveAspectRatio="none">${bars}</svg><div class="pa-axis"><span>${esc(dayName(D[0]))}</span><span>${esc(dayName(D[D.length - 1]))}</span></div>
       <div class="pa-lg pa-lgw">${FUEL.map(([k, l, col]) => `<span><i style="background:${col}"></i>${l}</span>`).join('')}</div></div>${src('ENTSO-E · ' + T('moyenne du jour, MW', 'daily mean, MW'))}`);
   }
-  function co2(m) { const b = m.byCode || {}; let e = 0, t = 0, low = 0, ren = 0;
-    Object.entries(b).forEach(([k, v]) => { const x = typeof v === 'number' ? v : (v && (v.mw != null ? v.mw : v.value)); if (!(x > 0) || EF[k] == null) return; e += x * EF[k]; t += x; if (LOW.includes(k)) low += x; if (REN.includes(k)) ren += x; });
-    return t ? { g: e / t, low: low / t, ren: ren / t } : null; }
+  function co2(m) { const M = META(); let e = 0, t = 0;
+    FUEL.forEach(([k]) => { const x = m[k] || 0; if (x > 0) { e += x * ((M[k] || {}).co2 || 0); t += x; } });
+    if (!t) return null; const ren = (m.wind || 0) + (m.solar || 0) + (m.hydro || 0) + (m.biomass || 0);
+    return { g: e / t, ren: ren / t, low: (ren + (m.nuclear || 0)) / t }; }
   async function grid() {
     const [g, ld, fc, xb, pr] = await Promise.all([get('genmix.json'), get('load.json'), get('forecast.json'), get('crossborder.json'), get('prices.json')]);
     if (!approved()) return `<h2 class="pa-h">${T('Réseau', 'Grid')}</h2>` + signIn(T('Le réseau en direct : production par filière, intensité CO₂, consommation, échanges et prix en Europe.', 'The grid live: generation by fuel, CO₂ intensity, consumption, flows and prices across Europe.'));
@@ -184,7 +186,7 @@
       <div><b>${c ? nf(c.g, 0) : '–'}</b><small>gCO₂/kWh</small></div></div>
       <div class="pa-gk"><div><b>${c ? nf(c.low * 100, 0) + ' %' : '–'}</b><small>${T('bas-carbone', 'low-carbon')}</small></div><div><b>${c ? nf(c.ren * 100, 0) + ' %' : '–'}</b><small>${T('renouvelable', 'renewable')}</small></div>
       <div><b>${nf(tot / 1000, 1)} GW</b><small>${T('production', 'generation')}</small></div>${X.length ? `<div><b class="${net < 0 ? 'dn' : 'up'}">${nf(Math.abs(net) / 1000, 1)} GW</b><small>${net < 0 ? T('exportés', 'exported') : T('importés', 'imported')}</small></div>` : ''}</div></div>
-      ${src(c ? T('Intensité CO₂ estimée à partir du mix, facteurs du cycle de vie (GIEC) : voir Méthodologie.', 'CO₂ intensity estimated from the mix, life-cycle factors (IPCC): see Methodology.') : T('Détail par filière indisponible pour cette zone : pas d’estimation CO₂.', 'No breakdown by fuel for this zone: no CO₂ estimate.'))}`);
+      ${src(c ? T('Intensité CO₂ estimée à partir du mix, mêmes facteurs que la page Mix de production (Méthodologie).', 'CO₂ intensity estimated from the mix, same factors as the Generation mix page (Methodology).') : T('Détail par filière indisponible pour cette zone : pas d’estimation CO₂.', 'No breakdown by fuel for this zone: no CO₂ estimate.'))}`);
     if (tot) out.push(sec(T('Production en ce moment', 'Generation now'), `<div class="pa-stack">${FUEL.map(([k, , col]) => m[k] > 0 ? `<i style="width:${(m[k] / tot * 100).toFixed(2)}%;background:${col}"></i>` : '').join('')}</div>
       <div class="pa-card pa-list">${FUEL.filter(([k]) => m[k] > 0).sort((a, b) => m[b[0]] - m[a[0]]).map(([k, l, col]) => `<div><span class="pa-sq" style="background:${col}"></span><b>${l}</b><span class="pa-mono">${nf(m[k] / 1000, 1)} GW</span><span class="pa-pc">${nf(m[k] / tot * 100, 0)} %</span></div>`).join('')}</div>${src('ENTSO-E · ' + T('dernière heure publiée', 'latest hour published'))}`));
     // consumption: today's forecast (data/forecast.json) and, for France, what was measured (data/load.json)
@@ -205,7 +207,7 @@
   }
 
   // ── News ──
-  let nv = 'une';
+  let nv = 'une', pendingPost = null;
   async function news() {
     if (!approved()) return `<h2 class="pa-h">${T('Veille', 'News')}</h2>` + signIn(T('L’actualité des marchés de l’électricité choisie pour vous, les textes officiels et les réponses de PowerKlock à vos questions.', 'Power market news chosen for you, official texts and PowerKlock’s answers to your questions.'));
     const [E, dg, N] = await Promise.all([get('newsletter.json'), get('news_digest.json'), get('news.json')]);
@@ -214,7 +216,7 @@
     const left = await askLeft();
     const out = [`<h2 class="pa-h">${T('Veille', 'News')}</h2><div class="pa-date">${mine && (mine.interests || []).length ? T('selon vos ' + mine.interests.length + ' sujets', 'from your ' + mine.interests.length + ' subjects') : T('édition générale', 'general edition')}</div>`,
       `<button type="button" class="pa-ask" id="pa-ask">✦ ${T('Posez une question à PowerKlock…', 'Ask PowerKlock a question…')}${left != null ? `<span>${left} / 30</span>` : ''}</button>`,
-      `<div class="pa-seg">${[['une', T('À la une', 'Top')], ['live', T('En continu', 'Live')], ['off', T('Textes officiels', 'Official texts')]].map(([k, l]) => `<button type="button" data-nv="${k}" class="${k === nv ? 'on' : ''}">${l}</button>`).join('')}</div>`];
+      `<div class="pa-seg">${[['une', T('À la une', 'Top')], ['live', T('En continu', 'Live')], ['off', T('Textes officiels', 'Official texts')], ['posts', T('Posts LinkedIn', 'LinkedIn posts')]].map(([k, l]) => `<button type="button" data-nv="${k}" class="${k === nv ? 'on' : ''}">${l}</button>`).join('')}</div>`];
     const a = (u, t) => `<a href="${esc(/^https?:\/\//.test(u || '') ? u : '#')}" target="_blank" rel="noopener noreferrer">${esc(t)}</a>`;
     const when = d => { const h = (Date.now() - new Date(d)) / 36e5; return h < 1 ? T('à l’instant', 'just now') : h < 24 ? T('il y a ' + Math.round(h) + ' h', Math.round(h) + ' h ago') : dayName(String(d).slice(0, 10)); };
     if (nv === 'une') {
@@ -223,6 +225,13 @@
       const D = (dg && dg.daily && dg.daily.items) || [];
       if (D.length) out.push(sec(T('L’essentiel du jour', 'Today’s essentials'), `<ol class="pa-ol">${D.map(x => `<li>${a(x.link, (en() && x.text_en) || x.text || x.title)}<small>${esc((x.sources || []).slice(0, 2).join(' · '))}</small></li>`).join('')}</ol>`));
       if (S.length > 1) out.push(sec(T('Vos sujets', 'Your subjects'), `<div class="pa-feed">${S.slice(1).map(x => `<div>${a(x.link, x.title)}<small>${esc((x.sources || []).slice(0, 2).join(' · '))}</small></div>`).join('')}</div>`));
+    } else if (nv === 'posts') {
+      // the team's LinkedIn posts (public.news_post, as News › LinkedIn posts): link, author, note; a post shared from
+      // LinkedIn to PowerKlock (share sheet) lands in the form below
+      let P = []; try { const { data } = await PKAccount.client().from('news_post').select('id, url, author, note, created_at').order('created_at', { ascending: false }).limit(40); P = data || []; } catch (_) {}
+      out.push(`<div class="pa-card pa-post"><b>${T('Ajouter un post LinkedIn', 'Add a LinkedIn post')}</b><input type="url" id="pa-post-url" class="pa-in" maxlength="600" value="${esc(pendingPost || '')}" placeholder="${T('Lien du post (Partager › Copier le lien)', 'Post link (Share › Copy link)')}">
+        <input type="text" id="pa-post-note" class="pa-in" maxlength="300" placeholder="${T('Pourquoi le lire (facultatif)', 'Why read it (optional)')}"><button type="button" class="pa-btn pa-wide" id="pa-post-add">${T('Ajouter', 'Add')}</button><p class="pa-note" id="pa-post-msg">${pendingPost ? T('Post reçu de LinkedIn : ajoutez une note si vous voulez, puis « Ajouter ».', 'Post received from LinkedIn: add a note if you like, then « Add ».') : T('Depuis l’app LinkedIn : Partager › PowerKlock (Android, app installée) ; ou copiez le lien ici.', 'From the LinkedIn app: Share › PowerKlock (Android, installed app); or paste the link here.')}</p></div>`);
+      out.push(P.length ? `<div class="pa-feed">${P.map(x => `<div>${a(x.url, x.author || 'LinkedIn')}${x.note ? `<p class="pa-pn">${esc(x.note)}</p>` : ''}<small>${esc(when(x.created_at))}</small></div>`).join('')}</div>` : `<p class="pa-note">${T('Aucun post pour l’instant.', 'No post yet.')}</p>`);
     } else {
       const off = nv === 'off', L = items.filter(i => off ? (i.tags || []).includes('official') : !(i.tags || []).includes('official') && !(i.tags || []).includes('research')).sort((p, q) => String(q.date).localeCompare(String(p.date))).slice(0, 40);
       out.push(L.length ? `<div class="pa-feed">${L.map(i => `<div>${a(i.link, i.title)}<small>${esc(i.source)} · ${esc(when(i.date))}</small></div>`).join('')}</div>` : `<p class="pa-note">${T('Rien pour l’instant.', 'Nothing yet.')}</p>`);
@@ -290,9 +299,17 @@
     m.querySelectorAll('[data-z]').forEach(b => b.addEventListener('click', () => { zone = b.dataset.z; draw(); }));
     m.querySelectorAll('[data-rng]').forEach(b => b.addEventListener('click', () => { rng = b.dataset.rng; draw(); }));
     m.querySelectorAll('[data-nv]').forEach(b => b.addEventListener('click', () => { nv = b.dataset.nv; draw(); }));
-    const sh = m.querySelector('#pa-share'); if (sh) sh.addEventListener('click', () => { const t = (m.querySelector('.pa-brief') || {}).innerText || ''; navigator.share({ title: 'PowerKlock · ' + T('le point du matin', 'the morning brief'), text: t.replace(/\s*Partager ↗|\s*Share ↗/, '') + '\n', url: location.origin + '/?app=1' }).catch(() => {}); });
     const ask = m.querySelector('#pa-ask'); if (ask) ask.addEventListener('click', () => { const d = document.getElementById('ask-drawer'); if (d && d.parentNode !== document.body) document.body.appendChild(d);   // out of the hidden News page
       if (typeof _askWire === 'function') _askWire(); if (typeof window.askOpen === 'function') window.askOpen(); });
+    const pa = m.querySelector('#pa-post-add'); if (pa) pa.addEventListener('click', async () => {
+      const u = m.querySelector('#pa-post-url').value.trim(), msg = m.querySelector('#pa-post-msg');
+      if (!/^https:\/\/([a-z]+\.)?linkedin\.com\//i.test(u)) { msg.textContent = T('Collez le lien d’un post LinkedIn.', 'Paste the link of a LinkedIn post.'); return; }
+      pa.disabled = true;
+      const author = typeof _newsAuthorOf === 'function' ? _newsAuthorOf(u) : null;
+      const { error } = await PKAccount.client().from('news_post').insert({ url: u.split('?')[0], author: author || null, note: m.querySelector('#pa-post-note').value.trim() || null });
+      if (error) { msg.textContent = T('Non ajouté : ', 'Not added: ') + error.message; pa.disabled = false; return; }
+      pendingPost = null; draw();
+    });
     m.querySelectorAll('[data-board]').forEach(b => b.addEventListener('click', () => { if (PKDash.select) PKDash.select(b.dataset.board); leave(); location.hash = '#dashboards'; }));
     m.querySelectorAll('[data-rule]').forEach(b => b.addEventListener('click', async () => { b.classList.toggle('on'); try { await PKAlerts.toggle(b.dataset.rule); } catch (_) {} draw(); }));
     const na = m.querySelector('#pa-newal'); if (na) na.addEventListener('click', () => window.PKSetup && PKSetup.settings('alerts'));
@@ -370,13 +387,13 @@
 
   function boot() {
     // launched from the home screen: straight into the app (the manifest opens /?app=1)
-    if (/[?&]app=1/.test(location.search) && !/^#app/.test(location.hash)) history.replaceState(null, '', location.pathname + '#app/' + (localStorage.getItem('pk-app-start') || 'today'));
+    if ((/[?&]app=1/.test(location.search) || (standalone() && !location.hash)) && !/^#app/.test(location.hash)) history.replaceState(null, '', location.pathname + '#app/' + (localStorage.getItem('pk-app-start') || 'today'));
     window.addEventListener('hashchange', route);
     window.addEventListener('online', () => { fresh(); if (H.classList.contains('pk-app')) draw(); });
     window.addEventListener('offline', () => { const up = document.getElementById('pa-up'); if (up) up.textContent = T('hors ligne', 'offline'); });
     if (window.PKAccount && PKAccount.onChange) PKAccount.onChange(() => { if (H.classList.contains('pk-app')) show(cur); });
     route();
   }
-  window.PKApp = { open: t => go(t || 'today'), install };
+  window.PKApp = { open: t => go(t || 'today'), install, sharePost: u => { pendingPost = u; nv = 'posts'; if (!H.classList.contains('pk-app')) enter(); go('news'); } };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })();

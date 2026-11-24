@@ -195,6 +195,7 @@
         <div class="pkd-modal-sub">${signed ? 'E-mails go to ' + esc(A.user.email) + ' when an alert triggers.' : 'Rules are kept in this browser and shown here. <a href="#" id="pk-al-signin">Sign in</a> to get them by e-mail.'}</div></div>
         <button class="pkd-ic" data-close type="button" title="Close">✕</button></div>
       <div class="pkd-form">
+        <div id="pk-al-push"></div>
         <div class="pk-al-sec">Today and tomorrow</div>
         <div id="pk-al-hits"></div>
         <div class="pk-al-sec">My alerts</div>
@@ -253,6 +254,14 @@
       });
     };
     drawHits(); drawRules();
+    // notifications on this device (Web Push, js/app.js › PKPush), as in the phone app's Alerts tab
+    const drawPush = async () => {
+      const h = $('#pk-al-push'); if (!h || !signed || !window.PKPush) return;
+      const st = await PKPush.state(); if (!st.supported) { h.innerHTML = ''; return; }
+      h.innerHTML = `<label class="pk-al-push"><input type="checkbox" id="pk-al-pushc"${st.on ? ' checked' : ''}${st.blocked ? ' disabled' : ''}><span><b>Notifications on this device</b><small>${st.blocked ? 'Blocked in this browser’s settings for this site.' : 'Alerts also arrive here as notifications, as well as by e-mail.'}</small></span></label>`;
+      $('#pk-al-pushc').addEventListener('change', async e => { e.target.disabled = true; try { await (e.target.checked ? PKPush.on() : PKPush.off()); } catch (x) { $('#pk-al-msg').textContent = 'Notifications not turned on: ' + (x.message || x); } drawPush(); });
+    };
+    drawPush();
     $('#pk-al-add').addEventListener('click', async () => {
       const k = $('#pk-al-kind').value, msg = $('#pk-al-msg');
       const zones = isCal(k) ? [$('#pk-al-cc').value] : noZones(k) ? ['FR'] : Array.from(bg.querySelectorAll('#pk-al-zones input:checked')).map(i => i.value);
