@@ -1,7 +1,7 @@
 // « Ask PowerKlock » (News › Ask): answers a question from the site's own content, with its sources.
 // 1. the caller must be signed in with an approved account: its Supabase token is checked by the database itself
-//    (public.ask_take(), warehouse migration 031), which also counts its questions of the day (15 at most);
-// 2. the question is matched against the site's published files (articles, official texts, consultations, the
+//    (public.ask_take(), warehouse migrations 031 and 036), which also counts its questions of the day (30 at most);
+// 2. the question is matched against the whole news archive (news.article) and the site's files (consultations, the
 //    newsletter, our market context): the best passages only, never the whole web;
 // 3. a free Workers AI model writes a short answer from those passages only, each sentence pointing to its source;
 //    the model goes from the most precise to the lightest as the day's questions add up, so the free daily
@@ -124,7 +124,19 @@ export default {
     if (q.length < 3) return reply(req, { error: 'empty' }, 400);
     const site = env.SITE || 'https://www.powerklock.com';
     const [news, cons, letter, digest] = await Promise.all(['news.json', 'consultations.json', 'newsletter.json', 'market_digest.json'].map(f => json(`${site}/data/${f}`).catch(() => null)));
-    const found = search(q, passages(news, cons, letter, digest));
+    // the whole archive (news.article, the search engine of News › Archives): the articles that hold any of the
+    // question's words, ranked here with the rest of the site's content
+    let archive = [];
+    try {
+      // the words as typed (the archive's index keeps accents), without the empty ones; prefixes find the plurals
+      const typed = [...new Set(q.toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(w => w.length > 2 && !STOP2.has(norm(w))))].join(' ');
+      const a = await db(env, 'news_search', token, { p_query: typed, p_any: true, p_limit: 120 });
+      archive = ((a && a.items) || []).map(i => ({ link: i.link, title: i.title, snippet: i.summary || '', source: i.source, date: i.date,
+        tags: [i.kind === 'official' ? 'official' : i.kind === 'research' ? 'research' : i.kind === 'report' ? 'report' : 'article'], topics: i.topics || [] }));
+    } catch { /* the files alone */ }
+    const seen = new Set(((news && news.items) || []).map(i => i.link));
+    const all = { items: ((news && news.items) || []).concat(archive.filter(i => !seen.has(i.link))) };
+    const found = search(q, passages(all, cons, letter, digest));
     // a question the site has nothing on costs no question and no AI
     if (!found.length) return reply(req, { answer: null, sources: [], none: true });
     const take = await db(env, 'ask_take', token);

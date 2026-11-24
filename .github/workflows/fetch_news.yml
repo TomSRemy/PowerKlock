@@ -31,7 +31,7 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v5
         with:
-          fetch-depth: ${{ inputs.backfill_archive && 0 || 1 }}   # the whole history only to take back the past articles
+          fetch-depth: ${{ inputs.backfill_archive && '0' || '1' }}   # the whole history only to take back the past articles (a bare 0 counts as false)
       - name: Setup Python
         uses: actions/setup-python@v6
         with:
