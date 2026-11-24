@@ -130,6 +130,10 @@ CONTEXT = """Tu écris pour la newsletter du matin de PowerKlock (marché franç
 (id, titre, médias, extrait : le début de l'article quand il a pu être lu), résume ce que dit l'article et pourquoi cela
 compte pour le marché de l'électricité en France. 2 phrases, 45 mots au plus. Ne reformule pas le titre : apporte ce
 qu'il ne dit pas (le contexte, le mécanisme en jeu, l'enjeu pour les producteurs, fournisseurs ou consommateurs).
+Ne nomme aucun lieu, pays, acteur ni chiffre absent du titre ou de l'extrait (ne devine pas où se trouve une ville). Si le
+sujet ne parle pas de la France, n'invente pas de lien avec elle : écris ce qu'il montre du marché (une tendance, un type de
+contrat). Une phrase vague (« un collectif réduit ses coûts ») ne sert à rien : dans le
+doute, décris précisément ce qu'annonce le titre.
 N'invente aucun fait, chiffre, date ni citation absents du titre ou de l'extrait ; sans extrait, explique le cadre général
 (le mécanisme, l'acteur, l'enjeu) plutôt que des détails. Pas de média cité.
 Réponds en JSON seulement : {"items": [{"id": "<id>", "what": "<français>", "what_en": "<anglais>"}]}"""
