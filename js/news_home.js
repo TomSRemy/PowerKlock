@@ -71,7 +71,7 @@ async function renderNewsHome() {
     return (en && s.what_en) || s.what || (d && ((en && d.text_en) || d.text)) || _nhSnip(it && it.snippet, s.title) || ''; };
   // a story one can read leads: it has a text, and its article is free or has a free equivalent
   const readable = s => { const it = byLink(s.link); return !_NEWS_PAID.test(((s.sources || [])[0] || '') + ' ' + (it ? it.source : '')) || (s.free || (it && it.free) || []).length; };
-  let lead = pin ? { title: pin.title, link: pin.link, what: '', tags: pin.topics || pin.tags, sources: [pin.source] } : (st.find(s => textOf(s) && !s.ctx && readable(s)) || st.find(s => textOf(s) && readable(s)) || st.find(s => textOf(s)) || st[0]);
+  let lead = pin ? { title: pin.title, link: pin.link, what: (_newsPinNotes || {})[pin.link] || '', tags: pin.topics || pin.tags, sources: [pin.source] } : (st.find(s => textOf(s) && !s.ctx && readable(s)) || st.find(s => textOf(s) && readable(s)) || st.find(s => textOf(s)) || st[0]);
   if (!lead && items[0]) lead = { title: items[0].title, link: items[0].link, tags: items[0].topics || items[0].tags, sources: [items[0].source] };
   const leadItem = lead && byLink(lead.link);
   if (lead) seen.add(lead.link);
@@ -86,7 +86,7 @@ async function renderNewsHome() {
     <h2>${_nhA(lead.link, _newsEsc(lead.title))}</h2>${lead.what || lead.for_you
       ? `<p class="nh-ret"><b>${_newsT('À retenir.', 'Takeaway.')}</b> ${_newsEsc(_newsKeep(lead, en))}</p>`
       : leadWhat ? `<p class="nh-chapo">${_newsEsc(leadWhat)}</p>` : ''}
-    <span class="nh-src">${_newsEsc((lead.sources || []).slice(0, 2).join(' · '))}${leadItem ? ' · ' + _nhAgo(leadItem.date) : ''} · ${_nhA(lead.link, _newsT('Lire l’article', 'Read the article'), 'nh-read')}${_newsPinBtn({ link: lead.link })}</span>
+    <span class="nh-src">${_newsEsc((lead.sources || []).slice(0, 2).join(' · '))}${leadItem ? ' · ' + _nhAgo(leadItem.date) : ''} · ${_nhA(lead.link, _newsT('Lire l’article', 'Read the article'), 'nh-read')}${_newsPinBtn({ link: lead.link })}${_newsPinNoteBtn({ link: lead.link })}</span>
     ${_newsFree(leadItem || lead)}</section>` : '';
   // ── the essentials: the reader's other stories of the day ──
   let ess = st.filter(s => !seen.has(s.link)).slice(0, 5);
