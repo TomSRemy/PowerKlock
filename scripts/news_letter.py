@@ -269,7 +269,7 @@ Ce qu'on attend :
   - le gaz et son contexte géopolitique, dit simplement (ce qui se passe, en quoi cela touche les prix) ;
   - ce qu'on attend pour les jours qui viennent (météo, tendance de la semaine), au conditionnel.
 Évite les répétitions : pas deux fois la même tournure, et « gaz », « prix », « hausse », « marché » deux fois au plus
-chacun (le combustible, le prix de gros, renchérit, se tend…). 2 ou 3 chiffres seulement (le spot, et un chiffre qui explique) : le lecteur ne doit pas être noyé ; les tuiles donnent les autres. Une cause n'est écrite que si le contexte ou un
+chacun (le prix de gros, se tend, progresse…). 2 ou 3 chiffres seulement (le spot, et un chiffre qui explique) : le lecteur ne doit pas être noyé ; les tuiles donnent les autres. Une cause n'est écrite que si le contexte ou un
 article la donne. Aucun fait, chiffre, acteur ni date absent de ce qui est reçu. Interdits : « les prix restent volatils »,
 « influencés par des facteurs », tout conseil.
 {example}
