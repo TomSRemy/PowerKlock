@@ -259,6 +259,11 @@ def group_major(out):
     return [r for r in out if id(r) not in drop]
 
 
+# a followed keyword is searched with energy words, and an article is kept only when it or its outlet is about energy
+ENERGY_Q = "énergie OR électricité OR électrique OR photovoltaïque OR solaire OR éolien OR CRE OR gaz OR tarif OR raccordement"
+ENERGY_OUTLET = r"green|watt|power|renew|environ|[ée]nergi|energy|solar|solaire|wind|[ée]olien|\bgaz\b|[ée]lectri|smartgrid|montel|contexte"
+ENERGY_RE = r"[ée]nergi|[ée]lectri|photovolta|solaire|[ée]olien|\bcre\b|\bgaz\b|tarif|raccordement|\brte\b|enedis|nucl[ée]aire|hydro|batter|stockage|ppa\b|\bppe\b|biom[ée]thane|r[ée]seau"
+
 def load_prefs():
     try:
         return json.loads(PREFS.read_text(encoding="utf-8"))
@@ -680,6 +685,9 @@ def add_items(out, items, src, now, limit, extra=None):
         # general-interest feeds ("require": a regex on the title, in config): keep only the energy-market articles
         if src.get("require") and not re.search(src["require"], it["title"].lower()):
             continue
+        # a followed keyword: the outlet or the article must be about energy (its title, extract or the outlet's name)
+        if src.get("require_text") and not (re.search(src["require_text"], blob) or re.search(ENERGY_OUTLET, (it.get("domain") or "").lower())):
+            continue
         found = [t for t, rx in KEYWORDS.items() if re.search(rx, blob)]
         tags = list(dict.fromkeys(src.get("tags", []) + found))
         countries = [c for c, rx in COUNTRIES.items() if re.search(rx, blob)]
@@ -846,7 +854,9 @@ def main():
             continue
         time.sleep(3)
         try:
-            n = add_items(out, gnews(f'"{kw}"', "fr"), {"name": "Search", "cls": "search", "tags": ["watch", "follow"]}, now, PER_SEARCH, {"query": kw})
+            # in the energy press only: « échelonnement » alone also finds debt reschedulings and harvests
+            n = add_items(out, gnews(f'"{kw}" ({ENERGY_Q})', "fr"), {"name": "Search", "cls": "search", "tags": ["watch", "follow"], "require_text": ENERGY_RE},
+                          now, PER_SEARCH, {"query": kw})
             status.append({"name": f"suivi : {kw}", "kind": "search", "ok": True, "n": n})
         except Exception as e:
             status.append({"name": f"suivi : {kw}", "kind": "search", "ok": False, "error": str(e)[:120]})
