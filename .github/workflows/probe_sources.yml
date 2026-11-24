@@ -1,0 +1,39 @@
+name: Probe news sources (temporary)
+# Temporary: Transitions & Énergies (feed, robots.txt) and the outlets cited by Watts Else articles. Removed after reading.
+on:
+  push:
+    branches: [claude/brave-dijkstra-0b04zg]
+    paths: ['.github/workflows/probe_sources.yml']
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - run: |
+          cat > /tmp/p.py <<'PY'
+          import re, json, collections, urllib.request, urllib.robotparser, urllib.error
+          from urllib.parse import urlparse
+          UA = "Mozilla/5.0 (PowerKlock news fetcher; +https://github.com/TomSRemy/PowerKlock)"
+          def get(u):
+              try:
+                  r = urllib.request.urlopen(urllib.request.Request(u, headers={"User-Agent": UA}), timeout=20); return r.status, r.read(2_000_000).decode("utf-8", "ignore")
+              except urllib.error.HTTPError as e: return e.code, ""
+              except Exception as e: return str(e)[:40], ""
+          for u in ["https://www.transitionsenergies.com/robots.txt", "https://www.transitionsenergies.com/feed/", "https://www.transitionsenergies.com/rss", "https://www.transitionsenergies.com/"]:
+              st, b = get(u); print("==", u, st, len(b), "items", len(re.findall(r"<item[ >]", b)))
+              if u.endswith("robots.txt"): print(b[:600])
+              if "<item" in b: print("   latest:", re.findall(r"<pubDate>([^<]+)", b)[:2], re.findall(r"<title>(?:<!\[CDATA\[)?([^<\]]+)", b)[1:4])
+              if u.endswith(".com/"): print("   alt:", re.findall(r'<link[^>]+(?:rss|atom)[^>]*>', b)[:3])
+          st, feed = get("https://wattselse.com/veille/feed.xml")
+          links = re.findall(r"<link>(https://wattselse\.com/veille/article/[^<]+)</link>", feed)[:40]
+          print("watts else articles:", len(links))
+          dom = collections.Counter(); ex = {}
+          for l in links:
+              st, b = get(l)
+              for h in set(re.findall(r'href="(https?://[^"#]+)"', b)):
+                  d = urlparse(h).netloc.lower().removeprefix("www.")
+                  if d and "wattselse" not in d and not re.search(r"google|facebook|twitter|x\.com|linkedin|youtube|instagram|gstatic|cloudflare|w3\.org|schema\.org|fonts|github|apple|bsky|mastodon|whatsapp|t\.me|plausible|umami", d):
+                      dom[d] += 1; ex.setdefault(d, h)
+          for d, n in dom.most_common(60): print(f"{n:3d} {d:40s} {ex[d][:110]}")
+          PY
+          python3 /tmp/p.py
