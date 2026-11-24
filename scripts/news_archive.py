@@ -2,7 +2,8 @@
 """The news watch's archive in the warehouse (news.article, warehouse migration 035).
 
 Each hourly run of fetch_news.yml upserts the articles of data/news.json: title, outlet, date, link, subjects, theme
-and the outlet's public summary (300 characters), never an article's text. --backfill takes back every version of
+and the outlet's public summary (300 characters), never an article's text. Everything is kept 3 months; after that only
+official texts, reports, papers, major publications, renewable support, regulation and stories covered by several outlets. --backfill takes back every version of
 data/news.json in the git history (the workflow checks out the whole history for it), so the archive starts with
 everything ever collected.
 
@@ -25,6 +26,14 @@ from jsonb_to_recordset(%s::jsonb) as x(link text, title text, source text, publ
 on conflict (link) do update set title = excluded.title, tags = excluded.tags, topics = excluded.topics,
   theme = coalesce(excluded.theme, news.article.theme), countries = excluded.countries,
   summary = coalesce(excluded.summary, news.article.summary), n_outlets = greatest(excluded.n_outlets, news.article.n_outlets)
+"""
+
+
+PRUNE = """
+delete from news.article
+where published < now() - interval '3 months'
+  and kind = 'article' and not ('major' = any(tags)) and not (topics && array['support', 'regulation'])
+  and n_outlets < 2
 """
 
 
@@ -77,8 +86,13 @@ def main():
             return 0
         for k in range(0, len(vals), 500):
             cur.execute(UPSERT, (json.dumps(vals[k:k + 500], ensure_ascii=False),))
+        # everything for 3 months; after that, only what shapes the market (official texts, reports, papers, major
+        # publications, renewable support, regulation, stories covered by several outlets): ~111 articles a day would
+        # otherwise add ~110 MB a year to a 500 MB database (owner, 24 Nov. 2026)
+        cur.execute(PRUNE)
+        pruned = cur.rowcount
         cur.execute("select count(*) from news.article")
-        print(f"archive: {len(vals)} upserted, {cur.fetchone()[0]} in news.article")
+        print(f"archive: {len(vals)} upserted, {pruned} older minor ones removed, {cur.fetchone()[0]} in news.article")
     return 0
 
 
