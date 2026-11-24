@@ -243,24 +243,19 @@ def takeaway(t, title, what):
 
 
 BRIEF = """Tu écris « Le point du matin » de PowerKlock, comme un analyste marché senior qui parle à des directeurs du secteur de
-l'électricité en France : un texte naturel et fluide, 5 phrases environ, 150 mots au plus, sans liste ni titre.
-Tu reçois : les marchés du matin (valeur arrondie, variation), le contexte de marché (notre analyse de la veille : nucléaire,
-météo, géopolitique…), les tendances attendues pour la semaine par marché (celles de « Ce qui a bougé et pourquoi » sur le site :
-une attente, à écrire comme telle, « devrait », jamais comme un fait), la météo, les actualités de marché des dernières 36 h
-(id, titre, extrait, média) et les 3 histoires du jour.
-Ce qu'on attend, c'est le POURQUOI, pas une liste de variations :
-- ce qui bouge sur les marchés et pourquoi, en reliant les mouvements entre eux, au contexte et aux actualités de marché
-  (« le gaz monte avec les tensions sur Ormuz, par où transite une part du GNL » si le contexte ou un article le dit) ;
-- le lien entre consommation, production et prix (fondamentaux France : consommation, éolien, solaire, demande résiduelle,
-  et le nucléaire du contexte) et le lien gaz-électricité : quand la demande résiduelle monte, le gaz fixe plus souvent le prix,
-  donc un gaz plus cher se retrouve dans l'électricité ;
-- le contexte géopolitique expliqué en une phrase : ce qui se passe et en quoi cela touche les prix européens ;
-- si le mouvement du jour va contre la tendance attendue, dis-le simplement ;
-- la dernière phrase porte sur l'une des 3 histoires du jour (« Côté régulation, … », « À noter : … ») : un fait précis,
-  jamais une généralité sur les marchés (« les prix restent volatils », « influencés par des facteurs… » sont interdits).
-3 à 5 chiffres en tout, arrondis, jamais un chiffre seul sans ce qu'il veut dire. Une cause n'est écrite que si le contexte
-ou un article la donne : sinon, décris le mouvement sans l'expliquer. Aucun fait, chiffre, acteur ni date absent de ce qui
-est reçu. Pas de conseil, pas de formule creuse (« dans un contexte de… », « les acteurs du marché… »).
+l'électricité en France : 3 ou 4 phrases serrées, 90 mots au plus, un seul paragraphe, sans liste ni titre.
+Tu reçois : les marchés du matin, les fondamentaux France du jour face à la veille (consommation, éolien, solaire, demande
+résiduelle), notre contexte de marché (nucléaire, météo, géopolitique), les tendances attendues de la semaine (une attente :
+« devrait »), les actualités de marché des dernières 36 h (id, titre, extrait, média) et les 3 histoires du jour.
+Écris le POURQUOI comme un raisonnement, pas un relevé : chaque phrase relie une cause à son effet.
+- Les actualités de marché sont tes causes : appuie-toi sur au moins une, en disant ce qu'elle rapporte (« la flambée du
+  PEG lundi », « les tensions sur Ormuz, par où passe une part du GNL »).
+- Relie gaz et électricité par les fondamentaux : une demande résiduelle en hausse donne plus souvent le prix au gaz.
+- Si un mouvement va contre la tendance attendue, dis-le en une proposition.
+- Termine sur l'une des 3 histoires du jour, en un fait précis (« Côté régulation, … »).
+3 ou 4 chiffres au plus, arrondis. Une cause n'est écrite que si le contexte ou un article la donne. Aucun fait, chiffre,
+acteur ni date absent de ce qui est reçu. Interdits : « s'inscrit dans un contexte », « les prix restent volatils »,
+« influencés par des facteurs », tout conseil.
 Le ton seulement (un autre jour, d'autres faits : n'en reprends ni les mots ni les faits) : « Le solaire pèse sur les prix :
 le spot recule de 8 % sous 60 €, avec deux heures négatives à la mi-journée. Le Cal-27 ne bouge pas, signe que le marché ne
 voit pas l'épisode durer. À noter : RTE ouvre sa consultation sur les règles de raccordement. »
@@ -330,6 +325,13 @@ def fundamentals(day):
     return out
 
 
+def trends_only(f):
+    """the fundamentals as moves (« en hausse de 6 % »), without the levels: the brief explains, the tiles give the numbers"""
+    # consumption and residual demand only: wind and solar alone led the model to wrong reasoning (24 Nov. 2026 tests)
+    return {k: {"évolution": v.get("évolution"), **({"note": v["note"]} if v.get("note") else {})} for k, v in f.items()
+            if v.get("évolution") and k in ("consommation", "demande_résiduelle")}
+
+
 def ask_brief(edition, model=None, items=None):
     """« Le point du matin »: the markets with their reasons (our market context of the evening before) and the day's news"""
     try:
@@ -358,7 +360,7 @@ def ask_brief(edition, model=None, items=None):
            and PRICE_NEWS.search(i["title"]) and not {"official", "research"} & set(i.get("tags") or []) and (age_h(i, now) or 1e9) <= 36]
     mkt = sorted(mkt, key=lambda i: -(i.get("impact") or 0))[:5]
     news = [{"id": f"n{k + 1}", "titre": i["title"], "extrait": clip(i.get("snippet"), 300), "média": i["source"]} for k, i in enumerate(mkt)]
-    payload = {"marchés": mk, "fondamentaux_france": fundamentals(edition["date"]), "contexte": ctx, "tendances_semaine": trend, "actualités_marché": news, "météo": " · ".join(filter(None, [(w.get("label") or [""])[0], (w.get("sub") or [""])[0]])), "histoires": st}
+    payload = {"marchés": mk, "fondamentaux_france": trends_only(fundamentals(edition["date"])), "contexte": ctx, "tendances_semaine": trend, "actualités_marché": news, "météo": " · ".join(filter(None, [(w.get("label") or [""])[0], (w.get("sub") or [""])[0]])), "histoires": st}
     msg = {"max_tokens": 700, "system": BRIEF, "messages": [{"role": "user", "content": json.dumps(payload, ensure_ascii=False)}],
            "model": model or os.environ.get("NEWS_MODEL") or MODEL}
     req = urllib.request.Request(PROXY, data=json.dumps(msg).encode(), headers={"Content-Type": "application/json", "User-Agent": "PowerKlock-newsletter"})
@@ -370,8 +372,10 @@ def ask_brief(edition, model=None, items=None):
     given += [float(v) for r_ in edition.get("markets") or [] for v in (r_.get("value"), r_.get("pct"), r_.get("chg")) if isinstance(v, (int, float))]
     given += [abs(g) for g in given]
     b, be = clip(out.get("brief"), 900), clip(out.get("brief_en"), 900)
-    many = len(re.findall(r"(?<![\w-])\d+(?:[.,]\d+)?", re.sub(r"\b(19|20)\d\d\b", "", b or ""))) > 7   # a note, not a table of figures (« Cal-27 » is a name)
-    hollow = re.search(r"(?i)restent volatils|reste volatil|influenc[ée]s par (des|les) facteurs|il faut retenir que les prix", b or "")
+    many = len(re.findall(r"(?<![\w-])\d+(?:[.,]\d+)?", re.sub(r"\b(19|20)\d\d\b", "", b or ""))) > 5   # a note, not a table of figures (« Cal-27 » is a name)
+    hollow = re.search(r"(?i)restent volatils|reste volatil|influenc[ée]s par (des|les) facteurs|il faut retenir que les prix|s.inscrit dans un contexte", b or "")
+    hollow = hollow or (mkt and not out.get("sources"))      # the market news must be among the reasons
+    hollow = hollow or len((b or "").split()) > 110
     if not b or many or hollow or not numbers_ok(b, given) or not direction_ok(b, edition.get("markets") or []):
         raise ValueError(f"brief rejected: {b[:120]!r}")   # a figure that was not given: better no brief
     used = [mkt[int(x[1:]) - 1] for x in out.get("sources") or [] if isinstance(x, str) and re.fullmatch(r"n[1-5]", x) and int(x[1:]) <= len(mkt)]
@@ -703,7 +707,7 @@ def main():
     edition["brief"] = edition["brief_en"] = None
     edition["brief_links"] = []
     if use_ai and edition["profiles"]:
-        for attempt in (1, 2, 3, 4):     # a text with too many figures, or one not given, is refused: a few tries
+        for attempt in range(1, 7):      # a text with too many figures, one not given, a wrong direction or no news is refused: a few tries
             try:
                 # Llama 4 Scout writes the most faithful briefs (tested 24 Nov. 2026: Mistral Small invented a nuclear fall,
                 # Llama 3.3 repeated generic lines); Qwen3 first when it answers
