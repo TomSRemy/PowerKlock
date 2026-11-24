@@ -290,6 +290,7 @@ def journal(today, E, ed, wk, mine):
                      f'<span style="{f};font-size:11px;color:#7A93AB">{sub}</span> <span style="{mono};font-size:11.5px;color:{col};white-space:nowrap">{ch}</span></a></td>')
     tiles = ''.join('<tr>' + ''.join(cells[i:i + 3]) + '<td></td>' * (3 - len(cells[i:i + 3])) + '</tr>' for i in range(0, len(cells), 3))
     srcs = ', '.join(sorted({r.get('src') for r in E.get('markets') or [] if r.get('src')}))
+    brief_sep = f'</p><p style="{f};margin:10px 0 0;font-size:15.5px;line-height:1.6;color:#121212">'   # the brief's second paragraph
     head = (f'<tr><td style="padding:18px 22px 16px;background:#0a0e13;border-radius:12px 12px 0 0">'
             f'<table role="presentation" width="100%" style="border-collapse:collapse"><tr><td style="{f};font-size:13px;color:#6B6B6B;vertical-align:middle"><a href="{SITE}" style="text-decoration:none">{img("../assets/logo-header.png", "PowerKlock", 150).replace("display:block;width:100%;max-width:150px", "display:inline-block;width:150px;vertical-align:middle")}</a><span style="vertical-align:middle;margin-left:10px">{frday(today)}</span></td>'
             f'<td style="{f};font-size:13px;text-align:right"><a href="{SITE}#intel/news" style="{green};font-weight:600;text-decoration:none">▶ Écouter</a></td></tr></table>'
@@ -297,7 +298,7 @@ def journal(today, E, ed, wk, mine):
             f'<p style="{f};margin:3px 0 0;font-size:13.5px;color:#6B6B6B">{SUB[wk]}{" · semaine du " + frday(today - timedelta(days=7)) if wk else ""}</p></td>{wx}</tr></table>'
             f'<table role="presentation" width="100%" style="border-collapse:collapse;table-layout:fixed">{tiles}</table>'
             f'<p style="{f};font-size:11px;color:#8A8A8A;margin:6px 0 0">Sources : {esc(srcs)}. {"Variation sur la semaine" if wk else "Variation sur la séance précédente"}. Chaque tuile ouvre sa page sur le site.</p>'
-            + (f'<p style="{f};margin:14px 0 0;font-size:15.5px;line-height:1.6;color:#121212"><b style="{green}">Le point du matin.</b> {esc(E["brief"])} <a href="{SITE}#today" style="{green};font-size:13.5px;white-space:nowrap">Le détail par marché →</a></p>'
+            + (f'<p style="{f};margin:14px 0 0;font-size:15.5px;line-height:1.6;color:#121212"><b style="{green}">Le point du matin.</b> {brief_sep.join(esc(x) for x in re.split(r"\n\s*\n", E["brief"]))} <a href="{SITE}#today" style="{green};font-size:13.5px;white-space:nowrap">Le détail par marché →</a></p>'
                + (f'<p style="{f};margin:6px 0 0;font-size:12.5px;color:#6B6B6B">À lire : ' + ' · '.join(f'<a href="{esc(x["link"])}" style="color:#6B6B6B">{esc(x["source"])}</a>' for x in E.get('brief_links') or []) + '</p>' if E.get('brief_links') else '')
                if E.get('brief') else '')
             + '</td></tr>')

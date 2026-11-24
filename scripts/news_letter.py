@@ -243,19 +243,23 @@ def takeaway(t, title, what):
 
 
 BRIEF = """Tu écris « Le point du matin » de PowerKlock, comme un analyste marché senior qui parle à des directeurs du secteur de
-l'électricité en France : 3 ou 4 phrases serrées, 90 mots au plus, un seul paragraphe, sans liste ni titre.
-Tu reçois : les marchés du matin, les fondamentaux France du jour face à la veille (consommation, éolien, solaire, demande
-résiduelle), notre contexte de marché (nucléaire, météo, géopolitique), les tendances attendues de la semaine (une attente :
-« devrait »), les actualités de marché des dernières 36 h (id, titre, extrait, média) et les 3 histoires du jour.
-Écris le POURQUOI comme un raisonnement, pas un relevé : chaque phrase relie une cause à son effet.
-- Les actualités de marché sont tes causes : appuie-toi sur au moins une, en disant ce qu'elle rapporte (« la flambée du
-  PEG lundi », « les tensions sur Ormuz, par où passe une part du GNL »).
-- Relie gaz et électricité par les fondamentaux : une demande résiduelle en hausse donne plus souvent le prix au gaz.
-- Si un mouvement va contre la tendance attendue, dis-le en une proposition.
-- Termine sur l'une des 3 histoires du jour, en un fait précis (« Côté régulation, … »).
-3 ou 4 chiffres au plus, arrondis. Une cause n'est écrite que si le contexte ou un article la donne. Aucun fait, chiffre,
-acteur ni date absent de ce qui est reçu. Interdits : « s'inscrit dans un contexte », « les prix restent volatils »,
-« influencés par des facteurs », tout conseil.
+l'électricité en France. Deux paragraphes séparés par une ligne vide, 150 mots au plus en tout, sans liste ni titre.
+Tu reçois : les marchés du matin (dont le spot du jour et le Cal 27, contrat de l'an prochain), les fondamentaux France
+(consommation, demande résiduelle face à la veille), notre contexte de marché (nucléaire, météo, géopolitique), les tendances
+attendues de la semaine (une attente : « devrait »), les actualités de marché des dernières 36 h (id, titre, extrait, média)
+et les 3 histoires du jour (titre, résumé).
+1er paragraphe, le marché, 3 phrases : le POURQUOI comme un raisonnement, chaque phrase reliant une cause à son effet.
+  - Le spot ET le Cal 27 : ce que dit l'écart entre le court terme et l'an prochain (le Cal suit-il le spot ? le marché
+    voit-il le mouvement durer ?).
+  - Les actualités de marché sont tes causes : appuie-toi sur au moins une, en disant ce qu'elle rapporte.
+  - Gaz et électricité liés par les fondamentaux : une demande résiduelle en hausse ne change pas le prix du gaz, elle fait
+    que les centrales au gaz fixent plus souvent le prix de l'électricité, qui suit alors le gaz.
+  - Si un mouvement va contre la tendance attendue, dis-le en une proposition.
+2e paragraphe, l'actualité, 2 ou 3 phrases : les 3 histoires du jour, chacune par son fait précis et ce qu'il change
+  (« Côté régulation, la CRE … ; pour les producteurs, … »).
+Varie les verbes : jamais deux fois « en hausse » ou « augmente ». 4 à 6 chiffres en tout, arrondis. Une cause n'est
+écrite que si le contexte ou un article la donne. Aucun fait, chiffre, acteur ni date absent de ce qui est reçu. Interdits :
+« s'inscrit dans un contexte », « les prix restent volatils », « influencés par des facteurs », tout conseil.
 Le ton seulement (un autre jour, d'autres faits : n'en reprends ni les mots ni les faits) : « Le solaire pèse sur les prix :
 le spot recule de 8 % sous 60 €, avec deux heures négatives à la mi-journée. Le Cal-27 ne bouge pas, signe que le marché ne
 voit pas l'épisode durer. À noter : RTE ouvre sa consultation sur les règles de raccordement. »
@@ -367,15 +371,19 @@ def ask_brief(edition, model=None, items=None):
     r = json.load(urllib.request.urlopen(req, timeout=150))
     txt = "".join(b.get("text") for b in r.get("content", []) if b.get("type") == "text" and isinstance(b.get("text"), str))
     m = re.search(r"\{.*\}", txt, re.S)
-    out = json.loads(m.group(0)) if m else {}
+    out = json.loads(m.group(0), strict=False) if m else {}   # the two paragraphs come with a real line break
     given = [float(x.replace(",", ".")) for x in re.findall(r"\d+(?:[.,]\d+)?", json.dumps(payload, ensure_ascii=False).replace("\u202f", ""))]
     given += [float(v) for r_ in edition.get("markets") or [] for v in (r_.get("value"), r_.get("pct"), r_.get("chg")) if isinstance(v, (int, float))]
     given += [abs(g) for g in given]
-    b, be = clip(out.get("brief"), 900), clip(out.get("brief_en"), 900)
-    many = len(re.findall(r"(?<![\w-])\d+(?:[.,]\d+)?", re.sub(r"\b(19|20)\d\d\b", "", b or ""))) > 5   # a note, not a table of figures (« Cal-27 » is a name)
+    para = lambda t: "\n\n".join(clip(x, 900) for x in re.split(r"\n\s*\n", str(t or "")) if x.strip())  # noqa: E731   two paragraphs kept
+    b, be = para(out.get("brief")), para(out.get("brief_en"))
+    market_par = re.split(r"\n\s*\n", b or "")[0]   # the market paragraph: a note, not a table of figures (« Cal-27 » is a name; the news keep theirs)
+    many = len(re.findall(r"(?<![\w-])\d+(?:[.,]\d+)?", re.sub(r"\b(19|20)\d\d\b", "", market_par))) > 6
     hollow = re.search(r"(?i)restent volatils|reste volatil|influenc[ée]s par (des|les) facteurs|il faut retenir que les prix|s.inscrit dans un contexte", b or "")
     hollow = hollow or (mkt and not out.get("sources"))      # the market news must be among the reasons
-    hollow = hollow or len((b or "").split()) > 110
+    hollow = hollow or len((b or "").split()) > 170
+    hollow = hollow or len(re.findall(r"(?i)\ben hausse\b|\baugmente", b or "")) > 3      # the same words again and again
+    hollow = hollow or not re.search(r"(?i)\bcal", b or "")                                  # the year ahead says whether the move lasts
     if not b or many or hollow or not numbers_ok(b, given) or not direction_ok(b, edition.get("markets") or []):
         raise ValueError(f"brief rejected: {b[:120]!r}")   # a figure that was not given: better no brief
     used = [mkt[int(x[1:]) - 1] for x in out.get("sources") or [] if isinstance(x, str) and re.fullmatch(r"n[1-5]", x) and int(x[1:]) <= len(mkt)]
