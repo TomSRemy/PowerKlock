@@ -617,7 +617,7 @@ footer img { height: 22px; width: auto; opacity: .85; }
   // ── texts (French first, English ready) ──
   const I = {
     beta: ['bêta', 'beta'], eyebrow: ['Électricité · France et Europe', 'Power · France and Europe'], discover: ['Découvrir le site', 'Discover the site'], published: ['publié', 'published'],
-    note0: ['Données publiques, recoupées avec une deuxième source, méthode publiée · accès gratuit sur validation', 'Public data, cross-checked with a second source, method published · free access on approval'], 'b-ppa': ['PPA benchmark · France', 'PPA benchmark · France'], 'u-ppas': ['€/MWh solaire', '€/MWh solar'], 'u-ppaw': ['€/MWh éolien', '€/MWh wind'],
+    note0: ['Données publiques recoupées, méthode publiée · accès gratuit sur validation', 'Public data, cross-checked, method published · free access on approval'], 'b-ppa': ['PPA benchmark · France', 'PPA benchmark · France'], 'u-ppas': ['€/MWh solaire', '€/MWh solar'], 'u-ppaw': ['€/MWh éolien', '€/MWh wind'],
     'k-news': ['Veille', 'Intelligence'], 'l-news': ['Presse, réglementation, articles de recherche, consultations et leurs dates limites, triés par sujet et par impact. L\'essentiel arrive chaque matin dans votre boîte mail.', 'Press, regulation, research papers, consultations and their deadlines, sorted by topic and impact. What matters lands in your inbox every morning.'],
     nl: ['Votre veille de marché, chaque jour ouvré', 'Your market brief, every working day'], 'open-news': ['Ouvrir la veille', 'Open the news'], d30: ['30 j', '30 d'], d60: ['60 j', '60 d'], signin: ['Se connecter', 'Sign in'],
     h1: ['Tout le marché de l\'électricité, <em>au même endroit</em>.', 'The whole power market, <em>in one place</em>.'],
@@ -628,19 +628,19 @@ footer img { height: 22px; width: auto; opacity: .85; }
     lead1: ['Les résultats day-ahead de 30&nbsp;zones de marché dès leur publication, vers 13&nbsp;h, et les courbes forward juste à côté. Rejouez la journée heure par heure, survolez un pays pour voir sa courbe.', 'Day-ahead results for 30&nbsp;bidding zones as soon as they are published, around 1&nbsp;pm, with the forward curves next to them. Replay the day hour by hour, hover a country to see its curve.'],
     open1: ['Ouvrir les prix', 'Open prices'], lock: ['après connexion', 'after sign-in'],
     k2: ['Ce qui fait le prix · France', 'What drives the price · France'], g2u: ['€/MWh, gaz TTF', '€/MWh, TTF gas'],
-    'h2-2': ['Comprendre <em>pourquoi</em> le prix bouge.', 'Know <em>why</em> prices move.'],
+    'h2-2': ['Comprendre <em>pourquoi</em> les prix bougent.', 'Know <em>why</em> power prices move.'],
     open2: ['Ouvrir Ce qui fait le prix', 'Open What drives the price'],
     k3: ['Outils · PPA, M0, BESS', 'Tools · PPA, M0, BESS'],
     'h2-3': ['Valorisez vos <em>actifs renouvelables</em>.', 'Value your <em>renewable assets</em>.'],
-    lead3: ['Prix PPA de référence solaire et éolien, M0 du mois avant sa publication par la CRE, taux de capture, et un premier benchmark pour vos batteries (BESS). Des chiffres prêts pour la négociation.', 'Solar and wind PPA benchmarks, this month\'s M0 before the CRE publishes it, capture rates, and a first benchmark for your batteries (BESS). Figures you can take into a negotiation.'],
+    lead3: ['Prix PPA de référence solaire et éolien, M0 estimée du mois avant sa publication par la CRE, taux de capture, et un premier benchmark pour vos batteries (BESS). Des chiffres prêts pour la négociation.', 'Solar and wind PPA benchmarks, this month\'s estimated M0 before the CRE publishes it, capture rates, and a first benchmark for your batteries (BESS). Figures you can take into a negotiation.'],
     open3: ['Ouvrir les outils', 'Open tools'],
     k4: ['Mes tableaux de bord', 'My dashboards'], g4: ['Votre dashboard.', 'Your dashboard.'],
     lead4: ['Composez votre dashboard, réglez vos alertes (prix négatifs, seuils de prix) et recevez votre veille de marché chaque matin à 7\u00a0h. Vous arrivez au bureau déjà briefé.', 'Build your dashboard, set your alerts (negative prices, price thresholds) and get your market brief every morning at 7\u00a0am. You walk into the office already briefed.'],
     open4: ['Créer mon tableau de bord', 'Build my dashboard'],
     hint: ['Faites défiler : la courbe change de forme', 'Scroll: the curve changes shape'],
     lead1b: ['', ''],
-    bh: ['pages, du prix de demain au bilan de l\'année.', 'pages, from tomorrow\'s price to the yearly review.'],
-    bp: ['Des graphiques du site, alimentés par les mêmes fichiers. Survolez pour lire les valeurs.', 'Charts from the site, fed by the same files. Hover to read the values.'],
+    bh: ['pages, et bien plus.', 'pages, and much more.'],
+    bp: ['Reporting carbone, analyses de marché par pays, veille et formations, en plus de tous les graphiques du site. Survolez pour lire les valeurs.', 'Carbon reporting, country power market analysis, intelligence and training, on top of every chart on the site. Hover to read the values.'],
     'b-nuc': ['Nucléaire disponible · France', 'Nuclear available · France'],
     's-nuc': ['Puissance nucléaire disponible, moyenne par jour (GW). Source : RTE, via PowerKlock.', 'Available nuclear capacity, daily average (GW). Source: RTE, via PowerKlock.'],
     'b-heat': ['Prix France · heure × mois', 'France price · hour × month'], 'h-heat': ['La cloche solaire se creuse d\'avril à août.', 'The solar dip deepens from April to August.'],
@@ -902,7 +902,7 @@ footer img { height: 22px; width: auto; opacity: .85; }
     const e0 = D.eu[0], e9 = D.eu[D.eu.length - 1];
     const rkRow = z => `<div class="r${z[0] === 'FR' ? ' fr' : ''}"><span>${esc(zn(z))}</span><span><b>${fmt(z[2], 0)}</b> <i style="color:${z[5] > 0 ? 'var(--up)' : 'var(--down)'}">${z[5] > 0 ? '▲' : '▼'}</i></span></div>`;
     $('#rk').innerHTML = `<div><h4>${tr('Plus chères', 'Dearest')}</h4>${D.eu.slice(0, 3).map(rkRow).join('')}</div><div><h4>France · ${rankFR}/${D.eu.length}</h4>${rkRow(byZ.FR)}<div class="r"><span>${tr('vs hier', 'vs yesterday')}</span><b style="color:${chg > 0 ? 'var(--up)' : 'var(--down)'}">${sgn(byZ.FR[5], 1)}</b></div></div><div><h4>${tr('Moins chères', 'Cheapest')}</h4>${D.eu.slice(-3).map(rkRow).join('')}</div>`;
-    $('#lead2').innerHTML = tr('Gaz, disponibilité nucléaire, éolien et solaire : chaque semaine, PowerKlock décompose ce qui a fait monter ou baisser le spot français.', 'Gas, nuclear availability, wind and solar: every week PowerKlock breaks down what pushed the French spot up or down.');
+    $('#lead2').innerHTML = tr('Gaz, carbone, disponibilité nucléaire, éolien et solaire : chaque semaine, PowerKlock décompose ce qui a fait bouger les prix de l\'électricité en France, du spot aux produits à terme.', 'Gas, carbon, nuclear availability, wind and solar: every week PowerKlock breaks down what moved French power prices, from spot to forwards.');
     const wEnd = (() => { const d = new Date(DRV[DRV.length - 1][0] + 'T12:00:00'); d.setDate(d.getDate() + 6); return d.toISOString().slice(0, 10); })();
     $('#src2').textContent = tr(` Moyennes par semaine (lundi à dimanche), du ${day(DRV[0][0])} au ${day(wEnd)} : spot France (ENTSO-E, moyenne publiée du jour de livraison), gaz TTF day-ahead et puissance nucléaire disponible (RTE), via PowerKlock. Décomposition détaillée : Marchés › Ce qui fait le prix.`, ` Weekly means (Monday to Sunday), ${day(DRV[0][0])} to ${day(wEnd)}: France spot (ENTSO-E, published average of the delivery day), TTF day-ahead gas and available nuclear capacity (RTE), via PowerKlock. Full split: Markets › What drives the price.`);
     $('#src3').textContent = tr(`M0 mensuelles et prix base (€/MWh), France, 13 derniers mois complets : le graphique de Renouvelables › M0. M0 recalculée par PowerKlock (courbes RTE via ODRÉ, prix ENTSO-E). Prix PPA du pricer publiés le ${day(D.ppa.days[D.ppa.days.length - 1][0])}.`, `Monthly M0 and base price (€/MWh), France, last 13 complete months: the chart of Renewables › M0. M0 recomputed by PowerKlock (RTE curves via ODRÉ, ENTSO-E prices). PPA prices of the pricer published on ${day(D.ppa.days[D.ppa.days.length - 1][0])}.`);
