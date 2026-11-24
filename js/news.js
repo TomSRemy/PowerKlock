@@ -34,7 +34,7 @@ async function loadNews() {
   renderNews(newsData);
   renderNewsSources();
   renderNewsAdd();
-  _newsWireViews();
+  _newsWireViews(); _askWire(); _askLoadCount();
   if (typeof renderNewsHome === 'function') renderNewsHome();
   renderNewsOfficial();
   renderNewsCover();
@@ -56,8 +56,7 @@ function newsSetView(v) {
   const ps = document.getElementById('news-v-posts'); if (ps) ps.hidden = v !== 'posts';
   if (v === 'posts' && typeof renderNewsPosts === 'function') renderNewsPosts();
   const sr = document.getElementById('news-v-sources'); if (sr) sr.hidden = v !== 'sources';
-  const ak = document.getElementById('news-v-ask'); if (ak) ak.hidden = v !== 'ask';
-  if (v === 'ask') renderNewsAsk();
+  if (v === 'ask') { askOpen(); return; }   // an old saved view: the question panel now opens beside the page
   _newsStore('pk-news-view', v);
 }
 window.newsSetView = newsSetView;
@@ -123,12 +122,13 @@ function _renderOffBar(pool) {
   const keys = Object.keys(_NEWS_CONS_THEMES).filter(k => cnt[k]);
   if (!bar.dataset.on) {
     bar.dataset.on = '1';
-    bar.innerHTML = `<div class="nf-bar off-bar"><input type="search" id="off-q" class="nf-q" placeholder="${_newsT('Chercher un texte, une consultation, un rapport…', 'Search a text, a consultation, a report…')}"><div class="off-chips"></div></div>`;
-    let t; bar.querySelector('#off-q').addEventListener('input', e => { clearTimeout(t); t = setTimeout(() => { _offQ = e.target.value.trim().toLowerCase(); renderNewsOfficial(); renderNewsCons(); }, 200); });
+    bar.innerHTML = `<div class="nf-bar off-bar"><input type="search" id="off-q" class="nf-q" placeholder="${_newsT('Chercher un texte, une consultation, un rapport, ou poser une question…', 'Search a text, a consultation, a report, or ask a question…')}"><div class="off-chips"></div></div>`;
+    let t; bar.querySelector('#off-q').addEventListener('input', e => { clearTimeout(t); t = setTimeout(() => { _offQ = _askIsQ(e.target.value) ? '' : e.target.value.trim().toLowerCase(); renderNewsOfficial(); renderNewsCons(); }, 200); });
     bar.addEventListener('click', e => { const b = e.target.closest('[data-ot]'); if (!b) return;
       if (b.dataset.ot === 'x') _offTopic = ''; else _newsConsTheme = b.dataset.ot === _newsConsTheme ? '' : b.dataset.ot; renderNewsOfficial(); renderNewsCons(); });
   }
   const lab = k => { const x = _NL_TH.find(y => y[0] === k); return x ? _newsT(x[1], x[2]) : _newsTagL(k); };
+  if (typeof _askWire === 'function') _askWire();
   bar.querySelector('.off-chips').innerHTML = [['', _newsT('Tous les thèmes', 'All themes')]].concat(keys.map(k => [k, `${_newsEsc(_newsT(..._NEWS_CONS_THEMES[k]))} <small>${cnt[k]}</small>`]))
     .map(([k, l]) => `<button type="button" class="filter-btn${k === (_newsConsTheme || '') ? ' active' : ''}" data-ot="${k}">${l}</button>`).join('')
     + (_offTopic ? `<button type="button" class="filter-btn active" data-ot="x">${_newsEsc(lab(_offTopic))} ×</button>` : '');
@@ -180,19 +180,67 @@ async function renderNewsAsk() {
     _newsT('Ce que dit le World Energy Outlook sur le nucléaire', 'What the World Energy Outlook says on nuclear'), _newsT('Les appels d’offres biométhane', 'The biomethane tenders')];
   if (!host.dataset.on) {
     host.dataset.on = '1';
-    host.innerHTML = `<form class="ask-f"><input type="text" id="ask-q" maxlength="300" autocomplete="off" placeholder="${_newsT('Posez une question sur l’actualité, les textes, les consultations…', 'Ask about the news, the texts, the consultations…')}" aria-label="${_newsT('Votre question', 'Your question')}"><button type="submit" class="pk-btn-primary">${_newsT('Demander', 'Ask')}</button></form>
+    host.innerHTML = `<form class="ask-f"><input type="text" id="ask-q" maxlength="300" autocomplete="off" placeholder="${_newsT('Posez une question sur l’actualité, les textes, les consultations…', 'Ask about the news, the texts, the consultations…')}" aria-label="${_newsT('Votre question', 'Your question')}"><button type="submit" class="ask-go">${_newsT('Demander', 'Ask')}</button></form>
       <div class="ask-hints">${hints.map(h => `<button type="button" class="ask-hint">${_newsEsc(h)}</button>`).join('')}</div>
-      <div class="ask-meta" id="ask-meta"></div><div class="ask-log" id="ask-log"></div>`;
+      <div class="ask-meta" id="ask-meta"></div><div class="ask-log" id="ask-log"></div>
+      <p class="ask-claude">${_newsT('Vous avez Claude ? Ajoutez-y PowerKlock (prix, forwards, textes, consultations, sans limite de ce côté) : Compte › Connecteur pour Claude.', 'Have Claude? Add PowerKlock to it (prices, forwards, texts, consultations, no limit on this side): Account › Connector for Claude.')}</p>`;
     host.querySelector('.ask-f').addEventListener('submit', e => { e.preventDefault(); const q = host.querySelector('#ask-q').value.trim(); if (q.length > 2) _askGo(q); });
     host.querySelectorAll('.ask-hint').forEach(b => b.addEventListener('click', () => { host.querySelector('#ask-q').value = b.textContent; _askGo(b.textContent); }));
-    try { const r = await fetch(ASK_URL, { headers: { Authorization: 'Bearer ' + token } }); const j = await r.json(); if (j && j.ok === false) _askLeft = -1; else if (j && j.left != null) _askLeft = j.left; } catch (_) { _askLeft = null; }
+    await _askLoadCount();
   }
   _askDraw();
 }
 async function _askToken() {
   try { const cl = window.PKAccount && PKAccount.client && PKAccount.client(); const { data } = cl ? await cl.auth.getSession() : { data: null }; return data && data.session ? data.session.access_token : null; } catch (_) { return null; }
 }
+// the panel beside the page (✦ in the News bar, or a question typed in a search box)
+function askOpen(q) {
+  const d = document.getElementById('ask-drawer'); if (!d) return;
+  d.hidden = false; document.body.classList.add('ask-on');
+  renderNewsAsk().then(() => { const i = document.getElementById('ask-q'); if (q && i) { i.value = q; _askGo(q); } else if (i) i.focus(); });
+}
+window.askOpen = askOpen;
+function _askClose() { const d = document.getElementById('ask-drawer'); if (d) d.hidden = true; document.body.classList.remove('ask-on'); }
+// a question rather than search words: a « ? », or how a question starts (French and English)
+const _askIsQ = t => (t = (t || '').trim()).length > 12 && (/\?$/.test(t) || /^(qu['’]est|que |quel|quelle|quels|quelles|comment|pourquoi|combien|o[uù] en est|est-ce|y a-t-il|faut-il|what|why|how|which|who|when|where|is |are |does |do |can )/i.test(t));
+function _askSugg(input, holderId) {
+  if (!input || input.dataset.ask) return; input.dataset.ask = '1';
+  const box = document.createElement('div'); box.className = 'ask-sugg'; box.id = holderId; box.hidden = true;
+  input.insertAdjacentElement('afterend', box);
+  const sync = () => { const v = input.value.trim(), on = _askIsQ(v); box.hidden = !on;
+    if (on) box.innerHTML = `<button type="button">✦ ${_newsT('Demander à PowerKlock', 'Ask PowerKlock')} : « ${_newsEsc(v.slice(0, 90))} »</button>`; };
+  input.addEventListener('input', sync);
+  input.addEventListener('keydown', e => { if (e.key === 'Enter' && _askIsQ(input.value)) { e.preventDefault(); askOpen(input.value.trim()); } });
+  box.addEventListener('click', () => askOpen(input.value.trim()));
+}
+function _askWire() {
+  const o = document.getElementById('ask-open'); if (o && !o.dataset.w) { o.dataset.w = '1'; o.addEventListener('click', () => { const d = document.getElementById('ask-drawer'); if (d && !d.hidden) _askClose(); else askOpen(); }); }
+  const c = document.getElementById('ask-close'); if (c && !c.dataset.w) { c.dataset.w = '1'; c.addEventListener('click', _askClose); }
+  if (!document.body.dataset.askEsc) { document.body.dataset.askEsc = '1'; document.addEventListener('keydown', e => { if (e.key === 'Escape') _askClose(); }); }
+  _askSugg(document.getElementById('news-search'), 'ask-sugg-feed');
+  _askSugg(document.getElementById('off-q'), 'ask-sugg-off');
+}
+// « Approfondir dans Claude »: Claude opens with the question and the sources PowerKlock found (the reader's own Claude)
+function _askClaude(x) {
+  const src = (x.sources || []).slice(0, 8).map(s => `${s.n}. ${s.title} (${s.source}${s.date ? ', ' + s.date : ''}) ${s.link}`).join('\n');
+  const p = _newsT(`Question sur le marché de l’électricité (France, Europe) : ${x.q}\n\nSources trouvées par PowerKlock :\n${src}\n\nRéponds en t’appuyant d’abord sur ces sources, cite-les, puis complète avec ce que tu sais en le signalant.`,
+    `Question on the power market (France, Europe): ${x.q}\n\nSources found by PowerKlock:\n${src}\n\nAnswer from these sources first and cite them, then add what you know, saying so.`);
+  return 'https://claude.ai/new?q=' + encodeURIComponent(p.slice(0, 3500));
+}
+// the questions left today, on the ✦ button from the start (signed in only)
+async function _askLoadCount() {
+  if (_askLeft != null) return _askCount();
+  const token = await _askToken(); if (!token) return;
+  try { const r = await fetch(ASK_URL, { headers: { Authorization: 'Bearer ' + token } }); const j = await r.json(); _askLeft = j && j.ok === false ? -1 : (j && j.left != null ? j.left : null); } catch (_) { /* the button stays without a count */ }
+  _askCount();
+}
+function _askCount() {
+  const o = document.getElementById('ask-open'); if (!o) return;
+  o.textContent = '✦ ' + _newsT('Demander', 'Ask') + (_askLeft != null && _askLeft >= 0 ? ` · ${_askLeft}` : '');
+  o.title = _askLeft != null && _askLeft >= 0 ? _newsT(`${_askLeft} question${_askLeft > 1 ? 's' : ''} restante${_askLeft > 1 ? 's' : ''} aujourd’hui`, `${_askLeft} question${_askLeft === 1 ? '' : 's'} left today`) : o.title;
+}
 function _askDraw() {
+  _askCount();
   const meta = document.getElementById('ask-meta'), log = document.getElementById('ask-log'); if (!meta || !log) return;
   meta.textContent = _askLeft === -1 ? _newsT('Votre compte attend validation : les questions s’ouvrent une fois l’accès validé.', 'Your account is waiting for approval: questions open once access is approved.')
     : _newsT('Cherche dans les articles, textes officiels, consultations, publications et papiers des 45 derniers jours, la newsletter et notre analyse de marché', 'Searches the articles, official texts, consultations, publications and papers of the last 45 days, the newsletter and our market analysis')
@@ -204,7 +252,7 @@ function _askDraw() {
       : x.none || !x.answer ? `<div class="ask-no">${_newsT('Rien sur ce sujet dans les contenus du site des 45 derniers jours. Essayez d’autres mots, ou le fil En continu.', 'Nothing on this in the site’s content of the last 45 days. Try other words, or the Live feed.')}</div>`
       : `<div class="ask-a">${_newsEsc(x.answer).replace(/\[(\d+)\]/g, '<sup>$1</sup>')}</div>
         <div class="ask-src">${src.map(s => `<a href="${_newsEsc(s.link)}" target="_blank" rel="noopener noreferrer"><b>${s.n}</b><span>${_newsEsc(s.title)}<small>${_newsEsc(s.source)}${s.date ? ' · ' + _newsEsc(s.date) : ''} · ${_newsEsc(s.kind)}</small></span></a>`).join('')}</div>
-        <div class="ask-m">${_newsT('Réponse écrite à partir des sources ci-dessus seulement', 'Answer written from the sources above only')} · ${_newsT('modèle', 'model')} ${_newsEsc(x.model || '')}</div>`;
+        <div class="ask-m">${_newsT('Réponse écrite à partir des sources ci-dessus seulement', 'Answer written from the sources above only')} · ${_newsT('modèle', 'model')} ${_newsEsc(x.model || '')} · <a href="${_newsEsc(_askClaude(x))}" target="_blank" rel="noopener noreferrer">${_newsT('Approfondir dans Claude', 'Go further in Claude')} ↗</a></div>`;
     return `<div class="ask-qa"><div class="ask-q">${_newsEsc(x.q)}</div>${body}</div>`;
   }).join('');
 }
@@ -796,7 +844,7 @@ async function renderNewsAdd() {
 function _newsEsc(s) { return PK.esc(s); }   // js/pk-core.js (name kept: used by morning.js and the news cards)
 
 function renderNews(items) {
-  const q = ((document.getElementById('news-search') || {}).value || '').trim().toLowerCase();
+  const q0 = ((document.getElementById('news-search') || {}).value || '').trim(), q = _askIsQ(q0) ? '' : q0.toLowerCase();   // a question goes to Ask PowerKlock, not to the filter
   const kw = _newsKw();
   const kn = document.getElementById('news-kw-n');
   if (kn) kn.textContent = kw.length ? (items || []).filter(i => _newsMine(i, kw)).length + ' matching' : '';
