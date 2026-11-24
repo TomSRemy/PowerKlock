@@ -85,7 +85,10 @@ async function renderNewsHome() {
     ${_newsFree(leadItem || lead)}</section>` : '';
   // ── the essentials: the reader's other stories of the day ──
   let ess = st.filter(s => !seen.has(s.link)).slice(0, 5);
-  if (ess.length < 3) ess = ess.concat(items.filter(i => !seen.has(i.link) && !ess.some(s => s.link === i.link) && (i.impact || 0) >= 3).slice(0, 5 - ess.length).map(i => ({ title: i.title, link: i.link, sources: [i.source] })));
+  // always five: the edition's stories first, then the most important articles of the last 48 h (papers aside)
+  if (ess.length < 5) ess = ess.concat(items.filter(i => !seen.has(i.link) && !ess.some(s => s.link === i.link) && Date.now() - i.date < 48 * 36e5 && !(i.tags || []).includes('research'))
+    .sort((a, b) => ((b.impact || 0) - 0.35 * (Date.now() - b.date) / 864e5) - ((a.impact || 0) - 0.35 * (Date.now() - a.date) / 864e5))
+    .slice(0, 5 - ess.length).map(i => ({ title: i.title, link: i.link, sources: [i.source] })));
   ess.forEach(s => seen.add(s.link));
   const essH = ess.length ? `<section class="nh-ess"><div class="nh-k">${_newsT('L’essentiel du jour', 'Today’s essentials')}${prof && prof.name ? ` <span class="nh-prof">· ${_newsT('profil', 'profile')} ${_newsEsc(L(prof.short || prof.name))}</span>` : ''}</div>
     <ol>${ess.map(s => `<li><span>${_nhA(s.link, _newsEsc(s.title))} <span class="nh-src">· ${_newsEsc((s.sources || [])[0] || '')}</span></span></li>`).join('')}</ol></section>` : '';
