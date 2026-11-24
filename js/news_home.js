@@ -90,11 +90,15 @@ async function renderNewsHome() {
   const pick = (pred, n) => { const out = items.filter(i => !seen.has(i.link) && fresh(i) && pred(i)).sort((a, b) => score(b) - score(a)).slice(0, n); out.forEach(i => seen.add(i.link)); return out; };
   const rubDef = id => NH_RUBS.find(r => r.id === id) || (pref.custom || []).find(c => c.id === id);
   const rubs = (pref.rubs || []).map(rubDef).filter(Boolean).filter(r => !r.mine || kw.length);
+  // a short summary under each title: the newsletter's when the article is in an edition, else the essentials' line,
+  // else the outlet's own extract (not when it only repeats the title)
+  const allSt = Object.values(E.profiles || {}).flatMap(p => p.stories || []);
+  const sumOf = i => { const s = allSt.find(x => x.link === i.link && x.what && !x.ctx); return s ? textOf(s) : textOf({ link: i.link, title: i.title }); };
   const secH = rubs.map(r => {
     const pred = r.mine ? i => _newsMine(i, kw) : r.intl ? i => !_newsIsFr(i) : r.f ? i => _nhMatch(i, r.f) : i => _newsSubj(i).some(t => r.topics.includes(t));
     const its = pick(pred, 4); if (!its.length) return '';
     return `<section class="nh-sec"><h3><button type="button" class="nh-sec-t" data-rub="${_newsEsc(r.id)}" title="${_newsT('Voir tout le fil de cette rubrique', 'See the whole feed of this section')}">${_newsEsc(r.label || _newsT(r.fr, r.en))} <span aria-hidden="true">→</span></button></h3>
-      ${its.map(i => `<div class="nh-it">${_nhA(i.link, `<span class="nh-it-t">${_newsEsc(i.title)}</span>`)}<span class="nh-it-m"><span class="nh-src">${_newsEsc(i.source)} · ${_nhAgo(i.date)}</span>${_newsPills(i)}</span>${_newsFree(i, 'news-free-row')}</div>`).join('')}</section>`;
+      ${its.map(i => { const sum = sumOf(i); return `<div class="nh-it">${_nhA(i.link, `<span class="nh-it-t">${_newsEsc(i.title)}</span>`)}${sum ? `<p class="nh-it-s">${_newsEsc(sum)}</p>` : ''}<span class="nh-it-m"><span class="nh-src">${_newsEsc(i.source)} · ${_nhAgo(i.date)}</span>${_newsPills(i)}</span>${_newsFree(i, 'news-free-row')}</div>`; }).join('')}</section>`;
   }).join('');
   // ── the latest, a teaser of the live feed ──
   const latest = items.filter(i => !seen.has(i.link) && (!pref.france || _newsIsFr(i))).sort((a, b) => b.date - a.date).slice(0, 10);

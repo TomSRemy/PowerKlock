@@ -4429,6 +4429,8 @@ html.pk-beta #prices-table th:first-child, html.pk-beta #prices-table tr.zone-ro
 .nh-sec-t span { opacity: 0; transition: opacity .15s; }
 .nh-sec-t:hover span, .nh-sec-t:focus-visible span { opacity: 1; }
 .nh-it { padding: 12px 0; border-bottom: 1px solid var(--border); }
+.nh-it-s { margin: 0 0 6px; font-size: 14.5px; line-height: 1.5; color: var(--text-2, var(--muted)); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.nl-what { margin: 0 0 8px; color: var(--text-2, var(--muted)); line-height: 1.55; }
 .nh-it-t { display: block; font: 600 clamp(16.5px, 0.9rem + 0.25vw, 19px)/1.35 var(--nh-serif); color: var(--text); margin-bottom: 5px; }
 .nh-it-m { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .nh-it-m .nf-pills { margin-left: auto; }

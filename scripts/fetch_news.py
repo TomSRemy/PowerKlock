@@ -148,6 +148,117 @@ def learn_prefs(cfg_db):
     return prefs
 
 
+# The major yearly publications of the sector. An article that names one is tagged "major": a strong boost, no penalty
+# for a world-wide subject, and every article on it within a week becomes ONE story, led by the publisher's own page
+# (the real report) when it was collected. "hint": the words of outlets that report on it without naming it
+# (« l'AIE prévient »), counted only when an article naming it is in the same week. "pages": where the report itself
+# lives ({y}: its year, {q}: its quarter); the first that answers becomes the story's "report_link".
+MAJOR = [
+    {"key": "weo", "pages": ["https://www.iea.org/reports/world-energy-outlook-{y}", "https://www.iea.org/topics/world-energy-outlook"], "name": "World Energy Outlook (IEA)", "pub": r"iea\.org|international energy agency",
+     "re": r"world energy outlook|\bweo ?20\d\d|perspectives [ée]nerg[ée]tiques mondiales", "hint": r"\b(aie|iea|agence internationale de l.[ée]nergie|international energy agency)\b.{0,80}\b(pr[ée]vient|pr[ée]dit|projette|anticipe|warns?|predicts?|projects?|says|rapport annuel|annual report|sc[ée]narios?)"},
+    {"key": "iea-electricity", "pages": ["https://www.iea.org/reports/electricity-{y}"], "name": "Electricity (IEA)", "pub": r"iea\.org|international energy agency",
+     "re": r"\b(iea|aie)\b.{0,40}\belectricity (20\d\d|mid-year update)|electricity mid-year update"},
+    {"key": "iea-renewables", "pages": ["https://www.iea.org/reports/renewables-{y}"], "name": "Renewables (IEA)", "pub": r"iea\.org|international energy agency",
+     "re": r"\b(iea|aie)\b.{0,40}\b(renewables 20\d\d|renouvelables 20\d\d)|^renewables 20\d\d"},
+    {"key": "iea-gas", "pages": ["https://www.iea.org/reports/gas-market-report-q{q}-{y}"], "name": "Gas Market Report (IEA)", "pub": r"iea\.org|international energy agency", "re": r"gas market report"},
+    {"key": "rte-bp", "pages": ["https://www.rte-france.com/analyses-tendances-et-prospectives/bilan-previsionnel"], "name": "Bilan prévisionnel (RTE)", "pub": r"rte-france|\brte\b", "re": r"bilan pr[ée]visionnel"},
+    {"key": "rte-be", "pages": ["https://analysesetdonnees.rte-france.com/bilan-electrique-synthese", "https://www.rte-france.com/analyses-tendances-et-prospectives/bilan-electrique"], "name": "Bilan électrique (RTE)", "pub": r"rte-france|\brte\b", "re": r"bilan [ée]lectrique"},
+    {"key": "cre-surv", "pages": ["https://www.cre.fr/documents/rapports-et-etudes.html"], "name": "Surveillance des marchés de gros (CRE)", "pub": r"cre\.fr|\bcre\b",
+     "re": r"(rapport de )?surveillance (du fonctionnement )?des march[ée]s de gros|wholesale market monitoring"},
+    {"key": "acer-mmr", "pages": ["https://www.acer.europa.eu/monitoring/MMR"], "name": "Market Monitoring Report (ACER)", "pub": r"acer\.europa|\bacer\b", "re": r"\bacer\b.{0,60}market monitoring report|market monitoring report.{0,60}\bacer\b"},
+    {"key": "eraa", "pages": ["https://www.entsoe.eu/outlooks/eraa/"], "name": "ERAA (ENTSO-E)", "pub": r"entsoe|entso-e", "re": r"\beraa\b|european resource adequacy assessment"},
+    {"key": "ember-eer", "pages": ["https://ember-energy.org/latest-insights/european-electricity-review-{y}/", "https://ember-energy.org/latest-insights/global-electricity-review-{y}/"], "name": "European Electricity Review (Ember)", "pub": r"ember", "re": r"european electricity review|global electricity review"},
+    {"key": "irena-weto", "pages": ["https://www.irena.org/Energy-Transition/Outlook"], "name": "World Energy Transitions Outlook (IRENA)", "pub": r"irena", "re": r"world energy transitions outlook"},
+    {"key": "eurelectric", "pages": ["https://www.eurelectric.org/power-barometer/"], "name": "Power Barometer (Eurelectric)", "pub": r"eurelectric", "re": r"power barometer"},
+]
+
+
+_page_ok = {}
+
+
+def report_page(m, when):
+    """the publisher's page of the report: the first candidate (this year's, then last year's) that answers"""
+    for y in (when.year, when.year - 1):
+        for u in m.get("pages") or []:
+            u = u.format(y=y, q=(when.month - 1) // 3 + 1)
+            if u not in _page_ok:
+                try:
+                    r = requests.get(u, headers=UA, timeout=15, allow_redirects=True)
+                    _page_ok[u] = r.status_code == 200
+                except Exception:
+                    _page_ok[u] = False
+            if _page_ok[u]:
+                return u
+    return None
+
+
+def tag_major(out):
+    """mark the articles on a major publication (rec["major"] = its key), before the scores are computed"""
+    named = {}
+    for rec in out:
+        blob = (rec["title"] + " " + (rec.get("snippet") or "")).lower()
+        for m in MAJOR:
+            if re.search(m["re"], blob):
+                rec["major"] = m["key"]
+                named.setdefault(m["key"], []).append(datetime.fromisoformat(rec["date"]))
+                break
+    for rec in out:
+        if rec.get("major"):
+            continue
+        blob = (rec["title"] + " " + (rec.get("snippet") or "")).lower()
+        d = datetime.fromisoformat(rec["date"])
+        for m in MAJOR:
+            if m.get("hint") and m["key"] in named and re.search(m["hint"], blob) and any(abs((d - x).days) <= 7 for x in named[m["key"]]):
+                rec["major"] = m["key"]
+                break
+    for rec in out:
+        if rec.get("major"):
+            rec["tags"] = list(dict.fromkeys(rec["tags"] + ["report", "major"]))
+
+
+def group_major(out):
+    """one story per major publication and week: the publisher's own page leads (the link to the real report), the
+    outlets that reported on it go under other_sources"""
+    by = {}
+    for rec in out:
+        if rec.get("major"):
+            by.setdefault(rec["major"], []).append(rec)
+    drop = set()
+    for key, recs in by.items():
+        m = next(x for x in MAJOR if x["key"] == key)
+        recs.sort(key=lambda r: r["date"])
+        while recs:                     # the articles of one week around the first one form one story
+            first = datetime.fromisoformat(recs[0]["date"])
+            week = [r for r in recs if (datetime.fromisoformat(r["date"]) - first).days <= 7]
+            recs = [r for r in recs if r not in week]
+            own = [r for r in week if re.search(m["pub"], (r["source"] + " " + r["link"]).lower())]
+            primary = max(own or week, key=lambda r: (len(r.get("snippet") or "") > 40, r["impact"], r["date"]))
+            others = [r for r in week if r is not primary]
+            primary["report_name"] = m["name"]
+            if primary in own and "news.google." not in primary["link"]:
+                primary["report_link"] = primary["link"]     # the publisher's own page: the report itself
+            else:
+                primary["report_link"] = report_page(m, datetime.fromisoformat(primary["date"]))
+            if not others:
+                continue
+            if len(primary.get("snippet") or "") < 40:      # the publisher's page often comes without an extract
+                best = max(others, key=lambda r: len(r.get("snippet") or ""))
+                primary["snippet"] = best.get("snippet") or primary.get("snippet") or ""
+            primary["tags"] = list(dict.fromkeys(primary["tags"] + [t for r in others for t in r["tags"]]))
+            primary["topics"] = sorted(set(primary.get("topics") or []) | {t for r in others for t in r.get("topics") or []}, key=TOPIC_ORDER.index)
+            primary["countries"] = list(dict.fromkeys(primary["countries"] + [c for r in others for c in r["countries"]]))
+            seen = {primary["link"]}
+            os_ = []
+            for r in others:
+                for o in [{"source": r["source"], "link": r["link"], "cls": r.get("cls", "")}] + list(r.get("other_sources") or []):
+                    if o["link"] not in seen:
+                        seen.add(o["link"]); os_.append({"source": o["source"], "link": o["link"], "cls": o.get("cls", "")})
+                drop.add(id(r))
+            primary["other_sources"] = list(primary.get("other_sources") or []) + [o for o in os_ if o["link"] not in {x["link"] for x in primary.get("other_sources") or []}]
+            primary["impact"] = round(max(r["impact"] for r in week) + 0.4 * math.log2(1 + len(primary["other_sources"])), 2)
+    return [r for r in out if id(r) not in drop]
+
+
 def load_prefs():
     try:
         return json.loads(PREFS.read_text(encoding="utf-8"))
@@ -164,8 +275,10 @@ def impact(rec, prefs):
         s += 1.0                                   # an energy text in the Journal officiel, EUR-Lex or from the CRE: on topic by construction
     elif not any(t in tags for t in ("power", "gas", "carbon", "markets", "geopolitics")):
         s -= 1.5                                   # off-topic for an energy market reader
+    if rec.get("major"):
+        s += 4.0                                   # a major yearly publication of the sector (MAJOR): not to be missed
     cs = rec.get("countries", [])
-    s += 1.5 if "FR" in cs else 1.0 if any(c in cs for c in ("EU", "DE", "BE", "ES", "NL", "IT", "UK")) else (0 if "geopolitics" in tags else -1.0)   # the European market first
+    s += 1.0 if rec.get("major") and not cs else 1.5 if "FR" in cs else 1.0 if any(c in cs for c in ("EU", "DE", "BE", "ES", "NL", "IT", "UK")) else (0 if "geopolitics" in tags else -1.0)   # the European market first
     s += 2.0 * prefs.get("sources", {}).get(rec["source"], 0)
     s += sum(prefs.get("cats", {}).get(t, 0) for t in tags)
     s += max(-3.0, min(3.0, sum(prefs.get("words", {}).get(w, 0) for w in set(words(rec["title"])))))
@@ -753,9 +866,10 @@ def main():
         print(f"  {st['kind']:6s} {st['name'][:40]:40s} " + (f"{st['n']} items" if st["ok"] else "ERROR " + st["error"]))
     if not out:
         sys.exit("No news fetched — keeping the previous file.")
+    tag_major(out)
     for rec in out:
         rec["impact"] = impact(rec, prefs)
-    out = cluster_stories(out)
+    out = group_major(cluster_stories(out))
     free_coverage(out, now)
     out.sort(key=lambda i: i["date"], reverse=True)
     OUT.parent.mkdir(parents=True, exist_ok=True)

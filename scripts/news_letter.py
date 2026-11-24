@@ -36,6 +36,9 @@ OUT_WEEK = os.path.join(ROOT, "data", "newsletter_week.json")   # PowerBrunch, M
 PROFILES = os.path.join(ROOT, "config", "news_profiles.json")
 MODEL = "@cf/qwen/qwen3-30b-a3b-fp8"
 MIN_SCORE = 3.0     # a story below this is off the reader's subjects (e.g. an offshore-wind contract for a lawyer)
+# « À retenir » must be a fact from the article: a generic line (« Impact sur les prix », « Intérêt pour les PPA ») is dropped
+GENERIC = re.compile(r"(?i)^\s*(l.|un |une |des |les |le |la )?(impacts?|int[ée]r[êe]ts?|enjeux?|opportunit[ée]s?|cons[ée]quences?|effets?|nouvel(le)?s?|"
+                     r"analyser|[ée]tudier|pr[ée]voir|surveiller|suivre|[àa] suivre|anticiper|v[ée]rifier|attention|implications?|potentiel)\b")
 EMPTY = re.compile(r"(?i)(aucune information|pas d.information|non (précisé|indiqué|disponible)|sans (détail|précision)s? supplémentaire)")
 
 SYSTEM = """Tu écris la newsletter du matin de PowerKlock pour ce lecteur : {reader}.
@@ -44,11 +47,15 @@ Tu reçois les sujets du jour (id, titre, médias, extrait) et les textes offici
 Réponds en JSON seulement :
 {{"headline": "<la journée en une phrase de 35 mots au plus>", "headline_en": "<la même en anglais>",
   "items": [{{"id": "<id du sujet>", "what": "<ce qui s'est passé, 2 phrases, 45 mots au plus>", "what_en": "<anglais>",
-             "for_you": "<pour ce lecteur, ce que cela change ou ce qu'il peut en faire, 1 phrase de 30 mots au plus>", "for_you_en": "<anglais>"}}]}}
+             "for_you": "<à retenir : le fait précis de l'article, 25 mots au plus>", "for_you_en": "<anglais>"}}]}}
 
 Un élément par sujet reçu, dans l'ordre reçu. N'invente rien : seulement ce que disent les titres et extraits, et ce qui en
-découle directement. Aucun chiffre absent des extraits. Ne cite pas de média. Si l'extrait ne permet pas de dire ce que cela
-change pour ce lecteur, laisse "for_you" vide plutôt que d'inventer."""
+découle directement. Aucun chiffre absent des extraits. Ne cite pas de média.
+"what" résume l'article : ce qui se passe, qui, où, combien, quand. Ne répète pas le titre, apporte ce qu'il ne dit pas.
+"for_you" (« À retenir ») est LE fait concret qu'un professionnel retient de l'article : un chiffre, une décision, une date,
+un montant, un volume, qui fait quoi (« 56 MW pour Vattenfall en Allemagne, mise en service fin 2027 »). Jamais une
+formule générale (« impact sur les prix », « intérêt pour les PPA », « nouvelle opportunité », « à suivre », « analyser… »),
+jamais un conseil. S'il n'y a pas de fait concret dans l'extrait, laisse "for_you" vide."""
 
 
 def load(path, default=None):
@@ -111,7 +118,7 @@ def pick(items, prof, now, hours, n=3):
 
 def ask(prof, stories, official, model=None):
     payload = {"sujets": [{"id": sid(i), "titre": i["title"], "medias": [i["source"]] + [o["source"] for o in i.get("other_sources") or []],
-                           "extrait": ((i.get("snippet") or "") if len(i.get("snippet") or "") >= 80 else best_text(i, 900) or i.get("snippet") or "")[:900]} for i in stories],
+                           "extrait": article(i, 1200)} for i in stories],
                "textes_officiels": [o["title"] for o in official[:5]]}
     msg = {"max_tokens": 2000, "system": SYSTEM.format(reader=prof["reader"]),
            "messages": [{"role": "user", "content": json.dumps(payload, ensure_ascii=False)}]}
@@ -157,7 +164,7 @@ def page_text(url, limit=1500):
     if url in _pages:
         return _pages[url]
     _pages[url] = ""
-    if not url or PAID.search(url) or "news.google." in url or len(_pages) > 24:
+    if not url or PAID.search(url) or "news.google." in url or len(_pages) > 40:
         return ""
     UA = "PowerKlock-newsletter (+https://github.com/TomSRemy/PowerKlock)"
     host = "{0.scheme}://{0.netloc}".format(urlparse(url))
@@ -205,6 +212,12 @@ def best_text(i, limit=1500):
     return ""
 
 
+def article(i, limit):
+    """what the model reads of a story: the outlet's extract, completed by the start of the article when it is short"""
+    sn = i.get("snippet") or ""
+    return (sn if len(sn) >= 400 else (sn + " " + best_text(i, limit)).strip())[:limit]
+
+
 def ask_context(items, model=None):
     """a context text for the stories that have none (no extract, a summary that only repeated the title)"""
     payload = [{"id": sid(i), "titre": i["title"], "medias": [i["source"]] + [o["source"] for o in i.get("other_sources") or []],
@@ -217,6 +230,14 @@ def ask_context(items, model=None):
     m = re.search(r"\{.*\}", txt, re.S)
     out = json.loads(m.group(0)) if m else {}
     return {str(x.get("id")): x for x in out.get("items") or [] if isinstance(x, dict) and x.get("what") and not EMPTY.search(x.get("what"))}
+
+
+def takeaway(t, title, what):
+    """« À retenir »: a concrete fact of the article, or nothing (not a generic line, not the title or summary again)"""
+    t = clip(t, 260)
+    if not t or EMPTY.search(t) or GENERIC.search(t) or len(t.split()) < 4 or adds_nothing(t, title + " " + (what or "")):
+        return None
+    return t
 
 
 def clip(s, n):
@@ -511,8 +532,9 @@ def main():
             out.append({"id": sid(i), "title": i["title"], "link": i["link"], "tags": (i.get("tags") or []) + (["fr"] if "FR" in (i.get("countries") or []) and "fr" not in (i.get("tags") or []) else []),
                         "sources": [i["source"]] + [o["source"] for o in i.get("other_sources") or []],
                         "free": [{"source": o["source"], "link": o["link"]} for o in i.get("free") or []] or None,   # paid outlet: the story at free ones
+                        "report_link": i.get("report_link"), "report_name": i.get("report_name"),   # a major publication: the report itself
                         "what": clip(what, 360) or None, "what_en": (clip(g.get("what_en"), 360) or None) if what and what == g.get("what") else None,
-                        "for_you": (clip(g.get("for_you"), 260) or None) if not EMPTY.search(g.get("for_you") or "") else None, "for_you_en": clip(g.get("for_you_en"), 260) or None})
+                        "for_you": takeaway(g.get("for_you"), i["title"], what), "for_you_en": clip(g.get("for_you_en"), 260) if takeaway(g.get("for_you"), i["title"], what) else None})
         # a story without a text gets a context written by the model (the owner's wish: always a text under a title),
         # marked « ctx » so the site and the mail can say so; one call per edition, shared by the profiles
         missing = [i for i in stories if not next((o for o in out if o["id"] == sid(i)), {}).get("what") and sid(i) not in ctx_cache]

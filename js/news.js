@@ -206,7 +206,7 @@ async function renderNewsLetter() {
       <div class="nl-hero-t"><h3>${a(h.link, h.title)}</h3>${(en && h.what_en) || h.what ? `<p>${_newsEsc((en && h.what_en) || h.what)}</p>` : ''}
       ${h.for_you ? `<p class="nl-ret"><b>${_newsT('À retenir.', 'Takeaway.')}</b> ${_newsEsc((en && h.for_you_en) || h.for_you)}</p>` : ''}<div class="nl-src">${h.sources.slice(0, 3).map(_newsEsc).join(' · ')}</div>${_newsFree(h)}</div></div></section>`); }
   if (E.figure && !E.weekly) parts.push(`<section class="nl-sec nl-fig"><b class="${E.figure.dir === 'dn' ? 'dn' : 'up'}">${_newsEsc(E.figure.value)}</b><div><h2>${_newsT('Le chiffre du jour', 'Figure of the day')}</h2><p>${_newsEsc(en ? E.figure.text_en : E.figure.text)}</p></div></section>`);
-  if (S.length > 1) parts.push(`<section class="nl-sec">${S.slice(1).map(h => `<article class="nl-story">${thL(h.tags)}<h3>${a(h.link, h.title)}</h3>${h.for_you ? `<p class="nl-ret"><b>${_newsT('À retenir.', 'Takeaway.')}</b> ${_newsEsc((en && h.for_you_en) || h.for_you)}</p>` : ''}<div class="nl-src">${h.sources.slice(0, 3).map(_newsEsc).join(' · ')}</div>${_newsFree(h)}</article>`).join('')}</section>`);
+  if (S.length > 1) parts.push(`<section class="nl-sec">${S.slice(1).map(h => `<article class="nl-story">${thL(h.tags)}<h3>${a(h.link, h.title)}</h3>${(en && h.what_en) || h.what ? `<p class="nl-what">${_newsEsc((en && h.what_en) || h.what)}</p>` : ''}${h.for_you ? `<p class="nl-ret"><b>${_newsT('À retenir.', 'Takeaway.')}</b> ${_newsEsc((en && h.for_you_en) || h.for_you)}</p>` : ''}<div class="nl-src">${h.sources.slice(0, 3).map(_newsEsc).join(' · ')}</div>${_newsFree(h)}</article>`).join('')}</section>`);
   const shownL = new Set(S.map(x => x.link)), brief = (E.top || []).filter(o => !shownL.has(o.link)).slice(0, E.weekly ? 6 : 4);
   if (brief.length) parts.push(`<section class="nl-sec"><h2>${E.weekly ? _newsT('La semaine en bref', 'The week in brief') : _newsT('En bref', 'In brief')}</h2>${brief.map(o => `<p class="nl-brief">${thL(o.tags)} ${a(o.link, o.title)} <span class="nl-src">${_newsEsc(o.source)}</span></p>`).join('')}</section>`);
   if ((E.week_ahead || []).length) parts.push(`<section class="nl-sec nl-ahead"><h2>${E.weekly ? _newsT('La semaine qui vient', 'The week ahead') : _newsT('Cette semaine', 'This week')}</h2><table>${E.week_ahead.map(x => `<tr><td>${wd(x.date)} ${new Date(x.date + 'T12:00:00Z').getUTCDate()}</td><td>${x.kind === 'cons' ? _newsT('Fin de consultation : ', 'Consultation closes: ') : ''}${x.link ? a(x.link, en && x.title_en ? x.title_en : x.title) : _newsEsc(en && x.title_en ? x.title_en : x.title)}</td></tr>`).join('')}</table></section>`);
@@ -461,8 +461,10 @@ function _newsCoverage(item) {
 // a paid outlet's article: the same story at outlets readable for free (scripts/fetch_news.py, free_coverage). Inside a card
 // that is itself a link, so each outlet is a span opened by the click handler below.
 function _newsFree(item, cls) {
-  const f = (item && item.free) || []; if (!f.length) return '';
-  return `<div class="news-free${cls ? ' ' + cls : ''}"><span>${_newsT('Aussi en accès libre', 'Also free to read')} :</span> ${f.map(o => `<span class="news-free-a" role="link" tabindex="0" data-open="${_newsEsc(o.link)}" title="${_newsEsc(o.title || o.source)}">${_newsEsc(o.source)} ↗</span>`).join(' · ')}</div>`;
+  // a major publication (World Energy Outlook, Bilan prévisionnel…): a link to the report itself, on the publisher's site
+  const rep = item && item.report_link ? `<div class="news-free news-report${cls ? ' ' + cls : ''}"><span>${_newsT('Le rapport', 'The report')} :</span> <span class="news-free-a" role="link" tabindex="0" data-open="${_newsEsc(item.report_link)}">${_newsEsc(item.report_name || _newsT('sur le site de l’éditeur', 'on the publisher’s site'))} ↗</span></div>` : '';
+  const f = (item && item.free) || []; if (!f.length) return rep;
+  return rep + `<div class="news-free${cls ? ' ' + cls : ''}"><span>${_newsT('Aussi en accès libre', 'Also free to read')} :</span> ${f.map(o => `<span class="news-free-a" role="link" tabindex="0" data-open="${_newsEsc(o.link)}" title="${_newsEsc(o.title || o.source)}">${_newsEsc(o.source)} ↗</span>`).join(' · ')}</div>`;
 }
 const _newsOpen = e => {
   const b = e.target.closest && e.target.closest('[data-open]'); if (!b || (e.type === 'keydown' && e.key !== 'Enter')) return;
