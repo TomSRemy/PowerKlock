@@ -94,7 +94,9 @@
       }));
     }
     let start = 0;
-    try { start = +(sessionStorage.getItem(KEY + key) || 0); } catch (_) {}
+    // the tab last opened in this session, else the reader's own default for this page (Settings: the Today page's
+    // opening view, localStorage pk-view-default-<key>), else the first
+    try { const v = sessionStorage.getItem(KEY + key); start = +(v != null ? v : localStorage.getItem(KEY + 'default-' + key) || 0); } catch (_) {}
     show(Math.min(Math.max(0, start), present.length - 1));
   }
 
