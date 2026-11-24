@@ -9,6 +9,7 @@ Env  SUPABASE_ACCESS_TOKEN (a personal access token, supabase.com › Account �
 import json
 import os
 import sys
+import urllib.error
 import urllib.request
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -21,8 +22,12 @@ def call(method, body=None):
     req = urllib.request.Request(API, method=method, data=json.dumps(body).encode() if body is not None else None,
                                  headers={'Authorization': 'Bearer ' + os.environ['SUPABASE_ACCESS_TOKEN'],
                                           'Content-Type': 'application/json', 'User-Agent': 'powerklock-auth-config'})
-    with urllib.request.urlopen(req, timeout=30) as r:
-        return json.loads(r.read() or b'{}')
+    try:
+        with urllib.request.urlopen(req, timeout=30) as r:
+            return json.loads(r.read() or b'{}')
+    except urllib.error.HTTPError as e:   # say why: a token without « Auth Config › Read & Write » gets 403 on the write
+        print(f'::error::Supabase answered {e.code} to {method}: {e.read().decode(errors="replace")[:400]}')
+        raise SystemExit(1)
 
 
 def main():
