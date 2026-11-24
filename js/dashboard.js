@@ -978,13 +978,78 @@
         el.innerHTML = note ? '<span class="pkd-acc-note" title="Layouts are kept in this browser until accounts are enabled">Saved in this browser</span>' : '';
         return;
       }
+      if (A.user && !note) {
+        // the header: a round avatar with the initial, opening the account menu
+        const mail = A.user.email || '', ini = (mail.match(/[a-z0-9]/i) || ['?'])[0].toUpperCase();
+        el.innerHTML = `<button type="button" class="pk-avatar" id="${id}-btn" aria-haspopup="menu" aria-expanded="false" title="${esc(mail)}"><span class="pk-avatar-c">${esc(ini)}</span><svg class="pk-avatar-chev" viewBox="0 0 10 6" width="10" height="6" aria-hidden="true"><path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>`;
+        el.querySelector(`#${id}-btn`).addEventListener('click', ev => { ev.stopPropagation(); accountMenu(ev.currentTarget); });
+        return;
+      }
       if (A.user) {
-        el.innerHTML = `${note ? '<span class="pkd-sync" id="pkd-sync"></span>' : ''}<button type="button" class="pk-btn-ghost pkd-acc" id="${id}-btn" title="Signed in · click to sign out">${esc(A.user.email || 'Account')}</button>`;
+        el.innerHTML = `<span class="pkd-sync" id="pkd-sync"></span><button type="button" class="pk-btn-ghost pkd-acc" id="${id}-btn">${esc(A.user.email || 'Account')}</button>`;
       } else {
         el.innerHTML = `${note ? '<span class="pkd-acc-note">Saved in this browser</span>' : ''}<button type="button" class="pk-btn-ghost pkd-acc" id="${id}-btn">Sign in</button>`;
       }
       el.querySelector(`#${id}-btn`).addEventListener('click', openAccount);
     });
+  }
+
+  // The account menu under the avatar: who is signed in, then every personal setting in one place, then sign out
+  let menuAdmin = null;
+  function accountMenu(btn) {
+    const A = window.PKAccount, old = document.getElementById('pk-acc-menu');
+    if (old) { old.remove(); btn.setAttribute('aria-expanded', 'false'); return; }
+    const mail = A.user.email || '', ini = (mail.match(/[a-z0-9]/i) || ['?'])[0].toUpperCase();
+    const I = {
+      user: '<path d="M10 10a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm-6 7c0-3 2.7-5 6-5s6 2 6 5" />',
+      mail: '<rect x="2.5" y="4.5" width="15" height="11" rx="2"/><path d="m3 6 7 5 7-5"/>',
+      bell: '<path d="M5 14V9a5 5 0 0 1 10 0v5l1.5 1.5h-13Z"/><path d="M8.5 17.5a1.6 1.6 0 0 0 3 0"/>',
+      grid: '<rect x="3" y="3" width="6" height="6" rx="1.2"/><rect x="11" y="3" width="6" height="6" rx="1.2"/><rect x="3" y="11" width="6" height="6" rx="1.2"/><rect x="11" y="11" width="6" height="6" rx="1.2"/>',
+      spark: '<path d="M10 2.5 11.6 8.4 17.5 10l-5.9 1.6L10 17.5l-1.6-5.9L2.5 10l5.9-1.6Z"/>',
+      shield: '<path d="M10 2.5 16 5v4.5c0 4-2.6 6.6-6 8-3.4-1.4-6-4-6-8V5Z"/><path d="m7.5 10 1.8 1.8L12.8 8"/>',
+      out: '<path d="M8 4H4.5v12H8"/><path d="m12 6.5 3.5 3.5L12 13.5M15.5 10H7.5"/>',
+    };
+    const ic = k => `<svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${I[k]}</svg>`;
+    const item = (k, label, sub, act) => `<button type="button" role="menuitem" class="pk-am-i" data-act="${act}">${ic(k)}<span><b>${label}</b><small>${sub}</small></span></button>`;
+    const m = document.createElement('div');
+    m.id = 'pk-acc-menu'; m.className = 'pk-acc-menu'; m.setAttribute('role', 'menu');
+    m.innerHTML = `<div class="pk-am-head"><span class="pk-avatar-c pk-am-av">${esc(ini)}</span><span><b>${esc(mail)}</b><small id="pk-am-role">Member</small></span></div>
+      <div class="pk-am-sec">Settings</div>
+      ${item('mail', 'My newsletter', 'Editions, subjects, address', 'letter')}
+      ${item('bell', 'My price alerts', 'Thresholds and e-mails', 'alerts')}
+      ${item('grid', 'My dashboards', 'Your own pages of charts', 'boards')}
+      ${item('spark', 'Connector for Claude', 'PowerKlock inside your Claude', 'mcp')}
+      <div class="pk-am-sep"></div>
+      ${item('user', 'My account', 'Password, delete the account', 'account')}
+      <div id="pk-am-admin"></div>
+      <div class="pk-am-sep"></div>
+      ${item('out', 'Sign out', '', 'out')}`;
+    document.body.appendChild(m);
+    const r = btn.getBoundingClientRect();
+    m.style.top = (r.bottom + 8) + 'px';
+    m.style.right = Math.max(8, window.innerWidth - r.right) + 'px';
+    btn.setAttribute('aria-expanded', 'true');
+    const close = () => { m.remove(); btn.setAttribute('aria-expanded', 'false'); document.removeEventListener('click', away, true); document.removeEventListener('keydown', esc_); };
+    const away = e => { if (!m.contains(e.target) && !btn.contains(e.target)) close(); };
+    const esc_ = e => { if (e.key === 'Escape') { close(); btn.focus(); } };
+    setTimeout(() => document.addEventListener('click', away, true), 0);
+    document.addEventListener('keydown', esc_);
+    const scrollTo = sel => setTimeout(() => { const t = document.querySelector(sel); if (t) t.scrollIntoView({ block: 'start', behavior: 'smooth' }); }, 350);
+    const go = {
+      letter: () => { location.hash = '#intel/news'; setTimeout(() => { if (typeof newsSetView === 'function') newsSetView('letter'); scrollTo('.nl-me'); }, 300); },
+      alerts: () => { if (window.PKAlerts) PKAlerts.open(); },
+      boards: () => { location.hash = '#dashboards'; },
+      mcp: () => { openAccount(); scrollTo('#pkd-mcp'); },
+      account: () => openAccount(),
+      admin: () => { openAccount(); scrollTo('#pkd-admin'); },
+      out: () => A.signOut().then(() => { renderAccount(); toast('Signed out'); }),
+    };
+    m.addEventListener('click', e => { const b = e.target.closest('[data-act]'); if (!b) return; close(); (go[b.dataset.act] || (() => {}))(); });
+    // the administrator also gets the accounts to approve
+    const showAdmin = on => { if (!on) return; const h = m.querySelector('#pk-am-admin'); if (h) h.innerHTML = item('shield', 'Accounts to approve', 'New members, access', 'admin'); const ro = m.querySelector('#pk-am-role'); if (ro) ro.textContent = 'Administrator'; };
+    if (menuAdmin !== null) showAdmin(menuAdmin);
+    else if (A.client && A.client()) A.client().rpc('is_news_admin').then(({ data }) => { menuAdmin = !!data; showAdmin(menuAdmin); });
+    const first = m.querySelector('.pk-am-i'); if (first) first.focus({ preventScroll: true });
   }
 
   function openAccount(hint) {
@@ -1002,7 +1067,27 @@
           <div class="pkd-msg" id="pkd-pw-msg" role="status">${hint ? esc(hint) : ''}</div>
           <div id="pkd-mcp"></div>
           <div id="pkd-admin"></div>
+          <details class="pkd-del"><summary>Delete my account</summary>
+            <p class="pkd-p">Your account and everything it holds are erased for good: dashboards, alerts, newsletter settings, keywords, the connector for Claude. This cannot be undone.</p>
+            <button type="button" class="pkd-del-go" id="pkd-del-go">Delete my account for good</button>
+            <div class="pkd-msg" id="pkd-del-msg" role="status"></div></details>
           <div class="pkd-form-foot"><button type="button" class="pk-btn-ghost" data-close>Close</button><button type="button" class="pk-btn-primary" id="pkd-out">Sign out</button></div></div>`, root => {
+        // « Delete my account » (warehouse migration 037): a second click confirms; the site's administrators are refused
+        root.querySelector('#pkd-del-go').addEventListener('click', ev => {
+          const b = ev.currentTarget, m = root.querySelector('#pkd-del-msg');
+          if (!b.dataset.sure) { b.dataset.sure = '1'; b.textContent = 'Click again to confirm'; return; }
+          b.disabled = true; m.textContent = 'Deleting…';
+          A.client().rpc('delete_my_account').then(({ data, error }) => {
+            if (error || !data || !data.ok) {
+              b.disabled = false;
+              m.textContent = data && data.reason === 'admin' ? 'An administrator account cannot delete itself here.' : 'Not deleted.';
+              if (error && error.message) m.append(' ' + error.message);
+              return;
+            }
+            try { localStorage.removeItem('pk-last-email'); localStorage.removeItem('pk-approved'); } catch (_) {}
+            A.signOut().finally(() => { closeModal(); renderAccount(); toast('Account deleted'); });
+          });
+        });
         root.querySelector('#pkd-out').addEventListener('click', () => { A.signOut().then(() => { closeModal(); renderAccount(); toast('Signed out'); }); });
         root.querySelector('#pkd-pw-form').addEventListener('submit', ev => {
           ev.preventDefault();
