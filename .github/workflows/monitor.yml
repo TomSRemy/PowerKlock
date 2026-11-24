@@ -3,13 +3,8 @@ name: Live site monitor
 # Every hour, the published site is checked as a visitor sees it (scripts/monitor_live.py): site up, data on time,
 # Today and Day-ahead showing prices without a script error. An e-mail when a problem appears or is solved.
 on:
-  schedule:
-    - cron: '23 * * * *'   # off the round minutes, where GitHub delays scheduled runs
-  # GitHub skips scheduled runs on busy days: the monitor also runs after the hourly news job.
-  # One trigger only: with several, runs collided and GitHub e-mailed every cancelled one.
-  workflow_run:
-    workflows: ['Fetch Energy News']
-    types: [completed]
+  # when: workers/scheduler/schedule.json (the PowerKlock scheduler, a Cloudflare Worker, starts it on time)
+  # One trigger only (the scheduler, every hour): with several, runs collided and GitHub e-mailed every cancelled one.
   workflow_dispatch:
 
 concurrency:

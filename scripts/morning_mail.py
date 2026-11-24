@@ -159,13 +159,13 @@ def tailor(E, pids, interests, france, n):
 
 
 # the subject of an article, shown in a pill at its right: the most specific of its categories (scripts/fetch_news.py)
-THEMES = [('renewables', 'Renouvelables', '#0F2A23', '#14D3A9'), ('gas', 'Gaz', '#2D2213', '#E8A33D'), ('carbon', 'Carbone', '#1B2430', '#9FB0C0'),
-          ('deal', 'Transactions', '#231C36', '#B48CF2'), ('build', 'Projets', '#13243A', '#6CB4F5'), ('regulation', 'Régulation', '#331A1C', '#ED6965'),
-          ('markets', 'Marchés', '#13243A', '#6CB4F5'), ('power', 'Électricité', '#0F2A23', '#14D3A9'), ('geopolitics', 'Géopolitique', '#2A2418', '#D9B26A')]
+THEMES = [('support', 'Soutien EnR', '#FBF3DC', '#7A5B00'), ('renewables', 'Renouvelables', '#E3F4EC', '#0B6B4F'), ('gas', 'Gaz', '#FCEFE0', '#9A5B12'), ('carbon', 'Carbone', '#ECEFF3', '#3F5468'),
+          ('deal', 'Transactions', '#EEE9F8', '#5B3FA0'), ('build', 'Projets', '#E6F0FA', '#1F5C99'), ('regulation', 'Régulation', '#FDECEC', '#A23B36'),
+          ('markets', 'Marchés', '#E6F0FA', '#1F5C99'), ('power', 'Électricité', '#E8F6F3', '#0B7A62'), ('geopolitics', 'Géopolitique', '#F3EEE6', '#6B5530')]
 CONS_T = {'cee': 'Efficacité énergétique', 'tariffs': 'Tarifs', 'grid': 'Réseau', 'market': 'Marché', 'renewables': 'Renouvelables', 'gas': 'Gaz', 'other': 'Autre'}
 
 
-def pill(label, bg='#1B2430', fg='#9FB0C0'):
+def pill(label, bg='#ECEFF3', fg='#3F5468'):
     return (f'<span style="font-family:Inter,Arial,sans-serif;display:inline-block;font-size:11px;font-weight:600;line-height:1;'
             f'padding:4px 8px;border-radius:999px;background:{bg};color:{fg};white-space:nowrap">{esc(label)}</span>') if label else ''
 
@@ -212,9 +212,9 @@ def render_letter(today, E, pid, mine=None, exclude=(), interests=(), france=Fal
 
 
 # theme of a story: its most specific category, as a coloured word above the title
-TH = [('renewables', 'Renouvelables', '#14D3A9'), ('gas', 'Gaz', '#E8A33D'), ('carbon', 'Carbone', '#9FB0C0'), ('deal', 'Transactions', '#B48CF2'),
-      ('build', 'Projets', '#6CB4F5'), ('regulation', 'Régulation', '#ED6965'), ('markets', 'Marchés', '#6CB4F5'), ('power', 'Électricité', '#14D3A9'),
-      ('geopolitics', 'Géopolitique', '#D9B26A')]
+TH = [('support', 'Soutien EnR', '#7A5B00'), ('renewables', 'Renouvelables', '#0B6B4F'), ('gas', 'Gaz', '#9A5B12'), ('carbon', 'Carbone', '#3F5468'), ('deal', 'Transactions', '#5B3FA0'),
+      ('build', 'Projets', '#1F5C99'), ('regulation', 'Régulation', '#B8322D'), ('markets', 'Marchés', '#1F5C99'), ('power', 'Électricité', '#0B7A62'),
+      ('geopolitics', 'Géopolitique', '#6B5530')]
 
 
 def theme_of(tags):
@@ -236,6 +236,9 @@ DARK = [('background:#0a0e13;border-radius:10px', 'background:#151c24;border:1px
         ('#EBEBEB', '#1e2d3d'), ('#F2F2F2', '#1a2532'), ('#F7F7F5', '#151c24')]
 
 
+GENERIC = re.compile(r"(?i)^\s*(l.|un |une |des |les |le |la )?(impacts?|int[ée]r[êe]ts?|enjeux?|opportunit[ée]s?|cons[ée]quences?|effets?|nouvel(le)?s?|"
+                     r"analyser|[ée]tudier|pr[ée]voir|surveiller|suivre|[àa] suivre|anticiper|v[ée]rifier|implications?|potentiel)\b")
+
 def dark(html):
     for a, b in DARK:
         html = html.replace(a, b)
@@ -244,7 +247,7 @@ def dark(html):
 
 
 def journal(today, E, ed, wk, mine):
-    """7 O'Klock and PowerBrunch « façon journal » (approved 19 Nov. 2026), on the site's dark background (24 Nov.), the price tiles, the lead
+    """7 O'Klock and PowerBrunch « façon journal » (approved 19 Nov. 2026), a black band at the top and the stories on white (24 Nov.), the price tiles, the lead
     story with its chart, the figure of the day (or the week's chart on Monday), the other stories, in brief, the days
     ahead. Images are attached to the mail (cid:), so they show without loading anything from the web."""
     f = 'font-family:Inter,Arial,Helvetica,sans-serif'
@@ -287,13 +290,18 @@ def journal(today, E, ed, wk, mine):
                      f'<span style="{f};font-size:11px;color:#7A93AB">{sub}</span> <span style="{mono};font-size:11.5px;color:{col};white-space:nowrap">{ch}</span></a></td>')
     tiles = ''.join('<tr>' + ''.join(cells[i:i + 3]) + '<td></td>' * (3 - len(cells[i:i + 3])) + '</tr>' for i in range(0, len(cells), 3))
     srcs = ', '.join(sorted({r.get('src') for r in E.get('markets') or [] if r.get('src')}))
-    head = (f'<tr><td style="padding:18px 22px 16px;border-bottom:1px solid #EBEBEB">'
+    brief_sep = f'</p><p style="{f};margin:10px 0 0;font-size:15.5px;line-height:1.6;color:#121212">'   # the brief's second paragraph
+    head = (f'<tr><td style="padding:18px 22px 16px;background:#0a0e13;border-radius:12px 12px 0 0">'
             f'<table role="presentation" width="100%" style="border-collapse:collapse"><tr><td style="{f};font-size:13px;color:#6B6B6B;vertical-align:middle"><a href="{SITE}" style="text-decoration:none">{img("../assets/logo-header.png", "PowerKlock", 150).replace("display:block;width:100%;max-width:150px", "display:inline-block;width:150px;vertical-align:middle")}</a><span style="vertical-align:middle;margin-left:10px">{frday(today)}</span></td>'
             f'<td style="{f};font-size:13px;text-align:right"><a href="{SITE}#intel/news" style="{green};font-weight:600;text-decoration:none">▶ Écouter</a></td></tr></table>'
             f'<table role="presentation" width="100%" style="border-collapse:collapse;margin:8px 0 12px"><tr><td style="vertical-align:bottom"><p style="{serif};margin:0;font-size:32px;font-weight:700;color:#121212">{TITLE[wk]}</p>'
             f'<p style="{f};margin:3px 0 0;font-size:13.5px;color:#6B6B6B">{SUB[wk]}{" · semaine du " + frday(today - timedelta(days=7)) if wk else ""}</p></td>{wx}</tr></table>'
             f'<table role="presentation" width="100%" style="border-collapse:collapse;table-layout:fixed">{tiles}</table>'
-            f'<p style="{f};font-size:11px;color:#8A8A8A;margin:6px 0 0">Sources : {esc(srcs)}. {"Variation sur la semaine" if wk else "Variation sur la séance précédente"}. Chaque tuile ouvre sa page sur le site.</p></td></tr>')
+            f'<p style="{f};font-size:11px;color:#8A8A8A;margin:6px 0 0">Sources : {esc(srcs)}. {"Variation sur la semaine" if wk else "Variation sur la séance précédente"}. Chaque tuile ouvre sa page sur le site.</p>'
+            + (f'<p style="{f};margin:14px 0 0;font-size:15.5px;line-height:1.6;color:#121212"><b style="{green}">Le point du matin.</b> {brief_sep.join(esc(x) for x in re.split(r"\n\s*\n", E["brief"]))} <a href="{SITE}#today" style="{green};font-size:13.5px;white-space:nowrap">Le détail par marché →</a></p>'
+               + (f'<p style="{f};margin:6px 0 0;font-size:12.5px;color:#6B6B6B">À lire : ' + ' · '.join(f'<a href="{esc(x["link"])}" style="color:#6B6B6B">{esc(x["source"])}</a>' for x in E.get('brief_links') or []) + '</p>' if E.get('brief_links') else '')
+               if E.get('brief') else '')
+            + '</td></tr>')
     body = []
     # ── PowerBrunch: the week's chart first ──
     wc = None   # no chart any more (the owner's choice, 23 Nov. 2026)
@@ -307,6 +315,16 @@ def journal(today, E, ed, wk, mine):
     def free(h):   # a paid outlet's story: the same at outlets free to read
         return (f'<p style="{f};margin:4px 0 0;font-size:12.5px;color:#6B6B6B">Aussi en accès libre : ' +
                 ' · '.join(f'<a href="{esc(o["link"])}" style="{green}">{esc(o["source"])}</a>' for o in h["free"]) + '</p>') if h.get('free') else ''
+
+    def keep(h):     # « À retenir »: the story's summary, then its concrete fact when it adds one
+        w, y = (h.get('what') or '').strip(), (h.get('for_you') or '').strip()
+        if GENERIC.search(y) or len(y.split()) < 4 or y.lower()[:40] in w.lower():
+            y = ''     # a generic line (« Intérêt pour les PPA ») adds nothing
+        return (w + ((' ' if w[-1:] in '.!?…' else '. ') + y if y else '')) if w else y
+
+    def report(h):   # a major publication: the report itself, on the publisher's site
+        return (f'<p style="{f};margin:4px 0 0;font-size:12.5px;color:#6B6B6B">Le rapport : <a href="{esc(h["report_link"])}" style="{green};font-weight:600">'
+                f'{esc(h.get("report_name") or "sur le site de l’éditeur")} ↗</a></p>') if h.get('report_link') else ''
     st = list(ed.get('stories') or [])
     if st:
         h = st[0]
@@ -316,9 +334,8 @@ def journal(today, E, ed, wk, mine):
                  f'<p style="{f};margin:6px 0 0;font-size:11.5px;color:#6B6B6B">Source : {esc(ch["src"])} · <a href="{SITE}#{esc(ch["page"])}" style="{green}">voir sur PowerKlock</a></p></div>') if ch else ''
         body.append(row(kick(('Le sujet de la semaine' if wk else 'À la une') + (f' · <span style="color:{col}">{lab}</span>' if lab else '')) +
                         f'<p style="{serif};margin:0 0 8px;font-size:25px;line-height:1.22;font-weight:700">{a(h["link"], h["title"])}</p>' +
-                        (f'<p style="{f};margin:0;font-size:16px;line-height:1.55;color:#383838">{esc(h["what"])}</p>' if h.get('what') else '') + chart +
-                        (f'<p style="{f};margin:{0 if chart else 12}px 0 0;font-size:15.5px;line-height:1.5;color:#121212;border-left:3px solid #0B7A62;padding-left:12px"><b style="{green}">À retenir.</b> {esc(h["for_you"])}</p>' if h.get('for_you') else '') +
-                        f'<p style="{f};margin:10px 0 0;font-size:12.5px;color:#6B6B6B">{esc(" · ".join(h["sources"][:3]))} · <a href="{esc(h["link"])}" style="{green};font-weight:600">Lire l\'article</a></p>' + free(h)))
+                        chart + (f'<p style="{f};margin:{12 if chart else 4}px 0 0;font-size:16px;line-height:1.55;color:#121212;border-left:3px solid #0B7A62;padding-left:12px"><b style="{green}">À retenir.</b> {esc(keep(h))}</p>' if keep(h) else '') +
+                        f'<p style="{f};margin:10px 0 0;font-size:12.5px;color:#6B6B6B">{esc(" · ".join(h["sources"][:3]))} · <a href="{esc(h["link"])}" style="{green};font-weight:600">Lire l\'article</a></p>' + report(h) + free(h)))
     # ── the figure of the day ──
     fig = E.get('figure')
     if fig and not wk:
@@ -329,8 +346,8 @@ def journal(today, E, ed, wk, mine):
         lab, col = theme_of(h.get('tags'))
         body.append(row((f'<p style="{f};margin:0 0 4px;font-size:12px;font-weight:700;color:{col}">{lab}</p>' if lab else '') +
                         f'<p style="{serif};margin:0 0 6px;font-size:19px;line-height:1.28;font-weight:700">{a(h["link"], h["title"])}</p>' +
-                        (f'<p style="{f};margin:0 0 6px;font-size:14.5px;line-height:1.5;color:#383838"><b style="{green}">À retenir.</b> {esc(h["for_you"])}</p>' if h.get('for_you') else '') +
-                        f'<p style="{f};margin:0;font-size:12.5px;color:#6B6B6B">{esc(" · ".join(h["sources"][:3]))}</p>' + free(h)))
+                        (f'<p style="{f};margin:0 0 8px;font-size:15px;line-height:1.5;color:#383838"><b style="{green}">À retenir.</b> {esc(keep(h))}</p>' if keep(h) else '') +
+                        f'<p style="{f};margin:0;font-size:12.5px;color:#6B6B6B">{esc(" · ".join(h["sources"][:3]))}</p>' + report(h) + free(h)))
     # ── your keywords ──
     if mine:
         body.append(row(kick('Vos mots-clés') + ''.join(f'<p style="{f};margin:0;padding:7px 0;border-bottom:1px solid #F2F2F2;font-size:14.5px;line-height:1.4">{a(o["link"], o["title"])} <span style="color:#6B6B6B;font-size:12px">· {esc(o["source"])}</span></p>' for o in mine)))
@@ -363,11 +380,11 @@ def journal(today, E, ed, wk, mine):
             f'Sujets choisis pour votre profil · résumés écrits automatiquement à partir des titres et extraits.<br>'
             f'<a href="{SITE}#intel/news" style="{green}">Voir en ligne</a> · <a href="{SITE}#intel/news" style="{green}">Changer de profil</a> · <a href="{SITE}#intel/news" style="{green}">Se désabonner</a></p></td></tr>')
     html = ('<div style="background:#F1F1EF;padding:16px 6px"><table role="presentation" width="100%" style="max-width:680px;margin:0 auto;border-collapse:collapse;table-layout:fixed;word-wrap:break-word;overflow-wrap:anywhere;background:#FFFFFF;border-radius:12px">'
-            + head + ''.join(body) + foot + '</table></div>')
+            + dark(head) + ''.join(body) + foot + '</table></div>')
     text = f'{TITLE[wk]} · {frday(today)}\n\n' + '\n'.join(f'{r["label"][0]} : {n(r["value"])} {r["unit"]}' for r in E.get('markets') or []) + '\n\n' + \
         '\n'.join(f'• {h["title"]}\n  {h.get("what") or ""}\n  {h["link"]}' for h in st) + f'\n\n{SITE}#intel/news\n'
     subject = f'{TITLE[wk]} · {frday(today)}' if not wk else f'PowerBrunch · la semaine du {frday(today - timedelta(days=7))}'
-    return subject, text, dark(html) + ''.join(f'<!--img:{x}-->' for x in dict.fromkeys(imgs))
+    return subject, text, html + ''.join(f'<!--img:{x}-->' for x in dict.fromkeys(imgs))
 
 
 def readers(today, weekly=False):

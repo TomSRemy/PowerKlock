@@ -6,8 +6,7 @@ name: Fetch Energy News
 # Server-side so the site needs no CORS proxy.
 
 on:
-  schedule:
-    - cron: '15 * * * *'     # every hour (sources added from the site are read at the next run)
+  # when: workers/scheduler/schedule.json (the PowerKlock scheduler, a Cloudflare Worker, starts it on time)
   push:                      # a source added in config/news_sources.json is read right away
     branches: [main]
     paths: ['config/news_sources.json']
@@ -35,6 +34,8 @@ jobs:
       - name: Fetch news feeds
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}   # optional: sources added from the site
+          GO_GMAIL_USER: ${{ secrets.GO_GMAIL_USER }}       # the team mailbox: paper alerts (config "mail_alerts"), titles and links only
+          GO_GMAIL_APP_PASSWORD: ${{ secrets.GO_GMAIL_APP_PASSWORD }}
         run: python scripts/fetch_news.py
       - name: Calendar (consultation deadlines and dated events, data/agenda.ics)
         run: python scripts/agenda_ics.py || echo "::warning::agenda.ics not written"

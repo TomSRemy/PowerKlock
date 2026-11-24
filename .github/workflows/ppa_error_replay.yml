@@ -6,8 +6,7 @@ name: PPA model-error replay (weekly)
 # After the weekly PPA test bench (Sunday 04:20 UTC), so the neighbours' data and the published set-up are fresh.
 
 on:
-  schedule:
-    - cron: '37 11 * * 0'     # Sunday 11:37 UTC
+  # when: workers/scheduler/schedule.json (the PowerKlock scheduler, a Cloudflare Worker, starts it on time)
   workflow_dispatch:
 
 concurrency:

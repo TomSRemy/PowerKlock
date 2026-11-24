@@ -5,8 +5,7 @@ name: Site notes ⇄ repository
 # go back to the database. Needs SUPABASE_DB_URL; does nothing without it.
 
 on:
-  schedule:
-    - cron: '41 * * * *'
+  # when: workers/scheduler/schedule.json (the PowerKlock scheduler, a Cloudflare Worker, starts it on time)
   # GitHub skips scheduled runs on busy days: also after the hourly news job
   workflow_run:
     workflows: ['Fetch Energy News']

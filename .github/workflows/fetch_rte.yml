@@ -10,10 +10,7 @@ name: Fetch RTE (éCO2mix France, M0 reference prices)
 #   France day-ahead history → data/m0.json (scripts/fetch_rte_m0.py).
 
 on:
-  schedule:
-    - cron: '10 6 * * *'     # 06:10 UTC, complete previous day
-    - cron: '10 18 * * *'    # 18:10 UTC (also PP2 signals of 19:00 Paris in winter)
-    - cron: '50 8 * * *'     # 08:50 UTC: PP1 signals (09:30 Paris)
+  # when: workers/scheduler/schedule.json (the PowerKlock scheduler, a Cloudflare Worker, starts it on time)
   workflow_dispatch:
     inputs:
       month_from:

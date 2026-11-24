@@ -1056,5 +1056,13 @@
       "lang": "fr",
       "require": "électri|electricit|photovolta|solaire|éolien|eolien|offshore|nucléaire|nucleaire|\\bedf\\b|engie|totalenergies|\\brte\\b|\\bcre\\b|enedis|hydrogène|batterie|stockage|renouvelable|pompe à chaleur|\\bppa\\b|énergie|energie|réseau électrique|gaz"
     }
-  ]
+  ],
+  "mail_alerts": [
+    {
+      "name": "Academia.edu",
+      "from": "academia",
+      "link": "academia\\.edu/\\d+"
+    }
+  ],
+  "_mail_alerts_about": "Paper alerts and newsletters received in the team mailbox (GO_GMAIL_USER): sender (part of the address), and the pattern of the links to keep. Titles and links only."
 }

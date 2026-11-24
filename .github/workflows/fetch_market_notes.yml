@@ -6,8 +6,7 @@ name: Market notes by e-mail (ENGIE Energy Market News)
 # section names, no text) is committed, to check the runs.
 
 on:
-  schedule:
-    - cron: '30 6,16 * * 1-5'    # morning and late afternoon, working days
+  # when: workers/scheduler/schedule.json (the PowerKlock scheduler, a Cloudflare Worker, starts it on time)
   workflow_dispatch:
   push:
     branches: [main]

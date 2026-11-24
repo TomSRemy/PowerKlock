@@ -6,8 +6,7 @@ name: PPA pricer test bench (weekly)
 # (scripts/ppa_lab.py → data/history/ppa_lab.json, ppa_forecast.json).
 
 on:
-  schedule:
-    - cron: '20 4 * * 0'      # Sunday 04:20 UTC
+  # when: workers/scheduler/schedule.json (the PowerKlock scheduler, a Cloudflare Worker, starts it on time)
   workflow_dispatch:
 
 concurrency:

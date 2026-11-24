@@ -36,6 +36,9 @@ OUT_WEEK = os.path.join(ROOT, "data", "newsletter_week.json")   # PowerBrunch, M
 PROFILES = os.path.join(ROOT, "config", "news_profiles.json")
 MODEL = "@cf/qwen/qwen3-30b-a3b-fp8"
 MIN_SCORE = 3.0     # a story below this is off the reader's subjects (e.g. an offshore-wind contract for a lawyer)
+# « À retenir » must be a fact from the article: a generic line (« Impact sur les prix », « Intérêt pour les PPA ») is dropped
+GENERIC = re.compile(r"(?i)^\s*(l.|un |une |des |les |le |la )?(impacts?|int[ée]r[êe]ts?|enjeux?|opportunit[ée]s?|cons[ée]quences?|effets?|nouvel(le)?s?|"
+                     r"analyser|[ée]tudier|pr[ée]voir|surveiller|suivre|[àa] suivre|anticiper|v[ée]rifier|attention|implications?|potentiel)\b")
 EMPTY = re.compile(r"(?i)(aucune information|pas d.information|non (précisé|indiqué|disponible)|sans (détail|précision)s? supplémentaire)")
 
 SYSTEM = """Tu écris la newsletter du matin de PowerKlock pour ce lecteur : {reader}.
@@ -44,11 +47,15 @@ Tu reçois les sujets du jour (id, titre, médias, extrait) et les textes offici
 Réponds en JSON seulement :
 {{"headline": "<la journée en une phrase de 35 mots au plus>", "headline_en": "<la même en anglais>",
   "items": [{{"id": "<id du sujet>", "what": "<ce qui s'est passé, 2 phrases, 45 mots au plus>", "what_en": "<anglais>",
-             "for_you": "<pour ce lecteur, ce que cela change ou ce qu'il peut en faire, 1 phrase de 30 mots au plus>", "for_you_en": "<anglais>"}}]}}
+             "for_you": "<à retenir : le fait précis de l'article, 25 mots au plus>", "for_you_en": "<anglais>"}}]}}
 
 Un élément par sujet reçu, dans l'ordre reçu. N'invente rien : seulement ce que disent les titres et extraits, et ce qui en
-découle directement. Aucun chiffre absent des extraits. Ne cite pas de média. Si l'extrait ne permet pas de dire ce que cela
-change pour ce lecteur, laisse "for_you" vide plutôt que d'inventer."""
+découle directement. Aucun chiffre absent des extraits. Ne cite pas de média.
+"what" résume l'article : ce qui se passe, qui, où, combien, quand. Ne répète pas le titre, apporte ce qu'il ne dit pas.
+"for_you" (« À retenir ») est LE fait concret qu'un professionnel retient de l'article : un chiffre, une décision, une date,
+un montant, un volume, qui fait quoi (« 56 MW pour Vattenfall en Allemagne, mise en service fin 2027 »). Jamais une
+formule générale (« impact sur les prix », « intérêt pour les PPA », « nouvelle opportunité », « à suivre », « analyser… »),
+jamais un conseil. S'il n'y a pas de fait concret dans l'extrait, laisse "for_you" vide."""
 
 
 def load(path, default=None):
@@ -86,13 +93,15 @@ def score(i, prof, now):
         s -= 2.5
     fr = "fr" in tags or "FR" in (i.get("countries") or [])
     s += prof.get("france", 1.0) if fr else -prof.get("foreign", 0.0)     # France first, as much as the profile asks
-    s += 0.5 * math.log2(1 + len(i.get("other_sources") or []))
+    if "major" in tags:
+        s += 4.0        # a major yearly publication (IEA World Energy Outlook, RTE Bilan prévisionnel…): it leads
+    s += 1.1 * math.log2(1 + len(i.get("other_sources") or []))     # covered by many outlets: the story of the day (5 outlets: +2.6)
     s -= 0.3 * (age_h(i, now) or 0) / 24
     return s
 
 
 def pick(items, prof, now, hours, n=3):
-    cands = [i for i in items if (age_h(i, now) or 1e9) <= hours and "official" not in (i.get("tags") or []) and energy(i)]   # texts have their own section
+    cands = [i for i in items if (age_h(i, now) or 1e9) <= hours and not {"official", "research"} & set(i.get("tags") or []) and energy(i)]   # texts and papers have their own sections
     cands.sort(key=lambda i: -score(i, prof, now))
     out, seen_src = [], set()
     for i in cands:
@@ -111,7 +120,7 @@ def pick(items, prof, now, hours, n=3):
 
 def ask(prof, stories, official, model=None):
     payload = {"sujets": [{"id": sid(i), "titre": i["title"], "medias": [i["source"]] + [o["source"] for o in i.get("other_sources") or []],
-                           "extrait": ((i.get("snippet") or "") if len(i.get("snippet") or "") >= 80 else best_text(i, 900) or i.get("snippet") or "")[:900]} for i in stories],
+                           "extrait": article(i, 1200)} for i in stories],
                "textes_officiels": [o["title"] for o in official[:5]]}
     msg = {"max_tokens": 2000, "system": SYSTEM.format(reader=prof["reader"]),
            "messages": [{"role": "user", "content": json.dumps(payload, ensure_ascii=False)}]}
@@ -157,7 +166,7 @@ def page_text(url, limit=1500):
     if url in _pages:
         return _pages[url]
     _pages[url] = ""
-    if not url or PAID.search(url) or "news.google." in url or len(_pages) > 24:
+    if not url or PAID.search(url) or "news.google." in url or len(_pages) > 40:
         return ""
     UA = "PowerKlock-newsletter (+https://github.com/TomSRemy/PowerKlock)"
     host = "{0.scheme}://{0.netloc}".format(urlparse(url))
@@ -205,6 +214,12 @@ def best_text(i, limit=1500):
     return ""
 
 
+def article(i, limit):
+    """what the model reads of a story: the outlet's extract, completed by the start of the article when it is short"""
+    sn = i.get("snippet") or ""
+    return (sn if len(sn) >= 400 else (sn + " " + best_text(i, limit)).strip())[:limit]
+
+
 def ask_context(items, model=None):
     """a context text for the stories that have none (no extract, a summary that only repeated the title)"""
     payload = [{"id": sid(i), "titre": i["title"], "medias": [i["source"]] + [o["source"] for o in i.get("other_sources") or []],
@@ -218,6 +233,154 @@ def ask_context(items, model=None):
     out = json.loads(m.group(0)) if m else {}
     return {str(x.get("id")): x for x in out.get("items") or [] if isinstance(x, dict) and x.get("what") and not EMPTY.search(x.get("what"))}
 
+
+def takeaway(t, title, what):
+    """« À retenir »: a concrete fact of the article, or nothing (not a generic line, not the title or summary again)"""
+    t = clip(t, 260)
+    if not t or EMPTY.search(t) or GENERIC.search(t) or len(t.split()) < 4 or adds_nothing(t, title + " " + (what or "")):
+        return None
+    return t
+
+
+BRIEF = """Tu écris « Le point du matin » de PowerKlock : l'analyse du marché de l'électricité français, comme un analyste marché
+senior qui parle à des directeurs du secteur. Un seul paragraphe, 4 ou 5 phrases, 110 mots au plus, ton clair et posé,
+sans liste ni titre. Pas d'actualité générale : la page la donne juste en dessous.
+Tu reçois : les marchés du matin (dont le spot du jour et le Cal 27, contrat de l'an prochain), les fondamentaux France
+(consommation, demande résiduelle face à la veille), notre contexte de marché (nucléaire, météo, géopolitique), les tendances
+attendues de la semaine (une attente : « devrait ») et les actualités de marché des dernières 36 h (id, titre, extrait, média).
+Ce qu'on attend :
+  - le spot ET le Cal 27, et ce que leur écart dit (le marché voit-il le mouvement durer ?) ;
+  - pourquoi : consommation et demande résiduelle, nucléaire, gaz ; une demande résiduelle en hausse ne change pas le prix du
+    gaz, elle fait que les centrales au gaz fixent plus souvent le prix de l'électricité ;
+  - le gaz et son contexte géopolitique, dit simplement (ce qui se passe, en quoi cela touche les prix) ;
+  - ce qu'on attend pour les jours qui viennent (météo, tendance de la semaine), au conditionnel.
+Varie les verbes : pas deux fois la même tournure. 4 à 6 chiffres, arrondis. Une cause n'est écrite que si le contexte ou un
+article la donne. Aucun fait, chiffre, acteur ni date absent de ce qui est reçu. Interdits : « les prix restent volatils »,
+« influencés par des facteurs », tout conseil.
+Le ton seulement (un autre jour, d'autres faits : n'en reprends ni les mots ni les faits) : « Le solaire pèse sur les prix :
+le spot recule de 8 % sous 60 €, avec deux heures négatives à la mi-journée. Le Cal-27 ne bouge pas, signe que le marché ne
+voit pas l'épisode durer. À noter : RTE ouvre sa consultation sur les règles de raccordement. »
+Réponds en JSON seulement : {"brief": "<français>", "brief_en": "<anglais>", "sources": ["<id des actualités de marché utilisées>"]}"""
+
+
+def numbers_ok(text, given):
+    """every figure of a generated text is one of the figures it was given (rounding allowed): nothing invented"""
+    nums = [float(x.replace("\u202f", "").replace(" ", "").replace(",", ".")) for x in re.findall(r"\d+(?:[ \u202f]\d{3})*(?:[.,]\d+)?", text or "")]
+    return all(any(abs(n - g) <= max(0.6, 0.012 * abs(g)) for g in given) for n in nums)
+
+
+UPW = r"hausse|haussi|monte|remonte|grimpe|progress|gagne|augment|bondit|s.envole|rench[ée]ri|rises?|up\b|gains?|climbs?|jumps?"
+DOWNW = r"baisse|recul|chute|perd|c[èe]de|repli|diminu|d[ée]croch|falls?|down\b|drops?|slips?|eases?|declines?"
+MKT_KEY = [(r"spot", "spot"), (r"\bgaz\b|\bpeg\b|\bgas\b|\bttf\b", "peg"), (r"\bcal", "cal"), (r"garanties|guarantees", "garanties"), (r"pointe|peak", "pointe")]
+PRICE_NEWS = re.compile(r"prix|price|cours|march[ée]|market|peg|ttf|spot|ormuz|hormuz|gnl|lng|p[ée]trole|oil|brent|g[ée]opolit|tension|sanction|"
+                        r"approvisionnement|supply|stocks?|carbone|co2|quotas?|nucl[ée]aire|disponibilit", re.I)
+
+
+def direction_ok(text, markets):
+    """a market said to rise really rose (and the other way): the sentence that names it must not give the opposite move"""
+    for r in markets:
+        lab = (r.get("label") or [""])[0].lower()
+        key = next((rx for rx, k in MKT_KEY if k in lab), None)
+        move = r.get("chg") if r.get("show") == "abs" or r.get("hours") else r.get("pct")
+        if not key or not isinstance(move, (int, float)) or abs(move) < 0.5:
+            continue
+        for sent in re.split(r"(?<=[.;!?])\s+", text):
+            m = re.search(key, sent, re.I)
+            if not m:
+                continue
+            after = sent[m.start(): m.start() + 90].lower()
+            up, down = re.search(UPW, after), re.search(DOWNW, after)
+            first = min([x for x in (up, down) if x], key=lambda x: x.start(), default=None)
+            if first is not None and (first is down) == (move > 0):
+                return False
+            break
+    return True
+
+
+def fundamentals(day):
+    """France's consumption, wind and solar of the delivery day against the day before (TSO forecasts, data/forecast.json),
+    and the demand left to nuclear, hydro and gas (consumption minus wind and solar): what links power to gas"""
+    try:
+        days = json.load(open(os.path.join(ROOT, "data", "forecast.json")))["zones"]["FR"]["days"]
+    except (OSError, ValueError, KeyError):
+        return {}
+    prev = (date.fromisoformat(day) - timedelta(days=1)).isoformat()
+
+    def avg(d, k):
+        v = [x for x in ((days.get(d) or {}).get(k) or []) if x is not None]
+        return sum(v) / len(v) / 1000 if len(v) >= 80 else None     # GW, a whole day only
+    out = {}
+    for k, name in (("load", "consommation"), ("wind", "éolien"), ("solar", "solaire")):
+        a, b = avg(day, k), avg(prev, k)
+        if a is not None:
+            out[name] = {"moyenne_GW": round(a, 1), "veille_GW": round(b, 1) if b else None,
+                         "évolution": None if not b else ("en hausse de " if a > b else "en baisse de ") + f"{abs(round((a / b - 1) * 100))} %"}
+    if all(k in out for k in ("consommation", "éolien", "solaire")):
+        r = out["consommation"]["moyenne_GW"] - out["éolien"]["moyenne_GW"] - out["solaire"]["moyenne_GW"]
+        rb = [out[k].get("veille_GW") for k in ("consommation", "éolien", "solaire")]
+        out["demande_résiduelle"] = {"moyenne_GW": round(r, 1), "note": "consommation moins éolien et solaire : ce que nucléaire, hydraulique et gaz doivent fournir ; "
+                                     "plus elle monte, plus les centrales au gaz fixent le prix de l'électricité"}
+        if all(rb):
+            rr = rb[0] - rb[1] - rb[2]
+            out["demande_résiduelle"]["évolution"] = ("en hausse de " if r > rr else "en baisse de ") + f"{abs(round((r / rr - 1) * 100))} %"
+    return out
+
+
+def trends_only(f):
+    """the fundamentals as moves (« en hausse de 6 % »), without the levels: the brief explains, the tiles give the numbers"""
+    # consumption and residual demand only: wind and solar alone led the model to wrong reasoning (24 Nov. 2026 tests)
+    return {k: {"évolution": v.get("évolution"), **({"note": v["note"]} if v.get("note") else {})} for k, v in f.items()
+            if v.get("évolution") and k in ("consommation", "demande_résiduelle")}
+
+
+def ask_brief(edition, model=None, items=None):
+    """« Le point du matin »: the markets with their reasons (our market context of the evening before) and the day's news"""
+    try:
+        md = json.load(open(os.path.join(ROOT, "data", "market_digest.json")))
+    except (OSError, ValueError):
+        md = {}
+    fresh = md.get("asof") and (date.fromisoformat(edition["date"]) - date.fromisoformat(md["asof"])).days <= 3
+    ctx = [{"sujet": c.get("topic"), "texte": c.get("text"), "tendance": c.get("tone")} for c in (md.get("context") or [])] if fresh else []
+    rnd = lambda v, d: None if not isinstance(v, (int, float)) else round(v) if abs(v) >= 20 or d == 0 else round(v, d)  # noqa: E731
+    # rounded as one says them (« vers 245 € », « +3 % »): the text then reads like a note, not a table
+    mk = [{"marché": r["label"][0], "valeur": rnd(r.get("value"), 1), "unité": r.get("unit"),
+           "variation": (("en hausse de " if r.get("pct", 0) > 0 else "en baisse de " if r.get("pct", 0) < 0 else "stable ") + f'{abs(rnd(r.get("pct"), 0))} %' if isinstance(r.get("pct"), (int, float)) and r.get("show") != "abs" and not r.get("hours")
+                         else f'{rnd(r.get("chg"), 1):+} {"h" if r.get("hours") else "€"}' if isinstance(r.get("chg"), (int, float)) else None)}
+          for r in edition.get("markets") or []]
+    w = edition.get("weather") or {}
+    names = {"oil": "pétrole", "gas": "gaz", "power": "électricité", "carbon": "carbone"}
+    trend = {names.get(k, k): {"tendance": v.get("tone"), "texte": v.get("text")} for k, v in (md.get("outlook") or {}).items()} if fresh else {}
+    # the market news of the last 36 h: what moved the prices (gas, power, carbon, geopolitics), the most important first
+    now = datetime.fromisoformat(edition["updated"])
+    mkt = [i for i in items or [] if {"markets", "gas", "geopolitics", "power", "carbon"} & set(i.get("topics") or [])
+           and PRICE_NEWS.search(i["title"]) and not {"official", "research"} & set(i.get("tags") or []) and (age_h(i, now) or 1e9) <= 36]
+    mkt = sorted(mkt, key=lambda i: -(i.get("impact") or 0))[:5]
+    news = [{"id": f"n{k + 1}", "titre": i["title"], "extrait": clip(i.get("snippet"), 300), "média": i["source"]} for k, i in enumerate(mkt)]
+    payload = {"marchés": mk, "fondamentaux_france": trends_only(fundamentals(edition["date"])), "contexte": ctx, "tendances_semaine": trend, "actualités_marché": news, "météo": " · ".join(filter(None, [(w.get("label") or [""])[0], (w.get("sub") or [""])[0]]))}
+    msg = {"max_tokens": 700, "system": BRIEF, "messages": [{"role": "user", "content": json.dumps(payload, ensure_ascii=False)}],
+           "model": model or os.environ.get("NEWS_MODEL") or MODEL}
+    req = urllib.request.Request(PROXY, data=json.dumps(msg).encode(), headers={"Content-Type": "application/json", "User-Agent": "PowerKlock-newsletter"})
+    r = json.load(urllib.request.urlopen(req, timeout=150))
+    txt = "".join(b.get("text") for b in r.get("content", []) if b.get("type") == "text" and isinstance(b.get("text"), str))
+    m = re.search(r"\{.*\}", txt, re.S)
+    out = json.loads(m.group(0), strict=False) if m else {}   # the two paragraphs come with a real line break
+    given = [float(x.replace(",", ".")) for x in re.findall(r"\d+(?:[.,]\d+)?", json.dumps(payload, ensure_ascii=False).replace("\u202f", ""))]
+    given += [float(v) for r_ in edition.get("markets") or [] for v in (r_.get("value"), r_.get("pct"), r_.get("chg")) if isinstance(v, (int, float))]
+    given += [abs(g) for g in given]
+    para = lambda t: "\n\n".join(clip(x, 900) for x in re.split(r"\n\s*\n", str(t or "")) if x.strip())  # noqa: E731   two paragraphs kept
+    b, be = para(out.get("brief")), para(out.get("brief_en"))
+    market_par = re.split(r"\n\s*\n", b or "")[0]   # the market paragraph: a note, not a table of figures (« Cal-27 » is a name; the news keep theirs)
+    many = len(re.findall(r"(?<![\w-])\d+(?:[.,]\d+)?", re.sub(r"\b(19|20)\d\d\b", "", market_par))) > 6
+    hollow = re.search(r"(?i)restent volatils|reste volatil|influenc[ée]s par (des|les) facteurs|il faut retenir que les prix", b or "")
+    hollow = hollow or len((b or "").split()) > 130
+    hollow = hollow or len(re.findall(r"(?i)\ben hausse\b", b or "")) > 3      # the same words again and again
+    hollow = hollow or "\n\n" in (b or "")                                                 # one paragraph: the market only
+    hollow = hollow or not re.search(r"(?i)\bcal", b or "")                                  # the year ahead says whether the move lasts
+    if not b or many or hollow or not numbers_ok(b, given) or not direction_ok(b, edition.get("markets") or []):
+        raise ValueError(f"brief rejected: {b[:120]!r}")   # a figure that was not given: better no brief
+    used = [mkt[int(x[1:]) - 1] for x in out.get("sources") or [] if isinstance(x, str) and re.fullmatch(r"n[1-5]", x) and int(x[1:]) <= len(mkt)]
+    links = [{"title": i["title"], "source": i["source"], "link": i["link"]} for i in dict((i["link"], i) for i in used).values()][:3]
+    return b, (be if be and numbers_ok(be, given) else None), links
 
 def clip(s, n):
     s = re.sub(r"\s+", " ", str(s or "")).strip()
@@ -511,8 +674,9 @@ def main():
             out.append({"id": sid(i), "title": i["title"], "link": i["link"], "tags": (i.get("tags") or []) + (["fr"] if "FR" in (i.get("countries") or []) and "fr" not in (i.get("tags") or []) else []),
                         "sources": [i["source"]] + [o["source"] for o in i.get("other_sources") or []],
                         "free": [{"source": o["source"], "link": o["link"]} for o in i.get("free") or []] or None,   # paid outlet: the story at free ones
+                        "report_link": i.get("report_link"), "report_name": i.get("report_name"),   # a major publication: the report itself
                         "what": clip(what, 360) or None, "what_en": (clip(g.get("what_en"), 360) or None) if what and what == g.get("what") else None,
-                        "for_you": (clip(g.get("for_you"), 260) or None) if not EMPTY.search(g.get("for_you") or "") else None, "for_you_en": clip(g.get("for_you_en"), 260) or None})
+                        "for_you": takeaway(g.get("for_you"), i["title"], what), "for_you_en": clip(g.get("for_you_en"), 260) if takeaway(g.get("for_you"), i["title"], what) else None})
         # a story without a text gets a context written by the model (the owner's wish: always a text under a title),
         # marked « ctx » so the site and the mail can say so; one call per edition, shared by the profiles
         missing = [i for i in stories if not next((o for o in out if o["id"] == sid(i)), {}).get("what") and sid(i) not in ctx_cache]
@@ -540,6 +704,17 @@ def main():
         edition["profiles"][pid] = {"hero_chart": hero, "name": prof["name"], "short": prof["short"], "order": prof["order"], "headline": clip(gen.get("headline"), 300) or None, "headline_en": clip(gen.get("headline_en"), 300) or None,
                                     "stories": out, "ai": bool(by)}
         print(f"{pid}: {len(out)} stories, AI text for {len(by)}")
+    edition["brief"] = edition["brief_en"] = None
+    edition["brief_links"] = []
+    if use_ai and edition["profiles"]:
+        for attempt in range(1, 7):      # a text with too many figures, one not given, a wrong direction or no news is refused: a few tries
+            try:
+                # Llama 4 Scout writes the most faithful briefs (tested 24 Nov. 2026: Mistral Small invented a nuclear fall,
+                # Llama 3.3 repeated generic lines); Qwen3 first when it answers
+                edition["brief"], edition["brief_en"], edition["brief_links"] = ask_brief(edition, None if attempt == 1 else "@cf/meta/llama-4-scout-17b-16e-instruct", items)
+                break
+            except Exception as e:
+                print(f"brief not written, attempt {attempt} ({str(e)[:160]})")
     with open(out_path, "w") as f:
         json.dump(edition, f, ensure_ascii=False, indent=1)
     return 0

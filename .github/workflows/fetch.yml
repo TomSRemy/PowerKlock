@@ -1,17 +1,12 @@
 name: Fetch Energy Data
 on:
-  schedule:
-    # GitHub queues scheduled runs, worst on the hour: the '0 5' and '0 12' runs started 4-5 h late every day.
-    # Off-minute slots, more of them (the concurrency group keeps one at a time; a run with nothing new commits nothing):
-    - cron: '7 4 * * *'    # night: yesterday finalised
-    - cron: '37 5 * * *'   # before the market opens (07:37 Paris in summer, 06:37 in winter)
-    - cron: '17 11 * * *'  # day-ahead results (published ~12:45 CET)
-    - cron: '47 12 * * *'  # second chance for the day-ahead results
-    - cron: '23 16 * * *'  # afternoon
-    # retry slots: they only fetch if a main zone (France first) is missing for the day that should be in
-    - cron: '13,43 6-9 * * *'
-    - cron: '3,23,53 11-17 * * *'
-  workflow_dispatch:       # bouton manuel dans GitHub
+  # when: workers/scheduler/schedule.json (the PowerKlock scheduler, a Cloudflare Worker, starts it on time)
+  workflow_dispatch:
+    inputs:
+      cron:
+        description: 'Slot that started it (set by the PowerKlock scheduler; empty when started by hand)'
+        type: string
+        default: ''
   push:                    # a change to the fetch runs it at once (GitHub's schedule can be hours late)
     branches: [main]
     paths: ['scripts/fetch_data.py', 'scripts/heal_price_gaps.py', 'scripts/check_prices_complete.py', '.github/workflows/fetch.yml']
@@ -38,7 +33,7 @@ jobs:
       - name: Anything missing? (retry slots only)
         id: check
         run: |
-          case "${{ github.event.schedule }}" in
+          case "${{ github.event.schedule || inputs.cron }}" in
             '13,43 6-9 * * *'|'3,23,53 11-17 * * *') python scripts/check_prices_complete.py ;;
             *) echo "run=true" >> "$GITHUB_OUTPUT" ;;
           esac

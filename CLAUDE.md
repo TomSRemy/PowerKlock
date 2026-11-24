@@ -33,6 +33,9 @@ Actions jobs that write JSON into `data/`. These rules come from the owner; foll
   date checked against its source.
 - When two sources disagree (PowerKlock vs RTE, EEX, CRE…), find and write down the cause before showing both.
 
+- **When jobs run**: in `workers/scheduler/schedule.json` (a Cloudflare Worker starts them on time), never a GitHub
+  `schedule:` (late by hours, often dropped). A job reading its slot uses `inputs.cron`. `tests/test_scheduler.py` checks it.
+
 ## Secrets
 - No key, token or password in the repository, in a commit, in a log or in a chat. Secrets live in GitHub
   (Settings › Secrets › Actions) and jobs read them as `${{ secrets.NAME }}`.

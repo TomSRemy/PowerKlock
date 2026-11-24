@@ -5,9 +5,7 @@ name: Render chart images
 # run so the repository does not grow. Index: png/charts.json.
 
 on:
-  schedule:
-    - cron: '30 7 * * *'    # after the morning fetches
-    - cron: '30 14 * * *'   # after the day-ahead auction results
+  # when: workers/scheduler/schedule.json (the PowerKlock scheduler, a Cloudflare Worker, starts it on time)
   workflow_dispatch:
   push:                     # also when the renderer or the catalogue changes
     branches: [main]

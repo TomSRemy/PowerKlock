@@ -4,8 +4,7 @@ name: Check CRE tender results
 # lose rows or show no new result for 9 months, so that a new tender result is never missed.
 
 on:
-  schedule:
-    - cron: "17 7 * * 3"       # Wednesdays 07:17 UTC
+  # when: workers/scheduler/schedule.json (the PowerKlock scheduler, a Cloudflare Worker, starts it on time)
   workflow_dispatch:
 
 permissions:

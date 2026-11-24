@@ -5,8 +5,7 @@ name: BESS day-ahead value
 # Everything is recomputed each time (about a minute): the file keeps 120 days of detail and the monthly history.
 
 on:
-  schedule:
-    - cron: '40 14 * * *'    # every day 14:40 UTC (next-day prices are out around 13:00 CET)
+  # when: workers/scheduler/schedule.json (the PowerKlock scheduler, a Cloudflare Worker, starts it on time)
   push:
     branches: [main]
     paths: ['scripts/bess_optim.py', '.github/workflows/bess_optim.yml']
