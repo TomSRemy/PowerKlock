@@ -94,7 +94,7 @@
     const [E, tmr, tdy, neg, wx, pp, md] = await Promise.all([get('newsletter.json'), get('history/daily/' + paris(1) + '.json'), get('history/daily/' + paris() + '.json'), get('neg_forecast.json'), get('weather_outlook.json'), get('rte_pp.json'), get('market_digest.json')]);
     const out = [`<h2 class="pa-h">${T('Aujourd’hui', 'Today')}</h2><div class="pa-date">${dayName(paris(), true)}</div>`];
     const brief = E && ((en() && E.brief_en) || E.brief);
-    if (brief) out.push(`<div class="pa-card pa-brief"><b>${T('Le point du matin.', 'The morning brief.')}</b> ${esc(String(brief).split(/\n\s*\n/)[0])}</div>`);
+    if (brief) out.push(`<div class="pa-card pa-brief"><b>${T('Le point du matin.', 'The morning brief.')}</b> ${esc(String(brief).split(/\n\s*\n/)[0])}${navigator.share ? `<button type="button" class="pa-share" id="pa-share">${T('Partager', 'Share')} ↗</button>` : ''}</div>`);
     const M = (E && E.markets) || [];
     if (M.length) out.push(sec(T('Les prix', 'Prices'), `<div class="pa-tiles">${M.map(r => { const c = r.chg || 0, h = r.hours;
       const ch = h ? (r.chg == null ? '' : !c ? T('stable', 'unchanged') : (c > 0 ? '+' : '−') + nf(Math.abs(c), 0) + ' h') : r.show === 'abs' ? (r.chg == null ? '' : (c > 0 ? '+' : '−') + nf(Math.abs(c), 1) + ' €') : r.pct == null ? '' : (c > 0 ? '+' : c < 0 ? '−' : '') + nf(Math.abs(r.pct), 1) + ' %';
@@ -105,6 +105,11 @@
       out.push(sec(fr[0] === paris(1) ? T('Demain heure par heure', 'Tomorrow hour by hour') : T('Aujourd’hui heure par heure', 'Today hour by hour'),
         `<div class="pa-card"><div class="pa-ch"><span>${T('Spot France', 'France spot')} · ${dayName(fr[0])}</span><b>${nf(fr[1].avg, 2)} €/MWh</b></div>${bars(hs, lo)}${axis()}
         <p class="pa-note">${T('Moins cher', 'Cheapest')} ${hs.indexOf(mn)} h (${nf(mn, 0)} €) · ${T('plus cher', 'dearest')} ${hs.indexOf(mx)} h (${nf(mx, 0)} €)${fr[1].negHours ? ' · ' + nf(fr[1].negHours, 2) + ' h ' + T('négatives', 'negative') : ''}</p></div>${src('ENTSO-E · ' + T('moyenne publiée du jour', 'published daily average'))}`)); }
+    // the last 7 delivery days: the published daily average (data/history/daily/<D>.json › avg)
+    const back = await Promise.all([...Array(7)].map((_, i) => get('history/daily/' + paris(-6 + i) + '.json').then(j => [paris(-6 + i), j && j.zones && j.zones.FR ? j.zones.FR.avg : null])));
+    if (back.filter(x => x[1] != null).length >= 3) { const v = back.map(x => x[1]), ok = v.filter(x => x != null), d0 = ok[0], d1 = ok[ok.length - 1], ch = d1 - d0;
+      out.push(sec(T('Les 7 derniers jours', 'The last 7 days'), `<div class="pa-card"><div class="pa-ch"><span>${T('Spot France, moyenne du jour', 'France spot, daily average')}</span><b class="${ch > 0 ? 'up' : 'dn'}">${ch > 0 ? '+' : '−'}${nf(Math.abs(ch), 0)} € ${T('sur la semaine', 'over the week')}</b></div>
+        ${line([v], ['#14D3A9'], 90)}<div class="pa-axis">${back.filter((_, i) => i % 2 === 0).map(x => `<span>${esc(dayName(x[0]))}</span>`).join('')}</div></div>${src('ENTSO-E · ' + T('moyenne publiée du jour', 'published daily average'))}`)); }
     // the next days: PowerKlock's price forecast and the risk of negative hours (data/neg_forecast.json)
     const ND = neg && neg.days ? Object.keys(neg.days).filter(d => d > (fr ? fr[0] : paris())).sort().slice(0, 5) : [];
     if (ND.length) out.push(sec(T('Les prochains jours', 'The next days'), `<div class="pa-days">${ND.map(d => { const p = neg.days[d].price || [], m = p.length ? p.reduce((a, b) => a + b, 0) / p.length : null;
@@ -136,7 +141,30 @@
   const ZN = { FR: ['🇫🇷', 'France', 'France'], DE_LU: ['🇩🇪', 'Allemagne', 'Germany'], ES: ['🇪🇸', 'Espagne', 'Spain'], BE: ['🇧🇪', 'Belgique', 'Belgium'], NL: ['🇳🇱', 'Pays-Bas', 'Netherlands'], GB: ['🇬🇧', 'Grande-Bretagne', 'Great Britain'], PT: ['🇵🇹', 'Portugal', 'Portugal'],
     IT_NORD: ['🇮🇹', 'Italie Nord', 'Italy North'], CH: ['🇨🇭', 'Suisse', 'Switzerland'], AT: ['🇦🇹', 'Autriche', 'Austria'], DK_W: ['🇩🇰', 'Danemark Ouest', 'Denmark West'], DK_E: ['🇩🇰', 'Danemark Est', 'Denmark East'],
     PL: ['🇵🇱', 'Pologne', 'Poland'], CZ: ['🇨🇿', 'Tchéquie', 'Czechia'], NO_2: ['🇳🇴', 'Norvège Sud', 'Norway South'], SE_4: ['🇸🇪', 'Suède Sud', 'Sweden South'], LU: ['🇱🇺', 'Luxembourg', 'Luxembourg'], IE_SEM: ['🇮🇪', 'Irlande', 'Ireland'] };
-  let zone = 'FR';
+  let zone = 'FR', rng = 'now';
+  // the mix day by day (data/history/genmix_daily/<year>.json: daily mean MW by fuel), as stacked bars, with the low-carbon share
+  async function mixHistory() {
+    const y = +paris().slice(0, 4), need = rng === '1y' ? [y - 1, y] : [y];
+    const files = await Promise.all(need.map(k => get('history/genmix_daily/' + k + '.json')));
+    const days = [], rows = {};
+    files.forEach(f => { const z = f && f.zones && f.zones[zone]; if (!z) return; z.days.forEach((d, i) => { days.push(d); FUEL.forEach(([k]) => { (rows[k] = rows[k] || []).push((z[k] || [])[i]); }); }); });
+    if (!days.length) return '';
+    const n = rng === '1y' ? 365 : 30, from = Math.max(0, days.length - n);
+    let D = days.slice(from), R = {}; FUEL.forEach(([k]) => { R[k] = (rows[k] || []).slice(from); });
+    if (rng === '1y') {   // a year: weekly means
+      const W = [], WR = {}; FUEL.forEach(([k]) => { WR[k] = []; });
+      for (let i = 0; i < D.length; i += 7) { W.push(D[i]); FUEL.forEach(([k]) => { const v = R[k].slice(i, i + 7).filter(x => x != null); WR[k].push(v.length ? v.reduce((a, b) => a + b, 0) / v.length : null); }); }
+      D = W; R = WR;
+    }
+    const tot = D.map((_, i) => FUEL.reduce((a, [k]) => a + (R[k][i] || 0), 0)), mx = Math.max(...tot) || 1, w = 300 / D.length;
+    const bars = D.map((_, i) => { let y0 = 120; return FUEL.map(([k, , col]) => { const h = (R[k][i] || 0) / mx * 116; y0 -= h; return h > 0 ? `<rect x="${(i * w).toFixed(2)}" y="${y0.toFixed(1)}" width="${Math.max(0.6, w - 0.6).toFixed(2)}" height="${h.toFixed(1)}" fill="${col}"/>` : ''; }).join(''); }).join('');
+    const low = D.map((_, i) => tot[i] ? ((R.nuclear[i] || 0) + (R.hydro[i] || 0) + (R.wind[i] || 0) + (R.solar[i] || 0)) / tot[i] * 100 : null);
+    const lv = low.filter(x => x != null), avg = lv.reduce((a, b) => a + b, 0) / (lv.length || 1);
+    return sec(rng === '1y' ? T('Production, 12 derniers mois (moyennes hebdomadaires)', 'Generation, last 12 months (weekly means)') : T('Production, 30 derniers jours', 'Generation, last 30 days'),
+      `<div class="pa-card"><div class="pa-ch"><span>${T('Part bas-carbone moyenne', 'Average low-carbon share')}</span><b>${nf(avg, 0)} %</b></div>
+      <svg class="pa-line" viewBox="0 0 300 120" preserveAspectRatio="none">${bars}</svg><div class="pa-axis"><span>${esc(dayName(D[0]))}</span><span>${esc(dayName(D[D.length - 1]))}</span></div>
+      <div class="pa-lg pa-lgw">${FUEL.map(([k, l, col]) => `<span><i style="background:${col}"></i>${l}</span>`).join('')}</div></div>${src('ENTSO-E · ' + T('moyenne du jour, MW', 'daily mean, MW'))}`);
+  }
   function co2(m) { const b = m.byCode || {}; let e = 0, t = 0, low = 0, ren = 0;
     Object.entries(b).forEach(([k, v]) => { const x = typeof v === 'number' ? v : (v && (v.mw != null ? v.mw : v.value)); if (!(x > 0) || EF[k] == null) return; e += x * EF[k]; t += x; if (LOW.includes(k)) low += x; if (REN.includes(k)) ren += x; });
     return t ? { g: e / t, low: low / t, ren: ren / t } : null; }
@@ -148,7 +176,9 @@
     const upd = g && g.updated ? new Date(g.updated).toLocaleTimeString(en() ? 'en-GB' : 'fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' }) : '';
     const X = (xb && xb.countries && xb.countries[zone]) || [], net = X.reduce((a, x) => a + (x.net || 0), 0);
     const out = [`<h2 class="pa-h">${T('Réseau', 'Grid')}</h2><div class="pa-date">${T('en direct', 'live')}${upd ? ' · ' + T('mise à jour', 'updated') + ' ' + upd : ''}</div>`,
-      `<div class="pa-zones">${Object.keys(Z).map(k => `<button type="button" data-z="${k}" class="${k === zone ? 'on' : ''}">${(ZN[k] || ['', k])[0]} ${k.slice(0, 2)}</button>`).join('')}</div>`];
+      `<div class="pa-zones">${Object.keys(Z).map(k => `<button type="button" data-z="${k}" class="${k === zone ? 'on' : ''}">${(ZN[k] || ['', k])[0]} ${k.slice(0, 2)}</button>`).join('')}</div>`,
+      `<div class="pa-seg">${[['now', T('Maintenant', 'Now')], ['30d', T('30 jours', '30 days')], ['1y', T('12 mois', '12 months')]].map(([k, l]) => `<button type="button" data-rng="${k}" class="${k === rng ? 'on' : ''}">${l}</button>`).join('')}</div>`];
+    if (rng !== 'now') { out.push(await mixHistory() || `<p class="pa-note">${T('Pas d’historique pour cette zone.', 'No history for this zone.')}</p>`); out.push(full('#genmix', T('Toutes les données du système électrique', 'All the power system data'))); return out.join(''); }
     const pct = c ? Math.round(c.g / 8) : 0;   // the ring: 0 to 800 g
     out.push(`<div class="pa-card pa-gauge"><div class="pa-ring"><svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="50" fill="none" stroke="var(--border2)" stroke-width="12"/>${c ? `<circle cx="60" cy="60" r="50" fill="none" stroke="${c.g < 100 ? '#14D3A9' : c.g < 300 ? '#E7B25C' : '#ED6965'}" stroke-width="12" stroke-dasharray="${Math.min(100, pct) * 3.14} 314" transform="rotate(-90 60 60)" stroke-linecap="round"/>` : ''}</svg>
       <div><b>${c ? nf(c.g, 0) : '–'}</b><small>gCO₂/kWh</small></div></div>
@@ -258,7 +288,9 @@
     m.querySelectorAll('[data-full]').forEach(a => a.addEventListener('click', () => leave()));
     m.querySelectorAll('[data-auth]').forEach(b => b.addEventListener('click', () => window.PKDash && PKDash.openAuth && PKDash.openAuth(b.dataset.auth)));
     m.querySelectorAll('[data-z]').forEach(b => b.addEventListener('click', () => { zone = b.dataset.z; draw(); }));
+    m.querySelectorAll('[data-rng]').forEach(b => b.addEventListener('click', () => { rng = b.dataset.rng; draw(); }));
     m.querySelectorAll('[data-nv]').forEach(b => b.addEventListener('click', () => { nv = b.dataset.nv; draw(); }));
+    const sh = m.querySelector('#pa-share'); if (sh) sh.addEventListener('click', () => { const t = (m.querySelector('.pa-brief') || {}).innerText || ''; navigator.share({ title: 'PowerKlock · ' + T('le point du matin', 'the morning brief'), text: t.replace(/\s*Partager ↗|\s*Share ↗/, '') + '\n', url: location.origin + '/?app=1' }).catch(() => {}); });
     const ask = m.querySelector('#pa-ask'); if (ask) ask.addEventListener('click', () => { const d = document.getElementById('ask-drawer'); if (d && d.parentNode !== document.body) document.body.appendChild(d);   // out of the hidden News page
       if (typeof _askWire === 'function') _askWire(); if (typeof window.askOpen === 'function') window.askOpen(); });
     m.querySelectorAll('[data-board]').forEach(b => b.addEventListener('click', () => { if (PKDash.select) PKDash.select(b.dataset.board); leave(); location.hash = '#dashboards'; }));

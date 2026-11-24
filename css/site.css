@@ -4966,3 +4966,5 @@ html[data-theme="light"] .pa-logo { content: url(../assets/logo-header-light.png
 .pa-sheet li { padding: 5px 0; }
 .pa-shr { display: inline-block; border: 1px solid var(--border2); border-radius: 6px; padding: 0 6px; color: #4F9DDE; }
 html.pk-app #ask-drawer { z-index: 10003; }
+.pa-share { display: block; margin-top: 10px; background: none; border: 1px solid var(--border2); color: var(--accent); border-radius: 9px; padding: 7px 12px; font: 600 13px "Inter", sans-serif; cursor: pointer; }
+.pa-lgw { flex-wrap: wrap; gap: 6px 12px; }
