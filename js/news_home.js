@@ -11,9 +11,10 @@ const NH_RUBS = [
   { id: 'gas', fr: 'Gaz et carbone', en: 'Gas and carbon', topics: ['gas', 'carbon'], tag: 'gas' },
   { id: 'deal', fr: 'Transactions', en: 'Deals', topics: ['deal'], tag: 'deal' },
   { id: 'intl', fr: 'Europe et international', en: 'Europe and international', intl: true },
+  { id: 'research', fr: 'Recherche', en: 'Research', research: true, tag: 'research' },   // papers: OpenAlex, arXiv, HAL, e-mail alerts
   { id: 'mine', fr: 'Mes mots-clés', en: 'My keywords', mine: true, tag: 'mine' },
 ];
-const NH_DEFAULT = ['renewables', 'power', 'regulation', 'intl', 'mine'];
+const NH_DEFAULT = ['renewables', 'power', 'regulation', 'intl', 'research', 'mine'];
 
 function _nhPrefs() {
   let p = null; try { p = JSON.parse(localStorage.getItem('pk-news-home') || 'null'); } catch (_) {}
@@ -21,7 +22,10 @@ function _nhPrefs() {
   if (!p.rubs) {   // first visit: the sections follow the newsletter interests, else the default set
     const ints = (typeof _nlMe !== 'undefined' && _nlMe && _nlMe.interests) || [];
     const fromInts = NH_RUBS.filter(r => r.topics && r.topics.some(t => ints.includes(t))).map(r => r.id);
-    p.rubs = fromInts.length ? fromInts.concat(['intl', 'mine'].filter(x => !fromInts.includes(x))) : NH_DEFAULT.slice();
+    p.rubs = fromInts.length ? fromInts.concat(['intl', 'research', 'mine'].filter(x => !fromInts.includes(x))) : NH_DEFAULT.slice();
+  } else if (!p.research) {   // the Research section (Nov. 2026) appears once in layouts saved before it existed
+    if (!p.rubs.includes('research')) p.rubs.splice(Math.max(0, p.rubs.indexOf('mine')) || p.rubs.length, 0, 'research');
+    p.research = 1; _nhSave(p);
   }
   return p;
 }
@@ -86,7 +90,7 @@ async function renderNewsHome() {
   const essH = ess.length ? `<section class="nh-ess"><div class="nh-k">${_newsT('L’essentiel du jour', 'Today’s essentials')}${prof && prof.name ? ` <span class="nh-prof">· ${_newsT('profil', 'profile')} ${_newsEsc(L(prof.short || prof.name))}</span>` : ''}</div>
     <ol>${ess.map(s => `<li><span>${_nhA(s.link, _newsEsc(s.title))} <span class="nh-src">· ${_newsEsc((s.sources || [])[0] || '')}</span></span></li>`).join('')}</ol></section>` : '';
   // ── the sections, in the reader's order; one article appears once, in its first section ──
-  const now = Date.now(), fresh = i => now - i.date < 7 * 864e5;
+  const now = Date.now(), fresh = i => now - i.date < ((i.tags || []).includes('research') ? 45 : 7) * 864e5;   // papers: the last 45 days
   const score = i => (i.impact || 0) - 0.35 * (now - i.date) / 864e5 + (pref.france && _newsIsFr(i) ? 1.2 : 0);
   const pick = (pred, n) => { const out = items.filter(i => !seen.has(i.link) && fresh(i) && pred(i)).sort((a, b) => score(b) - score(a)).slice(0, n); out.forEach(i => seen.add(i.link)); return out; };
   const rubDef = id => NH_RUBS.find(r => r.id === id) || (pref.custom || []).find(c => c.id === id);
@@ -96,13 +100,15 @@ async function renderNewsHome() {
   const allSt = Object.values(E.profiles || {}).flatMap(p => p.stories || []);
   const sumOf = i => { const s = allSt.find(x => x.link === i.link && x.what && !x.ctx); return s ? textOf(s) : textOf({ link: i.link, title: i.title }); };
   const secH = rubs.map(r => {
-    const pred = r.mine ? i => _newsMine(i, kw) : r.intl ? i => !_newsIsFr(i) : r.f ? i => _nhMatch(i, r.f) : i => _newsSubj(i).some(t => r.topics.includes(t));
+    const isR = i => (i.tags || []).includes('research');
+    const base = r.mine ? i => _newsMine(i, kw) : r.intl ? i => !_newsIsFr(i) : r.f ? i => _nhMatch(i, r.f) : r.research ? isR : i => _newsSubj(i).some(t => r.topics.includes(t));
+    const pred = r.research ? base : i => !isR(i) && base(i);   // papers only in their own section
     const its = pick(pred, 4); if (!its.length) return '';
     return `<section class="nh-sec"><h3><button type="button" class="nh-sec-t" data-rub="${_newsEsc(r.id)}" title="${_newsT('Voir tout le fil de cette rubrique', 'See the whole feed of this section')}">${_newsEsc(r.label || _newsT(r.fr, r.en))} <span aria-hidden="true">→</span></button></h3>
       ${its.map(i => { const sum = sumOf(i); return `<div class="nh-it">${_nhA(i.link, `<span class="nh-it-t">${_newsEsc(i.title)}</span>`)}${sum ? `<p class="nh-it-s">${_newsEsc(sum)}</p>` : ''}<span class="nh-it-m"><span class="nh-src">${_newsEsc(i.source)} · ${_nhAgo(i.date)}</span>${_newsPills(i)}</span>${_newsFree(i, 'news-free-row')}</div>`; }).join('')}</section>`;
   }).join('');
   // ── the latest, a teaser of the live feed ──
-  const latest = items.filter(i => !seen.has(i.link) && (!pref.france || _newsIsFr(i))).sort((a, b) => b.date - a.date).slice(0, 10);
+  const latest = items.filter(i => !seen.has(i.link) && !(i.tags || []).includes('research') && (!pref.france || _newsIsFr(i))).sort((a, b) => b.date - a.date).slice(0, 10);
   const contH = `<section class="nh-cont"><div class="nh-k">${_newsT('En continu', 'Live feed')}</div><div class="nh-rows">${latest.map(i => `<div class="nh-row"><span class="nh-h">${_nhClock(i.date)}</span><span>${_nhA(i.link, _newsEsc(i.title))} <span class="nh-src">· ${_newsEsc(i.source)}</span></span></div>`).join('')}</div>
     <button type="button" class="nh-more" data-rub="all">${_newsT('Tout le fil, avec recherche et filtres', 'The whole feed, with search and filters')} →</button></section>`;
   // ── the side column: markets, what not to miss, figure of the day; each block folds, the column hides ──

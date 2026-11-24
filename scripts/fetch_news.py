@@ -663,6 +663,117 @@ def modo_news(now, days=21, max_pages=12):
     return items
 
 
+# ── Research: recent papers on power markets from open scholarly APIs (OpenAlex, arXiv, HAL), titles and links only,
+# plus the paper alerts received by e-mail (Academia.edu…) in the team mailbox ──
+RESEARCH_RE = re.compile(r"electricity (market|price|system|sector|tariff|demand|retail)|power (market|price|system|purchase)|wholesale|day-ahead|intraday|"
+                         r"balancing|ancillary|capacity (market|mechanism|remuneration)|ppa\b|power purchase agreement|negative price|price cannibali|"
+                         r"capture (price|rate)|battery|energy storage|merit order|market design|contract for difference|\bcfds?\b|renewable (auction|support|tender)|"
+                         r"flow-based|market coupling|interconnect|curtail|flexibilit|demand response|marché de l.[ée]lectricit[ée]|prix de l.[ée]lectricit[ée]|"
+                         r"march[ée]s? de gros|stockage|capacit[ée]|tarif|[ée]quilibrage|flexibilit[ée]", re.I)
+RESEARCH_DAYS = 45
+
+
+def _authors(names, n=3):
+    names = [x for x in names if x]
+    return ", ".join(names[:n]) + (" et al." if len(names) > n else "")
+
+
+def openalex_research(now):
+    """OpenAlex (open catalogue of scholarly works, CC0): articles of the last weeks on power markets"""
+    since = (now - timedelta(days=RESEARCH_DAYS)).date().isoformat()
+    items = []
+    for q in ("electricity market", "power purchase agreement", "battery storage electricity market", "capacity market electricity"):
+        r = requests.get("https://api.openalex.org/works", headers=UA, timeout=40,
+                         params={"search": q, "filter": f"from_publication_date:{since},type:article", "sort": "publication_date:desc", "per-page": 25,
+                                 "select": "title,publication_date,doi,primary_location,authorships,open_access"})
+        r.raise_for_status()
+        for w in r.json().get("results") or []:
+            loc = w.get("primary_location") or {}
+            link = (w.get("open_access") or {}).get("oa_url") or loc.get("landing_page_url") or w.get("doi")
+            venue = ((loc.get("source") or {}).get("display_name")) or ""
+            who = _authors([(a.get("author") or {}).get("display_name") for a in w.get("authorships") or []])
+            if w.get("title") and link and RESEARCH_RE.search(w["title"]):
+                items.append({"title": clean(w["title"], 220), "link": link, "date": parse_date(w.get("publication_date")),
+                              "snippet": " · ".join(x for x in (who, venue) if x), "domain": venue or "OpenAlex"})
+        time.sleep(1)
+    return items
+
+
+def arxiv_research(now):
+    """arXiv (open preprints): economics, systems and finance categories, on power markets"""
+    q = ('(cat:econ.GN OR cat:econ.EM OR cat:eess.SY OR cat:q-fin.GN OR cat:q-fin.ST OR cat:math.OC) AND '
+         '(abs:"electricity market" OR abs:"power market" OR abs:"electricity price" OR abs:"energy storage" OR abs:"power purchase agreement" OR abs:"balancing market")')
+    r = requests.get("https://export.arxiv.org/api/query", headers=UA, timeout=60,
+                     params={"search_query": q, "sortBy": "submittedDate", "sortOrder": "descending", "max_results": 40})
+    r.raise_for_status()
+    ns = {"a": "http://www.w3.org/2005/Atom"}
+    items, since = [], now - timedelta(days=RESEARCH_DAYS)
+    for e in ET.fromstring(r.content).findall("a:entry", ns):
+        d = parse_date(text_of(e.find("a:published", ns)))
+        title = clean(text_of(e.find("a:title", ns)), 220)
+        link = text_of(e.find("a:id", ns))
+        if d and d >= since and title and link:
+            who = _authors([text_of(a.find("a:name", ns)) for a in e.findall("a:author", ns)])
+            items.append({"title": title, "link": link, "date": d, "snippet": who + " · arXiv (prépublication)", "domain": "arXiv"})
+    return items
+
+
+def hal_research(now):
+    """HAL (French open archive): recent papers and theses on electricity markets"""
+    r = requests.get("https://api.archives-ouvertes.fr/search/", headers=UA, timeout=40,
+                     params={"q": '"marché de l\'électricité" OR "electricity market" OR "prix de l\'électricité" OR "electricity prices" OR "power purchase agreement" OR "stockage d\'électricité"',
+                             "fq": f"producedDate_tdate:[NOW-{RESEARCH_DAYS}DAYS/DAY TO NOW]", "fl": "title_s,uri_s,producedDate_tdate,journalTitle_s,authFullName_s",
+                             "sort": "producedDate_tdate desc", "rows": 30, "wt": "json"})
+    r.raise_for_status()
+    items = []
+    for d in (r.json().get("response") or {}).get("docs") or []:
+        t = (d.get("title_s") or [""])[0]
+        if t and d.get("uri_s"):
+            who = _authors(d.get("authFullName_s") or [])
+            items.append({"title": clean(t, 220), "link": d["uri_s"], "date": parse_date(d.get("producedDate_tdate")),
+                          "snippet": " · ".join(x for x in (who, d.get("journalTitle_s") or "HAL") if x), "domain": "HAL"})
+    return items
+
+
+def mail_alerts(now, cfg):
+    """paper alerts and newsletters received in the team mailbox (config "mail_alerts": sender, link pattern): the title and
+    link of each paper they list; the mail itself is neither kept nor shown. Needs GO_GMAIL_USER / GO_GMAIL_APP_PASSWORD."""
+    import email as email_lib
+    import imaplib
+    from email.utils import parsedate_to_datetime
+    user, pw = os.environ.get("GO_GMAIL_USER"), os.environ.get("GO_GMAIL_APP_PASSWORD")
+    if not user or not pw or not cfg:
+        return []
+    im = imaplib.IMAP4_SSL("imap.gmail.com")
+    im.login(user, pw)
+    im.select("INBOX", readonly=True)
+    since = (now - timedelta(days=14)).strftime("%d-%b-%Y")
+    items = []
+    for a in cfg:
+        typ, data = im.search(None, f'(FROM "{a["from"]}" SINCE {since})')
+        for num in (data[0].split() if typ == "OK" and data and data[0] else [])[-30:]:
+            typ, msg = im.fetch(num, "(RFC822)")
+            m = email_lib.message_from_bytes(msg[0][1])
+            try:
+                d = parsedate_to_datetime(m.get("Date"))
+            except (TypeError, ValueError):
+                d = now
+            for part in m.walk():
+                if part.get_content_type() != "text/html":
+                    continue
+                h = part.get_payload(decode=True).decode(part.get_content_charset() or "utf-8", "ignore")
+                for href, txt in re.findall(r'(?is)<a[^>]+href="([^"]+)"[^>]*>(.*?)</a>', h):
+                    t = clean(txt, 220)
+                    if re.search(a["link"], href) and len(t) >= 25 and not re.search(r"(?i)unsubscribe|désinscri|settings|param[èe]tres|view in browser", t + href):
+                        items.append({"title": t, "link": html.unescape(href), "date": d, "snippet": a["name"] + " (alerte e-mail)", "domain": a["name"]})
+    im.logout()
+    seen, out = set(), []
+    for i in items:
+        if i["title"].lower() not in seen:
+            seen.add(i["title"].lower()); out.append(i)
+    return out
+
+
 PUBLISHERS = {"rte": ("RTE", "rte", rte_news, ["fr", "power", "markets"]), "eex": ("EEX", "eex", eex_news, ["markets"]),
               "modo": ("Modo Energy", "modo", modo_news, ["power", "markets"])}
 
@@ -860,6 +971,13 @@ def main():
             status.append({"name": f"suivi : {kw}", "kind": "search", "ok": True, "n": n})
         except Exception as e:
             status.append({"name": f"suivi : {kw}", "kind": "search", "ok": False, "error": str(e)[:120]})
+    for name, fn in (("OpenAlex", openalex_research), ("arXiv", arxiv_research), ("HAL", hal_research),
+                     ("alertes e-mail", lambda t: mail_alerts(t, cfg.get("mail_alerts")))):
+        try:
+            n = add_items(out, fn(now), {"name": name, "cls": "research", "tags": ["research"]}, now, 25)
+            status.append({"name": f"recherche : {name}", "kind": "research", "ok": True, "n": n})
+        except Exception as e:
+            status.append({"name": f"recherche : {name}", "kind": "research", "ok": False, "error": str(e)[:120]})
     for key, (name, cls, fn, tags) in PUBLISHERS.items():
         try:
             n = add_items(out, fn(now), {"name": name, "cls": cls, "tags": tags}, now, 20)
@@ -890,7 +1008,7 @@ def main():
     # the newest articles, but official texts and reports of the last 30 days always stay: with many outlets, a Journal
     # officiel text of a few days back would otherwise fall out of the file
     month = (now - timedelta(days=30)).isoformat(timespec="seconds")
-    keep = [r for r in out if r["date"] >= month and ({"official", "report"} & set(r["tags"]))]
+    keep = [r for r in out if r["date"] >= month and ({"official", "report", "research"} & set(r["tags"]))]
     rest = [r for r in out if r not in keep][: max(0, MAX_ITEMS - len(keep))]
     items = sorted(keep + rest, key=lambda i: i["date"], reverse=True)
     OUT.write_text(json.dumps({"updated": now.isoformat(timespec="seconds"), "items": items, "sources": status},
