@@ -243,7 +243,7 @@ def takeaway(t, title, what):
 
 
 BRIEF = """Tu écris « Le point du matin » de PowerKlock : l'analyse du marché de l'électricité français, comme un analyste marché
-senior qui parle à des directeurs du secteur. Un seul paragraphe, 5 phrases environ, 150 mots au plus, ton clair et posé,
+senior qui parle à des directeurs du secteur. Un seul paragraphe, 4 phrases, 90 mots au plus, simple à lire : un enchaînement de causes, pas un relevé ; ton clair et posé,
 sans liste ni titre. Pas d'actualité générale : la page la donne juste en dessous. Le contexte géopolitique vient des
 actualités de marché reçues : dis ce qui se passe et en quoi cela touche le gaz, donc l'électricité.
 Tu reçois : les marchés du matin (dont le spot du jour et le Cal 27, contrat de l'an prochain), les fondamentaux France
@@ -268,7 +268,7 @@ Ce qu'on attend :
     « la demande résiduelle pousse les centrales au gaz à fixer le prix », phrase obscure ; le nucléaire disponible joue en sens inverse ;
   - le gaz et son contexte géopolitique, dit simplement (ce qui se passe, en quoi cela touche les prix) ;
   - ce qu'on attend pour les jours qui viennent (météo, tendance de la semaine), au conditionnel.
-Varie les verbes : pas deux fois la même tournure. Des chiffres arrondis, chacun avec ce qu'il veut dire. Une cause n'est écrite que si le contexte ou un
+Varie les verbes : pas deux fois la même tournure. 2 ou 3 chiffres seulement (le spot, et un chiffre qui explique) : le lecteur ne doit pas être noyé ; les tuiles donnent les autres. Une cause n'est écrite que si le contexte ou un
 article la donne. Aucun fait, chiffre, acteur ni date absent de ce qui est reçu. Interdits : « les prix restent volatils »,
 « influencés par des facteurs », tout conseil.
 {example}
@@ -476,9 +476,9 @@ def ask_brief(edition, model=None, items=None):
     para = lambda t: "\n\n".join(clip(x, 900) for x in re.split(r"\n\s*\n", str(t or "")) if x.strip())  # noqa: E731   two paragraphs kept
     b, be = para(out.get("brief")), para(out.get("brief_en"))
     market_par = re.split(r"\n\s*\n", b or "")[0]   # the market paragraph: a note, not a table of figures (« Cal-27 » is a name; the news keep theirs)
-    many = len(re.findall(r"(?<![\w-])\d+(?:[.,]\d+)?", re.sub(r"\b(19|20)\d\d\b", "", market_par))) > 12
+    many = len(re.findall(r"(?<![\w-])\d+(?:[.,]\d+)?", re.sub(r"\b(19|20)\d\d\b", "", market_par))) > 5
     hollow = re.search(r"(?i)restent volatils|reste volatil|influenc[ée]s par (des|les) facteurs|il faut retenir que les prix|pousse les centrales", b or "")
-    hollow = hollow or len((b or "").split()) > 175
+    hollow = hollow or len((b or "").split()) > 115
     hollow = hollow or len(re.findall(r"(?i)\ben hausse\b", b or "")) > 3      # the same words again and again
     hollow = hollow or "\n\n" in (b or "")                                                 # one paragraph: the market only
     if payload.get("fondamentaux_france"):                                                  # consumption and residual demand always said
