@@ -21,11 +21,12 @@ jobs:
               except Exception as e: return str(e)[:40], ""
           for u in ["https://www.transitionsenergies.com/robots.txt", "https://www.transitionsenergies.com/feed/", "https://www.transitionsenergies.com/rss", "https://www.transitionsenergies.com/"]:
               st, b = get(u); print("==", u, st, len(b), "items", len(re.findall(r"<item[ >]", b)))
-              if u.endswith("robots.txt"): print(b[:600])
+              if u.endswith("robots.txt"): print(b[-500:]); rp = urllib.robotparser.RobotFileParser(); rp.parse(b.splitlines()); print("   our UA allowed:", rp.can_fetch(UA, "https://www.transitionsenergies.com/feed/"))
               if "<item" in b: print("   latest:", re.findall(r"<pubDate>([^<]+)", b)[:2], re.findall(r"<title>(?:<!\[CDATA\[)?([^<\]]+)", b)[1:4])
               if u.endswith(".com/"): print("   alt:", re.findall(r'<link[^>]+(?:rss|atom)[^>]*>', b)[:3])
           st, feed = get("https://wattselse.com/veille/feed.xml")
-          links = re.findall(r"<link>(https://wattselse\.com/veille/article/[^<]+)</link>", feed)[:40]
+          print("feed sample:", feed[:900].replace("\n", " "))
+          links = list(dict.fromkeys(re.findall(r"https://wattselse\.com/veille/article/[^<\"\s]+", feed)))[:40]
           print("watts else articles:", len(links))
           dom = collections.Counter(); ex = {}
           for l in links:
