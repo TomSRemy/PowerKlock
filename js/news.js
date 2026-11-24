@@ -44,7 +44,7 @@ async function loadNews() {
 let _newsMode = 'list', _newsSort = 'recent', _newsOffSrc = '', _offQ = '', _offTopic = '';
 const _newsStore = (k, v) => { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (_) {} return null; };
 function newsSetView(v) {
-  v = ['feed', 'official', 'letter', 'posts', 'sources', 'ask'].includes(v) ? v : 'home';
+  v = ['feed', 'official', 'letter', 'posts', 'sources', 'ask', 'archive'].includes(v) ? v : 'home';
   document.querySelectorAll('#news-tabs .tab-btn').forEach(b => b.classList.toggle('active', b.dataset.nv === v));
   const f = document.getElementById('news-v-feed'), o = document.getElementById('news-v-official');
   if (f) f.hidden = v !== 'feed'; if (o) o.hidden = v !== 'official';
@@ -56,6 +56,8 @@ function newsSetView(v) {
   const ps = document.getElementById('news-v-posts'); if (ps) ps.hidden = v !== 'posts';
   if (v === 'posts' && typeof renderNewsPosts === 'function') renderNewsPosts();
   const sr = document.getElementById('news-v-sources'); if (sr) sr.hidden = v !== 'sources';
+  const ar = document.getElementById('news-v-archive'); if (ar) ar.hidden = v !== 'archive';
+  if (v === 'archive') renderNewsArchive();
   if (v === 'ask') { askOpen(); return; }   // an old saved view: the question panel now opens beside the page
   _newsStore('pk-news-view', v);
 }
@@ -166,8 +168,48 @@ function renderNewsOfficial() {
   }
 }
 
+// ── Archives: the search engine on everything the watch ever collected (news.article, public.news_search(), warehouse
+// migrations 035–036): words, period, type, subject; no AI, so no limit. Approved accounts only ──
+const _arc = { q: '', per: 0, kind: '', topic: '', order: 'relevance', offset: 0, items: [], total: 0 };
+async function renderNewsArchive() {
+  const host = document.getElementById('news-archive'); if (!host) return;
+  const A = window.PKAccount; if (A && A.configured) await A.ready();
+  if (!A || !A.user) { host.innerHTML = `<div class="news-src-help">${_newsT('Connectez-vous avec un compte validé pour chercher dans les archives de la veille.', 'Sign in with an approved account to search the watch’s archives.')}</div>`; return; }
+  if (host.dataset.on) return;
+  host.dataset.on = '1';
+  const opt = (v, l) => `<option value="${v}">${l}</option>`;
+  const topics = (typeof _NL_TH !== 'undefined' ? _NL_TH : []).map(t => opt(t[0], _newsT(t[1], t[2]))).join('');
+  host.innerHTML = `<div class="nf-bar arc-bar"><input type="search" id="arc-q" class="nf-q" placeholder="${_newsT('Chercher dans toutes les archives : complément de rémunération, prix négatifs, TURPE…', 'Search all the archives: contracts for difference, negative prices, grid tariffs…')}">
+      <select id="arc-per" class="fuel-select">${opt(0, _newsT('Toute la période', 'All time'))}${opt(7, _newsT('7 derniers jours', 'Last 7 days'))}${opt(30, _newsT('30 derniers jours', 'Last 30 days'))}${opt(90, _newsT('3 derniers mois', 'Last 3 months'))}${opt(365, _newsT('12 derniers mois', 'Last 12 months'))}</select>
+      <select id="arc-kind" class="fuel-select">${opt('', _newsT('Tous les types', 'All types'))}${opt('article', _newsT('Articles', 'Articles'))}${opt('official', _newsT('Textes officiels', 'Official texts'))}${opt('report', _newsT('Rapports', 'Reports'))}${opt('research', _newsT('Recherche', 'Research'))}</select>
+      <select id="arc-topic" class="fuel-select">${opt('', _newsT('Tous les sujets', 'All subjects'))}${topics}</select>
+      <select id="arc-order" class="fuel-select">${opt('relevance', _newsT('Plus pertinents', 'Most relevant'))}${opt('date', _newsT('Plus récents', 'Most recent'))}</select></div>
+    <div class="arc-n" id="arc-n"></div><div class="arc-list" id="arc-list"></div><div class="arc-more" id="arc-more"></div>`;
+  let t;
+  const go = () => { clearTimeout(t); t = setTimeout(() => { _arc.offset = 0; _arcLoad(); }, 250); };
+  host.querySelector('#arc-q').addEventListener('input', e => { _arc.q = e.target.value.trim(); go(); });
+  [['arc-per', 'per'], ['arc-kind', 'kind'], ['arc-topic', 'topic'], ['arc-order', 'order']].forEach(([id, k]) => host.querySelector('#' + id).addEventListener('change', e => { _arc[k] = e.target.value; go(); }));
+  _arcLoad();
+}
+async function _arcLoad() {
+  const cl = window.PKAccount && PKAccount.client && PKAccount.client(); if (!cl) return;
+  const n = document.getElementById('arc-n'), list = document.getElementById('arc-list'), more = document.getElementById('arc-more'); if (!list) return;
+  if (!_arc.offset) list.innerHTML = `<div class="fuel-note"><span class="spinner"></span> ${_newsT('Recherche…', 'Searching…')}</div>`;
+  const since = +_arc.per ? new Date(Date.now() - _arc.per * 864e5).toISOString().slice(0, 10) : null;
+  const { data, error } = await cl.rpc('news_search', { p_query: _arc.q || null, p_kind: _arc.kind || null, p_topic: _arc.topic || null, p_since: since, p_order: _arc.q ? _arc.order : 'date', p_limit: 50, p_offset: _arc.offset });
+  if (error || !data || data.error) { list.innerHTML = `<div class="news-src-help">${error || (data && data.error === 'not approved') ? _newsT('Les archives s’ouvrent une fois votre compte validé.', 'The archives open once your account is approved.') : ''}</div>`; n.textContent = ''; more.innerHTML = ''; return; }
+  _arc.items = _arc.offset ? _arc.items.concat(data.items) : data.items; _arc.total = data.total;
+  const kindL = { article: _newsT('article', 'article'), official: _newsT('texte officiel', 'official text'), report: _newsT('rapport', 'report'), research: _newsT('recherche', 'research') };
+  n.textContent = _newsT(`${data.total} résultat${data.total > 1 ? 's' : ''}`, `${data.total} result${data.total === 1 ? '' : 's'}`) + (_arc.q ? '' : ' · ' + _newsT('les plus récents d’abord', 'most recent first'));
+  list.innerHTML = _arc.items.length ? _arc.items.map(i => `<div class="arc-it"><span class="arc-d">${_newsEsc(i.date || '')}</span><div><a href="${_newsEsc(i.link)}" target="_blank" rel="noopener noreferrer">${_newsEsc(i.title)}</a>
+      ${i.summary ? `<p>${_newsEsc(i.summary)}</p>` : ''}<span class="arc-m"><span class="nh-src">${_newsEsc(i.source || '')} · ${kindL[i.kind] || i.kind}${i.n_outlets > 1 ? ' · +' + (i.n_outlets - 1) + ' ' + _newsT('médias', 'outlets') : ''}</span>${_newsPills({ topics: i.topics || [], tags: [] })}</span></div></div>`).join('')
+    : `<div class="news-src-help">${_newsT('Rien trouvé : essayez d’autres mots, ou une période plus large.', 'Nothing found: try other words, or a longer period.')}</div>`;
+  more.innerHTML = _arc.items.length < _arc.total ? `<button type="button" class="pk-btn-ghost" id="arc-more-b">${_newsT('Plus de résultats', 'More results')}</button>` : '';
+  const b = document.getElementById('arc-more-b'); if (b) b.addEventListener('click', () => { _arc.offset = _arc.items.length; _arcLoad(); });
+}
+
 // ── Ask PowerKlock (workers/ask): a question answered from the site's own content, each sentence with its source;
-// approved accounts only, 15 questions a day each; the answers stay in this page only ──
+// approved accounts only, 30 questions a day each; the answers stay in this page only ──
 const ASK_URL = 'https://powerklock-ask.tom-s-remy.workers.dev';
 let _askLog = [], _askLeft = null;
 async function renderNewsAsk() {
@@ -265,7 +307,7 @@ async function _askGo(q) {
     const j = await r.json().catch(() => ({}));
     x.wait = false;
     if (r.ok) Object.assign(x, j);
-    else x.err = j.error === 'quota' ? _newsT('Vous avez posé vos 15 questions du jour : la suite demain.', 'You have asked your 15 questions of the day: more tomorrow.')
+    else x.err = j.error === 'quota' ? _newsT('Vous avez posé vos 30 questions du jour : la suite demain.', 'You have asked your 30 questions of the day: more tomorrow.')
       : j.error === 'day' ? _newsT('Le quota gratuit du jour est atteint pour tout le monde : réessayez demain.', 'Today’s free allowance is used up for everyone: try again tomorrow.')
       : j.error === 'not approved' ? _newsT('Votre compte attend validation.', 'Your account is waiting for approval.')
       : _newsT('Pas de réponse pour l’instant (le service d’IA est indisponible) : réessayez plus tard.', 'No answer for now (the AI service is unavailable): try again later.');
