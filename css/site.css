@@ -4907,7 +4907,7 @@ html[data-theme="light"] .pa-logo { content: url(../assets/logo-header-light.png
 .pa-eu span { display: block; font-size: 11.5px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .pa-eu b { font: 700 15px 'JetBrains Mono', Menlo, monospace; }
 .pa-ask { display: flex; width: 100%; align-items: center; gap: 8px; background: var(--bg3); border: 1px solid var(--border2); border-radius: 12px; padding: 12px; color: var(--text3); font: 14.5px 'Inter', sans-serif; margin-bottom: 12px; cursor: pointer; text-align: left; }
-.pa-ask span { margin-left: auto; font-size: 12px; }
+.pa-ask .pa-left { margin-left: auto; font-size: 12px; }
 .pa-lead h3 { font: 700 19px/1.25 Georgia, 'Times New Roman', serif; margin: 6px 0 8px; }
 .pa-lead h3 a, .pa-feed a, .pa-ol a { color: var(--text); text-decoration: none; }
 .pa-lead p { margin: 0; color: var(--text2); font-size: 14px; }
@@ -4996,3 +4996,6 @@ html.pk-app #pk-app { font-family: 'Inter', sans-serif; }
 .pa-shr-t { display: inline-flex; align-items: center; gap: 6px; margin: 10px 0 0; padding: 7px 12px; border: 1px solid var(--border2); border-radius: 8px; color: var(--accent); font: 600 13px 'Inter', sans-serif; line-height: 1; }
 .pa-feed > div, .pa-ol > li, .pa-lead { position: relative; padding-right: 30px; }
 .pa-shr-i { position: absolute; right: 0; top: 8px; margin: 0; }
+/* the brand in running text (js/brand.js): Power.Klock, the dot and Klock in the accent green, as the logo */
+.pk-wm { font-weight: 700; white-space: nowrap; }
+.pk-wm b { color: var(--accent); font-weight: 700; }

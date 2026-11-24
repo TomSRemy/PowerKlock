@@ -215,7 +215,7 @@
     const items = (N && N.items) || [], mine = E && typeof _nlMine === 'function' ? _nlMine(E) : null;
     const left = await askLeft();
     const out = [`<h2 class="pa-h">${T('Veille', 'News')}</h2><div class="pa-date">${mine && (mine.interests || []).length ? T('selon vos ' + mine.interests.length + ' sujets', 'from your ' + mine.interests.length + ' subjects') : T('édition générale', 'general edition')}</div>`,
-      `<button type="button" class="pa-ask" id="pa-ask">✦ ${T('Posez une question à PowerKlock…', 'Ask PowerKlock a question…')}${left != null ? `<span>${left} / 30</span>` : ''}</button>`,
+      `<button type="button" class="pa-ask" id="pa-ask"><span>✦ ${T('Posez une question à PowerKlock…', 'Ask PowerKlock a question…')}</span>${left != null ? `<span class="pa-left">${left} / 30</span>` : ''}</button>`,
       `<div class="pa-seg">${[['une', T('À la une', 'Top')], ['live', T('En continu', 'Live')], ['off', T('Textes officiels', 'Official texts')], ['posts', T('Posts LinkedIn', 'LinkedIn posts')]].map(([k, l]) => `<button type="button" data-nv="${k}" class="${k === nv ? 'on' : ''}">${l}</button>`).join('')}</div>`];
     const a = (u, t) => `<a href="${esc(/^https?:\/\//.test(u || '') ? u : '#')}" target="_blank" rel="noopener noreferrer">${esc(t)}</a>`;
     const when = d => { const h = (Date.now() - new Date(d)) / 36e5; return h < 1 ? T('à l’instant', 'just now') : h < 24 ? T('il y a ' + Math.round(h) + ' h', Math.round(h) + ' h ago') : dayName(String(d).slice(0, 10)); };
@@ -293,7 +293,10 @@
     const g = c.getContext('2d'), css = getComputedStyle(document.documentElement);
     const bg = css.getPropertyValue('--bg').trim() || '#0a0e13', tx = css.getPropertyValue('--text').trim() || '#E8EEF4', t2 = css.getPropertyValue('--text2').trim() || '#9FB0C0';
     g.fillStyle = bg; g.fillRect(0, 0, W, H);
-    g.fillStyle = '#14D3A9'; g.font = '700 40px Outfit, Inter, sans-serif'; g.fillText('PowerKlock', 60, 96);
+    // the logo, as everywhere the brand stands alone (the light one on a light theme)
+    const logo = new Image(); logo.src = document.documentElement.getAttribute('data-theme') === 'light' ? 'assets/logo-header-light.png' : 'assets/logo-header.png';
+    await new Promise(r => { logo.onload = r; logo.onerror = r; });
+    if (logo.naturalWidth) { const lh = 56, lw = logo.naturalWidth * lh / logo.naturalHeight; g.drawImage(logo, 60, 52, lw, lh); }
     const h3 = (sec.querySelector('.pa-k') || {}).textContent || '', ch = sec.querySelector('.pa-ch');
     g.fillStyle = t2; g.font = '600 30px Inter, sans-serif'; g.fillText(h3.toUpperCase().slice(0, 48), 60, 170);
     if (ch) { const sp = ch.querySelector('span'), b = ch.querySelector('b');
@@ -313,7 +316,7 @@
     return new Promise(r => c.toBlob(b => r(b), 'image/png'));
   }
   async function shareChart(sec) {
-    const title = 'PowerKlock · ' + ((sec.querySelector('.pa-k') || {}).textContent || '');
+    const title = 'Power.Klock · ' + ((sec.querySelector('.pa-k') || {}).textContent || '');
     const blob = await chartImage(sec), file = blob && new File([blob], 'powerklock.png', { type: 'image/png' });
     if (file && navigator.canShare && navigator.canShare({ files: [file] })) { try { await navigator.share({ files: [file], title, text: title + '\n' + appUrl() }); return; } catch (_) { return; } }
     shareText(title, title, appUrl());
@@ -327,7 +330,7 @@
     const br = m.querySelector('.pa-brief'); if (br && !br.querySelector('.pa-shr-b')) {
       br.insertAdjacentHTML('beforeend', `<button type="button" class="pa-shr-b pa-shr-t">${SHARE_IC} ${T('Partager', 'Share')}</button>`);
       br.querySelector('.pa-shr-b').addEventListener('click', () => { const t = br.cloneNode(true); t.querySelectorAll('button').forEach(x => x.remove());
-        shareText('PowerKlock · ' + T('le point du matin', 'the morning brief'), t.textContent.trim() + '\n\n' + dayName(paris(), true), appUrl('today')); }); }
+        shareText('Power.Klock · ' + T('le point du matin', 'the morning brief'), t.textContent.trim() + '\n\n' + dayName(paris(), true), appUrl('today')); }); }
     m.querySelectorAll('.pa-feed > div, .pa-ol > li, .pa-lead').forEach(it => { const a = it.querySelector('a[href^="http"]'); if (!a || it.querySelector('.pa-shr-b')) return;
       it.insertAdjacentHTML('beforeend', `<button type="button" class="pa-shr-b pa-shr-i" aria-label="${T('Partager l’article', 'Share the article')}">${SHARE_IC}</button>`);
       it.querySelector('.pa-shr-b').addEventListener('click', () => shareText(a.textContent.trim(), a.textContent.trim() + (it.querySelector('p b') ? '\n' + it.querySelector('p').textContent.trim() : ''), a.href)); });

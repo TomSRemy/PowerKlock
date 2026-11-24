@@ -205,11 +205,11 @@ def smtp_ready():
 
 def send(to, items):
     msg = EmailMessage()
-    msg['Subject'] = 'PowerKlock alert: ' + (items[0] if len(items) == 1 else f'{len(items)} alerts')[:120]
+    msg['Subject'] = 'Power.Klock alert: ' + (items[0] if len(items) == 1 else f'{len(items)} alerts')[:120]
     msg['From'] = os.environ.get('ALERT_FROM') or os.environ['SMTP_USER']
     msg['To'] = to
     body = '\n'.join('• ' + x for x in items)
-    msg.set_content(f'{body}\n\nPowerKlock · {SITE}\nManage your alerts on the site (bell icon in the top bar).\n')
+    msg.set_content(f'{body}\n\nPower.Klock · {SITE}\nManage your alerts on the site (bell icon in the top bar).\n')
     with smtplib.SMTP(os.environ['SMTP_HOST'], int(os.environ.get('SMTP_PORT') or 587), timeout=60) as s:
         s.starttls()
         s.login(os.environ['SMTP_USER'], os.environ['SMTP_PASS'])
@@ -244,7 +244,7 @@ def push(conn, new):
         if not subs.get(uid):
             continue
         body = items[0] if len(items) == 1 else f'{len(items)} alertes : ' + ' · '.join(x[:60] for x in items[:3])
-        data = json.dumps({'title': 'PowerKlock · ' + ('alerte' if len(items) == 1 else f'{len(items)} alertes'), 'body': body[:220],
+        data = json.dumps({'title': 'Power.Klock · ' + ('alerte' if len(items) == 1 else f'{len(items)} alertes'), 'body': body[:220],
                            'tag': 'pk-alert', 'url': '/?app=1#app/alerts', 'count': len(items)}, ensure_ascii=False)
         for ep, p, a in subs[uid]:
             try:
