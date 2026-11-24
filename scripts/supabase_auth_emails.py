@@ -53,9 +53,13 @@ def main():
     }
     call('PATCH', patch)
     after = call('GET')
-    ok = after.get('smtp_host') == patch['smtp_host'] and after.get('mailer_subjects_confirmation') == patch['mailer_subjects_confirmation']
-    print(f"account e-mails {'set' if ok else 'NOT confirmed'}: server {after.get('smtp_host')}, sender {after.get('smtp_sender_name')}, "
-          f"site {after.get('site_url')}, {len((after.get('uri_allow_list') or '').split(','))} return addresses")
+    # Supabase does not give the mail server's settings back to every token: each field is checked when it comes back
+    shown = {k: after.get(k) for k in patch if k != 'smtp_pass' and after.get(k) is not None}
+    wrong = sorted(k for k, v in shown.items() if v != patch[k])
+    hidden = sorted(k for k in patch if k != 'smtp_pass' and k not in shown)
+    ok = not wrong and 'mailer_templates_confirmation_content' in shown
+    print(f"account e-mails {'set' if ok else 'NOT set'}: {len(shown) - len(wrong)} settings checked"
+          + (f", different: {', '.join(wrong)}" if wrong else '') + (f", not shown back by Supabase: {', '.join(hidden)}" if hidden else ''))
     return 0 if ok else 1
 
 
