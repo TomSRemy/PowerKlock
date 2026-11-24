@@ -159,13 +159,13 @@ def tailor(E, pids, interests, france, n):
 
 
 # the subject of an article, shown in a pill at its right: the most specific of its categories (scripts/fetch_news.py)
-THEMES = [('renewables', 'Renouvelables', '#0F2A23', '#14D3A9'), ('gas', 'Gaz', '#2D2213', '#E8A33D'), ('carbon', 'Carbone', '#1B2430', '#9FB0C0'),
-          ('deal', 'Transactions', '#231C36', '#B48CF2'), ('build', 'Projets', '#13243A', '#6CB4F5'), ('regulation', 'Régulation', '#331A1C', '#ED6965'),
-          ('markets', 'Marchés', '#13243A', '#6CB4F5'), ('power', 'Électricité', '#0F2A23', '#14D3A9'), ('geopolitics', 'Géopolitique', '#2A2418', '#D9B26A')]
+THEMES = [('renewables', 'Renouvelables', '#E3F4EC', '#0B6B4F'), ('gas', 'Gaz', '#FCEFE0', '#9A5B12'), ('carbon', 'Carbone', '#ECEFF3', '#3F5468'),
+          ('deal', 'Transactions', '#EEE9F8', '#5B3FA0'), ('build', 'Projets', '#E6F0FA', '#1F5C99'), ('regulation', 'Régulation', '#FDECEC', '#A23B36'),
+          ('markets', 'Marchés', '#E6F0FA', '#1F5C99'), ('power', 'Électricité', '#E8F6F3', '#0B7A62'), ('geopolitics', 'Géopolitique', '#F3EEE6', '#6B5530')]
 CONS_T = {'cee': 'Efficacité énergétique', 'tariffs': 'Tarifs', 'grid': 'Réseau', 'market': 'Marché', 'renewables': 'Renouvelables', 'gas': 'Gaz', 'other': 'Autre'}
 
 
-def pill(label, bg='#1B2430', fg='#9FB0C0'):
+def pill(label, bg='#ECEFF3', fg='#3F5468'):
     return (f'<span style="font-family:Inter,Arial,sans-serif;display:inline-block;font-size:11px;font-weight:600;line-height:1;'
             f'padding:4px 8px;border-radius:999px;background:{bg};color:{fg};white-space:nowrap">{esc(label)}</span>') if label else ''
 
@@ -212,9 +212,9 @@ def render_letter(today, E, pid, mine=None, exclude=(), interests=(), france=Fal
 
 
 # theme of a story: its most specific category, as a coloured word above the title
-TH = [('renewables', 'Renouvelables', '#14D3A9'), ('gas', 'Gaz', '#E8A33D'), ('carbon', 'Carbone', '#9FB0C0'), ('deal', 'Transactions', '#B48CF2'),
-      ('build', 'Projets', '#6CB4F5'), ('regulation', 'Régulation', '#ED6965'), ('markets', 'Marchés', '#6CB4F5'), ('power', 'Électricité', '#14D3A9'),
-      ('geopolitics', 'Géopolitique', '#D9B26A')]
+TH = [('renewables', 'Renouvelables', '#0B6B4F'), ('gas', 'Gaz', '#9A5B12'), ('carbon', 'Carbone', '#3F5468'), ('deal', 'Transactions', '#5B3FA0'),
+      ('build', 'Projets', '#1F5C99'), ('regulation', 'Régulation', '#B8322D'), ('markets', 'Marchés', '#1F5C99'), ('power', 'Électricité', '#0B7A62'),
+      ('geopolitics', 'Géopolitique', '#6B5530')]
 
 
 def theme_of(tags):
@@ -244,7 +244,7 @@ def dark(html):
 
 
 def journal(today, E, ed, wk, mine):
-    """7 O'Klock and PowerBrunch « façon journal » (approved 19 Nov. 2026), on the site's dark background (24 Nov.), the price tiles, the lead
+    """7 O'Klock and PowerBrunch « façon journal » (approved 19 Nov. 2026), a black band at the top and the stories on white (24 Nov.), the price tiles, the lead
     story with its chart, the figure of the day (or the week's chart on Monday), the other stories, in brief, the days
     ahead. Images are attached to the mail (cid:), so they show without loading anything from the web."""
     f = 'font-family:Inter,Arial,Helvetica,sans-serif'
@@ -287,7 +287,7 @@ def journal(today, E, ed, wk, mine):
                      f'<span style="{f};font-size:11px;color:#7A93AB">{sub}</span> <span style="{mono};font-size:11.5px;color:{col};white-space:nowrap">{ch}</span></a></td>')
     tiles = ''.join('<tr>' + ''.join(cells[i:i + 3]) + '<td></td>' * (3 - len(cells[i:i + 3])) + '</tr>' for i in range(0, len(cells), 3))
     srcs = ', '.join(sorted({r.get('src') for r in E.get('markets') or [] if r.get('src')}))
-    head = (f'<tr><td style="padding:18px 22px 16px;border-bottom:1px solid #EBEBEB">'
+    head = (f'<tr><td style="padding:18px 22px 16px;background:#0a0e13;border-radius:12px 12px 0 0">'
             f'<table role="presentation" width="100%" style="border-collapse:collapse"><tr><td style="{f};font-size:13px;color:#6B6B6B;vertical-align:middle"><a href="{SITE}" style="text-decoration:none">{img("../assets/logo-header.png", "PowerKlock", 150).replace("display:block;width:100%;max-width:150px", "display:inline-block;width:150px;vertical-align:middle")}</a><span style="vertical-align:middle;margin-left:10px">{frday(today)}</span></td>'
             f'<td style="{f};font-size:13px;text-align:right"><a href="{SITE}#intel/news" style="{green};font-weight:600;text-decoration:none">▶ Écouter</a></td></tr></table>'
             f'<table role="presentation" width="100%" style="border-collapse:collapse;margin:8px 0 12px"><tr><td style="vertical-align:bottom"><p style="{serif};margin:0;font-size:32px;font-weight:700;color:#121212">{TITLE[wk]}</p>'
@@ -368,11 +368,11 @@ def journal(today, E, ed, wk, mine):
             f'Sujets choisis pour votre profil · résumés écrits automatiquement à partir des titres et extraits.<br>'
             f'<a href="{SITE}#intel/news" style="{green}">Voir en ligne</a> · <a href="{SITE}#intel/news" style="{green}">Changer de profil</a> · <a href="{SITE}#intel/news" style="{green}">Se désabonner</a></p></td></tr>')
     html = ('<div style="background:#F1F1EF;padding:16px 6px"><table role="presentation" width="100%" style="max-width:680px;margin:0 auto;border-collapse:collapse;table-layout:fixed;word-wrap:break-word;overflow-wrap:anywhere;background:#FFFFFF;border-radius:12px">'
-            + head + ''.join(body) + foot + '</table></div>')
+            + dark(head) + ''.join(body) + foot + '</table></div>')
     text = f'{TITLE[wk]} · {frday(today)}\n\n' + '\n'.join(f'{r["label"][0]} : {n(r["value"])} {r["unit"]}' for r in E.get('markets') or []) + '\n\n' + \
         '\n'.join(f'• {h["title"]}\n  {h.get("what") or ""}\n  {h["link"]}' for h in st) + f'\n\n{SITE}#intel/news\n'
     subject = f'{TITLE[wk]} · {frday(today)}' if not wk else f'PowerBrunch · la semaine du {frday(today - timedelta(days=7))}'
-    return subject, text, dark(html) + ''.join(f'<!--img:{x}-->' for x in dict.fromkeys(imgs))
+    return subject, text, html + ''.join(f'<!--img:{x}-->' for x in dict.fromkeys(imgs))
 
 
 def readers(today, weekly=False):

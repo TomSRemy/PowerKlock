@@ -4319,7 +4319,7 @@ span.nl-src { margin: 0; }
 .nl-fig h2 { margin-bottom: 4px; } .nl-fig p { margin: 0; font-size: 14.5px; color: var(--text2); }
 .nl-brief { margin: 0; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 14px; line-height: 1.45; } .nl-brief .nl-th { display: inline; margin-right: 4px; }
 .nl-brief a { color: var(--text); text-decoration: none; }
-.nl-ahead table { border-collapse: collapse; font-size: 13.5px; } .nl-ahead td { padding: 5px 12px 5px 0; vertical-align: top; color: var(--text2); } .nl-ahead td:first-child { font-weight: 700; color: var(--text); white-space: nowrap; }
+.nl-ahead table { border-collapse: collapse; font-size: 14px; width: 100%; table-layout: auto; } .nl-ahead td { padding: 6px 12px 6px 0; vertical-align: top; color: var(--text2); font-family: inherit; white-space: normal; text-align: left; border-bottom: 1px solid var(--border); } .nl-ahead td:first-child { font-weight: 700; color: var(--text); white-space: nowrap; }
 .nl-ahead a { color: var(--text); text-decoration: none; }
 .nl-src a, .nl-hero-ch a { color: var(--accent); text-decoration: none; }
 .news-card-f { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
