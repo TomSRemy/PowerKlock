@@ -428,7 +428,7 @@
 
   // an address may carry settings after the page (#tools/compare?s=…): kept for the page, which reads them once
   const routeOfHash = () => { const m = location.hash.match(/^#([a-z0-9/-]+)(?:\?([^#]*))?$/); if (!m || !R[m[1]]) return null; if (m[2]) { window.pkHashRoute = m[1]; window.pkHashParams = Object.fromEntries(new URLSearchParams(m[2])); } else if (window.pkHashParams) delete window.pkHashParams.v; return m[1]; };
-  const foreignHash = () => /^#(board|solo)=|access_token=|error_description=/.test(location.hash);
+  const foreignHash = () => /^#(board|solo)=|^#app(\/|$)|access_token=|error_description=/.test(location.hash);   // #app: the phone app (js/app.js) draws itself
 
   // a click on any menu or bar link
   document.addEventListener('click', e => {

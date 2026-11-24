@@ -9,7 +9,7 @@
   if (!window.pkGateOn) return;
   const H = document.documentElement, HOME = '#today?v=2';
   const T = (fr, en) => (!window.PKI18n || PKI18n.lang !== 'en') ? fr : en;
-  const onToday = () => /^#today(\?|$)/.test(location.hash);
+  const onToday = () => /^#(today(\?|$)|app(\/|$))/.test(location.hash);   // the phone app (js/app.js) shows a visitor its Today tab
   const authHash = () => /access_token=|error_description=|[?&]code=/.test(location.hash + location.search);
   const cache = v => { try { if (v) localStorage.setItem('pk-approved', '1'); else localStorage.removeItem('pk-approved'); } catch (_) {} };
   let state = H.classList.contains('pk-public') ? 'guest' : 'open';

@@ -5275,6 +5275,8 @@ price    = gas cost × 1 / (1 + exp(−(a − b × (coverage − 100)))) × (1 �
             <p class="meth-p">France, solar and wind: RTE’s official fleet at 31 December (ODRÉ, “Parc national annuel de production éolien et solaire”, every installation connected to the transmission and distribution grids), read again at each capacity update; onshore wind = RTE’s total − Energy-Charts’ offshore wind. Other countries and other technologies: Energy-Charts (Fraunhofer ISE). Since 2022 Energy-Charts counts 7 to 10 % less French solar than RTE (2025: 28.3 GW against 30.4): it does not follow the fast connection of small rooftop installations; up to 2021 the two sources agree within 1.5 %. A year RTE has not published yet keeps Energy-Charts’ figure corrected by that gap. These capacities feed the PPA pricer (capacity trend), the load factors and the PPE3 tracking.</p>
             <h3 class="meth-h3">Carbon intensity</h3>
             <p class="meth-p">Average (attributional) life-cycle intensity: Σ(output × emission factor) ÷ Σ(output), with IPCC / ADEME median factors per technology. Imports are not included.</p>
+                      <h3 class="meth-h3">CO₂ intensity of the mix (Generation mix, phone app › Grid)</h3>
+            <p class="meth-p">An estimate, not a measure: generation by fuel (ENTSO-E) weighted by life-cycle emission factors in gCO₂eq/kWh (IPCC AR5 medians): nuclear 12, wind 11, solar 45, hydro 24, biomass 230, fossil 650 (a blend of gas and coal, as js/carbon.js), other 400. Imports are not counted. Renewable share: wind, solar, hydro and biomass; low-carbon share (app): the same plus nuclear. The generation mix page and the phone app use the same factors and give the same figure.</p>
           </section>
 
           <section id="meth-cb" class="meth-section">
@@ -5489,6 +5491,8 @@ prix     = coût gaz × 1 / (1 + exp(−(a − b × (couverture − 100)))) × (
             <p class="meth-p">Par pays : production de l’année ÷ puissance installée (moyenne des fins d’année avant et après, Energy-Charts ; solaire et éolien de la France : RTE), années complètes seulement. Par région française : facteur de charge publié par RTE, moyenne des quarts d’heure de l’année.</p>
             <h3 class="meth-h3">Intensité carbone</h3>
             <p class="meth-p">Intensité moyenne (attributionnelle) en cycle de vie : Σ(production × facteur d’émission) ÷ Σ(production), avec les facteurs médians GIEC / ADEME par filière. Les imports ne sont pas inclus.</p>
+                      <h3 class="meth-h3">Intensité CO₂ du mix (Mix de production, app mobile › Réseau)</h3>
+            <p class="meth-p">Une estimation, pas une mesure : la production par filière (ENTSO-E) pondérée par les facteurs d’émission du cycle de vie en gCO₂eq/kWh (médianes du GIEC, AR5) : nucléaire 12, éolien 11, solaire 45, hydraulique 24, biomasse 230, fossile 650 (un mélange gaz et charbon, comme js/carbon.js), autres 400. Les importations ne sont pas comptées. Part renouvelable : éolien, solaire, hydraulique et biomasse ; part bas-carbone (app) : la même plus le nucléaire. La page Mix de production et l’app mobile utilisent les mêmes facteurs et donnent le même chiffre.</p>
           </section>
 
           <section id="meth-cb-fr" class="meth-section">
@@ -5835,6 +5839,7 @@ prix     = coût gaz × 1 / (1 + exp(−(a − b × (couverture − 100)))) × (
 <script src="js/alerts.js"></script>
 <script src="js/tour.js"></script>
 <script src="js/onboarding.js"></script>
+<script src="js/app.js"></script>
 <script src="js/account.js"></script>
 <script src="js/notes.js"></script>
 <script src="js/visits.js"></script>

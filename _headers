@@ -17,3 +17,8 @@
 /data/agenda.ics
   Content-Type: text/calendar; charset=utf-8
   Cache-Control: max-age=3600
+/sw.js
+  Cache-Control: no-cache
+  Service-Worker-Allowed: /
+/manifest.webmanifest
+  Cache-Control: no-cache

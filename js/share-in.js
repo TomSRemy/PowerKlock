@@ -20,6 +20,9 @@
       if (!await A.ready()) { if (window.PKDash && PKDash.openAccount) PKDash.openAccount(); return; }   // resumes after sign-in (onChange)
       for (let i = 0; i < 40 && document.documentElement.classList.contains('pk-public'); i++) await new Promise(r => setTimeout(r, 250));
       if (document.documentElement.classList.contains('pk-public')) return;   // an account waiting for approval cannot add posts yet
+      // in the phone app (installed, or #app): its News tab › LinkedIn posts takes the link (js/app.js)
+      const inApp = /^#app/.test(location.hash) || (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+      if (inApp && window.PKApp && PKApp.sharePost) { PKApp.sharePost(url); try { sessionStorage.removeItem(KEY); } catch (_) {} return; }
       if (!/^#intel\/news/.test(location.hash)) location.hash = '#intel/news';
       let f = null;
       for (let i = 0; i < 60 && !(f = document.getElementById('news-post-url')); i++) await new Promise(r => setTimeout(r, 250));
