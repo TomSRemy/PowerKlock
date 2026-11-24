@@ -61,7 +61,7 @@ jobs:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}   # the posts the team voted for
         run: |
           pip install -q requests==2.33.1 scikit-learn==1.6.1 "psycopg[binary]==3.3.2" matplotlib==3.9.2   # matplotlib: the charts of the mail (scripts/news_charts.py)
-          F=""; if [ "${{ inputs.preview }}" = "true" ]; then F="--force"; fi
+          F=""; if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then F="--force"; fi   # a run started by hand rebuilds the edition
           W=""; if [ "${{ steps.ed.outputs.mode }}" = "weekly" ]; then W="--weekly"; fi
           python scripts/news_digest.py $F || echo "::warning::digest not written"
           python scripts/news_letter.py $F $W || echo "::warning::newsletter not written"

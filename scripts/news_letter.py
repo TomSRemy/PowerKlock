@@ -128,7 +128,8 @@ def ask(prof, stories, official, model=None):
 
 CONTEXT = """Tu écris pour la newsletter du matin de PowerKlock (marché français de l'électricité). Pour chaque sujet reçu
 (id, titre, médias, extrait : le début de l'article quand il a pu être lu), résume ce que dit l'article et pourquoi cela
-compte pour le marché de l'électricité en France. 2 phrases, 45 mots au plus.
+compte pour le marché de l'électricité en France. 2 phrases, 45 mots au plus. Ne reformule pas le titre : apporte ce
+qu'il ne dit pas (le contexte, le mécanisme en jeu, l'enjeu pour les producteurs, fournisseurs ou consommateurs).
 N'invente aucun fait, chiffre, date ni citation absents du titre ou de l'extrait ; sans extrait, explique le cadre général
 (le mécanisme, l'acteur, l'enjeu) plutôt que des détails. Pas de média cité.
 Réponds en JSON seulement : {"items": [{"id": "<id>", "what": "<français>", "what_en": "<anglais>"}]}"""
@@ -175,6 +176,14 @@ def page_text(url, limit=1500):
     txt = " ".join(([_h.unescape(desc.group(1))] if desc else []) + paras)
     _pages[url] = clip(txt, limit)
     return _pages[url]
+
+
+def adds_nothing(what, title):
+    """a summary that only says the title again: most of its own words are the title's (not « similar », which is made to
+    pair two titles and finds two common words in nearly any summary)"""
+    w = lambda t: {x for x in re.findall(r"[a-z0-9à-ÿ]+", (t or "").lower()) if len(x) > 3}  # noqa: E731
+    sw, tw = w(what), w(title)
+    return not sw or len(sw - tw) <= max(2, len(sw) // 4)
 
 
 def best_text(i, limit=1500):
@@ -485,11 +494,11 @@ def main():
         for i in stories:
             g = by.get(sid(i), {})
             what = g.get("what") or i.get("snippet")
-            if what and similar(what, i["title"]) and i.get("snippet") and not similar(i["snippet"], i["title"]):
+            if what and adds_nothing(what, i["title"]) and i.get("snippet") and not adds_nothing(i["snippet"], i["title"]):
                 what = i["snippet"]                     # the model only repeated the title: the outlet's own extract says more
             if what and EMPTY.search(what):
                 what = None                             # the model saying it has nothing to say
-            if what and similar(what, i["title"]):
+            if what and adds_nothing(what, i["title"]):
                 what = None                             # nothing beyond the title (press searches give titles only)
             out.append({"id": sid(i), "title": i["title"], "link": i["link"], "tags": (i.get("tags") or []) + (["fr"] if "FR" in (i.get("countries") or []) and "fr" not in (i.get("tags") or []) else []),
                         "sources": [i["source"]] + [o["source"] for o in i.get("other_sources") or []],
@@ -508,7 +517,7 @@ def main():
                     print(f"{pid}: context not written, attempt {attempt} ({str(e)[:160]})")
         for o in out:
             c = ctx_cache.get(o["id"])
-            if not o.get("what") and c and not similar(c["what"], o["title"]):
+            if not o.get("what") and c and not adds_nothing(c["what"], o["title"]):
                 o["what"], o["what_en"], o["ctx"] = clip(c["what"], 360), clip(c.get("what_en"), 360) or None, True
         # no chart any more (the owner's choice, 23 Nov. 2026): the lead story is text only
         hero = None
