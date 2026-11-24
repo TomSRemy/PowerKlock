@@ -898,5 +898,19 @@
    "source": null
   }
  ],
- "pinned": null
+ "pinned": null,
+ "brief": "Le spot français remonte à 245 €/MWh (+2 %) avec l’arrivée du froid : les températures passent 1,6 °C sous la normale et la consommation comme la demande résiduelle gagnent 6 % sur la veille. La production bas-carbone ne couvrait plus que 106 % de la demande hier, contre 122 % la veille : la France exporte encore, mais son prix s’aligne sur celui de ses voisins, où les centrales au gaz fixent le prix. Or le gaz se tend : le TTF gagne près de 9 % en une semaine, porté par les tensions entre les États-Unis et l’Iran autour du détroit d’Ormuz et par des stocks européens inférieurs de 10 points à l’an dernier. Le Cal 27 n’en reprend qu’une partie, +1,2 € quand le gaz seul justifierait +4 € : le marché compte sur les 3,8 GW de nucléaire que l’exploitant attend encore pour détendre l’hiver.",
+ "brief_en": "The French spot climbs back to 245 €/MWh (+2%) as the cold sets in: temperatures fall 1.6 °C below normal and both consumption and residual demand gain 6% on the day before. Low-carbon output covered only 106% of demand yesterday, against 122% the day before: France still exports, but its price aligns with its neighbours', where gas plants set the price. And gas is tightening: TTF gains almost 9% in a week, driven by tension between the United States and Iran around the Strait of Hormuz and by European storage 10 points below last year. Cal 27 passes on only part of it, +€1.2 where gas alone would justify +€4: the market is counting on the 3.8 GW of nuclear the operator still expects to ease the winter.",
+ "brief_links": [
+  {
+   "title": "Prix du gaz : le marché s'envole de 5,3 % ce lundi 23 novembre, ce qui a fait flamber le PEG",
+   "source": "Selectra",
+   "link": "https://news.google.com/rss/articles/CBMibEFVX3lxTE1wMnZKLWdhSU96VnlOcFJFNUNERXNiZ1kwZ0Z1SndOUk5rNl9xeDE0Nm9HN1ZIbHBoMkozakgyeDU4YzI2R2U2VFZtZmZuZHZOYWgzLVpqeXlBbk1DNHpPUjdKMjRXRF9EcDkwRg?oc=5"
+  },
+  {
+   "title": "Crise d'Ormuz 2026 : ce choc pire qu'en 1973 qui fait exploser votre facture de gaz",
+   "source": "Bourse Inside",
+   "link": "https://news.google.com/rss/articles/CBMi6wFBVV95cUxPbHV5am1YM2QwQVRndmNBdGNta1VoWGlWM2JHbXhuaTRIYmo3YndhczRFU2EzOUY1ZDEyOElYbnRNVFA1dXU2cVFxTFA4TFc0WUFDcHZTQnFiUHl6eTQ0REZvY2IzSVVGdmUzSlk0MjBiOWxvbTJLWUtucXRsWWM5aFVvdTBEakswNlRhMEZCTFhMZFlkZjdrTlctamdIaUdWQWlaTHJfMUd6d1hjZmd3S3pnLWdkVXNNbDd1Tm14ZzAxTFo3VjBkM2hKOHk1YmhZTWZ6QVRiLUpvcTgwMnB4RE5VUVo0UVpkbF80?oc=5"
+  }
+ ]
 }

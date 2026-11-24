@@ -243,7 +243,7 @@ def takeaway(t, title, what):
 
 
 BRIEF = """Tu écris « Le point du matin » de PowerKlock : l'analyse du marché de l'électricité français, comme un analyste marché
-senior qui parle à des directeurs du secteur. Un seul paragraphe, 5 ou 6 phrases, 140 mots au plus, ton clair et posé,
+senior qui parle à des directeurs du secteur. Un seul paragraphe, 5 phrases environ, 150 mots au plus, ton clair et posé,
 sans liste ni titre. Pas d'actualité générale : la page la donne juste en dessous. Le contexte géopolitique vient des
 actualités de marché reçues : dis ce qui se passe et en quoi cela touche le gaz, donc l'électricité.
 Tu reçois : les marchés du matin (dont le spot du jour et le Cal 27, contrat de l'an prochain), les fondamentaux France
@@ -268,13 +268,22 @@ Ce qu'on attend :
     « la demande résiduelle pousse les centrales au gaz à fixer le prix », phrase obscure ; le nucléaire disponible joue en sens inverse ;
   - le gaz et son contexte géopolitique, dit simplement (ce qui se passe, en quoi cela touche les prix) ;
   - ce qu'on attend pour les jours qui viennent (météo, tendance de la semaine), au conditionnel.
-Varie les verbes : pas deux fois la même tournure. 4 à 6 chiffres, arrondis. Une cause n'est écrite que si le contexte ou un
+Varie les verbes : pas deux fois la même tournure. Des chiffres arrondis, chacun avec ce qu'il veut dire. Une cause n'est écrite que si le contexte ou un
 article la donne. Aucun fait, chiffre, acteur ni date absent de ce qui est reçu. Interdits : « les prix restent volatils »,
 « influencés par des facteurs », tout conseil.
-Le ton seulement (un autre jour, d'autres faits : n'en reprends ni les mots ni les faits) : « Le solaire pèse sur les prix :
-le spot recule de 8 % sous 60 €, avec deux heures négatives à la mi-journée. Le Cal-27 ne bouge pas, signe que le marché ne
-voit pas l'épisode durer. À noter : RTE ouvre sa consultation sur les règles de raccordement. »
+{example}
 Réponds en JSON seulement : {"brief": "<français>", "brief_en": "<anglais>", "sources": ["<id des actualités de marché utilisées>"]}"""
+
+
+def brief_system():
+    """the prompt, with the model text of config/brief_example.json (written by hand, editable) as the tone to follow"""
+    try:
+        ex = json.load(open(os.path.join(ROOT, "config", "brief_example.json")))
+        example = (f"Le modèle à suivre, écrit à la main sur les données du {ex.get('date')} (le ton, la façon de relier les causes ; "
+                   f"pas ses faits ni ses chiffres : écris avec ceux du jour) : « {ex['fr']} »")
+    except (OSError, ValueError, KeyError):
+        example = ""
+    return BRIEF.replace("{example}", example)
 
 
 def numbers_ok(text, given):
@@ -454,7 +463,7 @@ def ask_brief(edition, model=None, items=None):
     mkt = sorted(mkt, key=lambda i: -(i.get("impact") or 0))[:5]
     news = [{"id": f"n{k + 1}", "titre": i["title"], "extrait": clip(i.get("snippet"), 300), "média": i["source"]} for k, i in enumerate(mkt)]
     payload = {"marchés": mk, "fondamentaux_france": trends_only(fundamentals(edition["date"])), "indice_powerklock": pk_index(edition["date"]), "ce_qui_a_bougé": what_moved(), "contexte": ctx, "tendances_semaine": trend, "actualités_marché": news, "météo": " · ".join(filter(None, [(w.get("label") or [""])[0], (w.get("sub") or [""])[0]]))}
-    msg = {"max_tokens": 700, "system": BRIEF, "messages": [{"role": "user", "content": json.dumps(payload, ensure_ascii=False)}],
+    msg = {"max_tokens": 900, "system": brief_system(), "messages": [{"role": "user", "content": json.dumps(payload, ensure_ascii=False)}],
            "model": model or os.environ.get("NEWS_MODEL") or MODEL}
     req = urllib.request.Request(PROXY, data=json.dumps(msg).encode(), headers={"Content-Type": "application/json", "User-Agent": "PowerKlock-newsletter"})
     r = json.load(urllib.request.urlopen(req, timeout=150))
@@ -467,9 +476,9 @@ def ask_brief(edition, model=None, items=None):
     para = lambda t: "\n\n".join(clip(x, 900) for x in re.split(r"\n\s*\n", str(t or "")) if x.strip())  # noqa: E731   two paragraphs kept
     b, be = para(out.get("brief")), para(out.get("brief_en"))
     market_par = re.split(r"\n\s*\n", b or "")[0]   # the market paragraph: a note, not a table of figures (« Cal-27 » is a name; the news keep theirs)
-    many = len(re.findall(r"(?<![\w-])\d+(?:[.,]\d+)?", re.sub(r"\b(19|20)\d\d\b", "", market_par))) > 8
+    many = len(re.findall(r"(?<![\w-])\d+(?:[.,]\d+)?", re.sub(r"\b(19|20)\d\d\b", "", market_par))) > 12
     hollow = re.search(r"(?i)restent volatils|reste volatil|influenc[ée]s par (des|les) facteurs|il faut retenir que les prix|pousse les centrales", b or "")
-    hollow = hollow or len((b or "").split()) > 160
+    hollow = hollow or len((b or "").split()) > 175
     hollow = hollow or len(re.findall(r"(?i)\ben hausse\b", b or "")) > 3      # the same words again and again
     hollow = hollow or "\n\n" in (b or "")                                                 # one paragraph: the market only
     if payload.get("fondamentaux_france"):                                                  # consumption and residual demand always said
