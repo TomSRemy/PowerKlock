@@ -6,8 +6,7 @@ name: Fetch Power Map (generation per country, flows)
 # data/history/flows/ (scripts/fetch_energy_charts.py --map). Ten days kept.
 
 on:
-  schedule:
-    - cron: '25 1-22/3 * * *'   # every 3 hours
+  # when: workers/scheduler/schedule.json (the PowerKlock scheduler, a Cloudflare Worker, starts it on time)
   workflow_dispatch:
 
 concurrency:

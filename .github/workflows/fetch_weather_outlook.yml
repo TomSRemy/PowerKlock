@@ -6,15 +6,13 @@ name: Fetch weather outlook (France, 5 weeks vs normal)
 # The ERA5 archive cache (data/history/weather_archive.json) is refreshed weekly.
 
 on:
-  schedule:
-    - cron: '30 7 * * *'     # GFS 00z ensemble is available by then
-    # Open-Meteo's free daily quota is counted per IP, and GitHub runners share theirs: the morning run
-    # often finds it spent. Catch-up slots on other runners, skipped when the outlook is under 18 h old.
-    - cron: '13 10 * * *'
-    - cron: '47 13 * * *'
-    - cron: '19 18 * * *'
-    - cron: '41 22 * * *'
+  # when: workers/scheduler/schedule.json (the PowerKlock scheduler, a Cloudflare Worker, starts it on time)
   workflow_dispatch:
+    inputs:
+      cron:
+        description: 'Slot that started it (set by the PowerKlock scheduler; empty when started by hand)'
+        type: string
+        default: ''
 
 concurrency:
   group: fetch-weather-outlook
@@ -36,7 +34,7 @@ jobs:
           PYTHONUNBUFFERED: "1"   # so the log shows real progress instead of nothing until a 40-minute kill
         run: |
           AGE=$(python3 -c "import json,datetime as d;j=json.load(open('data/weather_outlook.json'));u=j.get('updated');print(int((d.datetime.now(d.timezone.utc)-d.datetime.fromisoformat(u.replace('Z','+00:00'))).total_seconds()/3600) if u else 999)" 2>/dev/null || echo 999)
-          if [ "${{ github.event_name }}" = "schedule" ] && [ "$AGE" -lt 18 ]; then echo "outlook ${AGE} h old: nothing to do"; exit 0; fi
+          if [ -n "${{ github.event.schedule || inputs.cron }}" ] && [ "$AGE" -lt 18 ]; then echo "outlook ${AGE} h old: nothing to do"; exit 0; fi
           python scripts/fetch_weather_outlook.py
       - name: Commit and push
         run: |

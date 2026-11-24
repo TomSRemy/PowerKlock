@@ -5,8 +5,7 @@ name: Fetch hydro reservoirs (ENTSO-E A72)
 # ENTSO-E publishes the week's value on the following Wednesday.
 
 on:
-  schedule:
-    - cron: '20 9 * * 3,4'   # Wednesday and Thursday 09:20 UTC
+  # when: workers/scheduler/schedule.json (the PowerKlock scheduler, a Cloudflare Worker, starts it on time)
   workflow_dispatch:
 
 concurrency:

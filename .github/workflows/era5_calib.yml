@@ -8,8 +8,7 @@ on:
   push:
     branches: [main]
     paths: ['scripts/era5_calib.py']
-  schedule:
-    - cron: '0 4 3 * *'      # monthly
+  # when: workers/scheduler/schedule.json (the PowerKlock scheduler, a Cloudflare Worker, starts it on time)
   workflow_dispatch:
 
 concurrency:

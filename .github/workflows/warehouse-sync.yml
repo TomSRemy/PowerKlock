@@ -35,8 +35,7 @@ on:
       - 'warehouse/**'
       - 'scripts/build_drivers.py'
       - '.github/workflows/warehouse-sync.yml'
-  schedule:
-    - cron: '17 */6 * * *'
+  # when: workers/scheduler/schedule.json (the PowerKlock scheduler, a Cloudflare Worker, starts it on time)
   workflow_dispatch:
     inputs:
       full:

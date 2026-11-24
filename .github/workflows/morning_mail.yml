@@ -3,18 +3,14 @@ name: Morning e-mail
 # The newsletters by e-mail (scripts/news_letter.py writes them, scripts/morning_mail.py sends them):
 #   7 O'Klock    every weekday at 07:00 Paris: the last 36 hours (84 on Monday)
 #   PowerBrunch  Monday at 10:00 Paris: the week before, larger
-# The PowerKlock scheduler (workers/scheduler, a Cloudflare Worker) starts it on time with auto=true; the GitHub crons
-# below stay as a fallback.
+# The PowerKlock scheduler (workers/scheduler, a Cloudflare Worker) starts it with auto=true at 07:00 and 08:00 Paris on
+# weekdays, 10:00 and 11:00 on Monday; the first try writes and sends the edition, the next one sees it sent
+# (data/newsletter_sent.json) and stops.
 # Only the readers who asked for it in the site (public.news_profile: 7 O'Klock and/or PowerBrunch ticked, account
 # approved) get it, each their own edition; nothing is sent to anyone else. Needs the SMTP_* secrets (as the alerts); without them it only prints.
 
 on:
-  # GitHub starts scheduled runs late, sometimes by hours (23 Nov. 2026: the 07:00 run started at 16:35), and least late
-  # off the hour: several tries every quarter of an hour, at :12 :27 :42 :57; the first one after 07:00 (10:00 for
-  # PowerBrunch) in Paris writes and sends the edition, the next ones see it sent (data/newsletter_sent.json) and stop
-  schedule:
-    - cron: '12,27,42,57 4,5,6 * * 1-5'   # 7 O'Klock: from 05:12 to 08:57 Paris in winter, 06:12 to 09:57 in summer
-    - cron: '12,27,42,57 7,8,9 * * 1'     # PowerBrunch: from 08:12 to 11:57 Paris in winter, 09:12 to 12:57 in summer
+  # when: workers/scheduler/schedule.json (the PowerKlock scheduler, a Cloudflare Worker, starts it on time)
   workflow_dispatch:
     inputs:
       edition:

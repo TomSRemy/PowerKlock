@@ -5,8 +5,7 @@ name: Fetch GO Auctions (EEX FR)
 # relancer ne fait que ré-écrire le mois courant s'il a changé.
 
 on:
-  schedule:
-    - cron: "0 8 * * 1"        # tous les lundis 08h UTC (attrape le nouveau résultat ~J+2)
+  # when: workers/scheduler/schedule.json (the PowerKlock scheduler, a Cloudflare Worker, starts it on time)
   workflow_dispatch:
 
 permissions:

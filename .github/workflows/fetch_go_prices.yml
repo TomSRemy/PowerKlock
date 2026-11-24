@@ -12,8 +12,7 @@ name: Fetch GO Prices (Commerg)
 #                             révoqué — pas de refresh token à gérer.
 
 on:
-  schedule:
-    - cron: "0 14 * * 5"      # chaque vendredi 14h UTC (Commerg envoie le vendredi)
+  # when: workers/scheduler/schedule.json (the PowerKlock scheduler, a Cloudflare Worker, starts it on time)
   workflow_dispatch:           # déclenchement manuel possible
 
 permissions:

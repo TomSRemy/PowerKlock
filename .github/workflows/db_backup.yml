@@ -7,8 +7,7 @@ name: Database backup (nightly, encrypted)
 # Restore: download the artifact, gpg -d db.dump.gpg > db.dump, pg_restore --no-owner -d <database> db.dump
 
 on:
-  schedule:
-    - cron: '17 2 * * *'
+  # when: workers/scheduler/schedule.json (the PowerKlock scheduler, a Cloudflare Worker, starts it on time)
   workflow_dispatch:
 
 jobs:

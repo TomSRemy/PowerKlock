@@ -5,8 +5,7 @@ name: Holes in the data
 # time it is seen until it is filled.
 
 on:
-  schedule:
-    - cron: '41 */2 * * *'
+  # when: workers/scheduler/schedule.json (the PowerKlock scheduler, a Cloudflare Worker, starts it on time)
   push:
     branches: [main]
     paths: ['scripts/check_data_gaps.py', 'scripts/verify_prices.py', 'scripts/verify_markets.py', '.github/workflows/data_gaps.yml']
