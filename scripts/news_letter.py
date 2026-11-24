@@ -243,20 +243,24 @@ def takeaway(t, title, what):
 
 
 BRIEF = """Tu écris « Le point du matin » de PowerKlock, comme un analyste marché senior qui parle à des directeurs du secteur de
-l'électricité en France : un texte naturel et fluide, 3 ou 4 phrases, 90 mots au plus, sans liste ni titre.
-Tu reçois : les marchés du matin (valeur, variation), le contexte de marché (notre analyse de la veille, avec sa tendance),
-les tendances attendues pour la semaine par marché (celles de « Ce qui a bougé et pourquoi » sur le site : une attente, à
-écrire comme telle, « devrait », jamais comme un fait), la météo, et les 3 histoires du jour (titre et résumé).
-Si le mouvement du jour va contre la tendance attendue (le gaz monte alors qu'on l'attend en baisse), dis-le simplement.
-Ce qu'on attend : d'abord ce qui bouge sur les marchés ET pourquoi, en reliant les mouvements entre eux et au contexte
-(« le spot remonte avec le gaz », « le froid annoncé soutient la pointe ») ; puis ce qu'il faut retenir de l'actualité.
-2 ou 3 chiffres au plus, arrondis, jamais un chiffre seul sans ce qu'il veut dire. Une cause n'est écrite que si le contexte
-ou une histoire la donne : sinon, décris le mouvement sans l'expliquer. Aucun fait, chiffre, acteur ni date absent de ce qui
+l'électricité en France : un texte naturel et fluide, 4 ou 5 phrases, 130 mots au plus, sans liste ni titre.
+Tu reçois : les marchés du matin (valeur arrondie, variation), le contexte de marché (notre analyse de la veille : nucléaire,
+météo, géopolitique…), les tendances attendues pour la semaine par marché (celles de « Ce qui a bougé et pourquoi » sur le site :
+une attente, à écrire comme telle, « devrait », jamais comme un fait), la météo, les actualités de marché des dernières 36 h
+(id, titre, extrait, média) et les 3 histoires du jour.
+Ce qu'on attend, c'est le POURQUOI, pas une liste de variations :
+- ce qui bouge sur les marchés et pourquoi, en reliant les mouvements entre eux, au contexte et aux actualités de marché
+  (« le gaz monte avec les tensions sur Ormuz, par où transite une part du GNL » si le contexte ou un article le dit) ;
+- le contexte géopolitique expliqué en une phrase : ce qui se passe et en quoi cela touche les prix européens ;
+- si le mouvement du jour va contre la tendance attendue, dis-le simplement ;
+- pour finir, ce qu'il faut retenir de l'actualité du jour, en une phrase qui conclut.
+2 à 4 chiffres en tout, arrondis, jamais un chiffre seul sans ce qu'il veut dire. Une cause n'est écrite que si le contexte
+ou un article la donne : sinon, décris le mouvement sans l'expliquer. Aucun fait, chiffre, acteur ni date absent de ce qui
 est reçu. Pas de conseil, pas de formule creuse (« dans un contexte de… », « les acteurs du marché… »).
 Le ton seulement (un autre jour, d'autres faits : n'en reprends ni les mots ni les faits) : « Le solaire pèse sur les prix :
 le spot recule de 8 % sous 60 €, avec deux heures négatives à la mi-journée. Le Cal-27 ne bouge pas, signe que le marché ne
 voit pas l'épisode durer. À noter : RTE ouvre sa consultation sur les règles de raccordement. »
-Réponds en JSON seulement : {"brief": "<français>", "brief_en": "<anglais>"}"""
+Réponds en JSON seulement : {"brief": "<français>", "brief_en": "<anglais>", "sources": ["<id des actualités de marché utilisées>"]}"""
 
 
 def numbers_ok(text, given):
@@ -265,7 +269,35 @@ def numbers_ok(text, given):
     return all(any(abs(n - g) <= max(0.6, 0.012 * abs(g)) for g in given) for n in nums)
 
 
-def ask_brief(edition, model=None):
+UPW = r"hausse|haussi|monte|remonte|grimpe|progress|gagne|augment|bondit|s.envole|rench[ée]ri|rises?|up\b|gains?|climbs?|jumps?"
+DOWNW = r"baisse|recul|chute|perd|c[èe]de|repli|diminu|d[ée]croch|falls?|down\b|drops?|slips?|eases?|declines?"
+MKT_KEY = [(r"spot", "spot"), (r"\bgaz\b|\bpeg\b|\bgas\b|\bttf\b", "peg"), (r"\bcal", "cal"), (r"garanties|guarantees", "garanties"), (r"pointe|peak", "pointe")]
+PRICE_NEWS = re.compile(r"prix|price|cours|march[ée]|market|peg|ttf|spot|ormuz|hormuz|gnl|lng|p[ée]trole|oil|brent|g[ée]opolit|tension|sanction|"
+                        r"approvisionnement|supply|stocks?|carbone|co2|quotas?|nucl[ée]aire|disponibilit", re.I)
+
+
+def direction_ok(text, markets):
+    """a market said to rise really rose (and the other way): the sentence that names it must not give the opposite move"""
+    for r in markets:
+        lab = (r.get("label") or [""])[0].lower()
+        key = next((rx for rx, k in MKT_KEY if k in lab), None)
+        move = r.get("chg") if r.get("show") == "abs" or r.get("hours") else r.get("pct")
+        if not key or not isinstance(move, (int, float)) or abs(move) < 0.5:
+            continue
+        for sent in re.split(r"(?<=[.;!?])\s+", text):
+            m = re.search(key, sent, re.I)
+            if not m:
+                continue
+            after = sent[m.start(): m.start() + 90].lower()
+            up, down = re.search(UPW, after), re.search(DOWNW, after)
+            first = min([x for x in (up, down) if x], key=lambda x: x.start(), default=None)
+            if first is not None and (first is down) == (move > 0):
+                return False
+            break
+    return True
+
+
+def ask_brief(edition, model=None, items=None):
     """« Le point du matin »: the markets with their reasons (our market context of the evening before) and the day's news"""
     try:
         md = json.load(open(os.path.join(ROOT, "data", "market_digest.json")))
@@ -276,7 +308,7 @@ def ask_brief(edition, model=None):
     rnd = lambda v, d: None if not isinstance(v, (int, float)) else round(v) if abs(v) >= 20 or d == 0 else round(v, d)  # noqa: E731
     # rounded as one says them (« vers 245 € », « +3 % »): the text then reads like a note, not a table
     mk = [{"marché": r["label"][0], "valeur": rnd(r.get("value"), 1), "unité": r.get("unit"),
-           "variation": (f'{rnd(r.get("pct"), 0):+d} %' if isinstance(r.get("pct"), (int, float)) and r.get("show") != "abs" and not r.get("hours")
+           "variation": (("en hausse de " if r.get("pct", 0) > 0 else "en baisse de " if r.get("pct", 0) < 0 else "stable ") + f'{abs(rnd(r.get("pct"), 0))} %' if isinstance(r.get("pct"), (int, float)) and r.get("show") != "abs" and not r.get("hours")
                          else f'{rnd(r.get("chg"), 1):+} {"h" if r.get("hours") else "€"}' if isinstance(r.get("chg"), (int, float)) else None)}
           for r in edition.get("markets") or []]
     seen, st = set(), []
@@ -287,7 +319,13 @@ def ask_brief(edition, model=None):
     w = edition.get("weather") or {}
     names = {"oil": "pétrole", "gas": "gaz", "power": "électricité", "carbon": "carbone"}
     trend = {names.get(k, k): {"tendance": v.get("tone"), "texte": v.get("text")} for k, v in (md.get("outlook") or {}).items()} if fresh else {}
-    payload = {"marchés": mk, "contexte": ctx, "tendances_semaine": trend, "météo": " · ".join(filter(None, [(w.get("label") or [""])[0], (w.get("sub") or [""])[0]])), "histoires": st}
+    # the market news of the last 36 h: what moved the prices (gas, power, carbon, geopolitics), the most important first
+    now = datetime.fromisoformat(edition["updated"])
+    mkt = [i for i in items or [] if {"markets", "gas", "geopolitics", "power", "carbon"} & set(i.get("topics") or [])
+           and PRICE_NEWS.search(i["title"]) and not {"official", "research"} & set(i.get("tags") or []) and (age_h(i, now) or 1e9) <= 36]
+    mkt = sorted(mkt, key=lambda i: -(i.get("impact") or 0))[:5]
+    news = [{"id": f"n{k + 1}", "titre": i["title"], "extrait": clip(i.get("snippet"), 300), "média": i["source"]} for k, i in enumerate(mkt)]
+    payload = {"marchés": mk, "contexte": ctx, "tendances_semaine": trend, "actualités_marché": news, "météo": " · ".join(filter(None, [(w.get("label") or [""])[0], (w.get("sub") or [""])[0]])), "histoires": st}
     msg = {"max_tokens": 700, "system": BRIEF, "messages": [{"role": "user", "content": json.dumps(payload, ensure_ascii=False)}],
            "model": model or os.environ.get("NEWS_MODEL") or MODEL}
     req = urllib.request.Request(PROXY, data=json.dumps(msg).encode(), headers={"Content-Type": "application/json", "User-Agent": "PowerKlock-newsletter"})
@@ -298,11 +336,13 @@ def ask_brief(edition, model=None):
     given = [float(x.replace(",", ".")) for x in re.findall(r"\d+(?:[.,]\d+)?", json.dumps(payload, ensure_ascii=False).replace("\u202f", ""))]
     given += [float(v) for r_ in edition.get("markets") or [] for v in (r_.get("value"), r_.get("pct"), r_.get("chg")) if isinstance(v, (int, float))]
     given += [abs(g) for g in given]
-    b, be = clip(out.get("brief"), 700), clip(out.get("brief_en"), 700)
-    many = len(re.findall(r"(?<![\w-])\d+(?:[.,]\d+)?", re.sub(r"\b(19|20)\d\d\b", "", b or ""))) > 4   # a note, not a table of figures (« Cal-27 » is a name)
-    if not b or many or not numbers_ok(b, given):
+    b, be = clip(out.get("brief"), 900), clip(out.get("brief_en"), 900)
+    many = len(re.findall(r"(?<![\w-])\d+(?:[.,]\d+)?", re.sub(r"\b(19|20)\d\d\b", "", b or ""))) > 5   # a note, not a table of figures (« Cal-27 » is a name)
+    if not b or many or not numbers_ok(b, given) or not direction_ok(b, edition.get("markets") or []):
         raise ValueError(f"brief rejected: {b[:120]!r}")   # a figure that was not given: better no brief
-    return b, (be if be and numbers_ok(be, given) else None)
+    used = [mkt[int(x[1:]) - 1] for x in out.get("sources") or [] if isinstance(x, str) and re.fullmatch(r"n[1-5]", x) and int(x[1:]) <= len(mkt)]
+    links = [{"title": i["title"], "source": i["source"], "link": i["link"]} for i in dict((i["link"], i) for i in used).values()][:3]
+    return b, (be if be and numbers_ok(be, given) else None), links
 
 def clip(s, n):
     s = re.sub(r"\s+", " ", str(s or "")).strip()
@@ -627,10 +667,13 @@ def main():
                                     "stories": out, "ai": bool(by)}
         print(f"{pid}: {len(out)} stories, AI text for {len(by)}")
     edition["brief"] = edition["brief_en"] = None
+    edition["brief_links"] = []
     if use_ai and edition["profiles"]:
         for attempt in (1, 2, 3, 4):     # a text with too many figures, or one not given, is refused: a few tries
             try:
-                edition["brief"], edition["brief_en"] = ask_brief(edition, None if attempt == 1 else "@cf/meta/llama-3.3-70b-instruct-fp8-fast")
+                # Llama 4 Scout writes the most faithful briefs (tested 24 Nov. 2026: Mistral Small invented a nuclear fall,
+                # Llama 3.3 repeated generic lines); Qwen3 first when it answers
+                edition["brief"], edition["brief_en"], edition["brief_links"] = ask_brief(edition, None if attempt == 1 else "@cf/meta/llama-4-scout-17b-16e-instruct", items)
                 break
             except Exception as e:
                 print(f"brief not written, attempt {attempt} ({str(e)[:160]})")

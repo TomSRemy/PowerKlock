@@ -539,8 +539,8 @@ CONS_THEMES = [
     ("cee", r"certificats? d.économies d.énergie|\bCEE\b|fiches? d.opérations? standardisées?|bonification|audit énergétique|précarité énergétique|programme PRO-"),
     ("tariffs", r"TURPE|ATR[DT]|\btarifs?\b|TRVE|péréquation|\bFPE\b|CRCP|dotation|prestations annexes"),
     ("grid", r"raccordement|ligne électrique|poste électrique|liaison|réseau public|\bRP[DT]\b|accès au réseau|SDDR|interconnexion|gestionnaires? de réseau|contrat d.accès|schéma décennal"),
-    ("market", r"capacité|équilibre|réserves?|marché|enchères?|ARENH|nucléaire|hydroélectri|flexibilit|effacement|stockage"),
     ("renewables", r"appel d.offres|\bAO\b|\bPPE\d?\b|photovolta|éolien|biométhane|biogaz|hydrogène|complément de rémunération|garanties d.origine|renouvelable"),
+    ("market", r"capacité|équilibre|réserves?|marché|enchères?|ARENH|parc nucléaire|production nucléaire|hydroélectri|flexibilit|effacement|stockage"),
     ("gas", r"\bgaz\b|GRTgaz|Teréga|NaTran|GRDF|méthane"),
 ]
 
@@ -1048,6 +1048,8 @@ def main():
     tag_major(out)
     for rec in out:
         rec["impact"] = impact(rec, prefs)
+        if {"official", "report"} & set(rec["tags"]):
+            rec["theme"] = cons_theme(rec["title"])     # the same themes as the consultations (Official texts tab)
     out = group_major(cluster_stories(out))
     free_coverage(out, now)
     out.sort(key=lambda i: i["date"], reverse=True)

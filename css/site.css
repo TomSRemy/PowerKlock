@@ -4160,7 +4160,10 @@ html:not(.pk-public) #pk-gate { display: none; }
 .cons-closed .cons-row { opacity: .75; }
 .cons-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
 .cons-chips small { font: 500 10px 'JetBrains Mono', monospace; opacity: .7; margin-left: 2px; }
-.cons-th { color: var(--accent); }
+.cons-th { color: var(--accent); cursor: pointer; }
+.off-bar { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin: 4px 0 14px; } .off-bar .nf-q { flex: 1 1 260px; min-width: 0; } .off-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.off-pills { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; } .news-pub li .off-pills, .news-pub li .news-free { grid-column: 2; }
+.off-major { background: rgba(20, 211, 169, .14); color: var(--accent); }
 
 /* ── News: two views, feed + side column (Intelligence › News) ── */
 .news-tab-n { font: 500 10.5px 'JetBrains Mono', monospace; color: var(--text3); margin-left: 4px; }
@@ -4431,6 +4434,7 @@ html.pk-beta #prices-table th:first-child, html.pk-beta #prices-table tr.zone-ro
 .nh-it { padding: 12px 0; border-bottom: 1px solid var(--border); }
 .nh-brief { padding: 4px 0 18px; margin-bottom: 18px; border-bottom: 1px solid var(--border); } .nh-brief p { margin: 6px 0 0; font-size: clamp(16.5px, 0.95rem + 0.3vw, 19px); line-height: 1.6; color: var(--text); max-width: 75ch; }
 .nh-brief-a { font-size: 14px; color: var(--accent); text-decoration: none; white-space: nowrap; } .nh-brief-a:hover { text-decoration: underline; }
+.nh-brief-src { margin: 6px 0 0 !important; font-size: 13px !important; color: var(--text3) !important; } .nh-brief-src a { color: var(--text2); } .nh-brief-src a:hover { color: var(--accent); }
 .nl-brief p { font-size: 16.5px; line-height: 1.6; color: var(--text); margin: 6px 0 0; }
 .nh-it-s { margin: 0 0 6px; font-size: 14.5px; line-height: 1.5; color: var(--text-2, var(--muted)); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .nl-what { margin: 0 0 8px; color: var(--text-2, var(--muted)); line-height: 1.55; }
