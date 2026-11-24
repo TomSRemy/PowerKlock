@@ -488,18 +488,33 @@ async function _newsSaveKw(value, team) {
 
 // « Mettre à la une »: the admin pins a story (public.news_pin, warehouse migration 027); the newsletter and the News page
 // lead with it for 36 hours. Others only see which one is pinned.
-let _newsAdmin = false, _newsPins = new Set();
+let _newsAdmin = false, _newsPins = new Set(), _newsPinNotes = {};
 async function _newsLoadPins() {
   const A = window.PKAccount; _newsAdmin = false; _newsPins = new Set();
   if (!A || !A.configured) return;
   try {
     await A.ready(); if (!A.user) return;
     const cl = A.client();
-    const [adm, pins] = await Promise.all([cl.rpc('is_news_admin'), cl.from('news_pin').select('link, pinned_at').gte('pinned_at', new Date(Date.now() - 36 * 3600e3).toISOString())]);
+    const [adm, pins] = await Promise.all([cl.rpc('is_news_admin'), cl.from('news_pin').select('link, pinned_at, note').gte('pinned_at', new Date(Date.now() - 36 * 3600e3).toISOString())]);
     _newsAdmin = !!(adm && adm.data);
     _newsPins = new Set(((pins && pins.data) || []).map(r => r.link));
+    _newsPinNotes = Object.fromEntries(((pins && pins.data) || []).filter(r => r.note).map(r => [r.link, r.note]));
   } catch (e) { console.warn('[news] pins not read:', e); }
 }
+// the admin edits the line under a pinned title
+const _newsPinNoteBtn = item => _newsAdmin && _newsPins.has(item.link) ? `<button type="button" class="news-pinb" data-pinnote="${_newsEsc(item.link)}" title="${_newsT('Modifier le résumé affiché sous le titre', 'Edit the summary shown under the title')}">✎ ${_newsT('Résumé', 'Summary')}</button>` : '';
+document.addEventListener('click', async e => {
+  const b = e.target.closest && e.target.closest('[data-pinnote]'); if (!b) return;
+  e.preventDefault(); e.stopPropagation();
+  const cl = window.PKAccount && PKAccount.client && PKAccount.client(), link = b.dataset.pinnote; if (!cl) return;
+  const v = window.prompt(_newsT('Résumé à afficher sous le titre : collez le chapô public de l’article ou écrivez une ligne (vide pour retirer).', 'Summary under the title: paste the article’s public summary or write one line (empty to remove).'), _newsPinNotes[link] || '');
+  if (v === null) return;
+  const note = v.trim().slice(0, 600) || null;
+  const r = await cl.from('news_pin').update({ note }).eq('link', link);
+  if (r.error) { b.textContent = _newsT('Non enregistré : ', 'Not saved: ') + r.error.message; return; }
+  if (note) _newsPinNotes[link] = note; else delete _newsPinNotes[link];
+  if (typeof renderNewsHome === 'function') renderNewsHome();
+}, true);
 const _newsPinBtn = item => _newsAdmin ? `<button type="button" class="news-pinb${_newsPins.has(item.link) ? ' on' : ''}" data-pin="${_newsEsc(item.link)}" title="${_newsPins.has(item.link) ? _newsT('Retirer de la une', 'Remove from the top') : _newsT('Mettre à la une (newsletter et page Veille, 36 h)', 'Put at the top (newsletter and News page, 36 h)')}">${_newsPins.has(item.link) ? _newsT('À la une ✓', 'At the top ✓') : _newsT('Mettre à la une', 'Put at the top')}</button>`
   : (_newsPins.has(item.link) ? `<span class="news-pinb on">${_newsT('À la une', 'At the top')}</span>` : '');
 document.addEventListener('click', async e => {
@@ -508,9 +523,17 @@ document.addEventListener('click', async e => {
   const cl = window.PKAccount && PKAccount.client && PKAccount.client(), link = b.dataset.pin; if (!cl) return;
   const item = (newsData || []).find(i => i.link === link) || {};
   b.disabled = true;
-  const r = _newsPins.has(link) ? await cl.from('news_pin').delete().eq('link', link) : await cl.from('news_pin').upsert({ link, title: String(item.title || '').slice(0, 400) }, { onConflict: 'link' });
+  // pinning: a line to show under the title (the public summary pasted from the page, or one written by the admin);
+  // paid papers refuse automated reading, so for them this is the only text the lead can have
+  let note = null;
+  if (!_newsPins.has(link)) {
+    note = window.prompt(_newsT('Résumé à afficher sous le titre (facultatif) : collez le chapô public de l’article ou écrivez une ligne.', 'Summary to show under the title (optional): paste the article’s public summary or write one line.'), '');
+    if (note === null) { b.disabled = false; return; }   // cancelled
+    note = note.trim().slice(0, 600) || null;
+  }
+  const r = _newsPins.has(link) ? await cl.from('news_pin').delete().eq('link', link) : await cl.from('news_pin').upsert({ link, title: String(item.title || '').slice(0, 400), note, pinned_at: new Date().toISOString() }, { onConflict: 'link' });
   if (r.error) { b.disabled = false; b.textContent = _newsT('Non enregistré : ', 'Not saved: ') + r.error.message; return; }
-  if (_newsPins.has(link)) _newsPins.delete(link); else _newsPins.add(link);
+  if (_newsPins.has(link)) { _newsPins.delete(link); delete _newsPinNotes[link]; } else { _newsPins.add(link); if (note) _newsPinNotes[link] = note; }
   renderNews(newsData); if (typeof renderNewsUne === 'function') renderNewsUne(); if (typeof renderNewsHome === 'function') renderNewsHome();
 }, true);
 

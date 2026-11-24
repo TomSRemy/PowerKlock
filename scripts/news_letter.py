@@ -159,15 +159,17 @@ _pages = {}
 
 def page_text(url, limit=1500):
     """the start of an article (its description and first paragraphs), read only to write a summary of a story that has
-    no extract: never kept, never shown. Paid outlets, Google News redirects and sites whose robots.txt refuses are not read."""
+    no extract: never kept, never shown. A paid outlet gives its public description only; Google News redirects and
+    sites whose robots.txt or servers refuse are not read."""
     import html as _h
     import urllib.robotparser
     from urllib.parse import urlparse
     if url in _pages:
         return _pages[url]
     _pages[url] = ""
-    if not url or PAID.search(url) or "news.google." in url or len(_pages) > 40:
+    if not url or "news.google." in url or len(_pages) > 40:
         return ""
+    paid = bool(PAID.search(url))     # a paid paper: its public summary only (the page's description), never the article (owner, 24 Nov. 2026)
     UA = "PowerKlock-newsletter (+https://github.com/TomSRemy/PowerKlock)"
     host = "{0.scheme}://{0.netloc}".format(urlparse(url))
     if host not in _robots:
@@ -190,7 +192,7 @@ def page_text(url, limit=1500):
     body = re.sub(r"(?s)<(script|style|nav|header|footer|aside)[^>]*>.*?</\1>", " ", b)
     paras = [re.sub(r"\s+", " ", _h.unescape(re.sub(r"<[^>]+>", " ", p))).strip() for p in re.findall(r"(?s)<p[^>]*>(.*?)</p>", body)]
     paras = [p for p in paras if len(p) > 60 and not re.search(r"cookie|abonn|newsletter|subscribe|©|tous droits", p, re.I)]
-    txt = " ".join(([_h.unescape(desc.group(1))] if desc else []) + paras)
+    txt = " ".join(([_h.unescape(desc.group(1))] if desc else []) + ([] if paid else paras))
     _pages[url] = clip(txt, limit)
     return _pages[url]
 
@@ -642,9 +644,9 @@ def pinned(now):
     try:
         import psycopg
         with psycopg.connect(db, connect_timeout=15, prepare_threshold=None) as conn, conn.cursor() as cur:
-            cur.execute("select link from public.news_pin where pinned_at >= %s order by pinned_at desc limit 1", (now - timedelta(hours=36),))
+            cur.execute("select link, note from public.news_pin where pinned_at >= %s order by pinned_at desc limit 1", (now - timedelta(hours=36),))
             r = cur.fetchone()
-            return r[0] if r else None
+            return (r[0], r[1]) if r else None
     except Exception as e:      # the newsletter must not depend on the database
         print("  pin not read:", str(e)[:160])
         return None
@@ -783,8 +785,10 @@ def main():
         edition["week_chart"] = None   # no chart any more (the owner's choice, 23 Nov. 2026)
     charts = {}
     ctx_cache = {}
-    pin_link = pinned(now)
+    pin_link, pin_note = pinned(now) or (None, None)
     pin = next((i for i in items if i.get("link") == pin_link), None) if pin_link else None
+    if pin and pin_note and len(pin.get("snippet") or "") < 40:
+        pin = dict(pin, snippet=pin_note)       # the admin's line under a pinned title (paid papers give none)
     edition["pinned"] = pin_link if pin else None
     for pid, prof in profiles.items():
         stories = pick(items, prof, now, hours, 5 if weekly else 3)
