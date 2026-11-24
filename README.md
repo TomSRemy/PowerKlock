@@ -12,6 +12,7 @@ weather, news, PPA and carbon tools, custom dashboards. Static site; data refres
 | Collection | `scripts/*.py`, `.github/workflows/*.yml` | One workflow per source, scheduled; each commits its files to `main`. |
 | Hosting | GitHub Pages (`main`, root) and a Cloudflare Worker (`wrangler.jsonc`, `.assetsignore`) | Both serve the same files; the Worker sits behind Cloudflare Access (team only). |
 | Accounts | Supabase (`js/account.js`, `warehouse/migrations/`) | Sign-in, dashboards, alerts, news votes, market notes (team only), visit counts. |
+| Landing page | `landing.html`, `js/landing.js`, `scripts/build_landing.py` → `data/landing.json` | What a visitor who is not signed in sees; every figure rebuilt after each price fetch (`fetch.yml`), sign-in through the account. |
 | Warehouse | Supabase Postgres, schemas `market` `analytics` `meta` `ops` (`warehouse/`) | SQL copy of the data, synced every 6 hours; migrations applied by `warehouse-sync`. |
 | AI proxy | Cloudflare Worker `powerklock-ai` (code not in this repository) | Market analysis text, weekly context (`scripts/market_digest.py`). |
 

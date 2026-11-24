@@ -1,8 +1,8 @@
 // gate.js · the public page. A visitor without an approved account (public.user_access, warehouse migration 022)
-// sees Today › Expert only, in dark, under a bar with one button to sign in or create an account; a signed-in
-// account still waiting for approval sees the same page with a notice. An approved account gets the whole site
-// and never comes back here. The index.html head script decides first (window.pkGateOn, class pk-public, cached
-// approval 'pk-approved') so the page does not flash; this file confirms with the account and keeps visitors on Today.
+// is sent to the public landing page (landing.html, js/landing.js), where they sign in or ask for access. Back from a
+// sign-in link (token in the address) the site stays a moment under a bar while this file confirms the account. An
+// approved account gets the whole site. The index.html head script decides first (window.pkGateOn, cached approval
+// 'pk-approved') so the page does not flash; this file confirms with the account.
 // The data files stay public (they are the site's API): the gate keeps the site simple for visitors, it is not a lock.
 (function () {
   'use strict';
@@ -29,6 +29,8 @@
 
   function lock(s) {
     state = s; cache(false);
+    // not (or no longer) approved: the public landing page, unless the address still holds a sign-in token
+    if (!authHash()) { location.replace('landing.html'); return; }
     H.classList.add('pk-public'); H.removeAttribute('data-theme');
     // back from the e-mail link the address still holds the token for a moment (js/dashboard.js clears it): wait for it
     setTimeout(() => { if (state !== 'open' && !authHash() && !onToday()) location.hash = HOME; expert(0); }, authHash() ? 1500 : 0);
