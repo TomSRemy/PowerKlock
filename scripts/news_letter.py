@@ -93,6 +93,8 @@ def score(i, prof, now):
         s -= 2.5
     fr = "fr" in tags or "FR" in (i.get("countries") or [])
     s += prof.get("france", 1.0) if fr else -prof.get("foreign", 0.0)     # France first, as much as the profile asks
+    if "major" in tags:
+        s += 4.0        # a major yearly publication (IEA World Energy Outlook, RTE Bilan prévisionnel…): it leads
     s += 0.5 * math.log2(1 + len(i.get("other_sources") or []))
     s -= 0.3 * (age_h(i, now) or 0) / 24
     return s

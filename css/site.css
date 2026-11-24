@@ -4421,7 +4421,7 @@ html.pk-beta #prices-table th:first-child, html.pk-beta #prices-table tr.zone-ro
 .nh-ess ol { list-style: none; margin: 6px 0 0; padding: 0; counter-reset: nh; }
 .nh-ess li { counter-increment: nh; display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 6px; padding: 10px 0; border-top: 1px solid var(--border); font-size: 16px; line-height: 1.5; color: var(--text); }
 .nh-ess li::before { content: counter(nh); font: 700 15px var(--nh-serif); color: var(--accent); }
-.nh-secs { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 24px 32px; padding-top: 14px; }
+.nh-secs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px 32px; padding-top: 14px; }   /* always two sections per row, side by side */
 @media (min-width: 1400px) { .nh-top { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 40px; border-bottom: 1px solid var(--border); } .nh-top .nh-lead { border-bottom: 0; } .nh-top .nh-ess { padding-top: 4px; } .nh-rows { columns: 2; column-gap: 40px; } }
 @media (min-width: 1700px) { .nh-grid { grid-template-columns: minmax(0, 1fr) 340px; gap: 44px; } }
 .nh-sec h3 { margin: 0 0 4px; border-top: 2px solid var(--accent); padding-top: 9px; }
