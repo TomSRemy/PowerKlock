@@ -11,6 +11,11 @@ on:
     branches: [main]
     paths: ['config/news_sources.json']
   workflow_dispatch:
+    inputs:
+      backfill_archive:
+        description: 'Also take back every article of the git history into the archive (news.article), once'
+        type: boolean
+        default: false
 
 concurrency:
   group: fetch-news
@@ -25,6 +30,8 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v5
+        with:
+          fetch-depth: ${{ inputs.backfill_archive && 0 || 1 }}   # the whole history only to take back the past articles
       - name: Setup Python
         uses: actions/setup-python@v6
         with:
@@ -37,6 +44,10 @@ jobs:
           GO_GMAIL_USER: ${{ secrets.GO_GMAIL_USER }}       # the team mailbox: paper alerts (config "mail_alerts"), titles and links only
           GO_GMAIL_APP_PASSWORD: ${{ secrets.GO_GMAIL_APP_PASSWORD }}
         run: python scripts/fetch_news.py
+      - name: Archive (news.article in the warehouse, titles, links, subjects, public summaries)
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: python scripts/news_archive.py ${{ inputs.backfill_archive && '--backfill' || '' }} || echo "::warning::archive not written"
       - name: Calendar (consultation deadlines and dated events, data/agenda.ics)
         run: python scripts/agenda_ics.py || echo "::warning::agenda.ics not written"
       - name: Commit and push
