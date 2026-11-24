@@ -68,6 +68,11 @@ jobs:
         if: steps.check.outputs.run == 'true'
         continue-on-error: true
         run: python scripts/build_neg_profile.py
+      # Every figure of the public landing page (landing.html), from the files above
+      - name: Build the landing page figures
+        if: steps.check.outputs.run == 'true'
+        continue-on-error: true
+        run: python scripts/build_landing.py
       - name: Commit and push data files
         if: steps.check.outputs.run == 'true'
         run: |

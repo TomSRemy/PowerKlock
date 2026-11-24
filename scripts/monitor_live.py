@@ -96,21 +96,23 @@ else:
             pg = b.new_page(viewport={'width': 1440, 'height': 900})
             errs = []
             pg.on('pageerror', lambda e: errs.append(str(e)[:120]))
-            pg.add_init_script("localStorage.setItem('pk-lang','fr');localStorage.setItem('pk-first-done','1');sessionStorage.setItem('pk-view-morning','2')")
-            pg.goto(base + '#today', wait_until='domcontentloaded', timeout=60000)
+            pg.add_init_script("localStorage.setItem('pk-lang','fr')")
+            # a visitor who is not signed in is sent to the public landing page (landing.html): its figures come from
+            # data/landing.json, rebuilt after each price fetch
+            pg.goto(base, wait_until='domcontentloaded', timeout=60000)
             pg.wait_for_timeout(9000)
-            cards = pg.evaluate("[...document.querySelectorAll('#mrn2 .mrn-3d .mu-day-avg')].map(e=>e.textContent.trim())")
-            if not cards:
-                problems['page-today'] = 'Aujourd’hui : aucune carte de prix spot affichée'
+            st = pg.evaluate("""() => ({ path: location.pathname, day: window.PK && PK.tom && PK.tom.date, avg: window.PK && PK.tom && PK.tom.avg,
+                zones: window.PK && PK.eu ? PK.eu.length : 0, map: !!(window.Chart && Chart.getChart(document.getElementById('c-map'))) })""")
+            if not st['path'].endswith('landing.html'):
+                problems['page-accueil'] = f"Page d'accueil : un visiteur n'arrive pas sur landing.html ({st['path']})"
+            elif not st['day'] or not st['map'] or st['zones'] < 20:
+                problems['page-accueil'] = f"Page d'accueil : chiffres ou carte absents ({st})"
             else:
-                ok.append('Aujourd’hui : ' + ' / '.join(cards))
-            pg.goto(base + '#markets/spot', wait_until='domcontentloaded', timeout=60000)
-            pg.wait_for_timeout(7000)
-            rows = pg.evaluate("document.querySelectorAll('#prices-tbody tr.zone-row').length")
-            if rows < 5:   # 7 zones by default (the zone choice)
-                problems['page-spot'] = f'Day-ahead : {rows} zones affichées'
-            else:
-                ok.append(f'Day-ahead : {rows} zones')
+                paris = datetime.now(ZoneInfo('Europe/Paris')).date().isoformat()
+                if st['day'] < paris:
+                    problems['page-accueil'] = f"Page d'accueil : prix du {st['day']}, pas d'aujourd'hui ni de demain"
+                else:
+                    ok.append(f"Page d'accueil : prix du {st['day']} ({st['avg']} €/MWh), {st['zones']} zones, carte dessinée")
             if errs:
                 problems['js'] = 'erreurs de script : ' + ' | '.join(sorted(set(errs))[:3])
             b.close()

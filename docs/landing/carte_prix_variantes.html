@@ -1,0 +1,100 @@
+<title>PowerKlock carte prix</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: four versions of the same price card on one board, same data, to choose between. Site palette and chart settings. */
+:root { --bg: #0a0e13; --bg2: #0f1419; --bg3: #151c24; --line: #1e2d3d; --line2: #243447; --fg: #fff; --fg2: #b8c9d9; --fg3: #7a93ab; --accent: #14d3a9; --up: #ed6965; --down: #14d3a9; color-scheme: dark;
+  --f-display: 'Outfit', 'Inter', system-ui, sans-serif; --f-body: 'Inter', system-ui, sans-serif; --f-num: 'JetBrains Mono', ui-monospace, monospace; }
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--fg); font: 15px/1.5 var(--f-body); padding-block: 28px 48px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 22px; }
+h1 { font: 800 clamp(26px, 4vw, 38px)/1.05 var(--f-display); letter-spacing: -.03em; margin: 0; }
+.intro { color: var(--fg2); max-width: 70ch; margin: 0; }
+.grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }
+@media (min-width: 900px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.opt { display: grid; gap: 10px; min-width: 0; align-content: start; }
+.opt h2 { margin: 0; font: 500 19px var(--f-display); letter-spacing: -.01em; display: flex; gap: 10px; align-items: baseline; }
+.opt h2 b { font: 800 22px var(--f-display); color: var(--accent); }
+.opt p { margin: 0; color: var(--fg2); font-size: 13.5px; }
+.live { background: var(--bg2); border: 1px solid var(--line2); border-radius: 16px; padding: 18px; display: grid; gap: 10px; min-width: 0; }
+.hd { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; font: 600 11px var(--f-num); color: var(--fg3); text-transform: uppercase; letter-spacing: .07em; }
+.hd .on { color: var(--accent); }
+.val { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.val .v { font: 600 clamp(36px, 5vw, 50px)/1 var(--f-num); letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.val .u { color: var(--fg3); font-size: 14px; }
+.chip { font: 600 12px var(--f-num); padding: 4px 9px; border-radius: 999px; color: var(--up); background: rgba(237,105,101,.14); }
+.cv { position: relative; height: 250px; }
+.cv canvas { position: absolute; inset: 0; }
+.src { font: 400 10px/1.45 var(--f-num); color: var(--fg3); }
+</style>
+<div class="wrap">
+  <h1>Carte prix du haut de page : quatre versions</h1>
+  <p class="intro">Mêmes données dans les quatre (France, livraison du jour et de la veille). A et B reprennent deux graphiques de la page Aujourd'hui du site ; C est la courbe sobre de la maquette précédente ; D est la version colorée actuelle. Le curseur glisse en continu dans chacune.</p>
+  <div class="grid" id="grid"></div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+<script>
+const D = {"date":"2026-11-24","prev":"2026-11-23","h":[216.56,212.79,208.47,203.98,212.47,211.8,210.57,205.0,207.52,202.84,200.29,200.0,200.8,200.0,199.45,199.9,200.02,200.0,200.28,200.28,201.44,206.57,210.0,205.0,223.14,249.06,264.41,289.99,276.88,282.98,300.0,300.0,321.51,309.88,300.0,284.61,299.61,284.11,271.53,245.0,264.75,244.32,236.44,227.79,228.02,218.91,218.32,218.08,221.89,221.32,216.01,218.35,219.09,218.99,223.1,233.0,235.67,248.18,272.36,290.79,276.58,290.0,300.63,309.21,276.84,276.7,275.0,291.44,257.5,267.36,284.36,288.63,287.42,289.93,288.64,294.02,298.02,293.13,285.75,274.85,287.8,274.34,260.0,245.29,241.29,232.3,232.72,222.57,233.72,226.64,223.01,219.72,219.72,213.22,212.15,201.68],"y":[195.0,187.13,184.9,181.84,186.11,182.89,182.06,181.84,183.28,182.25,182.28,182.06,182.06,181.75,181.98,180.96,182.06,182.52,182.06,182.87,181.39,182.34,187.5,202.27,198.07,209.08,216.02,241.86,250.03,263.7,271.95,277.66,284.98,285.47,280.2,273.35,280.0,271.61,269.29,258.92,270.17,253.06,237.06,221.92,221.36,217.35,214.2,214.62,210.4,208.83,208.35,208.83,209.04,212.87,209.92,216.17,218.8,229.0,252.82,270.8,260.31,272.04,277.79,288.04,271.31,294.16,304.87,310.2,299.9,311.66,313.02,328.34,318.93,316.3,313.3,308.45,312.23,300.87,295.34,292.31,295.32,286.39,277.9,263.7,273.01,263.43,249.8,232.0,244.59,240.05,238.43,230.08,224.92,212.66,210.1,206.73],"avg":245.27,"yavg":239.56,"min":199.45,"max":321.51,"peak":264.53};
+(function () {
+  const fmt = (v, d = 2) => new Intl.NumberFormat('fr-FR', { minimumFractionDigits: d, maximumFractionDigits: d }).format(v).replace('-', '−');
+  const sgn = (v, d = 2) => (v > 0 ? '+' : '') + fmt(v, d);
+  const MO = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+  const day = iso => { const [y, m, d] = iso.split('-').map(Number); return d + ' ' + MO[m - 1]; };
+  const hhmm = q => String(Math.floor(q / 4)).padStart(2, '0') + ':' + String((q % 4) * 15).padStart(2, '0');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches, clamp = (v, a = 0, b = 1) => Math.max(a, Math.min(b, v));
+  const H = D.h, Y = D.y, h24 = a => [...Array(24)].map((_, h) => (a[h * 4] + a[h * 4 + 1] + a[h * 4 + 2] + a[h * 4 + 3]) / 4), HH = h24(H), YH = h24(Y), chg = D.avg - D.yavg;
+  const C = Chart.defaults; C.font.family = "'JetBrains Mono', monospace"; C.font.size = 10; C.color = '#7A93AB'; C.borderColor = 'rgba(26,45,63,.5)'; C.elements.line.tension = 0; C.elements.point.radius = 0; C.maintainAspectRatio = false; C.animation = false; C.scale.grid.color = 'rgba(26,45,63,.5)'; C.scale.grid.drawTicks = false; C.scale.ticks.padding = 6; C.plugins.legend.labels.boxWidth = 10; C.plugins.legend.labels.boxHeight = 10; C.plugins.legend.labels.color = '#B8C9D9'; C.plugins.legend.position = 'bottom'; C.plugins.tooltip.enabled = false;
+  const OPTS = [
+    ['A', 'Hier et aujourd\'hui, comme la page Aujourd\'hui', 'Le graphique « Spot France » du site, sur deux jours : courbe verte, moyenne du jour en pointillé, heure la moins chère et la plus chère en points, créneaux de 3 h les moins chers (vert) et les plus chers (rouge) ombrés, étiquette par jour.', 'Prix day-ahead France par heure (€/MWh), ' + day(D.prev) + ' et ' + day(D.date) + '. Source : ENTSO-E, via PowerKlock.'],
+    ['B', 'Heure par heure, en barres', 'Le graphique « Le prix d\'aujourd\'hui heure par heure » du site : une barre par heure, les heures chères en rouge, la moyenne en pointillé.', 'Prix day-ahead France par heure (€/MWh), ' + day(D.date) + '. Heures chères : au-dessus de la moyenne de pointe. Source : ENTSO-E, via PowerKlock.'],
+    ['C', 'La courbe du jour, sobre', '96 quarts d\'heure en vert du site, léger fond dégradé, moyenne en pointillé, plus haut et plus bas marqués. La plus proche de la maquette d\'origine, en plus grand.', 'Prix day-ahead France par quart d\'heure (€/MWh), ' + day(D.date) + '. Source : ENTSO-E, via PowerKlock.'],
+    ['D', 'Version actuelle, colorée par niveau de prix', 'La courbe prend la couleur de son niveau (vert, orange, rouge), la veille en pointillé derrière.', 'Prix day-ahead France par quart d\'heure (€/MWh), ' + day(D.date) + ' ; pointillé : ' + day(D.prev) + '. Source : ENTSO-E, via PowerKlock.']];
+  document.getElementById('grid').innerHTML = OPTS.map(([k, t, p, s]) => `<section class="opt"><h2><b>${k}</b>${t}</h2><p>${p}</p><div class="live"><div class="hd"><span>Day-ahead France · livraison ${day(D.date)} 2026</span><span class="on">● publié</span></div><div class="val"><span class="v">${fmt(D.avg)}</span><span class="u">€/MWh</span><span class="chip">▲ ${sgn(chg)} € sur la veille</span></div><div class="cv"><canvas id="c${k}"></canvas></div><div class="src">${s.replace(/\.\./g, '.')}</div></div></section>`).join('');
+  // cursor: a point that glides along the series with its value
+  const cursor = (vals, lab) => ({ id: 'cur', afterDatasetsDraw(ch) { const f = ch.$f; if (f == null) return; const m = ch.getDatasetMeta(ch.$ds || 0).data, n = vals.length, u = f * (n - 1), i = Math.min(n - 2, Math.floor(u)), t = u - i, p0 = m[i + (ch.$off || 0)], p1 = m[i + 1 + (ch.$off || 0)]; if (!p0 || !p1 || vals[i] == null) return;
+    const bar = ch.config.type === 'bar', x = bar ? (t < .5 ? p0.x : p1.x) : p0.x + (p1.x - p0.x) * t, v = bar ? (t < .5 ? vals[i] : vals[i + 1]) : vals[i] + (vals[i + 1] - vals[i]) * t, y = ch.scales.y.getPixelForValue(v), c = ch.ctx, a = ch.chartArea;
+    c.save(); c.strokeStyle = 'rgba(255,255,255,.28)'; c.setLineDash([3, 3]); c.beginPath(); c.moveTo(x, a.top); c.lineTo(x, a.bottom); c.stroke(); c.setLineDash([]);
+    c.fillStyle = '#FFFD82'; c.strokeStyle = '#0a0e13'; c.lineWidth = 2; c.beginPath(); c.arc(x, y, 4.5, 0, 7); c.fill(); c.stroke();
+    const txt = lab(u) + '  ' + fmt(v, 0) + ' €'; c.font = "600 11px 'JetBrains Mono', monospace"; const w = c.measureText(txt).width + 16, bx = clamp(x - w / 2, a.left, a.right - w), by = y - 34 < a.top ? y + 14 : y - 34;
+    c.fillStyle = '#0a0e13'; c.strokeStyle = '#243447'; c.lineWidth = 1; c.beginPath(); c.roundRect(bx, by, w, 22, 6); c.fill(); c.stroke(); c.fillStyle = '#fff'; c.textBaseline = 'middle'; c.fillText(txt, bx + 8, by + 11.5); c.restore(); } });
+  const yAx = (lo, hi) => ({ position: 'right', min: Math.floor((lo - 8) / 50) * 50, max: Math.ceil((hi + 8) / 50) * 50, ticks: { stepSize: 50, callback: v => v + ' €' } });
+  const charts = [];
+  // A · two days, the site's Today chart
+  { const GAP = 2, lbl = [], real = [], avg = [], lo = [], hi = []; const days = [[D.prev, YH], [D.date, HH]];
+    const win = (v, s) => { let b = null; for (let h = 0; h <= 21; h++) { const m = (v[h] + v[h + 1] + v[h + 2]) / 3; if (!b || (s < 0 ? m < b.m : m > b.m)) b = { h, m }; } return b; };
+    const boxes = [], labels = [];
+    days.forEach(([d, v], di) => { const off = di * (24 + GAP), a = v.reduce((x, y) => x + y, 0) / 24, mn = Math.min(...v), mx = Math.max(...v);
+      v.forEach((p, h) => { lbl.push(h + ' h'); real.push(p); avg.push(a); lo.push(p === mn ? p : null); hi.push(p === mx ? p : null); });
+      if (di === 0) for (let g = 0; g < GAP; g++) { lbl.push(''); real.push(null); avg.push(null); lo.push(null); hi.push(null); }
+      const t = win(v, -1), p = win(v, 1); boxes.push([off + t.h - .5, off + t.h + 2.5, 'rgba(20,211,169,.10)'], [off + p.h - .5, off + p.h + 2.5, 'rgba(237,105,101,.10)']);
+      labels.push([off + 11.5, `${day(d)} · ${fmt(a, 1)} €` + (di ? ` (${sgn((a / days[0][1].reduce((x, y) => x + y, 0) * 24 - 1) * 100, 0)} %)` : '')]); });
+    const deco = { id: 'deco', beforeDatasetsDraw(ch) { const c = ch.ctx, a = ch.chartArea, x = ch.scales.x; c.save(); boxes.forEach(([x0, x1, col]) => { c.fillStyle = col; const p0 = x.getPixelForValue(x0), p1 = x.getPixelForValue(x1); c.fillRect(p0, a.top, p1 - p0, a.bottom - a.top); }); c.fillStyle = '#B8C9D9'; c.font = "500 10.5px 'JetBrains Mono', monospace"; c.textAlign = 'center'; labels.forEach(([xv, t]) => c.fillText(t, x.getPixelForValue(xv), a.top - 6)); c.restore(); } };
+    const ch = new Chart(document.getElementById('cA'), { type: 'line', plugins: [deco, cursor(HH, u => Math.round(u) + ' h')], data: { labels: lbl, datasets: [
+      { label: 'Prix réel', data: real, borderColor: '#14D3A9', borderWidth: 2.2, spanGaps: false },
+      { label: 'Moyenne du jour', data: avg, borderColor: 'rgba(184,201,217,.7)', borderWidth: 1.1, borderDash: [4, 4], spanGaps: false },
+      { label: 'Heure la moins chère', data: lo, showLine: false, pointRadius: 4.5, pointBackgroundColor: '#14D3A9', pointBorderColor: '#0A0F14', pointBorderWidth: 1.5, borderColor: '#14D3A9' },
+      { label: 'Heure la plus chère', data: hi, showLine: false, pointRadius: 4.5, pointBackgroundColor: '#ED6965', pointBorderColor: '#0A0F14', pointBorderWidth: 1.5, borderColor: '#ED6965' }] },
+      options: { layout: { padding: { top: 18 } }, plugins: { legend: { display: true, labels: { font: { size: 10 }, padding: 8, usePointStyle: false } } }, scales: { x: { grid: { display: false }, ticks: { autoSkip: false, maxRotation: 0, callback: (v, i) => { const h = i % 26; return h < 24 && h % 6 === 0 ? lbl[i] : ''; } } }, y: yAx(Math.min(...YH, ...HH), Math.max(...YH, ...HH)) } } });
+    ch.$off = 26; charts.push(ch); }
+  // B · hour by hour, bars
+  { const thr = D.peak; charts.push(new Chart(document.getElementById('cB'), { plugins: [cursor(HH, u => Math.round(u) + ' h')], type: 'bar', data: { labels: HH.map((_, h) => h + ' h'), datasets: [
+      { label: 'Prix, €/MWh', data: HH.map(v => Math.round(v * 10) / 10), backgroundColor: HH.map(v => v > thr ? 'rgba(237,105,101,.8)' : 'rgba(127,200,248,.6)'), borderWidth: 0, borderRadius: 2, order: 2 },
+      { type: 'line', label: 'Moyenne du jour', data: HH.map(() => D.avg), borderColor: 'rgba(184,201,217,.7)', borderWidth: 1.1, borderDash: [4, 4], order: 1 }] },
+      options: { plugins: { legend: { display: true, labels: { font: { size: 10 }, padding: 8 } } }, scales: { x: { grid: { display: false }, ticks: { autoSkip: false, maxRotation: 0, callback: (v, i) => i % 6 === 0 ? i + ' h' : '' } }, y: { position: 'right', min: 0, ticks: { maxTicksLimit: 5, callback: v => v + ' €' } } } } })); }
+  // C · the day's curve, plain
+  const marks = { id: 'marks', afterDatasetsDraw(ch) { const m = ch.getDatasetMeta(0).data, c = ch.ctx, a = ch.chartArea; c.save(); c.font = "600 10.5px 'JetBrains Mono', monospace"; [[H.indexOf(D.max), '#ED6965', -10], [H.indexOf(D.min), '#14D3A9', 17]].forEach(([q, col, dy]) => { const p = m[q]; c.fillStyle = col; c.beginPath(); c.arc(p.x, p.y, 3.5, 0, 7); c.fill(); c.textAlign = p.x > a.right - 40 ? 'right' : p.x < a.left + 40 ? 'left' : 'center'; c.fillText(fmt(H[q], 0) + ' €', p.x, p.y + dy); }); c.restore(); } };
+  const QL = [...Array(96)].map((_, q) => hhmm(q)), xq = { grid: { display: false }, ticks: { autoSkip: false, maxRotation: 0, callback: (v, i) => i % 24 === 0 ? (i / 4) + ' h' : '' } };
+  const fillG = (col) => ctx => { const a = ctx.chart.chartArea; if (!a) return 'transparent'; const g = ctx.chart.ctx.createLinearGradient(0, a.top, 0, a.bottom); g.addColorStop(0, col); g.addColorStop(1, 'rgba(20,211,169,0)'); return g; };
+  charts.push(new Chart(document.getElementById('cC'), { type: 'line', plugins: [marks, cursor(H, u => hhmm(Math.round(u) % 96))], data: { labels: QL, datasets: [
+    { data: H, borderColor: '#14D3A9', borderWidth: 2.2, fill: 'start', backgroundColor: fillG('rgba(20,211,169,.28)') }, { data: H.map(() => D.avg), borderColor: 'rgba(184,201,217,.7)', borderWidth: 1.1, borderDash: [4, 4] }] },
+    options: { layout: { padding: { top: 16 } }, plugins: { legend: { display: false } }, scales: { x: xq, y: yAx(D.min, D.max) } } }));
+  // D · current: coloured by price level, yesterday behind
+  const ramp = ctx => { const ar = ctx.chart.chartArea; if (!ar) return '#14D3A9'; const y = ctx.chart.scales.y, g = ctx.chart.ctx.createLinearGradient(0, ar.bottom, 0, ar.top), p = v => clamp((y.getPixelForValue(v) - ar.bottom) / (ar.top - ar.bottom)); g.addColorStop(0, '#14d3a9'); g.addColorStop(p(D.min), '#14d3a9'); g.addColorStop(p((D.min + D.max) / 2), '#ee9b00'); g.addColorStop(p(D.max), '#ed6965'); g.addColorStop(1, '#ed6965'); return g; };
+  charts.push(new Chart(document.getElementById('cD'), { type: 'line', plugins: [marks, cursor(H, u => hhmm(Math.round(u) % 96))], data: { labels: QL, datasets: [
+    { data: H, borderColor: ramp, borderWidth: 2.6, fill: 'start', backgroundColor: fillG('rgba(237,105,101,.18)') }, { data: Y, borderColor: 'rgba(122,147,171,.65)', borderDash: [3, 3], borderWidth: 1.2 }, { data: H.map(() => D.avg), borderColor: 'rgba(184,201,217,.45)', borderWidth: 1 }] },
+    options: { layout: { padding: { top: 16 } }, plugins: { legend: { display: false } }, scales: { x: xq, y: yAx(Math.min(D.min, ...Y), Math.max(D.max, ...Y)) } } }));
+  let f = .33, last = 0;
+  const loop = now => { if (last) f = (f + Math.min(.1, (now - last) / 1000) / 28) % 1; last = now; charts.forEach(c => { c.$f = f; c.draw(); }); if (!reduce) requestAnimationFrame(loop); };
+  requestAnimationFrame(loop);
+})();
+</script>
