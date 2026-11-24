@@ -412,8 +412,20 @@ window.pkLandingStart = function () {
     gsap.set(plates, { clearProps: 'all' }); gsap.set([...steps, '#stagebox'], { clearProps: 'all' }); gsap.set(['#c-map', '#c-neg', '#c-m0', '#tiles .tile'], { clearProps: 'all' });
     sec.classList.toggle('live', wide); stageLive = wide;
     ['c-map', 'c-neg', 'c-m0', 't-spot', 't-mix', 't-neg', 't-nuc'].forEach(id => { const c = charts[id]; if (c) { c.resize(); c.update('none'); } });
-    if (!wide) {   // phones and tablets: an ordinary page, each chart rises in under its caption
-      plates.forEach(pl => strigs.push(ScrollTrigger.create({ trigger: pl, start: 'top 88%', once: true, onEnter: () => gsap.from(pl, { y: 40, autoAlpha: 0, duration: .7, ease: 'power3.out' }) })));
+    if (!wide) {   // phones and tablets: an ordinary page; each chart rises in under its caption, then plays its own reveal
+      const mv = !matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const build = (k, after) => {   // the axes keep their final range while the weeks or months draw in
+        const ch = charts[k === 2 ? 'c-neg' : 'c-m0'], held = ch ? Object.entries(ch.scales).filter(([, sc]) => sc.axis === 'y').map(([id, sc]) => { const o = ch.options.scales[id], was = [o.min, o.max]; o.min = sc.min; o.max = sc.max; return [o, was]; }) : [];
+        const o = { b: 0 }; setBuild(k, 0); return gsap.to(o, { b: 1, duration: 1.6, ease: 'power1.inOut', onUpdate: () => setBuild(k, o.b), onComplete: () => { held.forEach(([sc, w]) => { sc.min = w[0]; sc.max = w[1]; }); if (ch) ch.update('none'); if (after) after(); } }); };
+      const reveal = [
+        () => { const ch = charts['c-map'], fr = GEO.find(f => f.properties.iso === 'FR'); if (ch && fr) { const c = ch.getDatasetMeta(0).data[GEO.indexOf(fr)].getCenterPoint(true); $('#c-map').style.setProperty('--fx', c.x + 'px'); $('#c-map').style.setProperty('--fy', c.y + 'px'); }
+          gsap.fromTo('#c-map', { '--r': '0%' }, { '--r': '190%', duration: 1.4, ease: 'power1.in' }); },
+        () => { gsap.fromTo('#c-neg', { '--p': '0%' }, { '--p': '140%', duration: 1.6, ease: 'none' }); build(2, () => readDrv(null)); },
+        () => { gsap.fromTo('#c-m0', { '--p': '0%' }, { '--p': '140%', duration: 1.6, ease: 'none' }); build(3); },
+        () => gsap.fromTo('#tiles .tile', { autoAlpha: 0, scale: .9, y: 18 }, { autoAlpha: 1, scale: 1, y: 0, duration: .5, stagger: .06, ease: 'power2.out' }),
+      ];
+      plates.forEach((pl, k) => strigs.push(ScrollTrigger.create({ trigger: pl, start: 'top 80%', once: true, onEnter: () => {
+        gsap.from(pl, { y: 40, autoAlpha: 0, duration: .7, ease: 'power3.out' }); if (mv && reveal[k]) reveal[k](); } })));
       return; }
     const sg = $('.sgrid'), sgs = getComputedStyle(sg), xR = sg.clientWidth - parseFloat(sgs.paddingLeft) - parseFloat(sgs.paddingRight) - $('#stagebox').offsetWidth;   // content width: the gutters are padding
     gsap.set('#stagebox', { x: xR });   // chart on the right first, then it changes side at each step
