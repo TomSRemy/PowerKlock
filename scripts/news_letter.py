@@ -242,24 +242,21 @@ def takeaway(t, title, what):
     return t
 
 
-BRIEF = """Tu écris « Le point du matin » de PowerKlock, comme un analyste marché senior qui parle à des directeurs du secteur de
-l'électricité en France. Deux paragraphes séparés par une ligne vide, 150 mots au plus en tout, sans liste ni titre.
+BRIEF = """Tu écris « Le point du matin » de PowerKlock : l'analyse du marché de l'électricité français, comme un analyste marché
+senior qui parle à des directeurs du secteur. Un seul paragraphe, 4 ou 5 phrases, 110 mots au plus, ton clair et posé,
+sans liste ni titre. Pas d'actualité générale : la page la donne juste en dessous.
 Tu reçois : les marchés du matin (dont le spot du jour et le Cal 27, contrat de l'an prochain), les fondamentaux France
 (consommation, demande résiduelle face à la veille), notre contexte de marché (nucléaire, météo, géopolitique), les tendances
-attendues de la semaine (une attente : « devrait »), les actualités de marché des dernières 36 h (id, titre, extrait, média)
-et les 3 histoires du jour (titre, résumé).
-1er paragraphe, le marché, 3 phrases : le POURQUOI comme un raisonnement, chaque phrase reliant une cause à son effet.
-  - Le spot ET le Cal 27 : ce que dit l'écart entre le court terme et l'an prochain (le Cal suit-il le spot ? le marché
-    voit-il le mouvement durer ?).
-  - Les actualités de marché sont tes causes : appuie-toi sur au moins une, en disant ce qu'elle rapporte.
-  - Gaz et électricité liés par les fondamentaux : une demande résiduelle en hausse ne change pas le prix du gaz, elle fait
-    que les centrales au gaz fixent plus souvent le prix de l'électricité, qui suit alors le gaz.
-  - Si un mouvement va contre la tendance attendue, dis-le en une proposition.
-2e paragraphe, l'actualité, 2 ou 3 phrases : les 3 histoires du jour, chacune par son fait précis et ce qu'il change
-  (« Côté régulation, la CRE … ; pour les producteurs, … »).
-Varie les verbes : jamais deux fois « en hausse » ou « augmente ». 4 à 6 chiffres en tout, arrondis. Une cause n'est
-écrite que si le contexte ou un article la donne. Aucun fait, chiffre, acteur ni date absent de ce qui est reçu. Interdits :
-« s'inscrit dans un contexte », « les prix restent volatils », « influencés par des facteurs », tout conseil.
+attendues de la semaine (une attente : « devrait ») et les actualités de marché des dernières 36 h (id, titre, extrait, média).
+Ce qu'on attend :
+  - le spot ET le Cal 27, et ce que leur écart dit (le marché voit-il le mouvement durer ?) ;
+  - pourquoi : consommation et demande résiduelle, nucléaire, gaz ; une demande résiduelle en hausse ne change pas le prix du
+    gaz, elle fait que les centrales au gaz fixent plus souvent le prix de l'électricité ;
+  - le gaz et son contexte géopolitique, dit simplement (ce qui se passe, en quoi cela touche les prix) ;
+  - ce qu'on attend pour les jours qui viennent (météo, tendance de la semaine), au conditionnel.
+Varie les verbes : pas deux fois la même tournure. 4 à 6 chiffres, arrondis. Une cause n'est écrite que si le contexte ou un
+article la donne. Aucun fait, chiffre, acteur ni date absent de ce qui est reçu. Interdits : « les prix restent volatils »,
+« influencés par des facteurs », tout conseil.
 Le ton seulement (un autre jour, d'autres faits : n'en reprends ni les mots ni les faits) : « Le solaire pèse sur les prix :
 le spot recule de 8 % sous 60 €, avec deux heures négatives à la mi-journée. Le Cal-27 ne bouge pas, signe que le marché ne
 voit pas l'épisode durer. À noter : RTE ouvre sa consultation sur les règles de raccordement. »
@@ -350,11 +347,6 @@ def ask_brief(edition, model=None, items=None):
            "variation": (("en hausse de " if r.get("pct", 0) > 0 else "en baisse de " if r.get("pct", 0) < 0 else "stable ") + f'{abs(rnd(r.get("pct"), 0))} %' if isinstance(r.get("pct"), (int, float)) and r.get("show") != "abs" and not r.get("hours")
                          else f'{rnd(r.get("chg"), 1):+} {"h" if r.get("hours") else "€"}' if isinstance(r.get("chg"), (int, float)) else None)}
           for r in edition.get("markets") or []]
-    seen, st = set(), []
-    for p in sorted(edition["profiles"].values(), key=lambda p: p.get("order", 9)):
-        for x in (p.get("stories") or [])[:2]:
-            if x["link"] not in seen and len(st) < 3:
-                seen.add(x["link"]); st.append({"titre": x["title"], "résumé": x.get("what") or ""})
     w = edition.get("weather") or {}
     names = {"oil": "pétrole", "gas": "gaz", "power": "électricité", "carbon": "carbone"}
     trend = {names.get(k, k): {"tendance": v.get("tone"), "texte": v.get("text")} for k, v in (md.get("outlook") or {}).items()} if fresh else {}
@@ -364,7 +356,7 @@ def ask_brief(edition, model=None, items=None):
            and PRICE_NEWS.search(i["title"]) and not {"official", "research"} & set(i.get("tags") or []) and (age_h(i, now) or 1e9) <= 36]
     mkt = sorted(mkt, key=lambda i: -(i.get("impact") or 0))[:5]
     news = [{"id": f"n{k + 1}", "titre": i["title"], "extrait": clip(i.get("snippet"), 300), "média": i["source"]} for k, i in enumerate(mkt)]
-    payload = {"marchés": mk, "fondamentaux_france": trends_only(fundamentals(edition["date"])), "contexte": ctx, "tendances_semaine": trend, "actualités_marché": news, "météo": " · ".join(filter(None, [(w.get("label") or [""])[0], (w.get("sub") or [""])[0]])), "histoires": st}
+    payload = {"marchés": mk, "fondamentaux_france": trends_only(fundamentals(edition["date"])), "contexte": ctx, "tendances_semaine": trend, "actualités_marché": news, "météo": " · ".join(filter(None, [(w.get("label") or [""])[0], (w.get("sub") or [""])[0]]))}
     msg = {"max_tokens": 700, "system": BRIEF, "messages": [{"role": "user", "content": json.dumps(payload, ensure_ascii=False)}],
            "model": model or os.environ.get("NEWS_MODEL") or MODEL}
     req = urllib.request.Request(PROXY, data=json.dumps(msg).encode(), headers={"Content-Type": "application/json", "User-Agent": "PowerKlock-newsletter"})
@@ -379,10 +371,10 @@ def ask_brief(edition, model=None, items=None):
     b, be = para(out.get("brief")), para(out.get("brief_en"))
     market_par = re.split(r"\n\s*\n", b or "")[0]   # the market paragraph: a note, not a table of figures (« Cal-27 » is a name; the news keep theirs)
     many = len(re.findall(r"(?<![\w-])\d+(?:[.,]\d+)?", re.sub(r"\b(19|20)\d\d\b", "", market_par))) > 6
-    hollow = re.search(r"(?i)restent volatils|reste volatil|influenc[ée]s par (des|les) facteurs|il faut retenir que les prix|s.inscrit dans un contexte", b or "")
-    hollow = hollow or (mkt and not out.get("sources"))      # the market news must be among the reasons
-    hollow = hollow or len((b or "").split()) > 170
-    hollow = hollow or len(re.findall(r"(?i)\ben hausse\b|\baugmente", b or "")) > 3      # the same words again and again
+    hollow = re.search(r"(?i)restent volatils|reste volatil|influenc[ée]s par (des|les) facteurs|il faut retenir que les prix", b or "")
+    hollow = hollow or len((b or "").split()) > 130
+    hollow = hollow or len(re.findall(r"(?i)\ben hausse\b", b or "")) > 3      # the same words again and again
+    hollow = hollow or "\n\n" in (b or "")                                                 # one paragraph: the market only
     hollow = hollow or not re.search(r"(?i)\bcal", b or "")                                  # the year ahead says whether the move lasts
     if not b or many or hollow or not numbers_ok(b, given) or not direction_ok(b, edition.get("markets") or []):
         raise ValueError(f"brief rejected: {b[:120]!r}")   # a figure that was not given: better no brief
