@@ -5,6 +5,8 @@ Objectif : un visiteur non connecté comprend en 10 secondes ce que contient le 
 Elle remplace la vue publique actuelle (Aujourd'hui › Expert sous la barre de `js/gate.js`).
 
 ## Ce qu'on garde de la maquette
+- Identité : logo complet `assets/logo-header.png` (barre du haut, pied de page) ; icône jaune ronde `assets/favicon-*.png` et `assets/apple-touch-icon.png` = icône du site (onglet, écran d'accueil iPhone), reprise en signature de la section Accès ; `assets/icon-192.png` / `icon-512.png` (fond sombre, éclair turquoise) = icône de l'app installée (manifest).
+- Fond du haut de page : la courbe France derrière le titre est à garder et à retravailler (plus présente qu'en v5, sans gêner la lecture).
 - Palette, polices et cartes du site (`css/site.css` : `--bg`, `--accent` #14D3A9, `--price-up` / `--price-down`, Outfit, Inter, JetBrains Mono).
 - Haut de page compact : titre à gauche, carte « Spot France, livraison J+1 » à droite (courbe des 96 quarts d'heure qu'on survole, plus bas, plus haut, pointe − base, écart sur la veille). La courbe France brille en fond, discrète (30 zones en fond : refusé, trop chargé).
 - Bandeau défilant des chiffres du jour (validé tel quel).
