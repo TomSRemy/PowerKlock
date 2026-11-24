@@ -4682,3 +4682,8 @@ html[data-theme="light"] .pkd-auth-logo { content: url(../assets/logo-header-lig
   .pk-gate-up, .pk-gate-go { font-size: 13px; padding: 9px 12px; }
 }
 @media (max-width: 420px) { .pk-gate-up, .pk-gate-go { padding: 8px 11px; font-size: 13px; } .pk-gate-in img { height: 18px; } }
+.pkd-del { margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--border); }
+.pkd-del summary { cursor: pointer; font-size: 13px; color: var(--text3); }
+.pkd-del summary:hover { color: #f87171; }
+.pkd-del-go { margin-top: 4px; padding: 9px 14px; border-radius: 8px; border: 1px solid #f87171; background: transparent; color: #f87171; font: 600 13.5px 'Inter', sans-serif; cursor: pointer; }
+.pkd-del-go:hover { background: rgba(248,113,113,.1); }

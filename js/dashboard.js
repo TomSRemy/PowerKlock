@@ -1002,7 +1002,27 @@
           <div class="pkd-msg" id="pkd-pw-msg" role="status">${hint ? esc(hint) : ''}</div>
           <div id="pkd-mcp"></div>
           <div id="pkd-admin"></div>
+          <details class="pkd-del"><summary>Delete my account</summary>
+            <p class="pkd-p">Your account and everything it holds are erased for good: dashboards, alerts, newsletter settings, keywords, the connector for Claude. This cannot be undone.</p>
+            <button type="button" class="pkd-del-go" id="pkd-del-go">Delete my account for good</button>
+            <div class="pkd-msg" id="pkd-del-msg" role="status"></div></details>
           <div class="pkd-form-foot"><button type="button" class="pk-btn-ghost" data-close>Close</button><button type="button" class="pk-btn-primary" id="pkd-out">Sign out</button></div></div>`, root => {
+        // « Delete my account » (warehouse migration 037): a second click confirms; the site's administrators are refused
+        root.querySelector('#pkd-del-go').addEventListener('click', ev => {
+          const b = ev.currentTarget, m = root.querySelector('#pkd-del-msg');
+          if (!b.dataset.sure) { b.dataset.sure = '1'; b.textContent = 'Click again to confirm'; return; }
+          b.disabled = true; m.textContent = 'Deleting…';
+          A.client().rpc('delete_my_account').then(({ data, error }) => {
+            if (error || !data || !data.ok) {
+              b.disabled = false;
+              m.textContent = data && data.reason === 'admin' ? 'An administrator account cannot delete itself here.' : 'Not deleted.';
+              if (error && error.message) m.append(' ' + error.message);
+              return;
+            }
+            try { localStorage.removeItem('pk-last-email'); localStorage.removeItem('pk-approved'); } catch (_) {}
+            A.signOut().finally(() => { closeModal(); renderAccount(); toast('Account deleted'); });
+          });
+        });
         root.querySelector('#pkd-out').addEventListener('click', () => { A.signOut().then(() => { closeModal(); renderAccount(); toast('Signed out'); }); });
         root.querySelector('#pkd-pw-form').addEventListener('submit', ev => {
           ev.preventDefault();
