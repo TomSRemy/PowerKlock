@@ -63,3 +63,6 @@ language sql immutable as $$
   from (select lower(w) w from regexp_split_to_table(coalesce(q, ''), '[^[:alnum:]]+') w where length(w) > 1) x
 $$;
 -- (public.news_search gains p_any boolean default false: same body with news.query(p_query, p_any); applied as 036b)
+
+-- the one-argument news.query(text) is dropped (applied as 036c): news.query(q, any_word) alone, no ambiguity
+drop function if exists news.query(text);
