@@ -154,7 +154,7 @@ def learn_prefs(cfg_db):
 # (« l'AIE prévient »), counted only when an article naming it is in the same week. "pages": where the report itself
 # lives ({y}: its year, {q}: its quarter); the first that answers becomes the story's "report_link".
 MAJOR = [
-    {"key": "weo", "pages": ["https://www.iea.org/reports/world-energy-outlook-{y}", "https://www.iea.org/topics/world-energy-outlook"], "name": "World Energy Outlook (IEA)", "pub": r"iea\.org|international energy agency",
+    {"key": "weo", "pages": ["https://www.iea.org/reports/world-energy-outlook-{y}", "~https://www.iea.org/topics/world-energy-outlook"], "name": "World Energy Outlook (IEA)", "pub": r"iea\.org|international energy agency",
      "re": r"world energy outlook|\bweo ?20\d\d|perspectives [ée]nerg[ée]tiques mondiales", "hint": r"\b(aie|iea|agence internationale de l.[ée]nergie|international energy agency)\b.{0,80}\b(pr[ée]vient|pr[ée]dit|projette|anticipe|warns?|predicts?|projects?|says|rapport annuel|annual report|sc[ée]narios?)"},
     {"key": "iea-electricity", "pages": ["https://www.iea.org/reports/electricity-{y}"], "name": "Electricity (IEA)", "pub": r"iea\.org|international energy agency",
      "re": r"\b(iea|aie)\b.{0,40}\belectricity (20\d\d|mid-year update)|electricity mid-year update"},
@@ -168,8 +168,8 @@ MAJOR = [
     {"key": "acer-mmr", "pages": ["https://www.acer.europa.eu/monitoring/MMR"], "name": "Market Monitoring Report (ACER)", "pub": r"acer\.europa|\bacer\b", "re": r"\bacer\b.{0,60}market monitoring report|market monitoring report.{0,60}\bacer\b"},
     {"key": "eraa", "pages": ["https://www.entsoe.eu/outlooks/eraa/"], "name": "ERAA (ENTSO-E)", "pub": r"entsoe|entso-e", "re": r"\beraa\b|european resource adequacy assessment"},
     {"key": "ember-eer", "pages": ["https://ember-energy.org/latest-insights/european-electricity-review-{y}/", "https://ember-energy.org/latest-insights/global-electricity-review-{y}/"], "name": "European Electricity Review (Ember)", "pub": r"ember", "re": r"european electricity review|global electricity review"},
-    {"key": "irena-weto", "pages": ["https://www.irena.org/Energy-Transition/Outlook"], "name": "World Energy Transitions Outlook (IRENA)", "pub": r"irena", "re": r"world energy transitions outlook"},
-    {"key": "eurelectric", "pages": ["https://www.eurelectric.org/power-barometer/"], "name": "Power Barometer (Eurelectric)", "pub": r"eurelectric", "re": r"power barometer"},
+    {"key": "irena-weto", "pages": ["~https://www.irena.org/Energy-Transition/Outlook"], "name": "World Energy Transitions Outlook (IRENA)", "pub": r"irena", "re": r"world energy transitions outlook"},
+    {"key": "eurelectric", "name": "Power Barometer (Eurelectric)", "pub": r"eurelectric", "re": r"power barometer"},
 ]
 
 
@@ -180,11 +180,14 @@ def report_page(m, when):
     """the publisher's page of the report: the first candidate (this year's, then last year's) that answers"""
     for y in (when.year, when.year - 1):
         for u in m.get("pages") or []:
-            u = u.format(y=y, q=(when.month - 1) // 3 + 1)
+            # "~": the publisher's stable page on the report (no year in it); its site refuses robots (403: IEA, IRENA),
+            # which says the page is there; a year's own page must answer 200
+            stable = u.startswith("~")
+            u = u.lstrip("~").format(y=y, q=(when.month - 1) // 3 + 1)
             if u not in _page_ok:
                 try:
                     r = requests.get(u, headers=UA, timeout=15, allow_redirects=True)
-                    _page_ok[u] = r.status_code == 200
+                    _page_ok[u] = r.status_code == 200 or (stable and r.status_code == 403)
                 except Exception:
                     _page_ok[u] = False
             if _page_ok[u]:
@@ -665,11 +668,19 @@ def modo_news(now, days=21, max_pages=12):
 
 # ── Research: recent papers on power markets from open scholarly APIs (OpenAlex, arXiv, HAL), titles and links only,
 # plus the paper alerts received by e-mail (Academia.edu…) in the team mailbox ──
-RESEARCH_RE = re.compile(r"electricity (market|price|system|sector|tariff|demand|retail)|power (market|price|system|purchase)|wholesale|day-ahead|intraday|"
-                         r"balancing|ancillary|capacity (market|mechanism|remuneration)|ppa\b|power purchase agreement|negative price|price cannibali|"
-                         r"capture (price|rate)|battery|energy storage|merit order|market design|contract for difference|\bcfds?\b|renewable (auction|support|tender)|"
-                         r"flow-based|market coupling|interconnect|curtail|flexibilit|demand response|marché de l.[ée]lectricit[ée]|prix de l.[ée]lectricit[ée]|"
-                         r"march[ée]s? de gros|stockage|capacit[ée]|tarif|[ée]quilibrage|flexibilit[ée]", re.I)
+# a paper is kept when its title speaks of a market (prices, contracts, auctions, market design…) AND of power
+RESEARCH_MKT = re.compile(r"market|pric(e|es|ing)|tariff|\bppas?\b|purchase agreement|auction|tender|bidding|trading|arbitrage|day-ahead|intraday|"
+                          r"balancing|ancillary|capacity (market|mechanism|remuneration|payment)|merit.order|contracts? for difference|\bcfds?\b|"
+                          r"subsid|cannibali|capture (price|rate)|wholesale|retail|revenue|investment|hedg|"
+                          r"march[ée]|prix|tarif|ench[èe]re|appel d.offres|soutien|r[ée]mun[ée]ration|contrat", re.I)
+RESEARCH_PWR = re.compile(r"electric|power|renewable|solar|photovolta|wind|storage|batter|grid|nuclear|hydro|flexib|demand response|"
+                          r"[ée]lectri|[ée]nergie|renouvelable|[ée]olien|solaire|stockage|r[ée]seau", re.I)
+
+
+def research_ok(title):
+    return bool(RESEARCH_MKT.search(title) and RESEARCH_PWR.search(title))
+
+
 RESEARCH_DAYS = 45
 
 
@@ -682,9 +693,9 @@ def openalex_research(now):
     """OpenAlex (open catalogue of scholarly works, CC0): articles of the last weeks on power markets"""
     since = (now - timedelta(days=RESEARCH_DAYS)).date().isoformat()
     items = []
-    for q in ("electricity market", "power purchase agreement", "battery storage electricity market", "capacity market electricity"):
+    for q in ("electricity market", "electricity prices", "power purchase agreement", "day-ahead market", "capacity market electricity", "battery arbitrage electricity"):
         r = requests.get("https://api.openalex.org/works", headers=UA, timeout=40,
-                         params={"search": q, "filter": f"from_publication_date:{since},type:article", "sort": "publication_date:desc", "per-page": 25,
+                         params={"search": q, "filter": f"from_publication_date:{since},type:article", "sort": "publication_date:desc", "per-page": 50,
                                  "select": "title,publication_date,doi,primary_location,authorships,open_access"})
         r.raise_for_status()
         for w in r.json().get("results") or []:
@@ -692,8 +703,9 @@ def openalex_research(now):
             link = (w.get("open_access") or {}).get("oa_url") or loc.get("landing_page_url") or w.get("doi")
             venue = ((loc.get("source") or {}).get("display_name")) or ""
             who = _authors([(a.get("author") or {}).get("display_name") for a in w.get("authorships") or []])
-            if w.get("title") and link and RESEARCH_RE.search(w["title"]):
-                items.append({"title": clean(w["title"], 220), "link": link, "date": parse_date(w.get("publication_date")),
+            d = parse_date(w.get("publication_date"))
+            if w.get("title") and link and d and d <= now and research_ok(w["title"]):   # an issue dated in the future is left out
+                items.append({"title": clean(w["title"], 220), "link": link, "date": d,
                               "snippet": " · ".join(x for x in (who, venue) if x), "domain": venue or "OpenAlex"})
         time.sleep(1)
     return items
@@ -712,7 +724,7 @@ def arxiv_research(now):
         d = parse_date(text_of(e.find("a:published", ns)))
         title = clean(text_of(e.find("a:title", ns)), 220)
         link = text_of(e.find("a:id", ns))
-        if d and d >= since and title and link:
+        if d and d >= since and title and link and research_ok(title):
             who = _authors([text_of(a.find("a:name", ns)) for a in e.findall("a:author", ns)])
             items.append({"title": title, "link": link, "date": d, "snippet": who + " · arXiv (prépublication)", "domain": "arXiv"})
     return items
@@ -728,7 +740,7 @@ def hal_research(now):
     items = []
     for d in (r.json().get("response") or {}).get("docs") or []:
         t = (d.get("title_s") or [""])[0]
-        if t and d.get("uri_s"):
+        if t and d.get("uri_s") and research_ok(t):
             who = _authors(d.get("authFullName_s") or [])
             items.append({"title": clean(t, 220), "link": d["uri_s"], "date": parse_date(d.get("producedDate_tdate")),
                           "snippet": " · ".join(x for x in (who, d.get("journalTitle_s") or "HAL") if x), "domain": "HAL"})
