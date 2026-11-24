@@ -75,11 +75,15 @@ def score(i, prof, now):
     """how much a story matters to this reader: categories weighted by the profile (the strongest in full, the others at
     half), the profile's keywords, France first, more outlets, fresher"""
     tags = i.get("tags") or []
-    ws = sorted((prof["weights"].get(t, 0) for t in tags), reverse=True)
+    subj = i.get("topics") if i.get("topics") is not None else tags    # the article's own subjects, not its outlet's
+    ws = sorted((prof["weights"].get(t, 0) for t in set(subj) | ({"official", "report", "assoc"} & set(tags))), reverse=True)
     s = (ws[0] + 0.5 * sum(ws[1:])) if ws else 0.0
     if "official" in tags:
         s += prof.get("official", 1)
     s += 1.5 * min(2, kw_hits(i, prof))
+    # electricity first (the owner, 24 Nov. 2026): a story about gas only, with nothing on power, renewables or markets, goes down
+    if "gas" in subj and not {"power", "renewables", "markets"} & set(subj):
+        s -= 2.5
     fr = "fr" in tags or "FR" in (i.get("countries") or [])
     s += prof.get("france", 1.0) if fr else -prof.get("foreign", 0.0)     # France first, as much as the profile asks
     s += 0.5 * math.log2(1 + len(i.get("other_sources") or []))
