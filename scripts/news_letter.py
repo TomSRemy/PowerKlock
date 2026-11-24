@@ -267,7 +267,9 @@ Ce qu'on attend :
     (« il faut davantage de centrales au gaz pour passer la journée, et ce sont elles qui fixent le prix ») ; jamais
     « la demande résiduelle pousse les centrales au gaz à fixer le prix », phrase obscure ; le nucléaire disponible joue en sens inverse ;
   - le gaz et son contexte géopolitique, dit simplement (ce qui se passe, en quoi cela touche les prix) ;
-  - ce qu'on attend pour les jours qui viennent (météo, tendance de la semaine), au conditionnel.
+  - ce qu'on attend pour les jours qui viennent (météo, tendance de la semaine), au conditionnel ;
+  - un signal structurant (bloc signaux_structurants, rempli seulement quand il compte vraiment, par exemple des réservoirs
+    hydrauliques au plus bas depuis dix ans) : une proposition, s'il y en a un ; rien sinon. Pas d'information secondaire.
 Évite les répétitions : pas deux fois la même tournure, et « gaz », « prix », « hausse », « marché » deux fois au plus
 chacun (le prix de gros, se tend, progresse…). 2 ou 3 chiffres seulement (le spot, et un chiffre qui explique) : le lecteur ne doit pas être noyé ; les tuiles donnent les autres. Une cause n'est écrite que si le contexte ou un
 article la donne. Aucun fait, chiffre, acteur ni date absent de ce qui est reçu. Interdits : « les prix restent volatils »,
@@ -433,6 +435,33 @@ def what_moved():
     return out
 
 
+def structural(day):
+    """only what really shapes the season, and only when it does: French hydro reservoirs far from their usual level for
+    the week (ENTSO-E A72, data/history/hydro_reservoirs.json, 25 % or more off the 2015-2025 mean, with their rank)"""
+    out = []
+    try:
+        W = json.load(open(os.path.join(ROOT, "data", "history", "hydro_reservoirs.json")))["countries"]["FR"]["weeks"]
+        W = sorted(W.items()) if isinstance(W, dict) else W
+        d0, v0 = W[-1]
+        if (date.fromisoformat(day) - date.fromisoformat(d0)).days <= 21:
+            wk = date.fromisoformat(d0).isocalendar()[1]
+            same = {k[:4]: v for k, v in W if date.fromisoformat(k).isocalendar()[1] == wk and k[:4] != d0[:4]}
+            if len(same) >= 5:
+                avg, gap = sum(same.values()) / len(same), None
+                gap = (v0 / avg - 1) * 100
+                if abs(gap) >= 25:
+                    low = v0 < min(same.values()) and gap < 0
+                    high = v0 > max(same.values()) and gap > 0
+                    out.append({"sujet": "réservoirs hydrauliques français", "semaine_du": d0,
+                                "écart_à_la_normale": ("en dessous" if gap < 0 else "au-dessus") + f" de la normale de {abs(round(gap))} %",
+                                "rang": f"au plus bas pour la saison sur {len(same) + 1} ans de données" if low else f"au plus haut pour la saison sur {len(same) + 1} ans de données" if high else None,
+                                "lecture": "moins d'eau en réserve, c'est moins de flexibilité pour passer les pointes d'hiver : plus de gaz et d'imports appelés aux heures chères"
+                                if gap < 0 else "des réservoirs bien remplis donnent de la marge pour les pointes d'hiver"})
+    except (OSError, ValueError, KeyError, IndexError, TypeError, ZeroDivisionError):
+        pass
+    return out
+
+
 def trends_only(f):
     """the fundamentals as moves (« en hausse de 6 % »), without the levels: the brief explains, the tiles give the numbers"""
     # consumption and residual demand only: wind and solar alone led the model to wrong reasoning (24 Nov. 2026 tests)
@@ -463,7 +492,7 @@ def ask_brief(edition, model=None, items=None):
            and PRICE_NEWS.search(i["title"]) and not {"official", "research"} & set(i.get("tags") or []) and (age_h(i, now) or 1e9) <= 36]
     mkt = sorted(mkt, key=lambda i: -(i.get("impact") or 0))[:5]
     news = [{"id": f"n{k + 1}", "titre": i["title"], "extrait": clip(i.get("snippet"), 300), "média": i["source"]} for k, i in enumerate(mkt)]
-    payload = {"marchés": mk, "fondamentaux_france": trends_only(fundamentals(edition["date"])), "indice_powerklock": pk_index(edition["date"]), "ce_qui_a_bougé": what_moved(), "contexte": ctx, "tendances_semaine": trend, "actualités_marché": news, "météo": " · ".join(filter(None, [(w.get("label") or [""])[0], (w.get("sub") or [""])[0]]))}
+    payload = {"marchés": mk, "fondamentaux_france": trends_only(fundamentals(edition["date"])), "indice_powerklock": pk_index(edition["date"]), "ce_qui_a_bougé": what_moved(), "signaux_structurants": structural(edition["date"]), "contexte": ctx, "tendances_semaine": trend, "actualités_marché": news, "météo": " · ".join(filter(None, [(w.get("label") or [""])[0], (w.get("sub") or [""])[0]]))}
     msg = {"max_tokens": 900, "system": brief_system(), "messages": [{"role": "user", "content": json.dumps(payload, ensure_ascii=False)}],
            "model": model or os.environ.get("NEWS_MODEL") or MODEL}
     req = urllib.request.Request(PROXY, data=json.dumps(msg).encode(), headers={"Content-Type": "application/json", "User-Agent": "PowerKlock-newsletter"})
