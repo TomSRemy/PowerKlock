@@ -152,28 +152,66 @@ def learn_prefs(cfg_db):
 # for a world-wide subject, and every article on it within a week becomes ONE story, led by the publisher's own page
 # (the real report) when it was collected. "hint": the words of outlets that report on it without naming it
 # (« l'AIE prévient »), counted only when an article naming it is in the same week. "pages": where the report itself
-# lives ({y}: its year, {q}: its quarter); the first that answers becomes the story's "report_link".
+# lives ({y}: its year, {q}: its quarter); the first that answers becomes the story's "report_link". "href": the address
+# of the report itself, looked for first in the articles on it (outlets link to the report they write about).
 MAJOR = [
-    {"key": "weo", "pages": ["https://www.iea.org/reports/world-energy-outlook-{y}", "~https://www.iea.org/topics/world-energy-outlook"], "name": "World Energy Outlook (IEA)", "pub": r"iea\.org|international energy agency",
+    {"key": "weo", "href": r"iea\.org/reports/world-energy-outlook-20\d\d", "pages": ["https://www.iea.org/reports/world-energy-outlook-{y}", "~https://www.iea.org/topics/world-energy-outlook"], "name": "World Energy Outlook (IEA)", "pub": r"iea\.org|international energy agency",
      "re": r"world energy outlook|\bweo ?20\d\d|perspectives [ée]nerg[ée]tiques mondiales", "hint": r"\b(aie|iea|agence internationale de l.[ée]nergie|international energy agency)\b.{0,80}\b(pr[ée]vient|pr[ée]dit|projette|anticipe|warns?|predicts?|projects?|says|rapport annuel|annual report|sc[ée]narios?)"},
-    {"key": "iea-electricity", "pages": ["https://www.iea.org/reports/electricity-{y}"], "name": "Electricity (IEA)", "pub": r"iea\.org|international energy agency",
+    {"key": "iea-electricity", "href": r"iea\.org/reports/electricity-(20\d\d|mid-year-update)", "pages": ["https://www.iea.org/reports/electricity-{y}"], "name": "Electricity (IEA)", "pub": r"iea\.org|international energy agency",
      "re": r"\b(iea|aie)\b.{0,40}\belectricity (20\d\d|mid-year update)|electricity mid-year update"},
-    {"key": "iea-renewables", "pages": ["https://www.iea.org/reports/renewables-{y}"], "name": "Renewables (IEA)", "pub": r"iea\.org|international energy agency",
+    {"key": "iea-renewables", "href": r"iea\.org/reports/renewables-20\d\d", "pages": ["https://www.iea.org/reports/renewables-{y}"], "name": "Renewables (IEA)", "pub": r"iea\.org|international energy agency",
      "re": r"\b(iea|aie)\b.{0,40}\b(renewables 20\d\d|renouvelables 20\d\d)|^renewables 20\d\d"},
-    {"key": "iea-gas", "pages": ["https://www.iea.org/reports/gas-market-report-q{q}-{y}"], "name": "Gas Market Report (IEA)", "pub": r"iea\.org|international energy agency", "re": r"gas market report"},
-    {"key": "rte-bp", "pages": ["https://www.rte-france.com/analyses-tendances-et-prospectives/bilan-previsionnel"], "name": "Bilan prévisionnel (RTE)", "pub": r"rte-france|\brte\b", "re": r"bilan pr[ée]visionnel"},
-    {"key": "rte-be", "pages": ["https://analysesetdonnees.rte-france.com/bilan-electrique-synthese", "https://www.rte-france.com/analyses-tendances-et-prospectives/bilan-electrique"], "name": "Bilan électrique (RTE)", "pub": r"rte-france|\brte\b", "re": r"bilan [ée]lectrique"},
-    {"key": "cre-surv", "pages": ["https://www.cre.fr/documents/rapports-et-etudes.html"], "name": "Surveillance des marchés de gros (CRE)", "pub": r"cre\.fr|\bcre\b",
+    {"key": "iea-gas", "href": r"iea\.org/reports/gas-market-report", "pages": ["https://www.iea.org/reports/gas-market-report-q{q}-{y}"], "name": "Gas Market Report (IEA)", "pub": r"iea\.org|international energy agency", "re": r"gas market report"},
+    {"key": "rte-bp", "href": r"rte-france\.com/[^\s\"'<>]*bilan-previsionnel", "pages": ["https://www.rte-france.com/analyses-tendances-et-prospectives/bilan-previsionnel"], "name": "Bilan prévisionnel (RTE)", "pub": r"rte-france|\brte\b", "re": r"bilan pr[ée]visionnel"},
+    {"key": "rte-be", "href": r"rte-france\.com/[^\s\"'<>]*bilan-electrique", "pages": ["https://analysesetdonnees.rte-france.com/bilan-electrique-synthese", "https://www.rte-france.com/analyses-tendances-et-prospectives/bilan-electrique"], "name": "Bilan électrique (RTE)", "pub": r"rte-france|\brte\b", "re": r"bilan [ée]lectrique"},
+    {"key": "cre-surv", "href": r"cre\.fr/[^\s\"'<>]*surveillance", "pages": ["https://www.cre.fr/documents/rapports-et-etudes.html"], "name": "Surveillance des marchés de gros (CRE)", "pub": r"cre\.fr|\bcre\b",
      "re": r"(rapport de )?surveillance (du fonctionnement )?des march[ée]s de gros|wholesale market monitoring"},
-    {"key": "acer-mmr", "pages": ["https://www.acer.europa.eu/monitoring/MMR"], "name": "Market Monitoring Report (ACER)", "pub": r"acer\.europa|\bacer\b", "re": r"\bacer\b.{0,60}market monitoring report|market monitoring report.{0,60}\bacer\b"},
-    {"key": "eraa", "pages": ["https://www.entsoe.eu/outlooks/eraa/"], "name": "ERAA (ENTSO-E)", "pub": r"entsoe|entso-e", "re": r"\beraa\b|european resource adequacy assessment"},
-    {"key": "ember-eer", "pages": ["https://ember-energy.org/latest-insights/european-electricity-review-{y}/", "https://ember-energy.org/latest-insights/global-electricity-review-{y}/"], "name": "European Electricity Review (Ember)", "pub": r"ember", "re": r"european electricity review|global electricity review"},
-    {"key": "irena-weto", "pages": ["~https://www.irena.org/Energy-Transition/Outlook"], "name": "World Energy Transitions Outlook (IRENA)", "pub": r"irena", "re": r"world energy transitions outlook"},
-    {"key": "eurelectric", "name": "Power Barometer (Eurelectric)", "pub": r"eurelectric", "re": r"power barometer"},
+    {"key": "acer-mmr", "href": r"acer\.europa\.eu/[^\s\"'<>]*(monitoring|mmr|market-monitoring)", "pages": ["https://www.acer.europa.eu/monitoring/MMR"], "name": "Market Monitoring Report (ACER)", "pub": r"acer\.europa|\bacer\b", "re": r"\bacer\b.{0,60}market monitoring report|market monitoring report.{0,60}\bacer\b"},
+    {"key": "eraa", "href": r"entsoe\.eu/[^\s\"'<>]*eraa", "pages": ["https://www.entsoe.eu/outlooks/eraa/"], "name": "ERAA (ENTSO-E)", "pub": r"entsoe|entso-e", "re": r"\beraa\b|european resource adequacy assessment"},
+    {"key": "ember-eer", "href": r"ember-energy\.org/[^\s\"'<>]*(european|global)-electricity-review", "pages": ["https://ember-energy.org/latest-insights/european-electricity-review-{y}/", "https://ember-energy.org/latest-insights/global-electricity-review-{y}/"], "name": "European Electricity Review (Ember)", "pub": r"ember", "re": r"european electricity review|global electricity review"},
+    {"key": "irena-weto", "href": r"irena\.org/[^\s\"'<>]*world-energy-transitions-outlook", "pages": ["~https://www.irena.org/Energy-Transition/Outlook"], "name": "World Energy Transitions Outlook (IRENA)", "pub": r"irena", "re": r"world energy transitions outlook"},
+    {"key": "eurelectric", "href": r"eurelectric\.org/[^\s\"'<>]*power-barometer", "name": "Power Barometer (Eurelectric)", "pub": r"eurelectric", "re": r"power barometer"},
 ]
 
 
 _page_ok = {}
+_robots = {}
+
+
+def robots_ok(url):
+    """this fetcher may read the page (the site's robots.txt; RFC 9309: a missing file allows, a server error does not)"""
+    import urllib.robotparser
+    from urllib.parse import urlparse
+    host = "{0.scheme}://{0.netloc}".format(urlparse(url))
+    if host not in _robots:
+        rp = urllib.robotparser.RobotFileParser()
+        try:
+            r = requests.get(host + "/robots.txt", headers=UA, timeout=10)
+            rp.parse([] if 400 <= r.status_code < 500 else r.text.splitlines() if r.ok else ["User-agent: *", "Disallow: /"])
+        except requests.RequestException:
+            rp.parse(["User-agent: *", "Disallow: /"])
+        _robots[host] = rp
+    return _robots[host].can_fetch(UA["User-Agent"], url)
+
+
+def report_from_articles(m, links, limit=6):
+    """the report's own address, as the outlets writing about it link to it: their pages are read (robots.txt
+    respected, paid outlets and Google News redirects skipped) and only the link to the report is kept"""
+    if not m.get("href"):
+        return None
+    found = {}
+    for u in [x for x in links if x and "news.google." not in x and not PAYWALL.search(x)][:limit]:
+        try:
+            if not robots_ok(u):
+                continue
+            h = requests.get(u, headers=UA, timeout=15).text[:800_000]
+        except requests.RequestException:
+            continue
+        for href in re.findall(r'href="(https?://[^"#]+)"', h):
+            if re.search(m["href"], href, re.I):
+                href = html.unescape(href).split("?")[0].rstrip("/")
+                found[href] = found.get(href, 0) + 1
+    return max(found, key=lambda k: (found[k], -len(k))) if found else None   # the link most outlets give, the shortest on a tie
 
 
 def report_page(m, when):
@@ -241,7 +279,8 @@ def group_major(out):
             if primary in own and "news.google." not in primary["link"]:
                 primary["report_link"] = primary["link"]     # the publisher's own page: the report itself
             else:
-                primary["report_link"] = report_page(m, datetime.fromisoformat(primary["date"]))
+                links = [r["link"] for r in week] + [o["link"] for r in week for o in r.get("other_sources") or []]
+                primary["report_link"] = report_from_articles(m, links) or report_page(m, datetime.fromisoformat(primary["date"]))
             if not others:
                 continue
             if len(primary.get("snippet") or "") < 40:      # the publisher's page often comes without an extract
