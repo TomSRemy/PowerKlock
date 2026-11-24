@@ -4624,3 +4624,4 @@ html.pk-beta #prices-table th:first-child, html.pk-beta #prices-table tr.zone-ro
 .arc-it p { margin: 4px 0; font-size: 14px; color: var(--text2); line-height: 1.5; } .arc-m { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
 .arc-more { margin: 14px 0; text-align: center; }
 @media (max-width: 600px) { .arc-it { grid-template-columns: 1fr; } }
+.pkd-mcp-guide { margin-top: 10px; } .pkd-mcp-guide summary { cursor: pointer; color: var(--accent); font-weight: 600; font-size: 13.5px; } .pkd-mcp-h { margin: 10px 0 2px; font-weight: 600; font-size: 13px; color: var(--text); }
