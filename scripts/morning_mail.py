@@ -384,7 +384,9 @@ def mine_for(kw, exclude, monday):
         return []
     items = (load('news.json') or {}).get('items') or []
     since = (datetime.now(PARIS) - timedelta(hours=72 if monday else 24)).isoformat()
-    has = lambda i, ws: any(re.search(r'\b' + re.escape(w.lower()) + r'\b', (i.get('title', '') + ' ' + (i.get('snippet') or '')).lower()) for w in ws)  # noqa: E731
+    import unicodedata
+    plain = lambda t: unicodedata.normalize('NFKD', (t or '').lower()).encode('ascii', 'ignore').decode()  # noqa: E731   accents left out: « echelonnement » finds « échelonnement »
+    has = lambda i, ws: any(re.search(r'\b' + re.escape(plain(w)) + r'\b', plain(i.get('title', '') + ' ' + (i.get('snippet') or ''))) or (i.get('query') or '').lower() == w.lower() for w in ws)  # noqa: E731
     out = [i for i in items if (i.get('date') or '') >= since and has(i, kw) and not has(i, exclude)]
     return sorted(out, key=lambda i: -(i.get('impact') or 0))[:6]
 
