@@ -1000,6 +1000,7 @@
             <input id="pkd-pw" name="new-password" type="password" minlength="10" autocomplete="new-password" placeholder="10 characters or more"></label>
             <button type="submit" class="pk-btn-ghost">Set password</button></form>
           <div class="pkd-msg" id="pkd-pw-msg" role="status">${hint ? esc(hint) : ''}</div>
+          <div id="pkd-mcp"></div>
           <div id="pkd-admin"></div>
           <div class="pkd-form-foot"><button type="button" class="pk-btn-ghost" data-close>Close</button><button type="button" class="pk-btn-primary" id="pkd-out">Sign out</button></div></div>`, root => {
         root.querySelector('#pkd-out').addEventListener('click', () => { A.signOut().then(() => { closeModal(); renderAccount(); toast('Signed out'); }); });
@@ -1012,6 +1013,7 @@
         });
         if (hint) setTimeout(() => root.querySelector('#pkd-pw').focus(), 30);
         adminAccounts(root.querySelector('#pkd-admin'));
+        mcpConnector(root.querySelector('#pkd-mcp'));
       });
       return;
     }
@@ -1077,6 +1079,40 @@
       if (A.googleEnabled) A.googleEnabled().then(on => { const g = root.querySelector('#pkd-google'); if (g) g.hidden = !on; });
       setTimeout(() => (last ? pwEl : mailEl).focus(), 30);
     });
+  }
+
+  // The connector for Claude (workers/mcp, warehouse migration 033): a personal link to add PowerKlock to one's Claude;
+  // made by the database, shown once, only its fingerprint kept; a new link replaces the old one
+  const MCP_URL = 'https://powerklock-mcp.tom-s-remy.workers.dev/mcp/';
+  async function mcpConnector(host) {
+    const A = window.PKAccount, cl = A.client && A.client();
+    if (!host || !cl) return;
+    const { data: st, error } = await cl.rpc('mcp_status');
+    if (error) return;   // not approved yet, or the database is not ready: nothing to show
+    const how = `<ol class="pkd-mcp-how"><li>In Claude: Settings › Connectors › Add custom connector.</li><li>Name it PowerKlock and paste the link.</li><li>Then ask Claude, for instance: « What moved on the French spot this week and why? », « Open consultations on grid connection? ».</li></ol>`;
+    const draw = (link) => {
+      host.innerHTML = `<div class="pkd-mcp"><div class="pkd-acc-t">Connector for Claude</div>
+        <p class="pkd-p">Add PowerKlock to your own Claude (paid plan): Claude then reads the site's prices, forwards, reservoirs, guarantees of origin, news, official texts and consultations, and answers with their sources. Read only, 400 calls a day.</p>
+        ${link ? `<div class="pkd-mcp-link"><input type="text" readonly value="${esc(link)}" aria-label="Your personal link"><button type="button" class="pk-btn-primary" id="pkd-mcp-copy">Copy</button></div>
+          <p class="pkd-p pkd-mcp-warn">Personal link: shown only now, keep it to yourself. A new link cancels this one.</p>${how}`
+        : st && st.active ? `<p class="pkd-p">Your link is active since ${esc(String(st.created_at || '').slice(0, 10))}.</p>` : ''}
+        <div class="pkd-mcp-b"><button type="button" class="pk-btn-ghost" id="pkd-mcp-new">${st && st.active ? 'Make a new link' : 'Make my link'}</button>${st && st.active ? '<button type="button" class="pk-btn-ghost" id="pkd-mcp-del">Remove my link</button>' : ''}</div>
+        <div class="pkd-msg" id="pkd-mcp-msg" role="status"></div></div>`;
+      const msg = host.querySelector('#pkd-mcp-msg');
+      const cp = host.querySelector('#pkd-mcp-copy'); if (cp) cp.addEventListener('click', () => { const i = host.querySelector('.pkd-mcp-link input'); i.select(); (navigator.clipboard ? navigator.clipboard.writeText(i.value) : Promise.reject()).then(() => { msg.textContent = 'Copied.'; }).catch(() => { document.execCommand('copy'); msg.textContent = 'Copied.'; }); });
+      host.querySelector('#pkd-mcp-new').addEventListener('click', async () => {
+        if (st && st.active && !window.confirm('A new link cancels the current one in Claude. Go on?')) return;
+        const { data: t, error: e } = await cl.rpc('mcp_new');
+        if (e || !t) { msg.textContent = 'Not made: ' + ((e && e.message) || 'try again'); return; }
+        st.active = true; st.created_at = new Date().toISOString(); draw(MCP_URL + t);
+      });
+      const del = host.querySelector('#pkd-mcp-del'); if (del) del.addEventListener('click', async () => {
+        if (!window.confirm('Remove your link? Claude will no longer reach PowerKlock.')) return;
+        const { error: e } = await cl.rpc('mcp_revoke'); if (e) { msg.textContent = 'Not removed: ' + e.message; return; }
+        st.active = false; draw(null);
+      });
+    };
+    draw(null);
   }
 
   // Accounts, for the admin (public.news_admin): approve a new account, refuse it, close or reopen one
