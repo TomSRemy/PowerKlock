@@ -354,6 +354,30 @@ def main():
             line = f"[catalogue] {r['wid']}: not drawn ({r['msg'].strip()[:120] or 'empty'})"
             (warnings if r['wid'] in LIVE_WIDGETS else errors).append(line)
         check_gaps(p, 'catalogue')
+
+        # the public landing page (landing.html, js/landing.js): every figure loads from data/landing.json, no JS
+        # error, nothing wider than the screen, in French and in English, on a phone and on a computer
+        for lang in ('fr', 'en'):
+            for wd in (390, 1280):
+                lp = b.new_page(viewport={'width': wd, 'height': 860})
+                lp.add_init_script(f"try {{ localStorage.setItem('pk-lang', '{lang}') }} catch (e) {{}}")
+                tag = f'landing/{lang}/{wd}'
+                lp.on('pageerror', lambda e, t=tag: errors.append(f"[{t}] JS error: {str(e)[:300]}"))
+                lp.goto(f'http://127.0.0.1:{PORT}/landing.html', wait_until='load')
+                lp.wait_for_timeout(2500)
+                h = lp.evaluate('document.documentElement.scrollHeight')
+                for y in range(0, h, 400):
+                    lp.evaluate(f'scrollTo(0, {y})')
+                    lp.wait_for_timeout(60)
+                st = lp.evaluate("""() => ({ nodata: document.documentElement.classList.contains('pk-nodata'), sw: document.documentElement.scrollWidth,
+                    map: !!(window.Chart && Chart.getChart(document.getElementById('c-map'))) })""")
+                if st['nodata']:
+                    errors.append(f"[{tag}] data/landing.json or the map outline did not load")
+                if st['sw'] > wd:
+                    errors.append(f"[{tag}] wider than the screen ({st['sw']}px)")
+                if not st['map']:
+                    errors.append(f"[{tag}] the Europe map is not drawn")
+                lp.close()
         b.close()
     srv.shutdown()
 

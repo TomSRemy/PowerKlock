@@ -127,14 +127,13 @@ def main():
         q = b.new_page(); q.goto(url + '#solo=jAAAA'); q.wait_for_timeout(5000)
         check('#solo= address not rewritten', q.evaluate("location.hash").startswith('#solo='), q.evaluate("location.hash"))
 
-        # ── public page (js/gate.js, on locally with ?pkgate=1): a visitor sees Today alone; shared dashboards stay open ──
+        # ── public page (js/gate.js, on locally with ?pkgate=1): a visitor goes to the landing page; shared dashboards stay open ──
         g = b.new_page(viewport={'width': 1440, 'height': 900})
-        g.goto(url + '?pkgate=1#markets/spot'); g.wait_for_timeout(8000)
-        st = g.evaluate("""[location.hash, document.documentElement.classList.contains('pk-public'), getComputedStyle(document.querySelector('.sidebar')).display,
-            !!document.getElementById('pk-gate-go'), !!document.querySelector('#page-morning .pk-views .tab-btn.active') && pkEN(document.querySelector('#page-morning .pk-views .tab-btn.active').textContent.trim())]""")
-        check('public page: a visitor lands on Today › Expert, no menu, one sign-in button', st[0].startswith('#today') and st[1] and st[2] == 'none' and st[3] and st[4] == 'Expert', st)
-        g.click('#mrn-kpis .mrn2-tile >> nth=0'); g.wait_for_timeout(600)
-        check('public page: a link to another page opens the sign-in instead', g.evaluate("[location.hash.startsWith('#today'), !!document.querySelector('.pkd-modal')]") == [True, True])
+        g.on('pageerror', lambda e: errs.append(f"landing: {e}"))
+        g.goto(url + '?pkgate=1#markets/spot'); g.wait_for_timeout(6000)
+        st = g.evaluate("""[location.pathname, document.documentElement.classList.contains('pk-nodata'), String(window.PK && window.PK.tom && window.PK.tom.avg || ''),
+            !!(window.Chart && Chart.getChart(document.getElementById('c-map'))), !!document.getElementById('signin')]""")
+        check('public page: a visitor is sent to landing.html, figures loaded, Europe map drawn, sign-in form', st[0].endswith('/landing.html') and not st[1] and st[2].strip() != '' and st[3] and st[4], st)
         g2 = b.new_page(); g2.goto(url + '?pkgate=1#solo=jAAAA'); g2.wait_for_timeout(4000)
         check('public page: a shared dashboard (#solo=) opens without it', not g2.evaluate("document.documentElement.classList.contains('pk-public')"))
         check('no JavaScript error', not errs, errs)
