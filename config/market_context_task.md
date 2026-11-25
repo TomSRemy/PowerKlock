@@ -18,6 +18,18 @@ wrong causes. It is « Le point du matin » of the newsletter: `daily` for 7 O'K
 - `data/news.json`: the news of the last days (titles and summaries), for regulation and geopolitics.
 - `data/newsletter.json` › `markets`: the tiles of the day.
 
+## Never against the Expert view (the owner, 25 Nov. 2026)
+The newsletter and Today › Expert are read by the same people: the brief never says the opposite of what the Expert
+view shows the same morning. Before writing, read what it shows:
+- its computed sentences, the same as the site's (spot, Cal against gas alone, weather, nuclear, gas, carbon):
+  `python3 -I -c "import sys; sys.path.insert(0, 'scripts'); import news_letter as n; print(n.expert_brief('<today>'))"`
+  from the repository's root (with a clone; with the GitHub tools only, compute them from the same files);
+- its market context and week-ahead calls in `data/market_digest.json` (`context`, `outlook`: tone up / down / flat).
+Then check each sentence of the brief against them: same direction for each market (a market shown rising is not
+« en baisse »), same cause where the Expert view gives one (if it says « nucléaire et demande détendus » on the Cal,
+do not write that demand drives the Cal up). When the figures disagree with an Expert sentence, leave that point out
+rather than contradict it, and say why in your final message so the owner can fix the site.
+
 ## What to write
 `{"asof": "<today, Paris>", "written": "<ISO time>", "daily": [...], "weekly": [...], "history": [...]}`, each item
 `{"topic", "topic_en", "text", "text_en"}`; `history` keeps the `daily` of the last 10 days (`{"asof", "daily"}`, newest
