@@ -18,7 +18,12 @@ wrong causes. It is « Le point du matin » of the newsletter: `daily` for 7 O'K
 - `data/news.json`: the news of the last days (titles and summaries), for regulation and geopolitics.
 - `data/newsletter.json` › `markets`: the tiles of the day.
 
-## Never against the Expert view (the owner, 25 Nov. 2026)
+## The Expert view feeds the brief (the owner, 25 Nov. 2026)
+Today › Expert is the first source of the brief, not only a check: start from what it shows the same morning (its
+computed sentences, its market context, its week-ahead calls), keep its readings, and add what the newsletter brings:
+why it moves, what changed since yesterday, what it means for a buyer or a producer. The other files below complete it.
+
+## Never against the Expert view
 The newsletter and Today › Expert are read by the same people: the brief never says the opposite of what the Expert
 view shows the same morning. Before writing, read what it shows:
 - its computed sentences, the same as the site's (spot, Cal against gas alone, weather, nuclear, gas, carbon):
