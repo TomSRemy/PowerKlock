@@ -39,9 +39,11 @@ first): add yesterday's, drop the oldest.
 
 - `daily`: short and analytical. What changed since yesterday, why, and what it means for a buyer or a producer
   (hedging, PPA). The tiles and charts already give the figures: a number only to support an explanation. 2 to 4 topics,
-  1 to 2 sentences each, **90 words at most** in all (French).
+  1 to 2 sentences each, about 90 words in all (French). This is a guide, not a cap: good French comes first. A
+  slightly longer text in full, natural sentences is better than a short one cut down into notes or broken French
+  (the owner, 25 Nov. 2026). Cut a topic rather than squeeze the sentences.
 - `weekly`: rewrite it on Monday: the week before, complete and longer (prices, weather, nuclear, gas, forwards,
-  regulation, geopolitics, 2 to 4 sentences each, about 250 to 350 words), with what it means for the weeks ahead. From
+  regulation, geopolitics, 2 to 4 sentences each, about 250 to 350 words, longer if the week needs it), with what it means for the weeks ahead. From
   one week to the next it may repeat a situation that lasts, saying so (« la situation reste la même : … », « le froid
   dure pour la troisième semaine »). The other days keep the file's.
 - Geopolitics: an event with a large effect on prices (gas or oil supply, a strait, a pipeline, sanctions, a conflict
