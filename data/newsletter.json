@@ -1,6 +1,6 @@
 {
- "date": "2026-11-24",
- "updated": "2026-11-24T08:14:11+00:00",
+ "date": "2026-11-25",
+ "updated": "2026-11-25T06:01:26+00:00",
  "engine": "proxy",
  "monday": false,
  "weekly": false,
@@ -10,27 +10,27 @@
     "Spot France aujourd'hui",
     "France spot today"
    ],
-   "value": 245.27,
+   "value": 255.17,
    "unit": "€/MWh",
    "page": "markets/spot",
    "src": "ENTSO-E",
    "show": "pct",
    "hours": false,
-   "chg": 5.72,
-   "pct": 2.4
+   "chg": 9.89,
+   "pct": 4.0
   },
   {
    "label": [
     "Pointe − base aujourd'hui",
     "Peak − base today"
    ],
-   "value": 19.26,
+   "value": 32.06,
    "unit": "€/MWh",
    "page": "markets/spot",
    "src": "ENTSO-E",
    "show": "abs",
    "hours": false,
-   "chg": -5.74,
+   "chg": 12.8,
    "pct": null
   },
   {
@@ -92,6 +92,18 @@
  ],
  "official": [
   {
+   "title": "Arrêté du 10 novembre 2026 fixant les critères applicables à la livraison et à l'installation, dans les logements, des équipements de production d'électricité utilisant l'énergie radiative du soleil, d'une puissance…",
+   "link": "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000055137223",
+   "source": "Journal officiel",
+   "date": "2026-11-25T00:00:00+00:00",
+   "tags": [
+    "fr",
+    "regulation",
+    "official",
+    "power"
+   ]
+  },
+  {
    "title": "Arrêté du 20 novembre 2026 supprimant la fiche d'opération standardisée BAR-TH-159 « Pompe à chaleur hybride individuelle » du dispositif des certificats d'économies d'énergie",
    "link": "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000055129394",
    "source": "Journal officiel",
@@ -111,69 +123,56 @@
     "regulation",
     "official"
    ]
-  },
-  {
-   "title": "Arrêté du 9 novembre 2026 portant définition et fixant les conditions de délivrance du brevet de technicien supérieur « Froid, climatisation et transition énergétique »",
-   "link": "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000055119569",
-   "source": "Journal officiel",
-   "date": "2026-11-22T00:00:00+00:00",
-   "tags": [
-    "fr",
-    "regulation",
-    "official"
-   ]
-  },
-  {
-   "title": "Délibération n° 2026-221 du 12 novembre 2026 portant approbation du modèle de contrat d'accès au réseau public de distribution d'électricité d'OYA Energies pour les clients en contrat unique",
-   "link": "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000055119927",
-   "source": "Journal officiel",
-   "date": "2026-11-22T00:00:00+00:00",
-   "tags": [
-    "fr",
-    "regulation",
-    "official",
-    "power"
-   ]
-  },
-  {
-   "title": "Délibération n° 2026-222 du 12 novembre 2026 portant approbation du modèle de contrat d'accès au réseau public de distribution de gaz naturel d'OYA Energies pour les clients en contrat unique",
-   "link": "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000055119937",
-   "source": "Journal officiel",
-   "date": "2026-11-22T00:00:00+00:00",
-   "tags": [
-    "fr",
-    "regulation",
-    "official",
-    "gas",
-    "power"
-   ]
   }
  ],
  "pubs": [
   {
-   "title": "Executive summary - World Energy Outlook 2026",
-   "link": "https://news.google.com/rss/articles/CBMie0FVX3lxTE83dzR3Z1piODFrZl91c1FoQkh3S1RkS1NRSUhOUmNGdGs5M0tNZ3J6MGVUcnBWZUJmXy1fN2VuTWp2U2pFQ3FRSWF0cWFhdEdHbVVqU0FZX2wzVTFFUnptMm80bjVmOURCVG9fN3pJX24xUkxlNkFueEN5WQ?oc=5",
-   "source": "IEA - International Energy Agency",
-   "date": "2026-11-24T08:06:16+00:00",
+   "title": "EEX Customer Information - Adjustment of the EU EUA Auction Calendar",
+   "link": "https://www.eex.com/en/newsroom/detail?tx_news_pi1%5Baction%5D=detail&tx_news_pi1%5Bcontroller%5D=News&tx_news_pi1%5Bnews%5D=15754&cHash=37d2fe488d9037538fc85697101d7cfe",
+   "source": "EEX",
+   "date": "2026-11-24T12:00:00+00:00",
    "tags": [
-    "power",
     "markets",
-    "watch",
-    "report"
+    "carbon"
    ]
   },
   {
-   "title": "Si en France 55 % des foyers sont encore au tarif réglementé de l'électricité, ils sont 27 % en Espagne quand l'Allemagne n'en a même pas",
-   "link": "https://news.google.com/rss/articles/CBMiygFBVV95cUxQSUpPaE9OQzdXeE5qS0JkUEZQY0xSSWlFdTBMVWNIdGNHdGw4RzNwWmZiUkZ1MWgyYmlJbnZoQ0ZNSTZaT19GZlFhcnFTdEZnUTFvRk1nU1FvY2FkT2ZMU1hnZUo5WXJRNmM5TUlmT0VtVlhEdTJfNVVjMkpJd3pGMWpCZFBCQXNKNklTaWxnTFZzOUxoR1JuOWRVRjhoOVJmanphYmJVWkgyeU1nTFo5b2toYno4SWF5OFc1VG90WmJsTlVzamUwMnFB?oc=5",
-   "source": "JeChange",
-   "date": "2026-11-22T14:30:00+00:00",
+   "title": "Prix du gaz : le marché parie sur la détente, ce que les cours de 2027 et 2028 racontent ce 24 novembre",
+   "link": "https://news.google.com/rss/articles/CBMibEFVX3lxTFBGdEhObE5VX2FiUEpvSV91Q1hrU25kN2toeThSYlhNZThmcUVjWmNyUHpnQ3RuUGVOSm1HdkMteEo4QnBVUjZfdUZZaFRQS0wta0JzNklKSU1ZV2hxTm54Z0xGMWRjWV9pVXE3Yw?oc=5",
+   "source": "Selectra",
+   "date": "2026-11-24T05:10:00+00:00",
    "tags": [
     "fr",
     "report",
     "markets",
     "regulation",
     "watch",
-    "power"
+    "gas"
+   ]
+  },
+  {
+   "title": "COP31 : l’AIE a lancé un Observatoire mondial pour contribuer à renforcer la résilience du secteur énergétique",
+   "link": "https://www.energiesdelamer.eu/2026/11/23/laie-a-lance-un-observatoire-mondial-pour-contribuer-a-renforcer-la-resilience-du-secteur-energetique/",
+   "source": "Énergies de la mer",
+   "date": "2026-11-23T09:01:13+00:00",
+   "tags": [
+    "fr",
+    "renewables",
+    "report"
+   ]
+  },
+  {
+   "title": "Prix du gaz : le marché s'envole de 5,3 % ce lundi 23 novembre, ce qui a fait flamber le PEG",
+   "link": "https://news.google.com/rss/articles/CBMibEFVX3lxTE1wMnZKLWdhSU96VnlOcFJFNUNERXNiZ1kwZ0Z1SndOUk5rNl9xeDE0Nm9HN1ZIbHBoMkozakgyeDU4YzI2R2U2VFZtZmZuZHZOYWgzLVpqeXlBbk1DNHpPUjdKMjRXRF9EcDkwRg?oc=5",
+   "source": "Selectra",
+   "date": "2026-11-23T05:10:00+00:00",
+   "tags": [
+    "fr",
+    "report",
+    "markets",
+    "regulation",
+    "watch",
+    "gas"
    ]
   }
  ],
@@ -201,6 +200,14 @@
    "deadline": "2026-12-05",
    "opened": "2026-11-13",
    "theme": "cee"
+  },
+  {
+   "title": "Projet d’arrêté portant création du programme « Maison électrique » dans le cadre du dispositif des certificats d’économies d’énergie",
+   "link": "https://www.consultations-publiques.developpement-durable.gouv.fr/projet-d-arrete-portant-creation-du-programme-a3503.html",
+   "source": "Ministère · Énergies et climat",
+   "deadline": "2026-12-16",
+   "opened": "2026-11-25",
+   "theme": "cee"
   }
  ],
  "agenda": [
@@ -223,125 +230,130 @@
   "weekly": false,
   "items": [
    {
-    "text": "La CRE prolonge le régime transitoire de tarification dynamique : les fournisseurs doivent adapter leurs offres.",
-    "text_en": "The CRE extends the transitional dynamic pricing regime: suppliers must adapt their offers.",
-    "title": "Tarification dynamique : la CRE précise les offres et prolonge le régime transitoire",
-    "link": "https://www.actu-environnement.com/ae/news/cre-tarification-dynamique-offres-regime-transitoire-48835.php4",
+    "text": "La CRE approuve le cahier des charges de PPE3 Neutre : les producteurs bénéficient d'un plancher de rémunération",
+    "text_en": "The CRE approves the PPE3 Neutre specifications: producers benefit from a minimum remuneration",
+    "title": "Appel d’offres PPE3 Neutre : la CRE approuve le cahier des charges et réclame un plancher de rémunération",
+    "link": "https://www.lechodusolaire.fr/appel-doffres-ppe3-neutre-la-cre-approuve-le-cahier-des-charges-et-reclame-un-plancher-de-remuneration/?utm_source=rss&utm_medium=rss&utm_campaign=appel-doffres-ppe3-neutre-la-cre-approuve-le-cahier-des-charges-et-reclame-un-plancher-de-remuneration",
     "sources": [
-     "Actu-Environnement"
+     "L'Écho du solaire"
     ]
    },
    {
-    "text": "La CRE réduit le budget de résilience du réseau de RTE : les coûts de maintenance seront revus.",
-    "text_en": "The CRE reduces RTE's network resilience budget: maintenance costs will be revised.",
-    "title": "RTE : la CRE réduit de près de 4 millions d’euros le budget de résilience du réseau",
-    "link": "https://news.google.com/rss/articles/CBMibkFVX3lxTFBiTk95MHY0QWtpcEt6eFpNeTdseXRTVHlLdWZIa0ZwSndRdWhEVkdkM1d3a2o4U2xvQUdiX3VOUnVud0Nad3JJbmZYTk1wMjg2YlZIN3IzWld1NWFtX1QzR2ZzazlCcmI1ejNsa3lR?oc=5",
+    "text": "NW investit 200 M€ dans des batteries de stockage : les fournisseurs améliorent leur offre de stockage d'électricité",
+    "text_en": "NW invests €200 million in storage batteries: suppliers improve their electricity storage offer",
+    "title": "NW investit 200 M€ dans 400 batteries de stockage, dont 300 en France",
+    "link": "https://www.lechodusolaire.fr/nw-investit-200-me-dans-400-batteries-de-stockage-dont-300-en-france/?utm_source=rss&utm_medium=rss&utm_campaign=nw-investit-200-me-dans-400-batteries-de-stockage-dont-300-en-france",
     "sources": [
-     "Les Smartgrids"
+     "L'Écho du solaire"
     ]
    },
    {
-    "text": "Un indicateur horaire de part des EnR est mis en place : les consommateurs peuvent suivre le mix énergétique.",
-    "text_en": "A hourly indicator of the share of renewables is implemented: consumers can monitor the energy mix.",
-    "title": "Part des EnR et intensité en émissions de GES de l’électricité consommée en France en temps réel",
-    "link": "https://wattselse.com/veille/article/4667/part-des-enr-et-intensite-en-emissions-de-ges-de-lelectricite-consommee-en-franc",
+    "text": "RTE relève ses prévisions de consommation électrique : les gestionnaires de réseau anticipent une demande accrue",
+    "text_en": "RTE increases its electricity consumption forecasts: network managers anticipate increased demand",
+    "title": "RTE devrait relever de 26 % ses prévisions de consommation électrique à l’horizon 2050",
+    "link": "https://news.google.com/rss/articles/CBMisgFBVV95cUxOVVBTdm9hZ19ISW56dDJMYkk0ZWZnNEVFREtSMXBMRV9lcHNlYk5jVnBTcVJEdzJ6eGxaSFBvS3RsekxoWnA1ZFFhaXBBdTRmaUM1WVBfYUVsUzRLRkpfUW95RUlWeGFBNlNfaDdudjBYVGhMZVBZWGxtZVlTdVItYkdGbXB0Q1VfbVNac0prWDNQLTU4SE9BOGtyMjgwNjhGMGdjSmdRWnhYUTU1QmwtbTNn?oc=5",
     "sources": [
-     "Watts Else"
+     "Tecsol Quotidien"
     ]
    },
    {
-    "text": "Le Portugal renforce la sécurité de son approvisionnement en électricité : les importations seront mieux régulées.",
-    "text_en": "Portugal strengthens the security of its electricity supply: imports will be better regulated.",
-    "title": "Le Portugal va renforcer la sécurité de son approvisionnement en électricité",
-    "link": "https://news.google.com/rss/articles/CBMi1wFBVV95cUxPUFhwclRzejRFWFVFMzZ0Mnprcklad05kVzJjcGF1cFJLanZiUTdieE5PZ0xCd0ZYN1BJc3Ftc3J2MENuMHJPTkNkT3NyZ3AxeTFRM2xXV0g4ZGJ5dGo4eWlFV2g1dE1EMnJPbWV5WVR4bFJrMG9HNHFHczRLc19ldmYzYVhHNjFEV1VpUVZrOU9hMFE0T2J2UjMzY1BRVG1VbU96U24ySmRqX0tFNmJpLWdOeUdUck9nVlZRb1JaQmhUbHpLM091RkJpUHJXZHR6MTVHT2pHcw?oc=5",
+    "text": "Des turbines Siemens Gamesa choisies pour un parc éolien flottant : les développeurs de projets renforcent leur capacité de production",
+    "text_en": "Siemens Gamesa turbines chosen for a floating wind farm: project developers strengthen their production capacity",
+    "title": "Les turbines Siemens Gamesa de 15 MW choisies pour un parc éolien flottant",
+    "link": "https://www.greenunivers.com/2026/11/les-turbines-siemens-gamesa-de-15-mw-choisies-pour-un-parc-eolien-flottant-439481/",
     "sources": [
-     "The Portugal News",
-     "Watts Else"
+     "GreenUnivers",
+     "Windpower Monthly",
+     "reNEWS",
+     "Recharge News"
     ]
    },
    {
-    "text": "TotalEnergies rachète des participations dans des actifs amont de gaz naturel : la production de gaz sera renforcée.",
-    "text_en": "TotalEnergies buys stakes in upstream natural gas assets: gas production will be strengthened.",
-    "title": "TotalEnergies rachète à Continental Resources des participations dans des actifs amont de gaz naturel",
-    "link": "https://news.google.com/rss/articles/CBMi7gFBVV95cUxQVk83T2NzMHhjbXk1QnMyMlFXZHNaTHNxOWVDMFAwWHpYUURtUjduR29MMDhUQ2JJX200WWduMGpJS1JjLVMtV1JBYXVOcjFaTmM1RTNLV0J5M3Jlbm9lSWpqOWl4S1NickNIbC1USFpvbmlVUHA4d1JRZzcwd2NaR0NMbGdoREREVUw1dGx5OHFZdDRqNFhkUmgyZmdNUVZkYVpRNkRBeWxSTkFBbFRUSHNKZDJXQ3ZLS1hUZ1M3Mm01V2NnQ1MtWkV3YkxPT1JFX1FvVUw0Y05DckEzWmpaeld0ZFMyWGRfZ1pXQlJn?oc=5",
+    "text": "RTE enfouit 22 km de lignes électriques : les habitants bénéficient d'une meilleure sécurité et esthétique",
+    "text_en": "RTE buries 22 km of power lines: residents benefit from improved safety and aesthetics",
+    "title": "RTE enfouit 22 km de lignes entre la Moselle et la Meurthe-et-Moselle",
+    "link": "https://news.google.com/rss/articles/CBMirAFBVV95cUxOQUtpVDBCWmNJaFZoLTRGelNhUGl6YTUwUjZKblRQTktMdzJteXlnckQ4QWZ3eUsxSkFyV0t1NDMxREFWd21DZlp1dTJld3hTMDZTTkdFMmFkUzdwM3B4cklkM2hYdHNVVV9MTVlxclBvaWVZbWg3WElWTjJHTmR6YlYtTm0zRlRZdGMxV1V0WmhQYUtfdm40dWRTdjl0Q3RzSjVJQVNYbXFzamM1?oc=5",
     "sources": [
-     "Boursier.com"
+     "La Gazette France"
     ]
    }
   ]
  },
  "top": [
   {
-   "title": "Voici comment les drones pourraient réduire l’impact environnemental des éoliennes",
-   "link": "https://www.revolution-energetique.com/actus/voici-comment-les-drones-pourraient-reduire-limpact-environnemental-des-eoliennes/",
-   "source": "Révolution Énergétique",
-   "date": "2026-11-24T05:57:00+00:00",
+   "title": "Appel d’offres PPE3 Neutre : la CRE approuve le cahier des charges et réclame un plancher de rémunération",
+   "link": "https://www.lechodusolaire.fr/appel-doffres-ppe3-neutre-la-cre-approuve-le-cahier-des-charges-et-reclame-un-plancher-de-remuneration/?utm_source=rss&utm_medium=rss&utm_campaign=appel-doffres-ppe3-neutre-la-cre-approuve-le-cahier-des-charges-et-reclame-un-plancher-de-remuneration",
+   "source": "L'Écho du solaire",
+   "date": "2026-11-24T09:20:23+00:00",
    "n": 1,
    "tags": [
     "fr",
+    "renewables",
     "power",
-    "geopolitics",
-    "renewables"
-   ]
-  },
-  {
-   "title": "RTE : la CRE réduit de près de 4 millions d’euros le budget de résilience du réseau",
-   "link": "https://news.google.com/rss/articles/CBMibkFVX3lxTFBiTk95MHY0QWtpcEt6eFpNeTdseXRTVHlLdWZIa0ZwSndRdWhEVkdkM1d3a2o4U2xvQUdiX3VOUnVud0Nad3JJbmZYTk1wMjg2YlZIN3IzWld1NWFtX1QzR2ZzazlCcmI1ejNsa3lR?oc=5",
-   "source": "Les Smartgrids",
-   "date": "2026-11-24T00:32:21+00:00",
-   "n": 1,
-   "tags": [
-    "fr",
-    "power",
-    "watch",
+    "support",
     "regulation"
    ]
   },
   {
-   "title": "Tarification dynamique : la CRE précise les offres et prolonge le régime transitoire",
-   "link": "https://www.actu-environnement.com/ae/news/cre-tarification-dynamique-offres-regime-transitoire-48835.php4",
-   "source": "Actu-Environnement",
-   "date": "2026-11-23T15:34:28+00:00",
+   "title": "EDF Hydro Méditerranée injectera 700 millions d’euros dans la chaîne Durance-Verdon d’ici 2035 - https://horticulture-abadie-pyrenees.com/",
+   "link": "https://news.google.com/rss/articles/CBMibkFVX3lxTFBXN1U5TkRRQTlnTWFmZFlBd3ljZHVkcFdMQll4VkxlWUNyMzdIUXR6LWtUeElzWEJjcndsU0QzVEJJVGVkUWNsbkx6WnR0R25oWkFZU19HZnBUTVhwNS0tTTZQcV91UlhjRVN5M1hR?oc=5",
+   "source": "horticulture-abadie-pyrenees.com",
+   "date": "2026-11-25T02:52:53+00:00",
    "n": 1,
    "tags": [
     "fr",
-    "power",
-    "regulation"
-   ]
-  },
-  {
-   "title": "L’ASNR n’est toujours pas convaincue par la solution d’EDF pour renforcer le sol d’implantation des EPR2 à Gravelines",
-   "link": "https://news.google.com/rss/articles/CBMi-gFBVV95cUxNc3lGNHJyYVVPVG5qclRBb2NkWDF4ZkRuYzJ4WXVieDRlcDJsZXZCMjR2S2x6aUU4TUpCblpEc0Z6WkpDUjQ1VVFzQ1pTWm92RXBJb2hhQlhMZExFYk9fcUJqS1FvN2RRNm9KZ1R3bWcwQnhpLUNrdFBOU1kxWHBJLWdLQUZSRlRXQ25kc21QSlk5MHA3bV9hVThCZHFGWVlJWU5OS2FKM1lkTFVMMC1XWXFYSGViVDFrXzIwWDNvR281dGdPWnpGWGhNLUwyUUJhSTRMMFVJMDVmeGRQU2ZrdExLNDNSRlpwckxuVWhBQ2lYUnFyTnlFN0Zn?oc=5",
-   "source": "Contexte",
-   "date": "2026-11-23T12:03:57+00:00",
-   "n": 1,
-   "tags": [
     "regulation",
     "watch",
     "power"
    ]
   },
   {
-   "title": "L’état-major d’Octopus Energy France",
-   "link": "https://www.greenunivers.com/2026/11/letat-major-doctopus-energy-france-2-439423/",
-   "source": "GreenUnivers",
-   "date": "2026-11-23T16:40:58+00:00",
+   "title": "France may tie 5.5% solar VAT rate to RG5 hail resistance",
+   "link": "https://www.pv-magazine.com/2026/11/24/france-may-tie-5-5-solar-vat-rate-to-rg5-hail-resistance/",
+   "source": "pv magazine",
+   "date": "2026-11-24T14:30:04+00:00",
+   "n": 1,
+   "tags": [
+    "power",
+    "regulation",
+    "renewables"
+   ]
+  },
+  {
+   "title": "EDF UK boss: 'Kicking gas off the grid an outrageously expensive mistake'",
+   "link": "https://news.google.com/rss/articles/CBMiwwFBVV95cUxQNmgxTTFIdUtKMGJva1llaThVM3JQemlFRE8ya0ZjUVpqVFpkT1BycnFHTklEaGY3VE8zMDd4OXF2a3ItNUZ2UU0tNmhqU2ExcDVGS2NhMmFFVVZRSlZRWTZNSVpUVVJHbjA2Y0NKaXU2SkJQWUZETXdJNndMd3BFMDdMYksyWlkydk55TmxRRDI3bjBNOFByb3RnS05WVHo4UFMzVXFWSDVUZTFIRGJVeWR6Nm5iak1MRUNUVXdUZG5hQUE?oc=5",
+   "source": "Recharge News",
+   "date": "2026-11-24T13:36:28+00:00",
+   "n": 1,
+   "tags": [
+    "renewables",
+    "watch",
+    "gas",
+    "power"
+   ]
+  },
+  {
+   "title": "RTE devrait relever de 26 % ses prévisions de consommation électrique à l’horizon 2050",
+   "link": "https://news.google.com/rss/articles/CBMisgFBVV95cUxOVVBTdm9hZ19ISW56dDJMYkk0ZWZnNEVFREtSMXBMRV9lcHNlYk5jVnBTcVJEdzJ6eGxaSFBvS3RsekxoWnA1ZFFhaXBBdTRmaUM1WVBfYUVsUzRLRkpfUW95RUlWeGFBNlNfaDdudjBYVGhMZVBZWGxtZVlTdVItYkdGbXB0Q1VfbVNac0prWDNQLTU4SE9BOGtyMjgwNjhGMGdjSmdRWnhYUTU1QmwtbTNn?oc=5",
+   "source": "Tecsol Quotidien",
+   "date": "2026-11-24T19:53:36+00:00",
    "n": 1,
    "tags": [
     "fr",
     "power",
-    "gas"
+    "watch"
    ]
   },
   {
-   "title": "Inflation : pourquoi la hausse des cours de l’énergie tarde à se répercuter sur l’ensemble des prix en France",
-   "link": "https://www.lemonde.fr/economie/article/2026/11/24/inflation-pourquoi-la-hausse-des-cours-de-l-energie-tarde-a-se-repercuter-sur-l-ensemble-des-prix-en-france_6814604_3234.html",
-   "source": "Le Monde · Énergies",
-   "date": "2026-11-24T04:00:12+00:00",
+   "title": "Radiateurs à 10 % de puissance en moins : la mesure que RTE peut décider avant de couper le courant",
+   "link": "https://news.google.com/rss/articles/CBMinAFBVV95cUxPS1RDUzhLaGd2Nlh6WHNHTXdxUC16YU1yLU55Nm52dzdMdFBHQ0ZFWUI0YWZ4VUNJT2Ric0kwUmUya2RKODk2eWEtSU4tVEJSUnlYVlZnMGw2blU4YVdOd1gyZ05URHpPUlIzcXZuUm11RkljN0FxdW9FTVJQbFdUWjUyZ2ZyckN0alB2SVNaVUhYV1dsQlFUeVIzb1k?oc=5",
+   "source": "Selectra",
+   "date": "2026-11-24T18:14:09+00:00",
    "n": 1,
    "tags": [
     "fr",
-    "gas"
+    "power",
+    "watch"
    ]
   }
  ],
@@ -367,9 +379,52 @@
     "agenda",
     "post"
    ],
-   "headline": "La CRE réduit le budget de RTE et précise la tarification dynamique",
-   "headline_en": "CRE reduces RTE budget and clarifies dynamic pricing",
+   "headline": "La CRE approuve le cahier des charges de PPE3 Neutre",
+   "headline_en": "The CRE approves the PPE3 Neutre specifications",
    "stories": [
+    {
+     "id": "01newzoqxo5vehga1fyqqoc5",
+     "title": "« C'est inquiétant » : les banques financent encore trop les énergies fossiles par rapport aux renouvelables",
+     "link": "https://news.google.com/rss/articles/CBMi-wFBVV95cUxOMG5iWWJHQl9LNW5sNVM4ODhBbGNfVDB1WVpveHNxTlI0Ym5xU2ZvRFhKck1ya0tReEFWTVliU2xCMk9KSWRuTDB1X01sZTc4bFNmSmtadzF5MmJOaFNwVmN4cmpOQi1ZSlEycWhnQ1V0SmdrVXpHRW83RHFJSW9yelJlR04teG9VMmt2R01yQnhvcjNLOVduUXBYUGZvQWVXMmVFWG5mVDYxN1pRWEtSUmhRcTJySnEwNkhuamhfUFZDdFM3UUFkWmk1a3FWR0lQNmVwQzBodXdIVUxLb1pQUFg0ZHRHdk55Z3pHQ01neWZoQXo5VEhGa1FYQQ?oc=5",
+     "tags": [
+      "fr",
+      "power",
+      "watch",
+      "renewables"
+     ],
+     "sources": [
+      "Les Echos"
+     ],
+     "free": null,
+     "report_link": null,
+     "report_name": null,
+     "what": null,
+     "what_en": null,
+     "for_you": null,
+     "for_you_en": null
+    },
+    {
+     "id": "unplancherderemuneration",
+     "title": "Appel d’offres PPE3 Neutre : la CRE approuve le cahier des charges et réclame un plancher de rémunération",
+     "link": "https://www.lechodusolaire.fr/appel-doffres-ppe3-neutre-la-cre-approuve-le-cahier-des-charges-et-reclame-un-plancher-de-remuneration/?utm_source=rss&utm_medium=rss&utm_campaign=appel-doffres-ppe3-neutre-la-cre-approuve-le-cahier-des-charges-et-reclame-un-plancher-de-remuneration",
+     "tags": [
+      "fr",
+      "renewables",
+      "power",
+      "support",
+      "regulation"
+     ],
+     "sources": [
+      "L'Écho du solaire"
+     ],
+     "free": null,
+     "report_link": null,
+     "report_name": null,
+     "what": "La Commission de régulation de l’énergie (CRE) a rendu un avis favorable, dans une délibération du 5 novembre, sur le cahier des charges de la première période de l’appel d’offres « PPE3 Neutre », qui porte sur 500 MW/MWc d’installations…",
+     "what_en": null,
+     "for_you": null,
+     "for_you_en": null
+    },
     {
      "id": "zr2zzazlccmi1ejnsa3lroc5",
      "title": "RTE : la CRE réduit de près de 4 millions d’euros le budget de résilience du réseau",
@@ -384,50 +439,12 @@
       "Les Smartgrids"
      ],
      "free": null,
-     "what": "La réduction du budget de résilience affecte la gestion du réseau électrique.",
-     "what_en": "The reduction of the resilience budget affects the management of the electrical grid.",
-     "for_you": "Analyser l'impact sur la résilience du réseau",
-     "for_you_en": "Analyze impact on network resilience",
-     "ctx": true
-    },
-    {
-     "id": "gimetransitoire48835php4",
-     "title": "Tarification dynamique : la CRE précise les offres et prolonge le régime transitoire",
-     "link": "https://www.actu-environnement.com/ae/news/cre-tarification-dynamique-offres-regime-transitoire-48835.php4",
-     "tags": [
-      "fr",
-      "power",
-      "regulation"
-     ],
-     "sources": [
-      "Actu-Environnement"
-     ],
-     "free": null,
-     "what": "La réglementation européenne prévoit la mise en place d'offres à tarification dynamique pour mieux refléter les prix du marché de l'électricité et permettre aux consommateurs d'adapter leurs usages au...",
+     "report_link": null,
+     "report_name": null,
+     "what": null,
      "what_en": null,
-     "for_you": "Étudier les offres pour les consommateurs",
-     "for_you_en": "Study offers for consumers"
-    },
-    {
-     "id": "nedjudc1zs1ndqwzkdjdnoc5",
-     "title": "Loi de finances 2027 : La commission des finances rejette les articles 49 et 50 sur les équipements solaires",
-     "link": "https://news.google.com/rss/articles/CBMi7gFBVV95cUxQVW9XVU01aWNNN3lzVE1qQzRudTlkUFE0bjVBYTJsaV9wUmdlam1CaTFFTEJPYjRsel83VHUzdW5qS1d4S3h1OU9NWkpKRzM3WFJ6MXh2RG9BRlVtN1JfdG1nQXpRMHo1ZDZVNldaMGZnUTNMRVZtR09ZUmRqWktZT3R4a3lRb2otUWdOOW9zZ1hhUmJTckIyWUJZZEg1cHJxcG9VTkM2QUZSWDBmenlLNzUyWVR6bGdQcXczWk9qcEtTVjdJcmVWc3ZrcnNCRURkbzRkcmNuYURfMzNGTnRNeDJUdC1ZS1NDQWZKdjdn?oc=5",
-     "tags": [
-      "fr",
-      "power",
-      "watch",
-      "regulation",
-      "renewables"
-     ],
-     "sources": [
-      "webdo"
-     ],
-     "free": null,
-     "what": "Le rejet des articles sur les équipements solaires impacte les politiques énergétiques.",
-     "what_en": "The rejection of the articles on solar equipment affects energy policies.",
      "for_you": null,
-     "for_you_en": null,
-     "ctx": true
+     "for_you_en": null
     }
    ],
    "ai": true
@@ -453,67 +470,72 @@
     "markets",
     "post"
    ],
-   "headline": "La CRE réduit le budget de RTE et précise la tarification dynamique",
-   "headline_en": "CRE reduces RTE budget and clarifies dynamic pricing",
+   "headline": "La CRE approuve le cahier des charges de PPE3 Neutre",
+   "headline_en": "CRE approves PPE3 Neutre tender documents",
    "stories": [
     {
-     "id": "zr2zzazlccmi1ejnsa3lroc5",
-     "title": "RTE : la CRE réduit de près de 4 millions d’euros le budget de résilience du réseau",
-     "link": "https://news.google.com/rss/articles/CBMibkFVX3lxTFBiTk95MHY0QWtpcEt6eFpNeTdseXRTVHlLdWZIa0ZwSndRdWhEVkdkM1d3a2o4U2xvQUdiX3VOUnVud0Nad3JJbmZYTk1wMjg2YlZIN3IzWld1NWFtX1QzR2ZzazlCcmI1ejNsa3lR?oc=5",
+     "id": "01newzoqxo5vehga1fyqqoc5",
+     "title": "« C'est inquiétant » : les banques financent encore trop les énergies fossiles par rapport aux renouvelables",
+     "link": "https://news.google.com/rss/articles/CBMi-wFBVV95cUxOMG5iWWJHQl9LNW5sNVM4ODhBbGNfVDB1WVpveHNxTlI0Ym5xU2ZvRFhKck1ya0tReEFWTVliU2xCMk9KSWRuTDB1X01sZTc4bFNmSmtadzF5MmJOaFNwVmN4cmpOQi1ZSlEycWhnQ1V0SmdrVXpHRW83RHFJSW9yelJlR04teG9VMmt2R01yQnhvcjNLOVduUXBYUGZvQWVXMmVFWG5mVDYxN1pRWEtSUmhRcTJySnEwNkhuamhfUFZDdFM3UUFkWmk1a3FWR0lQNmVwQzBodXdIVUxLb1pQUFg0ZHRHdk55Z3pHQ01neWZoQXo5VEhGa1FYQQ?oc=5",
      "tags": [
       "fr",
       "power",
       "watch",
-      "regulation"
+      "renewables"
      ],
      "sources": [
-      "Les Smartgrids"
+      "Les Echos"
      ],
      "free": null,
-     "what": "La réduction du budget de résilience affecte la gestion du réseau électrique.",
-     "what_en": "The reduction of the resilience budget affects the management of the electrical grid.",
-     "for_you": "Impact sur les contrats de résilience du réseau",
-     "for_you_en": "Impact on network resilience contracts",
-     "ctx": true
-    },
-    {
-     "id": "gimetransitoire48835php4",
-     "title": "Tarification dynamique : la CRE précise les offres et prolonge le régime transitoire",
-     "link": "https://www.actu-environnement.com/ae/news/cre-tarification-dynamique-offres-regime-transitoire-48835.php4",
-     "tags": [
-      "fr",
-      "power",
-      "regulation"
-     ],
-     "sources": [
-      "Actu-Environnement"
-     ],
-     "free": null,
-     "what": "La réglementation européenne prévoit la mise en place d'offres à tarification dynamique pour mieux refléter les prix du marché de l'électricité et permettre aux consommateurs d'adapter leurs usages au...",
+     "report_link": null,
+     "report_name": null,
+     "what": null,
      "what_en": null,
-     "for_you": "Nouvelles offres pour les consommateurs",
-     "for_you_en": "New offers for consumers"
+     "for_you": null,
+     "for_you_en": null
     },
     {
-     "id": "nedjudc1zs1ndqwzkdjdnoc5",
-     "title": "Loi de finances 2027 : La commission des finances rejette les articles 49 et 50 sur les équipements solaires",
-     "link": "https://news.google.com/rss/articles/CBMi7gFBVV95cUxQVW9XVU01aWNNN3lzVE1qQzRudTlkUFE0bjVBYTJsaV9wUmdlam1CaTFFTEJPYjRsel83VHUzdW5qS1d4S3h1OU9NWkpKRzM3WFJ6MXh2RG9BRlVtN1JfdG1nQXpRMHo1ZDZVNldaMGZnUTNMRVZtR09ZUmRqWktZT3R4a3lRb2otUWdOOW9zZ1hhUmJTckIyWUJZZEg1cHJxcG9VTkM2QUZSWDBmenlLNzUyWVR6bGdQcXczWk9qcEtTVjdJcmVWc3ZrcnNCRURkbzRkcmNuYURfMzNGTnRNeDJUdC1ZS1NDQWZKdjdn?oc=5",
+     "id": "unplancherderemuneration",
+     "title": "Appel d’offres PPE3 Neutre : la CRE approuve le cahier des charges et réclame un plancher de rémunération",
+     "link": "https://www.lechodusolaire.fr/appel-doffres-ppe3-neutre-la-cre-approuve-le-cahier-des-charges-et-reclame-un-plancher-de-remuneration/?utm_source=rss&utm_medium=rss&utm_campaign=appel-doffres-ppe3-neutre-la-cre-approuve-le-cahier-des-charges-et-reclame-un-plancher-de-remuneration",
+     "tags": [
+      "fr",
+      "renewables",
+      "power",
+      "support",
+      "regulation"
+     ],
+     "sources": [
+      "L'Écho du solaire"
+     ],
+     "free": null,
+     "report_link": null,
+     "report_name": null,
+     "what": "La Commission de régulation de l’énergie (CRE) a rendu un avis favorable, dans une délibération du 5 novembre, sur le cahier des charges de la première période de l’appel d’offres « PPE3 Neutre », qui porte sur 500 MW/MWc d’installations…",
+     "what_en": null,
+     "for_you": null,
+     "for_you_en": null
+    },
+    {
+     "id": "ocdesimplification439521",
+     "title": "Renouvelables, data centers : le Congrès américain prépare un choc de simplification",
+     "link": "https://www.greenunivers.com/2026/11/renouvelables-data-centers-le-congres-americain-prepare-un-choc-de-simplification-439521/",
      "tags": [
       "fr",
       "power",
-      "watch",
       "regulation",
       "renewables"
      ],
      "sources": [
-      "webdo"
+      "GreenUnivers"
      ],
      "free": null,
-     "what": "Le rejet des articles sur les équipements solaires impacte les politiques énergétiques.",
-     "what_en": "The rejection of the articles on solar equipment affects energy policies.",
+     "report_link": null,
+     "report_name": null,
+     "what": "Le Sénat américain a approuvé le 19 novembre le projet de loi “Bipartisan American Affordability and Jobs Act”. Le texte vise à simplifier les procédures administratives fédérales pour les projets de production d’énergie, de construction…",
+     "what_en": null,
      "for_you": null,
-     "for_you_en": null,
-     "ctx": true
+     "for_you_en": null
     }
    ],
    "ai": true
@@ -539,65 +561,73 @@
     "agenda",
     "post"
    ],
-   "headline": "Régulation et production renouvelable évoluent",
-   "headline_en": "Regulation and renewable production evolve",
+   "headline": "La CRE approuve l'appel d'offres PPE3 Neutre",
+   "headline_en": "CRE approves PPE3 Neutre call for tenders",
    "stories": [
     {
-     "id": "zr2zzazlccmi1ejnsa3lroc5",
-     "title": "RTE : la CRE réduit de près de 4 millions d’euros le budget de résilience du réseau",
-     "link": "https://news.google.com/rss/articles/CBMibkFVX3lxTFBiTk95MHY0QWtpcEt6eFpNeTdseXRTVHlLdWZIa0ZwSndRdWhEVkdkM1d3a2o4U2xvQUdiX3VOUnVud0Nad3JJbmZYTk1wMjg2YlZIN3IzWld1NWFtX1QzR2ZzazlCcmI1ejNsa3lR?oc=5",
+     "id": "01newzoqxo5vehga1fyqqoc5",
+     "title": "« C'est inquiétant » : les banques financent encore trop les énergies fossiles par rapport aux renouvelables",
+     "link": "https://news.google.com/rss/articles/CBMi-wFBVV95cUxOMG5iWWJHQl9LNW5sNVM4ODhBbGNfVDB1WVpveHNxTlI0Ym5xU2ZvRFhKck1ya0tReEFWTVliU2xCMk9KSWRuTDB1X01sZTc4bFNmSmtadzF5MmJOaFNwVmN4cmpOQi1ZSlEycWhnQ1V0SmdrVXpHRW83RHFJSW9yelJlR04teG9VMmt2R01yQnhvcjNLOVduUXBYUGZvQWVXMmVFWG5mVDYxN1pRWEtSUmhRcTJySnEwNkhuamhfUFZDdFM3UUFkWmk1a3FWR0lQNmVwQzBodXdIVUxLb1pQUFg0ZHRHdk55Z3pHQ01neWZoQXo5VEhGa1FYQQ?oc=5",
      "tags": [
       "fr",
       "power",
       "watch",
-      "regulation"
-     ],
-     "sources": [
-      "Les Smartgrids"
-     ],
-     "free": null,
-     "what": "La réduction du budget de résilience affecte la gestion du réseau électrique.",
-     "what_en": "The reduction of the resilience budget affects the management of the electrical grid.",
-     "for_you": "Impact sur la gestion du réseau",
-     "for_you_en": "Impact on network management",
-     "ctx": true
-    },
-    {
-     "id": "vec10foismoinsdeturbines",
-     "title": "Ce parc éolien va produire 40 % d’électricité en plus avec 10 fois moins de turbines",
-     "link": "https://www.revolution-energetique.com/actus/ce-parc-eolien-va-produire-40-delectricite-en-plus-avec-10-fois-moins-de-turbines/",
-     "tags": [
-      "fr",
-      "power",
-      "build",
       "renewables"
      ],
      "sources": [
-      "Révolution Énergétique"
+      "Les Echos"
      ],
      "free": null,
-     "what": "Repowering éolien améliore production en Espagne",
-     "what_en": "Wind repowering improves production in Spain",
-     "for_you": "Intérêt pour les PPA",
-     "for_you_en": "Interest for PPAs"
+     "report_link": null,
+     "report_name": null,
+     "what": null,
+     "what_en": null,
+     "for_you": null,
+     "for_you_en": null
     },
     {
-     "id": "gimetransitoire48835php4",
-     "title": "Tarification dynamique : la CRE précise les offres et prolonge le régime transitoire",
-     "link": "https://www.actu-environnement.com/ae/news/cre-tarification-dynamique-offres-regime-transitoire-48835.php4",
+     "id": "unplancherderemuneration",
+     "title": "Appel d’offres PPE3 Neutre : la CRE approuve le cahier des charges et réclame un plancher de rémunération",
+     "link": "https://www.lechodusolaire.fr/appel-doffres-ppe3-neutre-la-cre-approuve-le-cahier-des-charges-et-reclame-un-plancher-de-remuneration/?utm_source=rss&utm_medium=rss&utm_campaign=appel-doffres-ppe3-neutre-la-cre-approuve-le-cahier-des-charges-et-reclame-un-plancher-de-remuneration",
      "tags": [
       "fr",
+      "renewables",
       "power",
+      "support",
       "regulation"
      ],
      "sources": [
-      "Actu-Environnement"
+      "L'Écho du solaire"
      ],
      "free": null,
-     "what": "La réglementation européenne prévoit la mise en place d'offres à tarification dynamique pour mieux refléter les prix du marché de l'électricité et permettre aux consommateurs d'adapter leurs usages au...",
+     "report_link": null,
+     "report_name": null,
+     "what": "La Commission de régulation de l’énergie (CRE) a rendu un avis favorable, dans une délibération du 5 novembre, sur le cahier des charges de la première période de l’appel d’offres « PPE3 Neutre », qui porte sur 500 MW/MWc d’installations…",
      "what_en": null,
-     "for_you": "Impact sur les prix de marché",
-     "for_you_en": "Impact on market prices"
+     "for_you": null,
+     "for_you_en": null
+    },
+    {
+     "id": "zn0rlnozxfgdvlhs0ruawoc5",
+     "title": "Grenergy conclut au Pérou un macro PPA renouvelable de 900 GWh par an pendant 15 ans à partir de 2029",
+     "link": "https://news.google.com/rss/articles/CBMi1gFBVV95cUxOTnF6bU5SVWZhWm5ncTRYbWIycERCRzByTUpEck4xVkRfd1o5NXg3YzFocWNyTmpHTmg3Z0dkTTYwZ2NzSm1RMnM2MUNfVXBnYjczUlNrd194eHJhaEZEZ3cwbWlwMzZnaHdvNlNFa3haRV83UnFmRVcxV2g5UHpuV0NPaGo4dVpwN09ocFBDcW1zVkI2T3lWVXAxUmh6ZlcwWUl1VklCejhLZmVYM1V2M0wwQ21EVFNGU21NVGo2TkZ5NHh4bG95blFoU042N0t0VnlvVjBn0gHbAUFVX3lxTE9McGpxNUwyLXBxdEdUN2J6Nzh5eUxZRE0wa2IwMkxxRFFqY241QjdmZGZlVWE2aEx6dFUyWkxHU0FVdWhJMnJxS1JmRS1ycE1MMjR5VkdpUFJXeFhkMUNnM0xZM2MzTXZjVzJXajJqVlJadjJKMzZGWlZpZmhUaW5rOHdwLUI3RXlUbjZIcF8yZXU4SGZUZHdMY2NLWFJRZGsySnJ1dGhZZFlLV3lVUDhuMFE1V2ExdS1ZWHFpNUR3ZGpsMzRDbkt6eTRSVzN0RlNOZXFGdVlhS0RUaw?oc=5",
+     "tags": [
+      "markets",
+      "fr",
+      "watch",
+      "renewables"
+     ],
+     "sources": [
+      "Demócrata"
+     ],
+     "free": null,
+     "report_link": null,
+     "report_name": null,
+     "what": "Cela montre une tendance vers les contrats de gré à gré à long terme pour les énergies renouvelables.",
+     "what_en": "This shows a trend towards long-term power purchase agreements for renewable energies.",
+     "for_you": null,
+     "for_you_en": null,
+     "ctx": true
     }
    ],
    "ai": true
@@ -623,66 +653,70 @@
     "agenda",
     "post"
    ],
-   "headline": "Actualité des contrats et du stockage",
-   "headline_en": "Contract and storage news",
+   "headline": "Nouvelles de l'énergie renouvelable",
+   "headline_en": "Renewable energy news",
    "stories": [
     {
-     "id": "ljzdfhadtlvnedns0rkswoc5",
-     "title": "ZE Energy acquiert le projet de stockage de Magliano Alpi (59 MW), son 3ᵉ projet BESS en Italie",
-     "link": "https://news.google.com/rss/articles/CBMiyAFBVV95cUxNbDI2ZFEzb0pPWnZILVNUVElBOVVYT3dpNG44enlsNk9TRFBweHdHRUZSZmMxblBpUi05aUF2aUdUd2tDdTlmQzZqR3pDUVlTcF9TODk0ZlFkbzFIakNjYmRvbl9hd01SSHVhYVJZWTc0T1JRR01NWFM0LWxWZTlwU0I1UGp2ekJHSEdpa25nQ2h5WG1sTlduakJ5N3BGR0xlQy10UFJkdTFIMDloYjlfNDBOaXhSeF9wNlJZdFhadTlVNEdNS0RkSw?oc=5",
+     "id": "01newzoqxo5vehga1fyqqoc5",
+     "title": "« C'est inquiétant » : les banques financent encore trop les énergies fossiles par rapport aux renouvelables",
+     "link": "https://news.google.com/rss/articles/CBMi-wFBVV95cUxOMG5iWWJHQl9LNW5sNVM4ODhBbGNfVDB1WVpveHNxTlI0Ym5xU2ZvRFhKck1ya0tReEFWTVliU2xCMk9KSWRuTDB1X01sZTc4bFNmSmtadzF5MmJOaFNwVmN4cmpOQi1ZSlEycWhnQ1V0SmdrVXpHRW83RHFJSW9yelJlR04teG9VMmt2R01yQnhvcjNLOVduUXBYUGZvQWVXMmVFWG5mVDYxN1pRWEtSUmhRcTJySnEwNkhuamhfUFZDdFM3UUFkWmk1a3FWR0lQNmVwQzBodXdIVUxLb1pQUFg0ZHRHdk55Z3pHQ01neWZoQXo5VEhGa1FYQQ?oc=5",
      "tags": [
       "fr",
       "power",
       "watch",
-      "deal"
+      "renewables"
+     ],
+     "sources": [
+      "Les Echos"
+     ],
+     "free": null,
+     "report_link": null,
+     "report_name": null,
+     "what": null,
+     "what_en": null,
+     "for_you": null,
+     "for_you_en": null
+    },
+    {
+     "id": "0wve9cukdhvfbrzfhfckuoc5",
+     "title": "BESS : Incidences, Eliosfair et deux SEML s’associent pour développer 50 MVA de stockage d’ici 2030",
+     "link": "https://news.google.com/rss/articles/CBMiwAFBVV95cUxOaTBuMGhGQ1NPWlk3MGtwdFZtRWpSY2FpQ2VvZDlTZXZsdmVkM0pRTWE4MXdIR2RkNkV0dmlmNEdTdWMxZTBScngyd29HUGtWd0RxaHEzQXB2S09ta0s4aXRUOEVWbnlnZmRqR3dZbzZqVV9NcllKeVJSak1OV2FXQU9PUVFVdlc1YjVOSFFUaUd4RHlBb2h1VGZnbmNYTXZWQ0U1S0lsTnVMbm5reEpQdS0wVE9CUkdhVFBRZFhfckU?oc=5",
+     "tags": [
+      "fr",
+      "power",
+      "watch"
      ],
      "sources": [
       "Tecsol Quotidien"
      ],
      "free": null,
-     "what": "L'acquisition de projets de stockage d'énergie renforce la présence de ZE Energy dans le marché italien.",
-     "what_en": "The acquisition of energy storage projects strengthens ZE Energy's presence in the Italian market.",
-     "for_you": "Nouvelle opportunité de stockage",
-     "for_you_en": "New storage opportunity",
+     "report_link": null,
+     "report_name": null,
+     "what": "L'association vise à développer des capacités de stockage d'électricité, réduisant les coûts et améliorant la stabilité du réseau.",
+     "what_en": "The partnership aims to develop electricity storage capabilities, reducing costs and improving grid stability.",
+     "for_you": null,
+     "for_you_en": null,
      "ctx": true
     },
     {
-     "id": "nybuysgasbelgiumbuysbess",
-     "title": "Capacity auctions: Germany buys gas, Belgium buys BESS",
-     "link": "https://timera-energy.com/blog/capacity-auctions-germany-buys-gas-belgium-buys-bess/",
+     "id": "etitssitesprofessionnels",
+     "title": "TCL SunPower lance en Europe une batterie à onduleur intégré pour les petits sites professionnels",
+     "link": "https://www.lechodusolaire.fr/tcl-sunpower-lance-en-europe-une-batterie-a-onduleur-integre-pour-les-petits-sites-professionnels/?utm_source=rss&utm_medium=rss&utm_campaign=tcl-sunpower-lance-en-europe-une-batterie-a-onduleur-integre-pour-les-petits-sites-professionnels",
      "tags": [
-      "gas",
-      "power",
-      "markets",
-      "deal"
-     ],
-     "sources": [
-      "Timera Energy"
-     ],
-     "free": null,
-     "what": "Allemagne et Belgique font des achats de capacité",
-     "what_en": "Germany and Belgium make capacity purchases",
-     "for_you": "Impact sur les prix des contrats",
-     "for_you_en": "Impact on contract prices"
-    },
-    {
-     "id": "gns56mwgermanbatterydeal",
-     "title": "Vattenfall signs 56MW German battery deal",
-     "link": "https://www.renews.biz/other-news/energy-storage/vattenfall-signs-56mw-german-battery-deal/",
-     "tags": [
-      "power",
+      "fr",
       "renewables",
-      "deal",
-      "markets"
+      "power"
      ],
      "sources": [
-      "reNEWS"
+      "L'Écho du solaire"
      ],
      "free": null,
-     "what": "Vattenfall signe un accord pour un projet de stockage allemand",
-     "what_en": "Vattenfall signs German storage deal",
-     "for_you": "Nouveau projet de stockage en Allemagne",
-     "for_you_en": "New German storage project"
+     "report_link": null,
+     "report_name": null,
+     "what": "Le Chinois TCL SunPower Global a ouvert le 19 novembre les commandes en Europe de son système de stockage X5, destiné aux petits sites commerciaux, industriels et agricoles. L’armoire intègre un onduleur hybride de 50 kW assemblé et…",
+     "what_en": null,
+     "for_you": null,
+     "for_you_en": null
     }
    ],
    "ai": true
@@ -708,66 +742,69 @@
     "agenda",
     "post"
    ],
-   "headline": "Prix de l'énergie en hausse",
-   "headline_en": "Energy prices rising",
+   "headline": "Marchés de l'énergie : financement des énergies, ajustement du calendrier des enchères EUA",
+   "headline_en": "Energy markets: fossil fuel financing, EUA auction calendar adjustment",
    "stories": [
     {
-     "id": "courtedureemarches439371",
-     "title": "L’accalmie des prix de l’énergie aura été de courte durée [Marchés]",
-     "link": "https://www.greenunivers.com/2026/11/laccalmie-des-prix-de-lenergie-aura-ete-de-courte-duree-marches-439371/",
+     "id": "01newzoqxo5vehga1fyqqoc5",
+     "title": "« C'est inquiétant » : les banques financent encore trop les énergies fossiles par rapport aux renouvelables",
+     "link": "https://news.google.com/rss/articles/CBMi-wFBVV95cUxOMG5iWWJHQl9LNW5sNVM4ODhBbGNfVDB1WVpveHNxTlI0Ym5xU2ZvRFhKck1ya0tReEFWTVliU2xCMk9KSWRuTDB1X01sZTc4bFNmSmtadzF5MmJOaFNwVmN4cmpOQi1ZSlEycWhnQ1V0SmdrVXpHRW83RHFJSW9yelJlR04teG9VMmt2R01yQnhvcjNLOVduUXBYUGZvQWVXMmVFWG5mVDYxN1pRWEtSUmhRcTJySnEwNkhuamhfUFZDdFM3UUFkWmk1a3FWR0lQNmVwQzBodXdIVUxLb1pQUFg0ZHRHdk55Z3pHQ01neWZoQXo5VEhGa1FYQQ?oc=5",
      "tags": [
       "fr",
       "power",
-      "gas",
-      "markets"
-     ],
-     "sources": [
-      "GreenUnivers"
-     ],
-     "free": null,
-     "what": "Les prix de l’énergie ont baissé puis remonté.",
-     "what_en": "Energy prices fell then rose.",
-     "for_you": "Prévoir une hausse des coûts.",
-     "for_you_en": "Expect higher costs."
-    },
-    {
-     "id": "zaermvvnbukltrllpmkt6oc5",
-     "title": "Prix du gaz en chute de 7% : le détail caché dans le calcul du prix repère qui empêche votre facture de janvier de baisser",
-     "link": "https://news.google.com/rss/articles/CBMi6AFBVV95cUxNOXViRWIxd1V0MEVfU19fbkIyT1NydmpvSkV5Um4wYTJXalFyWlNxYmNzeGppVjl0bVNZRHJQX2RHQXlRS1NrYTB4QXhwX1RzV0tndDJES21hTmRuOGw1TWZ1dnFjdEpHQmtZZXRQNmd6N1Z2aDRvWTBZSl83Y3NCTl9oNUw0N2MxbFF5dlRGdXhDRTJKTE4ybklwWm9LckZxaGNFcGppWTAtT016eC1MbWNmTFItVWpCRy1sTlB4Z1BnSkxuWmtvZmxqZmJLak91dG1xa20wQ1MzaERmVVNBUkltRllPMkt6?oc=5",
-     "tags": [
-      "fr",
-      "regulation",
       "watch",
-      "gas",
-      "markets"
+      "renewables"
      ],
      "sources": [
-      "Bourse Inside"
+      "Les Echos"
      ],
      "free": null,
-     "what": "La baisse du prix du gaz n'affecte pas les factures de janvier.",
-     "what_en": "The drop in gas prices does not affect January bills.",
+     "report_link": null,
+     "report_name": null,
+     "what": null,
+     "what_en": null,
      "for_you": null,
-     "for_you_en": null,
-     "ctx": true
+     "for_you_en": null
     },
     {
-     "id": "lxtzhjulctqk1yanzpwesoc5",
-     "title": "109 000 coupures de gaz en 2025, en hausse de 4 % : pourquoi le gaz se coupe plus de 2,5 fois plus que l'électricité",
-     "link": "https://news.google.com/rss/articles/CBMitAFBVV95cUxPWS1lam5Qd1UxV1NaRWRaQmRORVd5RU4xUGUyZ29tOWhXRVlQR3BHa1ZKOTJXcUpvVklETmlQNUJlallpajNyQWRIcF9wd2FBbHRfZHFaWHg1cHN2Z3JGSnZoMUVfMUp3UnV1VEpCTmhQc2Z5Z2RJRk1tcDVMU0JOdElET0xDVFhJY0RKNzVHdEhHQXlHUVN0M0w1d01aZFktMXN4bllXTzhJUlctQk1yanZPWEs?oc=5",
+     "id": "8d9037538fc85697101d7cfe",
+     "title": "EEX Customer Information - Adjustment of the EU EUA Auction Calendar",
+     "link": "https://www.eex.com/en/newsroom/detail?tx_news_pi1%5Baction%5D=detail&tx_news_pi1%5Bcontroller%5D=News&tx_news_pi1%5Bnews%5D=15754&cHash=37d2fe488d9037538fc85697101d7cfe",
      "tags": [
-      "fr",
-      "regulation",
-      "watch",
-      "gas",
-      "power"
+      "markets",
+      "carbon"
      ],
      "sources": [
-      "JeChange"
+      "EEX"
      ],
      "free": null,
-     "what": "Les coupures de gaz sont plus fréquentes que celles d'électricité.",
-     "what_en": "Gas outages occur more frequently than electricity outages.",
+     "report_link": null,
+     "report_name": null,
+     "what": "EEX ajuste le calendrier des enchères EUA",
+     "what_en": "EEX adjusts EUA auction calendar",
+     "for_you": null,
+     "for_you_en": null
+    },
+    {
+     "id": "m54z0xgmwrjwv9pvxe3ywoc5",
+     "title": "Prix du gaz : le marché parie sur la détente, ce que les cours de 2027 et 2028 racontent ce 24 novembre",
+     "link": "https://news.google.com/rss/articles/CBMibEFVX3lxTFBGdEhObE5VX2FiUEpvSV91Q1hrU25kN2toeThSYlhNZThmcUVjWmNyUHpnQ3RuUGVOSm1HdkMteEo4QnBVUjZfdUZZaFRQS0wta0JzNklKSU1ZV2hxTm54Z0xGMWRjWV9pVXE3Yw?oc=5",
+     "tags": [
+      "fr",
+      "report",
+      "markets",
+      "regulation",
+      "watch",
+      "gas"
+     ],
+     "sources": [
+      "Selectra"
+     ],
+     "free": null,
+     "report_link": null,
+     "report_name": null,
+     "what": "Les cours du gaz pour 2027 et 2028 influencent les prix actuels.",
+     "what_en": "Gas prices for 2027 and 2028 are influencing current prices.",
      "for_you": null,
      "for_you_en": null,
      "ctx": true
@@ -796,67 +833,74 @@
     "agenda",
     "post"
    ],
-   "headline": "Prix du gaz en baisse, objectifs d'Octopus Energy France",
-   "headline_en": "Gas price decrease, Octopus Energy France objectives",
+   "headline": "Nouvelles règles pour les énergies renouvelables",
+   "headline_en": "New rules for renewable energy",
    "stories": [
     {
-     "id": "zaermvvnbukltrllpmkt6oc5",
-     "title": "Prix du gaz en chute de 7% : le détail caché dans le calcul du prix repère qui empêche votre facture de janvier de baisser",
-     "link": "https://news.google.com/rss/articles/CBMi6AFBVV95cUxNOXViRWIxd1V0MEVfU19fbkIyT1NydmpvSkV5Um4wYTJXalFyWlNxYmNzeGppVjl0bVNZRHJQX2RHQXlRS1NrYTB4QXhwX1RzV0tndDJES21hTmRuOGw1TWZ1dnFjdEpHQmtZZXRQNmd6N1Z2aDRvWTBZSl83Y3NCTl9oNUw0N2MxbFF5dlRGdXhDRTJKTE4ybklwWm9LckZxaGNFcGppWTAtT016eC1MbWNmTFItVWpCRy1sTlB4Z1BnSkxuWmtvZmxqZmJLak91dG1xa20wQ1MzaERmVVNBUkltRllPMkt6?oc=5",
-     "tags": [
-      "fr",
-      "regulation",
-      "watch",
-      "gas",
-      "markets"
-     ],
-     "sources": [
-      "Bourse Inside"
-     ],
-     "free": null,
-     "what": "La baisse du prix du gaz n'affecte pas les factures de janvier.",
-     "what_en": "The drop in gas prices does not affect January bills.",
-     "for_you": "Baisse du prix du gaz pour vos clients",
-     "for_you_en": "Lower gas price for your clients",
-     "ctx": true
-    },
-    {
-     "id": "topusenergyfrance2439423",
-     "title": "L’état-major d’Octopus Energy France",
-     "link": "https://www.greenunivers.com/2026/11/letat-major-doctopus-energy-france-2-439423/",
-     "tags": [
-      "fr",
-      "power",
-      "gas"
-     ],
-     "sources": [
-      "GreenUnivers"
-     ],
-     "free": null,
-     "what": "Octopus Energy France veut alimenter 1 million de compteurs",
-     "what_en": "Octopus Energy France aims to supply 1 million meters",
-     "for_you": "Nouvel acteur sur le marché de l'énergie",
-     "for_you_en": "New player in the energy market"
-    },
-    {
-     "id": "zr2zzazlccmi1ejnsa3lroc5",
-     "title": "RTE : la CRE réduit de près de 4 millions d’euros le budget de résilience du réseau",
-     "link": "https://news.google.com/rss/articles/CBMibkFVX3lxTFBiTk95MHY0QWtpcEt6eFpNeTdseXRTVHlLdWZIa0ZwSndRdWhEVkdkM1d3a2o4U2xvQUdiX3VOUnVud0Nad3JJbmZYTk1wMjg2YlZIN3IzWld1NWFtX1QzR2ZzazlCcmI1ejNsa3lR?oc=5",
+     "id": "01newzoqxo5vehga1fyqqoc5",
+     "title": "« C'est inquiétant » : les banques financent encore trop les énergies fossiles par rapport aux renouvelables",
+     "link": "https://news.google.com/rss/articles/CBMi-wFBVV95cUxOMG5iWWJHQl9LNW5sNVM4ODhBbGNfVDB1WVpveHNxTlI0Ym5xU2ZvRFhKck1ya0tReEFWTVliU2xCMk9KSWRuTDB1X01sZTc4bFNmSmtadzF5MmJOaFNwVmN4cmpOQi1ZSlEycWhnQ1V0SmdrVXpHRW83RHFJSW9yelJlR04teG9VMmt2R01yQnhvcjNLOVduUXBYUGZvQWVXMmVFWG5mVDYxN1pRWEtSUmhRcTJySnEwNkhuamhfUFZDdFM3UUFkWmk1a3FWR0lQNmVwQzBodXdIVUxLb1pQUFg0ZHRHdk55Z3pHQ01neWZoQXo5VEhGa1FYQQ?oc=5",
      "tags": [
       "fr",
       "power",
       "watch",
+      "renewables"
+     ],
+     "sources": [
+      "Les Echos"
+     ],
+     "free": null,
+     "report_link": null,
+     "report_name": null,
+     "what": null,
+     "what_en": null,
+     "for_you": null,
+     "for_you_en": null
+    },
+    {
+     "id": "spetitestoituressolaires",
+     "title": "Allemagne : la coalition s’oriente vers le maintien du tarif d’achat des petites toitures solaires",
+     "link": "https://www.lechodusolaire.fr/allemagne-la-coalition-soriente-vers-le-maintien-du-tarif-dachat-des-petites-toitures-solaires/?utm_source=rss&utm_medium=rss&utm_campaign=allemagne-la-coalition-soriente-vers-le-maintien-du-tarif-dachat-des-petites-toitures-solaires",
+     "tags": [
+      "fr",
+      "renewables",
+      "power",
+      "support",
       "regulation"
      ],
      "sources": [
-      "Les Smartgrids"
+      "L'Écho du solaire"
      ],
      "free": null,
-     "what": "La réduction du budget de résilience affecte la gestion du réseau électrique.",
-     "what_en": "The reduction of the resilience budget affects the management of the electrical grid.",
+     "report_link": null,
+     "report_name": null,
+     "what": "La fédération allemande de l’industrie solaire BSW-Solar salue l’entente trouvée au niveau des experts entre le SPD et l’Union (CDU/CSU), selon des indications du SPD, pour conserver la rémunération de l’électricité injectée par les…",
+     "what_en": null,
      "for_you": null,
-     "for_you_en": null,
-     "ctx": true
+     "for_you_en": null
+    },
+    {
+     "id": "enverbetacableproduction",
+     "title": "NKT starts IJmuiden Ver Beta cable production",
+     "link": "https://www.renews.biz/offshore-wind/nkt-starts-ijmuiden-ver-beta-cable-production/",
+     "tags": [
+      "power",
+      "renewables",
+      "carbon",
+      "fr",
+      "build"
+     ],
+     "sources": [
+      "reNEWS",
+      "Énergies de la mer"
+     ],
+     "free": null,
+     "report_link": null,
+     "report_name": null,
+     "what": "NKT commence la production de câbles pour le réseau offshore néerlandais",
+     "what_en": "NKT starts cable production for Dutch offshore grid",
+     "for_you": null,
+     "for_you_en": null
     }
    ],
    "ai": true
@@ -898,19 +942,24 @@
    "source": null
   }
  ],
- "pinned": null,
- "brief": "Le froid s’installe et tend le marché : le spot français remonte à 245 €/MWh. Avec une consommation en hausse, la production bas-carbone ne suffit plus à couvrir les besoins, et le prix s’aligne davantage sur celui des centrales au gaz. Or le gaz lui-même se tend, porté par les tensions autour du détroit d’Ormuz et par des stocks européens plus bas qu’il y a un an. Le Cal 27 bouge à peine : le marché compte sur le retour d’une partie du parc nucléaire pour passer l’hiver.",
- "brief_en": "The cold is setting in and tightening the market: the French spot climbs back to 245 €/MWh. With consumption rising, low-carbon output no longer covers needs, and the price aligns more closely with that of gas plants. And gas itself is tightening, driven by tension around the Strait of Hormuz and by European storage lower than a year ago. Cal 27 barely moves: the market is counting on part of the nuclear fleet coming back to get through the winter.",
+ "pinned": "https://news.google.com/rss/articles/CBMi-wFBVV95cUxOMG5iWWJHQl9LNW5sNVM4ODhBbGNfVDB1WVpveHNxTlI0Ym5xU2ZvRFhKck1ya0tReEFWTVliU2xCMk9KSWRuTDB1X01sZTc4bFNmSmtadzF5MmJOaFNwVmN4cmpOQi1ZSlEycWhnQ1V0SmdrVXpHRW83RHFJSW9yelJlR04teG9VMmt2R01yQnhvcjNLOVduUXBYUGZvQWVXMmVFWG5mVDYxN1pRWEtSUmhRcTJySnEwNkhuamhfUFZDdFM3UUFkWmk1a3FWR0lQNmVwQzBodXdIVUxLb1pQUFg0ZHRHdk55Z3pHQ01neWZoQXo5VEhGa1FYQQ?oc=5",
+ "brief": "Le froid s'accentue, tendant le marché : le spot français s'inscrit à 255 €/MWh. La consommation en hausse et la demande résiduelle élevée appellent davantage de centrales au gaz, qui fixent le prix. Or le gaz se tend, porté par les tensions au Moyen-Orient et des stocks européens plus bas qu'il y a un an. Le Cal 27 monte peu : le marché mise sur une disponibilité nucléaire en hausse pour passer l'hiver.",
+ "brief_en": "The cold snap is tightening the market: the French spot price is at €255/MWh. Rising consumption and high residual demand call for more gas-fired power, setting the price. Meanwhile, gas prices are rising due to Middle Eastern tensions and lower European stockpiles compared to last year. The Cal 27 price is relatively stable: the market is counting on increased nuclear availability to get through the winter.",
  "brief_links": [
   {
-   "title": "Prix du gaz : le marché s'envole de 5,3 % ce lundi 23 novembre, ce qui a fait flamber le PEG",
+   "title": "Prix du gaz : le marché parie sur la détente, ce que les cours de 2027 et 2028 racontent ce 24 novembre",
    "source": "Selectra",
-   "link": "https://news.google.com/rss/articles/CBMibEFVX3lxTE1wMnZKLWdhSU96VnlOcFJFNUNERXNiZ1kwZ0Z1SndOUk5rNl9xeDE0Nm9HN1ZIbHBoMkozakgyeDU4YzI2R2U2VFZtZmZuZHZOYWgzLVpqeXlBbk1DNHpPUjdKMjRXRF9EcDkwRg?oc=5"
+   "link": "https://news.google.com/rss/articles/CBMibEFVX3lxTFBGdEhObE5VX2FiUEpvSV91Q1hrU25kN2toeThSYlhNZThmcUVjWmNyUHpnQ3RuUGVOSm1HdkMteEo4QnBVUjZfdUZZaFRQS0wta0JzNklKSU1ZV2hxTm54Z0xGMWRjWV9pVXE3Yw?oc=5"
   },
   {
-   "title": "Crise d'Ormuz 2026 : ce choc pire qu'en 1973 qui fait exploser votre facture de gaz",
-   "source": "Bourse Inside",
-   "link": "https://news.google.com/rss/articles/CBMi6wFBVV95cUxPbHV5am1YM2QwQVRndmNBdGNta1VoWGlWM2JHbXhuaTRIYmo3YndhczRFU2EzOUY1ZDEyOElYbnRNVFA1dXU2cVFxTFA4TFc0WUFDcHZTQnFiUHl6eTQ0REZvY2IzSVVGdmUzSlk0MjBiOWxvbTJLWUtucXRsWWM5aFVvdTBEakswNlRhMEZCTFhMZFlkZjdrTlctamdIaUdWQWlaTHJfMUd6d1hjZmd3S3pnLWdkVXNNbDd1Tm14ZzAxTFo3VjBkM2hKOHk1YmhZTWZ6QVRiLUpvcTgwMnB4RE5VUVo0UVpkbF80?oc=5"
+   "title": "China’s Refining Sector: Impacts of the Strait of Hormuz Crisis",
+   "source": "Oxford Institute for Energy Studies",
+   "link": "https://news.google.com/rss/articles/CBMipwFBVV95cUxPeXFxeVVwcktBNW5IeUx6dDFRMFRIUXNBUVJkbFlQRHdmYTMwLUVFcVd3TmZuemRRQi1ZYnMzOGxiLWs2NUVZaXdOOTBFbXJjY19wbEJndEVObmNENHVrOXJDX1NST2ZiYWNzMWtianFSRHJXeHJLeWl1ak1ILTRvQ3pOWUFOWS1rTExnMnBrenoxOGxDVXpoYjNMVTBwVV9pWmk5eEpFVQ?oc=5"
+  },
+  {
+   "title": "Asia’s exposure to Hormuz persists while fixes remain years away",
+   "source": "Aurora Energy Research",
+   "link": "https://news.google.com/rss/articles/CBMiuwFBVV95cUxQZHJ6Z1FPR0RpNU0wOHFEME5mR1Z0bDhZRnNpT1hSeFotUW5VcHVKMnQwS1NBVkdyUkNCbHRxR0YtT3l1Skg3UlBkZjROdVpHZlppTXNjdGo4SmNLY2UybTNFTENTeXpLTUc4MWp6eGx5RlJLNWowNzBaMGlVejlfZGl4OTZDbFljeFRfOEpUQTdaam80N3BHZUpxVlRLekFJSWhxamJVc2d4VjNRdWJrRUtZdE1UdlV4ZUZB?oc=5"
   }
  ]
 }
