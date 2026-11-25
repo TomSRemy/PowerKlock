@@ -5012,3 +5012,13 @@ html.pk-app #pk-app { font-family: 'Inter', sans-serif; }
 
 /* Newsletter page: the subject pill by the outlet (js/news.js, as the e-mail) */
 .nl-src-pill { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+/* Veille › Actualités on small screens (the owner, 25 Nov. 2026: text too large): smaller brief and lead title, the
+   column toggle hidden (the column already falls under the stories) */
+@media (max-width: 700px) {
+  .nh-brief p { font-size: 14.5px; line-height: 1.55; }
+  .nh-lead h2 { font-size: 20px; line-height: 1.25; }
+  .nh-lead .nh-ret, .nh-ret { font-size: 14px; }
+  .nh-it-s { font-size: 13.5px; }
+  #nh-aside-t { display: none; }
+}

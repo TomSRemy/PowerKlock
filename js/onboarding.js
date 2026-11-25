@@ -54,7 +54,7 @@
     });
     S = { me, first: !me.onboarded_at, interests: new Set(me.interests || []), france: !!me.france, daily: me.onboarded_at ? !!me.daily : true, weekly: !!me.weekly,
       email_to: me.email_to || '', keywords: ((k && k.data) || []).map(x => x.keyword), alerts, alertTo: '',
-      lang: (window.PKI18n && PKI18n.lang) || 'fr', theme: document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark',
+      lang: (window.PKI18n && PKI18n.lang) || 'fr', theme: 'dark',
       view: lsGet('pk-view-default-morning', '2') };
   }
 
@@ -111,7 +111,7 @@
       ${GROUPS.map(([g, ks]) => `<div class="ob-grp">${g}</div>` + S.alerts.map((a, i) => ks.includes(a.kind) ? alertCard(a, i) : '').join('')).join('')}`,
     display: () => `<h1>${T('Votre affichage', 'Your display')}</h1><p class="ob-lead">${T('Comment le site s’ouvre pour vous, sur ce navigateur.', 'How the site opens for you, on this browser.')}</p>
       <label class="ob-f">${T('Langue', 'Language')}</label>${seg('lang', S.lang, [['fr', 'Français'], ['en', 'English']])}
-      <label class="ob-f">${T('Thème', 'Theme')}</label>${seg('theme', S.theme, [['dark', T('Sombre', 'Dark')], ['light', T('Clair', 'Light')]])}
+
       <label class="ob-f">${T('Page Aujourd’hui', 'Today page')}</label>${seg('view', S.view, [['0', T('Coup d’œil', 'Quick look')], ['1', T('Découverte', 'Discovery')], ['2', 'Expert']])}
       <div class="ob-hint">${T('Coup d’œil : l’essentiel en un écran. Découverte : chaque chiffre expliqué. Expert : tous les chiffres et les lectures d’analyste.', 'Quick look: the essentials on one screen. Discovery: each figure explained. Expert: every figure and the analyst reads.')}</div>`,
     summary: () => { const on = S.alerts.filter(a => a.on);
@@ -120,7 +120,7 @@
         <div class="ob-row"><span>${T('Sujets', 'Subjects')}</span><b>${S.interests.size ? S.interests.size + ' ' + T('sujets', 'subjects') : T('édition générale', 'general edition')} · ${S.france ? T('France d’abord', 'France first') : T('France et Europe', 'France and Europe')}</b></div>
         <div class="ob-row"><span>Newsletter</span><b>${[S.daily && '7 O’Klock', S.weekly && 'PowerBrunch'].filter(Boolean).join(', ') || T('aucune', 'none')}</b></div>
         <div class="ob-row"><span>${T('Alertes', 'Alerts')}</span><b>${on.length ? on.map(a => AL[a.kind][0]).filter((x, i, l) => l.indexOf(x) === i).join(', ') : T('aucune', 'none')}</b></div>
-        <div class="ob-row"><span>${T('Affichage', 'Display')}</span><b>${S.lang === 'en' ? 'English' : 'Français'} · ${S.theme === 'light' ? T('clair', 'light') : T('sombre', 'dark')} · ${[T('Coup d’œil', 'Quick look'), T('Découverte', 'Discovery'), 'Expert'][+S.view]}</b></div>
+        <div class="ob-row"><span>${T('Affichage', 'Display')}</span><b>${S.lang === 'en' ? 'English' : 'Français'} · ${[T('Coup d’œil', 'Quick look'), T('Découverte', 'Discovery'), 'Expert'][+S.view]}</b></div>
       </div>${window.PKTour ? `<p class="ob-hint">${T('Une visite guidée d’une minute vous montre ensuite où trouver chaque chose.', 'A one-minute guided tour then shows you where everything is.')}</p>` : ''}`; },
   };
   const ORDER = ['welcome', 'subjects', 'newsletter', 'alerts', 'display', 'summary'];
