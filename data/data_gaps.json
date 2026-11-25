@@ -1,5 +1,5 @@
 {
-"updated": "2026-11-25T10:41:48+00:00",
+"updated": "2026-11-25T12:41:48+00:00",
 "storage": {
 "data_mb": 214.5
 },
@@ -10,7 +10,7 @@
 "what": "What drives the price: last spot week ends on 2026-11-19",
 "repair": "flagged: warehouse sync job (after each data fetch)",
 "since": "2026-11-24T03:02:11+00:00",
-"lastSeen": "2026-11-25T10:41:48+00:00"
+"lastSeen": "2026-11-25T12:41:48+00:00"
 }
 ],
 "resolved": [
