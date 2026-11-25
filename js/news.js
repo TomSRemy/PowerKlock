@@ -21,7 +21,9 @@ async function loadNews() {
     const upd = j.updated ? new Date(j.updated).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' }) : '';
     window._newsSources = j.sources || null;
     const nSrc = j.sources ? j.sources.filter(s => s.kind !== 'search').length : new Set(newsData.map(n => n.source)).size;
-    if (badge) badge.textContent = `${newsData.length} articles · ${nSrc} sources${j.sources ? ' + ' + j.sources.filter(s => s.kind === 'search').length + ' searches' : ''} · ${upd}`;
+    // the bar on one line (the owner, 25 Nov. 2026): the time only, the counts in the tooltip and on the Sources tab
+    const srcTab = document.querySelector('#page-intel-news [data-nv="sources"], [data-nv="sources"]');
+    if (badge) { badge.textContent = upd; badge.title = `${newsData.length} articles · ${nSrc} sources${j.sources ? ' + ' + j.sources.filter(s => s.kind === 'search').length + ' searches' : ''} · ${upd}`; if (srcTab) srcTab.title = badge.title; }
   } catch (e) {
     newsData = [];
     if (badge) badge.textContent = 'News feed unavailable';
@@ -235,7 +237,7 @@ async function renderNewsAsk() {
 async function _askToken() {
   try { const cl = window.PKAccount && PKAccount.client && PKAccount.client(); const { data } = cl ? await cl.auth.getSession() : { data: null }; return data && data.session ? data.session.access_token : null; } catch (_) { return null; }
 }
-// the panel beside the page (✦ in the News bar, or a question typed in a search box)
+// the panel beside the page (the Ask button in the News bar, or a question typed in a search box)
 function askOpen(q) {
   const d = document.getElementById('ask-drawer'); if (!d) return;
   d.hidden = false; document.body.classList.add('ask-on');
@@ -250,7 +252,7 @@ function _askSugg(input, holderId) {
   const box = document.createElement('div'); box.className = 'ask-sugg'; box.id = holderId; box.hidden = true;
   input.insertAdjacentElement('afterend', box);
   const sync = () => { const v = input.value.trim(), on = _askIsQ(v); box.hidden = !on;
-    if (on) box.innerHTML = `<button type="button">✦ ${_newsT('Demander à PowerKlock', 'Ask PowerKlock')} : « ${_newsEsc(v.slice(0, 90))} »</button>`; };
+    if (on) box.innerHTML = `<button type="button">${window.PK && PK.icon ? PK.icon('chat', 13) + ' ' : ''}${_newsT('Demander à PowerKlock', 'Ask PowerKlock')} : « ${_newsEsc(v.slice(0, 90))} »</button>`; };
   input.addEventListener('input', sync);
   input.addEventListener('keydown', e => { if (e.key === 'Enter' && _askIsQ(input.value)) { e.preventDefault(); askOpen(input.value.trim()); } });
   box.addEventListener('click', () => askOpen(input.value.trim()));
@@ -269,7 +271,7 @@ function _askClaude(x) {
     `Question on the power market (France, Europe): ${x.q}\n\nSources found by PowerKlock:\n${src}\n\nAnswer from these sources first and cite them, then add what you know, saying so.`);
   return 'https://claude.ai/new?q=' + encodeURIComponent(p.slice(0, 3500));
 }
-// the questions left today, on the ✦ button from the start (signed in only)
+// the questions left today, on the Ask button from the start (signed in only)
 async function _askLoadCount() {
   if (_askLeft != null) return _askCount();
   const token = await _askToken(); if (!token) return;
@@ -278,7 +280,7 @@ async function _askLoadCount() {
 }
 function _askCount() {
   const o = document.getElementById('ask-open'); if (!o) return;
-  o.textContent = '✦ ' + _newsT('Demander', 'Ask') + (_askLeft != null && _askLeft >= 0 ? ` · ${_askLeft}` : '');
+  o.innerHTML = (window.PK && PK.icon ? PK.icon('chat', 14) + ' ' : '') + _newsT('Demander', 'Ask') + (_askLeft != null && _askLeft >= 0 ? ` <span class="ask-n">${_askLeft}</span>` : '');
   o.title = _askLeft != null && _askLeft >= 0 ? _newsT(`${_askLeft} question${_askLeft > 1 ? 's' : ''} restante${_askLeft > 1 ? 's' : ''} aujourd’hui`, `${_askLeft} question${_askLeft === 1 ? '' : 's'} left today`) : o.title;
 }
 function _askDraw() {

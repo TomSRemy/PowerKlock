@@ -1113,7 +1113,7 @@
       out.innerHTML = '<div style="color:#ED6965;font-family:\'JetBrains Mono\',monospace;font-size:11px;padding:10px">API error: ' + err.message + '. On a static deployment a serverless proxy is needed to hide the API key.</div>';
     } finally {
       STATE.aiBusy = false;
-      if (btn) { btn.disabled = false; btn.innerHTML = '✦ ' + (_fr() ? 'Version IA (facultatif)' : 'AI version (optional)'); }
+      if (btn) { btn.disabled = false; btn.innerHTML = (_fr() ? 'Version IA (facultatif)' : 'AI version (optional)'); }
     }
   };
 

@@ -4602,6 +4602,10 @@ html.pk-beta #prices-table th:first-child, html.pk-beta #prices-table tr.zone-ro
 /* Ask PowerKlock as a panel beside the page (✦ in the News bar, or a question typed in a search box) */
 .ask-open { font: 600 13px Inter, sans-serif; color: var(--accent); background: rgba(20, 211, 169, .1); border: 1px solid rgba(20, 211, 169, .45); border-radius: 8px; padding: 5px 10px; cursor: pointer; margin-right: 8px; white-space: nowrap; }
 .ask-open:hover { background: rgba(20, 211, 169, .18); }
+.ask-open { display: inline-flex; align-items: center; gap: 6px; }
+/* the News bar on one line (the owner, 25 Nov. 2026): below 1450 px the update time moves into the Sources tab's tooltip */
+@media (max-width: 1450px) { #news-updated { display: none; } }
+.ask-open .ask-n { font: 600 11px 'JetBrains Mono', monospace; background: rgba(20, 211, 169, .18); border-radius: 999px; padding: 1px 6px; }
 .ask-drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(460px, 100vw); z-index: 900; background: var(--bg); border-left: 1px solid var(--border); box-shadow: -12px 0 30px rgba(0, 0, 0, .35); padding: 14px 16px 24px; overflow-y: auto; }
 .ask-dh { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; } .ask-dh b { color: var(--accent); font-size: 15px; }
 .ask-drawer .ask-f { flex-direction: column; } .ask-drawer .ask-f button { width: 100%; }
