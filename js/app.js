@@ -215,7 +215,7 @@
     const items = (N && N.items) || [], mine = E && typeof _nlMine === 'function' ? _nlMine(E) : null;
     const left = await askLeft();
     const out = [`<h2 class="pa-h">${T('Veille', 'News')}</h2><div class="pa-date">${mine && (mine.interests || []).length ? T('selon vos ' + mine.interests.length + ' sujets', 'from your ' + mine.interests.length + ' subjects') : T('édition générale', 'general edition')}</div>`,
-      `<button type="button" class="pa-ask" id="pa-ask"><span>✦ ${T('Posez une question à PowerKlock…', 'Ask PowerKlock a question…')}</span>${left != null ? `<span class="pa-left">${left} / 30</span>` : ''}</button>`,
+      `<button type="button" class="pa-ask" id="pa-ask"><span>${PK.askIcon ? PK.askIcon(15) + ' ' : ''}${T('Posez une question à PowerKlock…', 'Ask PowerKlock a question…')}</span>${left != null ? `<span class="pa-left">${left} / 30</span>` : ''}</button>`,
       `<div class="pa-seg">${[['une', T('À la une', 'Top')], ['live', T('En continu', 'Live')], ['off', T('Textes officiels', 'Official texts')], ['posts', T('Posts LinkedIn', 'LinkedIn posts')]].map(([k, l]) => `<button type="button" data-nv="${k}" class="${k === nv ? 'on' : ''}">${l}</button>`).join('')}</div>`];
     const a = (u, t) => `<a href="${esc(/^https?:\/\//.test(u || '') ? u : '#')}" target="_blank" rel="noopener noreferrer">${esc(t)}</a>`;
     const when = d => { const h = (Date.now() - new Date(d)) / 36e5; return h < 1 ? T('à l’instant', 'just now') : h < 24 ? T('il y a ' + Math.round(h) + ' h', Math.round(h) + ' h ago') : dayName(String(d).slice(0, 10)); };
