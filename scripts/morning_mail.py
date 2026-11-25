@@ -365,9 +365,10 @@ def journal(today, E, ed, wk, mine):
         ch = None   # no chart any more (the owner's choice, 23 Nov. 2026)
         chart = (f'<div style="margin:12px 0;padding:10px;border:1px solid #EBEBEB;border-radius:10px"><p style="{f};margin:0 0 6px;font-size:12.5px;font-weight:600;color:#383838">{esc(ch["title"])}</p>{img(ch["img"], ch["title"])}'
                  f'<p style="{f};margin:6px 0 0;font-size:11.5px;color:#6B6B6B">Source : {esc(ch["src"])} · <a href="{SITE}#{esc(ch["page"])}" style="{green}">voir sur PowerKlock</a></p></div>') if ch else ''
-        body.append(row(kick(('Le sujet de la semaine' if wk else 'À la une') + (f' · <span style="color:{col}">{lab}</span>' if lab else '')) +
-                        f'<p style="{serif};margin:0 0 8px;font-size:25px;line-height:1.22;font-weight:700">{a(h["link"], h["title"])}</p>' +
-                        chart + (f'<p style="{f};margin:{12 if chart else 4}px 0 0;font-size:16px;line-height:1.55;color:#121212;border-left:3px solid #0B7A62;padding-left:12px"><b style="{green}">À retenir.</b> {esc(keep(h))}</p>' if keep(h) else '') + impact(h) +
+        # as Veille › Top stories on the site: a large title, the kicker in the subject's colour (the owner, 25 Nov. 2026)
+        body.append(row(kick(('Le sujet de la semaine' if wk else 'À la une') + (f' · {lab}' if lab else ''), col or '#0B7A62') +
+                        f'<p style="{serif};margin:0 0 10px;font-size:32px;line-height:1.16;font-weight:700">{a(h["link"], h["title"])}</p>' +
+                        chart + (f'<p style="{f};margin:{12 if chart else 4}px 0 0;font-size:16.5px;line-height:1.55;color:#121212;border-left:3px solid #0B7A62;padding-left:12px"><b style="{green}">À retenir.</b> {esc(keep(h))}</p>' if keep(h) else '') + impact(h).replace('margin:0 0 8px', 'margin:8px 0 0;padding-left:15px') +
                         f'<p style="{f};margin:10px 0 0;font-size:12.5px;color:#6B6B6B">{esc(" · ".join(h["sources"][:3]))} · <a href="{esc(h["link"])}" style="{green};font-weight:600">Lire l\'article</a></p>' + report(h) + free(h)))
     # ── the figure of the day ──
     fig = E.get('figure')
