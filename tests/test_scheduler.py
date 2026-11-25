@@ -161,6 +161,16 @@ if js:
     starts = sum(len(x) for x in js)
     print(f'{len(minutes)} minutes compared, {starts} job starts, {len(bad)} differences')
 
+# every workflow file is valid YAML: GitHub runs none of a file it cannot read, without an error anywhere but the
+# Actions tab (an apostrophe inside a '…' description broke the newsletter for a morning, 25 Nov. 2026)
+import yaml  # noqa: E402
+for f in sorted(os.listdir(WF)):
+    if f.endswith(('.yml', '.yaml')):
+        try:
+            yaml.safe_load(open(os.path.join(WF, f), encoding='utf-8'))
+        except yaml.YAMLError as e:
+            check(False, f'{f} is not valid YAML: {str(e).splitlines()[-1].strip()}')
+
 if errors:
     print('\n'.join('✗ ' + e for e in errors))
     sys.exit(1)
