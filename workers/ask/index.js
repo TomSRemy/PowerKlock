@@ -25,7 +25,9 @@ const MORE_STOP = 'change changement changements changer mois semaine jour jours
   'question sujet sujets concernant propos ete etre avoir peut doit doivent news actualite actualites article articles ' +
   // words of a natural question that no passage carries (the owner, 25 Nov. 2026: « l'IA ne répond presque à aucune question »)
   'si se ne pas passe passer arrive arriver haut bas encore toujours tendance tendances impact impacts effet effets situation niveau ' +
-  'explique expliquer quoi sont-ils est-il est-elle ils elles qu cela ca ceci aujourd hui france francais francaise';
+  'explique expliquer quoi sont-ils est-il est-elle ils elles qu cela ca ceci aujourd hui france francais francaise ' +
+  'resume resumer resumes resume-moi synthese synthetiser moi me vue niveau cote angle domaine principaux principales grandes evolutions ' +
+  'summarise summarize summary happened past last';
 const STOP2 = new Set([...STOP, ...MORE_STOP.split(' ')].map(w => norm(w)));
 const stem = w => w.length > 4 ? w.replace(/(aux|eaux)$/, 'al').replace(/(s|x)$/, '') : w;
 // words a reader uses for what the files call otherwise (« papier » → the research items, « PPA » → power purchase agreement…)
@@ -34,7 +36,12 @@ const SYN = { ppa: 'ppa power purchase agreement contrat achat', papier: 'public
   negatif: 'negatif negative', stockage: 'stockage batterie storage', batterie: 'batterie stockage bess',
   spot: 'spot day-ahead prix', nucleaire: 'nucleaire edf reacteur disponibilite', edf: 'edf nucleaire', gaz: 'gaz ttf peg gnl', ttf: 'ttf gaz',
   capacite: 'capacite mecanisme', garanty: 'garantie origine go', garantie: 'garantie origine go', go: 'garantie origine', froid: 'froid temperature meteo vague',
-  cal: 'cal calendar forward terme', forward: 'forward terme cal', solaire: 'solaire photovoltaique pv', eolien: 'eolien vent offshore', rentable: 'rentable rentabilite prix capture' };
+  cal: 'cal calendar forward terme',
+  // « juridique » is how a reader says what the files call official texts, regulation, decrees, deliberations
+  juridique: 'juridique reglementation regulation officiel arrete decret loi deliberation consultation cre ordonnance directive reglement',
+  juridiqu: 'juridique reglementation regulation officiel arrete decret loi deliberation consultation cre ordonnance directive reglement',
+  reglementaire: 'reglementation regulation officiel arrete decret loi deliberation consultation cre', legal: 'legal regulation officiel arrete decret loi deliberation',
+  regulation: 'regulation reglementation officiel arrete decret deliberation cre', forward: 'forward terme cal', solaire: 'solaire photovoltaique pv', eolien: 'eolien vent offshore', rentable: 'rentable rentabilite prix capture' };
 export const terms = q => [...new Set(norm(q).split(/[^a-z0-9]+/).filter(w => w.length > 1 && !STOP2.has(w)).map(stem))];
 const words = t => norm(t).split(/[^a-z0-9]+/).filter(Boolean).map(stem);
 
@@ -75,11 +82,35 @@ export function passages(news, cons, letter, digest) {
   });
 }
 
+// two words one or two typing slips apart (Levenshtein distance ≤ 2)
+function near(a, b) {
+  if (Math.abs(a.length - b.length) > 2) return false;
+  let prev = Array.from({ length: b.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= a.length; i++) {
+    const cur = [i];
+    for (let j = 1; j <= b.length; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    prev = cur;
+  }
+  return prev[b.length] <= 2;
+}
+
 // the passages that answer best (BM25-like): a word counts by its rarity in the whole site (« rémunération » far more
 // than « prix »), in the title three times more than in the text; the question's words found side by side count
 // double; a passage must hold most of the question's weight (less for a long question); fresher first on a tie
 export function search(q, docs, n = 8) {
-  const raw = terms(q); if (!raw.length) return [];
+  // « sur 15 jours », « depuis 2 semaines », « ce mois » : only the passages of that span (the owner, 25 Nov. 2026)
+  const span = norm(q).match(/(\d+)\s*(jours?|j\b|semaines?|mois|days?|weeks?|months?)/);
+  if (span) {
+    const k = +span[1] * (/^(sem|week)/.test(span[2]) ? 7 : /^(mois|month)/.test(span[2]) ? 30 : 1);
+    const from = new Date(Date.now() - k * 864e5).toISOString().slice(0, 10);
+    docs = docs.filter(d => !d.date || d.date >= from);
+    q = norm(q).replace(span[0], ' ');
+  }
+  const has = w => docs.some(d => d._all.has(w));
+  // a typo (« jurifdique ») is read as the nearest known word; a word no passage holds is left out rather than sinking
+  // the whole question
+  const fix = w => has(w) || SYN[w] ? w : (Object.keys(SYN).find(k => k.length > 4 && k.slice(0, 4) === w.slice(0, 4) && near(k, w)) || null);
+  const raw = terms(q).filter(w => !/^\d{1,2}$/.test(w) || /cal|y\+|m\+/.test(norm(q))).map(fix).filter(Boolean); if (!raw.length) return [];
   const groups = raw.map(w => [w, ...((SYN[w] || '').split(' ').filter(Boolean).map(stem))]);
   const N = docs.length || 1, idf = w => Math.log(1 + N / (1 + docs.reduce((c, d) => c + (d._all.has(w) ? 1 : 0), 0)));
   const gw = groups.map(g => Math.max(...g.map(idf)));
