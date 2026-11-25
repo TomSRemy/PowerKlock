@@ -881,8 +881,9 @@ def claude_brief(day, weekly=False):
     if nb.get("asof") != day:
         return "", ""
     items = [c for c in (nb.get("weekly" if weekly else "daily") or []) if isinstance(c, dict) and c.get("text")]
-    fr = " ".join((f"{c['topic']} : " if c.get("topic") else "") + c["text"].strip() for c in items)
-    en = " ".join((f"{c.get('topic_en') or c.get('topic')}: " if (c.get("topic_en") or c.get("topic")) else "") + (c.get("text_en") or c["text"]).strip() for c in items)
+    # one paragraph per topic (the mail and the site split the brief on blank lines)
+    fr = "\n\n".join((f"{c['topic']} : " if c.get("topic") else "") + c["text"].strip() for c in items)
+    en = "\n\n".join((f"{c.get('topic_en') or c.get('topic')}: " if (c.get("topic_en") or c.get("topic")) else "") + (c.get("text_en") or c["text"]).strip() for c in items)
     return fr, en
 
 
