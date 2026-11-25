@@ -2,7 +2,8 @@
 // BETA SHELL — loaded by js/beta.js only when the beta is on.
 // The same pages, charts and data as the current site, found another way:
 //   · a menu by job: a rail of 8 sections (Home, Market, Renewables & PPA,
-//     Flexibility & BESS, Power system, Intelligence, Tools, Data & method),
+//     Flexibility & BESS, Power system, Analysis, Intelligence, Data & method;
+//     brief of 25 Nov. 2026: Tools and Infographics are spread among them),
 //     and the pages of the chosen section beside it, never folded;
 //   · a search field in the top bar (the quick search, Ctrl+K);
 //   · on every page: the path Section › Page in the sticky bar, then the
@@ -28,7 +29,9 @@
   // ── the site by job. P(route, fr, en, template, what the page answers fr, en); G(group fr, en, pages) ──
   // templates: dash = dashboard, ana = analysis, tool = tool or reference
   const P = (r, fr, en, tpl, dfr, den) => ({ r, fr, en, tpl, dfr, den });
-  const G = (fr, en, pages) => ({ group: true, fr, en, pages });
+  // one = true: pages merged into one entry of the menu, shown as tabs of one page (brief of 25 Nov. 2026: a merge never
+  // rewrites a page, every former address keeps opening its own tab)
+  const G = (fr, en, pages, one) => ({ group: true, fr, en, pages, one: !!one });
   // a link to one view (tab) of a page that lives in another section: shown in the menu, not counted as a page
   const X = (r, fr, en, tab, dfr, den) => ({ ext: true, r, fr, en, tab, dfr, den });
   const IA = [
@@ -61,28 +64,29 @@
           P('renewables/capture', 'Capture & cannibalisation', 'Capture & cannibalisation', 'ana', 'Taux de capture du solaire et de l’éolien, cannibalisation, capture forward, comparaison européenne.', 'Solar and wind capture rates, cannibalisation, forward capture, European comparison.'),
           P('renewables/m0', 'M0 & appels d’offres CRE', 'M0 & CRE tenders', 'ana', 'Le prix de marché de référence M0, estimé avant la publication de la CRE, et les résultats des appels d’offres.', 'The M0 reference market price, estimated before the CRE publishes it, and tender results.'),
         ]),
+        X('renewables/capture', 'Production ENR et prévision vs réalisé', 'RES output and forecast vs actual', 'Daily', 'Production éolienne et solaire du jour face au prix, et la prévision de la veille face au réalisé.', 'Today’s wind and solar output against the price, and the day-ahead forecast against the actual.'),
         P('tools/forecast', 'Prévision de production', 'Production forecast', 'tool', 'La prévision solaire ou éolienne d’un site, ce qu’elle vaut et sa fiabilité mesurée.', 'The solar or wind forecast of a site, what it is worth and its measured reliability.'),
-        X('system/weather', 'Prévision météo 5 semaines', '5-week weather outlook', 'Forecast', 'Vent, soleil et température à 5 semaines face à la normale : ce que produiront l’éolien et le solaire.', 'Wind, sun and temperature 5 weeks ahead against normal: what wind and solar will produce.'),
         G('Garanties d’origine', 'Guarantees of origin', [
           P('markets/go', 'Prix Europe', 'EU prices', 'ana', 'Prix des garanties d’origine par millésime et par technologie.', 'Guarantee of origin prices by vintage and technology.'),
           P('markets/go/auctions', 'Enchères France', 'France auctions', 'ana', 'Résultats mensuels des enchères françaises (EEX), par technologie et par région.', 'Monthly results of the French auctions (EEX), by technology and region.'),
         ]),
-        G('Parc installé', 'Installed fleet', [
-          P('renewables/capacity', 'Capacité installée', 'Installed capacity', 'ana', 'Le parc installé par filière et par pays, année par année et en comparaison.', 'Installed fleet by technology and country, year by year and compared.'),
-          P('system/france/regions', 'Régions', 'Regions', 'ana', 'Production, capacités et consommation des régions françaises.', 'Generation, capacity and demand of the French regions.'),
-        ]),
+        P('renewables/capacity', 'Capacité installée', 'Installed capacity', 'ana', 'Le parc installé par filière et par pays, année par année et en comparaison.', 'Installed fleet by technology and country, year by year and compared.'),
+        X('system/weather', 'Prévision météo 5 semaines', '5-week weather outlook', 'Forecast', 'Vent, soleil et température à 5 semaines face à la normale : ce que produiront l’éolien et le solaire.', 'Wind, sun and temperature 5 weeks ahead against normal: what wind and solar will produce.'),
+        X('system/france/regions', 'Régions', 'Regions', '', 'Production, capacités et consommation des régions françaises (page rangée dans Système).', 'Generation, capacity and demand of the French regions (page kept under Power system).'),
       ] },
     { id: 'flex', fr: 'Flexibilité', en: 'Flexibility', lfr: 'Flexibilité & BESS', len: 'Flexibility & BESS', icon: svg('<rect x="2.5" y="7" width="16.5" height="10" rx="2"/><path d="M22 10.5v3"/><path d="M11.5 9.2 9 12.3h3.6L10 15"/>'),
       dfr: 'Ce que vaut la flexibilité : batteries, réserves, prix négatifs, spreads, écarts.', den: 'What flexibility is worth: batteries, reserves, negative prices, spreads, imbalance.', items: [
         P('markets/bess', 'Batteries (BESS)', 'Batteries (BESS)', 'ana', 'Les revenus d’une batterie : Europe, valeur day-ahead, réserves, sources de revenus, mécanisme de capacité, indice BESS.', 'Battery revenues: Europe, day-ahead value, reserves, revenue streams, capacity mechanism, BESS index.'),
+        X('tools/bess-index', 'Indice BESS', 'BESS index', '', 'L’indice PowerKlock de la valeur d’une batterie, mois par mois.', 'The PowerKlock index of a battery’s value, month by month.'),
         P('tools/boa', 'Pricer BOA', 'BOA pricer', 'tool', 'Le prix d’un contrat d’optimisation de batterie pour votre batterie, et les structures de contrat.', 'The price of a battery optimisation agreement for your battery, and the contract structures.'),
         P('markets/spot/spread', 'Spreads', 'Spreads', 'ana', 'Écarts de prix dans la journée : spreads batterie TB1 à TB4 et spread intrajournalier.', 'Price spreads within the day: battery spreads TB1 to TB4 and the intraday spread.'),
         P('markets/spot/imbalance', 'Déséquilibre', 'Imbalance', 'ana', 'Le prix de règlement des écarts face au day-ahead, et les activations mFRR.', 'The imbalance settlement price against day-ahead, and mFRR activations.'),
       ] },
     { id: 'system', fr: 'Système', en: 'System', lfr: 'Système électrique', len: 'Power system', icon: svg('<path d="M12 2.5 8 21.5M12 2.5l4 19M5 9h14M6.5 15h11M9.6 9l5.6 6M14.4 9l-5.6 6"/>'),
       dfr: 'Production, consommation, échanges, météo : les fondamentaux physiques.', den: 'Generation, demand, flows, weather: the physical fundamentals.', items: [
-        P('system/map', 'Carte d’Europe', 'Europe map', 'ana', 'Prix, production et échanges de chaque zone sur la carte, heure par heure.', 'Price, generation and flows of every zone on the map, hour by hour.'),
+        P('system/france', 'Système France', 'France system', 'ana', 'Le système électrique français du jour : production, consommation, échanges, puis l’historique.', 'The French power system of the day: generation, demand, flows, then history.'),
         G('Production', 'Generation', [
+          P('system/map', 'Carte d’Europe', 'Europe map', 'ana', 'Prix, production et échanges de chaque zone sur la carte, heure par heure.', 'Price, generation and flows of every zone on the map, hour by hour.'),
           P('system/generation', 'Mix de production', 'Generation mix', 'ana', 'La production par filière et par zone, le jour et dans le temps.', 'Generation by technology and zone, for a day and over time.'),
           P('system/generation/nuclear', 'Nucléaire', 'Nuclear', 'ana', 'Disponibilité et production du parc nucléaire français.', 'Availability and output of the French nuclear fleet.'),
           P('system/generation/outages', 'Indisponibilités & REMIT', 'Outages & REMIT', 'ana', 'Les arrêts déclarés des centrales, unité par unité, et les plateformes de transparence.', 'Declared plant outages, unit by unit, and the transparency platforms.'),
@@ -91,23 +95,23 @@
         G('Consommation & échanges', 'Demand & flows', [
           P('system/demand', 'Consommation', 'Demand', 'ana', 'La consommation par zone : le jour, la prévision des gestionnaires de réseau, l’historique.', 'Demand by zone: the day, the grid operators’ forecast, the history.'),
           P('system/demand/flows', 'Échanges transfrontaliers', 'Cross-border flows', 'ana', 'Les échanges entre zones et le détail de chaque frontière.', 'Flows between zones and the detail of each border.'),
+          P('system/france/regions', 'Régions', 'Regions', 'ana', 'Production, capacités et consommation des régions françaises.', 'Generation, capacity and demand of the French regions.'),
         ]),
-        P('system/france', 'Système France', 'France system', 'ana', 'Le système électrique français du jour : production, consommation, échanges, puis l’historique.', 'The French power system of the day: generation, demand, flows, then history.'),
-        G('Météo', 'Weather', [
+        G('Météo & DJU', 'Weather & degree days', [
           P('system/weather', 'Villes & prévisions', 'Cities & outlook', 'ana', 'Météo des grandes villes, prévision à 5 semaines et réservoirs hydrauliques.', 'Weather of the main cities, 5-week outlook and hydro reservoirs.'),
           P('system/weather/hdd', 'DJU chauffage / climatisation', 'HDD / CDD', 'ana', 'Degrés-jours de chauffage et de climatisation, au jour et à la semaine.', 'Heating and cooling degree days, daily and weekly.'),
-        ]),
+        ], true),
+        P('tools/carbon', 'Empreinte carbone', 'Carbon footprint', 'tool', 'L’empreinte carbone, le coût et la couverture solaire d’une courbe de consommation.', 'The carbon footprint, cost and solar coverage of a consumption curve.'),
       ] },
     { id: 'analysis', fr: 'Analyse', en: 'Analysis', icon: svg('<path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/>'),
       dfr: 'Comprendre ce qui s’est passé : moteurs du prix, lecture croisée, bilan de l’année, journée rejouée, séries comparées.', den: 'Understand what happened: price drivers, cross reading, yearly review, replayed day, compared series.', items: [
-        P('markets/drivers', 'Ce qui fait le prix', 'What drives the price', 'ana', 'Des fondamentaux aux échéances : ce qui a fait bouger le prix sur la période choisie.', 'From fundamentals to maturities: what moved the price over the chosen period.'),
-        P('intel/analysis', 'Analyse de marché', 'Market analysis', 'ana', 'Prix, production, échanges et météo sur un même axe de temps, avec les moments clés de la période.', 'Prices, generation, flows and weather on one time axis, with the key moments of the period.'),
+        G('Comprendre le prix', 'Understand the price', [
+          P('markets/drivers', 'Ce qui fait le prix', 'What drives the price', 'ana', 'Des fondamentaux aux échéances : ce qui a fait bouger le prix sur la période choisie.', 'From fundamentals to maturities: what moved the price over the chosen period.'),
+          P('intel/analysis', 'Analyse de marché', 'Market analysis', 'ana', 'Prix, production, échanges et météo sur un même axe de temps, avec les moments clés de la période.', 'Prices, generation, flows and weather on one time axis, with the key moments of the period.'),
+        ], true),
         P('system/bilan', 'Bilan électrique', 'Yearly review', 'ana', 'L’année électrique française en chiffres : prix, production, échanges, records.', 'The French power year in figures: prices, generation, flows, records.'),
         P('system/replay', 'Rejouer une journée', 'Replay a day', 'tool', 'Revoir une journée heure par heure sur la carte : prix, production, échanges.', 'Watch a day again hour by hour on the map: prices, generation, flows.'),
         P('tools/compare', 'Comparateur', 'Comparator', 'tool', 'Superposer n’importe quelles séries du site sur une même période.', 'Overlay any series of the site over the same period.'),
-      ] },
-    { id: 'info', fr: 'Infographies', en: 'Infographics', icon: svg('<circle cx="12" cy="12" r="9"/><path d="M12 12c0-3 3-4 4-2s-1 5-4 5-5-3-4-6 5-5 8-3"/>'),
-      dfr: 'Le marché raconté en images : des graphiques à part, à lire et à partager.', den: 'The market told in pictures: charts of their own, to read and share.', items: [
         P('infographics', 'Spirale des prix', 'Price spiral', 'dash', 'Tous les prix horaires français depuis 2019 sur une horloge de 24 heures : le creux solaire, la crise de 2021-2022, les prix négatifs.', 'Every French hourly price since 2019 on a 24-hour clock: the solar hollow, the 2021-22 crisis, negative prices.'),
       ] },
     { id: 'intel', fr: 'Veille', en: 'Intel', lfr: 'Veille', len: 'Intelligence', icon: svg('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8.5h6M7 12h10M7 15.5h10"/>'),
@@ -115,16 +119,12 @@
         P('intel/news', 'Actualités', 'News', 'ana', 'Les titres du jour sur l’énergie, par thème, avec le lien vers la source.', 'Today’s energy headlines, by theme, with the link to the source.'),
         P('intel/regulation', 'Évolutions et événements', 'Events and changes', 'ana', 'Les changements de règles et les événements de marché, datés et sourcés.', 'Rule changes and market events, dated and sourced.'),
       ] },
-    { id: 'tools', fr: 'Outils', en: 'Tools', icon: svg('<path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/>'),
-      dfr: 'Les outils transverses : convertir, mesurer.', den: 'The cross-cutting tools: convert, measure.', items: [
-        P('tools/converter', 'Convertisseur', 'Converter', 'tool', 'Convertir les unités d’énergie, de puissance et de prix.', 'Convert energy, power and price units.'),
-        P('tools/carbon', 'Empreinte carbone', 'Carbon footprint', 'tool', 'L’empreinte carbone, le coût et la couverture solaire d’une courbe de consommation.', 'The carbon footprint, cost and solar coverage of a consumption curve.'),
-      ] },
     { id: 'data', fr: 'Données', en: 'Data', lfr: 'Données & méthode', len: 'Data & method', icon: svg('<ellipse cx="12" cy="5.5" rx="8" ry="3"/><path d="M4 5.5v6.5c0 1.7 3.6 3 8 3s8-1.3 8-3V5.5"/><path d="M4 12v6.5c0 1.7 3.6 3 8 3s8-1.3 8-3V12"/>'),
       dfr: 'D’où viennent les chiffres et comment ils sont calculés.', den: 'Where the figures come from and how they are computed.', items: [
         P('status', 'État des données', 'Data status', 'ana', 'La fraîcheur de chaque source et les problèmes de flux, suivis jusqu’à leur résolution.', 'The freshness of every source and the feed problems, tracked until solved.'),
         P('methodology', 'Méthodologie', 'Methodology', 'tool', 'Comment chaque chiffre du site est calculé.', 'How every figure of the site is computed.'),
         P('api', 'API', 'API', 'tool', 'Les fichiers de données du site, à lire directement.', 'The data files of the site, to read directly.'),
+        P('tools/converter', 'Convertisseur', 'Converter', 'tool', 'Convertir les unités d’énergie, de puissance et de prix.', 'Convert energy, power and price units.'),
         P('about', 'À propos', 'About', 'tool', 'Ce qu’est PowerKlock, ses sources et comment signaler un problème.', 'What PowerKlock is, its sources and how to report a problem.'),
       ] },
   ];
@@ -134,14 +134,14 @@
   // pages used together: links at the top of each page
   const SEE = {
     'today': ['markets/spot/overview', 'tools/ppa', 'markets/bess', 'sitemap'],
-    'markets/drivers': ['intel/analysis', 'markets/forwards', 'markets/fuels'],
+    'markets/drivers': ['markets/forwards', 'markets/fuels', 'system/replay'],
     'markets/spot/overview': ['markets/forwards', 'markets/fuels', 'markets/spot/negative'],
     'markets/spot': ['markets/spot/negative', 'markets/spot/spread', 'system/generation'],
     'markets/forwards': ['markets/fuels/forwards', 'markets/fuels/spreads', 'tools/ppa'],
     'markets/fuels': ['markets/forwards', 'system/generation'],
     'markets/fuels/forwards': ['markets/forwards'],
     'markets/fuels/spreads': ['markets/forwards', 'system/generation'],
-    'intel/analysis': ['markets/drivers', 'system/replay', 'tools/compare'],
+    'intel/analysis': ['system/replay', 'tools/compare'],
     'tools/ppa': ['renewables/capture', 'renewables/m0', 'markets/forwards', 'markets/go', 'tools/forecast'],
     'renewables/capture': ['tools/ppa', 'markets/spot/negative', 'renewables/capacity'],
     'renewables/m0': ['tools/ppa', 'markets/go/auctions'],
@@ -159,7 +159,7 @@
     'system/generation/nuclear': ['markets/forwards'],
     'system/generation/outages': ['markets/forwards'],
     'system/carbon': ['tools/carbon'],
-    'system/demand': ['system/weather/hdd'],
+    'system/demand': ['system/weather'],
     'system/demand/flows': ['system/map'],
     'system/france': ['system/generation/nuclear', 'markets/spot'],
     'system/france/regions': ['renewables/capture'],
@@ -214,7 +214,8 @@
   const pane = document.createElement('div');
   pane.className = 'pkb-pane';
   pane.innerHTML = IA.map(s => '<section class="pkb-sec" data-sec="' + s.id + '" hidden><div class="pkb-sec-t">' + esc(LL(s)) + '</div><div class="pkb-sec-d">' + esc(D(s)) + '</div>' +
-    s.items.map(it => it.ext ? '<a class="pkb-item pkb-ext" href="#' + it.r + '" data-pkb-tab="' + esc(it.tab) + '" title="' + esc(D(it)) + '">' + esc(L(it)) + '</a>' : it.group ? '<div class="pkb-group"><div class="pkb-group-t">' + esc(L(it)) + '</div>' + it.pages.map(p => link(p, 'pkb-item')).join('') + '</div>' : link(it, 'pkb-item')).join('') +
+    s.items.map(it => it.ext ? '<a class="pkb-item pkb-ext" href="#' + it.r + '"' + (it.tab ? ' data-pkb-tab="' + esc(it.tab) + '"' : '') + ' title="' + esc(D(it)) + '">' + esc(L(it)) + '</a>' :
+      it.one ? '<a class="pkb-item" href="#' + it.pages[0].r + '" data-route="' + it.pages[0].r + '" data-routes="' + it.pages.map(p => p.r).join(' ') + '">' + esc(L(it)) + '</a>' : it.group ? '<div class="pkb-group"><div class="pkb-group-t">' + esc(L(it)) + '</div>' + it.pages.map(p => link(p, 'pkb-item')).join('') + '</div>' : link(it, 'pkb-item')).join('') +
     '</section>').join('') +
     '<div class="pkb-pane-foot">' + link(byRoute.sitemap, '', T('Plan du site', 'Site map')) + '<button type="button" data-pkb-search>' + T('Rechercher', 'Search') + ' · Ctrl K</button></div>';
   nav.appendChild(rail); nav.appendChild(pane); nav.appendChild(legacy);
@@ -338,7 +339,7 @@
     const shownAs = byRoute[route] ? route : (ALIAS[route] || 'today');
     const p = byRoute[route] || byRoute[shownAs], s = secOf[p.r], g = groupOf[shownAs];
     // menu
-    pane.querySelectorAll('.pkb-item').forEach(a => { const on = a.dataset.route === shownAs; a.classList.toggle('on', on); if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
+    pane.querySelectorAll('.pkb-item').forEach(a => { const on = (a.dataset.routes || a.dataset.route || '').split(' ').includes(shownAs); a.classList.toggle('on', on); if (on) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
     rail.querySelectorAll('.pkb-rail-b').forEach(b => b.classList.toggle('cur', b.dataset.sec === s.id));
     if (sync.last !== route) { showSec(s.id); sync.last = route; }
     document.title = 'PowerKlock · ' + (g ? L(g) + ' · ' : '') + L(p);
@@ -362,7 +363,7 @@
     const h1 = !root.querySelector('h1:not(.pkb-head-t)');
     const hh = '<div class="pkb-head-main">' + (own ? '' : '<' + (h1 ? 'h1' : 'div role="heading" aria-level="2"') + ' class="pkb-head-t">' + (g && g.pages.length > 1 && L(g) !== L(p) ? '<span class="pkb-head-g">' + esc(L(g)) + ' · </span>' : '') + esc(L(p)) + '</' + (h1 ? 'h1' : 'div') + '>') +
       '<p class="pkb-head-d">' + esc(D(p)) + '</p>' +
-      (g ? '<nav class="pkb-sibs" aria-label="' + esc(L(g)) + '">' + g.pages.map(x => '<a href="#' + x.r + '" data-route="' + x.r + '"' + (x.r === shownAs ? ' class="on" aria-current="page"' : '') + '>' + esc(L(x)) + '</a>').join('') + '</nav>' : '') + '</div>' +
+      (g ? '<nav class="pkb-sibs' + (g.one ? ' pkb-tabs' : '') + '" aria-label="' + esc(L(g)) + '">' + g.pages.map(x => '<a href="#' + x.r + '" data-route="' + x.r + '"' + (x.r === shownAs ? ' class="on" aria-current="page"' : '') + '>' + esc(L(x)) + '</a>').join('') + '</nav>' : '') + '</div>' +
       (see.length ? '<div class="pkb-see"><span>' + T('Voir aussi', 'See also') + '</span>' + see.map(x => link(x, '')).join('') + '</div>' : '');
     if (head.dataset.k !== hh) { const kept = [...head.querySelectorAll('[data-pkb-keep]')]; head.innerHTML = hh; head.dataset.k = hh; kept.forEach(k => head.firstChild.appendChild(k)); }
     // Power spot › Overview: its own header is hidden in the beta layout; the line it carried (market, delivery day) stays here
@@ -384,8 +385,8 @@
     const n = document.querySelector('.pk-beta-note'); if (!n) return;
     let closed = false; try { closed = localStorage.getItem('pk-beta-note') === '0'; } catch (e) { /* ignore */ }
     if (closed) { n.remove(); return; }
-    n.innerHTML = '<span>' + T('<b>Version bêta</b> · menu par métier toujours ouvert, sections Analyse et Infographies, recherche (Ctrl K), plan du site, Aujourd’hui en une seule vue. Aucun graphique n’est retiré. Bouton « Bêta » en haut pour revenir à la version actuelle.',
-      '<b>Beta</b> · menu by job that stays open, Analysis and Infographics sections, search (Ctrl K), site map, Today in one view. No chart is removed. “Beta” button at the top to go back to the current version.') +
+    n.innerHTML = '<span>' + T('<b>Version bêta</b> · 8 rubriques par métier (les outils rangés près de leur usage), pages fusionnées en onglets (Comprendre le prix, Météo & DJU), Aujourd’hui allégé avec le détail replié. Aucun graphique n’est retiré. Bouton « Bêta » en haut pour revenir à la version actuelle.',
+      '<b>Beta</b> · 8 sections by job (each tool next to its use), pages merged as tabs (Understand the price, Weather & degree days), a lighter Today with the detail folded. No chart is removed. “Beta” button at the top to go back to the current version.') +
       '</span><button type="button" class="pk-beta-note-x" aria-label="' + T('Fermer', 'Close') + '">×</button>';
     n.querySelector('button').addEventListener('click', () => { n.remove(); try { localStorage.setItem('pk-beta-note', '0'); } catch (e) { /* ignore */ } });
   })();

@@ -208,3 +208,5 @@ html.pk-beta #pk-search .pk-s-k.page { display: block; padding: 2px 0; margin: 0
   .pkb-tile-2 { gap: 12px; }
   .pkb-orig-h span { display: none; }
 }
+/* pages merged into one entry of the menu (brief of 25 Nov. 2026): their views read as the tabs of one page */
+.pkb-sibs.pkb-tabs a { font-size: 14px; padding: 6px 14px; }
