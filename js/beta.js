@@ -134,7 +134,25 @@
       '</span></div><svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div><div class="hist-section-body open"></div>';
     sec.lastChild.appendChild(learn);
     last.after(sec);
-    window.PKBeta.views = Object.assign(window.PKBeta.views || {}, { morning: [['Expert', ['mrn2', 'hs-morning-2', 'hs-morning-fund', 'hs-morning-3', 'hs-morning-4', 'hs-morning-fc', 'hs-morning-idx', 'hs-morning-learn']]] });
+    // (brief of 25 Nov. 2026, owner's choice pending) the first screen keeps six blocks: the day's sentence, the
+    // origination benchmarks, the key figures (spot, Cal+1, gas, carbon), what moved, the news. The rest of the day
+    // (three spot days, the four driver cards, what moved, the next 4 weeks) waits one click away in a folded
+    // section, and the deeper sections start folded: nothing leaves the page
+    const fold = (id, fr, en, dfr, den, nodes) => {
+      const x = document.createElement('div');
+      x.className = 'hist-section hist-section-strong collapsed'; x.id = id;
+      x.innerHTML = '<div class="hist-section-header open" onclick="toggleStrongSection(\'' + id + '\')"><div class="hist-section-title">' + T(fr, en) + '<span class="pk-hs-meta">' + T(dfr, den) +
+        '</span></div><svg class="hist-section-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg></div><div class="hist-section-body open"></div>';
+      nodes.filter(Boolean).forEach(n => x.lastChild.appendChild(n));
+      return x;
+    };
+    const d30 = document.getElementById('mrn-30d'), d30Card = d30 && d30.closest('section');
+    const detail = fold('hs-morning-detail', 'Le détail du jour', 'The day in detail',
+      'les trois journées spot, ce qui fait le prix, les 4 prochaines semaines', 'the three spot days, what drives the price, the next 4 weeks',
+      [days, drivers, movedSec, d30Card]);
+    mrn2.after(detail);
+    ['hs-morning-fund', 'hs-morning-3', 'hs-morning-4', 'hs-morning-fc'].forEach(id => { const x = $(id); if (x) x.classList.add('collapsed'); });
+    window.PKBeta.views = Object.assign(window.PKBeta.views || {}, { morning: [['Expert', ['mrn2', 'hs-morning-detail', 'hs-morning-2', 'hs-morning-fund', 'hs-morning-3', 'hs-morning-4', 'hs-morning-fc', 'hs-morning-idx', 'hs-morning-learn']]] });
   })();
 
   // ── Beta notice ──
