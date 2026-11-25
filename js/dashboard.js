@@ -1006,6 +1006,8 @@
       bell: '<path d="M5 14V9a5 5 0 0 1 10 0v5l1.5 1.5h-13Z"/><path d="M8.5 17.5a1.6 1.6 0 0 0 3 0"/>',
       grid: '<rect x="3" y="3" width="6" height="6" rx="1.2"/><rect x="11" y="3" width="6" height="6" rx="1.2"/><rect x="3" y="11" width="6" height="6" rx="1.2"/><rect x="11" y="11" width="6" height="6" rx="1.2"/>',
       spark: '<path d="M10 2.5 11.6 8.4 17.5 10l-5.9 1.6L10 17.5l-1.6-5.9L2.5 10l5.9-1.6Z"/>',
+      // a plug for the connector (the owner, 25 Nov. 2026: a sparkle reads as another company's AI)
+      plug: '<path d="M7 2.5v4M13 2.5v4M5 6.5h10v3a5 5 0 0 1-10 0Z"/><path d="M10 14.5v3"/>',
       shield: '<path d="M10 2.5 16 5v4.5c0 4-2.6 6.6-6 8-3.4-1.4-6-4-6-8V5Z"/><path d="m7.5 10 1.8 1.8L12.8 8"/>',
       out: '<path d="M8 4H4.5v12H8"/><path d="m12 6.5 3.5 3.5L12 13.5M15.5 10H7.5"/>',
       gear: '<circle cx="10" cy="10" r="2.6"/><path d="M10 2.5v2M10 15.5v2M2.5 10h2M15.5 10h2M4.7 4.7l1.4 1.4M13.9 13.9l1.4 1.4M4.7 15.3l1.4-1.4M13.9 6.1l1.4-1.4"/>',
@@ -1021,7 +1023,7 @@
       ${item('mail', 'My newsletter', 'Editions, subjects, address', 'letter')}
       ${item('bell', 'My alerts', 'Prices, forwards, peak days', 'alerts')}
       ${item('grid', 'My dashboards', 'Your own pages of charts', 'boards')}
-      ${item('spark', 'Connector for Claude', 'PowerKlock inside your Claude', 'mcp')}
+      ${item('plug', 'Connector for Claude', 'PowerKlock inside your Claude', 'mcp')}
       <div class="pk-am-sep"></div>
       ${item('user', 'My account', 'Password, delete the account', 'account')}
       ${item('map', 'Guided tour', 'Where to find everything, in one minute', 'tour')}
