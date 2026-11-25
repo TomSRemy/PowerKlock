@@ -211,9 +211,14 @@ async function _arcLoad() {
 }
 
 // ── Ask PowerKlock (workers/ask): a question answered from the site's own content, each sentence with its source;
-// approved accounts only, 30 questions a day each; the answers stay in this page only ──
+// approved accounts only, 30 questions a day each; the answers are kept in this browser (_askSave) ──
 const ASK_URL = 'https://powerklock-ask.tom-s-remy.workers.dev';
-let _askLog = [], _askLeft = null;
+let _askLog = [], _askLeft = null, _askUid = null;
+// the reader's questions and answers are kept in this browser, per account, so the panel opens on them again (the owner,
+// 25 Nov. 2026: « quand je rappuie sur le module IA je veux retrouver mon historique »); 50 at most, 30 days
+const _askKey = () => 'pk-ask-log-' + (_askUid || 'anon');
+function _askLoad() { try { const a = JSON.parse(localStorage.getItem(_askKey()) || '[]'), t = Date.now() - 30 * 864e5; _askLog = Array.isArray(a) ? a.filter(x => x && x.q && (x.t || 0) > t) : []; } catch (_) { _askLog = []; } }
+function _askSave() { try { localStorage.setItem(_askKey(), JSON.stringify(_askLog.filter(x => !x.wait && !x.err).slice(0, 50))); } catch (_) { /* private window: history for this page only */ } }
 async function renderNewsAsk() {
   const host = document.getElementById('news-ask'); if (!host) return;
   const A = window.PKAccount;
@@ -227,15 +232,20 @@ async function renderNewsAsk() {
     host.innerHTML = `<form class="ask-f"><input type="text" id="ask-q" maxlength="300" autocomplete="off" placeholder="${_newsT('Posez une question sur l’actualité, les textes, les consultations…', 'Ask about the news, the texts, the consultations…')}" aria-label="${_newsT('Votre question', 'Your question')}"><button type="submit" class="ask-go">${_newsT('Demander', 'Ask')}</button></form>
       <div class="ask-hints">${hints.map(h => `<button type="button" class="ask-hint">${_newsEsc(h)}</button>`).join('')}</div>
       <div class="ask-meta" id="ask-meta"></div><div class="ask-log" id="ask-log"></div>
+      <button type="button" class="ask-clear" id="ask-clear" hidden>${_newsT('Effacer l’historique', 'Clear the history')}</button>
       <p class="ask-claude">${_newsT('Vous avez Claude ? Ajoutez-y PowerKlock (prix, forwards, textes, consultations, sans limite de ce côté) : Compte › Connecteur pour Claude.', 'Have Claude? Add PowerKlock to it (prices, forwards, texts, consultations, no limit on this side): Account › Connector for Claude.')}</p>`;
     host.querySelector('.ask-f').addEventListener('submit', e => { e.preventDefault(); const q = host.querySelector('#ask-q').value.trim(); if (q.length > 2) _askGo(q); });
     host.querySelectorAll('.ask-hint').forEach(b => b.addEventListener('click', () => { host.querySelector('#ask-q').value = b.textContent; _askGo(b.textContent); }));
+    host.querySelector('#ask-clear').addEventListener('click', () => { if (!confirm(_newsT('Effacer toutes vos questions de ce navigateur ?', 'Clear all your questions from this browser?'))) return; _askLog = []; _askSave(); _askDraw(); });
+    _askLoad();
     await _askLoadCount();
   }
   _askDraw();
 }
 async function _askToken() {
-  try { const cl = window.PKAccount && PKAccount.client && PKAccount.client(); const { data } = cl ? await cl.auth.getSession() : { data: null }; return data && data.session ? data.session.access_token : null; } catch (_) { return null; }
+  try { const cl = window.PKAccount && PKAccount.client && PKAccount.client(); const { data } = cl ? await cl.auth.getSession() : { data: null };
+    if (data && data.session && data.session.user) _askUid = data.session.user.id;
+    return data && data.session ? data.session.access_token : null; } catch (_) { return null; }
 }
 // the panel beside the page (the Ask button in the News bar, or a question typed in a search box)
 function askOpen(q) {
@@ -286,6 +296,7 @@ function _askCount() {
 function _askDraw() {
   _askCount();
   const meta = document.getElementById('ask-meta'), log = document.getElementById('ask-log'); if (!meta || !log) return;
+  const clr = document.getElementById('ask-clear'); if (clr) clr.hidden = !_askLog.some(x => !x.wait);
   meta.textContent = _askLeft === -1 ? _newsT('Votre compte attend validation : les questions s’ouvrent une fois l’accès validé.', 'Your account is waiting for approval: questions open once access is approved.')
     : _newsT('Cherche dans les articles, textes officiels, consultations, publications et papiers des 45 derniers jours, la newsletter et notre analyse de marché', 'Searches the articles, official texts, consultations, publications and papers of the last 45 days, the newsletter and our market analysis')
       + (_askLeft != null ? ' · ' + _newsT(`${_askLeft} question${_askLeft > 1 ? 's' : ''} restante${_askLeft > 1 ? 's' : ''} aujourd’hui`, `${_askLeft} question${_askLeft === 1 ? '' : 's'} left today`) : '');
@@ -303,7 +314,7 @@ function _askDraw() {
 async function _askGo(q) {
   const token = await _askToken();
   if (!token) return renderNewsAsk();
-  const x = { q, wait: true }; _askLog.unshift(x); _askDraw();
+  const x = { q, wait: true, t: Date.now() }; _askLog.unshift(x); _askDraw();
   try {
     const r = await fetch(ASK_URL, { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify({ q }) });
     const j = await r.json().catch(() => ({}));
@@ -317,6 +328,7 @@ async function _askGo(q) {
   } catch (_) {
     x.wait = false; x.err = _newsT('Le service n’est pas joignable pour l’instant.', 'The service cannot be reached for now.');
   }
+  _askSave();
   _askDraw();
 }
 
@@ -474,13 +486,13 @@ async function renderNewsLetter() {
     <div class="nl-paper"><header class="nl-head"><div><span translate="no" class="nl-brand">PowerKlock</span><span>${_newsEsc(day)}</span></div>
       <div class="nl-tt"><h1 translate="no">${E.weekly ? 'PowerBrunch' : '7 O’Klock'}</h1>${wx}</div><div>${E.weekly ? _newsT('La semaine servie à point : ce qu’il fallait retenir, à lire au calme', 'Last week, well done: what mattered, to read at leisure') : _newsT('Marchés, régulation, énergie : l’essentiel à 7 h', 'Markets, regulation, energy: what matters at 7:00')}</div>${sec.markets()}</header>${(en && E.brief_en) || E.brief ? `<section class="nl-sec nl-brief"><h2>${_newsT('Le point du matin', 'The morning brief')}</h2>${String((en && E.brief_en) || E.brief).split(/\n\s*\n/).map(x => `<p>${_newsEsc(x)}</p>`).join('')}${(E.brief_links || []).length ? `<p class="nh-brief-src">${_newsT('À lire', 'Read')} : ${E.brief_links.map(x => `<a href="${_newsEsc(x.link)}" target="_blank" rel="noopener noreferrer">${_newsEsc(x.source)}</a>`).join(' · ')}</p>` : ''}</section>` : ''}
       ${body}
-      <footer class="nl-foot">${_newsT('Sujets choisis selon vos centres d’intérêt ; résumés rédigés automatiquement à partir des titres et extraits, chaque sujet renvoie à ses articles. Le même contenu part par e-mail chaque matin de semaine à 7 h.', 'Stories chosen from your subjects; summaries written automatically from the titles and extracts, each story links to its articles. The same content goes out by e-mail every weekday at 7:00.')}</footer></div>`;
+      <footer class="nl-foot">${_newsT('Sujets choisis selon vos centres d’intérêt ; résumés rédigés automatiquement à partir des titres et extraits, chaque sujet renvoie à ses articles. Le même contenu part par e-mail du mardi au vendredi à 7 h, et le lundi à 8 h dans PowerBrunch.', 'Stories chosen from your subjects; summaries written automatically from the titles and extracts, each story links to its articles. The same content goes out by e-mail Tuesday to Friday at 7:00, and on Monday at 8:00 in PowerBrunch.')}</footer></div>`;
   const A = window.PKAccount, me = _nlMe;
   host.insertAdjacentHTML('beforeend', `<div class="news-side nl-me"><div class="news-side-t">${_newsT('Ma newsletter par e-mail', 'My newsletter by e-mail')}</div>` + (A && A.user && me ? `
     <div class="nl-me-f">${_newsT('Mes sujets : votre édition est faite à partir d’eux', 'My subjects: your edition is built from them')}${PK_INTERESTS.map(([gf, ge, list]) => `<div class="nl-me-g">${_newsT(gf, ge)}</div><div class="nl-me-row nl-me-chips">${list.map(([k, fr, en]) => `<label class="nl-chip"><input type="checkbox" name="nl-int" value="${k}"${(me.interests || []).includes(k) ? ' checked' : ''}><span>${_newsT(fr, en)}</span></label>`).join('')}</div>`).join('')}
       <label><input type="checkbox" id="nl-fr"${me.france ? ' checked' : ''}> ${_newsT('Surtout la France (le reste passe après)', 'France first (the rest comes after)')}</label></div>
-    <div class="nl-me-f">${_newsT('Recevoir par e-mail', 'Receive by e-mail')}<div class="nl-me-row"><label><input type="checkbox" id="nl-daily"${me.daily ? ' checked' : ''}> <b translate="no">7 O’Klock</b> · ${_newsT('chaque matin de semaine, 7 h', 'every weekday, 7:00')}</label>
-      <label><input type="checkbox" id="nl-weekly"${me.weekly ? ' checked' : ''}> <b translate="no">PowerBrunch</b> · ${_newsT('le lundi à 10 h, la semaine écoulée', 'Monday at 10:00, the week before')}</label></div></div>
+    <div class="nl-me-f">${_newsT('Recevoir par e-mail', 'Receive by e-mail')}<div class="nl-me-row"><label><input type="checkbox" id="nl-daily"${me.daily ? ' checked' : ''}> <b translate="no">7 O’Klock</b> · ${_newsT('du mardi au vendredi, 7 h', 'Tuesday to Friday, 7:00')}</label>
+      <label><input type="checkbox" id="nl-weekly"${me.weekly ? ' checked' : ''}> <b translate="no">PowerBrunch</b> · ${_newsT('le lundi à 8 h, à la place de 7 O’Klock : la semaine écoulée', 'Monday at 08:00, instead of 7 O’Klock: the week before')}</label></div></div>
     <label class="nl-me-f">${_newsT('Adresse (vide = celle du compte)', 'Address (empty = the account’s)')}<input type="email" id="nl-to" class="fuel-select" maxlength="200" value="${_newsEsc(me.email_to || '')}" placeholder="${_newsEsc(A.user.email || '')}"></label>
     <label class="nl-me-f">${_newsT('Mots à écarter, séparés par des virgules', 'Words to leave out, comma separated')}<input type="text" id="nl-ex" class="fuel-select" maxlength="400" value="${_newsEsc((me.exclude || []).join(', '))}" placeholder="${_newsT('ex. pétrole, crypto', 'e.g. oil, crypto')}"></label>
     <div class="nl-me-help">${_newsT('Vos mots-clés (Veille › Personnaliser) ajoutent une rubrique « Vos mots-clés » à votre e-mail.', 'Your keywords (News › Customise) add a “Your keywords” section to your e-mail.')}</div>

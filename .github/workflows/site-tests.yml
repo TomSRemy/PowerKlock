@@ -23,9 +23,12 @@ on:
   workflow_dispatch:
 
 jobs:
-  smoke:
+  # The fast checks, then the smoke test in four parts side by side (the owner, 25 Nov. 2026: 13 minutes was too long;
+  # tests/smoke.py › SMOKE_SHARD). The job named « smoke » waits for all of them and fails when one did, so the PR check
+  # and the publish workflow keep reading the same name.
+  checks:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
@@ -42,12 +45,43 @@ jobs:
       - name: Workers syntax (ES modules, as Cloudflare builds them)
         run: for f in workers/*/index.js; do node --input-type=module --check < "$f" || { echo "$f"; exit 1; }; done
       - name: Calculations
-        run: pip install -q numpy==2.2.6 scipy==1.15.3 && python tests/test_calculations.py && python tests/test_prices_dst.py && python tests/test_bess_optim.py && python tests/test_scheduler.py
+        run: pip install -q numpy==2.2.6 scipy==1.15.3 pyyaml==6.0.2 && python tests/test_calculations.py && python tests/test_prices_dst.py && python tests/test_bess_optim.py && python tests/test_scheduler.py
       - name: Site logic
         run: python tests/test_site_logic.py && python tests/test_ppa_frozen.py && python tests/test_consistency.py
-      - name: Smoke tests (English and French)
+
+  pages:
+    name: pages ${{ matrix.part }}/4
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        part: [1, 2, 3, 4]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Install Playwright
+        run: |
+          pip install playwright==1.48.0 requests==2.33.1
+          python -m playwright install --with-deps chromium
+      - name: Smoke tests, part ${{ matrix.part }} of 4 (English and French)
+        env:
+          SMOKE_SHARD: ${{ matrix.part }}/4
         run: python tests/smoke.py
 
+  smoke:
+    needs: [checks, pages]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Every check and every part passed
+        run: |
+          echo "checks: ${{ needs.checks.result }} · pages: ${{ needs.pages.result }}"
+          [ "${{ needs.checks.result }}" = "success" ] && [ "${{ needs.pages.result }}" = "success" ]
+      - uses: actions/checkout@v5
+        if: failure()
       - name: E-mail on failure
         if: failure()
         env:

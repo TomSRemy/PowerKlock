@@ -119,7 +119,8 @@ for when, job, expected in [
     ('2026-07-07T05:00', 'morning_mail.yml', True),    # 07:00 Paris in summer
     ('2026-07-07T06:00', 'morning_mail.yml', True),    # 08:00 Paris: the retry
     ('2026-11-28T06:00', 'morning_mail.yml', False),   # Saturday
-    ('2026-11-23T09:00', 'morning_mail.yml', True),    # Monday 10:00 Paris: PowerBrunch
+    ('2026-11-23T07:00', 'morning_mail.yml', True),    # Monday 08:00 Paris: PowerBrunch (the owner, 25 Nov. 2026)
+    ('2026-11-23T06:00', 'morning_mail.yml', False),   # Monday 07:00: no 7 O'Klock, PowerBrunch replaces it
     ('2026-11-24T09:00', 'morning_mail.yml', False),   # Tuesday 10:00: no PowerBrunch
     ('2026-11-24T07:00', 'reel.yml', True),            # 08:00 Paris in winter
     ('2026-07-07T06:00', 'reel.yml', True),            # 08:00 Paris in summer
@@ -160,6 +161,16 @@ if js:
         check(False, f'{t:%Y-%m-%d %H:%M} UTC: the Worker starts {b}, expected {sorted(a)}')
     starts = sum(len(x) for x in js)
     print(f'{len(minutes)} minutes compared, {starts} job starts, {len(bad)} differences')
+
+# every workflow file is valid YAML: GitHub runs none of a file it cannot read, without an error anywhere but the
+# Actions tab (an apostrophe inside a '…' description broke the newsletter for a morning, 25 Nov. 2026)
+import yaml  # noqa: E402
+for f in sorted(os.listdir(WF)):
+    if f.endswith(('.yml', '.yaml')):
+        try:
+            yaml.safe_load(open(os.path.join(WF, f), encoding='utf-8'))
+        except yaml.YAMLError as e:
+            check(False, f'{f} is not valid YAML: {str(e).splitlines()[-1].strip()}')
 
 if errors:
     print('\n'.join('✗ ' + e for e in errors))

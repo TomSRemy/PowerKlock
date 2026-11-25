@@ -28,11 +28,11 @@ on:
         type: boolean
         default: false
       night:
-        description: 'Night run (00:05 Paris, every day): the day's edition for the site only, so Top stories change at midnight; no e-mail'
+        description: "Night run (00:05 Paris, every day): the day's edition for the site only, so Top stories change at midnight; no e-mail"
         type: boolean
         default: false
       cron:
-        description: 'The scheduler's slot (workers/scheduler, pass_cron): 5 0 * * * is the night run'
+        description: "The scheduler's slot (workers/scheduler, pass_cron): 5 0 * * * is the night run"
         type: string
         default: ''
 
@@ -57,16 +57,17 @@ jobs:
       - name: Which edition
         id: ed
         run: |
-          # a scheduled run sends the edition once a day: from 07:00 (PowerBrunch: 10:00 on Monday) in Paris, if not sent yet;
-          # after 12:00 (PowerBrunch: 14:00) an edition still late is written for the site but not mailed
+          # a scheduled run sends the edition once a day: 7 O'Klock from 07:00 Tuesday to Friday, PowerBrunch from 08:00 on
+          # Monday instead of 7 O'Klock (the owner, 25 Nov. 2026), in Paris, if not sent yet; after 12:00 an edition still
+          # late is written for the site but not mailed
           H=$((10#$(TZ=Europe/Paris date +%H))); D=$(TZ=Europe/Paris date +%F); W=$(TZ=Europe/Paris date +%u)
           SENT_D=$(python3 -c "import json;print((json.load(open('data/newsletter_sent.json')) if __import__('os').path.exists('data/newsletter_sent.json') else {}).get('daily',''))")
           SENT_W=$(python3 -c "import json;print((json.load(open('data/newsletter_sent.json')) if __import__('os').path.exists('data/newsletter_sent.json') else {}).get('weekly',''))")
           M=none; MAIL=yes
           if [ "${{ inputs.night }}" = "true" ] || [ "${{ inputs.cron }}" = "5 0 * * *" ]; then M=daily; MAIL=no   # Top stories change at midnight (the owner, 25 Nov. 2026); the 07:00 run rebuilds and sends
           elif [ "${{ github.event_name }}" = "schedule" ] || [ "${{ inputs.auto }}" = "true" ]; then
-            if [ "$W" = "1" ] && [ "$H" -ge 10 ] && [ "$SENT_W" != "$D" ]; then M=weekly; [ "$H" -ge 14 ] && MAIL=no
-            elif [ "$W" -le 5 ] && [ "$H" -ge 7 ] && [ "$SENT_D" != "$D" ]; then M=daily; [ "$H" -ge 12 ] && MAIL=no
+            if [ "$W" = "1" ] && [ "$H" -ge 8 ] && [ "$SENT_W" != "$D" ]; then M=weekly; [ "$H" -ge 12 ] && MAIL=no
+            elif [ "$W" -ge 2 ] && [ "$W" -le 5 ] && [ "$H" -ge 7 ] && [ "$SENT_D" != "$D" ]; then M=daily; [ "$H" -ge 12 ] && MAIL=no
             else echo "Nothing to do: before 07:00 in Paris, or today's edition already sent"; fi
           elif [ "${{ inputs.edition }}" = "PowerBrunch" ]; then M=weekly
           else M=daily; fi

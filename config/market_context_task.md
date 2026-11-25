@@ -53,6 +53,10 @@ first): add yesterday's, drop the oldest.
   regulation, geopolitics, 2 to 4 sentences each, about 250 to 350 words, longer if the week needs it), with what it means for the weeks ahead. From
   one week to the next it may repeat a situation that lasts, saying so (« la situation reste la même : … », « le froid
   dure pour la troisième semaine »). The other days keep the file's.
+- On Monday also write PowerBrunch's top (the owner's mockup v4, 25 Nov. 2026): `week_title` (the week in one sentence,
+  a headline of 8 to 14 words, e.g. « Le spot a fondu de moitié, mais l'hiver revient dès ce lundi »), `week_text` (one or
+  two sentences under it), and `week_keys`: three `{"bold", "text"}`, the three things to remember of the week, `bold` a
+  few words that say it (« Le spot divisé par deux »), `text` one sentence with the figure or the date.
 - Geopolitics: an event with a large effect on prices (gas or oil supply, a strait, a pipeline, sanctions, a conflict
   that moves TTF or Brent) is always in the daily the day it appears or changes, first if it is the day's main move; a
   geopolitical topic without an effect on prices is left out.
