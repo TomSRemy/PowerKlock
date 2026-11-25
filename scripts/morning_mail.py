@@ -556,7 +556,7 @@ def brunch(today, E, st, mine, keep, report, free, img, imgs):
         body.append(row(kick('La semaine en chiffres') + f'<table role="presentation" width="100%" style="border-collapse:collapse"><tr><td style="{f};font-size:11px;color:#8A8A8A;padding-bottom:4px">Marché</td><td style="{f};font-size:11px;color:#8A8A8A;text-align:right;padding-bottom:4px">Valeur</td><td style="{f};font-size:11px;color:#8A8A8A;text-align:right;padding-bottom:4px">Sur la semaine</td></tr>{trs}</table>'
                         f'<p style="{f};font-size:11px;color:#8A8A8A;margin:6px 0 0">Sources : {esc(srcs)}. Chaque ligne ouvre sa page sur le site.</p>'))
     # ── the week ahead ──
-    wa = E.get('week_ahead') or []
+    wa = [x for x in E.get('week_ahead') or [] if x.get('date', '') >= str(today)]   # what is still ahead on the day it is read
     if wa:
         def wl_(x):
             dd = date.fromisoformat(x['date'])
