@@ -54,8 +54,12 @@
   }
   const SUN = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>';
   const MOON = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+  // the site is dark only (the owner, 25 Nov. 2026: « oublier l'option fond blanc »): no theme button, and a light theme
+  // saved earlier in this browser is dropped
+  const DARK_ONLY = true;
   function init() {
     if (window.Chart && Chart.register) { try { Chart.register(plugin); } catch (_) {} if (light()) Chart.defaults.color = TXT2; }
+    if (DARK_ONLY) { if (light()) apply('dark'); else { try { localStorage.setItem(KEY, 'dark'); } catch (_) {} } return; }
     const right = document.querySelector('.topbar-right'); if (!right || document.getElementById('pk-theme-btn')) return;
     const b = document.createElement('button'); b.type = 'button'; b.id = 'pk-theme-btn'; b.className = 'pk-theme-btn';
     b.addEventListener('click', () => apply(light() ? 'dark' : 'light'));

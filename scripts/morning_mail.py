@@ -289,7 +289,7 @@ def journal(today, E, ed, wk, mine):
         imgs.append(rel)
         return f'<img src="cid:{esc(name)}" alt="{esc(alt)}" width="{width}" style="display:block;width:100%;max-width:{width}px;height:auto;border:0">'
 
-    # ── header: brand, date, listen, title, weather, tiles ──
+    # ── header: brand, date, title, weather, tiles ──
     w = E.get('weather') or {}
     wx = (f'<td style="text-align:right;vertical-align:bottom;white-space:nowrap">{img("newsletter_img/" + WEATHER_ICON[w["kind"]], w["label"][0], 30).replace("display:block;width:100%;max-width:30px", "display:inline-block;width:30px;vertical-align:middle")}'
           f'<span style="{f};display:inline-block;vertical-align:middle;font-size:12px;line-height:1.3;text-align:left;margin-left:6px"><b>{esc(w["label"][0])}</b><br><span style="color:#6B6B6B">{esc(w["sub"][0])}</span></span></td>') if w.get('kind') in WEATHER_ICON else '<td></td>'
@@ -320,7 +320,7 @@ def journal(today, E, ed, wk, mine):
     brief_sep = f'</p><p style="{f};margin:10px 0 0;font-size:15.5px;line-height:1.6;color:#121212">'   # the brief's second paragraph
     head = (f'<tr><td style="padding:18px 22px 16px;background:#0a0e13;border-radius:12px 12px 0 0">'
             f'<table role="presentation" width="100%" style="border-collapse:collapse"><tr><td style="{f};font-size:13px;color:#6B6B6B;vertical-align:middle"><a href="{SITE}" style="text-decoration:none">{img("../assets/logo-header.png", "PowerKlock", 150).replace("display:block;width:100%;max-width:150px", "display:inline-block;width:150px;vertical-align:middle")}</a><span style="vertical-align:middle;margin-left:10px">{frday(today)}</span></td>'
-            f'<td style="{f};font-size:13px;text-align:right"><a href="{SITE}#intel/news?listen=1" style="{green};font-weight:600;text-decoration:none">▶ Écouter</a></td></tr></table>'
+            f'</tr></table>'
             f'<table role="presentation" width="100%" style="border-collapse:collapse;margin:8px 0 12px"><tr><td style="vertical-align:bottom"><p style="{serif};margin:0;font-size:32px;font-weight:700;color:#121212">{TITLE[wk]}</p>'
             f'<p style="{f};margin:3px 0 0;font-size:13.5px;color:#6B6B6B">{SUB[wk]}{" · semaine du " + frday(today - timedelta(days=7)) if wk else ""}</p></td>{wx}</tr></table>'
             f'<table role="presentation" width="100%" style="border-collapse:collapse;table-layout:fixed">{tiles}</table>'

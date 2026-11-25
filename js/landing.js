@@ -80,7 +80,7 @@ window.pkLandingStart = function () {
     'c-pages': ['pages', 'pages'], 'c-zones': ['zones de prix', 'bidding zones'], 'c-src': ['sources de veille', 'news sources'],
     fnote: ['Connexion par mot de passe, Google ou code par e-mail. Les nouveaux comptes sont ouverts après validation. Données hébergées dans l\'Union européenne.', 'Sign in with a password, Google or an e-mail code. New accounts are opened after approval. Data hosted in the European Union.'],
     stay: ['Vous restez connecté sur ce navigateur.', 'You stay signed in on this browser.'], google: ['Continuer avec Google', 'Continue with Google'], or: ['ou', 'or'],
-    mail: ['E-mail', 'E-mail'], pw: ['Mot de passe', 'Password'], code: ['Recevoir un code par e-mail', 'Get a code by e-mail'], noacc: ['Pas de compte ?', 'No account?'], create: ['Créer un compte', 'Create an account'],
+    mail: ['E-mail', 'E-mail'], pw: ['Mot de passe', 'Password'], code: ['Mot de passe oublié ?', 'Forgot your password?'], noacc: ['Pas de compte ?', 'No account?'], create: ['Créer un compte', 'Create an account'],
     demo: ['Maquette : rien n\'est envoyé. Sur le site, ce formulaire ouvre la connexion existante, puis la page se transforme en site complet.', 'Mockup: nothing is sent. On the site, this form opens the existing sign-in, then the page turns into the full site.'],
     foot: ['Données publiques : ENTSO-E, RTE, ODRÉ, CRE, EEX.', 'Public data: ENTSO-E, RTE, ODRÉ, CRE, EEX.'], meth: ['Méthodologie', 'Methodology'], privacy: ['Confidentialité', 'Privacy'], hosted: ["Données hébergées dans l'Union européenne.", 'Data hosted in the European Union.'], 'code-lab': ['Code reçu par e-mail', 'Code received by e-mail'], 'code-go': ['Valider', 'Confirm'],
     w1: ['Bienvenue.', 'Welcome.'], w2: ['Ouverture du site…', 'Opening the site…'], w3: ['', ''],
@@ -597,7 +597,7 @@ window.pkLandingStart = function () {
     e.preventDefault();
     const mail = mailEl.value.trim(), pw = pwEl.value; keepMail();
     if (!mail) { say(tr('Saisissez votre e-mail.', 'Type your e-mail.'), true); mailEl.focus(); return; }
-    if (!pw) { say(tr('Saisissez votre mot de passe, ou recevez un code par e-mail.', 'Type your password, or get a code by e-mail.'), true); pwEl.focus(); return; }
+    if (!pw) { say(tr('Saisissez votre mot de passe.', 'Type your password.'), true); pwEl.focus(); return; }
     say(tr('Connexion…', 'Signing in…'));
     try { await A.signInPassword(mail, pw); say(''); afterSignIn(e.submitter || $('#signin .btn')); }
     catch (err) { say(tr('Connexion refusée : e-mail ou mot de passe incorrect.', 'Sign-in refused: wrong e-mail or password.'), true); }
@@ -606,17 +606,30 @@ window.pkLandingStart = function () {
     say(tr('Ouverture de Google…', 'Opening Google…'));
     try { await A.signInGoogle(); } catch (err) { say(tr('Connexion Google indisponible pour le moment.', 'Google sign-in is not available right now.'), true); }
   });
-  // a code by e-mail: first sign-in, new account or forgotten password
-  const askCode = async ev => {
+  // classic accounts, as on the site (the owner, 25 Nov. 2026: no sign-in without a password): a password is always asked;
+  // « Créer un compte » makes the account with the e-mail and password typed, the e-mail link only confirms the address;
+  // « Mot de passe oublié ? » sends a link to choose a new one
+  $('#si-askcode').addEventListener('click', async ev => {
     ev.preventDefault();
     const mail = mailEl.value.trim(); keepMail();
     if (!mail || !mailEl.checkValidity()) { say(tr("Saisissez d'abord votre e-mail.", 'Type your e-mail first.'), true); mailEl.focus(); return; }
-    say(tr('Envoi du code…', 'Sending the code…'));
-    try { await A.signIn(mail); $('#si-codebox').hidden = false; say(tr(`Code envoyé à ${mail}. Saisissez-le ci-dessous.`, `Code sent to ${mail}. Type it below.`)); $('#si-code').focus(); }
-    catch (err) { say(tr("Le code n'a pas pu être envoyé. Réessayez dans un instant.", 'The code could not be sent. Try again in a moment.'), true); }
-  };
-  $('#si-askcode').addEventListener('click', askCode);
-  $('#si-create').addEventListener('click', askCode);
+    say(tr('Envoi du lien…', 'Sending the link…'));
+    try { await A.resetPassword(mail); say(tr(`Lien envoyé à ${mail} : il permet de choisir un nouveau mot de passe.`, `Link sent to ${mail}: it lets you choose a new password.`)); }
+    catch (err) { say(tr("Le lien n'a pas pu être envoyé. Réessayez dans un instant.", 'The link could not be sent. Try again in a moment.'), true); }
+  });
+  $('#si-create').addEventListener('click', async ev => {
+    ev.preventDefault();
+    const mail = mailEl.value.trim(), pw = pwEl.value; keepMail();
+    if (!mail || !mailEl.checkValidity()) { say(tr("Saisissez d'abord votre e-mail.", 'Type your e-mail first.'), true); mailEl.focus(); return; }
+    if (!pw || pw.length < 8) { say(tr('Choisissez un mot de passe de 8 caractères au moins.', 'Choose a password of at least 8 characters.'), true); pwEl.focus(); return; }
+    say(tr('Création du compte…', 'Creating the account…'));
+    try {
+      const r = await A.signUp(mail, pw);
+      if (r.exists) say(tr('Un compte existe déjà avec cet e-mail : connectez-vous, ou « Mot de passe oublié ? ».', 'An account already exists with this e-mail: sign in, or « Forgot your password? ».'), true);
+      else if (r.session) { say(''); afterSignIn($('#si-create')); }
+      else say(tr(`Compte créé. Confirmez votre adresse avec le lien envoyé à ${mail}, puis connectez-vous.`, `Account created. Confirm your address with the link sent to ${mail}, then sign in.`));
+    } catch (err) { say(tr("Le compte n'a pas pu être créé. Réessayez dans un instant.", 'The account could not be created. Try again in a moment.'), true); }
+  });
   $('#si-codego').addEventListener('click', async () => {
     const code = $('#si-code').value.trim(); if (!code) return;
     say(tr('Vérification…', 'Checking…'));

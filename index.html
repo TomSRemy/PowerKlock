@@ -21,7 +21,7 @@
     document.documentElement.classList.add('pk-public');
     if (!/access_token=|error_description=|[?&]code=/.test(location.hash + pkQ) && !/^#today(\?|$)/.test(location.hash)) history.replaceState(null, '', location.pathname + pkQ + '#today?v=2');
   }
-  if (!pkPublic && (pkBare && pkTh ? pkTh === 'light' : localStorage.getItem('pk-theme') === 'light')) document.documentElement.setAttribute('data-theme', 'light');
+  // dark only (the owner, 25 Nov. 2026): the light theme is no longer applied, even if it was saved before
   // French (the default): the page stays hidden until js/i18n.js has translated it once, so English never shows; the two
   // dictionaries are asked for now, beside the rest of the page, instead of after it (js/i18n.js reads them from the cache)
   if (localStorage.getItem('pk-lang') !== 'en') {
@@ -2439,7 +2439,7 @@ if (/^#solo=/.test(location.hash)) { document.body.classList.add('pk-solo');
             <button class="tab-btn" data-nv="feed" type="button">Live feed</button>
             <button class="tab-btn" data-nv="official" type="button">Official texts <span class="news-tab-n" id="news-tab-off-n"></span></button>
             <button class="tab-btn" data-nv="posts" type="button">LinkedIn posts</button>
-            <button class="tab-btn" data-nv="letter" type="button">Newsletter</button>
+            <button class="tab-btn" data-nv="letter" type="button" style="display:none">Newsletter</button>
             <button class="tab-btn" data-nv="archive" type="button">Archives</button>
             <button class="tab-btn" data-nv="sources" type="button">Sources</button>
           </div>

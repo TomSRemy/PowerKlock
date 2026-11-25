@@ -69,8 +69,7 @@ function _newsWireViews() {
   if (tabs && !tabs.dataset.wired) {
     tabs.dataset.wired = '1';
     tabs.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => newsSetView(b.dataset.nv)));
-    // the e-mail's « ▶ Écouter » (#intel/news?listen=1) opens the newsletter, its Listen button lit up
-    newsSetView(window.pkHashParams && window.pkHashParams.listen ? 'letter' : (_newsStore('pk-news-view') || 'home'));
+    newsSetView((v => v === 'letter' ? 'home' : v)(_newsStore('pk-news-view')) || 'home');
     _newsMode = _newsStore('pk-news-mode') === 'topics' ? 'topics' : 'list';
     _newsSort = _newsStore('pk-news-sort') === 'important' ? 'important' : 'recent';
     const sync = () => {
@@ -385,31 +384,6 @@ function _nlPill(tags, official) {
 const _nlConsPill = k => { const t = _NEWS_CONS_THEMES[k || 'other'] || _NEWS_CONS_THEMES.other; return `<span class="nl-pill">${_newsEsc(_newsT(t[0], t[1]))}</span>`; };
 const _NL_SEC = { markets: ['Marchés en 30 secondes', 'Markets in 30 seconds'], digest: ['L’essentiel', 'The essentials'], top: ['Les articles principaux', 'Main articles'], stories: ['Les sujets du jour', 'Today’s stories'], official: ['Textes officiels', 'Official texts'],
   cons: ['Consultations : à vos réponses', 'Consultations: time to reply'], pubs: ['Publications et rapports', 'Publications and reports'], agenda: ['Agenda', 'Agenda'], post: ['À lire : le post de la semaine', 'Worth reading: post of the week'] };
-// « Écouter » (the owner, 25 Nov. 2026: the e-mail's ▶ Écouter led nowhere): the edition read aloud by the browser's own
-// voice (speechSynthesis, free, nothing sent anywhere): the morning brief, then each story's title and « À retenir ».
-// The e-mail's link opens this page with ?listen=1; browsers only speak after a click, so the button is then lit up.
-function _nlListenText(E, ed, en) {
-  const clean = t => String(t || '').replace(/\s+/g, ' ').replace(/€\/MWh/g, en ? ' euros per megawatt-hour' : ' euros le mégawattheure').replace(/ GW\b/g, en ? ' gigawatts' : ' gigawatts').trim();
-  const out = [(E.weekly ? 'PowerBrunch' : '7 O’Klock') + '.'];
-  const b = (en && E.brief_en) || E.brief; if (b) out.push((en ? 'The morning brief. ' : 'Le point du matin. ') + clean(b));
-  (ed.stories || []).forEach((s, i) => { out.push((i === 0 ? (en ? 'Top story. ' : 'À la une. ') : '') + clean(s.title) + '.'); const w = (en && s.what_en) || s.what; if (w) out.push(clean(w)); });
-  return out;
-}
-function _nlListenWire(E, ed, en) {
-  const head = document.querySelector('#news-letter .nl-head > div'); if (!head || !('speechSynthesis' in window)) return;
-  const b = document.createElement('button'); b.type = 'button'; b.className = 'nl-listen'; b.textContent = _newsT('▶ Écouter', '▶ Listen');
-  head.appendChild(b);
-  const stop = () => { speechSynthesis.cancel(); b.textContent = _newsT('▶ Écouter', '▶ Listen'); b.classList.remove('on'); };
-  b.addEventListener('click', () => {
-    if (speechSynthesis.speaking) { stop(); return; }
-    const lang = en ? 'en-GB' : 'fr-FR', v = speechSynthesis.getVoices().find(x => x.lang === lang) || speechSynthesis.getVoices().find(x => x.lang.startsWith(lang.slice(0, 2)));
-    const parts = _nlListenText(E, ed, en); let i = 0;
-    const next = () => { if (i >= parts.length) { stop(); return; } const u = new SpeechSynthesisUtterance(parts[i++]); u.lang = lang; if (v) u.voice = v; u.rate = 1.02; u.onend = next; u.onerror = stop; speechSynthesis.speak(u); };
-    b.textContent = _newsT('■ Arrêter', '■ Stop'); b.classList.add('on'); next();
-  });
-  if (window.pkHashParams && window.pkHashParams.listen) b.classList.add('nl-listen-cue');   // from the e-mail: one click to start
-}
-
 async function renderNewsLetter() {
   const host = document.getElementById('news-letter'); if (!host) return;
   if (_nlData === undefined) {
@@ -460,7 +434,16 @@ async function renderNewsLetter() {
       <div class="nl-hero-t"><h3>${a(h.link, h.title)}</h3>
       ${_newsKeep(h, en) ? `<p class="nl-ret"><b>${_newsT('À retenir.', 'Takeaway.')}</b> ${_newsEsc(_newsKeep(h, en))}</p>` : ''}<div class="nl-src">${h.sources.slice(0, 3).map(_newsEsc).join(' · ')}</div>${_newsFree(h)}</div></div></section>`); }
   if (E.figure && !E.weekly) parts.push(`<section class="nl-sec nl-fig"><b class="${E.figure.dir === 'dn' ? 'dn' : 'up'}">${_newsEsc(E.figure.value)}</b><div><h2>${_newsT('Le chiffre du jour', 'Figure of the day')}</h2><p>${_newsEsc(en ? E.figure.text_en : E.figure.text)}</p></div></section>`);
-  if (S.length > 1) parts.push(`<section class="nl-sec">${S.slice(1).map(h => `<article class="nl-story">${thL(h.tags)}<h3>${a(h.link, h.title)}</h3>${_newsKeep(h, en) ? `<p class="nl-ret"><b>${_newsT('À retenir.', 'Takeaway.')}</b> ${_newsEsc(_newsKeep(h, en))}</p>` : ''}<div class="nl-src">${h.sources.slice(0, 3).map(_newsEsc).join(' · ')}</div>${_newsFree(h)}</article>`).join('')}</section>`);
+  // the other stories by section, as the e-mail (scripts/morning_mail.py; the owner, 25 Nov. 2026): the section named once,
+  // the subject as a pill by the outlet; the sections in the order of the reader's subjects (the stories come sorted by them)
+  if (S.length > 1) {
+    const SEC = { regulation: ['Régulation et appels d’offres', 'Regulation and tenders'], markets: ['Marchés, gaz et géopolitique', 'Markets, gas and geopolitics'], nuclear_grid: ['Nucléaire et réseau', 'Nuclear and grid'],
+      deals: ['Transactions et contrats', 'Deals and contracts'], projects: ['Projets et nouvelles capacités', 'Projects and new capacity'], supply: ['Fourniture et consommation', 'Supply and consumption'] };
+    const secOf = h => { if (SEC[h.section]) return h.section; const t = new Set(h.tags || []);
+      return ['regulation', 'support', 'official'].some(x => t.has(x)) ? 'regulation' : t.has('deal') ? 'deals' : (t.has('build') || t.has('renewables')) ? 'projects' : ['gas', 'markets', 'geopolitics', 'carbon'].some(x => t.has(x)) ? 'markets' : 'supply'; };
+    const order = []; S.slice(1).forEach(h => { if (!order.includes(secOf(h))) order.push(secOf(h)); });
+    parts.push(order.map(k => `<section class="nl-sec"><h2>${_newsT(SEC[k][0], SEC[k][1])}</h2>${S.slice(1).filter(h => secOf(h) === k).map(h => `<article class="nl-story"><h3>${a(h.link, h.title)}</h3>${_newsKeep(h, en) ? `<p class="nl-ret"><b>${_newsT('À retenir.', 'Takeaway.')}</b> ${_newsEsc(_newsKeep(h, en))}</p>` : ''}<div class="nl-src nl-src-pill">${_nlPill(h.tags)}<span>${h.sources.slice(0, 3).map(_newsEsc).join(' · ')}</span></div>${_newsFree(h)}</article>`).join('')}</section>`).join(''));
+  }
   const shownL = new Set(S.map(x => x.link)), brief = (E.top || []).filter(o => !shownL.has(o.link)).slice(0, E.weekly ? 6 : 4);
   if (brief.length) parts.push(`<section class="nl-sec"><h2>${E.weekly ? _newsT('La semaine en bref', 'The week in brief') : _newsT('En bref', 'In brief')}</h2>${brief.map(o => `<p class="nl-brief">${thL(o.tags)} ${a(o.link, o.title)} <span class="nl-src">${_newsEsc(o.source)}</span></p>`).join('')}</section>`);
   if ((E.week_ahead || []).length) parts.push(`<section class="nl-sec nl-ahead"><h2>${E.weekly ? _newsT('La semaine qui vient', 'The week ahead') : _newsT('Cette semaine', 'This week')}</h2><table>${E.week_ahead.map(x => `<tr><td>${wd(x.date)} ${new Date(x.date + 'T12:00:00Z').getUTCDate()}</td><td>${x.kind === 'cons' ? _newsT('Fin de consultation : ', 'Consultation closes: ') : ''}${x.link ? a(x.link, en && x.title_en ? x.title_en : x.title) : _newsEsc(en && x.title_en ? x.title_en : x.title)}</td></tr>`).join('')}</table></section>`);
@@ -475,7 +458,6 @@ async function renderNewsLetter() {
       <div class="nl-tt"><h1 translate="no">${E.weekly ? 'PowerBrunch' : '7 O’Klock'}</h1>${wx}</div><div>${E.weekly ? _newsT('La semaine servie à point : ce qu’il fallait retenir, à lire au calme', 'Last week, well done: what mattered, to read at leisure') : _newsT('Marchés, régulation, énergie : l’essentiel à 7 h', 'Markets, regulation, energy: what matters at 7:00')}</div>${sec.markets()}</header>${(en && E.brief_en) || E.brief ? `<section class="nl-sec nl-brief"><h2>${_newsT('Le point du matin', 'The morning brief')}</h2>${String((en && E.brief_en) || E.brief).split(/\n\s*\n/).map(x => `<p>${_newsEsc(x)}</p>`).join('')}${(E.brief_links || []).length ? `<p class="nh-brief-src">${_newsT('À lire', 'Read')} : ${E.brief_links.map(x => `<a href="${_newsEsc(x.link)}" target="_blank" rel="noopener noreferrer">${_newsEsc(x.source)}</a>`).join(' · ')}</p>` : ''}</section>` : ''}
       ${body}
       <footer class="nl-foot">${_newsT('Sujets choisis selon vos centres d’intérêt ; résumés rédigés automatiquement à partir des titres et extraits, chaque sujet renvoie à ses articles. Le même contenu part par e-mail chaque matin de semaine à 7 h.', 'Stories chosen from your subjects; summaries written automatically from the titles and extracts, each story links to its articles. The same content goes out by e-mail every weekday at 7:00.')}</footer></div>`;
-  _nlListenWire(E, ed, en);
   const A = window.PKAccount, me = _nlMe;
   host.insertAdjacentHTML('beforeend', `<div class="news-side nl-me"><div class="news-side-t">${_newsT('Ma newsletter par e-mail', 'My newsletter by e-mail')}</div>` + (A && A.user && me ? `
     <div class="nl-me-f">${_newsT('Mes sujets : votre édition est faite à partir d’eux', 'My subjects: your edition is built from them')}${PK_INTERESTS.map(([gf, ge, list]) => `<div class="nl-me-g">${_newsT(gf, ge)}</div><div class="nl-me-row nl-me-chips">${list.map(([k, fr, en]) => `<label class="nl-chip"><input type="checkbox" name="nl-int" value="${k}"${(me.interests || []).includes(k) ? ' checked' : ''}><span>${_newsT(fr, en)}</span></label>`).join('')}</div>`).join('')}
@@ -635,6 +617,12 @@ async function _newsSaveKw(value, team) {
 // « Mettre à la une »: the admin pins a story (public.news_pin, warehouse migration 027); the newsletter and the News page
 // lead with it for 36 hours. Others only see which one is pinned.
 let _newsAdmin = false, _newsPins = new Set(), _newsPinNotes = {};
+// the Newsletter tab is the admin's only (the owner, 25 Nov. 2026: not public); readers manage theirs in Settings
+function _newsLetterTab() {
+  const b = document.querySelector('#news-tabs [data-nv="letter"]'); if (b) b.style.display = _newsAdmin ? '' : 'none';
+  const cur = document.querySelector('#news-tabs .tab-btn.active');
+  if (!_newsAdmin && cur && cur.dataset.nv === 'letter') newsSetView('home');
+}
 async function _newsLoadPins() {
   const A = window.PKAccount; _newsAdmin = false; _newsPins = new Set();
   if (!A || !A.configured) return;
@@ -643,6 +631,7 @@ async function _newsLoadPins() {
     const cl = A.client();
     const [adm, pins] = await Promise.all([cl.rpc('is_news_admin'), cl.from('news_pin').select('link, pinned_at, note').gte('pinned_at', new Date(Date.now() - 36 * 3600e3).toISOString())]);
     _newsAdmin = !!(adm && adm.data);
+    _newsLetterTab();
     _newsPins = new Set(((pins && pins.data) || []).map(r => r.link));
     _newsPinNotes = Object.fromEntries(((pins && pins.data) || []).filter(r => r.note).map(r => [r.link, r.note]));
   } catch (e) { console.warn('[news] pins not read:', e); }
