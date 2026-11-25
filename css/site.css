@@ -4435,7 +4435,7 @@ html.pk-beta #prices-table th:first-child, html.pk-beta #prices-table tr.zone-ro
 /* source and subjects on one line: the source is cut (full on hover), the subjects never wrap (the owner, 25 Nov. 2026) */
 .nh-sec .nh-it-m { flex-wrap: nowrap; min-width: 0; }
 .nh-sec .nh-src { flex: 1 1 0; min-width: 5em; display: flex; white-space: nowrap; }
-.nh-sec .nh-src-n { min-width: 0; overflow: hidden; text-overflow: ellipsis; } .nh-sec .nh-src-d { flex: none; white-space: pre; }   /* the outlet is cut, never the date */
+.nh-sec .nh-src-n { min-width: 0; overflow: hidden; text-overflow: ellipsis; } .nh-sec .nh-src-d { flex: none; white-space: pre; color: var(--text); }   /* the date first and brighter: it matters (the owner, 25 Nov. 2026) */   /* the outlet is cut, never the date */
 .nh-sec .nh-it-m .nf-pills, .nh-sec .nh-it-m .news-pinb { flex: none; flex-wrap: nowrap; white-space: nowrap; }
 .nh-sec .nh-it { min-width: 0; display: flex; flex-direction: column; } .nh-sec .nh-it-m { margin-top: auto; }   /* source and subjects at the foot of the row */
 @media (max-width: 700px) { .nh-sec:nth-child(2n)::before { display: none; } .nh-sec:nth-child(2) h3 { margin-top: 26px; } }
