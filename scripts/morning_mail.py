@@ -365,16 +365,10 @@ def journal(today, E, ed, wk, mine):
         ch = None   # no chart any more (the owner's choice, 23 Nov. 2026)
         chart = (f'<div style="margin:12px 0;padding:10px;border:1px solid #EBEBEB;border-radius:10px"><p style="{f};margin:0 0 6px;font-size:12.5px;font-weight:600;color:#383838">{esc(ch["title"])}</p>{img(ch["img"], ch["title"])}'
                  f'<p style="{f};margin:6px 0 0;font-size:11.5px;color:#6B6B6B">Source : {esc(ch["src"])} · <a href="{SITE}#{esc(ch["page"])}" style="{green}">voir sur PowerKlock</a></p></div>') if ch else ''
-        # the lead story stands out (the owner, 25 Nov. 2026, once the charts were gone): a tinted band, a larger title,
-        # « À retenir » and « Impact » in one framed box, a button to read it
-        y = impact(h).replace('margin:0 0 8px;font-size:14px', 'margin:8px 0 0;font-size:15px')
-        box = (f'<table role="presentation" width="100%" style="border-collapse:collapse;margin:{12 if chart else 6}px 0 0"><tr><td bgcolor="#FFFFFF" style="background:#FFFFFF;border-left:4px solid #0B7A62;border-radius:0 8px 8px 0;padding:12px 14px">'
-               + (f'<p style="{f};margin:0;font-size:16.5px;line-height:1.55;color:#121212"><b style="{green}">À retenir.</b> {esc(keep(h))}</p>' if keep(h) else '') + y + '</td></tr></table>') if keep(h) or y else ''
-        body.append(row(kick(('Le sujet de la semaine' if wk else 'À la une') + (f' · <span style="color:{col}">{lab}</span>' if lab else ''), '#0B7A62') +
-                        f'<p style="{serif};margin:0 0 6px;font-size:29px;line-height:1.2;font-weight:700">{a(h["link"], h["title"])}</p>' +
-                        chart + box +
-                        f'<table role="presentation" style="border-collapse:collapse;margin:14px 0 0"><tr><td bgcolor="#0B7A62" style="background:#0B7A62;border-radius:6px;padding:8px 14px"><a href="{esc(h["link"])}" style="{f};color:#FFFFFF;font-size:14px;font-weight:700;text-decoration:none">Lire l\'article →</a></td>'
-                        f'<td style="{f};padding-left:12px;font-size:12.5px;color:#6B6B6B">{esc(" · ".join(h["sources"][:3]))}</td></tr></table>' + report(h) + free(h), '#EEF7F3'))
+        body.append(row(kick(('Le sujet de la semaine' if wk else 'À la une') + (f' · <span style="color:{col}">{lab}</span>' if lab else '')) +
+                        f'<p style="{serif};margin:0 0 8px;font-size:25px;line-height:1.22;font-weight:700">{a(h["link"], h["title"])}</p>' +
+                        chart + (f'<p style="{f};margin:{12 if chart else 4}px 0 0;font-size:16px;line-height:1.55;color:#121212;border-left:3px solid #0B7A62;padding-left:12px"><b style="{green}">À retenir.</b> {esc(keep(h))}</p>' if keep(h) else '') + impact(h) +
+                        f'<p style="{f};margin:10px 0 0;font-size:12.5px;color:#6B6B6B">{esc(" · ".join(h["sources"][:3]))} · <a href="{esc(h["link"])}" style="{green};font-weight:600">Lire l\'article</a></p>' + report(h) + free(h)))
     # ── the figure of the day ──
     fig = E.get('figure')
     if fig and not wk:
