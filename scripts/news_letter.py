@@ -826,6 +826,51 @@ def prices_line(day):
     return "Les prix du jour : " + ", ".join(fr) + ".", "Today's prices: " + ", ".join(en) + "."
 
 
+# the sections of the newsletter's articles, as « Ce qui fait bouger le marché » on the site (the owner, 25 Nov. 2026)
+SECTIONS = ["regulation", "markets", "nuclear_grid", "deals", "projects", "supply"]
+
+
+def section_of(tags):
+    t = set(tags or [])
+    if t & {"regulation", "support", "official"}:
+        return "regulation"
+    if t & {"deal"}:
+        return "deals"
+    if t & {"build"}:
+        return "projects"
+    if t & {"gas", "markets", "geopolitics", "carbon"}:
+        return "markets"
+    if t & {"renewables"}:
+        return "projects"
+    return "supply"
+
+
+def claude_articles(day, weekly, items):
+    """the articles Claude chose this morning (data/newsletter_brief.json › articles / articles_week), as stories: the
+    title, link and outlets from data/news.json, Claude's short description (« what ») and neutral impact (« for_you »)"""
+    try:
+        nb = json.load(open(os.path.join(ROOT, "data", "newsletter_brief.json")))
+    except (OSError, ValueError):
+        return []
+    if nb.get("asof") != day:
+        return []
+    by = {i.get("link"): i for i in items}
+    out = []
+    for a in nb.get("articles_week" if weekly else "articles") or []:
+        i = by.get(a.get("link")) if isinstance(a, dict) else None
+        if not i or not a.get("what"):
+            continue        # only articles of the feed, never a link the model made up
+        tags = (i.get("tags") or []) + (["fr"] if "FR" in (i.get("countries") or []) and "fr" not in (i.get("tags") or []) else [])
+        out.append({"id": sid(i), "title": i["title"], "link": i["link"], "tags": tags,
+                    "section": a.get("section") if a.get("section") in SECTIONS else section_of(tags),
+                    "sources": [i["source"]] + [o["source"] for o in i.get("other_sources") or []],
+                    "free": [{"source": o["source"], "link": o["link"]} for o in i.get("free") or []] or None,
+                    "report_link": i.get("report_link"), "report_name": i.get("report_name"),
+                    "what": clip(a.get("what"), 360), "what_en": clip(a.get("what_en"), 360) or None,
+                    "for_you": clip(a.get("impact"), 260) or None, "for_you_en": clip(a.get("impact_en"), 260) or None})
+    return out
+
+
 def claude_brief(day, weekly=False):
     """the newsletter brief Claude wrote this morning (data/newsletter_brief.json: {asof, daily, weekly}, each a list of
     {topic, topic_en, text, text_en}), « Prix : … Couverture : … » as one paragraph, when it is of the edition's day"""
@@ -1227,7 +1272,7 @@ def main():
         pin = dict(pin, snippet=pin_note)       # the admin's line under a pinned title (paid papers give none)
     edition["pinned"] = pin_link if pin else None
     for pid, prof in profiles.items():
-        stories = pick(items, prof, now, hours, 5)
+        stories = pick(items, prof, now, hours, 8)   # more stories, more subjects (the owner, 25 Nov. 2026)
         if pin:     # the admin's pinned story leads every profile's edition
             stories = [pin] + [i for i in stories if i.get("link") != pin["link"]][:len(stories) - 1 if stories else 0]
         gen = {}
@@ -1280,6 +1325,12 @@ def main():
                     news_charts.draw(spec, os.path.join(news_charts.IMG, f"{t}_{key}.png"))
                     charts[key] = {"img": f"newsletter_img/{t}_{key}.png", "title": spec["title"], "src": spec["src"], "page": spec["page"]}
                 hero = charts[key]
+        cl = claude_articles(edition["date"], weekly, items)
+        if cl:
+            # the articles Claude chose this morning (config/market_context_task.md): every section, a short description
+            # and a neutral impact under each (the owner, 25 Nov. 2026); every profile gets them, each reader's order follows
+            # their subjects (scripts/morning_mail.py › tailor)
+            out = cl
         edition["profiles"][pid] = {"hero_chart": hero, "name": prof["name"], "short": prof["short"], "order": prof["order"], "headline": clip(gen.get("headline"), 300) or None, "headline_en": clip(gen.get("headline_en"), 300) or None,
                                     "stories": out, "ai": bool(by)}
         print(f"{pid}: {len(out)} stories, AI text for {len(by)}")

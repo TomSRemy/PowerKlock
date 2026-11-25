@@ -38,7 +38,7 @@ rather than contradict it, and say why in your final message so the owner can fi
 7-day averages, and a three-day rise inside it is not a contradiction once the horizon is written.
 
 ## What to write
-`{"asof": "<today, Paris>", "written": "<ISO time>", "daily": [...], "weekly": [...], "history": [...]}`, each item
+`{"asof": "<today, Paris>", "written": "<ISO time>", "daily": [...], "weekly": [...], "history": [...], "articles": [...], "articles_week": [...]}`, each item
 `{"topic", "topic_en", "text", "text_en"}`; `history` keeps the `daily` of the last 10 days (`{"asof", "daily"}`, newest
 first): add yesterday's, drop the oldest.
 
@@ -81,6 +81,22 @@ Example of a day (25 Nov. 2026), for the level of analysis only (not a template)
   traite à 203 €, contre 193 € pour l'indice PowerKlock : acheter ce mois aujourd'hui revient à payer environ 10 € de prime.
 - À surveiller : 3,8 GW de nucléaire annoncés par EDF manquent encore. Leur retour est le principal facteur de baisse à
   court terme.
+
+## The articles (the owner, 25 Nov. 2026)
+Also write `articles` (every day) and, on Monday, `articles_week`: the newsletter's articles, chosen in `data/news.json`.
+- Daily: 10 to 12 articles of the last 36 hours (84 on Monday); weekly: 14 to 18 of the last 7 days. Cover several
+  subjects: every section that has something useful gets 1 to 3 articles. Never an article already sent: leave out the
+  links of `data/newsletter_history.json` (the editions of the last 10 days) and titles about the same event.
+- `section`, one of: `regulation` (CRE, ministries, Brussels, tenders, support schemes), `markets` (prices, gas,
+  geopolitics, carbon), `nuclear_grid` (EDF's fleet, RTE, networks, interconnections), `deals` (PPAs, acquisitions,
+  contracts), `projects` (new capacity, storage, renewables), `supply` (suppliers, tariffs, consumers, industry).
+- Leave out what does not touch the French or European power and gas business: general climate pieces, consumer tips,
+  technical curiosities, adverts.
+- Each article: `{"link" (exactly as in news.json), "section", "what", "what_en", "impact", "impact_en"}`.
+  `what` (« À retenir »): a short description of the article, 1 to 2 sentences, what happens, who, how much, when; no
+  analysis, no opinion. `impact`: one neutral sentence on what it changes and for whom (suppliers, consumers, producers,
+  the grid, the market), not only PPAs; empty when the article does not say. Use only the title and the public summary
+  of news.json: never the text of a paid article.
 
 ## How to publish
 Write that one file on `main` (one commit, message `data: newsletter brief <date> (Claude)`), nothing else. If a figure

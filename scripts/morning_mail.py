@@ -199,7 +199,7 @@ def render_letter(today, E, pid, mine=None, exclude=(), interests=(), france=Fal
                 stories.append(dict(st, short=E['profiles'][p]['short'][0]))
     ed['stories'] = stories
     if interests or france:     # ticked subjects or France first: the reader's own choice among every profile's stories
-        ed['stories'] = tailor(E, pids, interests, france, 6 if E.get('weekly') else 5)   # five a day (the owner, 25 Nov. 2026: not enough stories)
+        ed['stories'] = tailor(E, pids, interests, france, 14 if E.get('weekly') else 10)   # several subjects, not two articles (the owner, 25 Nov. 2026)
         seen = {st['link'] for st in ed['stories']}
     if interests or len(pids) > 1:
         ed['name'] = ['Vos sujets', 'Your subjects']
@@ -345,9 +345,15 @@ def journal(today, E, ed, wk, mine):
 
     def keep(h):     # « À retenir »: the story's summary, then its concrete fact when it adds one
         w, y = (h.get('what') or '').strip(), (h.get('for_you') or '').strip()
+        if h.get('section'):
+            return w        # chosen by Claude: the description alone, the impact on its own line (impact())
         if GENERIC.search(y) or len(y.split()) < 4 or y.lower()[:40] in w.lower():
             y = ''     # a generic line (« Intérêt pour les PPA ») adds nothing
         return (w + ((' ' if w[-1:] in '.!?…' else '. ') + y if y else '')) if w else y
+
+    def impact(h):   # Claude's neutral line on what the article changes and for whom (the owner, 25 Nov. 2026)
+        y = (h.get('for_you') or '').strip() if h.get('section') else ''
+        return f'<p style="{f};margin:0 0 8px;font-size:14px;line-height:1.5;color:#383838"><b style="color:#383838">Impact.</b> {esc(y)}</p>' if y else ''
 
     def report(h):   # a major publication: the report itself, on the publisher's site
         return (f'<p style="{f};margin:4px 0 0;font-size:12.5px;color:#6B6B6B">Le rapport : <a href="{esc(h["report_link"])}" style="{green};font-weight:600">'
@@ -361,7 +367,7 @@ def journal(today, E, ed, wk, mine):
                  f'<p style="{f};margin:6px 0 0;font-size:11.5px;color:#6B6B6B">Source : {esc(ch["src"])} · <a href="{SITE}#{esc(ch["page"])}" style="{green}">voir sur PowerKlock</a></p></div>') if ch else ''
         body.append(row(kick(('Le sujet de la semaine' if wk else 'À la une') + (f' · <span style="color:{col}">{lab}</span>' if lab else '')) +
                         f'<p style="{serif};margin:0 0 8px;font-size:25px;line-height:1.22;font-weight:700">{a(h["link"], h["title"])}</p>' +
-                        chart + (f'<p style="{f};margin:{12 if chart else 4}px 0 0;font-size:16px;line-height:1.55;color:#121212;border-left:3px solid #0B7A62;padding-left:12px"><b style="{green}">À retenir.</b> {esc(keep(h))}</p>' if keep(h) else '') +
+                        chart + (f'<p style="{f};margin:{12 if chart else 4}px 0 0;font-size:16px;line-height:1.55;color:#121212;border-left:3px solid #0B7A62;padding-left:12px"><b style="{green}">À retenir.</b> {esc(keep(h))}</p>' if keep(h) else '') + impact(h) +
                         f'<p style="{f};margin:10px 0 0;font-size:12.5px;color:#6B6B6B">{esc(" · ".join(h["sources"][:3]))} · <a href="{esc(h["link"])}" style="{green};font-weight:600">Lire l\'article</a></p>' + report(h) + free(h)))
     # ── the figure of the day ──
     fig = E.get('figure')
@@ -369,11 +375,27 @@ def journal(today, E, ed, wk, mine):
         body.append(row(f'<table role="presentation" style="border-collapse:collapse"><tr><td style="{mono};font-size:34px;font-weight:700;color:{"#0B7A62" if fig["dir"] == "dn" else "#B8322D"};padding-right:16px;white-space:nowrap;vertical-align:middle">{esc(fig["value"])}</td>'
                         f'<td style="vertical-align:middle">{kick("Le chiffre du jour")}<p style="{f};margin:0;font-size:15px;line-height:1.45">{esc(fig["text"])}</p></td></tr></table>'))
     # ── the other stories ──
+    # the other stories by section (the owner, 25 Nov. 2026), the sections in the order of the reader's subjects (the
+    # stories come sorted by them): a section heading, then its articles
+    SEC = {'regulation': 'Régulation et appels d’offres', 'markets': 'Marchés, gaz et géopolitique', 'nuclear_grid': 'Nucléaire et réseau',
+           'deals': 'Transactions et contrats', 'projects': 'Projets et nouvelles capacités', 'supply': 'Fourniture et consommation'}
+    def sec_of(h):
+        if h.get('section') in SEC:
+            return h['section']
+        t = set(h.get('tags') or [])
+        return ('regulation' if t & {'regulation', 'support', 'official'} else 'deals' if 'deal' in t else 'projects' if t & {'build', 'renewables'}
+                else 'markets' if t & {'gas', 'markets', 'geopolitics', 'carbon'} else 'supply')
+    order = []
     for h in st[1:]:
+        if sec_of(h) not in order:
+            order.append(sec_of(h))
+    rest = [h for k in order for h in st[1:] if sec_of(h) == k]
+    for j, h in enumerate(rest):
+        sec_head = kick(SEC[sec_of(h)], '#0B7A62') if j == 0 or sec_of(rest[j - 1]) != sec_of(h) else ''
         lab, col = theme_of(h.get('tags'))
-        body.append(row((f'<p style="{f};margin:0 0 4px;font-size:12px;font-weight:700;color:{col}">{lab}</p>' if lab else '') +
+        body.append(row(sec_head + (f'<p style="{f};margin:0 0 4px;font-size:12px;font-weight:700;color:{col}">{lab}</p>' if lab else '') +
                         f'<p style="{serif};margin:0 0 6px;font-size:19px;line-height:1.28;font-weight:700">{a(h["link"], h["title"])}</p>' +
-                        (f'<p style="{f};margin:0 0 8px;font-size:15px;line-height:1.5;color:#383838"><b style="{green}">À retenir.</b> {esc(keep(h))}</p>' if keep(h) else '') +
+                        (f'<p style="{f};margin:0 0 8px;font-size:15px;line-height:1.5;color:#383838"><b style="{green}">À retenir.</b> {esc(keep(h))}</p>' if keep(h) else '') + impact(h) +
                         f'<p style="{f};margin:0;font-size:12.5px;color:#6B6B6B">{esc(" · ".join(h["sources"][:3]))}</p>' + report(h) + free(h)))
     # ── your keywords ──
     if mine:
