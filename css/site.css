@@ -5062,3 +5062,21 @@ html.pk-app #pk-app { font-family: 'Inter', sans-serif; }
   .nh-band .nh-due a, .nh-band .nh-due span { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
   .nh-band .nh-more, .nh-band .nh-note { margin-top: auto; padding-top: 10px; text-align: left; }
 }
+
+/* Veille › En continu in the style of Top stories (the owner, 25 Nov. 2026): the title in the serif on 2 lines (whole on
+   hover), its summary on 2 lines (hidden by « Résumés » for the compact list), then the date first, the outlet and the
+   subjects on one line; the feed stays chronological, one article per row */
+.news-row.nf-row { display: flex; flex-direction: column; align-items: stretch; gap: 4px; padding: 12px 2px; }
+.nf-row-t { font: 600 16.5px/1.35 'Source Serif 4', Georgia, 'Times New Roman', serif; color: var(--text); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.news-row.nf-row:hover .nf-row-t { color: var(--accent); }
+.nf-row-s { font-size: 14px; line-height: 1.5; color: var(--text2); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.nf-compact .nf-row-s { display: none; }
+.nf-compact .news-row.nf-row { padding: 8px 2px; }
+.nf-row-m { display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; min-width: 0; margin-top: 2px; font-size: 13px; }
+.nf-row-src { flex: 1 1 0; min-width: 5em; display: flex; white-space: nowrap; color: var(--text2); }
+.nf-row-d { flex: none; white-space: pre; color: var(--text); }
+.nf-row-n { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.nf-row-m .nf-pills, .nf-row-m .news-pinb, .nf-row-m .news-vote { flex: none; white-space: nowrap; }
+.nf-row-m .nf-pills { flex-wrap: nowrap; margin-left: auto; }   /* the subjects on the right, as in Top stories */
+.nf-row-src { flex: 1 1 auto; }   /* takes the room left, so the subjects and votes sit on the right */
+@media (max-width: 700px) { .nf-row-t { font-size: 15.5px; } .nf-row-s { font-size: 13.5px; } .nf-row-m .news-vote { display: none; } }

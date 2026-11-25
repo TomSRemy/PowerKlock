@@ -79,6 +79,16 @@ function _newsWireViews() {
     document.querySelectorAll('[data-nm]').forEach(b => b.addEventListener('click', () => { _newsMode = b.dataset.nm; _newsStore('pk-news-mode', _newsMode); sync(); renderNews(newsData); }));
     document.querySelectorAll('[data-ns]').forEach(b => b.addEventListener('click', () => { _newsSort = b.dataset.ns; _newsStore('pk-news-sort', _newsSort); sync(); renderNews(newsData); }));
     sync();
+    // « Résumés »: the summaries under the titles, or the compact list of titles only (the owner, 25 Nov. 2026); kept per browser
+    const seg = document.querySelector('.news-seg [data-nm]') && document.querySelector('.news-seg [data-nm]').parentElement;
+    if (seg && !document.getElementById('news-sum-t')) {
+      const bt = document.createElement('button'); bt.type = 'button'; bt.id = 'news-sum-t'; bt.className = 'filter-btn';
+      const on = () => _newsStore('pk-news-sum') !== 'off';
+      const draw = () => { bt.classList.toggle('active', on()); bt.textContent = _newsT('Résumés', 'Summaries'); bt.title = on() ? _newsT('Masquer les résumés : la liste des titres seulement', 'Hide the summaries: titles only') : _newsT('Afficher les résumés sous les titres', 'Show the summaries under the titles');
+        const g = document.getElementById('news-grid'); if (g) g.classList.toggle('nf-compact', !on()); };
+      bt.addEventListener('click', () => { _newsStore('pk-news-sum', on() ? 'off' : 'on'); draw(); });
+      seg.insertAdjacentElement('afterend', bt); draw();
+    }
     const sb = document.getElementById('news-src-btn');
     if (sb) sb.addEventListener('click', () => { newsSetView('sources'); window.scrollTo({ top: 0, behavior: 'smooth' }); });
     if (_newsMode !== 'list' || _newsSort !== 'recent') renderNews(newsData);
@@ -722,6 +732,8 @@ async function _newsLoadDigest() {
 }
 function renderNewsDigest() {
   const sec = document.getElementById('hs-news-digest'), host = document.getElementById('news-digest'); if (!sec || !host) return;
+  // « L'essentiel » lives in Top stories only (js/news_home.js): on top of the live feed it repeated it (the owner, 25 Nov. 2026)
+  if (!window._NEWS_FEED_DIGEST) { sec.hidden = true; return; }
   const D = _newsDigest || {}, today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris' }).format(new Date());
   const monday = (() => { const d = new Date(today + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() - (d.getUTCDay() + 6) % 7); return d.toISOString().slice(0, 10); })();
   const daily = D.daily && D.daily.date >= (() => { const d = new Date(today + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() - 3); return d.toISOString().slice(0, 10); })() ? D.daily : null;
@@ -965,12 +977,12 @@ function renderNews(items) {
   const kn = document.getElementById('news-kw-n');
   if (kn) kn.textContent = kw.length ? (items || []).filter(i => _newsMine(i, kw)).length + ' matching' : '';
   const frOnly = _newsFr();
-  _newsFillSelects(items || []);
+  _newsFillSelects((items || []).filter(i => !frOnly || _newsIsFr(i)));   // the sources that have articles under the France focus
   const src = (document.getElementById('news-src') || {}).value || '', cty = (document.getElementById('news-cty') || {}).value || '';
   const per = +((document.getElementById('news-per') || {}).value || 0), since = per ? Date.now() - per * 864e5 : 0;
   const offOnly = !!(document.getElementById('news-offonly') || {}).checked, freeOnly = !!(document.getElementById('news-freeonly') || {}).checked;
   let filtered = (items || []).filter(i => (!frOnly || _newsIsFr(i)) &&
-    (newsFilter === 'all' || newsFilter === 'movers' || (newsFilter === 'mine' ? _newsMine(i, kw) :
+    (newsFilter === 'all' || newsFilter === 'movers' || (newsFilter === 'mine' ? _newsMine(i, kw) : newsFilter === 'intl' ? !_newsIsFr(i) :
       newsFilter === 'section' ? _newsSubj(i).some(t => (_newsSectionTags || []).includes(t)) || (i.tags || []).some(t => (_newsSectionTags || []).includes(t) && !_NEWS_TOPICS.includes(t)) :
       _NEWS_TOPICS.includes(newsFilter) ? _newsSubj(i).includes(newsFilter) : (i.tags || []).includes(newsFilter))) &&
     (!since || i.date >= since) && (!offOnly || (i.tags || []).includes('official')) && (!freeOnly || !_NEWS_PAID.test(i.source)) &&
@@ -989,17 +1001,20 @@ function renderNews(items) {
     return;
   }
   if (filtered.length === 0) {
-    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">${frOnly && newsFilter === 'all' ? 'No French news at the last run.' : newsFilter === 'mine' && !kw.length ? 'Type your keywords above to follow your subjects.' : newsFilter === 'watch' ? 'No press-search results at the last run.' : 'No articles for this filter.'}</div>`;
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">${frOnly && newsFilter === 'all' ? _newsT('Pas d’actualité française à la dernière collecte.', 'No French news at the last run.') : newsFilter === 'mine' && !kw.length ? _newsT('Tapez vos mots-clés (Personnaliser) pour suivre vos sujets.', 'Type your keywords (Customise) to follow your subjects.') : newsFilter === 'watch' ? _newsT('Aucun résultat des recherches presse à la dernière collecte.', 'No press-search results at the last run.') : _newsT('Aucun article pour ce filtre.', 'No articles for this filter.')}</div>`;
     return;
   }
   if (_newsMode === 'list') {
     grid.innerHTML = filtered.map(item => {
       const link = /^https?:\/\//.test(item.link || '') ? item.link : '#', mine = _newsMine(item, kw), more = (item.other_sources || []).length;
-      const t = new Date(item.date), recent = Date.now() - t < 864e5;
-      return `<a class="news-row${mine ? ' mine' : ''}" href="${_newsEsc(link)}" target="_blank" rel="noopener noreferrer"><span class="news-row-d">${recent ? t.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' }) : _newsDay(t)}</span>
-        <span class="news-row-b"><span class="news-row-t">${mine ? '<span class="news-star">★</span>' : ''}${(item.tags || []).includes('official') ? `<span class="news-off">${_newsT('Texte officiel', 'Official text')}</span>` : ''}${_newsEsc(item.title)}</span>
-        <small>${_newsEsc(item.source)}${more ? ` +${more}` : ''}</small>${_newsFree(item, 'news-free-row')}</span>
-        <span class="news-row-f">${_newsPills(item)}${_newsPinBtn(item)}<span class="news-vote" data-link="${_newsEsc(item.link)}">${_newsVoteBtns(item.link)}</span></span></a>`;
+      // as Top stories (the owner, 25 Nov. 2026): the title (2 lines, whole on hover), its summary (2 lines, hidden in the
+      // compact view), then the date first, the outlet and the subjects on one line
+      const t = new Date(item.date), ago = typeof _nhAgo === 'function' ? _nhAgo(t) : _newsDay(t);
+      const sum = typeof _nhSnip === 'function' ? _nhSnip(item.snippet, item.title) : (item.snippet || '');
+      return `<a class="news-row nf-row${mine ? ' mine' : ''}" href="${_newsEsc(link)}" target="_blank" rel="noopener noreferrer">
+        <span class="nf-row-t" title="${_newsEsc(item.title)}">${mine ? '<span class="news-star">★</span>' : ''}${(item.tags || []).includes('official') ? `<span class="news-off">${_newsT('Texte officiel', 'Official text')}</span>` : ''}${_newsEsc(item.title)}</span>
+        ${sum ? `<span class="nf-row-s">${_newsEsc(sum)}</span>` : ''}
+        <span class="nf-row-m"><span class="nf-row-src" title="${_newsEsc(item.source)}"><span class="nf-row-d">${ago} · </span><span class="nf-row-n">${_newsEsc(item.source)}${more ? ` +${more}` : ''}</span></span>${_newsPills(item)}${_newsPinBtn(item)}<span class="news-vote" data-link="${_newsEsc(item.link)}">${_newsVoteBtns(item.link)}</span></span>${_newsFree(item, 'news-free-row')}</a>`;
     }).join('');
     return;
   }
@@ -1039,10 +1054,10 @@ function _newsFillSelects(items) {
   const fill = (id, vals, all) => { const el = document.getElementById(id); if (!el || el.dataset.n == vals.length) return; const cur = el.value;
     el.innerHTML = `<option value="">${all}</option>` + vals.map(v => `<option value="${_newsEsc(v[0])}">${_newsEsc(v[1])}</option>`).join(''); el.value = cur; el.dataset.n = vals.length; };
   const cnt = {}; items.forEach(i => { cnt[i.source] = (cnt[i.source] || 0) + 1; });
-  fill('news-src', Object.keys(cnt).sort((a, b) => a.localeCompare(b)).map(k => [k, k + ' (' + cnt[k] + ')']), 'All sources');
-  const CN = { FR: 'France', EU: 'Europe / EU', DE: 'Germany', BE: 'Belgium', ES: 'Spain', IT: 'Italy', NL: 'Netherlands', UK: 'United Kingdom' };
+  fill('news-src', Object.keys(cnt).sort((a, b) => a.localeCompare(b)).map(k => [k, k + ' (' + cnt[k] + ')']), _newsT('Toutes les sources', 'All sources'));
+  const CN = { FR: 'France', EU: _newsT('Europe / UE', 'Europe / EU'), DE: _newsT('Allemagne', 'Germany'), BE: _newsT('Belgique', 'Belgium'), ES: _newsT('Espagne', 'Spain'), IT: _newsT('Italie', 'Italy'), NL: _newsT('Pays-Bas', 'Netherlands'), UK: _newsT('Royaume-Uni', 'United Kingdom') };
   const cc = [...new Set(['FR', ...items.flatMap(i => i.countries || [])])].sort((a, b) => Object.keys(CN).indexOf(a) - Object.keys(CN).indexOf(b));
-  fill('news-cty', cc.map(c => [c, CN[c] || c]), 'All countries');
+  fill('news-cty', cc.map(c => [c, CN[c] || c]), _newsT('Tous les pays', 'All countries'));
 }
 
 // line icons in the site's style (no emojis)
@@ -1084,6 +1099,7 @@ document.addEventListener('click', e => {
 }, true);
 
 function filterNews(tag, btn) {
+  document.querySelectorAll('.news-sec-chip').forEach(x => x.remove());   // a section chip from Top stories (js/news_home.js › _nfFilter)
   newsFilter = tag;
   _newsSectionTags = null;
   document.querySelectorAll('.news-filters .filter-btn').forEach(b => b.classList.remove('active'));

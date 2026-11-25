@@ -171,14 +171,29 @@ function _nhOpenFeed(id) {
     _nfFilter(f.tag || 'all');
   } else if (r && r.intl) {
     const fr = document.getElementById('news-fr'); if (fr) { fr.checked = false; try { localStorage.setItem('pk-news-fr', '0'); } catch (_) {} }
-    _nfFilter('all');
+    _nfFilter('intl');      // Europe and international: the articles that are not about France
   } else _nfFilter(r && r.tag ? r.tag : 'all');
   newsSetView('feed');
   window.scrollTo({ top: 0 });
 }
 function _nfFilter(tag) {
-  const b = document.querySelector(`.news-filters .filter-btn[data-tag="${tag}"]`) || document.querySelector('.news-filters .filter-btn[data-tag="all"]');
-  if (b) filterNews(b.dataset.tag, b);
+  document.querySelectorAll('.news-sec-chip').forEach(x => x.remove());
+  const b = document.querySelector(`.news-filters .filter-btn[data-tag="${tag}"]`);
+  if (b || tag === 'all') { const a = b || document.querySelector('.news-filters .filter-btn[data-tag="all"]'); if (a) filterNews(a.dataset.tag, a); return; }
+  // a section without its own button in the feed (Renewable support, Research, Europe and international): the feed still
+  // shows that section only, not everything (user test, 25 Nov. 2026)
+  newsFilter = tag; _newsSectionTags = null;
+  document.querySelectorAll('.news-filters .filter-btn').forEach(x => x.classList.remove('active'));
+  // the section shown as an active chip at the head of the filters, so the reader sees what the feed holds
+  const host = document.querySelector('.news-filters'), r = NH_RUBS.find(x => x.tag === tag || (tag === 'intl' && x.intl));
+  if (host && r) {
+    host.querySelectorAll('.news-sec-chip').forEach(x => x.remove());
+    const c = document.createElement('button'); c.type = 'button'; c.className = 'filter-btn active news-sec-chip';
+    c.textContent = _newsT(r.fr, r.en) + ' ✕'; c.title = _newsT('Revenir à tout le fil', 'Back to the whole feed');
+    c.addEventListener('click', () => { c.remove(); _nfFilter('all'); });
+    host.insertBefore(c, host.firstChild);
+  }
+  renderNews(newsData);
 }
 
 // ── the « Customise » panel: the newsletter profile, the sections and their order, France first, the side column ──
@@ -226,7 +241,8 @@ function _nhCustomise() {
     if (mw) mw.addEventListener('change', () => { mailW = mw.checked; });
     if (mt) mt.addEventListener('input', () => { mailTo = mt.value.trim(); });
     ov.querySelectorAll('[data-aside]').forEach(c => c.addEventListener('change', () => { p.aside[c.dataset.aside] = c.checked; }));
-    const close = () => { back(); ov.remove(); document.removeEventListener('keydown', esc); };
+    // the keywords are kept as they are typed (js/news.js): the page shows them whichever way the panel closes
+    const close = () => { back(); ov.remove(); document.removeEventListener('keydown', esc); renderNewsHome(); };
     ov.querySelector('.nh-x').addEventListener('click', close); ov.querySelector('#nh-cancel').addEventListener('click', close);
     ov.querySelector('#nh-ok').addEventListener('click', async () => {
       const msg = ov.querySelector('#nh-msg');
@@ -237,10 +253,10 @@ function _nhCustomise() {
         await _nlSave({ interests: ints, france: p.france, daily: mailD, weekly: mailW, email_to: mailTo || null }, msg);
         if (/ko/.test(msg.className)) return;   // not saved: the panel stays open with the reason
       }
-      close(); renderNewsHome();
+      close();
     });
   };
-  const esc = e => { if (e.key === 'Escape') { back(); ov.remove(); document.removeEventListener('keydown', esc); } };
+  const esc = e => { if (e.key === 'Escape') { back(); ov.remove(); document.removeEventListener('keydown', esc); renderNewsHome(); } };
   document.addEventListener('keydown', esc);
   ov.addEventListener('click', e => { if (e.target === ov) { back(); ov.remove(); document.removeEventListener('keydown', esc); } });
   draw(); document.body.appendChild(ov);
