@@ -583,6 +583,29 @@ def brief_from_facts(facts):
     return " ".join(x[1] for x in pick), " ".join(x[2] for x in pick)
 
 
+def brief_from_context(day):
+    """the brief taken from the site's market context (data/market_digest.json, the Expert view), when it is from the
+    day of the edition or the day before: the same text the site shows, numbers rounded as one says them"""
+    try:
+        md = json.load(open(os.path.join(ROOT, "data", "market_digest.json")))
+        if (date.fromisoformat(day) - date.fromisoformat(md["asof"])).days > 1:
+            return "", ""
+    except (OSError, ValueError, KeyError, TypeError):
+        return "", ""
+    def tidy(t, fr):
+        # 47001,18 MW -> 47 000 MW: a capacity or a volume is read in round figures
+        def big(m):
+            v = float(m.group(1).replace(",", ".")) if fr else float(m.group(1))
+            r = f"{round(v, -2):,.0f}"
+            return (r.replace(",", "\u202f") if fr else r) + " " + m.group(2)
+        num = r"(\d{4,}(?:[,]\d+)?)" if fr else r"(\d{4,}(?:[.]\d+)?)"
+        return re.sub(num + r"\s?(MW|GW|MWh|GWh|TWh)\b", big, (t or "").strip())
+    items = md.get("context") or []
+    fr = " ".join(tidy(c.get("text"), True) for c in items if c.get("text"))
+    en = " ".join(tidy(c.get("text_en") or c.get("text"), False) for c in items if c.get("text_en") or c.get("text"))
+    return fr, en
+
+
 def overlap(a, b, n=5):
     """the share of a's five-word runs that are in b: a text that copies its model or yesterday's"""
     w = lambda t: re.findall(r"\w+", (t or "").lower())  # noqa: E731
@@ -1011,10 +1034,16 @@ def main():
             except Exception as e:
                 print(f"brief not written, attempt {attempt} ({str(e)[:160]})")
     if not edition["brief"]:
-        # no AI text passed the checks: the computed conclusions are the brief (never a wrong one)
-        edition["brief"], edition["brief_en"] = brief_from_facts(key_facts(edition))
-        edition["brief_auto"] = True
-        print("brief written from the computed conclusions")
+        # no AI text passed the checks: the site's market context (Expert view, data/market_digest.json) is the brief, as the
+        # owner asked (25 Nov. 2026); the computed conclusions only when that context is missing or older than a day
+        edition["brief"], edition["brief_en"] = brief_from_context(edition["date"])
+        if edition["brief"]:
+            edition["brief_auto"] = "context"
+            print("brief taken from the market context")
+        else:
+            edition["brief"], edition["brief_en"] = brief_from_facts(key_facts(edition))
+            edition["brief_auto"] = True
+            print("brief written from the computed conclusions")
     with open(out_path, "w") as f:
         json.dump(edition, f, ensure_ascii=False, indent=1)
     if not weekly:
