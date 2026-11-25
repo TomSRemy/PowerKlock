@@ -6,8 +6,8 @@ Actions jobs that write JSON into `data/`. These rules come from the owner; foll
 ## Before pushing
 - **Run `scripts/check_before_push.sh`** before every push (or once per clone `git config core.hooksPath .githooks`:
   the pre-push hook runs it). It runs the fast "Site tests" checks in about 2 minutes (lint, JS syntax, calculations,
-  site logic, same figures everywhere and page weight). The smoke test of every page in French and English (about
-  10 minutes) runs in "Site tests"; add `--full` to run it locally too, for a change that touches many pages.
+  site logic, same figures everywhere and page weight). The smoke test of every page in French and English (four
+  parts side by side, about 5 minutes; `SMOKE_SHARD=k/4` runs one part) runs in "Site tests"; add `--full` to run it locally too, for a change that touches many pages.
   "Publish" only deploys code that passed Site tests: a red Site tests means nothing reaches the live site. When the
   merged code is the same as a branch that already passed, Publish does not run the tests a second time.
 - After pushing, check that the commit's "Site tests" and "Publish" runs are green.
@@ -55,4 +55,4 @@ Actions jobs that write JSON into `data/`. These rules come from the owner; foll
 - A question asking for information gets an answer, not a site change.
 - Site notes (the "Note" button) arrive in `data/site_notes.json`; answer each in `config/note_replies.json`.
 - Commit messages say what changed for the reader of the site, in plain words.
-- Group small changes into one push: each push to the site costs a test run of about 12 minutes.
+- Group small changes into one push: each push to the site costs a test run of about 5 minutes.
