@@ -640,6 +640,20 @@ def mine_for(kw, exclude, monday):
     return sorted(out, key=lambda i: -(i.get('impact') or 0))[:6]
 
 
+LIGHT_ONLY = re.compile(r'background:(#[0-9A-Fa-f]{6})(?!;background-image)')
+
+
+def light_only(html):
+    """the mail as a whole document that asks to stay in its own colours (the owner, 25 Nov. 2026: a reader in dark mode
+    saw the colours inverted): Apple Mail, iOS Mail and Outlook read the color-scheme meta; the Gmail apps do not, but
+    they leave a background-image alone, so every coloured background is given again as a plain gradient"""
+    html = LIGHT_ONLY.sub(lambda m: f'background:{m[1]};background-image:linear-gradient({m[1]},{m[1]})', html)
+    return ('<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+            '<meta name="color-scheme" content="light only"><meta name="supported-color-schemes" content="light only">'
+            '<style>:root{color-scheme:light only;supported-color-schemes:light only}</style></head>'
+            f'<body style="margin:0;padding:0;background:#F1F1EF">{html}</body></html>')
+
+
 def send(mails):
     """mails: [(to list, subject, text, html)], one SMTP session"""
     with smtplib.SMTP(os.environ['SMTP_HOST'], int(os.environ.get('SMTP_PORT') or 587), timeout=60) as srv:
@@ -651,7 +665,7 @@ def send(mails):
             msg['From'] = os.environ.get('ALERT_FROM') or os.environ['SMTP_USER']
             msg['To'] = ', '.join(to)
             msg.set_content(text)
-            msg.add_alternative(html, subtype='html')
+            msg.add_alternative(light_only(html), subtype='html')
             part = msg.get_payload()[-1]
             for rel in re.findall(r'<!--img:([^>]+)-->', html):   # images shown in the mail (cid:), attached to it
                 try:
