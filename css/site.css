@@ -4431,6 +4431,7 @@ html.pk-beta #prices-table th:first-child, html.pk-beta #prices-table tr.zone-ro
 .nh-sec { display: grid; grid-template-rows: subgrid; align-content: start; position: relative; }
 .nh-sec:nth-child(2n)::before { content: ''; position: absolute; left: -16px; top: 0; bottom: 0; border-left: 1px solid var(--border); }
 .nh-sec:nth-child(n+3) h3 { margin-top: 26px; }
+.nh-sec .nh-it-t { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }   /* title on 2 lines at most, summary on 3 (the owner, 25 Nov. 2026); the full title on hover */
 .nh-sec .nh-it { display: flex; flex-direction: column; } .nh-sec .nh-it-m { margin-top: auto; }   /* source and subjects at the foot of the row */
 @media (max-width: 700px) { .nh-sec:nth-child(2n)::before { display: none; } .nh-sec:nth-child(2) h3 { margin-top: 26px; } }
 .nh-sec h3 { margin: 0 0 4px; border-top: 2px solid var(--accent); padding-top: 9px; }
