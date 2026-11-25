@@ -522,12 +522,13 @@ def key_facts(edition):
     up = lambda v: v and "hausse" in v  # noqa: E731
     if cold and up(cons):
         why_fr = "Le froid fait monter la consommation" + (" et ce qu’il reste à couvrir une fois l’éolien et le solaire déduits" if up(rd) else "") + "."
+        why_en = "The cold lifts consumption" + (" and what is left to cover once wind and solar are taken off" if up(rd) else "") + "."
     elif temp and not cold and cons and not up(cons):
-        why_fr = "La douceur fait reculer la consommation."
+        why_fr, why_en = "La douceur fait reculer la consommation.", "Mild weather brings consumption down."
     elif up(rd):
-        why_fr = "Il reste davantage à couvrir une fois l’éolien et le solaire déduits."
+        why_fr, why_en = "Il reste davantage à couvrir une fois l’éolien et le solaire déduits.", "More is left to cover once wind and solar are taken off."
     else:
-        why_fr = ""
+        why_fr = why_en = ""
     if cv:
         pct, prev, ex = cv["pct"], cv.get("veille_pct"), cv.get("exports_GW") or 0
         was = (", en recul sur la veille" if prev > pct else ", en progrès sur la veille") if prev is not None and prev != pct else ""
@@ -541,7 +542,7 @@ def key_facts(edition):
             fr = (f"La production bas-carbone ne couvre plus la consommation ({pct} %{was}) : ce sont les centrales au gaz françaises qui fixent le prix"
                   + (f", près de leur coût de production ({cost} €/MWh)." if cost else "."))
             en = (f"Low-carbon output no longer covers consumption ({pct} %): French gas plants set the price" + (f", close to their production cost ({cost} €/MWh)." if cost else "."))
-        f.append(("coverage", (why_fr + " " if why_fr else "") + fr, en))
+        f.append(("coverage", (why_fr + " " if why_fr else "") + fr, (why_en + " " if why_en else "") + en))
     W = what_moved()
     g = W.get("gaz") or {}
     if g.get("TTF_€") is not None:
