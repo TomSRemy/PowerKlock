@@ -1,7 +1,8 @@
 // « Ask PowerKlock » (News › Ask): answers a question from the site's own content, with its sources.
 // 1. the caller must be signed in with an approved account: its Supabase token is checked by the database itself
 //    (public.ask_take(), warehouse migrations 031 and 036), which also counts its questions of the day (30 at most);
-// 2. the question is matched against the whole news archive (news.article) and the site's files (consultations, the
+// 2. a small free model first reads the question (terms in French and English, span, kind of content, summary or not);
+//    those terms are matched against the whole news archive (news.article) and the site's files (consultations, the
 //    newsletter, our market context): the best passages only, never the whole web;
 // 3. a free Workers AI model writes a short answer from those passages only, each sentence pointing to its source;
 //    the model goes from the most precise to the lightest as the day's questions add up, so the free daily
@@ -136,9 +137,68 @@ export function search(q, docs, n = 8) {
   return best.slice(0, n).map(x => { const { _ti, _tx, _all, _flat, ...d } = x.d; return d; });
 }
 
+// ── the question read by the model first (the owner, 25 Nov. 2026: « flexible et intelligente », no list of words known in
+//    advance): what to look for, in French and English, over which span and in which kind of content ──
+const PLAN = `Tu prépares une recherche dans la veille de PowerKlock (électricité, gaz, carbone, renouvelables, stockage, réseaux,
+régulation, en France et en Europe). Les contenus sont des titres et résumés d'articles, de textes officiels (arrêtés, décrets,
+délibérations de la CRE, directives), de consultations publiques, de publications et d'analyses de marché PowerKlock.
+Lis la question et réponds en JSON seulement :
+{"terms": [12 à 20 mots ou expressions courtes, en français ET en anglais, qu'on trouverait dans les titres ou résumés des contenus
+qui répondent : les notions de la question, leurs synonymes et termes techniques, les acteurs et institutions concernés (CRE, RTE,
+EDF, ministère, Commission européenne…), les sigles (PPA, CfD, TURPE, ARENH…)],
+ "days": <le nombre de jours si la question donne une période (« 15 jours » : 15, « ce mois » : 30, « cette semaine » : 7), sinon null>,
+ "kinds": [parmi "officiel", "consultation", "article", "recherche", "analyse" ; [] si tous ; « juridique » ou « réglementaire » :
+ ["officiel", "consultation", "article"]],
+ "summary": <true si la question demande un résumé, un point, une synthèse ou « ce qui s'est passé » sur une période ou un thème>}`;
+const PLAN_MODEL = '@cf/meta/llama-3.1-8b-instruct-fp8';
+const KIND = { officiel: ['texte officiel'], consultation: ['consultation'], article: ['article', 'rapport'], recherche: ['publication scientifique', 'rapport'],
+  analyse: ['analyse PowerKlock', 'données de marché PowerKlock'] };
+
+export function readPlan(txt) {
+  try {
+    const o = typeof txt === 'object' ? txt : JSON.parse((String(txt).match(/\{[\s\S]*\}/) || ['{}'])[0]);
+    const terms_ = (Array.isArray(o.terms) ? o.terms : []).map(t => String(t).trim()).filter(t => t.length > 1).slice(0, 24);
+    const days = Number.isFinite(+o.days) && +o.days > 0 ? Math.min(400, Math.round(+o.days)) : null;
+    const kinds = (Array.isArray(o.kinds) ? o.kinds : []).map(k => norm(k).trim()).filter(k => KIND[k]);
+    return terms_.length || days ? { terms: terms_, days, kinds, summary: !!o.summary } : null;
+  } catch { return null; }
+}
+
+// the passages for a plan: each of its terms counts by its rarity, in the title three times more than in the text; no share
+// of the question to reach (the model chose the terms); a summary of a span or a kind of content also takes the newest
+// passages of that span and kind, so « what happened in law over 15 days » sees every text of the 15 days
+export function planSearch(plan, docs, n = 10) {
+  if (plan.days) { const from = new Date(Date.now() - plan.days * 864e5).toISOString().slice(0, 10); docs = docs.filter(d => !d.date || d.date >= from); }
+  if (plan.kinds.length) { const ok = new Set(plan.kinds.flatMap(k => KIND[k])); docs = docs.filter(d => ok.has(d.kind)); }
+  const groups = plan.terms.map(t => words(t).filter(w => w.length > 1 && !STOP2.has(w))).filter(g => g.length);
+  const N = docs.length || 1, idf = w => Math.log(1 + N / (1 + docs.reduce((c, d) => c + (d._all.has(w) ? 1 : 0), 0)));
+  const gw = groups.map(g => Math.max(...g.map(idf)));
+  const scored = docs.map(d => {
+    let s = 0;
+    groups.forEach((g, k) => {
+      const ph = ' ' + g.join(' ') + ' ';
+      const inT = g.length > 1 ? (' ' + d._ti.join(' ') + ' ').includes(ph) : d._ti.includes(g[0]);
+      const inX = g.length > 1 ? (' ' + d._tx.join(' ') + ' ').includes(ph) : d._tx.includes(g[0]);
+      if (inT || inX) s += gw[k] * ((inT ? 3 : 0) + (inX ? 1 : 0));
+    });
+    // our own analysis and the day's prices explain a market move better than one article: a little ahead on a tie
+    if (/PowerKlock/.test(d.kind)) s *= 1.6;
+    return { d, s };
+  });
+  const strip = x => { const { _ti, _tx, _all, _flat, ...d } = x.d; return d; };
+  const hits = scored.filter(x => x.s > 0).sort((a, b) => b.s - a.s || (b.d.date || '').localeCompare(a.d.date || ''));
+  let out = hits.slice(0, n);
+  if (plan.summary && (plan.days || plan.kinds.length) && out.length < n) {
+    const have = new Set(out.map(x => x.d.link));
+    out = out.concat(scored.filter(x => !have.has(x.d.link)).sort((a, b) => (b.d.date || '').localeCompare(a.d.date || '')).slice(0, n - out.length));
+  }
+  return out.map(strip);
+}
+
 const SYSTEM = `Tu es l'assistant de veille de PowerKlock (marché français et européen de l'électricité), pour des directeurs du secteur.
 Tu reçois une question et des passages numérotés tirés du site (articles, textes officiels, consultations, analyses PowerKlock).
-Réponds dans la langue de la question, en 2 à 5 phrases claires, uniquement à partir de ces passages : chaque phrase finit par le
+Réponds dans la langue de la question, uniquement à partir de ces passages : 2 à 5 phrases claires pour une question précise ;
+pour un résumé ou un point sur une période, 6 à 12 phrases regroupées par thème, les plus importantes d'abord. Chaque phrase finit par le
 numéro de sa source entre crochets, par exemple [2]. Aucun fait, chiffre, date ni acteur absent des passages. Si les passages ne
 répondent pas à la question, dis-le en une phrase, sans inventer. Pas de conseil, pas de formule creuse.
 Réponds en JSON seulement : {"answer": "<texte>", "used": [<numéros utilisés>]}`;
@@ -175,27 +235,36 @@ export default {
     const [news, cons, letter, digest] = await Promise.all(['news.json', 'consultations.json', 'newsletter.json', 'market_digest.json'].map(f => json(`${site}/data/${f}`).catch(() => null)));
     // the whole archive (news.article, the search engine of News › Archives): the articles that hold any of the
     // question's words, ranked here with the rest of the site's content
+    // 1. the model reads the question: terms (French and English), span, kind of content, summary or not
+    let plan = null;
+    try {
+      const r = await env.AI.run(PLAN_MODEL, { messages: [{ role: 'system', content: PLAN }, { role: 'user', content: q }], max_tokens: 400 });
+      plan = readPlan(typeof r === 'string' ? r : (r.response ?? ''));
+    } catch { /* the words of the question alone */ }
     let archive = [];
     try {
-      // the words as typed (the archive's index keeps accents), without the empty ones; prefixes find the plurals
-      const typed = [...new Set(q.toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(w => w.length > 2 && !STOP2.has(norm(w))))].join(' ');
+      // the words as typed and the model's terms (the archive's index keeps accents), without the empty ones; prefixes find the plurals
+      const typed = [...new Set((q + ' ' + (plan ? plan.terms.join(' ') : '')).toLowerCase().split(/[^\p{L}\p{N}]+/u).filter(w => w.length > 2 && !STOP2.has(norm(w))))].slice(0, 40).join(' ');
       const a = await db(env, 'news_search', token, { p_query: typed, p_any: true, p_limit: 120 });
       archive = ((a && a.items) || []).map(i => ({ link: i.link, title: i.title, snippet: i.summary || '', source: i.source, date: i.date,
         tags: [i.kind === 'official' ? 'official' : i.kind === 'research' ? 'research' : i.kind === 'report' ? 'report' : 'article'], topics: i.topics || [] }));
     } catch { /* the files alone */ }
     const seen = new Set(((news && news.items) || []).map(i => i.link));
     const all = { items: ((news && news.items) || []).concat(archive.filter(i => !seen.has(i.link))) };
-    const found = search(q, passages(all, cons, letter, digest));
+    const docs = passages(all, cons, letter, digest);
+    // 2. the passages the model's plan points to, else those holding the question's own words
+    let found = plan ? planSearch(plan, docs, plan.summary ? 25 : 10) : [];
+    if (!found.length) found = search(q, docs);
     // a question the site has nothing on costs no question and no AI
     if (!found.length) return reply(req, { answer: null, sources: [], none: true });
     const take = await db(env, 'ask_take', token);
     if (!take.ok) return reply(req, { error: take.reason || 'refused', left: take.left }, take.reason === 'quota' || take.reason === 'day' ? 429 : 403);
     const m = model((take.total || 1) - 1);
     if (!m) return reply(req, { error: 'day', left: 0 }, 429);
-    const ctx = found.map((d, k) => `[${k + 1}] ${d.title} (${d.kind}, ${d.source}${d.date ? ', ' + d.date : ''})\n${(d.text || '').slice(0, 600)}`).join('\n\n');
+    const ctx = found.map((d, k) => `[${k + 1}] ${d.title} (${d.kind}, ${d.source}${d.date ? ', ' + d.date : ''})\n${(d.text || '').slice(0, found.length > 12 ? 350 : 600)}`).join('\n\n');
     let answer = null, used = [];
     try {
-      const r = await env.AI.run(m, { messages: [{ role: 'system', content: SYSTEM }, { role: 'user', content: `Question : ${q}\n\nPassages :\n${ctx}` }], max_tokens: 500 });
+      const r = await env.AI.run(m, { messages: [{ role: 'system', content: SYSTEM }, { role: 'user', content: `Question : ${q}\n\nPassages :\n${ctx}` }], max_tokens: plan && plan.summary ? 1000 : 500 });
       const txt = typeof r === 'string' ? r : (r.response ?? '');
       const o = typeof txt === 'object' ? txt : JSON.parse((String(txt).match(/\{[\s\S]*\}/) || ['{}'])[0]);
       answer = String(o.answer || '').trim() || null;
