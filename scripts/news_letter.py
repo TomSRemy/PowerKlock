@@ -602,7 +602,7 @@ def key_facts(edition):
         mv_en = (f"{'gains' if d > 0 else 'loses'} {abs(d):.1f} € over the week") if abs(d) >= 0.5 else "barely moves over the week"
         fr, en = f"Le {c['contrat']}{lvl_fr} {mv_fr}.", f"{c['contrat']}{lvl_en} {mv_en}."
         if cal and sp and sp["value"] >= 1.8 * cal["value"]:
-            fr = fr[:-1] + f", moitié moins que le spot : le marché ne reporte pas la tension d’aujourd’hui sur l’an prochain."
+            fr = fr[:-1] + ", moitié moins que le spot : le marché ne reporte pas la tension d’aujourd’hui sur l’an prochain."
             en = en[:-1] + ", half the spot: the market does not carry today's tightness into next year."
         f.append(("cal", fr, en))
     for x in structural(edition["date"]) or []:
