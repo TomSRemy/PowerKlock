@@ -211,9 +211,14 @@ async function _arcLoad() {
 }
 
 // ── Ask PowerKlock (workers/ask): a question answered from the site's own content, each sentence with its source;
-// approved accounts only, 30 questions a day each; the answers stay in this page only ──
+// approved accounts only, 30 questions a day each; the answers are kept in this browser (_askSave) ──
 const ASK_URL = 'https://powerklock-ask.tom-s-remy.workers.dev';
-let _askLog = [], _askLeft = null;
+let _askLog = [], _askLeft = null, _askUid = null;
+// the reader's questions and answers are kept in this browser, per account, so the panel opens on them again (the owner,
+// 25 Nov. 2026: « quand je rappuie sur le module IA je veux retrouver mon historique »); 50 at most, 30 days
+const _askKey = () => 'pk-ask-log-' + (_askUid || 'anon');
+function _askLoad() { try { const a = JSON.parse(localStorage.getItem(_askKey()) || '[]'), t = Date.now() - 30 * 864e5; _askLog = Array.isArray(a) ? a.filter(x => x && x.q && (x.t || 0) > t) : []; } catch (_) { _askLog = []; } }
+function _askSave() { try { localStorage.setItem(_askKey(), JSON.stringify(_askLog.filter(x => !x.wait && !x.err).slice(0, 50))); } catch (_) { /* private window: history for this page only */ } }
 async function renderNewsAsk() {
   const host = document.getElementById('news-ask'); if (!host) return;
   const A = window.PKAccount;
@@ -227,15 +232,20 @@ async function renderNewsAsk() {
     host.innerHTML = `<form class="ask-f"><input type="text" id="ask-q" maxlength="300" autocomplete="off" placeholder="${_newsT('Posez une question sur l’actualité, les textes, les consultations…', 'Ask about the news, the texts, the consultations…')}" aria-label="${_newsT('Votre question', 'Your question')}"><button type="submit" class="ask-go">${_newsT('Demander', 'Ask')}</button></form>
       <div class="ask-hints">${hints.map(h => `<button type="button" class="ask-hint">${_newsEsc(h)}</button>`).join('')}</div>
       <div class="ask-meta" id="ask-meta"></div><div class="ask-log" id="ask-log"></div>
+      <button type="button" class="ask-clear" id="ask-clear" hidden>${_newsT('Effacer l’historique', 'Clear the history')}</button>
       <p class="ask-claude">${_newsT('Vous avez Claude ? Ajoutez-y PowerKlock (prix, forwards, textes, consultations, sans limite de ce côté) : Compte › Connecteur pour Claude.', 'Have Claude? Add PowerKlock to it (prices, forwards, texts, consultations, no limit on this side): Account › Connector for Claude.')}</p>`;
     host.querySelector('.ask-f').addEventListener('submit', e => { e.preventDefault(); const q = host.querySelector('#ask-q').value.trim(); if (q.length > 2) _askGo(q); });
     host.querySelectorAll('.ask-hint').forEach(b => b.addEventListener('click', () => { host.querySelector('#ask-q').value = b.textContent; _askGo(b.textContent); }));
+    host.querySelector('#ask-clear').addEventListener('click', () => { if (!confirm(_newsT('Effacer toutes vos questions de ce navigateur ?', 'Clear all your questions from this browser?'))) return; _askLog = []; _askSave(); _askDraw(); });
+    _askLoad();
     await _askLoadCount();
   }
   _askDraw();
 }
 async function _askToken() {
-  try { const cl = window.PKAccount && PKAccount.client && PKAccount.client(); const { data } = cl ? await cl.auth.getSession() : { data: null }; return data && data.session ? data.session.access_token : null; } catch (_) { return null; }
+  try { const cl = window.PKAccount && PKAccount.client && PKAccount.client(); const { data } = cl ? await cl.auth.getSession() : { data: null };
+    if (data && data.session && data.session.user) _askUid = data.session.user.id;
+    return data && data.session ? data.session.access_token : null; } catch (_) { return null; }
 }
 // the panel beside the page (the Ask button in the News bar, or a question typed in a search box)
 function askOpen(q) {
@@ -286,6 +296,7 @@ function _askCount() {
 function _askDraw() {
   _askCount();
   const meta = document.getElementById('ask-meta'), log = document.getElementById('ask-log'); if (!meta || !log) return;
+  const clr = document.getElementById('ask-clear'); if (clr) clr.hidden = !_askLog.some(x => !x.wait);
   meta.textContent = _askLeft === -1 ? _newsT('Votre compte attend validation : les questions s’ouvrent une fois l’accès validé.', 'Your account is waiting for approval: questions open once access is approved.')
     : _newsT('Cherche dans les articles, textes officiels, consultations, publications et papiers des 45 derniers jours, la newsletter et notre analyse de marché', 'Searches the articles, official texts, consultations, publications and papers of the last 45 days, the newsletter and our market analysis')
       + (_askLeft != null ? ' · ' + _newsT(`${_askLeft} question${_askLeft > 1 ? 's' : ''} restante${_askLeft > 1 ? 's' : ''} aujourd’hui`, `${_askLeft} question${_askLeft === 1 ? '' : 's'} left today`) : '');
@@ -303,7 +314,7 @@ function _askDraw() {
 async function _askGo(q) {
   const token = await _askToken();
   if (!token) return renderNewsAsk();
-  const x = { q, wait: true }; _askLog.unshift(x); _askDraw();
+  const x = { q, wait: true, t: Date.now() }; _askLog.unshift(x); _askDraw();
   try {
     const r = await fetch(ASK_URL, { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify({ q }) });
     const j = await r.json().catch(() => ({}));
@@ -317,6 +328,7 @@ async function _askGo(q) {
   } catch (_) {
     x.wait = false; x.err = _newsT('Le service n’est pas joignable pour l’instant.', 'The service cannot be reached for now.');
   }
+  _askSave();
   _askDraw();
 }
 
