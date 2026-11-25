@@ -1,5 +1,5 @@
 {
- "lastUpdate": "2026-11-25T07:08:09.184857+00:00",
+ "lastUpdate": "2026-11-25T08:44:24.420749+00:00",
  "spot": {
   "value": 255.17,
   "unit": "EUR/MWh",
@@ -316,10 +316,10 @@
      "contract": "UK Q1 27 base",
      "marketId": 189670,
      "unit": "GBP/MWh",
-     "value": 186.2,
+     "value": 186.19,
      "date": "2026-11-24",
      "varD1Pct": 2.12,
-     "varW1Pct": 6.28
+     "varW1Pct": 6.27
     },
     {
      "tenor": "Q+2",
@@ -329,7 +329,7 @@
      "value": 130.64,
      "date": "2026-11-24",
      "varD1Pct": 0,
-     "varW1Pct": 2.78
+     "varW1Pct": 2.77
     },
     {
      "tenor": "Q+3",
@@ -339,7 +339,7 @@
      "value": 118.92,
      "date": "2026-11-24",
      "varD1Pct": -0.26,
-     "varW1Pct": 0.3
+     "varW1Pct": 0.31
     },
     {
      "tenor": "S+1",
@@ -348,7 +348,7 @@
      "unit": "GBP/MWh",
      "value": 124.75,
      "date": "2026-11-24",
-     "varD1Pct": -0.12,
+     "varD1Pct": -0.13,
      "varW1Pct": 1.58
     },
     {
@@ -359,7 +359,7 @@
      "value": 116.91,
      "date": "2026-11-24",
      "varD1Pct": -0.24,
-     "varW1Pct": -1.18
+     "varW1Pct": -1.19
     },
     {
      "tenor": "Y+1",
@@ -376,10 +376,10 @@
      "contract": "UK Cal 2028 base",
      "marketId": 189467,
      "unit": "GBP/MWh",
-     "value": 84.66,
+     "value": 84.67,
      "date": "2026-11-24",
-     "varD1Pct": -1.14,
-     "varW1Pct": -2.22
+     "varD1Pct": -1.13,
+     "varW1Pct": -2.21
     },
     {
      "tenor": "Y+3",
@@ -388,23 +388,23 @@
      "unit": "GBP/MWh",
      "value": 68.68,
      "date": "2026-11-24",
-     "varD1Pct": -0.95,
-     "varW1Pct": -2.14
+     "varD1Pct": -0.94,
+     "varW1Pct": -2.13
     }
    ],
    "forwardCurveDate": "2026-11-24",
    "nuclearCapacity": null,
    "nuclearCapacityDate": null,
    "generationMix": {
-    "gas": 20.51,
-    "wind": 6.04,
-    "solar": 2.31,
+    "gas": 17.93,
+    "wind": 16.28,
+    "solar": 0.75,
     "nuclear": 5.13,
-    "hydro": 0.36,
-    "biomass": 3.19,
-    "other": 1.41
+    "hydro": 0.29,
+    "biomass": 3.11,
+    "other": 1.22
    },
-   "generationMixDate": "2026-11-23"
+   "generationMixDate": "2026-11-24"
   },
   "DE": {
    "label": "Germany",
