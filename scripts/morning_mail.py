@@ -389,14 +389,14 @@ def journal(today, E, ed, wk, mine):
             order.append(sec_of(h))
     rest = [h for k in order for h in st[1:] if sec_of(h) == k]
     for j, h in enumerate(rest):
-        # the section's name once, as the site's headings (small capitals, a thin rule), and one subject pill by the outlet
+        # the section's name once, as the site's headings (small capitals, a thin rule), and the subject in colour, no background, by the outlet
         # instead of a second coloured label above the title (the owner, 25 Nov. 2026: two labels read badly)
         sec_head = (f'<p style="{f};margin:{0 if j == 0 else 6}px 0 12px;padding-bottom:6px;border-bottom:1px solid #D9D9D9;font-size:12px;font-weight:700;letter-spacing:1.2px;'
                     f'text-transform:uppercase;color:#383838">{SEC[sec_of(h)]}</p>') if j == 0 or sec_of(rest[j - 1]) != sec_of(h) else ''
         body.append(row(sec_head +
                         f'<p style="{serif};margin:0 0 6px;font-size:19px;line-height:1.28;font-weight:700">{a(h["link"], h["title"])}</p>' +
                         (f'<p style="{f};margin:0 0 8px;font-size:15px;line-height:1.5;color:#383838"><b style="{green}">À retenir.</b> {esc(keep(h))}</p>' if keep(h) else '') +
-                        f'<p style="{f};margin:0;font-size:12.5px;color:#6B6B6B">{theme_pill(h.get("tags"))}{" " if theme_pill(h.get("tags")) else ""}{esc(" · ".join(h["sources"][:3]))}</p>' + report(h) + free(h)))
+                        f'<p style="{f};margin:0;font-size:12.5px;color:#6B6B6B">{(lambda lc: f'<b style="color:{lc[1]}">{lc[0]}</b> · ' if lc[0] else '')(theme_of(h.get("tags")))}{esc(" · ".join(h["sources"][:3]))}</p>' + report(h) + free(h)))
     # ── your keywords ──
     if mine:
         body.append(row(kick('Vos mots-clés') + ''.join(f'<p style="{f};margin:0;padding:7px 0;border-bottom:1px solid #F2F2F2;font-size:14.5px;line-height:1.4">{a(o["link"], o["title"])} <span style="color:#6B6B6B;font-size:12px">· {esc(o["source"])}</span></p>' for o in mine)))
