@@ -32,7 +32,7 @@ import news_charts   # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, "data", "newsletter.json")             # 7 O'Klock, every weekday at 7:00
-OUT_WEEK = os.path.join(ROOT, "data", "newsletter_week.json")   # PowerBrunch, Monday at 10:00: the week before
+OUT_WEEK = os.path.join(ROOT, "data", "newsletter_week.json")   # PowerBrunch, Monday at 08:00 instead of 7 O'Klock: the week before
 # what the last editions carried (links, titles, brief): an article is never in two editions of 7 O'Klock, and a brief does not
 # repeat yesterday's (the owner, 25 Nov. 2026); 10 days kept
 HIST = os.path.join(ROOT, "data", "newsletter_history.json")
@@ -1344,6 +1344,17 @@ def main():
     # short and analytical for 7 O'Klock, complete for PowerBrunch (the owner, 25 Nov. 2026); the models below only when
     # it is missing. The Expert view's context (data/market_digest.json) is not touched.
     nb = claude_brief(edition["date"], weekly)
+    if weekly:
+        # PowerBrunch's top (scripts/morning_mail.py › brunch): the week in one sentence and the three things to remember,
+        # when Claude wrote them this morning (week_title, week_text, week_keys); the mail computes them otherwise
+        try:
+            wb = json.load(open(os.path.join(ROOT, "data", "newsletter_brief.json")))
+            if wb.get("asof") == edition["date"]:
+                if wb.get("week_title"):
+                    edition["week_line"] = {"title": clip(wb["week_title"], 160), "text": clip(wb.get("week_text") or "", 400)}
+                edition["week_keys"] = [{"bold": clip(k.get("bold") or "", 80), "text": clip(k.get("text") or "", 300)} for k in (wb.get("week_keys") or [])[:3] if isinstance(k, dict) and k.get("text")]
+        except (OSError, ValueError):
+            pass
     if nb[0]:
         edition["brief"], edition["brief_en"] = nb
         edition["brief_auto"] = "claude"
