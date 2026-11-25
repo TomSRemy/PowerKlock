@@ -85,10 +85,12 @@ jobs:
           W=""; if [ "${{ steps.ed.outputs.mode }}" = "weekly" ]; then W="--weekly"; fi
           python scripts/news_digest.py $F || echo "::warning::digest not written"
           python scripts/news_letter.py $F $W || echo "::warning::newsletter not written"
+          # the same e-mail as a web page for Veille › Newsletter (the admin's edition; scripts/morning_mail.py --html-only)
+          python scripts/morning_mail.py --html-only $W || echo "::warning::newsletter page not written"
           if [ "${{ inputs.preview }}" = "true" ]; then echo "Preview: nothing committed."; exit 0; fi
           git config user.name "PowerDesk Bot"
           git config user.email "bot@powerdesk.local"
-          git add -A data/news_digest.json data/newsletter.json data/newsletter_week.json data/newsletter_history.json data/newsletter_img 2>/dev/null || true
+          git add -A data/news_digest.json data/newsletter.json data/newsletter_week.json data/newsletter_history.json data/newsletter_mail.html data/newsletter_week_mail.html data/newsletter_img 2>/dev/null || true
           if git diff --staged --quiet; then echo "No new edition."; exit 0; fi
           git commit -q -m "data: newsletter $(TZ=Europe/Paris date +%F)"
           for i in 1 2 3 4 5; do git pull -q --rebase -X theirs origin main && git push -q && exit 0; git rebase --abort 2>/dev/null || true; sleep 5; done

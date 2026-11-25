@@ -514,7 +514,41 @@ def admins():
         return []
 
 
+def web_copy(html):
+    """the e-mail as a web page (Veille › Newsletter on the site, the admin's only): the attached images (cid:) pointed at
+    the site's own files, so the page is the e-mail exactly (the owner, 25 Nov. 2026)"""
+    for rel in re.findall(r'<!--img:([^>]+)-->', html):
+        web = os.path.normpath(os.path.join('data', rel)).replace(os.sep, '/')
+        html = html.replace(f'src="cid:{esc(os.path.basename(rel))}"', f'src="{web}"')
+    return re.sub(r'<!--img:[^>]+-->', '', html)
+
+
+def html_only(today, weekly):
+    """--html-only: write the edition as the admin receives it (their subjects, else the general edition) to
+    data/newsletter_mail.html (7 O'Klock) or data/newsletter_week_mail.html (PowerBrunch), for the site; nothing sent"""
+    E = load('newsletter_week.json' if weekly else 'newsletter.json') or {}
+    if not E.get('profiles'):
+        print('no edition: nothing written'); return 0
+    pid = os.environ.get('MORNING_PROFILE') or 'origination'
+    pid = pid if pid in E['profiles'] else next(iter(E['profiles']))
+    adm = set(a.lower() for a in admins())
+    me = next((r for r in readers(today, weekly) if (r['to'] or '').lower() in adm), None) if adm else None
+    day = date.fromisoformat(E['date']) if E.get('date') else today
+    if me:
+        ps = [p for p in me['profiles'] if p in E['profiles']] or list(E['profiles'])
+        _, _, html = render_letter(day, E, ps, [], me['exclude'], me['interests'], me['france'])
+    else:
+        _, _, html = render_letter(day, E, pid)
+    out = os.path.join(D, 'newsletter_week_mail.html' if weekly else 'newsletter_mail.html')
+    with open(out, 'w') as f:
+        f.write(web_copy(html))
+    print('written', out, '(the admin\'s edition)' if me else '(general edition)')
+    return 0
+
+
 def main():
+    if '--html-only' in sys.argv:
+        return html_only(datetime.now(PARIS).date(), '--weekly' in sys.argv)
     today, rows, lines, heading = build()
     subject, text, html = render(today, rows, lines, heading)
     # the newsletter when today's edition exists (scripts/news_letter.py), for the profile MORNING_PROFILE (default: origination)

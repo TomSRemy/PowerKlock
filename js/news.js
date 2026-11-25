@@ -322,7 +322,7 @@ async function _askGo(q) {
 
 // ── Newsletter (data/newsletter.json, scripts/news_letter.py): one edition per reading profile (config/news_profiles.json),
 // the profile chosen here is kept in this browser; the morning e-mail sends the same edition ──
-let _nlData, _nlWeek, _nlEd = 'daily', _nlMe;
+let _nlData, _nlWeek, _nlEd = 'daily', _nlMe, _nlHtml;
 // the subjects a reader can follow (public.news_profile.interests; the categories of scripts/fetch_news.py), in three groups:
 // the newsletter, the lead story and the Top stories page are built from them (the owner's choice, 24 Nov. 2026: interests,
 // not reading profiles); also the first sign-in (js/onboarding.js) and Settings
@@ -389,6 +389,23 @@ async function renderNewsLetter() {
   if (_nlData === undefined) {
     const get = async u => { try { const r = await fetch(u + '?t=' + Date.now()); return r.ok ? await r.json() : null; } catch (_) { return null; } };
     [_nlData, _nlWeek] = await Promise.all([get(DATA_BASE + 'newsletter.json'), get(DATA_BASE + 'newsletter_week.json'), _nlLoadMe()]);
+  }
+  // the page is the e-mail itself (the owner, 25 Nov. 2026: « la newsletter sur le site doit être la même que par mail »):
+  // the last 7 O'Klock and the last PowerBrunch as the job writes them (scripts/morning_mail.py --html-only)
+  if (_nlHtml === undefined) {
+    const getT = async u => { try { const r = await fetch(u + '?t=' + Date.now()); return r.ok ? await r.text() : null; } catch (_) { return null; } };
+    _nlHtml = { daily: await getT(DATA_BASE + 'newsletter_mail.html'), weekly: await getT(DATA_BASE + 'newsletter_week_mail.html') };
+  }
+  const mailH = _nlHtml[_nlEd === 'weekly' ? 'weekly' : 'daily'];
+  if (mailH) {
+    host.innerHTML = `<div class="nl-profiles">${[['daily', '7 O’Klock'], ['weekly', 'PowerBrunch']].filter(([k]) => _nlHtml[k]).map(([k, l]) => `<button type="button" class="tab-btn${k === (_nlEd === 'weekly' ? 'weekly' : 'daily') ? ' active' : ''}" data-nle="${k}" translate="no">${l}</button>`).join('')}</div>
+      <iframe class="nl-mail" title="Newsletter" sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin" referrerpolicy="no-referrer"></iframe>`;
+    const fr = host.querySelector('.nl-mail');
+    // links open in a new tab; the frame grows to its content
+    fr.srcdoc = '<!doctype html><html><head><meta charset="utf-8"><base href="' + new URL('.', location.href).href + '" target="_blank"><meta name="viewport" content="width=device-width,initial-scale=1"><style>body{margin:0;background:#F1F1EF}</style></head><body>' + mailH + '</body></html>';
+    fr.addEventListener('load', () => { try { fr.style.height = fr.contentDocument.documentElement.scrollHeight + 'px'; } catch (_) {} });
+    host.querySelectorAll('[data-nle]').forEach(b => b.addEventListener('click', () => { _nlEd = b.dataset.nle; renderNewsLetter(); }));
+    return;
   }
   const E = _nlEd === 'weekly' && _nlWeek ? _nlWeek : _nlData, P = (E && E.profiles) || {};
   if (!E || !E.profiles || !Object.keys(P).length) { host.innerHTML = `<div class="news-src-help">${_newsT('La première édition paraît demain à 7 h.', 'The first edition comes out tomorrow at 7:00.')}</div>`; return; }
