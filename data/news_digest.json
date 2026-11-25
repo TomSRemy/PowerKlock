@@ -1,58 +1,60 @@
 {
  "daily": {
-  "date": "2026-11-24",
-  "updated": "2026-11-24T08:13:57+00:00",
+  "date": "2026-11-25",
+  "updated": "2026-11-25T06:01:07+00:00",
   "engine": "proxy",
   "items": [
    {
-    "id": "gimetransitoire48835php4",
-    "text": "La CRE prolonge le régime transitoire de tarification dynamique : les fournisseurs doivent adapter leurs offres.",
-    "text_en": "The CRE extends the transitional dynamic pricing regime: suppliers must adapt their offers.",
-    "title": "Tarification dynamique : la CRE précise les offres et prolonge le régime transitoire",
-    "link": "https://www.actu-environnement.com/ae/news/cre-tarification-dynamique-offres-regime-transitoire-48835.php4",
+    "id": "unplancherderemuneration",
+    "text": "La CRE approuve le cahier des charges de PPE3 Neutre : les producteurs bénéficient d'un plancher de rémunération",
+    "text_en": "The CRE approves the PPE3 Neutre specifications: producers benefit from a minimum remuneration",
+    "title": "Appel d’offres PPE3 Neutre : la CRE approuve le cahier des charges et réclame un plancher de rémunération",
+    "link": "https://www.lechodusolaire.fr/appel-doffres-ppe3-neutre-la-cre-approuve-le-cahier-des-charges-et-reclame-un-plancher-de-remuneration/?utm_source=rss&utm_medium=rss&utm_campaign=appel-doffres-ppe3-neutre-la-cre-approuve-le-cahier-des-charges-et-reclame-un-plancher-de-remuneration",
     "sources": [
-     "Actu-Environnement"
+     "L'Écho du solaire"
     ]
    },
    {
-    "id": "zr2zzazlccmi1ejnsa3lroc5",
-    "text": "La CRE réduit le budget de résilience du réseau de RTE : les coûts de maintenance seront revus.",
-    "text_en": "The CRE reduces RTE's network resilience budget: maintenance costs will be revised.",
-    "title": "RTE : la CRE réduit de près de 4 millions d’euros le budget de résilience du réseau",
-    "link": "https://news.google.com/rss/articles/CBMibkFVX3lxTFBiTk95MHY0QWtpcEt6eFpNeTdseXRTVHlLdWZIa0ZwSndRdWhEVkdkM1d3a2o4U2xvQUdiX3VOUnVud0Nad3JJbmZYTk1wMjg2YlZIN3IzWld1NWFtX1QzR2ZzazlCcmI1ejNsa3lR?oc=5",
+    "id": "estockagedont300enfrance",
+    "text": "NW investit 200 M€ dans des batteries de stockage : les fournisseurs améliorent leur offre de stockage d'électricité",
+    "text_en": "NW invests €200 million in storage batteries: suppliers improve their electricity storage offer",
+    "title": "NW investit 200 M€ dans 400 batteries de stockage, dont 300 en France",
+    "link": "https://www.lechodusolaire.fr/nw-investit-200-me-dans-400-batteries-de-stockage-dont-300-en-france/?utm_source=rss&utm_medium=rss&utm_campaign=nw-investit-200-me-dans-400-batteries-de-stockage-dont-300-en-france",
     "sources": [
-     "Les Smartgrids"
+     "L'Écho du solaire"
     ]
    },
    {
-    "id": "ctriciteconsommeeenfranc",
-    "text": "Un indicateur horaire de part des EnR est mis en place : les consommateurs peuvent suivre le mix énergétique.",
-    "text_en": "A hourly indicator of the share of renewables is implemented: consumers can monitor the energy mix.",
-    "title": "Part des EnR et intensité en émissions de GES de l’électricité consommée en France en temps réel",
-    "link": "https://wattselse.com/veille/article/4667/part-des-enr-et-intensite-en-emissions-de-ges-de-lelectricite-consommee-en-franc",
+    "id": "jsmdrwnhyutu1qmwtbtnnoc5",
+    "text": "RTE relève ses prévisions de consommation électrique : les gestionnaires de réseau anticipent une demande accrue",
+    "text_en": "RTE increases its electricity consumption forecasts: network managers anticipate increased demand",
+    "title": "RTE devrait relever de 26 % ses prévisions de consommation électrique à l’horizon 2050",
+    "link": "https://news.google.com/rss/articles/CBMisgFBVV95cUxOVVBTdm9hZ19ISW56dDJMYkk0ZWZnNEVFREtSMXBMRV9lcHNlYk5jVnBTcVJEdzJ6eGxaSFBvS3RsekxoWnA1ZFFhaXBBdTRmaUM1WVBfYUVsUzRLRkpfUW95RUlWeGFBNlNfaDdudjBYVGhMZVBZWGxtZVlTdVItYkdGbXB0Q1VfbVNac0prWDNQLTU4SE9BOGtyMjgwNjhGMGdjSmdRWnhYUTU1QmwtbTNn?oc=5",
     "sources": [
-     "Watts Else"
+     "Tecsol Quotidien"
     ]
    },
    {
-    "id": "kjpuhjxzhr6mtvht2phcwoc5",
-    "text": "Le Portugal renforce la sécurité de son approvisionnement en électricité : les importations seront mieux régulées.",
-    "text_en": "Portugal strengthens the security of its electricity supply: imports will be better regulated.",
-    "title": "Le Portugal va renforcer la sécurité de son approvisionnement en électricité",
-    "link": "https://news.google.com/rss/articles/CBMi1wFBVV95cUxPUFhwclRzejRFWFVFMzZ0Mnprcklad05kVzJjcGF1cFJLanZiUTdieE5PZ0xCd0ZYN1BJc3Ftc3J2MENuMHJPTkNkT3NyZ3AxeTFRM2xXV0g4ZGJ5dGo4eWlFV2g1dE1EMnJPbWV5WVR4bFJrMG9HNHFHczRLc19ldmYzYVhHNjFEV1VpUVZrOU9hMFE0T2J2UjMzY1BRVG1VbU96U24ySmRqX0tFNmJpLWdOeUdUck9nVlZRb1JaQmhUbHpLM091RkJpUHJXZHR6MTVHT2pHcw?oc=5",
+    "id": "parceolienflottant439481",
+    "text": "Des turbines Siemens Gamesa choisies pour un parc éolien flottant : les développeurs de projets renforcent leur capacité de production",
+    "text_en": "Siemens Gamesa turbines chosen for a floating wind farm: project developers strengthen their production capacity",
+    "title": "Les turbines Siemens Gamesa de 15 MW choisies pour un parc éolien flottant",
+    "link": "https://www.greenunivers.com/2026/11/les-turbines-siemens-gamesa-de-15-mw-choisies-pour-un-parc-eolien-flottant-439481/",
     "sources": [
-     "The Portugal News",
-     "Watts Else"
+     "GreenUnivers",
+     "Windpower Monthly",
+     "reNEWS",
+     "Recharge News"
     ]
    },
    {
-    "id": "aeld0zfmywgrfz1pxqljnoc5",
-    "text": "TotalEnergies rachète des participations dans des actifs amont de gaz naturel : la production de gaz sera renforcée.",
-    "text_en": "TotalEnergies buys stakes in upstream natural gas assets: gas production will be strengthened.",
-    "title": "TotalEnergies rachète à Continental Resources des participations dans des actifs amont de gaz naturel",
-    "link": "https://news.google.com/rss/articles/CBMi7gFBVV95cUxQVk83T2NzMHhjbXk1QnMyMlFXZHNaTHNxOWVDMFAwWHpYUURtUjduR29MMDhUQ2JJX200WWduMGpJS1JjLVMtV1JBYXVOcjFaTmM1RTNLV0J5M3Jlbm9lSWpqOWl4S1NickNIbC1USFpvbmlVUHA4d1JRZzcwd2NaR0NMbGdoREREVUw1dGx5OHFZdDRqNFhkUmgyZmdNUVZkYVpRNkRBeWxSTkFBbFRUSHNKZDJXQ3ZLS1hUZ1M3Mm01V2NnQ1MtWkV3YkxPT1JFX1FvVUw0Y05DckEzWmpaeld0ZFMyWGRfZ1pXQlJn?oc=5",
+    "id": "0q3rzsjvjqvnybxfzamm1oc5",
+    "text": "RTE enfouit 22 km de lignes électriques : les habitants bénéficient d'une meilleure sécurité et esthétique",
+    "text_en": "RTE buries 22 km of power lines: residents benefit from improved safety and aesthetics",
+    "title": "RTE enfouit 22 km de lignes entre la Moselle et la Meurthe-et-Moselle",
+    "link": "https://news.google.com/rss/articles/CBMirAFBVV95cUxOQUtpVDBCWmNJaFZoLTRGelNhUGl6YTUwUjZKblRQTktMdzJteXlnckQ4QWZ3eUsxSkFyV0t1NDMxREFWd21DZlp1dTJld3hTMDZTTkdFMmFkUzdwM3B4cklkM2hYdHNVVV9MTVlxclBvaWVZbWg3WElWTjJHTmR6YlYtTm0zRlRZdGMxV1V0WmhQYUtfdm40dWRTdjl0Q3RzSjVJQVNYbXFzamM1?oc=5",
     "sources": [
-     "Boursier.com"
+     "La Gazette France"
     ]
    }
   ]
