@@ -1,13 +1,13 @@
-# Market context: written by Claude every morning
+# Newsletter brief: written by Claude every morning
 
-A scheduled Claude task (claude.ai, the owner's account) writes `data/market_digest.json` every day at 06:17 Paris,
+A scheduled Claude task (claude.ai, the owner's account) writes `data/newsletter_brief.json` every day at 06:17 Paris,
 before the newsletter (07:00). The owner asked for it on 25 Nov. 2026: the free models of the site write vague French and
-wrong causes. The text is shown in Today › Expert (« Contexte ») and is the brief of the newsletter: `context` for
-7 O'Klock, `context_week` for PowerBrunch on Monday. The site's own job (`scripts/market_digest.py`, after the market
-notes) keeps a context Claude wrote the same day and only fills in what is missing.
+wrong causes. It is « Le point du matin » of the newsletter: `daily` for 7 O'Klock, `weekly` for PowerBrunch on Monday
+(scripts/news_letter.py › claude_brief). The Expert view (data/market_digest.json) is not touched: the owner likes it as it is.
 
 ## What to read (branch `main` of TomSRemy/PowerKlock)
-- `data/market_digest.json`: yesterday's text (do not repeat it) and the week-ahead calls (`outlook`).
+- `data/newsletter_brief.json`: yesterday's text (do not repeat it).
+- `data/market_digest.json`: the site's market context and week-ahead calls (a source among others; check it against the figures).
 - `data/history/daily/<today>.json` and `<yesterday>.json`: spot of every zone (`zones.<Z>.avg`, never the mean of the series).
 - `data/history/summary_fr.json`: French spot by day (`zones.FR`, `d`, `avg`).
 - `data/history/commodities_series.json`: `series.ttf`, `agsi` (EU gas storage %), `eua`, `brent`, `fr_nuc_avail` and
@@ -19,14 +19,13 @@ notes) keeps a context Claude wrote the same day and only fills in what is missi
 - `data/newsletter.json` › `markets`: the tiles of the day.
 
 ## What to write
-The JSON keeps its shape: `{"updated", "asof" (today, Paris), "notes": 0, "engine": "claude", "context": [...],
-"context_week": [...], "outlook": {oil, gas, power, carbon}}`, each item `{"topic", "topic_en", "text", "text_en", "tone"}`
-(tone `up` / `down` / `flat` for prices). Keep `outlook` from the file unless it contradicts the figures.
+`{"asof": "<today, Paris>", "written": "<ISO time>", "daily": [...], "weekly": [...]}`, each item
+`{"topic", "topic_en", "text", "text_en"}`.
 
-- `context`, the day: short and analytical. What changed since yesterday, why, and what it means for a buyer or a
-  producer (hedging, PPA). The charts already give the figures: a number only to support an explanation. 2 to 4 topics,
+- `daily`: short and analytical. What changed since yesterday, why, and what it means for a buyer or a producer
+  (hedging, PPA). The tiles and charts already give the figures: a number only to support an explanation. 2 to 4 topics,
   1 to 2 sentences each.
-- `context_week`: rewrite it on Monday (the week before, complete: prices, weather, nuclear, gas, forwards, regulation,
+- `weekly`: rewrite it on Monday (the week before, complete: prices, weather, nuclear, gas, forwards, regulation,
   geopolitics, 2 to 3 sentences each); the other days keep the file's.
 - Same text in English in `topic_en` / `text_en`.
 
@@ -44,5 +43,5 @@ Example of a day (25 Nov. 2026):
 - À surveiller : les 3,8 GW de nucléaire qu'EDF attend encore. Leur retour est le principal facteur de baisse d'ici Noël.
 
 ## How to publish
-Write the file on `main` with the GitHub tools (one commit, message `data: market context <date> (Claude)`), nothing
-else. If a figure is missing or a file is late, write without that topic; never invent a figure.
+Write that one file on `main` (one commit, message `data: newsletter brief <date> (Claude)`), nothing else. If a figure
+is missing or a file is late, write without that topic; never invent a figure.

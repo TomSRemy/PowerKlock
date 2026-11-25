@@ -820,6 +820,21 @@ def prices_line(day):
     return "Les prix du jour : " + ", ".join(fr) + ".", "Today's prices: " + ", ".join(en) + "."
 
 
+def claude_brief(day, weekly=False):
+    """the newsletter brief Claude wrote this morning (data/newsletter_brief.json: {asof, daily, weekly}, each a list of
+    {topic, topic_en, text, text_en}), « Prix : … Couverture : … » as one paragraph, when it is of the edition's day"""
+    try:
+        nb = json.load(open(os.path.join(ROOT, "data", "newsletter_brief.json")))
+    except (OSError, ValueError):
+        return "", ""
+    if nb.get("asof") != day:
+        return "", ""
+    items = [c for c in (nb.get("weekly" if weekly else "daily") or []) if isinstance(c, dict) and c.get("text")]
+    fr = " ".join((f"{c['topic']} : " if c.get("topic") else "") + c["text"].strip() for c in items)
+    en = " ".join((f"{c.get('topic_en') or c.get('topic')}: " if (c.get("topic_en") or c.get("topic")) else "") + (c.get("text_en") or c["text"]).strip() for c in items)
+    return fr, en
+
+
 def brief_from_context(day, abroad=False, weekly=False):
     """the brief taken from the site's market context (data/market_digest.json, the Expert view), when it is from the
     day of the edition or the day before: the same text the site shows, numbers rounded as one says them"""
@@ -1264,17 +1279,14 @@ def main():
         print(f"{pid}: {len(out)} stories, AI text for {len(by)}")
     edition["brief"] = edition["brief_en"] = None
     edition["brief_links"] = []
-    # the market context Claude wrote this morning (config/market_context_task.md) is the brief when it is today's: short and
-    # analytical for 7 O'Klock, complete for PowerBrunch (the owner, 25 Nov. 2026); the models below only when it is missing
-    try:
-        _md = json.load(open(os.path.join(ROOT, "data", "market_digest.json")))
-    except (OSError, ValueError):
-        _md = {}
-    if _md.get("engine") == "claude" and _md.get("asof") == edition["date"]:
-        edition["brief"], edition["brief_en"] = brief_from_context(edition["date"], weekly=weekly)
-        if edition["brief"]:
-            edition["brief_auto"] = "claude"
-            print("brief: the market context written by Claude this morning")
+    # the brief Claude wrote this morning (config/market_context_task.md, data/newsletter_brief.json) when it is today's:
+    # short and analytical for 7 O'Klock, complete for PowerBrunch (the owner, 25 Nov. 2026); the models below only when
+    # it is missing. The Expert view's context (data/market_digest.json) is not touched.
+    nb = claude_brief(edition["date"], weekly)
+    if nb[0]:
+        edition["brief"], edition["brief_en"] = nb
+        edition["brief_auto"] = "claude"
+        print("brief: written by Claude this morning")
     if use_ai and edition["profiles"] and not edition["brief"]:
         # Qwen3 first when it answers, then Llama 4 Scout, the most faithful in the tests of 24 Nov. 2026, and two other free
         # models as a backup when Workers AI refuses one; a text that fails the checks (figures, direction, hollow lines) is
