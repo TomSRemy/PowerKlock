@@ -1,6 +1,6 @@
 {
- "date": "2026-11-25",
- "updated": "2026-11-25T06:01:26+00:00",
+ "date": "2026-11-26",
+ "updated": "2026-11-25T23:06:10+00:00",
  "engine": "proxy",
  "monday": false,
  "weekly": false,
@@ -10,27 +10,27 @@
     "Spot France aujourd'hui",
     "France spot today"
    ],
-   "value": 255.17,
+   "value": 289.44,
    "unit": "€/MWh",
    "page": "markets/spot",
    "src": "ENTSO-E",
    "show": "pct",
    "hours": false,
-   "chg": 9.89,
-   "pct": 4.0
+   "chg": 34.27,
+   "pct": 13.4
   },
   {
    "label": [
     "Pointe − base aujourd'hui",
     "Peak − base today"
    ],
-   "value": 32.06,
+   "value": 47.23,
    "unit": "€/MWh",
    "page": "markets/spot",
    "src": "ENTSO-E",
    "show": "abs",
    "hours": false,
-   "chg": 12.8,
+   "chg": 15.17,
    "pct": null
   },
   {
@@ -52,28 +52,28 @@
     "Cal 27 France",
     "Cal 27 France"
    ],
-   "value": 114.6,
+   "value": 116.97,
    "unit": "€/MWh",
    "page": "markets/forwards",
    "src": "EEX",
    "show": "pct",
    "hours": false,
-   "chg": 0.48,
-   "pct": 0.4
+   "chg": 2.37,
+   "pct": 2.1
   },
   {
    "label": [
     "Gaz PEG",
     "PEG gas"
    ],
-   "value": 89.23,
+   "value": 91.34,
    "unit": "€/MWh",
    "page": "markets/fuels",
    "src": "PowerKlock",
    "show": "pct",
    "hours": false,
-   "chg": 2.67,
-   "pct": 3.1
+   "chg": 2.11,
+   "pct": 2.4
   },
   {
    "label": [
@@ -125,66 +125,8 @@
    ]
   }
  ],
- "pubs": [
-  {
-   "title": "EEX Customer Information - Adjustment of the EU EUA Auction Calendar",
-   "link": "https://www.eex.com/en/newsroom/detail?tx_news_pi1%5Baction%5D=detail&tx_news_pi1%5Bcontroller%5D=News&tx_news_pi1%5Bnews%5D=15754&cHash=37d2fe488d9037538fc85697101d7cfe",
-   "source": "EEX",
-   "date": "2026-11-24T12:00:00+00:00",
-   "tags": [
-    "markets",
-    "carbon"
-   ]
-  },
-  {
-   "title": "Prix du gaz : le marché parie sur la détente, ce que les cours de 2027 et 2028 racontent ce 24 novembre",
-   "link": "https://news.google.com/rss/articles/CBMibEFVX3lxTFBGdEhObE5VX2FiUEpvSV91Q1hrU25kN2toeThSYlhNZThmcUVjWmNyUHpnQ3RuUGVOSm1HdkMteEo4QnBVUjZfdUZZaFRQS0wta0JzNklKSU1ZV2hxTm54Z0xGMWRjWV9pVXE3Yw?oc=5",
-   "source": "Selectra",
-   "date": "2026-11-24T05:10:00+00:00",
-   "tags": [
-    "fr",
-    "report",
-    "markets",
-    "regulation",
-    "watch",
-    "gas"
-   ]
-  },
-  {
-   "title": "COP31 : l’AIE a lancé un Observatoire mondial pour contribuer à renforcer la résilience du secteur énergétique",
-   "link": "https://www.energiesdelamer.eu/2026/11/23/laie-a-lance-un-observatoire-mondial-pour-contribuer-a-renforcer-la-resilience-du-secteur-energetique/",
-   "source": "Énergies de la mer",
-   "date": "2026-11-23T09:01:13+00:00",
-   "tags": [
-    "fr",
-    "renewables",
-    "report"
-   ]
-  },
-  {
-   "title": "Prix du gaz : le marché s'envole de 5,3 % ce lundi 23 novembre, ce qui a fait flamber le PEG",
-   "link": "https://news.google.com/rss/articles/CBMibEFVX3lxTE1wMnZKLWdhSU96VnlOcFJFNUNERXNiZ1kwZ0Z1SndOUk5rNl9xeDE0Nm9HN1ZIbHBoMkozakgyeDU4YzI2R2U2VFZtZmZuZHZOYWgzLVpqeXlBbk1DNHpPUjdKMjRXRF9EcDkwRg?oc=5",
-   "source": "Selectra",
-   "date": "2026-11-23T05:10:00+00:00",
-   "tags": [
-    "fr",
-    "report",
-    "markets",
-    "regulation",
-    "watch",
-    "gas"
-   ]
-  }
- ],
+ "pubs": [],
  "cons": [
-  {
-   "title": "Projet d’arrêté relatif au plan d’action établi sur la base des recommandations découlant de l’audit énergétique ou sur la base du système de management de l’énergie",
-   "link": "https://www.consultations-publiques.developpement-durable.gouv.fr/projet-d-arrete-relatif-au-plan-d-action-etabli-a3483.html",
-   "source": "Ministère · Énergies et climat",
-   "deadline": "2026-11-25",
-   "opened": "2026-11-03",
-   "theme": "cee"
-  },
   {
    "title": "Projet d’arrêté portant la création de la fiche d’opération standardisée IND-UT-142, du référentiel de contrôle et de la bonification associés",
    "link": "https://www.consultations-publiques.developpement-durable.gouv.fr/projet-d-arrete-portant-la-creation-de-la-fiche-d-a3487.html",
@@ -230,125 +172,104 @@
   "weekly": false,
   "items": [
    {
-    "text": "La CRE approuve le cahier des charges de PPE3 Neutre : les producteurs bénéficient d'un plancher de rémunération",
-    "text_en": "The CRE approves the PPE3 Neutre specifications: producers benefit from a minimum remuneration",
-    "title": "Appel d’offres PPE3 Neutre : la CRE approuve le cahier des charges et réclame un plancher de rémunération",
-    "link": "https://www.lechodusolaire.fr/appel-doffres-ppe3-neutre-la-cre-approuve-le-cahier-des-charges-et-reclame-un-plancher-de-remuneration/?utm_source=rss&utm_medium=rss&utm_campaign=appel-doffres-ppe3-neutre-la-cre-approuve-le-cahier-des-charges-et-reclame-un-plancher-de-remuneration",
+    "text": "La France investit dans une forge nucléaire : les producteurs d'électricité pourront réduire leur dépendance aux fournisseurs étrangers",
+    "text_en": "France invests in a nuclear forge: electricity producers can reduce dependence on foreign suppliers",
+    "title": "Nucléaire : la France veut investir un milliard d’euros dans une forge que les États-Unis pourraient lui envier",
+    "link": "https://wattselse.com/veille/article/4676/nucleaire-la-france-veut-investir-un-milliard-deuros-dans-une-forge-que-les-etat",
     "sources": [
-     "L'Écho du solaire"
+     "Watts Else"
     ]
    },
    {
-    "text": "NW investit 200 M€ dans des batteries de stockage : les fournisseurs améliorent leur offre de stockage d'électricité",
-    "text_en": "NW invests €200 million in storage batteries: suppliers improve their electricity storage offer",
-    "title": "NW investit 200 M€ dans 400 batteries de stockage, dont 300 en France",
-    "link": "https://www.lechodusolaire.fr/nw-investit-200-me-dans-400-batteries-de-stockage-dont-300-en-france/?utm_source=rss&utm_medium=rss&utm_campaign=nw-investit-200-me-dans-400-batteries-de-stockage-dont-300-en-france",
+    "text": "L'arrêté du 10 novembre 2026 définit les critères pour le taux réduit de TVA aux équipements photovoltaïques : les installateurs et les consommateurs seront impactés",
+    "text_en": "The November 10, 2026 decree defines the criteria for the reduced VAT rate on photovoltaic equipment: installers and consumers will be affected",
+    "title": "Solaire : l'arrêté du 10 novembre 2026 redéfinit les critères d'application du taux réduit de TVA aux équipements photovoltaïques d'une puissance inférieure ou égale à 9 kWc installés dans les logements",
+    "link": "https://news.google.com/rss/articles/CBMiWEFVX3lxTE1SVHdFMW5naWFFZWptZ3lLVnFGOTFmaGxudDJmbVBwT2V4SWpsZmxMaDZfN2lfX1E4U25LN0hCZ2Q2MUkxd0EycDZILXFvOUp5V1o5TjQwLVc?oc=5",
     "sources": [
-     "L'Écho du solaire"
+     "Cabinet Gossement AVOCATS",
+     "Gossement Avocats"
     ]
    },
    {
-    "text": "RTE relève ses prévisions de consommation électrique : les gestionnaires de réseau anticipent une demande accrue",
-    "text_en": "RTE increases its electricity consumption forecasts: network managers anticipate increased demand",
-    "title": "RTE devrait relever de 26 % ses prévisions de consommation électrique à l’horizon 2050",
-    "link": "https://news.google.com/rss/articles/CBMisgFBVV95cUxOVVBTdm9hZ19ISW56dDJMYkk0ZWZnNEVFREtSMXBMRV9lcHNlYk5jVnBTcVJEdzJ6eGxaSFBvS3RsekxoWnA1ZFFhaXBBdTRmaUM1WVBfYUVsUzRLRkpfUW95RUlWeGFBNlNfaDdudjBYVGhMZVBZWGxtZVlTdVItYkdGbXB0Q1VfbVNac0prWDNQLTU4SE9BOGtyMjgwNjhGMGdjSmdRWnhYUTU1QmwtbTNn?oc=5",
+    "text": "EDF veut creuser un tunnel pour transformer un barrage en système de stockage d’électricité géant : les capacités de stockage d'électricité seront améliorées",
+    "text_en": "EDF wants to dig a tunnel to transform a dam into a giant electricity storage system: electricity storage capacities will be improved",
+    "title": "Ce tunnel de 17 km qu’EDF veut creuser pour transformer un barrage en système de stockage d’électricité géant",
+    "link": "https://www.revolution-energetique.com/actus/ce-tunnel-de-17-km-quedf-veut-creuser-pour-transformer-un-barrage-en-systeme-de-stockage-delectricite-geant/",
     "sources": [
-     "Tecsol Quotidien"
-    ]
-   },
-   {
-    "text": "Des turbines Siemens Gamesa choisies pour un parc éolien flottant : les développeurs de projets renforcent leur capacité de production",
-    "text_en": "Siemens Gamesa turbines chosen for a floating wind farm: project developers strengthen their production capacity",
-    "title": "Les turbines Siemens Gamesa de 15 MW choisies pour un parc éolien flottant",
-    "link": "https://www.greenunivers.com/2026/11/les-turbines-siemens-gamesa-de-15-mw-choisies-pour-un-parc-eolien-flottant-439481/",
-    "sources": [
-     "GreenUnivers",
-     "Windpower Monthly",
-     "reNEWS",
-     "Recharge News"
-    ]
-   },
-   {
-    "text": "RTE enfouit 22 km de lignes électriques : les habitants bénéficient d'une meilleure sécurité et esthétique",
-    "text_en": "RTE buries 22 km of power lines: residents benefit from improved safety and aesthetics",
-    "title": "RTE enfouit 22 km de lignes entre la Moselle et la Meurthe-et-Moselle",
-    "link": "https://news.google.com/rss/articles/CBMirAFBVV95cUxOQUtpVDBCWmNJaFZoLTRGelNhUGl6YTUwUjZKblRQTktMdzJteXlnckQ4QWZ3eUsxSkFyV0t1NDMxREFWd21DZlp1dTJld3hTMDZTTkdFMmFkUzdwM3B4cklkM2hYdHNVVV9MTVlxclBvaWVZbWg3WElWTjJHTmR6YlYtTm0zRlRZdGMxV1V0WmhQYUtfdm40dWRTdjl0Q3RzSjVJQVNYbXFzamM1?oc=5",
-    "sources": [
-     "La Gazette France"
+     "Révolution Énergétique"
     ]
    }
   ]
  },
  "top": [
   {
-   "title": "Appel d’offres PPE3 Neutre : la CRE approuve le cahier des charges et réclame un plancher de rémunération",
-   "link": "https://www.lechodusolaire.fr/appel-doffres-ppe3-neutre-la-cre-approuve-le-cahier-des-charges-et-reclame-un-plancher-de-remuneration/?utm_source=rss&utm_medium=rss&utm_campaign=appel-doffres-ppe3-neutre-la-cre-approuve-le-cahier-des-charges-et-reclame-un-plancher-de-remuneration",
-   "source": "L'Écho du solaire",
-   "date": "2026-11-24T09:20:23+00:00",
+   "title": "Pourquoi le premier jour rouge Tempo d'EDF tombe si tôt cette année, dès le 26 novembre ?",
+   "link": "https://news.google.com/rss/articles/CBMizAFBVV95cUxQdDFRcmNUUk1yTlZiT3loTXZGZHJDZ0RCNl81NlNQbWRxTzQweHREaWJmSlVzR0hzZkN2Q0FBV0ExWm1FNTg2SVNlOVFqQlpkZDV2cWtKNUNYaHYzMHFudG5OLUpFZXdnbUlxdXdFbXZDV1lDZUNWVXRiN2JiNU1pcWNXemx4Y2hSUjNNSEJfT2FsTFozWl9nTm9ick1IX0JGZDZvRHVWcVNGaS1wWDR5U1o0clZrZmdhbDVfTm5YaGlXaEF2dGgwNDItbnE?oc=5",
+   "source": "Numerama",
+   "date": "2026-11-25T17:32:50+00:00",
    "n": 1,
    "tags": [
     "fr",
-    "renewables",
+    "regulation",
+    "markets",
+    "watch",
+    "power"
+   ]
+  },
+  {
+   "title": "Nucléaire : la France veut investir un milliard d’euros dans une forge que les États-Unis pourraient lui envier",
+   "link": "https://wattselse.com/veille/article/4676/nucleaire-la-france-veut-investir-un-milliard-deuros-dans-une-forge-que-les-etat",
+   "source": "Watts Else",
+   "date": "2026-11-25T05:20:00+00:00",
+   "n": 1,
+   "tags": [
+    "fr",
     "power",
-    "support",
     "regulation"
    ]
   },
   {
-   "title": "EDF Hydro Méditerranée injectera 700 millions d’euros dans la chaîne Durance-Verdon d’ici 2035 - https://horticulture-abadie-pyrenees.com/",
-   "link": "https://news.google.com/rss/articles/CBMibkFVX3lxTFBXN1U5TkRRQTlnTWFmZFlBd3ljZHVkcFdMQll4VkxlWUNyMzdIUXR6LWtUeElzWEJjcndsU0QzVEJJVGVkUWNsbkx6WnR0R25oWkFZU19HZnBUTVhwNS0tTTZQcV91UlhjRVN5M1hR?oc=5",
-   "source": "horticulture-abadie-pyrenees.com",
-   "date": "2026-11-25T02:52:53+00:00",
-   "n": 1,
-   "tags": [
-    "fr",
-    "regulation",
-    "watch",
-    "power"
-   ]
-  },
-  {
-   "title": "France may tie 5.5% solar VAT rate to RG5 hail resistance",
-   "link": "https://www.pv-magazine.com/2026/11/24/france-may-tie-5-5-solar-vat-rate-to-rg5-hail-resistance/",
-   "source": "pv magazine",
-   "date": "2026-11-24T14:30:04+00:00",
-   "n": 1,
+   "title": "Entrion Wind secures French monopile trial",
+   "link": "https://www.renews.biz/uncategorized/entrion-wind-secures-french-monopile-trial/",
+   "source": "reNEWS",
+   "date": "2026-11-25T11:53:36+00:00",
+   "n": 2,
    "tags": [
     "power",
-    "regulation",
     "renewables"
    ]
   },
   {
-   "title": "EDF UK boss: 'Kicking gas off the grid an outrageously expensive mistake'",
-   "link": "https://news.google.com/rss/articles/CBMiwwFBVV95cUxQNmgxTTFIdUtKMGJva1llaThVM3JQemlFRE8ya0ZjUVpqVFpkT1BycnFHTklEaGY3VE8zMDd4OXF2a3ItNUZ2UU0tNmhqU2ExcDVGS2NhMmFFVVZRSlZRWTZNSVpUVVJHbjA2Y0NKaXU2SkJQWUZETXdJNndMd3BFMDdMYksyWlkydk55TmxRRDI3bjBNOFByb3RnS05WVHo4UFMzVXFWSDVUZTFIRGJVeWR6Nm5iak1MRUNUVXdUZG5hQUE?oc=5",
-   "source": "Recharge News",
-   "date": "2026-11-24T13:36:28+00:00",
-   "n": 1,
-   "tags": [
-    "renewables",
-    "watch",
-    "gas",
-    "power"
-   ]
-  },
-  {
-   "title": "RTE devrait relever de 26 % ses prévisions de consommation électrique à l’horizon 2050",
-   "link": "https://news.google.com/rss/articles/CBMisgFBVV95cUxOVVBTdm9hZ19ISW56dDJMYkk0ZWZnNEVFREtSMXBMRV9lcHNlYk5jVnBTcVJEdzJ6eGxaSFBvS3RsekxoWnA1ZFFhaXBBdTRmaUM1WVBfYUVsUzRLRkpfUW95RUlWeGFBNlNfaDdudjBYVGhMZVBZWGxtZVlTdVItYkdGbXB0Q1VfbVNac0prWDNQLTU4SE9BOGtyMjgwNjhGMGdjSmdRWnhYUTU1QmwtbTNn?oc=5",
-   "source": "Tecsol Quotidien",
-   "date": "2026-11-24T19:53:36+00:00",
+   "title": "Ce tunnel de 17 km qu’EDF veut creuser pour transformer un barrage en système de stockage d’électricité géant",
+   "link": "https://www.revolution-energetique.com/actus/ce-tunnel-de-17-km-quedf-veut-creuser-pour-transformer-un-barrage-en-systeme-de-stockage-delectricite-geant/",
+   "source": "Révolution Énergétique",
+   "date": "2026-11-25T10:59:30+00:00",
    "n": 1,
    "tags": [
     "fr",
     "power",
-    "watch"
+    "renewables"
    ]
   },
   {
-   "title": "Radiateurs à 10 % de puissance en moins : la mesure que RTE peut décider avant de couper le courant",
-   "link": "https://news.google.com/rss/articles/CBMinAFBVV95cUxPS1RDUzhLaGd2Nlh6WHNHTXdxUC16YU1yLU55Nm52dzdMdFBHQ0ZFWUI0YWZ4VUNJT2Ric0kwUmUya2RKODk2eWEtSU4tVEJSUnlYVlZnMGw2blU4YVdOd1gyZ05URHpPUlIzcXZuUm11RkljN0FxdW9FTVJQbFdUWjUyZ2ZyckN0alB2SVNaVUhYV1dsQlFUeVIzb1k?oc=5",
-   "source": "Selectra",
-   "date": "2026-11-24T18:14:09+00:00",
+   "title": "Solaire : l'arrêté du 10 novembre 2026 redéfinit les critères d'application du taux réduit de TVA aux équipements photovoltaïques d'une puissance inférieure ou égale à 9 kWc installés dans les logements",
+   "link": "https://news.google.com/rss/articles/CBMiWEFVX3lxTE1SVHdFMW5naWFFZWptZ3lLVnFGOTFmaGxudDJmbVBwT2V4SWpsZmxMaDZfN2lfX1E4U25LN0hCZ2Q2MUkxd0EycDZILXFvOUp5V1o5TjQwLVc?oc=5",
+   "source": "Cabinet Gossement AVOCATS",
+   "date": "2026-11-25T07:19:31+00:00",
+   "n": 2,
+   "tags": [
+    "fr",
+    "regulation",
+    "power",
+    "watch",
+    "renewables"
+   ]
+  },
+  {
+   "title": "Ingénieur Gestion de Projets Nucléaire H/F ASSYSTEM Chusclan, , France CDI",
+   "link": "https://news.google.com/rss/articles/CBMizwFBVV95cUxPOHBZTlB0aUNicm4wdTFRY3hGVzg4SU5xS3d6bmtweFlKS1BFTDZCLTE5M3NOSVUtdjBKNjNNcWRxZEwwdzE5YU43TmdOLWZ4c2FVSkpyVHZtOFBqay1KS0lzZlhRNXVHVEVMNVlpbWJZNWZWTUoyWjZZMXV5b0pNQVJyTjlmZTBtVS1CaXpXbWpjSGlYeXY5cWt2aV9RblBXbTVZR1lYRlhfemx4M0thQndidmdZS2l6X0pkX1BNZlItaE9aWjhHMDdvWTdrQjA?oc=5",
+   "source": "L'Usine Nouvelle",
+   "date": "2026-11-25T00:48:29+00:00",
    "n": 1,
    "tags": [
     "fr",
@@ -379,21 +300,45 @@
     "agenda",
     "post"
    ],
-   "headline": "La CRE approuve le cahier des charges de PPE3 Neutre",
-   "headline_en": "The CRE approves the PPE3 Neutre specifications",
+   "headline": "Actualité énergétique du jour",
+   "headline_en": "Today's energy news",
    "stories": [
     {
-     "id": "01newzoqxo5vehga1fyqqoc5",
-     "title": "« C'est inquiétant » : les banques financent encore trop les énergies fossiles par rapport aux renouvelables",
-     "link": "https://news.google.com/rss/articles/CBMi-wFBVV95cUxOMG5iWWJHQl9LNW5sNVM4ODhBbGNfVDB1WVpveHNxTlI0Ym5xU2ZvRFhKck1ya0tReEFWTVliU2xCMk9KSWRuTDB1X01sZTc4bFNmSmtadzF5MmJOaFNwVmN4cmpOQi1ZSlEycWhnQ1V0SmdrVXpHRW83RHFJSW9yelJlR04teG9VMmt2R01yQnhvcjNLOVduUXBYUGZvQWVXMmVFWG5mVDYxN1pRWEtSUmhRcTJySnEwNkhuamhfUFZDdFM3UUFkWmk1a3FWR0lQNmVwQzBodXdIVUxLb1pQUFg0ZHRHdk55Z3pHQ01neWZoQXo5VEhGa1FYQQ?oc=5",
+     "id": "nementsarrete16avril2026",
+     "title": "Contribution de l’UFE relative à l’étude d’une solution pérenne alternative aux échelonnements de l’arrêté du 16 avril 2026",
+     "link": "https://ufe-electricite.fr/contribution-ufe-solution-perenne-alternative-echelonnements-arrete-16-avril-2026/",
      "tags": [
       "fr",
       "power",
-      "watch",
-      "renewables"
+      "assoc",
+      "support",
+      "regulation"
      ],
      "sources": [
-      "Les Echos"
+      "UFE"
+     ],
+     "free": null,
+     "report_link": null,
+     "report_name": null,
+     "what": "L'UFE partage l'objectif de maîtriser les arrêts et redémarrages des installations de production d'électricité",
+     "what_en": "UFE shares the goal of controlling the shutdowns and restarts of electricity production facilities",
+     "for_you": null,
+     "for_you_en": null
+    },
+    {
+     "id": "vdegzvsufkmetjqnbbeeeoc5",
+     "title": "Prix négatifs de l'électricité : un levier pour le stockage",
+     "link": "https://news.google.com/rss/articles/CBMiogFBVV95cUxNMUZrYk1kR0ZpWWtwSmtOVllfdkVhUlFJVHliZmlmcGVYSktWT2NSbFBmeTJwWEtZVmZjYkpfb0VSUFIzTWg1T2dBTUxPMzMxSHFlTWVHSkprREphVmlsb0RwY0FxZEdoWEp0QzVEcjRjaVhWOHFubGhMQVY5d3U4M3U2Ujg5ZHRvcXlOemVoN0t3d1VDeGZVSUFkMEtJQnBBeEE?oc=5",
+     "tags": [
+      "markets",
+      "fr",
+      "watch",
+      "support",
+      "power"
+     ],
+     "sources": [
+      "Dosya Haber",
+      "pv magazine France"
      ],
      "free": null,
      "report_link": null,
@@ -404,39 +349,125 @@
      "for_you_en": null
     },
     {
-     "id": "unplancherderemuneration",
-     "title": "Appel d’offres PPE3 Neutre : la CRE approuve le cahier des charges et réclame un plancher de rémunération",
-     "link": "https://www.lechodusolaire.fr/appel-doffres-ppe3-neutre-la-cre-approuve-le-cahier-des-charges-et-reclame-un-plancher-de-remuneration/?utm_source=rss&utm_medium=rss&utm_campaign=appel-doffres-ppe3-neutre-la-cre-approuve-le-cahier-des-charges-et-reclame-un-plancher-de-remuneration",
+     "id": "memesoutienquaunucleaire",
+     "title": "Niclas Broman, directeur de Skyborn Suède, demande des CfD pour l’éolien en mer et le même soutien qu’au nucléaire",
+     "link": "https://www.energiesdelamer.eu/2026/11/25/niclas-broman-directeur-de-skyborn-suede-demande-des-cfd-pour-leolien-en-mer-et-le-meme-soutien-quau-nucleaire/",
      "tags": [
       "fr",
       "renewables",
-      "power",
-      "support",
-      "regulation"
+      "regulation",
+      "power"
      ],
      "sources": [
-      "L'Écho du solaire"
+      "Énergies de la mer"
      ],
      "free": null,
      "report_link": null,
      "report_name": null,
-     "what": "La Commission de régulation de l’énergie (CRE) a rendu un avis favorable, dans une délibération du 5 novembre, sur le cahier des charges de la première période de l’appel d’offres « PPE3 Neutre », qui porte sur 500 MW/MWc d’installations…",
+     "what": "25/11/2026 – energiesdelamer.eu. Niclas Broman souhaite que le prochain gouvernement suédois accorde à l’éolien offshore le même soutien qu’au nucléaire avant l’expiration des permis. En juillet 2026, le gouvernement suédois […]",
      "what_en": null,
      "for_you": null,
      "for_you_en": null
     },
     {
-     "id": "zr2zzazlccmi1ejnsa3lroc5",
-     "title": "RTE : la CRE réduit de près de 4 millions d’euros le budget de résilience du réseau",
-     "link": "https://news.google.com/rss/articles/CBMibkFVX3lxTFBiTk95MHY0QWtpcEt6eFpNeTdseXRTVHlLdWZIa0ZwSndRdWhEVkdkM1d3a2o4U2xvQUdiX3VOUnVud0Nad3JJbmZYTk1wMjg2YlZIN3IzWld1NWFtX1QzR2ZzazlCcmI1ejNsa3lR?oc=5",
+     "id": "ovoltaiquess6ets10439765",
+     "title": "Le gouvernement compte supprimer les contrats d’achat photovoltaïques « S6 » et « S10 »",
+     "link": "https://www.greenunivers.com/2026/11/le-gouvernement-compte-supprimer-les-contrats-dachat-photovoltaiques-s6-et-s10-439765/",
      "tags": [
       "fr",
       "power",
-      "watch",
-      "regulation"
+      "support",
+      "renewables"
      ],
      "sources": [
-      "Les Smartgrids"
+      "GreenUnivers"
+     ],
+     "free": null,
+     "report_link": null,
+     "report_name": null,
+     "what": "Une proposition radicale. Parce qu’il n’arrive pas juridiquement à modifier les contrats solaires dits « S6 » et « S10 », le gouvernement propose désormais de les supprimer. Ces contrats, signés entre 2006 et 2010, garantissent un tarif de…",
+     "what_en": null,
+     "for_you": null,
+     "for_you_en": null
+    },
+    {
+     "id": "mh3etdksllwrnd4neq4uqoc5",
+     "title": "TAQA boucle le financement de Taweelah C, centrale à gaz de 2,11 Md$",
+     "link": "https://news.google.com/rss/articles/CBMikgFBVV95cUxNcVRKRGVNN1lLRkczY255d3BxMmdJVElHcE5feDFicndaTjhyMHlSanVEUzdvRndGX216T1NaV3doQmcwempqYUZtWlJkU1Jici1Ya29xRUdJRmU4UUNFSmptTHVXZmJMeFRyaUVTS0dNd29oS0dkSHpUSHRrVHRDLVc2Qmh3eTdkSllwRnd4NEQ4UQ?oc=5",
+     "tags": [
+      "markets",
+      "fr",
+      "watch",
+      "deal",
+      "gas",
+      "power"
+     ],
+     "sources": [
+      "energynews.pro"
+     ],
+     "free": null,
+     "report_link": null,
+     "report_name": null,
+     "what": null,
+     "what_en": null,
+     "for_you": null,
+     "for_you_en": null
+    },
+    {
+     "id": "athtrapsolarpvdevelopers",
+     "title": "Timing of Polish regulatory reforms has created ‘a bit of a deathtrap’ for solar developers",
+     "link": "https://www.pv-tech.org/timing-polish-regulatory-reforms-bit-of-a-deathtrap-solar-pv-developers/",
+     "tags": [
+      "power",
+      "regulation",
+      "renewables"
+     ],
+     "sources": [
+      "PV Tech"
+     ],
+     "free": null,
+     "report_link": null,
+     "report_name": null,
+     "what": "Réformes réglementaires en Pologne créent des difficultés pour les développeurs solaires",
+     "what_en": "Regulatory reforms in Poland create difficulties for solar developers",
+     "for_you": null,
+     "for_you_en": null
+    },
+    {
+     "id": "planassofrmairessolaires",
+     "title": "Le solaire vu par 100 maires",
+     "link": "https://www.enerplan.asso.fr/maires-solaires/",
+     "tags": [
+      "fr",
+      "regulation",
+      "power",
+      "assoc",
+      "renewables"
+     ],
+     "sources": [
+      "Enerplan"
+     ],
+     "free": null,
+     "report_link": null,
+     "report_name": null,
+     "what": "100 maires partagent leur expérience sur le solaire",
+     "what_en": "100 mayors share their experience on solar energy",
+     "for_you": null,
+     "for_you_en": null
+    },
+    {
+     "id": "q0m012dwq0cwhjnu1jbdaoc5",
+     "title": "Prix du gaz : +5,8 % en décembre, les conseils de Guillaume Faure",
+     "link": "https://news.google.com/rss/articles/CBMizAFBVV95cUxOUmhjUXUtSTE0bS1zd1N2Mk1qY2xGRWpySXhzZW40QTVzLVJuSkwxNG43S3ptWUNJbFkxVzFJWVZyU0JvZ2pLd3ZKbEo4LTdpMmR4WGdGV3Y4aDl6SFVXWVhGYXE5OXB3OVpJcjAwbVcyb2R6WjFDNHphNnVRWG9UZ05wNF9JNkFUNzdnbkpKMmpyNEdkeVFUT2U0T2JKWXZVNDNicWtSWWhGeW9YZ2ZCM0FVX2ZGYkN6NXFnMUQ0M012dWQ0cWhjNU1jbDA?oc=5",
+     "tags": [
+      "fr",
+      "regulation",
+      "watch",
+      "gas",
+      "markets"
+     ],
+     "sources": [
+      "Presse Agence"
      ],
      "free": null,
      "report_link": null,
@@ -470,70 +501,28 @@
     "markets",
     "post"
    ],
-   "headline": "La CRE approuve le cahier des charges de PPE3 Neutre",
-   "headline_en": "CRE approves PPE3 Neutre tender documents",
+   "headline": "L'UFE propose une solution alternative aux échelonnements de l'arrêté du 16 avril 2026",
+   "headline_en": "UFE proposes alternative solution to the April 16, 2026 decree's staggered schedule",
    "stories": [
     {
-     "id": "01newzoqxo5vehga1fyqqoc5",
-     "title": "« C'est inquiétant » : les banques financent encore trop les énergies fossiles par rapport aux renouvelables",
-     "link": "https://news.google.com/rss/articles/CBMi-wFBVV95cUxOMG5iWWJHQl9LNW5sNVM4ODhBbGNfVDB1WVpveHNxTlI0Ym5xU2ZvRFhKck1ya0tReEFWTVliU2xCMk9KSWRuTDB1X01sZTc4bFNmSmtadzF5MmJOaFNwVmN4cmpOQi1ZSlEycWhnQ1V0SmdrVXpHRW83RHFJSW9yelJlR04teG9VMmt2R01yQnhvcjNLOVduUXBYUGZvQWVXMmVFWG5mVDYxN1pRWEtSUmhRcTJySnEwNkhuamhfUFZDdFM3UUFkWmk1a3FWR0lQNmVwQzBodXdIVUxLb1pQUFg0ZHRHdk55Z3pHQ01neWZoQXo5VEhGa1FYQQ?oc=5",
+     "id": "nementsarrete16avril2026",
+     "title": "Contribution de l’UFE relative à l’étude d’une solution pérenne alternative aux échelonnements de l’arrêté du 16 avril 2026",
+     "link": "https://ufe-electricite.fr/contribution-ufe-solution-perenne-alternative-echelonnements-arrete-16-avril-2026/",
      "tags": [
       "fr",
       "power",
-      "watch",
-      "renewables"
-     ],
-     "sources": [
-      "Les Echos"
-     ],
-     "free": null,
-     "report_link": null,
-     "report_name": null,
-     "what": null,
-     "what_en": null,
-     "for_you": null,
-     "for_you_en": null
-    },
-    {
-     "id": "unplancherderemuneration",
-     "title": "Appel d’offres PPE3 Neutre : la CRE approuve le cahier des charges et réclame un plancher de rémunération",
-     "link": "https://www.lechodusolaire.fr/appel-doffres-ppe3-neutre-la-cre-approuve-le-cahier-des-charges-et-reclame-un-plancher-de-remuneration/?utm_source=rss&utm_medium=rss&utm_campaign=appel-doffres-ppe3-neutre-la-cre-approuve-le-cahier-des-charges-et-reclame-un-plancher-de-remuneration",
-     "tags": [
-      "fr",
-      "renewables",
-      "power",
+      "assoc",
       "support",
       "regulation"
      ],
      "sources": [
-      "L'Écho du solaire"
+      "UFE"
      ],
      "free": null,
      "report_link": null,
      "report_name": null,
-     "what": "La Commission de régulation de l’énergie (CRE) a rendu un avis favorable, dans une délibération du 5 novembre, sur le cahier des charges de la première période de l’appel d’offres « PPE3 Neutre », qui porte sur 500 MW/MWc d’installations…",
-     "what_en": null,
-     "for_you": null,
-     "for_you_en": null
-    },
-    {
-     "id": "ocdesimplification439521",
-     "title": "Renouvelables, data centers : le Congrès américain prépare un choc de simplification",
-     "link": "https://www.greenunivers.com/2026/11/renouvelables-data-centers-le-congres-americain-prepare-un-choc-de-simplification-439521/",
-     "tags": [
-      "fr",
-      "power",
-      "regulation",
-      "renewables"
-     ],
-     "sources": [
-      "GreenUnivers"
-     ],
-     "free": null,
-     "report_link": null,
-     "report_name": null,
-     "what": "Le Sénat américain a approuvé le 19 novembre le projet de loi “Bipartisan American Affordability and Jobs Act”. Le texte vise à simplifier les procédures administratives fédérales pour les projets de production d’énergie, de construction…",
-     "what_en": null,
+     "what": "L'UFE partage l'objectif de maîtriser les arrêts et redémarrages des installations de production d'électricité. L'UFE souligne la nécessité de caractériser le besoin résiduel de RTE.",
+     "what_en": "UFE shares the goal of controlling the shutdowns and restarts of electricity production facilities. UFE emphasizes the need to characterize RTE's residual needs.",
      "for_you": null,
      "for_you_en": null
     }
@@ -561,21 +550,23 @@
     "agenda",
     "post"
    ],
-   "headline": "La CRE approuve l'appel d'offres PPE3 Neutre",
-   "headline_en": "CRE approves PPE3 Neutre call for tenders",
+   "headline": "Nouvelles règles pour les équipements photovoltaïques",
+   "headline_en": "New rules for photovoltaic equipment",
    "stories": [
     {
-     "id": "01newzoqxo5vehga1fyqqoc5",
-     "title": "« C'est inquiétant » : les banques financent encore trop les énergies fossiles par rapport aux renouvelables",
-     "link": "https://news.google.com/rss/articles/CBMi-wFBVV95cUxOMG5iWWJHQl9LNW5sNVM4ODhBbGNfVDB1WVpveHNxTlI0Ym5xU2ZvRFhKck1ya0tReEFWTVliU2xCMk9KSWRuTDB1X01sZTc4bFNmSmtadzF5MmJOaFNwVmN4cmpOQi1ZSlEycWhnQ1V0SmdrVXpHRW83RHFJSW9yelJlR04teG9VMmt2R01yQnhvcjNLOVduUXBYUGZvQWVXMmVFWG5mVDYxN1pRWEtSUmhRcTJySnEwNkhuamhfUFZDdFM3UUFkWmk1a3FWR0lQNmVwQzBodXdIVUxLb1pQUFg0ZHRHdk55Z3pHQ01neWZoQXo5VEhGa1FYQQ?oc=5",
+     "id": "vdegzvsufkmetjqnbbeeeoc5",
+     "title": "Prix négatifs de l'électricité : un levier pour le stockage",
+     "link": "https://news.google.com/rss/articles/CBMiogFBVV95cUxNMUZrYk1kR0ZpWWtwSmtOVllfdkVhUlFJVHliZmlmcGVYSktWT2NSbFBmeTJwWEtZVmZjYkpfb0VSUFIzTWg1T2dBTUxPMzMxSHFlTWVHSkprREphVmlsb0RwY0FxZEdoWEp0QzVEcjRjaVhWOHFubGhMQVY5d3U4M3U2Ujg5ZHRvcXlOemVoN0t3d1VDeGZVSUFkMEtJQnBBeEE?oc=5",
      "tags": [
+      "markets",
       "fr",
-      "power",
       "watch",
-      "renewables"
+      "support",
+      "power"
      ],
      "sources": [
-      "Les Echos"
+      "Dosya Haber",
+      "pv magazine France"
      ],
      "free": null,
      "report_link": null,
@@ -586,48 +577,156 @@
      "for_you_en": null
     },
     {
-     "id": "unplancherderemuneration",
-     "title": "Appel d’offres PPE3 Neutre : la CRE approuve le cahier des charges et réclame un plancher de rémunération",
-     "link": "https://www.lechodusolaire.fr/appel-doffres-ppe3-neutre-la-cre-approuve-le-cahier-des-charges-et-reclame-un-plancher-de-remuneration/?utm_source=rss&utm_medium=rss&utm_campaign=appel-doffres-ppe3-neutre-la-cre-approuve-le-cahier-des-charges-et-reclame-un-plancher-de-remuneration",
+     "id": "zilxfvoup5v1o5tjqwlvcoc5",
+     "title": "Solaire : l'arrêté du 10 novembre 2026 redéfinit les critères d'application du taux réduit de TVA aux équipements photovoltaïques d'une puissance inférieure ou égale à 9 kWc installés dans les logements",
+     "link": "https://news.google.com/rss/articles/CBMiWEFVX3lxTE1SVHdFMW5naWFFZWptZ3lLVnFGOTFmaGxudDJmbVBwT2V4SWpsZmxMaDZfN2lfX1E4U25LN0hCZ2Q2MUkxd0EycDZILXFvOUp5V1o5TjQwLVc?oc=5",
      "tags": [
       "fr",
-      "renewables",
+      "regulation",
       "power",
-      "support",
-      "regulation"
+      "watch",
+      "renewables"
      ],
      "sources": [
-      "L'Écho du solaire"
+      "Cabinet Gossement AVOCATS",
+      "Gossement Avocats"
      ],
      "free": null,
      "report_link": null,
      "report_name": null,
-     "what": "La Commission de régulation de l’énergie (CRE) a rendu un avis favorable, dans une délibération du 5 novembre, sur le cahier des charges de la première période de l’appel d’offres « PPE3 Neutre », qui porte sur 500 MW/MWc d’installations…",
+     "what": "Arrêté du 10 novembre 2026 définit critères pour TVA réduite",
+     "what_en": "November 10, 2026 decree defines criteria for reduced VAT",
+     "for_you": null,
+     "for_you_en": null
+    },
+    {
+     "id": "memesoutienquaunucleaire",
+     "title": "Niclas Broman, directeur de Skyborn Suède, demande des CfD pour l’éolien en mer et le même soutien qu’au nucléaire",
+     "link": "https://www.energiesdelamer.eu/2026/11/25/niclas-broman-directeur-de-skyborn-suede-demande-des-cfd-pour-leolien-en-mer-et-le-meme-soutien-quau-nucleaire/",
+     "tags": [
+      "fr",
+      "renewables",
+      "regulation",
+      "power"
+     ],
+     "sources": [
+      "Énergies de la mer"
+     ],
+     "free": null,
+     "report_link": null,
+     "report_name": null,
+     "what": "25/11/2026 – energiesdelamer.eu. Niclas Broman souhaite que le prochain gouvernement suédois accorde à l’éolien offshore le même soutien qu’au nucléaire avant l’expiration des permis. En juillet 2026, le gouvernement suédois […]",
      "what_en": null,
      "for_you": null,
      "for_you_en": null
     },
     {
-     "id": "zn0rlnozxfgdvlhs0ruawoc5",
-     "title": "Grenergy conclut au Pérou un macro PPA renouvelable de 900 GWh par an pendant 15 ans à partir de 2029",
-     "link": "https://news.google.com/rss/articles/CBMi1gFBVV95cUxOTnF6bU5SVWZhWm5ncTRYbWIycERCRzByTUpEck4xVkRfd1o5NXg3YzFocWNyTmpHTmg3Z0dkTTYwZ2NzSm1RMnM2MUNfVXBnYjczUlNrd194eHJhaEZEZ3cwbWlwMzZnaHdvNlNFa3haRV83UnFmRVcxV2g5UHpuV0NPaGo4dVpwN09ocFBDcW1zVkI2T3lWVXAxUmh6ZlcwWUl1VklCejhLZmVYM1V2M0wwQ21EVFNGU21NVGo2TkZ5NHh4bG95blFoU042N0t0VnlvVjBn0gHbAUFVX3lxTE9McGpxNUwyLXBxdEdUN2J6Nzh5eUxZRE0wa2IwMkxxRFFqY241QjdmZGZlVWE2aEx6dFUyWkxHU0FVdWhJMnJxS1JmRS1ycE1MMjR5VkdpUFJXeFhkMUNnM0xZM2MzTXZjVzJXajJqVlJadjJKMzZGWlZpZmhUaW5rOHdwLUI3RXlUbjZIcF8yZXU4SGZUZHdMY2NLWFJRZGsySnJ1dGhZZFlLV3lVUDhuMFE1V2ExdS1ZWHFpNUR3ZGpsMzRDbkt6eTRSVzN0RlNOZXFGdVlhS0RUaw?oc=5",
+     "id": "ovoltaiquess6ets10439765",
+     "title": "Le gouvernement compte supprimer les contrats d’achat photovoltaïques « S6 » et « S10 »",
+     "link": "https://www.greenunivers.com/2026/11/le-gouvernement-compte-supprimer-les-contrats-dachat-photovoltaiques-s6-et-s10-439765/",
      "tags": [
-      "markets",
       "fr",
-      "watch",
+      "power",
+      "support",
       "renewables"
      ],
      "sources": [
-      "Demócrata"
+      "GreenUnivers"
      ],
      "free": null,
      "report_link": null,
      "report_name": null,
-     "what": "Cela montre une tendance vers les contrats de gré à gré à long terme pour les énergies renouvelables.",
-     "what_en": "This shows a trend towards long-term power purchase agreements for renewable energies.",
+     "what": "Une proposition radicale. Parce qu’il n’arrive pas juridiquement à modifier les contrats solaires dits « S6 » et « S10 », le gouvernement propose désormais de les supprimer. Ces contrats, signés entre 2006 et 2010, garantissent un tarif de…",
+     "what_en": null,
+     "for_you": null,
+     "for_you_en": null
+    },
+    {
+     "id": "zyxv0zoukxfs3hbt1hnzwoc5",
+     "title": "TotalEnergies Mirny wind to FC",
+     "link": "https://news.google.com/rss/articles/CBMickFVX3lxTE9mVkl5a3laNlBZMzhSOC12dkRzeEdSUnB5M2dodW82ZElQWk9kNHZNMk5VSWhBU3p1Z2dwbmJGODV4c1V2RmpOR3p0MVJZYklDY1pBLUcwOUFUNEZ0QXg4d1NrTzYxV0ZOUkxfS3hBT1hnZw?oc=5",
+     "tags": [
+      "markets",
+      "fr",
+      "watch",
+      "renewables",
+      "power"
+     ],
+     "sources": [
+      "Project Finance International",
+      "Boursier.com"
+     ],
+     "free": null,
+     "report_link": null,
+     "report_name": null,
+     "what": "TotalEnergies utilise l'énergie éolienne pour produire de l'hydrogène",
+     "what_en": "TotalEnergies uses wind energy to produce hydrogen",
      "for_you": null,
      "for_you_en": null,
      "ctx": true
+    },
+    {
+     "id": "curesfrenchmonopiletrial",
+     "title": "Entrion Wind secures French monopile trial",
+     "link": "https://www.renews.biz/uncategorized/entrion-wind-secures-french-monopile-trial/",
+     "tags": [
+      "power",
+      "renewables",
+      "fr"
+     ],
+     "sources": [
+      "reNEWS",
+      "Windpower Monthly"
+     ],
+     "free": null,
+     "report_link": null,
+     "report_name": null,
+     "what": "Entrion Wind teste technologie de fondation",
+     "what_en": "Entrion Wind tests foundation technology",
+     "for_you": "Essais à 100 mètres de profondeur",
+     "for_you_en": "Trials at 100 meters depth"
+    },
+    {
+     "id": "tockagedelectricitegeant",
+     "title": "Ce tunnel de 17 km qu’EDF veut creuser pour transformer un barrage en système de stockage d’électricité géant",
+     "link": "https://www.revolution-energetique.com/actus/ce-tunnel-de-17-km-quedf-veut-creuser-pour-transformer-un-barrage-en-systeme-de-stockage-delectricite-geant/",
+     "tags": [
+      "fr",
+      "power",
+      "renewables"
+     ],
+     "sources": [
+      "Révolution Énergétique"
+     ],
+     "free": null,
+     "report_link": null,
+     "report_name": null,
+     "what": "Dans l’Aveyron, EDF veut relier le lac de Pareloup à l’usine hydroélectrique du Pouget par une galerie de 17 km. Une enveloppe de près d’un […] L’article Ce tunnel de 17 km qu’EDF veut creuser pour transformer un barrage en système de…",
+     "what_en": null,
+     "for_you": null,
+     "for_you_en": null
+    },
+    {
+     "id": "q0m012dwq0cwhjnu1jbdaoc5",
+     "title": "Prix du gaz : +5,8 % en décembre, les conseils de Guillaume Faure",
+     "link": "https://news.google.com/rss/articles/CBMizAFBVV95cUxOUmhjUXUtSTE0bS1zd1N2Mk1qY2xGRWpySXhzZW40QTVzLVJuSkwxNG43S3ptWUNJbFkxVzFJWVZyU0JvZ2pLd3ZKbEo4LTdpMmR4WGdGV3Y4aDl6SFVXWVhGYXE5OXB3OVpJcjAwbVcyb2R6WjFDNHphNnVRWG9UZ05wNF9JNkFUNzdnbkpKMmpyNEdkeVFUT2U0T2JKWXZVNDNicWtSWWhGeW9YZ2ZCM0FVX2ZGYkN6NXFnMUQ0M012dWQ0cWhjNU1jbDA?oc=5",
+     "tags": [
+      "fr",
+      "regulation",
+      "watch",
+      "gas",
+      "markets"
+     ],
+     "sources": [
+      "Presse Agence"
+     ],
+     "free": null,
+     "report_link": null,
+     "report_name": null,
+     "what": null,
+     "what_en": null,
+     "for_you": null,
+     "for_you_en": null
     }
    ],
    "ai": true
@@ -653,21 +752,23 @@
     "agenda",
     "post"
    ],
-   "headline": "Nouvelles de l'énergie renouvelable",
-   "headline_en": "Renewable energy news",
+   "headline": "Nouvelles énergétiques : stockage, PPA, éoliennes",
+   "headline_en": "Energy news: storage, PPA, wind farms",
    "stories": [
     {
-     "id": "01newzoqxo5vehga1fyqqoc5",
-     "title": "« C'est inquiétant » : les banques financent encore trop les énergies fossiles par rapport aux renouvelables",
-     "link": "https://news.google.com/rss/articles/CBMi-wFBVV95cUxOMG5iWWJHQl9LNW5sNVM4ODhBbGNfVDB1WVpveHNxTlI0Ym5xU2ZvRFhKck1ya0tReEFWTVliU2xCMk9KSWRuTDB1X01sZTc4bFNmSmtadzF5MmJOaFNwVmN4cmpOQi1ZSlEycWhnQ1V0SmdrVXpHRW83RHFJSW9yelJlR04teG9VMmt2R01yQnhvcjNLOVduUXBYUGZvQWVXMmVFWG5mVDYxN1pRWEtSUmhRcTJySnEwNkhuamhfUFZDdFM3UUFkWmk1a3FWR0lQNmVwQzBodXdIVUxLb1pQUFg0ZHRHdk55Z3pHQ01neWZoQXo5VEhGa1FYQQ?oc=5",
+     "id": "vdegzvsufkmetjqnbbeeeoc5",
+     "title": "Prix négatifs de l'électricité : un levier pour le stockage",
+     "link": "https://news.google.com/rss/articles/CBMiogFBVV95cUxNMUZrYk1kR0ZpWWtwSmtOVllfdkVhUlFJVHliZmlmcGVYSktWT2NSbFBmeTJwWEtZVmZjYkpfb0VSUFIzTWg1T2dBTUxPMzMxSHFlTWVHSkprREphVmlsb0RwY0FxZEdoWEp0QzVEcjRjaVhWOHFubGhMQVY5d3U4M3U2Ujg5ZHRvcXlOemVoN0t3d1VDeGZVSUFkMEtJQnBBeEE?oc=5",
      "tags": [
+      "markets",
       "fr",
-      "power",
       "watch",
-      "renewables"
+      "support",
+      "power"
      ],
      "sources": [
-      "Les Echos"
+      "Dosya Haber",
+      "pv magazine France"
      ],
      "free": null,
      "report_link": null,
@@ -678,42 +779,155 @@
      "for_you_en": null
     },
     {
-     "id": "0wve9cukdhvfbrzfhfckuoc5",
-     "title": "BESS : Incidences, Eliosfair et deux SEML s’associent pour développer 50 MVA de stockage d’ici 2030",
-     "link": "https://news.google.com/rss/articles/CBMiwAFBVV95cUxOaTBuMGhGQ1NPWlk3MGtwdFZtRWpSY2FpQ2VvZDlTZXZsdmVkM0pRTWE4MXdIR2RkNkV0dmlmNEdTdWMxZTBScngyd29HUGtWd0RxaHEzQXB2S09ta0s4aXRUOEVWbnlnZmRqR3dZbzZqVV9NcllKeVJSak1OV2FXQU9PUVFVdlc1YjVOSFFUaUd4RHlBb2h1VGZnbmNYTXZWQ0U1S0lsTnVMbm5reEpQdS0wVE9CUkdhVFBRZFhfckU?oc=5",
+     "id": "nementsarrete16avril2026",
+     "title": "Contribution de l’UFE relative à l’étude d’une solution pérenne alternative aux échelonnements de l’arrêté du 16 avril 2026",
+     "link": "https://ufe-electricite.fr/contribution-ufe-solution-perenne-alternative-echelonnements-arrete-16-avril-2026/",
      "tags": [
       "fr",
       "power",
-      "watch"
+      "assoc",
+      "support",
+      "regulation"
      ],
      "sources": [
-      "Tecsol Quotidien"
+      "UFE"
      ],
      "free": null,
      "report_link": null,
      "report_name": null,
-     "what": "L'association vise à développer des capacités de stockage d'électricité, réduisant les coûts et améliorant la stabilité du réseau.",
-     "what_en": "The partnership aims to develop electricity storage capabilities, reducing costs and improving grid stability.",
+     "what": "En préambule, l’UFE partage l’objectif de mieux maîtriser les arrêts et redémarrages (A/R) volontaires des installations de production d’électricité, qui résultent des volumes d’électricité vendus sur les différents marchés journalier et…",
+     "what_en": null,
+     "for_you": null,
+     "for_you_en": null
+    },
+    {
+     "id": "mh3etdksllwrnd4neq4uqoc5",
+     "title": "TAQA boucle le financement de Taweelah C, centrale à gaz de 2,11 Md$",
+     "link": "https://news.google.com/rss/articles/CBMikgFBVV95cUxNcVRKRGVNN1lLRkczY255d3BxMmdJVElHcE5feDFicndaTjhyMHlSanVEUzdvRndGX216T1NaV3doQmcwempqYUZtWlJkU1Jici1Ya29xRUdJRmU4UUNFSmptTHVXZmJMeFRyaUVTS0dNd29oS0dkSHpUSHRrVHRDLVc2Qmh3eTdkSllwRnd4NEQ4UQ?oc=5",
+     "tags": [
+      "markets",
+      "fr",
+      "watch",
+      "deal",
+      "gas",
+      "power"
+     ],
+     "sources": [
+      "energynews.pro"
+     ],
+     "free": null,
+     "report_link": null,
+     "report_name": null,
+     "what": null,
+     "what_en": null,
+     "for_you": null,
+     "for_you_en": null
+    },
+    {
+     "id": "dvntvhmwzwcklzu052d1eoc5",
+     "title": "Appel d'offre, contrat d'achat : le gouvernement veut faire évoluer le soutien au solaire",
+     "link": "https://news.google.com/rss/articles/CBMinwFBVV95cUxQRlBMbUU3eXUxZ21CYmp2MVFIWlBCNTkxdzBqejFlZFd4MjZIOTRnZm1XdXhheHdyZVpsdUJzVU9JSGVRZ2k0U1VJREhxOTY4N2oteEJ0U2JIUS1LM0lyQnhQb3poMHlJWl9vTmFxOFJIVktBTzNaTEkyS0IzdngxSDJHTUpQdWMtVW9CT0gyNmdVNTVHMWZwcklZU052d1E?oc=5",
+     "tags": [
+      "fr",
+      "regulation",
+      "watch",
+      "support",
+      "renewables"
+     ],
+     "sources": [
+      "Batiactu"
+     ],
+     "free": null,
+     "report_link": null,
+     "report_name": null,
+     "what": "L'évolution du soutien au solaire impacte les producteurs et les consommateurs d'électricité",
+     "what_en": "The evolution of solar support affects electricity producers and consumers",
      "for_you": null,
      "for_you_en": null,
      "ctx": true
     },
     {
-     "id": "etitssitesprofessionnels",
-     "title": "TCL SunPower lance en Europe une batterie à onduleur intégré pour les petits sites professionnels",
-     "link": "https://www.lechodusolaire.fr/tcl-sunpower-lance-en-europe-une-batterie-a-onduleur-integre-pour-les-petits-sites-professionnels/?utm_source=rss&utm_medium=rss&utm_campaign=tcl-sunpower-lance-en-europe-une-batterie-a-onduleur-integre-pour-les-petits-sites-professionnels",
+     "id": "ates99mwromanianwindfarm",
+     "title": "Nala inaugurates 99MW Romanian wind farm",
+     "link": "https://www.renews.biz/onshore-wind/nala-inaugurates-99mw-romanian-wind-farm/",
      "tags": [
-      "fr",
+      "power",
       "renewables",
-      "power"
+      "build",
+      "markets",
+      "watch"
      ],
      "sources": [
-      "L'Écho du solaire"
+      "reNEWS",
+      "Romania Insider"
      ],
      "free": null,
      "report_link": null,
      "report_name": null,
-     "what": "Le Chinois TCL SunPower Global a ouvert le 19 novembre les commandes en Europe de son système de stockage X5, destiné aux petits sites commerciaux, industriels et agricoles. L’armoire intègre un onduleur hybride de 50 kW assemblé et…",
+     "what": "Inauguration de ferme éolienne en Roumanie",
+     "what_en": "Inauguration of wind farm in Romania",
+     "for_you": null,
+     "for_you_en": null
+    },
+    {
+     "id": "terystorageprojecttodate",
+     "title": "Greenvolt Power breaks ground at its biggest US solar and battery storage project to date",
+     "link": "https://www.pv-magazine.com/2026/11/25/greenvolt-power-breaks-ground-at-its-biggest-us-solar-and-battery-storage-project-to-date/",
+     "tags": [
+      "power",
+      "build",
+      "renewables",
+      "watch"
+     ],
+     "sources": [
+      "pv magazine",
+      "Renewables Now"
+     ],
+     "free": null,
+     "report_link": null,
+     "report_name": null,
+     "what": "Projet de stockage d'énergie aux États-Unis",
+     "what_en": "Energy storage project in the US",
+     "for_you": null,
+     "for_you_en": null
+    },
+    {
+     "id": "lityfloatingpvkyrgyzstan",
+     "title": "ADB part-finances Kyrgyzstan’s first utility-scale floating PV project",
+     "link": "https://www.pv-tech.org/asian-development-bank-finance-first-utility-floating-pv-kyrgyzstan/",
+     "tags": [
+      "power",
+      "deal",
+      "build",
+      "renewables"
+     ],
+     "sources": [
+      "PV Tech"
+     ],
+     "free": null,
+     "report_link": null,
+     "report_name": null,
+     "what": "Financement de projet solaire flottant au Kirghizistan",
+     "what_en": "Financing of floating solar project in Kyrgyzstan",
+     "for_you": null,
+     "for_you_en": null
+    },
+    {
+     "id": "tockagedelectricitegeant",
+     "title": "Ce tunnel de 17 km qu’EDF veut creuser pour transformer un barrage en système de stockage d’électricité géant",
+     "link": "https://www.revolution-energetique.com/actus/ce-tunnel-de-17-km-quedf-veut-creuser-pour-transformer-un-barrage-en-systeme-de-stockage-delectricite-geant/",
+     "tags": [
+      "fr",
+      "power",
+      "renewables"
+     ],
+     "sources": [
+      "Révolution Énergétique"
+     ],
+     "free": null,
+     "report_link": null,
+     "report_name": null,
+     "what": "Dans l’Aveyron, EDF veut relier le lac de Pareloup à l’usine hydroélectrique du Pouget par une galerie de 17 km. Une enveloppe de près d’un […] L’article Ce tunnel de 17 km qu’EDF veut creuser pour transformer un barrage en système de…",
      "what_en": null,
      "for_you": null,
      "for_you_en": null
@@ -742,21 +956,23 @@
     "agenda",
     "post"
    ],
-   "headline": "Marchés de l'énergie : financement des énergies, ajustement du calendrier des enchères EUA",
-   "headline_en": "Energy markets: fossil fuel financing, EUA auction calendar adjustment",
+   "headline": "Prix négatifs, éolien offshore, nucléaire et gaz",
+   "headline_en": "Negative prices, offshore wind, nuclear and gas",
    "stories": [
     {
-     "id": "01newzoqxo5vehga1fyqqoc5",
-     "title": "« C'est inquiétant » : les banques financent encore trop les énergies fossiles par rapport aux renouvelables",
-     "link": "https://news.google.com/rss/articles/CBMi-wFBVV95cUxOMG5iWWJHQl9LNW5sNVM4ODhBbGNfVDB1WVpveHNxTlI0Ym5xU2ZvRFhKck1ya0tReEFWTVliU2xCMk9KSWRuTDB1X01sZTc4bFNmSmtadzF5MmJOaFNwVmN4cmpOQi1ZSlEycWhnQ1V0SmdrVXpHRW83RHFJSW9yelJlR04teG9VMmt2R01yQnhvcjNLOVduUXBYUGZvQWVXMmVFWG5mVDYxN1pRWEtSUmhRcTJySnEwNkhuamhfUFZDdFM3UUFkWmk1a3FWR0lQNmVwQzBodXdIVUxLb1pQUFg0ZHRHdk55Z3pHQ01neWZoQXo5VEhGa1FYQQ?oc=5",
+     "id": "vdegzvsufkmetjqnbbeeeoc5",
+     "title": "Prix négatifs de l'électricité : un levier pour le stockage",
+     "link": "https://news.google.com/rss/articles/CBMiogFBVV95cUxNMUZrYk1kR0ZpWWtwSmtOVllfdkVhUlFJVHliZmlmcGVYSktWT2NSbFBmeTJwWEtZVmZjYkpfb0VSUFIzTWg1T2dBTUxPMzMxSHFlTWVHSkprREphVmlsb0RwY0FxZEdoWEp0QzVEcjRjaVhWOHFubGhMQVY5d3U4M3U2Ujg5ZHRvcXlOemVoN0t3d1VDeGZVSUFkMEtJQnBBeEE?oc=5",
      "tags": [
+      "markets",
       "fr",
-      "power",
       "watch",
-      "renewables"
+      "support",
+      "power"
      ],
      "sources": [
-      "Les Echos"
+      "Dosya Haber",
+      "pv magazine France"
      ],
      "free": null,
      "report_link": null,
@@ -767,47 +983,156 @@
      "for_you_en": null
     },
     {
-     "id": "8d9037538fc85697101d7cfe",
-     "title": "EEX Customer Information - Adjustment of the EU EUA Auction Calendar",
-     "link": "https://www.eex.com/en/newsroom/detail?tx_news_pi1%5Baction%5D=detail&tx_news_pi1%5Bcontroller%5D=News&tx_news_pi1%5Bnews%5D=15754&cHash=37d2fe488d9037538fc85697101d7cfe",
+     "id": "q0m012dwq0cwhjnu1jbdaoc5",
+     "title": "Prix du gaz : +5,8 % en décembre, les conseils de Guillaume Faure",
+     "link": "https://news.google.com/rss/articles/CBMizAFBVV95cUxOUmhjUXUtSTE0bS1zd1N2Mk1qY2xGRWpySXhzZW40QTVzLVJuSkwxNG43S3ptWUNJbFkxVzFJWVZyU0JvZ2pLd3ZKbEo4LTdpMmR4WGdGV3Y4aDl6SFVXWVhGYXE5OXB3OVpJcjAwbVcyb2R6WjFDNHphNnVRWG9UZ05wNF9JNkFUNzdnbkpKMmpyNEdkeVFUT2U0T2JKWXZVNDNicWtSWWhGeW9YZ2ZCM0FVX2ZGYkN6NXFnMUQ0M012dWQ0cWhjNU1jbDA?oc=5",
      "tags": [
-      "markets",
-      "carbon"
+      "fr",
+      "regulation",
+      "watch",
+      "gas",
+      "markets"
      ],
      "sources": [
-      "EEX"
+      "Presse Agence"
      ],
      "free": null,
      "report_link": null,
      "report_name": null,
-     "what": "EEX ajuste le calendrier des enchères EUA",
-     "what_en": "EEX adjusts EUA auction calendar",
+     "what": null,
+     "what_en": null,
      "for_you": null,
      "for_you_en": null
     },
     {
-     "id": "m54z0xgmwrjwv9pvxe3ywoc5",
-     "title": "Prix du gaz : le marché parie sur la détente, ce que les cours de 2027 et 2028 racontent ce 24 novembre",
-     "link": "https://news.google.com/rss/articles/CBMibEFVX3lxTFBGdEhObE5VX2FiUEpvSV91Q1hrU25kN2toeThSYlhNZThmcUVjWmNyUHpnQ3RuUGVOSm1HdkMteEo4QnBVUjZfdUZZaFRQS0wta0JzNklKSU1ZV2hxTm54Z0xGMWRjWV9pVXE3Yw?oc=5",
+     "id": "memesoutienquaunucleaire",
+     "title": "Niclas Broman, directeur de Skyborn Suède, demande des CfD pour l’éolien en mer et le même soutien qu’au nucléaire",
+     "link": "https://www.energiesdelamer.eu/2026/11/25/niclas-broman-directeur-de-skyborn-suede-demande-des-cfd-pour-leolien-en-mer-et-le-meme-soutien-quau-nucleaire/",
      "tags": [
       "fr",
-      "report",
-      "markets",
+      "renewables",
       "regulation",
-      "watch",
-      "gas"
+      "power"
      ],
      "sources": [
-      "Selectra"
+      "Énergies de la mer"
      ],
      "free": null,
      "report_link": null,
      "report_name": null,
-     "what": "Les cours du gaz pour 2027 et 2028 influencent les prix actuels.",
-     "what_en": "Gas prices for 2027 and 2028 are influencing current prices.",
+     "what": "25/11/2026 – energiesdelamer.eu. Niclas Broman souhaite que le prochain gouvernement suédois accorde à l’éolien offshore le même soutien qu’au nucléaire avant l’expiration des permis. En juillet 2026, le gouvernement suédois […]",
+     "what_en": null,
+     "for_you": null,
+     "for_you_en": null
+    },
+    {
+     "id": "dsedjrjkwwe45qm1pethroc5",
+     "title": "Nucléaire : la future forge de Framatome aura besoin d’un raccordement électrique de 225 000 volts",
+     "link": "https://news.google.com/rss/articles/CBMiggFBVV95cUxOcHZrZU5EdkktRmxrV0FuRG5SM1c0VThWdDZqQXVJWGxmSkpqa0NOalc3Zkx0ckZ3azJsSjNEYkNrc2p6ZjNyVFFRYVRNNVBKU2w5MHM2TXkwR2p5VkFMdzdMSFllaktRZUNoM1FVUnpnbFNDSEdjRjkwWE45Qm1PeThR?oc=5",
+     "tags": [
+      "fr",
+      "power",
+      "watch",
+      "build"
+     ],
+     "sources": [
+      "Les Smartgrids"
+     ],
+     "free": null,
+     "report_link": null,
+     "report_name": null,
+     "what": "La future forge de Framatome nécessitera un raccordement électrique haute tension",
+     "what_en": "Framatome's future forge will require a high-voltage electrical connection",
      "for_you": null,
      "for_you_en": null,
      "ctx": true
+    },
+    {
+     "id": "nementsarrete16avril2026",
+     "title": "Contribution de l’UFE relative à l’étude d’une solution pérenne alternative aux échelonnements de l’arrêté du 16 avril 2026",
+     "link": "https://ufe-electricite.fr/contribution-ufe-solution-perenne-alternative-echelonnements-arrete-16-avril-2026/",
+     "tags": [
+      "fr",
+      "power",
+      "assoc",
+      "support",
+      "regulation"
+     ],
+     "sources": [
+      "UFE"
+     ],
+     "free": null,
+     "report_link": null,
+     "report_name": null,
+     "what": "En préambule, l’UFE partage l’objectif de mieux maîtriser les arrêts et redémarrages (A/R) volontaires des installations de production d’électricité, qui résultent des volumes d’électricité vendus sur les différents marchés journalier et…",
+     "what_en": null,
+     "for_you": null,
+     "for_you_en": null
+    },
+    {
+     "id": "ates99mwromanianwindfarm",
+     "title": "Nala inaugurates 99MW Romanian wind farm",
+     "link": "https://www.renews.biz/onshore-wind/nala-inaugurates-99mw-romanian-wind-farm/",
+     "tags": [
+      "power",
+      "renewables",
+      "build",
+      "markets",
+      "watch"
+     ],
+     "sources": [
+      "reNEWS",
+      "Romania Insider"
+     ],
+     "free": null,
+     "report_link": null,
+     "report_name": null,
+     "what": "Nala inaugure un parc éolien de 99MW en Roumanie",
+     "what_en": "Nala inaugurates a 99MW wind farm in Romania",
+     "for_you": null,
+     "for_you_en": null
+    },
+    {
+     "id": "mh3etdksllwrnd4neq4uqoc5",
+     "title": "TAQA boucle le financement de Taweelah C, centrale à gaz de 2,11 Md$",
+     "link": "https://news.google.com/rss/articles/CBMikgFBVV95cUxNcVRKRGVNN1lLRkczY255d3BxMmdJVElHcE5feDFicndaTjhyMHlSanVEUzdvRndGX216T1NaV3doQmcwempqYUZtWlJkU1Jici1Ya29xRUdJRmU4UUNFSmptTHVXZmJMeFRyaUVTS0dNd29oS0dkSHpUSHRrVHRDLVc2Qmh3eTdkSllwRnd4NEQ4UQ?oc=5",
+     "tags": [
+      "markets",
+      "fr",
+      "watch",
+      "deal",
+      "gas",
+      "power"
+     ],
+     "sources": [
+      "energynews.pro"
+     ],
+     "free": null,
+     "report_link": null,
+     "report_name": null,
+     "what": null,
+     "what_en": null,
+     "for_you": null,
+     "for_you_en": null
+    },
+    {
+     "id": "ttpscarbonpulsecom575331",
+     "title": "Euro Markets: EUAs weaken amid options selling, weak energy and drop in speculator length",
+     "link": "https://carbon-pulse.com/575331/",
+     "tags": [
+      "carbon",
+      "deal"
+     ],
+     "sources": [
+      "Carbon Pulse"
+     ],
+     "free": null,
+     "report_link": null,
+     "report_name": null,
+     "what": "EUA prices drifted lower on Wednesday amid a general weakness across energy markets and a sell-off after the November options expiry, while the weekly Commitment of Traders data showing investment funds last week made the biggest single…",
+     "what_en": null,
+     "for_you": null,
+     "for_you_en": null
     }
    ],
    "ai": true
@@ -833,21 +1158,23 @@
     "agenda",
     "post"
    ],
-   "headline": "Nouvelles règles pour les énergies renouvelables",
-   "headline_en": "New rules for renewable energy",
+   "headline": "Prix négatifs, suppression de contrats solaires, investissement nucléaire",
+   "headline_en": "Negative prices, solar contract cancellation, nuclear investment",
    "stories": [
     {
-     "id": "01newzoqxo5vehga1fyqqoc5",
-     "title": "« C'est inquiétant » : les banques financent encore trop les énergies fossiles par rapport aux renouvelables",
-     "link": "https://news.google.com/rss/articles/CBMi-wFBVV95cUxOMG5iWWJHQl9LNW5sNVM4ODhBbGNfVDB1WVpveHNxTlI0Ym5xU2ZvRFhKck1ya0tReEFWTVliU2xCMk9KSWRuTDB1X01sZTc4bFNmSmtadzF5MmJOaFNwVmN4cmpOQi1ZSlEycWhnQ1V0SmdrVXpHRW83RHFJSW9yelJlR04teG9VMmt2R01yQnhvcjNLOVduUXBYUGZvQWVXMmVFWG5mVDYxN1pRWEtSUmhRcTJySnEwNkhuamhfUFZDdFM3UUFkWmk1a3FWR0lQNmVwQzBodXdIVUxLb1pQUFg0ZHRHdk55Z3pHQ01neWZoQXo5VEhGa1FYQQ?oc=5",
+     "id": "vdegzvsufkmetjqnbbeeeoc5",
+     "title": "Prix négatifs de l'électricité : un levier pour le stockage",
+     "link": "https://news.google.com/rss/articles/CBMiogFBVV95cUxNMUZrYk1kR0ZpWWtwSmtOVllfdkVhUlFJVHliZmlmcGVYSktWT2NSbFBmeTJwWEtZVmZjYkpfb0VSUFIzTWg1T2dBTUxPMzMxSHFlTWVHSkprREphVmlsb0RwY0FxZEdoWEp0QzVEcjRjaVhWOHFubGhMQVY5d3U4M3U2Ujg5ZHRvcXlOemVoN0t3d1VDeGZVSUFkMEtJQnBBeEE?oc=5",
      "tags": [
+      "markets",
       "fr",
-      "power",
       "watch",
-      "renewables"
+      "support",
+      "power"
      ],
      "sources": [
-      "Les Echos"
+      "Dosya Haber",
+      "pv magazine France"
      ],
      "free": null,
      "report_link": null,
@@ -858,47 +1185,151 @@
      "for_you_en": null
     },
     {
-     "id": "spetitestoituressolaires",
-     "title": "Allemagne : la coalition s’oriente vers le maintien du tarif d’achat des petites toitures solaires",
-     "link": "https://www.lechodusolaire.fr/allemagne-la-coalition-soriente-vers-le-maintien-du-tarif-dachat-des-petites-toitures-solaires/?utm_source=rss&utm_medium=rss&utm_campaign=allemagne-la-coalition-soriente-vers-le-maintien-du-tarif-dachat-des-petites-toitures-solaires",
+     "id": "nementsarrete16avril2026",
+     "title": "Contribution de l’UFE relative à l’étude d’une solution pérenne alternative aux échelonnements de l’arrêté du 16 avril 2026",
+     "link": "https://ufe-electricite.fr/contribution-ufe-solution-perenne-alternative-echelonnements-arrete-16-avril-2026/",
      "tags": [
       "fr",
-      "renewables",
       "power",
+      "assoc",
       "support",
       "regulation"
      ],
      "sources": [
-      "L'Écho du solaire"
+      "UFE"
      ],
      "free": null,
      "report_link": null,
      "report_name": null,
-     "what": "La fédération allemande de l’industrie solaire BSW-Solar salue l’entente trouvée au niveau des experts entre le SPD et l’Union (CDU/CSU), selon des indications du SPD, pour conserver la rémunération de l’électricité injectée par les…",
+     "what": "L'UFE partage l'objectif de maîtriser les arrêts et redémarrages des installations de production d'électricité.",
+     "what_en": "UFE shares the goal of controlling the shutdowns and restarts of electricity production facilities.",
+     "for_you": null,
+     "for_you_en": null
+    },
+    {
+     "id": "ovoltaiquess6ets10439765",
+     "title": "Le gouvernement compte supprimer les contrats d’achat photovoltaïques « S6 » et « S10 »",
+     "link": "https://www.greenunivers.com/2026/11/le-gouvernement-compte-supprimer-les-contrats-dachat-photovoltaiques-s6-et-s10-439765/",
+     "tags": [
+      "fr",
+      "power",
+      "support",
+      "renewables"
+     ],
+     "sources": [
+      "GreenUnivers"
+     ],
+     "free": null,
+     "report_link": null,
+     "report_name": null,
+     "what": "Une proposition radicale. Parce qu’il n’arrive pas juridiquement à modifier les contrats solaires dits « S6 » et « S10 », le gouvernement propose désormais de les supprimer. Ces contrats, signés entre 2006 et 2010, garantissent un tarif de…",
      "what_en": null,
      "for_you": null,
      "for_you_en": null
     },
     {
-     "id": "enverbetacableproduction",
-     "title": "NKT starts IJmuiden Ver Beta cable production",
-     "link": "https://www.renews.biz/offshore-wind/nkt-starts-ijmuiden-ver-beta-cable-production/",
+     "id": "osdansuneforgequelesetat",
+     "title": "Nucléaire : la France veut investir un milliard d’euros dans une forge que les États-Unis pourraient lui envier",
+     "link": "https://wattselse.com/veille/article/4676/nucleaire-la-france-veut-investir-un-milliard-deuros-dans-une-forge-que-les-etat",
      "tags": [
-      "power",
-      "renewables",
-      "carbon",
       "fr",
-      "build"
+      "power",
+      "regulation"
      ],
      "sources": [
-      "reNEWS",
+      "Watts Else"
+     ],
+     "free": null,
+     "report_link": null,
+     "report_name": null,
+     "what": "Framatome envisage d'investir plus d'un milliard d'euros dans sa forge.",
+     "what_en": "Framatome plans to invest over one billion euros in its forge.",
+     "for_you": null,
+     "for_you_en": null
+    },
+    {
+     "id": "mh3etdksllwrnd4neq4uqoc5",
+     "title": "TAQA boucle le financement de Taweelah C, centrale à gaz de 2,11 Md$",
+     "link": "https://news.google.com/rss/articles/CBMikgFBVV95cUxNcVRKRGVNN1lLRkczY255d3BxMmdJVElHcE5feDFicndaTjhyMHlSanVEUzdvRndGX216T1NaV3doQmcwempqYUZtWlJkU1Jici1Ya29xRUdJRmU4UUNFSmptTHVXZmJMeFRyaUVTS0dNd29oS0dkSHpUSHRrVHRDLVc2Qmh3eTdkSllwRnd4NEQ4UQ?oc=5",
+     "tags": [
+      "markets",
+      "fr",
+      "watch",
+      "deal",
+      "gas",
+      "power"
+     ],
+     "sources": [
+      "energynews.pro"
+     ],
+     "free": null,
+     "report_link": null,
+     "report_name": null,
+     "what": null,
+     "what_en": null,
+     "for_you": null,
+     "for_you_en": null
+    },
+    {
+     "id": "memesoutienquaunucleaire",
+     "title": "Niclas Broman, directeur de Skyborn Suède, demande des CfD pour l’éolien en mer et le même soutien qu’au nucléaire",
+     "link": "https://www.energiesdelamer.eu/2026/11/25/niclas-broman-directeur-de-skyborn-suede-demande-des-cfd-pour-leolien-en-mer-et-le-meme-soutien-quau-nucleaire/",
+     "tags": [
+      "fr",
+      "renewables",
+      "regulation",
+      "power"
+     ],
+     "sources": [
       "Énergies de la mer"
      ],
      "free": null,
      "report_link": null,
      "report_name": null,
-     "what": "NKT commence la production de câbles pour le réseau offshore néerlandais",
-     "what_en": "NKT starts cable production for Dutch offshore grid",
+     "what": "25/11/2026 – energiesdelamer.eu. Niclas Broman souhaite que le prochain gouvernement suédois accorde à l’éolien offshore le même soutien qu’au nucléaire avant l’expiration des permis. En juillet 2026, le gouvernement suédois […]",
+     "what_en": null,
+     "for_you": null,
+     "for_you_en": null
+    },
+    {
+     "id": "q0m012dwq0cwhjnu1jbdaoc5",
+     "title": "Prix du gaz : +5,8 % en décembre, les conseils de Guillaume Faure",
+     "link": "https://news.google.com/rss/articles/CBMizAFBVV95cUxOUmhjUXUtSTE0bS1zd1N2Mk1qY2xGRWpySXhzZW40QTVzLVJuSkwxNG43S3ptWUNJbFkxVzFJWVZyU0JvZ2pLd3ZKbEo4LTdpMmR4WGdGV3Y4aDl6SFVXWVhGYXE5OXB3OVpJcjAwbVcyb2R6WjFDNHphNnVRWG9UZ05wNF9JNkFUNzdnbkpKMmpyNEdkeVFUT2U0T2JKWXZVNDNicWtSWWhGeW9YZ2ZCM0FVX2ZGYkN6NXFnMUQ0M012dWQ0cWhjNU1jbDA?oc=5",
+     "tags": [
+      "fr",
+      "regulation",
+      "watch",
+      "gas",
+      "markets"
+     ],
+     "sources": [
+      "Presse Agence"
+     ],
+     "free": null,
+     "report_link": null,
+     "report_name": null,
+     "what": null,
+     "what_en": null,
+     "for_you": null,
+     "for_you_en": null
+    },
+    {
+     "id": "acityforreactorinternals",
+     "title": "Framatome enhances its capacity for reactor internals",
+     "link": "https://www.world-nuclear-news.org/articles/framatome-enhances-its-capacity-for-reactor-internals",
+     "tags": [
+      "power",
+      "build",
+      "fr"
+     ],
+     "sources": [
+      "World Nuclear News"
+     ],
+     "free": null,
+     "report_link": null,
+     "report_name": null,
+     "what": "Framatome a inauguré un nouvel atelier pour la fabrication de composants de réacteurs nucléaires.",
+     "what_en": "Framatome has inaugurated a new workshop for the manufacture of nuclear reactor components.",
      "for_you": null,
      "for_you_en": null
     }
@@ -914,18 +1345,11 @@
    "Cloudy"
   ],
   "sub": [
-   "prix stables",
-   "prices steady"
+   "prix en hausse",
+   "prices up"
   ]
  },
  "week_ahead": [
-  {
-   "date": "2026-11-25",
-   "kind": "cons",
-   "title": "Projet d’arrêté relatif au plan d’action établi sur la base des recommandations découlant de l’audit énergétique ou sur la base du système de management de l’énergie",
-   "link": "https://www.consultations-publiques.developpement-durable.gouv.fr/projet-d-arrete-relatif-au-plan-d-action-etabli-a3483.html",
-   "source": "Ministère · Énergies et climat"
-  },
   {
    "date": "2026-12-01",
    "kind": "cons",
@@ -942,24 +1366,9 @@
    "source": null
   }
  ],
- "pinned": "https://news.google.com/rss/articles/CBMi-wFBVV95cUxOMG5iWWJHQl9LNW5sNVM4ODhBbGNfVDB1WVpveHNxTlI0Ym5xU2ZvRFhKck1ya0tReEFWTVliU2xCMk9KSWRuTDB1X01sZTc4bFNmSmtadzF5MmJOaFNwVmN4cmpOQi1ZSlEycWhnQ1V0SmdrVXpHRW83RHFJSW9yelJlR04teG9VMmt2R01yQnhvcjNLOVduUXBYUGZvQWVXMmVFWG5mVDYxN1pRWEtSUmhRcTJySnEwNkhuamhfUFZDdFM3UUFkWmk1a3FWR0lQNmVwQzBodXdIVUxLb1pQUFg0ZHRHdk55Z3pHQ01neWZoQXo5VEhGa1FYQQ?oc=5",
- "brief": "Le froid s'accentue, tendant le marché : le spot français s'inscrit à 255 €/MWh. La consommation en hausse et la demande résiduelle élevée appellent davantage de centrales au gaz, qui fixent le prix. Or le gaz se tend, porté par les tensions au Moyen-Orient et des stocks européens plus bas qu'il y a un an. Le Cal 27 monte peu : le marché mise sur une disponibilité nucléaire en hausse pour passer l'hiver.",
- "brief_en": "The cold snap is tightening the market: the French spot price is at €255/MWh. Rising consumption and high residual demand call for more gas-fired power, setting the price. Meanwhile, gas prices are rising due to Middle Eastern tensions and lower European stockpiles compared to last year. The Cal 27 price is relatively stable: the market is counting on increased nuclear availability to get through the winter.",
- "brief_links": [
-  {
-   "title": "Prix du gaz : le marché parie sur la détente, ce que les cours de 2027 et 2028 racontent ce 24 novembre",
-   "source": "Selectra",
-   "link": "https://news.google.com/rss/articles/CBMibEFVX3lxTFBGdEhObE5VX2FiUEpvSV91Q1hrU25kN2toeThSYlhNZThmcUVjWmNyUHpnQ3RuUGVOSm1HdkMteEo4QnBVUjZfdUZZaFRQS0wta0JzNklKSU1ZV2hxTm54Z0xGMWRjWV9pVXE3Yw?oc=5"
-  },
-  {
-   "title": "China’s Refining Sector: Impacts of the Strait of Hormuz Crisis",
-   "source": "Oxford Institute for Energy Studies",
-   "link": "https://news.google.com/rss/articles/CBMipwFBVV95cUxPeXFxeVVwcktBNW5IeUx6dDFRMFRIUXNBUVJkbFlQRHdmYTMwLUVFcVd3TmZuemRRQi1ZYnMzOGxiLWs2NUVZaXdOOTBFbXJjY19wbEJndEVObmNENHVrOXJDX1NST2ZiYWNzMWtianFSRHJXeHJLeWl1ak1ILTRvQ3pOWUFOWS1rTExnMnBrenoxOGxDVXpoYjNMVTBwVV9pWmk5eEpFVQ?oc=5"
-  },
-  {
-   "title": "Asia’s exposure to Hormuz persists while fixes remain years away",
-   "source": "Aurora Energy Research",
-   "link": "https://news.google.com/rss/articles/CBMiuwFBVV95cUxQZHJ6Z1FPR0RpNU0wOHFEME5mR1Z0bDhZRnNpT1hSeFotUW5VcHVKMnQwS1NBVkdyUkNCbHRxR0YtT3l1Skg3UlBkZjROdVpHZlppTXNjdGo4SmNLY2UybTNFTENTeXpLTUc4MWp6eGx5RlJLNWowNzBaMGlVejlfZGl4OTZDbFljeFRfOEpUQTdaam80N3BHZUpxVlRLekFJSWhxamJVc2d4VjNRdWJrRUtZdE1UdlV4ZUZB?oc=5"
-  }
- ]
+ "pinned": null,
+ "brief": "France : La disponibilité nucléaire en France est en hausse, avec 47,0 GW disponibles. La consommation d'électricité est également en hausse, avec des prix spot à 255,2 €/MWh. Le gouvernement a dévoilé un guide pour aider les territoires à sortir du gaz. Golfe : Les tensions entre les États-Unis et l'Iran entraînent une hausse du risque géopolitique, mais les exportations en hausse du Moyen-Orient et de la Russie, ainsi que la production américaine, compensent ce risque. Norvège : La Norvège a augmenté sa production de gaz, ce qui exerce une pression à la baisse sur les prix du gaz.",
+ "brief_en": "France: Nuclear availability in France is increasing, with 47.0 GW available. Electricity consumption is also rising, with spot prices at €255.2/MWh. The government has released a guide to help territories exit gas. Gulf: Tensions between the US and Iran are driving up geopolitical risk, but rising exports from the Middle East and Russia, as well as US production, are offsetting this risk. Norway: Norway has increased its gas production, putting downward pressure on gas prices.",
+ "brief_links": [],
+ "brief_auto": "context"
 }

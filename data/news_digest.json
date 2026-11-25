@@ -1,33 +1,44 @@
 {
  "daily": {
-  "date": "2026-11-25",
-  "updated": "2026-11-25T06:01:07+00:00",
+  "date": "2026-11-26",
+  "updated": "2026-11-25T23:05:58+00:00",
   "engine": "proxy",
   "items": [
    {
-    "id": "unplancherderemuneration",
-    "text": "La CRE approuve le cahier des charges de PPE3 Neutre : les producteurs bénéficient d'un plancher de rémunération",
-    "text_en": "The CRE approves the PPE3 Neutre specifications: producers benefit from a minimum remuneration",
-    "title": "Appel d’offres PPE3 Neutre : la CRE approuve le cahier des charges et réclame un plancher de rémunération",
-    "link": "https://www.lechodusolaire.fr/appel-doffres-ppe3-neutre-la-cre-approuve-le-cahier-des-charges-et-reclame-un-plancher-de-remuneration/?utm_source=rss&utm_medium=rss&utm_campaign=appel-doffres-ppe3-neutre-la-cre-approuve-le-cahier-des-charges-et-reclame-un-plancher-de-remuneration",
+    "id": "osdansuneforgequelesetat",
+    "text": "La France investit dans une forge nucléaire : les producteurs d'électricité pourront réduire leur dépendance aux fournisseurs étrangers",
+    "text_en": "France invests in a nuclear forge: electricity producers can reduce dependence on foreign suppliers",
+    "title": "Nucléaire : la France veut investir un milliard d’euros dans une forge que les États-Unis pourraient lui envier",
+    "link": "https://wattselse.com/veille/article/4676/nucleaire-la-france-veut-investir-un-milliard-deuros-dans-une-forge-que-les-etat",
     "sources": [
-     "L'Écho du solaire"
+     "Watts Else"
     ]
    },
    {
-    "id": "estockagedont300enfrance",
-    "text": "NW investit 200 M€ dans des batteries de stockage : les fournisseurs améliorent leur offre de stockage d'électricité",
-    "text_en": "NW invests €200 million in storage batteries: suppliers improve their electricity storage offer",
-    "title": "NW investit 200 M€ dans 400 batteries de stockage, dont 300 en France",
-    "link": "https://www.lechodusolaire.fr/nw-investit-200-me-dans-400-batteries-de-stockage-dont-300-en-france/?utm_source=rss&utm_medium=rss&utm_campaign=nw-investit-200-me-dans-400-batteries-de-stockage-dont-300-en-france",
+    "id": "zilxfvoup5v1o5tjqwlvcoc5",
+    "text": "L'arrêté du 10 novembre 2026 définit les critères pour le taux réduit de TVA aux équipements photovoltaïques : les installateurs et les consommateurs seront impactés",
+    "text_en": "The November 10, 2026 decree defines the criteria for the reduced VAT rate on photovoltaic equipment: installers and consumers will be affected",
+    "title": "Solaire : l'arrêté du 10 novembre 2026 redéfinit les critères d'application du taux réduit de TVA aux équipements photovoltaïques d'une puissance inférieure ou égale à 9 kWc installés dans les logements",
+    "link": "https://news.google.com/rss/articles/CBMiWEFVX3lxTE1SVHdFMW5naWFFZWptZ3lLVnFGOTFmaGxudDJmbVBwT2V4SWpsZmxMaDZfN2lfX1E4U25LN0hCZ2Q2MUkxd0EycDZILXFvOUp5V1o5TjQwLVc?oc=5",
     "sources": [
-     "L'Écho du solaire"
+     "Cabinet Gossement AVOCATS",
+     "Gossement Avocats"
+    ]
+   },
+   {
+    "id": "tttzqcv91ulhjrvn5m1hroc5",
+    "text": "EDF Hydro Méditerranée investit 700 millions d’euros dans la chaîne Durance-Verdon : les capacités de production d'électricité renouvelable augmenteront",
+    "text_en": "EDF Hydro Méditerranée invests 700 million euros in the Durance-Verdon chain: renewable electricity production capacities will increase",
+    "title": "EDF Hydro Méditerranée injectera 700 millions d’euros dans la chaîne Durance-Verdon d’ici 2035 - https://horticulture-abadie-pyrenees.com/",
+    "link": "https://news.google.com/rss/articles/CBMibkFVX3lxTFBXN1U5TkRRQTlnTWFmZFlBd3ljZHVkcFdMQll4VkxlWUNyMzdIUXR6LWtUeElzWEJjcndsU0QzVEJJVGVkUWNsbkx6WnR0R25oWkFZU19HZnBUTVhwNS0tTTZQcV91UlhjRVN5M1hR?oc=5",
+    "sources": [
+     "horticulture-abadie-pyrenees.com"
     ]
    },
    {
     "id": "jsmdrwnhyutu1qmwtbtnnoc5",
-    "text": "RTE relève ses prévisions de consommation électrique : les gestionnaires de réseau anticipent une demande accrue",
-    "text_en": "RTE increases its electricity consumption forecasts: network managers anticipate increased demand",
+    "text": "RTE relève ses prévisions de consommation électrique à l’horizon 2050 : les producteurs et les gestionnaires de réseaux devront s'adapter",
+    "text_en": "RTE increases its electricity consumption forecasts by 2050: producers and network managers will have to adapt",
     "title": "RTE devrait relever de 26 % ses prévisions de consommation électrique à l’horizon 2050",
     "link": "https://news.google.com/rss/articles/CBMisgFBVV95cUxOVVBTdm9hZ19ISW56dDJMYkk0ZWZnNEVFREtSMXBMRV9lcHNlYk5jVnBTcVJEdzJ6eGxaSFBvS3RsekxoWnA1ZFFhaXBBdTRmaUM1WVBfYUVsUzRLRkpfUW95RUlWeGFBNlNfaDdudjBYVGhMZVBZWGxtZVlTdVItYkdGbXB0Q1VfbVNac0prWDNQLTU4SE9BOGtyMjgwNjhGMGdjSmdRWnhYUTU1QmwtbTNn?oc=5",
     "sources": [
@@ -35,26 +46,13 @@
     ]
    },
    {
-    "id": "parceolienflottant439481",
-    "text": "Des turbines Siemens Gamesa choisies pour un parc éolien flottant : les développeurs de projets renforcent leur capacité de production",
-    "text_en": "Siemens Gamesa turbines chosen for a floating wind farm: project developers strengthen their production capacity",
-    "title": "Les turbines Siemens Gamesa de 15 MW choisies pour un parc éolien flottant",
-    "link": "https://www.greenunivers.com/2026/11/les-turbines-siemens-gamesa-de-15-mw-choisies-pour-un-parc-eolien-flottant-439481/",
+    "id": "tockagedelectricitegeant",
+    "text": "EDF veut creuser un tunnel pour transformer un barrage en système de stockage d’électricité géant : les capacités de stockage d'électricité seront améliorées",
+    "text_en": "EDF wants to dig a tunnel to transform a dam into a giant electricity storage system: electricity storage capacities will be improved",
+    "title": "Ce tunnel de 17 km qu’EDF veut creuser pour transformer un barrage en système de stockage d’électricité géant",
+    "link": "https://www.revolution-energetique.com/actus/ce-tunnel-de-17-km-quedf-veut-creuser-pour-transformer-un-barrage-en-systeme-de-stockage-delectricite-geant/",
     "sources": [
-     "GreenUnivers",
-     "Windpower Monthly",
-     "reNEWS",
-     "Recharge News"
-    ]
-   },
-   {
-    "id": "0q3rzsjvjqvnybxfzamm1oc5",
-    "text": "RTE enfouit 22 km de lignes électriques : les habitants bénéficient d'une meilleure sécurité et esthétique",
-    "text_en": "RTE buries 22 km of power lines: residents benefit from improved safety and aesthetics",
-    "title": "RTE enfouit 22 km de lignes entre la Moselle et la Meurthe-et-Moselle",
-    "link": "https://news.google.com/rss/articles/CBMirAFBVV95cUxOQUtpVDBCWmNJaFZoLTRGelNhUGl6YTUwUjZKblRQTktMdzJteXlnckQ4QWZ3eUsxSkFyV0t1NDMxREFWd21DZlp1dTJld3hTMDZTTkdFMmFkUzdwM3B4cklkM2hYdHNVVV9MTVlxclBvaWVZbWg3WElWTjJHTmR6YlYtTm0zRlRZdGMxV1V0WmhQYUtfdm40dWRTdjl0Q3RzSjVJQVNYbXFzamM1?oc=5",
-    "sources": [
-     "La Gazette France"
+     "Révolution Énergétique"
     ]
    }
   ]
