@@ -42,7 +42,7 @@ jobs:
       - name: Workers syntax (ES modules, as Cloudflare builds them)
         run: for f in workers/*/index.js; do node --input-type=module --check < "$f" || { echo "$f"; exit 1; }; done
       - name: Calculations
-        run: pip install -q numpy==2.2.6 scipy==1.15.3 && python tests/test_calculations.py && python tests/test_prices_dst.py && python tests/test_bess_optim.py && python tests/test_scheduler.py
+        run: pip install -q numpy==2.2.6 scipy==1.15.3 pyyaml==6.0.2 && python tests/test_calculations.py && python tests/test_prices_dst.py && python tests/test_bess_optim.py && python tests/test_scheduler.py
       - name: Site logic
         run: python tests/test_site_logic.py && python tests/test_ppa_frozen.py && python tests/test_consistency.py
       - name: Smoke tests (English and French)

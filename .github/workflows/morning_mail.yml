@@ -28,11 +28,11 @@ on:
         type: boolean
         default: false
       night:
-        description: 'Night run (00:05 Paris, every day): the day's edition for the site only, so Top stories change at midnight; no e-mail'
+        description: "Night run (00:05 Paris, every day): the day's edition for the site only, so Top stories change at midnight; no e-mail"
         type: boolean
         default: false
       cron:
-        description: 'The scheduler's slot (workers/scheduler, pass_cron): 5 0 * * * is the night run'
+        description: "The scheduler's slot (workers/scheduler, pass_cron): 5 0 * * * is the night run"
         type: string
         default: ''
 
