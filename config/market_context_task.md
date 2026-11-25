@@ -44,7 +44,9 @@ first): add yesterday's, drop the oldest.
 
 - `daily`: short and analytical. What changed since yesterday, why, and what it means for a buyer or a producer
   (hedging, PPA). The tiles and charts already give the figures: a number only to support an explanation. 2 to 4 topics,
-  1 to 2 sentences each, about 90 words in all (French). This is a guide, not a cap: good French comes first. A
+  1 to 2 sentences each, about 90 words in all (French). The newsletter shows the daily as **one flowing text,
+  without the topic names** (the owner, 25 Nov. 2026): write each topic's text so that it follows from the one before,
+  as a single paragraph read from start to end; `topic` stays in the file for the order only. This is a guide, not a cap: good French comes first. A
   slightly longer text in full, natural sentences is better than a short one cut down into notes or broken French
   (the owner, 25 Nov. 2026). Cut a topic rather than squeeze the sentences.
 - `weekly`: rewrite it on Monday: the week before, complete and longer (prices, weather, nuclear, gas, forwards,
@@ -71,16 +73,12 @@ ailleurs, autrement dit, dans ce contexte); a cause only when the figures or the
 figures; prices in €/MWh without decimals, capacity in GW with one decimal, moves in % without decimals; no source or
 outlet named, nothing copied.
 
-Example of a day (25 Nov. 2026), for the level of analysis only (not a template):
-- Prix : Le spot monte pour le troisième jour (+4 % sur la veille) et la France devient plus chère que l'Allemagne. Le froid et le manque de vent
-  obligent à faire tourner, aux heures de pointe, des centrales plus chères que le gaz. Le vent ne reviendra que vers le
-  10 décembre : ce niveau devrait tenir jusque-là.
-- Gaz : Le gaz monte encore (+3 % sur la veille) et les stocks européens sont bas. Si le froid dure, c'est le premier
-  risque de nouvelle hausse.
-- Couverture : Le Cal 27 bouge à peine : le marché voit une tension de court terme, pas un problème durable. Décembre se
-  traite à 203 €, contre 193 € pour l'indice PowerKlock : acheter ce mois aujourd'hui revient à payer environ 10 € de prime.
-- À surveiller : 3,8 GW de nucléaire annoncés par EDF manquent encore. Leur retour est le principal facteur de baisse à
-  court terme.
+Example of a day (25 Nov. 2026), for the level of analysis and the flow only (not a template), as the reader sees it:
+> Le spot français monte à 255 €/MWh (+4 %) et dépasse l'Allemagne (246 €). À ce niveau, le prix est bien au-dessus
+> du coût d'une centrale gaz : le marché est tendu aux heures de pointe. En cause, le froid, qui tire la consommation,
+> et un vent faible qui ne reviendra que vers le 10 décembre. Le gaz a pris 9 % en une semaine avec des stocks
+> européens sous l'an dernier. Le Cal 27 ne suit pas : le marché ne voit pas cette tension durer. À surveiller, les
+> 3,8 GW de nucléaire qu'EDF attend encore, principal facteur de baisse à court terme.
 
 ## The articles (the owner, 25 Nov. 2026)
 Also write `articles` (every day) and, on Monday, `articles_week`: the newsletter's articles, chosen in `data/news.json`.
