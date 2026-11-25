@@ -28,7 +28,9 @@ view shows the same morning. Before writing, read what it shows:
 Then check each sentence of the brief against them: same direction for each market (a market shown rising is not
 « en baisse »), same cause where the Expert view gives one (if it says « nucléaire et demande détendus » on the Cal,
 do not write that demand drives the Cal up). When the figures disagree with an Expert sentence, leave that point out
-rather than contradict it, and say why in your final message so the owner can fix the site.
+rather than contradict it, and say why in your final message so the owner can fix the site. Say the horizon of a move
+(« sur la veille », « depuis trois jours », « sur la semaine »): the Expert view's « stable sur la semaine » compares two
+7-day averages, and a three-day rise inside it is not a contradiction once the horizon is written.
 
 ## What to write
 `{"asof": "<today, Paris>", "written": "<ISO time>", "daily": [...], "weekly": [...], "history": [...]}`, each item
@@ -63,7 +65,7 @@ figures; prices in €/MWh without decimals, capacity in GW with one decimal, mo
 outlet named, nothing copied.
 
 Example of a day (25 Nov. 2026), for the level of analysis only (not a template):
-- Prix : Le spot continue de monter et la France devient plus chère que l'Allemagne. Le froid et le manque de vent
+- Prix : Le spot monte pour le troisième jour (+4 % sur la veille) et la France devient plus chère que l'Allemagne. Le froid et le manque de vent
   obligent à faire tourner, aux heures de pointe, des centrales plus chères que le gaz. Le vent ne reviendra que vers le
   10 décembre : ce niveau devrait tenir jusque-là.
 - Gaz : Le gaz monte encore (+3 % sur la veille) et les stocks européens sont bas. Si le froid dure, c'est le premier
