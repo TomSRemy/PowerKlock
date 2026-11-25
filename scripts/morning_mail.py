@@ -346,14 +346,10 @@ def journal(today, E, ed, wk, mine):
     def keep(h):     # « À retenir »: the story's summary, then its concrete fact when it adds one
         w, y = (h.get('what') or '').strip(), (h.get('for_you') or '').strip()
         if h.get('section'):
-            return w        # chosen by Claude: the description alone, the impact on its own line (impact())
+            return w        # chosen by Claude: the short description alone (no « Impact » line: the owner, 25 Nov. 2026)
         if GENERIC.search(y) or len(y.split()) < 4 or y.lower()[:40] in w.lower():
             y = ''     # a generic line (« Intérêt pour les PPA ») adds nothing
         return (w + ((' ' if w[-1:] in '.!?…' else '. ') + y if y else '')) if w else y
-
-    def impact(h):   # Claude's neutral line on what the article changes and for whom (the owner, 25 Nov. 2026)
-        y = (h.get('for_you') or '').strip() if h.get('section') else ''
-        return f'<p style="{f};margin:0 0 8px;font-size:14px;line-height:1.5;color:#383838"><b style="color:#383838">Impact.</b> {esc(y)}</p>' if y else ''
 
     def report(h):   # a major publication: the report itself, on the publisher's site
         return (f'<p style="{f};margin:4px 0 0;font-size:12.5px;color:#6B6B6B">Le rapport : <a href="{esc(h["report_link"])}" style="{green};font-weight:600">'
@@ -368,7 +364,7 @@ def journal(today, E, ed, wk, mine):
         # as Veille › Top stories on the site: a large title, the kicker in the subject's colour (the owner, 25 Nov. 2026)
         body.append(row(kick(('Le sujet de la semaine' if wk else 'À la une') + (f' · {lab}' if lab else ''), col or '#0B7A62') +
                         f'<p style="{serif};margin:0 0 10px;font-size:32px;line-height:1.16;font-weight:700">{a(h["link"], h["title"])}</p>' +
-                        chart + (f'<p style="{f};margin:{12 if chart else 4}px 0 0;font-size:16.5px;line-height:1.55;color:#121212;border-left:3px solid #0B7A62;padding-left:12px"><b style="{green}">À retenir.</b> {esc(keep(h))}</p>' if keep(h) else '') + impact(h).replace('margin:0 0 8px', 'margin:8px 0 0;padding-left:15px') +
+                        chart + (f'<p style="{f};margin:{12 if chart else 4}px 0 0;font-size:16.5px;line-height:1.55;color:#121212;border-left:3px solid #0B7A62;padding-left:12px"><b style="{green}">À retenir.</b> {esc(keep(h))}</p>' if keep(h) else '') +
                         f'<p style="{f};margin:10px 0 0;font-size:12.5px;color:#6B6B6B">{esc(" · ".join(h["sources"][:3]))} · <a href="{esc(h["link"])}" style="{green};font-weight:600">Lire l\'article</a></p>' + report(h) + free(h)))
     # ── the figure of the day ──
     fig = E.get('figure')
@@ -396,7 +392,7 @@ def journal(today, E, ed, wk, mine):
         lab, col = theme_of(h.get('tags'))
         body.append(row(sec_head + (f'<p style="{f};margin:0 0 4px;font-size:12px;font-weight:700;color:{col}">{lab}</p>' if lab else '') +
                         f'<p style="{serif};margin:0 0 6px;font-size:19px;line-height:1.28;font-weight:700">{a(h["link"], h["title"])}</p>' +
-                        (f'<p style="{f};margin:0 0 8px;font-size:15px;line-height:1.5;color:#383838"><b style="{green}">À retenir.</b> {esc(keep(h))}</p>' if keep(h) else '') + impact(h) +
+                        (f'<p style="{f};margin:0 0 8px;font-size:15px;line-height:1.5;color:#383838"><b style="{green}">À retenir.</b> {esc(keep(h))}</p>' if keep(h) else '') +
                         f'<p style="{f};margin:0;font-size:12.5px;color:#6B6B6B">{esc(" · ".join(h["sources"][:3]))}</p>' + report(h) + free(h)))
     # ── your keywords ──
     if mine:

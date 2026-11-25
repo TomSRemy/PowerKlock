@@ -92,11 +92,10 @@ Also write `articles` (every day) and, on Monday, `articles_week`: the newslette
   contracts), `projects` (new capacity, storage, renewables), `supply` (suppliers, tariffs, consumers, industry).
 - Leave out what does not touch the French or European power and gas business: general climate pieces, consumer tips,
   technical curiosities, adverts.
-- Each article: `{"link" (exactly as in news.json), "section", "what", "what_en", "impact", "impact_en"}`.
+- Each article: `{"link" (exactly as in news.json), "section", "what", "what_en"}`.
   `what` (« À retenir »): a short description of the article, 1 to 2 sentences, what happens, who, how much, when; no
-  analysis, no opinion. `impact`: one neutral sentence on what it changes and for whom (suppliers, consumers, producers,
-  the grid, the market), not only PPAs; empty when the article does not say. Use only the title and the public summary
-  of news.json: never the text of a paid article.
+  analysis, no opinion, no « impact » line (the owner, 25 Nov. 2026). Use only the title and the public summary of
+  news.json: never the text of a paid article.
 
 ## How to publish
 Write that one file on `main` (one commit, message `data: newsletter brief <date> (Claude)`), nothing else. If a figure
