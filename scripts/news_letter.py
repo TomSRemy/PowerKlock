@@ -510,7 +510,41 @@ def key_facts(edition):
         mv = sp.get("pct")
         trend_fr = "" if not isinstance(mv, (int, float)) or abs(mv) < 1 else (f", en hausse de {fr_num(abs(mv), 0)} % sur la veille" if mv > 0 else f", en baisse de {fr_num(abs(mv), 0)} % sur la veille")
         trend_en = "" if not isinstance(mv, (int, float)) or abs(mv) < 1 else (f", up {abs(mv):.0f} % on the day before" if mv > 0 else f", down {abs(mv):.0f} % on the day before")
-        f.append(("spot", f"Le spot français s’établit à {fr_num(sp['value'], 0)} €/MWh{trend_fr}.", f"The French spot is at {sp['value']:.0f} €/MWh{trend_en}."))
+        fr, en = f"Le spot France ressort à {fr_num(sp['value'], 0)} €/MWh pour aujourd’hui{trend_fr}.", f"The French spot is {sp['value']:.0f} €/MWh for today{trend_en}."
+        # where France stands among its neighbours, the same delivery day (data/history/daily/<D>.json): a fact, not a guess
+        try:
+            Z = json.load(open(os.path.join(ROOT, "data", "history", "daily", edition["date"] + ".json"))).get("zones") or {}
+        except (OSError, ValueError):
+            Z = {}
+        NB = [("DE_LU", "l’Allemagne", "Germany"), ("BE", "la Belgique", "Belgium"), ("NL", "les Pays-Bas", "the Netherlands"),
+              ("IT_NORD", "l’Italie du Nord", "northern Italy"), ("ES", "l’Espagne", "Spain"), ("CH", "la Suisse", "Switzerland")]
+        nb = [(fz, ez, Z[z]["avg"]) for z, fz, ez in NB if isinstance((Z.get(z) or {}).get("avg"), (int, float))]
+        lo = sorted([x for x in nb if x[2] < sp["value"] - 2], key=lambda x: x[2])[-3:]
+        hi = sorted([x for x in nb if x[2] > sp["value"] + 2], key=lambda x: -x[2])[-3:]
+        lst = lambda xs, k: " et ".join(", ".join(f"{x[k]} ({fr_num(x[2], 0) if k == 0 else f'{x[2]:.0f}'} €)" for x in xs).rsplit(", ", 1)) if xs else ""  # noqa: E731
+        lsten = lambda xs: " and ".join(", ".join(f"{x[1]} ({x[2]:.0f} €)" for x in xs).rsplit(", ", 1))  # noqa: E731
+        if lo and hi:
+            fr += f" C’est plus cher que {lst(lo, 0)}, moins que {lst(hi, 0)}."
+            en += f" That is above {lsten(lo)}, below {lsten(hi)}."
+        elif lo:
+            fr += f" La France est la zone la plus chère du voisinage, devant {lst(lo, 0)}."
+            en += f" France is the dearest zone around, above {lsten(lo)}."
+        elif hi:
+            fr += f" La France est la zone la moins chère du voisinage, sous {lst(hi, 0)}."
+            en += f" France is the cheapest zone around, below {lsten(hi)}."
+        cost = (pk_index(edition["date"]) or {}).get("coût_MWh_centrale_gaz")
+        if isinstance(cost, (int, float)):
+            gap = sp["value"] - cost
+            if gap > 15:
+                fr += f" Le prix dépasse de {fr_num(gap, 0)} € le coût de production d’une centrale au gaz ({fr_num(cost, 0)} €/MWh) : le système est tendu, avec des heures de pointe payées bien au-delà du gaz."
+                en += f" The price is {gap:.0f} € above a gas plant's production cost ({cost:.0f} €/MWh): the system is tight, with peak hours paid well above gas."
+            elif gap >= -15:
+                fr += f" Le prix est au niveau du coût de production d’une centrale au gaz ({fr_num(cost, 0)} €/MWh) : c’est le gaz qui fixe le prix."
+                en += f" The price is at a gas plant's production cost ({cost:.0f} €/MWh): gas sets the price."
+            else:
+                fr += f" Le prix reste sous le coût de production d’une centrale au gaz ({fr_num(cost, 0)} €/MWh) : le nucléaire et les renouvelables fixent le prix une bonne partie de la journée."
+                en += f" The price stays below a gas plant's production cost ({cost:.0f} €/MWh): nuclear and renewables set the price much of the day."
+        f.append(("spot", fr, en))
     ix = pk_index(edition["date"])
     fu = trends_only(fundamentals(edition["date"])) or {}
     cv = ix.get("couverture_bas_carbone")
@@ -530,18 +564,17 @@ def key_facts(edition):
     else:
         why_fr = why_en = ""
     if cv:
+        # the coverage is of the day before (the last complete day of generation data): said as such, and without saying
+        # who sets the price, which the spot sentence does from the prices themselves
         pct, prev, ex = cv["pct"], cv.get("veille_pct"), cv.get("exports_GW") or 0
-        was = (", en recul sur la veille" if prev > pct else ", en progrès sur la veille") if prev is not None and prev != pct else ""
+        was_fr = f", contre {prev} % la veille" if prev is not None and prev != pct else ""
+        was_en = f", against {prev} % the day before" if prev is not None and prev != pct else ""
         if pct >= 100:
-            fr = (f"La production bas-carbone couvre encore la consommation française ({pct} %{was})" + (" et la France exporte" if ex >= 0.5 else "")
-                  + " : son prix suit alors celui de ses voisins, fixé par leurs centrales au gaz.")
-            en = (f"Low-carbon output still covers French consumption ({pct} %" + (f", against {prev} % the day before" if was else "") + ")" + (f" and France exports {ex:.1f} GW" if ex >= 0.5 else "")
-                  + ": its price then follows its neighbours', set by their gas plants.")
+            fr = f"Hier, la production bas-carbone couvrait encore la consommation française ({pct} %{was_fr})" + (f" et la France exportait {fr_num(ex)} GW." if ex >= 0.5 else ".")
+            en = f"Yesterday low-carbon output still covered French consumption ({pct} %{was_en})" + (f" and France exported {ex:.1f} GW." if ex >= 0.5 else ".")
         else:
-            cost = ix.get("coût_MWh_centrale_gaz")
-            fr = (f"La production bas-carbone ne couvre plus la consommation ({pct} %{was}) : ce sont les centrales au gaz françaises qui fixent le prix"
-                  + (f", près de leur coût de production ({cost} €/MWh)." if cost else "."))
-            en = (f"Low-carbon output no longer covers consumption ({pct} %): French gas plants set the price" + (f", close to their production cost ({cost} €/MWh)." if cost else "."))
+            fr = f"Hier, la production bas-carbone ne couvrait plus la consommation française ({pct} %{was_fr}) : le complément est venu du gaz et des importations."
+            en = f"Yesterday low-carbon output no longer covered French consumption ({pct} %{was_en}): gas and imports made up the rest."
         f.append(("coverage", (why_fr + " " if why_fr else "") + fr, (why_en + " " if why_en else "") + en))
     W = what_moved()
     g = W.get("gaz") or {}
@@ -561,14 +594,16 @@ def key_facts(edition):
         f.append(("nuclear", fr, en))
     c = W.get("cal") or {}
     if c.get("variation_7_jours_€") is not None:
-        d, gs = c["variation_7_jours_€"], c.get("effet_du_gaz_seul_€")
-        mv_fr = ("monte" if d > 0 else "recule") + " sur la semaine" if abs(d) >= 0.5 else "bouge à peine sur la semaine"
-        mv_en = f"{'gains' if d > 0 else 'loses'} {abs(d):.1f} € over seven days" if abs(d) >= 0.5 else "barely moves over seven days"
-        if isinstance(gs, (int, float)) and abs(gs - d) >= 1:
-            fr = f"Le {c['contrat']} {mv_fr}, " + ("moins que ce que le gaz seul aurait donné : le marché ne voit pas la tension française durer." if d < gs else "plus que le gaz seul ne l’explique : le marché anticipe un hiver français plus tendu.")
-            en = f"{c['contrat']} {mv_en}, " + ("less than gas alone would give: the market does not see French tightness lasting." if d < gs else "more than gas alone explains: the market expects a tighter French winter.")
-        else:
-            fr, en = f"Le {c['contrat']} {mv_fr}, au rythme du gaz.", f"{c['contrat']} {mv_en}, in step with gas."
+        d = c["variation_7_jours_€"]
+        cal = next((r for r in M if r["label"][0].startswith("Cal ")), None)
+        lvl_fr = f" à {fr_num(cal['value'], 0)} €/MWh" if cal else ""
+        lvl_en = f" at {cal['value']:.0f} €/MWh" if cal else ""
+        mv_fr = (f"{'gagne' if d > 0 else 'perd'} {fr_num(abs(d))} € sur la semaine") if abs(d) >= 0.5 else "bouge à peine sur la semaine"
+        mv_en = (f"{'gains' if d > 0 else 'loses'} {abs(d):.1f} € over the week") if abs(d) >= 0.5 else "barely moves over the week"
+        fr, en = f"Le {c['contrat']}{lvl_fr} {mv_fr}.", f"{c['contrat']}{lvl_en} {mv_en}."
+        if cal and sp and sp["value"] >= 1.8 * cal["value"]:
+            fr = fr[:-1] + f", moitié moins que le spot : le marché ne reporte pas la tension d’aujourd’hui sur l’an prochain."
+            en = en[:-1] + ", half the spot: the market does not carry today's tightness into next year."
         f.append(("cal", fr, en))
     for x in structural(edition["date"]) or []:
         if "hydraul" in x.get("sujet", ""):
