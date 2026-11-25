@@ -70,7 +70,7 @@ function _newsWireViews() {
     tabs.dataset.wired = '1';
     tabs.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => newsSetView(b.dataset.nv)));
     // the e-mail's « ▶ Écouter » (#intel/news?listen=1) opens the newsletter, its Listen button lit up
-    newsSetView(window.pkHashParams && window.pkHashParams.listen ? 'letter' : (_newsStore('pk-news-view') || 'home'));
+    newsSetView(window.pkHashParams && window.pkHashParams.listen ? 'letter' : ((v => v === 'letter' ? 'home' : v)(_newsStore('pk-news-view')) || 'home'));
     _newsMode = _newsStore('pk-news-mode') === 'topics' ? 'topics' : 'list';
     _newsSort = _newsStore('pk-news-sort') === 'important' ? 'important' : 'recent';
     const sync = () => {
@@ -644,6 +644,13 @@ async function _newsSaveKw(value, team) {
 // « Mettre à la une »: the admin pins a story (public.news_pin, warehouse migration 027); the newsletter and the News page
 // lead with it for 36 hours. Others only see which one is pinned.
 let _newsAdmin = false, _newsPins = new Set(), _newsPinNotes = {};
+// the Newsletter tab is the admin's only (the owner, 25 Nov. 2026: not public); readers manage theirs in Settings and reach
+// the page only from the e-mail's « ▶ Écouter » link (#intel/news?listen=1), signed in
+function _newsLetterTab() {
+  const b = document.querySelector('#news-tabs [data-nv="letter"]'); if (b) b.style.display = _newsAdmin ? '' : 'none';
+  const cur = document.querySelector('#news-tabs .tab-btn.active');
+  if (!_newsAdmin && cur && cur.dataset.nv === 'letter' && !(window.pkHashParams && window.pkHashParams.listen)) newsSetView('home');
+}
 async function _newsLoadPins() {
   const A = window.PKAccount; _newsAdmin = false; _newsPins = new Set();
   if (!A || !A.configured) return;
@@ -652,6 +659,7 @@ async function _newsLoadPins() {
     const cl = A.client();
     const [adm, pins] = await Promise.all([cl.rpc('is_news_admin'), cl.from('news_pin').select('link, pinned_at, note').gte('pinned_at', new Date(Date.now() - 36 * 3600e3).toISOString())]);
     _newsAdmin = !!(adm && adm.data);
+    _newsLetterTab();
     _newsPins = new Set(((pins && pins.data) || []).map(r => r.link));
     _newsPinNotes = Object.fromEntries(((pins && pins.data) || []).filter(r => r.note).map(r => [r.link, r.note]));
   } catch (e) { console.warn('[news] pins not read:', e); }
