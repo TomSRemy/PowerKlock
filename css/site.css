@@ -4428,11 +4428,16 @@ html.pk-beta #prices-table th:first-child, html.pk-beta #prices-table tr.zone-ro
 @media (min-width: 1400px) { .nh-top { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 40px; border-bottom: 1px solid var(--border); } .nh-top .nh-lead { border-bottom: 0; } .nh-top .nh-ess { padding-top: 4px; } .nh-rows { columns: 2; column-gap: 40px; } }
 @media (min-width: 1700px) { .nh-grid { grid-template-columns: minmax(0, 1fr) 340px; gap: 44px; } }
 /* the two sections of a row share their row lines (subgrid): the end line of each article sits at the same height on both sides; a thin rule between the two columns (the owner, 25 Nov. 2026) */
-.nh-sec { display: grid; grid-template-rows: subgrid; align-content: start; position: relative; }
+.nh-sec { display: grid; grid-template-rows: subgrid; grid-template-columns: minmax(0, 1fr); min-width: 0; align-content: start; position: relative; }
 .nh-sec:nth-child(2n)::before { content: ''; position: absolute; left: -16px; top: 0; bottom: 0; border-left: 1px solid var(--border); }
 .nh-sec:nth-child(n+3) h3 { margin-top: 26px; }
 .nh-sec .nh-it-t { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }   /* title on 2 lines at most, summary on 3 (the owner, 25 Nov. 2026); the full title on hover */
-.nh-sec .nh-it { display: flex; flex-direction: column; } .nh-sec .nh-it-m { margin-top: auto; }   /* source and subjects at the foot of the row */
+/* source and subjects on one line: the source is cut (full on hover), the subjects never wrap (the owner, 25 Nov. 2026) */
+.nh-sec .nh-it-m { flex-wrap: nowrap; min-width: 0; }
+.nh-sec .nh-src { flex: 1 1 0; min-width: 5em; display: flex; white-space: nowrap; }
+.nh-sec .nh-src-n { min-width: 0; overflow: hidden; text-overflow: ellipsis; } .nh-sec .nh-src-d { flex: none; white-space: pre; }   /* the outlet is cut, never the date */
+.nh-sec .nh-it-m .nf-pills, .nh-sec .nh-it-m .news-pinb { flex: none; flex-wrap: nowrap; white-space: nowrap; }
+.nh-sec .nh-it { min-width: 0; display: flex; flex-direction: column; } .nh-sec .nh-it-m { margin-top: auto; }   /* source and subjects at the foot of the row */
 @media (max-width: 700px) { .nh-sec:nth-child(2n)::before { display: none; } .nh-sec:nth-child(2) h3 { margin-top: 26px; } }
 .nh-sec h3 { margin: 0 0 4px; border-top: 2px solid var(--accent); padding-top: 9px; }
 .nh-sec-t { background: none; border: 0; padding: 0; cursor: pointer; font: 700 13.5px Inter, sans-serif; letter-spacing: 1.1px; text-transform: uppercase; color: var(--accent); }
