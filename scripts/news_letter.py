@@ -785,6 +785,41 @@ def expert_brief(day):
     return " ".join(FR), " ".join(EN)
 
 
+def prices_line(day):
+    """the day's prices in one sentence (what the market context does not give): spot, Cal, gas, carbon"""
+    H = os.path.join(ROOT, "data", "history")
+    def load(*a):
+        try:
+            return json.load(open(os.path.join(*a)))
+        except (OSError, ValueError):
+            return None
+    fr, en = [], []
+    sp = (((load(H, "daily", day + ".json") or {}).get("zones") or {}).get("FR") or {}).get("avg")
+    rows = [r for r in (((load(H, "summary_fr.json") or {}).get("zones") or {}).get("FR") or []) if r.get("avg") is not None and (r.get("d") or "") < day]
+    if isinstance(sp, (int, float)):
+        mv = (sp / rows[-1]["avg"] - 1) * 100 if rows else None
+        fr.append(f"spot France {fr_num(sp, 0)} €/MWh" + (f" ({'+' if mv >= 0 else '−'}{fr_num(abs(mv), 0)} % sur la veille)" if mv is not None and abs(mv) >= 1 else ""))
+        en.append(f"France spot {sp:.0f} €/MWh" + (f" ({'+' if mv >= 0 else '−'}{abs(mv):.0f} % on the day before)" if mv is not None and abs(mv) >= 1 else ""))
+    yrs = ((load(H, "fr_market_calchain.json") or {}).get("FR") or {}).get("years") or {}
+    if yrs:
+        y = sorted(yrs)[0]
+        v = [x for x in yrs[y]["values"] if x is not None]
+        if v:
+            fr.append(f"Cal {y[2:]} {fr_num(v[-1], 0)} €/MWh"); en.append(f"Cal {y[2:]} {v[-1]:.0f} €/MWh")
+    S = (load(H, "commodities_series.json") or {}).get("series") or {}
+    for k, lf, le, u in (("ttf", "gaz TTF", "TTF gas", "€/MWh"), ("eua", "CO₂", "CO₂", "€/t")):
+        pts = [x for x in (S.get(k) or {}).get("points") or [] if x[1] is not None]
+        if pts:
+            k7 = (date.fromisoformat(pts[-1][0]) - timedelta(days=7)).isoformat()
+            old = [x for d, x in pts if d <= k7]
+            mv = (pts[-1][1] / old[-1] - 1) * 100 if old else None
+            fr.append(f"{lf} {fr_num(pts[-1][1], 0)} {u}" + (f" ({'+' if mv >= 0 else '−'}{fr_num(abs(mv), 0)} % sur 7 jours)" if mv is not None and abs(mv) >= 1 else ""))
+            en.append(f"{le} {pts[-1][1]:.0f} {u}" + (f" ({'+' if mv >= 0 else '−'}{abs(mv):.0f} % on 7 days)" if mv is not None and abs(mv) >= 1 else ""))
+    if not fr:
+        return "", ""
+    return "Les prix du jour : " + ", ".join(fr) + ".", "Today's prices: " + ", ".join(en) + "."
+
+
 def brief_from_context(day, abroad=False):
     """the brief taken from the site's market context (data/market_digest.json, the Expert view), when it is from the
     day of the edition or the day before: the same text the site shows, numbers rounded as one says them"""
@@ -795,16 +830,22 @@ def brief_from_context(day, abroad=False):
     except (OSError, ValueError, KeyError, TypeError):
         return "", ""
     def tidy(t, fr):
-        # 47001,18 MW -> 47 000 MW: a capacity or a volume is read in round figures
+        # 47001,18 MW -> 47,0 GW: a capacity is read in GW
         def big(m):
-            v = float(m.group(1).replace(",", ".")) if fr else float(m.group(1))
-            r = f"{round(v, -2):,.0f}"
-            return (r.replace(",", "\u202f") if fr else r) + " " + m.group(2)
-        num = r"(\d{4,}(?:[,]\d+)?)" if fr else r"(\d{4,}(?:[.]\d+)?)"
+            v = float(m.group(1).replace("\u202f", "").replace(" ", "").replace(",", ".") if fr else m.group(1).replace(",", ""))
+            g = {"MW": ("GW", 1e3), "MWh": ("GWh", 1e3), "GWh": ("TWh", 1e3)}.get(m.group(2))
+            if g and v >= 1000:
+                v, unit = v / g[1], g[0]
+            else:
+                unit = m.group(2)
+            t = f"{v:.1f}" if v < 100 else f"{v:,.0f}"
+            return (t.replace(",", "\u202f").replace(".", ",") if fr else t) + " " + unit
+        num = r"(\d[\d\u202f ]{3,}(?:,\d+)?|\d{4,}(?:,\d+)?)" if fr else r"(\d[\d,]{3,}(?:\.\d+)?)"
         return re.sub(num + r"\s?(MW|GW|MWh|GWh|TWh)\b", big, (t or "").strip())
     items = [c for c in md.get("context") or [] if not abroad or (c.get("topic_en") or c.get("topic") or "").lower() != "france"]
-    fr = " ".join(tidy(c.get("text"), True) for c in items if c.get("text"))
-    en = " ".join(tidy(c.get("text_en") or c.get("text"), False) for c in items if c.get("text_en") or c.get("text"))
+    # as the Expert view shows it: « France : … Golfe : … »
+    fr = " ".join(f"{c.get('topic')} : " * bool(c.get("topic")) + tidy(c.get("text"), True) for c in items if c.get("text"))
+    en = " ".join(f"{c.get('topic_en') or c.get('topic')}: " * bool(c.get("topic_en") or c.get("topic")) + tidy(c.get("text_en") or c.get("text"), False) for c in items if c.get("text_en") or c.get("text"))
     return fr, en
 
 
@@ -1236,13 +1277,19 @@ def main():
             except Exception as e:
                 print(f"brief not written, attempt {attempt} ({str(e)[:160]})")
     if not edition["brief"]:
-        # no AI text passed the checks: the brief is the Expert view's own text (the owner, 25 Nov. 2026), the computed
-        # conclusions only if those figures are missing
-        edition["brief"], edition["brief_en"] = expert_brief(edition["date"])
+        # no AI text passed the checks: the brief is the Expert view's market context, as the site shows it (the owner,
+        # 25 Nov. 2026), then the day's prices it leaves out (spot, Cal, gas, carbon), from our figures; the Expert view's
+        # computed text when the context is missing or more than a day old
+        cfr, cen = brief_from_context(edition["date"])
+        pfr, pen = prices_line(edition["date"])
+        if cfr:
+            edition["brief"], edition["brief_en"] = " ".join(filter(None, [cfr, pfr])), " ".join(filter(None, [cen, pen]))
+        else:
+            edition["brief"], edition["brief_en"] = expert_brief(edition["date"])
         if not edition["brief"]:
             edition["brief"], edition["brief_en"] = brief_from_facts(key_facts(edition))
         edition["brief_auto"] = True
-        print("brief written from the Expert view's computed text")
+        print("brief written from the market context and the day's prices")
     with open(out_path, "w") as f:
         json.dump(edition, f, ensure_ascii=False, indent=1)
     if not weekly:
