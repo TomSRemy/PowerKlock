@@ -22,13 +22,26 @@ const STOP = new Set(('le la les un une des du de d l à a au aux en et ou sur d
 export const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[’']/g, ' ');
 const MORE_STOP = 'change changement changements changer mois semaine jour jours annee an ans ci la-dessus actuel actuelle actuellement nouveau nouvelle nouveaux nouvelles ' +
   'derniere dernieres dernier derniers recent recente recents recentes decision decisions info infos information informations point savoir dire dit fait faire ' +
-  'question sujet sujets concernant propos ete etre avoir peut doit doivent news actualite actualites article articles';
+  'question sujet sujets concernant propos ete etre avoir peut doit doivent news actualite actualites article articles ' +
+  // words of a natural question that no passage carries (the owner, 25 Nov. 2026: « l'IA ne répond presque à aucune question »)
+  'si se ne pas passe passer arrive arriver haut bas encore toujours tendance tendances impact impacts effet effets situation niveau ' +
+  'explique expliquer quoi sont-ils est-il est-elle ils elles qu cela ca ceci aujourd hui france francais francaise ' +
+  'resume resumer resumes resume-moi synthese synthetiser moi me vue niveau cote angle domaine principaux principales grandes evolutions ' +
+  'summarise summarize summary happened past last';
 const STOP2 = new Set([...STOP, ...MORE_STOP.split(' ')].map(w => norm(w)));
 const stem = w => w.length > 4 ? w.replace(/(aux|eaux)$/, 'al').replace(/(s|x)$/, '') : w;
 // words a reader uses for what the files call otherwise (« papier » → the research items, « PPA » → power purchase agreement…)
 const SYN = { ppa: 'ppa power purchase agreement contrat achat', papier: 'publication scientifique recherche', paper: 'publication scientifique recherche',
   etude: 'etude rapport publication', cr: 'complement remuneration', oa: 'obligation achat', turpe: 'turpe tarif reseau', aie: 'aie iea', iea: 'aie iea',
-  negatif: 'negatif negative', stockage: 'stockage batterie storage', batterie: 'batterie stockage bess' };
+  negatif: 'negatif negative', stockage: 'stockage batterie storage', batterie: 'batterie stockage bess',
+  spot: 'spot day-ahead prix', nucleaire: 'nucleaire edf reacteur disponibilite', edf: 'edf nucleaire', gaz: 'gaz ttf peg gnl', ttf: 'ttf gaz',
+  capacite: 'capacite mecanisme', garanty: 'garantie origine go', garantie: 'garantie origine go', go: 'garantie origine', froid: 'froid temperature meteo vague',
+  cal: 'cal calendar forward terme',
+  // « juridique » is how a reader says what the files call official texts, regulation, decrees, deliberations
+  juridique: 'juridique reglementation regulation officiel arrete decret loi deliberation consultation cre ordonnance directive reglement',
+  juridiqu: 'juridique reglementation regulation officiel arrete decret loi deliberation consultation cre ordonnance directive reglement',
+  reglementaire: 'reglementation regulation officiel arrete decret loi deliberation consultation cre', legal: 'legal regulation officiel arrete decret loi deliberation',
+  regulation: 'regulation reglementation officiel arrete decret deliberation cre', forward: 'forward terme cal', solaire: 'solaire photovoltaique pv', eolien: 'eolien vent offshore', rentable: 'rentable rentabilite prix capture' };
 export const terms = q => [...new Set(norm(q).split(/[^a-z0-9]+/).filter(w => w.length > 1 && !STOP2.has(w)).map(stem))];
 const words = t => norm(t).split(/[^a-z0-9]+/).filter(Boolean).map(stem);
 
@@ -54,7 +67,12 @@ export function passages(news, cons, letter, digest) {
   for (const p of Object.values((letter && letter.profiles) || {})) {
     for (const s of p.stories || []) if (s.what) out.push({ title: s.title, text: s.what + (s.for_you ? ' ' + s.for_you : ''), source: (s.sources || [])[0] || 'PowerKlock', date: (letter.date || ''), link: s.link, kind: 'article', topics: s.tags || [] });
   }
+  // the day's prices (the newsletter's tiles): what a question on a price or a level can be answered from
+  const mk = (letter && letter.markets) || [];
+  if (mk.length) out.push({ title: 'Marchés ce matin PowerKlock (prix, forwards, gaz, garanties d’origine)', text: mk.map(r => `${(r.label || [])[0] || ''} : ${r.value} ${r.unit || ''}` + (r.pct != null ? ` (${r.pct > 0 ? '+' : ''}${r.pct} % sur la séance précédente)` : r.chg != null ? ` (${r.chg > 0 ? '+' : ''}${r.chg})` : '') + (r.src ? `, source ${r.src}` : '')).join(' ; ') + '. Spot day-ahead, Cal forward, gaz PEG.',
+    source: 'PowerKlock', date: letter.date || '', link: 'https://www.powerklock.com/#today', kind: 'données de marché PowerKlock', topics: ['markets'] });
   if (letter && letter.brief) out.push({ title: 'Le point du matin PowerKlock', text: letter.brief, source: 'PowerKlock', date: letter.date || '', link: 'https://www.powerklock.com/#intel/news', kind: 'analyse PowerKlock', topics: ['markets'] });
+  for (const [k, c] of Object.entries((digest && digest.outlook) || {})) if (c && c.text) out.push({ title: `Tendance de la semaine · ${k}`, text: c.text, source: 'PowerKlock (notes de marché)', date: digest.asof || '', link: 'https://www.powerklock.com/#today', kind: 'analyse PowerKlock', topics: ['markets'] });
   for (const c of (digest && digest.context) || []) out.push({ title: `Contexte de marché · ${c.topic}`, text: c.text, source: 'PowerKlock (notes de marché)', date: digest.asof || '', link: 'https://www.powerklock.com/#today', kind: 'analyse PowerKlock', topics: ['markets'] });
   const by = new Map();   // the same link once (the newsletter repeats articles): the longest text wins
   for (const p of out) { const o = by.get(p.link); if (!o || (p.text || '').length > (o.text || '').length) by.set(p.link, p); }
@@ -64,11 +82,35 @@ export function passages(news, cons, letter, digest) {
   });
 }
 
+// two words one or two typing slips apart (Levenshtein distance ≤ 2)
+function near(a, b) {
+  if (Math.abs(a.length - b.length) > 2) return false;
+  let prev = Array.from({ length: b.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= a.length; i++) {
+    const cur = [i];
+    for (let j = 1; j <= b.length; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    prev = cur;
+  }
+  return prev[b.length] <= 2;
+}
+
 // the passages that answer best (BM25-like): a word counts by its rarity in the whole site (« rémunération » far more
 // than « prix »), in the title three times more than in the text; the question's words found side by side count
-// double; a passage must hold most of the question's weight; fresher first on a tie
+// double; a passage must hold most of the question's weight (less for a long question); fresher first on a tie
 export function search(q, docs, n = 8) {
-  const raw = terms(q); if (!raw.length) return [];
+  // « sur 15 jours », « depuis 2 semaines », « ce mois » : only the passages of that span (the owner, 25 Nov. 2026)
+  const span = norm(q).match(/(\d+)\s*(jours?|j\b|semaines?|mois|days?|weeks?|months?)/);
+  if (span) {
+    const k = +span[1] * (/^(sem|week)/.test(span[2]) ? 7 : /^(mois|month)/.test(span[2]) ? 30 : 1);
+    const from = new Date(Date.now() - k * 864e5).toISOString().slice(0, 10);
+    docs = docs.filter(d => !d.date || d.date >= from);
+    q = norm(q).replace(span[0], ' ');
+  }
+  const has = w => docs.some(d => d._all.has(w));
+  // a typo (« jurifdique ») is read as the nearest known word; a word no passage holds is left out rather than sinking
+  // the whole question
+  const fix = w => has(w) || SYN[w] ? w : (Object.keys(SYN).find(k => k.length > 4 && k.slice(0, 4) === w.slice(0, 4) && near(k, w)) || null);
+  const raw = terms(q).filter(w => !/^\d{1,2}$/.test(w) || /cal|y\+|m\+/.test(norm(q))).map(fix).filter(Boolean); if (!raw.length) return [];
   const groups = raw.map(w => [w, ...((SYN[w] || '').split(' ').filter(Boolean).map(stem))]);
   const N = docs.length || 1, idf = w => Math.log(1 + N / (1 + docs.reduce((c, d) => c + (d._all.has(w) ? 1 : 0), 0)));
   const gw = groups.map(g => Math.max(...g.map(idf)));
@@ -82,9 +124,16 @@ export function search(q, docs, n = 8) {
     });
     for (const ph of phrases) if (d._flat.includes(ph)) s *= 1.5;
     return { d, s, got };
-  }).filter(x => x.got >= 0.6 * total);
-  scored.sort((a, b) => b.s - a.s || (b.d.date || '').localeCompare(a.d.date || ''));
-  return scored.slice(0, n).map(x => { const { _ti, _tx, _all, _flat, ...d } = x.d; return d; });
+  });
+  // most of the question's weight first; a long natural question rarely has it all in one passage: then 45 %, then 30 %
+  // (at least three passages, the model says itself when they do not answer)
+  let best = [];
+  for (const share of [0.6, 0.45, 0.3]) {
+    best = scored.filter(x => x.got >= share * total && x.s > 0);
+    if (best.length >= 3) break;
+  }
+  best.sort((a, b) => b.s - a.s || (b.d.date || '').localeCompare(a.d.date || ''));
+  return best.slice(0, n).map(x => { const { _ti, _tx, _all, _flat, ...d } = x.d; return d; });
 }
 
 const SYSTEM = `Tu es l'assistant de veille de PowerKlock (marché français et européen de l'électricité), pour des directeurs du secteur.

@@ -119,7 +119,8 @@ for when, job, expected in [
     ('2026-07-07T05:00', 'morning_mail.yml', True),    # 07:00 Paris in summer
     ('2026-07-07T06:00', 'morning_mail.yml', True),    # 08:00 Paris: the retry
     ('2026-11-28T06:00', 'morning_mail.yml', False),   # Saturday
-    ('2026-11-23T09:00', 'morning_mail.yml', True),    # Monday 10:00 Paris: PowerBrunch
+    ('2026-11-23T07:00', 'morning_mail.yml', True),    # Monday 08:00 Paris: PowerBrunch (the owner, 25 Nov. 2026)
+    ('2026-11-23T06:00', 'morning_mail.yml', False),   # Monday 07:00: no 7 O'Klock, PowerBrunch replaces it
     ('2026-11-24T09:00', 'morning_mail.yml', False),   # Tuesday 10:00: no PowerBrunch
     ('2026-11-24T07:00', 'reel.yml', True),            # 08:00 Paris in winter
     ('2026-07-07T06:00', 'reel.yml', True),            # 08:00 Paris in summer

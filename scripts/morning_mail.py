@@ -134,7 +134,7 @@ def esc(t):
     return str(t or '').replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;')
 
 
-# 7 O'Klock every weekday at 7:00; PowerBrunch on Monday at 10:00, larger, on the week before
+# 7 O'Klock Tuesday to Friday at 7:00; PowerBrunch on Monday at 8:00 instead, on the week before
 TITLE = {False: '7 O’Klock', True: 'PowerBrunch'}
 SUB = {False: 'Marchés, régulation, énergie : l’essentiel à 7 h', True: 'La semaine servie à point : ce qu’il fallait retenir, à lire au calme'}
 SEC = {'markets': 'Marchés en 30 secondes', 'digest': 'L’essentiel', 'top': 'Les articles principaux', 'stories': 'Les sujets du jour', 'official': 'Textes officiels', 'cons': 'Consultations : à vos réponses',
@@ -198,9 +198,11 @@ def render_letter(today, E, pid, mine=None, exclude=(), interests=(), france=Fal
                 seen.add(st['link'])
                 stories.append(dict(st, short=E['profiles'][p]['short'][0]))
     ed['stories'] = stories
-    if interests or france:     # ticked subjects or France first: the reader's own choice among every profile's stories
-        ed['stories'] = tailor(E, pids, interests, france, 14 if E.get('weekly') else 10)   # several subjects, not two articles (the owner, 25 Nov. 2026)
-        seen = {st['link'] for st in ed['stories']}
+    # every edition chooses among every profile's stories: the reader's ticked subjects and France first rank them, and an
+    # edition without either (the general one, the site's Newsletter tab) still gets 10, not one profile's 2 or 3
+    # (the owner, 25 Nov. 2026: « deux articles c'est trop peu »)
+    ed['stories'] = tailor(E, pids, interests, france, 14 if E.get('weekly') else 10)
+    seen = {st['link'] for st in ed['stories']}
     if interests or len(pids) > 1:
         ed['name'] = ['Vos sujets', 'Your subjects']
     # an article shown once: the main articles leave out the stories and the essentials already in the e-mail
@@ -355,6 +357,8 @@ def journal(today, E, ed, wk, mine):
         return (f'<p style="{f};margin:4px 0 0;font-size:12.5px;color:#6B6B6B">Le rapport : <a href="{esc(h["report_link"])}" style="{green};font-weight:600">'
                 f'{esc(h.get("report_name") or "sur le site de l’éditeur")} ↗</a></p>') if h.get('report_link') else ''
     st = list(ed.get('stories') or [])
+    if wk:     # PowerBrunch has its own layout (the owner's mockup v4, 25 Nov. 2026)
+        return brunch(today, E, st, mine, keep, report, free, img, imgs)
     if st:
         h = st[0]
         lab, col = theme_of(h.get('tags'))
@@ -440,6 +444,165 @@ def journal(today, E, ed, wk, mine):
     return subject, text, html + ''.join(f'<!--img:{x}-->' for x in dict.fromkeys(imgs))
 
 
+# ── PowerBrunch, the Monday edition (the owner's mockup v4, 25 Nov. 2026): a dark band in the site's colours, the week
+# in one sentence, the three things to remember, the figure of the week, the week in figures, the week ahead, then one
+# block per theme, the analysis first and its articles below ──
+BRUNCH_SEC = [('prices', 'Prix et forwards'), ('gas', 'Gaz et géopolitique'), ('regulation', 'Régulation et appels d’offres'),
+              ('nuclear_grid', 'Nucléaire et réseau'), ('deals', 'Transactions et contrats'), ('projects', 'Projets et nouvelles capacités'),
+              ('supply', 'Fourniture et consommation')]
+# the brief's topics (« Prix : … ») go to the theme whose words they use
+BRUNCH_TOPIC = [('gas', r'gaz|ttf|peg|gnl|g[ée]opoli|p[ée]trole|brent|carbone|co2|eua'), ('nuclear_grid', r'nucl[ée]|edf|r[ée]seau|rte|hydro'),
+                ('regulation', r'r[ée]gul|cre|appel|arr[êe]t[ée]|d[ée]cret|bruxelles|soutien|loi'), ('deals', r'ppa|contrat|transaction'),
+                ('supply', r'fourni|tarif|consomm|client'), ('projects', r'projet|capacit|stockage|batter'), ('prices', r'.')]
+
+
+def brunch_sec(h):
+    """an article's theme in PowerBrunch: the newsletter's sections, markets split into prices and gas/geopolitics"""
+    t = set(h.get('tags') or [])
+    sec = h.get('section')
+    if sec == 'markets':
+        return 'gas' if t & {'gas', 'geopolitics', 'carbon'} else 'prices'
+    if sec in ('regulation', 'nuclear_grid', 'deals', 'projects', 'supply'):
+        return sec
+    # no section from Claude: the most specific subject first (a PPA is a deal before it is a market story)
+    return ('regulation' if t & {'regulation', 'support', 'official'} else 'deals' if 'deal' in t else 'projects' if t & {'build', 'renewables'}
+            else 'gas' if t & {'gas', 'geopolitics', 'carbon'} else 'prices' if t & {'markets', 'power'} else 'supply')
+
+
+def spot_weeks(today):
+    """the French spot's average over the last full week (Monday to Sunday before today) and the week before, published
+    daily averages (data/history/summary_fr.json › avg), or None"""
+    try:
+        rows = {r['d']: r['avg'] for r in load('history', 'summary_fr.json')['zones']['FR'] if r.get('avg') is not None}
+    except (TypeError, KeyError):
+        return None
+    end = today - timedelta(days=today.weekday() + 1)      # last Sunday
+    wk = lambda e: [rows[str(e - timedelta(days=k))] for k in range(7) if str(e - timedelta(days=k)) in rows]  # noqa: E731
+    a, b = wk(end), wk(end - timedelta(days=7))
+    if len(a) < 5 or len(b) < 5:
+        return None
+    return sum(a) / len(a), sum(b) / len(b), end
+
+
+def brunch(today, E, st, mine, keep, report, free, img, imgs):
+    f = 'font-family:Inter,Arial,Helvetica,sans-serif'
+    serif = "font-family:Georgia,'Times New Roman',serif"
+    mono = 'font-family:Menlo,Consolas,monospace'
+    green = '#0B7A62'
+    jours = ['lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.', 'dim.']
+    kick = lambda t: f'<p style="{f};font-size:11px;font-weight:700;letter-spacing:1px;color:#383838;margin:0 0 10px;padding-bottom:6px;border-bottom:1px solid #D9D9D9;text-transform:uppercase">{t}</p>'  # noqa: E731
+    row = lambda inner, bg='#FFFFFF': f'<tr><td style="padding:18px 22px;border-bottom:1px solid #EBEBEB;background:{bg}">{inner}</td></tr>'  # noqa: E731
+    a = lambda u, t: f'<a href="{esc(u)}" style="color:#121212;text-decoration:none">{esc(t)}</a>'  # noqa: E731
+    sw = spot_weeks(today)
+    end = sw[2] if sw else today - timedelta(days=today.weekday() + 1)
+    start = end - timedelta(days=6)
+    span = f'semaine du {start.day}{"" if start.month == end.month else " " + MONTHS[start.month - 1]} au {end.day} {MONTHS[end.month - 1]}'
+    # ── the dark band: brand, date, title in two colours ──
+    head = (f'<tr><td bgcolor="#0a0e13" style="padding:18px 22px 16px;background:#0a0e13;background-image:linear-gradient(135deg,#0a0e13 55%,#0d3b32);border-radius:12px 12px 0 0;border-bottom:3px solid #14D3A9">'
+            f'<p style="{f};margin:0;font-size:13px;color:#9FB0C0"><a href="{SITE}" style="text-decoration:none">{img("../assets/logo-header.png", "PowerKlock", 130).replace("display:block;width:100%;max-width:130px", "display:inline-block;width:130px;vertical-align:middle")}</a>'
+            f'<span style="vertical-align:middle;margin-left:8px">· {frday(today)}</span></p>'
+            f'<p style="{serif};margin:12px 0 0;font-size:34px;line-height:1.1;font-weight:700;color:#FFFFFF">Power<span style="color:#14D3A9">Brunch</span></p>'
+            f'<p style="{f};margin:4px 0 0;font-size:13.5px;color:#9FB0C0">La semaine servie à point · {span}</p></td></tr>')
+    body = []
+    # the brief's paragraphs « Topic : text » (scripts/news_letter.py › claude_brief, weekly)
+    paras = []
+    for x in re.split(r'\n\s*\n', E.get('brief') or ''):
+        m = re.match(r'^([A-ZÀ-Ü][^:.]{1,40}) : (.+)$', x.strip(), re.S)
+        paras.append((m[1], m[2].strip()) if m else ('', x.strip()))
+    paras = [p_ for p_ in paras if p_[1]]
+    first = lambda t: (re.match(r'(.+?[.!?])(\s|$)', t) or [None, t])[1]  # noqa: E731
+    # ── the week in one sentence: Claude's (newsletter_brief.json › week_title, week_text), else the spot's week ──
+    wl = E.get('week_line') or {}
+    if not wl.get('title') and sw:
+        pct = (sw[0] / sw[1] - 1) * 100
+        wl = {'title': f'Le spot France {"recule" if pct < 0 else "monte"} de {abs(pct):.0f} % sur la semaine',
+              'text': first(paras[0][1]) if paras else f'{n(sw[1], 0)} € la semaine d’avant, {n(sw[0], 0)} € en moyenne cette semaine.'}
+    if wl.get('title'):
+        body.append(row(f'<p style="{f};font-size:11px;font-weight:700;letter-spacing:1px;color:{green};margin:0 0 6px;text-transform:uppercase">La semaine en une phrase</p>'
+                        f'<p style="{serif};margin:0;font-size:26px;line-height:1.2;font-weight:700;color:#121212">{esc(wl["title"])}</p>'
+                        + (f'<p style="{f};margin:8px 0 0;font-size:15.5px;line-height:1.55;color:#383838">{esc(wl["text"])}</p>' if wl.get('text') else '')))
+    # ── the three things to remember: Claude's (week_keys), else the first sentence of the brief's first topics ──
+    keys = [k for k in E.get('week_keys') or [] if k.get('text')][:3] or [{'bold': t, 'text': first(x)} for t, x in paras[:3]]
+    if keys:
+        li = ''.join(f'<tr><td style="{serif};font-size:26px;font-weight:700;color:{green};padding:4px 14px 8px 0;vertical-align:top;width:20px">{k_ + 1}</td>'
+                     f'<td style="{f};font-size:15px;line-height:1.5;color:#383838;padding:6px 0 8px">' + (f'<b style="color:#121212">{esc(k["bold"])}</b> : ' if k.get('bold') else '') + f'{esc(k["text"])}</td></tr>'
+                     for k_, k in enumerate(keys))
+        body.append(row(kick('Les 3 choses à retenir') + f'<table role="presentation" style="border-collapse:collapse">{li}</table>'))
+    # ── the figure of the week (the spot's weekly average), on the dark tile ──
+    if sw:
+        pct = (sw[0] / sw[1] - 1) * 100
+        col = '#ED6965' if pct > 0 else '#14D3A9'
+        body.append(row(f'<table role="presentation" width="100%" style="border-collapse:collapse"><tr><td bgcolor="#0a0e13" style="background:#0a0e13;border-radius:10px;padding:16px 18px">'
+                        f'<table role="presentation" style="border-collapse:collapse"><tr><td style="{mono};font-size:36px;font-weight:700;color:{col};padding-right:18px;white-space:nowrap;vertical-align:middle">{"+" if pct > 0 else "−"}{abs(pct):.0f} %</td>'
+                        f'<td style="{f};font-size:14.5px;line-height:1.5;color:#E8EEF4;vertical-align:middle"><b>Le chiffre de la semaine.</b> La {"hausse" if pct > 0 else "baisse"} du spot France sur la semaine, de {n(sw[1], 0)} € à {n(sw[0], 0)} € en moyenne.</td></tr></table></td></tr></table>'))
+    # ── the week in figures (the edition's tiles: the change is over the week) ──
+    mk = E.get('markets') or []
+    if mk:
+        def chg(r):
+            c = r.get('chg') or 0
+            up = (c < 0) if r.get('hours') else (c > 0)
+            colr = '#6B6B6B' if not c else '#B8322D' if up else green
+            if r.get('hours'):
+                t = 'stable' if not c else ('▲ +' if c > 0 else '▼ −') + n(abs(c), 0) + ' h'
+            elif r.get('show') == 'abs' or r.get('pct') is None:
+                t = ('▲ +' if c > 0 else '▼ −' if c < 0 else '') + n(abs(c), 1) + ' €'
+            else:
+                t = ('▲ +' if c > 0 else '▼ −' if c < 0 else '') + n(abs(r['pct']), 1) + ' %'
+            return f'<span style="color:{colr}">{t}</span>'
+        trs = ''.join(f'<tr><td style="{f};padding:7px 8px 7px 0;border-bottom:1px solid #F2F2F2;font-size:14px;color:#121212"><a href="{SITE}#{esc(r.get("page") or "today")}" style="color:#121212;text-decoration:none">{esc(r["label"][0])}</a></td>'
+                      f'<td style="{mono};padding:7px 8px;border-bottom:1px solid #F2F2F2;font-size:13.5px;text-align:right;white-space:nowrap">{n(r["value"], 0 if r.get("hours") else 2)} {esc(r.get("unit") or ("h" if r.get("hours") else ""))}</td>'
+                      f'<td style="{mono};padding:7px 0 7px 8px;border-bottom:1px solid #F2F2F2;font-size:13px;text-align:right;white-space:nowrap">{chg(r)}</td></tr>' for r in mk)
+        srcs = ', '.join(sorted({r.get('src') for r in mk if r.get('src')}))
+        body.append(row(kick('La semaine en chiffres') + f'<table role="presentation" width="100%" style="border-collapse:collapse"><tr><td style="{f};font-size:11px;color:#8A8A8A;padding-bottom:4px">Marché</td><td style="{f};font-size:11px;color:#8A8A8A;text-align:right;padding-bottom:4px">Valeur</td><td style="{f};font-size:11px;color:#8A8A8A;text-align:right;padding-bottom:4px">Sur la semaine</td></tr>{trs}</table>'
+                        f'<p style="{f};font-size:11px;color:#8A8A8A;margin:6px 0 0">Sources : {esc(srcs)}. Chaque ligne ouvre sa page sur le site.</p>'))
+    # ── the week ahead ──
+    wa = [x for x in E.get('week_ahead') or [] if x.get('date', '') >= str(today)]   # what is still ahead on the day it is read
+    if wa:
+        def wl_(x):
+            dd = date.fromisoformat(x['date'])
+            label = ('Fin de consultation : ' if x['kind'] == 'cons' else '') + x['title']
+            return (f'<tr><td style="{f};padding:6px 12px 6px 0;border-bottom:1px solid #F2F2F2;font-size:14px;font-weight:700;color:#B8322D;white-space:nowrap;vertical-align:top">{jours[dd.weekday()]} {dd.day}</td>'
+                    f'<td style="{f};padding:6px 0;border-bottom:1px solid #F2F2F2;font-size:14.5px;line-height:1.4">{a(x["link"], label) if x.get("link") else esc(label)}</td></tr>')
+        body.append(row(kick('La semaine à venir') + '<table role="presentation" width="100%" style="border-collapse:collapse">' + ''.join(wl_(x) for x in wa) + '</table>'))
+    # ── one block per theme: the brief's analysis, then its articles ──
+    ana = {}
+    for t, x in paras:
+        for k, rx in BRUNCH_TOPIC:
+            if re.search(rx, t, re.I):
+                ana.setdefault(k, []).append(x)
+                break
+    arts = {}
+    for h in st:
+        arts.setdefault(brunch_sec(h), []).append(h)
+    for k, name in BRUNCH_SEC:
+        if not ana.get(k) and not arts.get(k):
+            continue
+        inner = kick(name) + ''.join(f'<p style="{f};margin:0 0 12px;font-size:15.5px;line-height:1.6;color:#121212">{esc(x)}</p>' for x in ana.get(k) or [])
+        for h in arts.get(k) or []:
+            kp = keep(h)
+            inner += (f'<div style="margin:6px 0 14px"><p style="{serif};margin:0 0 6px;font-size:19px;line-height:1.28;font-weight:700">{a(h["link"], h["title"])}</p>'
+                      + (f'<p style="{f};margin:0 0 6px;font-size:15px;line-height:1.5;color:#383838"><b style="color:{green}">À retenir.</b> {esc(kp)}</p>' if kp else '')
+                      + f'<p style="{f};margin:0;font-size:12.5px;color:#6B6B6B">{theme_pill(h.get("tags"))}{" " if theme_pill(h.get("tags")) else ""}{esc(" · ".join(h["sources"][:3]))}</p>' + report(h) + free(h) + '</div>')
+        body.append(row(inner))
+    if mine:
+        body.append(row(kick('Vos mots-clés') + ''.join(f'<p style="{f};margin:0;padding:7px 0;border-bottom:1px solid #F2F2F2;font-size:14.5px;line-height:1.4">{a(o["link"], o["title"])} <span style="color:#6B6B6B;font-size:12px">· {esc(o["source"])}</span></p>' for o in mine)))
+    # ── in brief ──
+    shown = {h['link'] for h in st}
+    br = [o for o in E.get('top') or [] if o['link'] not in shown][:6]
+    if br:
+        body.append(row(kick('La semaine en bref') + ''.join(f'<p style="{f};margin:0;padding:8px 0;border-bottom:1px solid #F2F2F2;font-size:15px;line-height:1.4">{theme_pill(o.get("tags"))} {a(o["link"], o["title"])} <span style="color:#8A8A8A;font-size:12px">{esc(o["source"])}</span></p>' for o in br)))
+    foot = (f'<tr><td style="padding:16px 22px 22px;background:#FFFFFF"><p style="{f};font-size:12px;color:#6B6B6B;line-height:1.6;margin:0;text-align:center">'
+            f'Sujets choisis pour vous · résumés écrits à partir des titres et extraits publics.<br>'
+            f'<a href="{SITE}#intel/news" style="color:{green}">Voir en ligne</a> · <a href="{SITE}#intel/news" style="color:{green}">Changer mes sujets</a> · <a href="{SITE}#intel/news" style="color:{green}">Se désabonner</a></p></td></tr>')
+    html = outlook('<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F1F1EF;border-collapse:collapse"><tr><td align="center" style="padding:16px 6px">'
+                   '<!--[if mso]><table role="presentation" width="680" align="center" cellpadding="0" cellspacing="0"><tr><td><![endif]-->'
+                   '<table role="presentation" width="100%" align="center" cellpadding="0" cellspacing="0" style="max-width:680px;margin:0 auto;border-collapse:collapse;table-layout:fixed;word-wrap:break-word;overflow-wrap:anywhere;background:#FFFFFF;border-radius:12px">'
+                   + head + ''.join(body) + foot + '</table><!--[if mso]></td></tr></table><![endif]--></td></tr></table>')
+    text = f'PowerBrunch · {span}\n\n' + (f'{wl.get("title")}\n{wl.get("text") or ""}\n\n' if wl.get('title') else '') + \
+        '\n'.join(f'• {h["title"]}\n  {h.get("what") or ""}\n  {h["link"]}' for h in st) + f'\n\n{SITE}#intel/news\n'
+    return f'PowerBrunch · la {span}', text, html + ''.join(f'<!--img:{x}-->' for x in dict.fromkeys(imgs))
+
+
 def readers(today, weekly=False):
     """The readers who chose to receive the newsletter (public.news_profile, warehouse migration 024): their address
     (the one they chose, else their account's), profile, words to leave out and own keywords. Daily on weekdays, or
@@ -477,6 +640,20 @@ def mine_for(kw, exclude, monday):
     return sorted(out, key=lambda i: -(i.get('impact') or 0))[:6]
 
 
+LIGHT_ONLY = re.compile(r'background:(#[0-9A-Fa-f]{6})(?!;background-image)')
+
+
+def light_only(html):
+    """the mail as a whole document that asks to stay in its own colours (the owner, 25 Nov. 2026: a reader in dark mode
+    saw the colours inverted): Apple Mail, iOS Mail and Outlook read the color-scheme meta; the Gmail apps do not, but
+    they leave a background-image alone, so every coloured background is given again as a plain gradient"""
+    html = LIGHT_ONLY.sub(lambda m: f'background:{m[1]};background-image:linear-gradient({m[1]},{m[1]})', html)
+    return ('<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+            '<meta name="color-scheme" content="light only"><meta name="supported-color-schemes" content="light only">'
+            '<style>:root{color-scheme:light only;supported-color-schemes:light only}</style></head>'
+            f'<body style="margin:0;padding:0;background:#F1F1EF">{html}</body></html>')
+
+
 def send(mails):
     """mails: [(to list, subject, text, html)], one SMTP session"""
     with smtplib.SMTP(os.environ['SMTP_HOST'], int(os.environ.get('SMTP_PORT') or 587), timeout=60) as srv:
@@ -488,7 +665,7 @@ def send(mails):
             msg['From'] = os.environ.get('ALERT_FROM') or os.environ['SMTP_USER']
             msg['To'] = ', '.join(to)
             msg.set_content(text)
-            msg.add_alternative(html, subtype='html')
+            msg.add_alternative(light_only(html), subtype='html')
             part = msg.get_payload()[-1]
             for rel in re.findall(r'<!--img:([^>]+)-->', html):   # images shown in the mail (cid:), attached to it
                 try:
@@ -552,7 +729,7 @@ def main():
     today, rows, lines, heading = build()
     subject, text, html = render(today, rows, lines, heading)
     # the newsletter when today's edition exists (scripts/news_letter.py), for the profile MORNING_PROFILE (default: origination)
-    weekly = '--weekly' in sys.argv   # PowerBrunch (Monday at 10:00) instead of 7 O'Klock
+    weekly = '--weekly' in sys.argv   # PowerBrunch (Monday at 08:00) instead of 7 O'Klock
     E = load('newsletter_week.json' if weekly else 'newsletter.json') or {}
     has_letter = E.get('date') == today.isoformat() and bool(E.get('profiles'))
     pid = os.environ.get('MORNING_PROFILE') or 'origination'
