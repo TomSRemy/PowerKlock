@@ -25,13 +25,18 @@ first): add yesterday's, drop the oldest.
 
 - `daily`: short and analytical. What changed since yesterday, why, and what it means for a buyer or a producer
   (hedging, PPA). The tiles and charts already give the figures: a number only to support an explanation. 2 to 4 topics,
-  1 to 2 sentences each.
-- `weekly`: rewrite it on Monday (the week before, complete: prices, weather, nuclear, gas, forwards, regulation,
-  geopolitics, 2 to 3 sentences each); the other days keep the file's.
+  1 to 2 sentences each, **90 words at most** in all (French).
+- `weekly`: rewrite it on Monday: the week before, complete and longer (prices, weather, nuclear, gas, forwards,
+  regulation, geopolitics, 2 to 4 sentences each, about 250 to 350 words), with what it means for the weeks ahead. From
+  one week to the next it may repeat a situation that lasts, saying so (« la situation reste la même : … », « le froid
+  dure pour la troisième semaine »). The other days keep the file's.
+- Geopolitics: an event with a large effect on prices (gas or oil supply, a strait, a pipeline, sanctions, a conflict
+  that moves TTF or Brent) is always in the daily the day it appears or changes, first if it is the day's main move; a
+  geopolitical topic without an effect on prices is left out.
 - Same text in English in `topic_en` / `text_en`.
 
 Not the same text every day (the owner, 25 Nov. 2026):
-- Read `history` first. Do not repeat an idea already written in the last days unless it changed (a new level, a
+- Read `history` first (the daily only; the weekly may repeat, see above). Do not repeat an idea already written in the last days unless it changed (a new level, a
   reversal, a date that moved): then say what changed (« le vent revient plus tôt que prévu », « EDF repousse… »).
 - No fixed list of topics: pick the 2 or 3 things that matter most today. The topics of the example are not a template;
   a quiet day can be 2 topics, a day with a CRE decision or a reversal starts with it.

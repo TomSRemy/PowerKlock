@@ -1287,6 +1287,12 @@ def main():
         edition["brief"], edition["brief_en"] = nb
         edition["brief_auto"] = "claude"
         print("brief: written by Claude this morning")
+    if not edition["brief"]:
+        # then the Expert view's market context of the day (data/market_digest.json), before the free models (the owner, 25 Nov. 2026)
+        cfr, cen = brief_from_context(edition["date"], weekly=weekly)
+        if cfr:
+            edition["brief"], edition["brief_en"], edition["brief_auto"] = cfr, cen, "context"
+            print("brief: the Expert view's market context")
     if use_ai and edition["profiles"] and not edition["brief"]:
         # Qwen3 first when it answers, then Llama 4 Scout, the most faithful in the tests of 24 Nov. 2026, and two other free
         # models as a backup when Workers AI refuses one; a text that fails the checks (figures, direction, hollow lines) is
