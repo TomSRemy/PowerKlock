@@ -820,7 +820,7 @@ def prices_line(day):
     return "Les prix du jour : " + ", ".join(fr) + ".", "Today's prices: " + ", ".join(en) + "."
 
 
-def brief_from_context(day, abroad=False):
+def brief_from_context(day, abroad=False, weekly=False):
     """the brief taken from the site's market context (data/market_digest.json, the Expert view), when it is from the
     day of the edition or the day before: the same text the site shows, numbers rounded as one says them"""
     try:
@@ -842,7 +842,7 @@ def brief_from_context(day, abroad=False):
             return (t.replace(",", "\u202f").replace(".", ",") if fr else t) + " " + unit
         num = r"(\d[\d\u202f ]{3,}(?:,\d+)?|\d{4,}(?:,\d+)?)" if fr else r"(\d[\d,]{3,}(?:\.\d+)?)"
         return re.sub(num + r"\s?(MW|GW|MWh|GWh|TWh)\b", big, (t or "").strip())
-    items = [c for c in md.get("context") or [] if not abroad or (c.get("topic_en") or c.get("topic") or "").lower() != "france"]
+    items = [c for c in (md.get("context_week") if weekly else None) or md.get("context") or [] if not abroad or (c.get("topic_en") or c.get("topic") or "").lower() != "france"]
     # as the Expert view shows it: « France : … Golfe : … »
     fr = " ".join(f"{c.get('topic')} : " * bool(c.get("topic")) + tidy(c.get("text"), True) for c in items if c.get("text"))
     en = " ".join(f"{c.get('topic_en') or c.get('topic')}: " * bool(c.get("topic_en") or c.get("topic")) + tidy(c.get("text_en") or c.get("text"), False) for c in items if c.get("text_en") or c.get("text"))
@@ -1280,7 +1280,7 @@ def main():
         # no AI text passed the checks: the brief is the Expert view's market context, as the site shows it (the owner,
         # 25 Nov. 2026), then the day's prices it leaves out (spot, Cal, gas, carbon), from our figures; the Expert view's
         # computed text when the context is missing or more than a day old
-        cfr, cen = brief_from_context(edition["date"])
+        cfr, cen = brief_from_context(edition["date"], weekly=weekly)
         pfr, pen = prices_line(edition["date"])
         if cfr:
             edition["brief"], edition["brief_en"] = " ".join(filter(None, [cfr, pfr])), " ".join(filter(None, [cen, pen]))
