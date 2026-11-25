@@ -26,8 +26,10 @@
     cloud: '<path d="M7 18h10a4 4 0 0 0 0-8 6 6 0 0 0-11.5 1.5A3.5 3.5 0 0 0 7 18z"/>',
     tank: '<ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v12c0 1.7 3.1 3 7 3s7-1.3 7-3V6"/><path d="M5 12c0 1.7 3.1 3 7 3s7-1.3 7-3"/>',
     chart: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
-    chat: '<path d="M6.2 7.6A8.5 8.5 0 1 0 17.6 6.4"/><circle cx="5.4" cy="6.2" r="1.3" fill="currentColor" stroke="none"/><path d="M13.6 2.5 9.4 12.2h3.4l-1.6 8.3 4.8-10.4h-3.4l1.7-7.6z" fill="currentColor" stroke="none"/>',   // Ask PowerKlock: the site's own mark, the power ring and its bolt (the owner, 25 Nov. 2026: not the ✦ of other AI tools)
   };
+  // Ask PowerKlock: the site's yellow mark (assets/ask-icon.png, from logo-icon-yellow.png; the owner, 25 Nov. 2026:
+  // not the ✦ of other AI tools)
+  PK.askIcon = size => '<img src="assets/ask-icon.png" width="' + (size || 16) + '" height="' + (size || 16) + '" alt="" aria-hidden="true" style="vertical-align:-3px;border-radius:50%">';
   PK.icon = (name, size) => IC[name] ? '<svg class="pk-ic" width="' + (size || 13) + '" height="' + (size || 13) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px">' + IC[name] + '</svg>' : '';
 
   const hooks = [];

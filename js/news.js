@@ -253,7 +253,7 @@ function _askSugg(input, holderId) {
   const box = document.createElement('div'); box.className = 'ask-sugg'; box.id = holderId; box.hidden = true;
   input.insertAdjacentElement('afterend', box);
   const sync = () => { const v = input.value.trim(), on = _askIsQ(v); box.hidden = !on;
-    if (on) box.innerHTML = `<button type="button">${window.PK && PK.icon ? PK.icon('chat', 13) + ' ' : ''}${_newsT('Demander à PowerKlock', 'Ask PowerKlock')} : « ${_newsEsc(v.slice(0, 90))} »</button>`; };
+    if (on) box.innerHTML = `<button type="button">${window.PK && PK.askIcon ? PK.askIcon(13) + ' ' : ''}${_newsT('Demander à PowerKlock', 'Ask PowerKlock')} : « ${_newsEsc(v.slice(0, 90))} »</button>`; };
   input.addEventListener('input', sync);
   input.addEventListener('keydown', e => { if (e.key === 'Enter' && _askIsQ(input.value)) { e.preventDefault(); askOpen(input.value.trim()); } });
   box.addEventListener('click', () => askOpen(input.value.trim()));
@@ -281,7 +281,7 @@ async function _askLoadCount() {
 }
 function _askCount() {
   const o = document.getElementById('ask-open'); if (!o) return;
-  o.innerHTML = (window.PK && PK.icon ? PK.icon('chat', 14) + ' ' : '') + _newsT('Demander', 'Ask') + (_askLeft != null && _askLeft >= 0 ? ` <span class="ask-n">${_askLeft}</span>` : '');
+  o.innerHTML = (window.PK && PK.askIcon ? PK.askIcon(14) + ' ' : '') + _newsT('Demander', 'Ask') + (_askLeft != null && _askLeft >= 0 ? ` <span class="ask-n">${_askLeft}</span>` : '');
   o.title = _askLeft != null && _askLeft >= 0 ? _newsT(`${_askLeft} question${_askLeft > 1 ? 's' : ''} restante${_askLeft > 1 ? 's' : ''} aujourd’hui`, `${_askLeft} question${_askLeft === 1 ? '' : 's'} left today`) : o.title;
 }
 function _askDraw() {
