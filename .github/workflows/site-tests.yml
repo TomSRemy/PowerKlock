@@ -34,6 +34,10 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
+      - name: Install Playwright
+        run: |
+          pip install playwright==1.48.0 requests==2.33.1
+          python -m playwright install --with-deps chromium
       - name: Python lint
         run: pip install -q ruff==0.17.2 && ruff check scripts tests warehouse
       - name: JavaScript syntax
@@ -43,7 +47,7 @@ jobs:
       - name: Calculations
         run: pip install -q numpy==2.2.6 scipy==1.15.3 pyyaml==6.0.2 && python tests/test_calculations.py && python tests/test_prices_dst.py && python tests/test_bess_optim.py && python tests/test_scheduler.py
       - name: Site logic
-        run: pip install -q playwright==1.48.0 requests==2.33.1 && python -m playwright install --with-deps chromium && python tests/test_site_logic.py && python tests/test_ppa_frozen.py && python tests/test_consistency.py
+        run: python tests/test_site_logic.py && python tests/test_ppa_frozen.py && python tests/test_consistency.py
 
   pages:
     name: pages ${{ matrix.part }}/4
