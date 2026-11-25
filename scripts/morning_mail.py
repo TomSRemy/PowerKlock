@@ -199,7 +199,7 @@ def render_letter(today, E, pid, mine=None, exclude=(), interests=(), france=Fal
                 stories.append(dict(st, short=E['profiles'][p]['short'][0]))
     ed['stories'] = stories
     if interests or france:     # ticked subjects or France first: the reader's own choice among every profile's stories
-        ed['stories'] = tailor(E, pids, interests, france, 5 if E.get('weekly') else 3)
+        ed['stories'] = tailor(E, pids, interests, france, 6 if E.get('weekly') else 5)   # five a day (the owner, 25 Nov. 2026: not enough stories)
         seen = {st['link'] for st in ed['stories']}
     if interests or len(pids) > 1:
         ed['name'] = ['Vos sujets', 'Your subjects']
@@ -259,6 +259,15 @@ def outlook(html):
     return BG.sub(lambda m: f'<{m[1]} bgcolor="{m[4]}"{m[2]}style="{m[3]}background:{m[4]}', html)
 
 
+def tile_label(t):
+    """a tile's label on one line in every mail client (the owner, 25 Nov. 2026: tiles of unequal sizes): short words,
+    the same meaning (« Spot France aujourd'hui » → « Spot France auj. », « Garanties d'origine 2027 » → « GO 2027 »)"""
+    for a, b in (("aujourd'hui", "auj."), ("aujourd’hui", "auj."), ("Garanties d'origine", "GO"), ("Garanties d’origine", "GO"),
+                 ("Pointe − base", "Pointe−base")):
+        t = t.replace(a, b)
+    return t[:22]
+
+
 def journal(today, E, ed, wk, mine):
     """7 O'Klock and PowerBrunch « façon journal » (approved 19 Nov. 2026), a black band at the top and the stories on white (24 Nov.), the price tiles, the lead
     story with its chart, the figure of the day (or the week's chart on Monday), the other stories, in brief, the days
@@ -303,7 +312,7 @@ def journal(today, E, ed, wk, mine):
         h = 84 if any(x.get("sub") for x in E["markets"]) else 70
         cells.append(f'<td width="33%" style="padding:3px;vertical-align:top"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate"><tr>'
                      f'<td height="{h}" style="background:#0a0e13;border-radius:10px;padding:9px 11px;vertical-align:top">'
-                     f'<div style="{f};font-size:11.5px;line-height:15px;color:#B8C9D9"><a href="{href}" style="color:#B8C9D9;text-decoration:none">{esc(r["label"][0])}</a></div>'
+                     f'<div style="{f};font-size:11.5px;line-height:15px;color:#B8C9D9;white-space:nowrap;overflow:hidden"><a href="{href}" style="color:#B8C9D9;text-decoration:none">{esc(tile_label(r["label"][0]))}</a></div>'
                      f'<div style="{mono};font-size:18px;line-height:24px;font-weight:700;color:#FFFFFF;margin:2px 0"><a href="{href}" style="color:#FFFFFF;text-decoration:none">{val}</a></div>'
                      f'<div style="{f};font-size:11px;line-height:15px;color:#7A93AB">{sub} <span style="{mono};font-size:11.5px;color:{col};white-space:nowrap">{ch}</span></div></td></tr></table></td>')
     tiles = ''.join('<tr>' + ''.join(cells[i:i + 3]) + '<td></td>' * (3 - len(cells[i:i + 3])) + '</tr>' for i in range(0, len(cells), 3))

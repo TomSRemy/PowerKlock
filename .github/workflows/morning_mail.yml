@@ -77,7 +77,7 @@ jobs:
           if [ "${{ inputs.preview }}" = "true" ]; then echo "Preview: nothing committed."; exit 0; fi
           git config user.name "PowerDesk Bot"
           git config user.email "bot@powerdesk.local"
-          git add -A data/news_digest.json data/newsletter.json data/newsletter_week.json data/newsletter_img 2>/dev/null || true
+          git add -A data/news_digest.json data/newsletter.json data/newsletter_week.json data/newsletter_history.json data/newsletter_img 2>/dev/null || true
           if git diff --staged --quiet; then echo "No new edition."; exit 0; fi
           git commit -q -m "data: newsletter $(TZ=Europe/Paris date +%F)"
           for i in 1 2 3 4 5; do git pull -q --rebase -X theirs origin main && git push -q && exit 0; git rebase --abort 2>/dev/null || true; sleep 5; done
