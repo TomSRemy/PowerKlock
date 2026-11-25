@@ -79,6 +79,16 @@ function _newsWireViews() {
     document.querySelectorAll('[data-nm]').forEach(b => b.addEventListener('click', () => { _newsMode = b.dataset.nm; _newsStore('pk-news-mode', _newsMode); sync(); renderNews(newsData); }));
     document.querySelectorAll('[data-ns]').forEach(b => b.addEventListener('click', () => { _newsSort = b.dataset.ns; _newsStore('pk-news-sort', _newsSort); sync(); renderNews(newsData); }));
     sync();
+    // « Résumés »: the summaries under the titles, or the compact list of titles only (the owner, 25 Nov. 2026); kept per browser
+    const seg = document.querySelector('.news-seg [data-nm]') && document.querySelector('.news-seg [data-nm]').parentElement;
+    if (seg && !document.getElementById('news-sum-t')) {
+      const bt = document.createElement('button'); bt.type = 'button'; bt.id = 'news-sum-t'; bt.className = 'filter-btn';
+      const on = () => _newsStore('pk-news-sum') !== 'off';
+      const draw = () => { bt.classList.toggle('active', on()); bt.textContent = _newsT('Résumés', 'Summaries'); bt.title = on() ? _newsT('Masquer les résumés : la liste des titres seulement', 'Hide the summaries: titles only') : _newsT('Afficher les résumés sous les titres', 'Show the summaries under the titles');
+        const g = document.getElementById('news-grid'); if (g) g.classList.toggle('nf-compact', !on()); };
+      bt.addEventListener('click', () => { _newsStore('pk-news-sum', on() ? 'off' : 'on'); draw(); });
+      seg.insertAdjacentElement('afterend', bt); draw();
+    }
     const sb = document.getElementById('news-src-btn');
     if (sb) sb.addEventListener('click', () => { newsSetView('sources'); window.scrollTo({ top: 0, behavior: 'smooth' }); });
     if (_newsMode !== 'list' || _newsSort !== 'recent') renderNews(newsData);
@@ -722,6 +732,8 @@ async function _newsLoadDigest() {
 }
 function renderNewsDigest() {
   const sec = document.getElementById('hs-news-digest'), host = document.getElementById('news-digest'); if (!sec || !host) return;
+  // « L'essentiel » lives in Top stories only (js/news_home.js): on top of the live feed it repeated it (the owner, 25 Nov. 2026)
+  if (!window._NEWS_FEED_DIGEST) { sec.hidden = true; return; }
   const D = _newsDigest || {}, today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris' }).format(new Date());
   const monday = (() => { const d = new Date(today + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() - (d.getUTCDay() + 6) % 7); return d.toISOString().slice(0, 10); })();
   const daily = D.daily && D.daily.date >= (() => { const d = new Date(today + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() - 3); return d.toISOString().slice(0, 10); })() ? D.daily : null;
@@ -995,11 +1007,14 @@ function renderNews(items) {
   if (_newsMode === 'list') {
     grid.innerHTML = filtered.map(item => {
       const link = /^https?:\/\//.test(item.link || '') ? item.link : '#', mine = _newsMine(item, kw), more = (item.other_sources || []).length;
-      const t = new Date(item.date), recent = Date.now() - t < 864e5;
-      return `<a class="news-row${mine ? ' mine' : ''}" href="${_newsEsc(link)}" target="_blank" rel="noopener noreferrer"><span class="news-row-d">${recent ? t.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' }) : _newsDay(t)}</span>
-        <span class="news-row-b"><span class="news-row-t">${mine ? '<span class="news-star">★</span>' : ''}${(item.tags || []).includes('official') ? `<span class="news-off">${_newsT('Texte officiel', 'Official text')}</span>` : ''}${_newsEsc(item.title)}</span>
-        <small>${_newsEsc(item.source)}${more ? ` +${more}` : ''}</small>${_newsFree(item, 'news-free-row')}</span>
-        <span class="news-row-f">${_newsPills(item)}${_newsPinBtn(item)}<span class="news-vote" data-link="${_newsEsc(item.link)}">${_newsVoteBtns(item.link)}</span></span></a>`;
+      // as Top stories (the owner, 25 Nov. 2026): the title (2 lines, whole on hover), its summary (2 lines, hidden in the
+      // compact view), then the date first, the outlet and the subjects on one line
+      const t = new Date(item.date), ago = typeof _nhAgo === 'function' ? _nhAgo(t) : _newsDay(t);
+      const sum = typeof _nhSnip === 'function' ? _nhSnip(item.snippet, item.title) : (item.snippet || '');
+      return `<a class="news-row nf-row${mine ? ' mine' : ''}" href="${_newsEsc(link)}" target="_blank" rel="noopener noreferrer">
+        <span class="nf-row-t" title="${_newsEsc(item.title)}">${mine ? '<span class="news-star">★</span>' : ''}${(item.tags || []).includes('official') ? `<span class="news-off">${_newsT('Texte officiel', 'Official text')}</span>` : ''}${_newsEsc(item.title)}</span>
+        ${sum ? `<span class="nf-row-s">${_newsEsc(sum)}</span>` : ''}
+        <span class="nf-row-m"><span class="nf-row-src" title="${_newsEsc(item.source)}"><span class="nf-row-d">${ago} · </span><span class="nf-row-n">${_newsEsc(item.source)}${more ? ` +${more}` : ''}</span></span>${_newsPills(item)}${_newsPinBtn(item)}<span class="news-vote" data-link="${_newsEsc(item.link)}">${_newsVoteBtns(item.link)}</span></span>${_newsFree(item, 'news-free-row')}</a>`;
     }).join('');
     return;
   }
