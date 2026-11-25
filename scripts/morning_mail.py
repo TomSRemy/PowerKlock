@@ -198,9 +198,11 @@ def render_letter(today, E, pid, mine=None, exclude=(), interests=(), france=Fal
                 seen.add(st['link'])
                 stories.append(dict(st, short=E['profiles'][p]['short'][0]))
     ed['stories'] = stories
-    if interests or france:     # ticked subjects or France first: the reader's own choice among every profile's stories
-        ed['stories'] = tailor(E, pids, interests, france, 14 if E.get('weekly') else 10)   # several subjects, not two articles (the owner, 25 Nov. 2026)
-        seen = {st['link'] for st in ed['stories']}
+    # every edition chooses among every profile's stories: the reader's ticked subjects and France first rank them, and an
+    # edition without either (the general one, the site's Newsletter tab) still gets 10, not one profile's 2 or 3
+    # (the owner, 25 Nov. 2026: « deux articles c'est trop peu »)
+    ed['stories'] = tailor(E, pids, interests, france, 14 if E.get('weekly') else 10)
+    seen = {st['link'] for st in ed['stories']}
     if interests or len(pids) > 1:
         ed['name'] = ['Vos sujets', 'Your subjects']
     # an article shown once: the main articles leave out the stories and the essentials already in the e-mail
