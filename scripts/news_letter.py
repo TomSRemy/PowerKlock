@@ -1281,9 +1281,9 @@ def main():
         # 25 Nov. 2026), then the day's prices it leaves out (spot, Cal, gas, carbon), from our figures; the Expert view's
         # computed text when the context is missing or more than a day old
         cfr, cen = brief_from_context(edition["date"], weekly=weekly)
-        pfr, pen = prices_line(edition["date"])
         if cfr:
-            edition["brief"], edition["brief_en"] = " ".join(filter(None, [cfr, pfr])), " ".join(filter(None, [cen, pen]))
+            # the tiles of the e-mail give the prices: the context alone, short for the day, complete for the week
+            edition["brief"], edition["brief_en"] = cfr, cen
         else:
             edition["brief"], edition["brief_en"] = expert_brief(edition["date"])
         if not edition["brief"]:

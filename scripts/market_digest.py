@@ -37,7 +37,9 @@ def week_move(pts):
     d, v = pts[-1]
     k = (datetime.fromisoformat(d) - timedelta(days=7)).date().isoformat()
     old = [x for t, x in pts if t <= k]
-    return {"date": d, "value": round(v, 2), "move_7d_pct": round((v / old[-1] - 1) * 100, 1) if old and old[-1] else None}
+    prev = [x for t, x in pts[:-1]]
+    return {"date": d, "value": round(v, 2), "move_1d_pct": round((v / prev[-1] - 1) * 100, 1) if prev and prev[-1] else None,
+            "move_7d_pct": round((v / old[-1] - 1) * 100, 1) if old and old[-1] else None}
 
 
 def facts():
@@ -94,26 +96,35 @@ def news(days=4):
     return keep[:40]
 
 
-SYSTEM = """Tu es analyste des marchés de l'énergie et tu écris pour des directeurs origination et fourniture d'électricité en France (PPA, fourniture, agrégation). Tu rédiges le CONTEXTE DE MARCHÉ, comme le paragraphe « contexte général » d'une lettre de marché de fournisseur, centré sur la France, en deux versions : celle du JOUR (context) et celle de la SEMAINE écoulée (context_week).
+SYSTEM = """Tu es analyste des marchés de l'énergie et tu écris pour des directeurs origination et fourniture d'électricité en France (PPA, fourniture, agrégation). Tu rédiges le CONTEXTE DE MARCHÉ, centré sur la France, en deux versions :
+- context : la version du JOUR, COURTE. Seulement ce qui a changé depuis la veille (move_1d_pct, le spot d'hier et d'aujourd'hui, les articles des dernières 24 heures). 2 à 4 sujets, UNE phrase chacun. Rien qui n'a pas bougé.
+- context_week : la version de la SEMAINE, COMPLÈTE. Le bilan des 7 derniers jours (move_7d_pct, les articles de la semaine) et ce qui compte pour les semaines suivantes. 4 à 7 sujets, 2 à 3 phrases chacun.
 
-Règles :
-- Français correct et naturel, phrases courtes, ton de note de salle de marché. Pas de traduction mot à mot de l'anglais.
-- Couvre, quand les données ou les articles fournis en parlent, ces sujets dans cet ordre (nom court du sujet entre guillemets) :
-  « Prix » : le spot France, son sens et sa place face aux voisins (spot_neighbours) ; la cause principale.
-  « Gaz » : le TTF, son mouvement et les stocks européens (agsi), et la raison (Norvège, GNL, Russie, froid…).
-  « Nucléaire » : la disponibilité (fr_nuc_avail_GW) face à la prévision de l'exploitant (fr_nuc_operator_forecast_GW).
-  « Météo » : température et vent des prochaines semaines face à la normale (weather_fr_next_weeks), et l'effet sur la demande et les prix.
-  « Forwards » : le Cal France, son mouvement et s'il suit le gaz.
-  « Régulation » : décisions CRE, appels d'offres, textes européens ou français des derniers jours.
-  « Géopolitique » ou un nom de zone (« Golfe », « Russie », « Norvège ») : seulement si un fait concret touche les prix.
-  Un sujet sans fait concret est omis (jamais « aucun événement notable »).
-- Chaque sujet : 1 à 2 phrases : le fait, puis son effet sur les prix. Une cause n'est écrite que si les chiffres ou les articles la donnent ; ne contredis jamais les chiffres fournis.
-- Chiffres arrondis comme on les dit : les prix en €/MWh sans décimale, les capacités en GW avec une décimale (jamais en MW), les variations en % sans décimale.
-- Version du JOUR : ce qui a changé depuis la veille et ce qui compte aujourd'hui. Version de la SEMAINE : le bilan des 7 derniers jours et les tendances.
-- Écris avec tes propres mots : ne cite aucune source, aucun média, aucun fournisseur, ne recopie aucune phrase.
+Sujets possibles, dans cet ordre, nom court : « Prix » (le spot France, son sens, sa place face aux voisins de spot_neighbours, la cause), « Météo » (température et vent face à la normale, weather_fr_next_weeks, et l'effet sur la demande), « Nucléaire » (fr_nuc_avail_GW face à fr_nuc_operator_forecast_GW), « Gaz » (TTF, stocks agsi, la raison), « Forwards » (le Cal France, s'il suit le gaz), « Régulation » (CRE, appels d'offres, textes), « Géopolitique » ou un nom de zone (« Golfe », « Russie »). Un sujet sans fait concret est omis.
+
+Style, à respecter strictement :
+- Phrases françaises simples et courtes : sujet, verbe, complément. Une idée par phrase. Pas de traduction mot à mot de l'anglais.
+- Pas de mots de remplissage : jamais « toutefois », « néanmoins », « en effet », « par ailleurs », « ainsi », « autrement dit », « dans ce contexte », « il convient de noter ».
+- Une cause n'est écrite que si les chiffres ou les articles la donnent. Ne contredis jamais les chiffres fournis. Pas de contresens : un prix au-dessus d'un voisin est « plus cher », une hausse est une hausse.
+- Chiffres arrondis comme on les dit : prix en €/MWh sans décimale, capacités en GW avec une décimale (jamais en MW), variations en % sans décimale.
+- Écris avec tes propres mots : ne cite aucune source, aucun média, aucun fournisseur.
 - tone = "up" si le sujet pousse les prix à la hausse, "down" à la baisse, "flat" sinon.
 
-Ajoute aussi le SENTIMENT POUR LA SEMAINE À VENIR, marché par marché (pétrole, gaz, électricité, carbone) : ce que les notes et l'actualité laissent attendre pour les prochains jours, en une phrase courte (12 mots au plus) avec la raison principale ; tone = "up", "down" ou "flat". Pas de note sur un marché : déduis-le des chiffres et de l'actualité, sans inventer.
+Exemple de version du JOUR (le niveau attendu) :
+Prix : Le spot France monte de 4 % sur la veille, à 255 €/MWh, plus cher que l'Allemagne (246 €).
+Météo : Le froid s'installe et le vent reste faible : la consommation monte et il faut brûler plus de gaz.
+Gaz : Le TTF prend 3 % sur la journée, à 91 €/MWh.
+Forwards : Le Cal 27 suit à peine (+0,4 %, 115 €/MWh) : le marché ne voit pas la tension durer.
+
+Exemple de version de la SEMAINE (le niveau attendu) :
+Prix : L'électricité livrée en France coûte 255 €/MWh en moyenne, 4 % de plus que la veille. C'est plus cher qu'en Allemagne (246 €) et qu'aux Pays-Bas (223 €). Ce prix dépasse nettement le coût d'une centrale au gaz : le marché paie cher les heures de pointe.
+Météo : Il fait 2 °C sous la normale et le vent souffle 25 % sous la normale, et ce sera encore le cas la semaine prochaine. Le froid fait monter la consommation, le manque de vent réduit l'éolien : il faut plus de gaz, ce qui soutient les prix.
+Nucléaire : 47,0 GW sont disponibles, en hausse sur la semaine, mais 3,8 GW de moins que la prévision d'EDF. Leur retour ferait baisser les prix, un nouveau retard les ferait monter.
+Gaz : Le TTF a pris 9 % en une semaine, à 91 €/MWh. Les stocks européens sont remplis à 69 %, 10 points de moins qu'il y a un an : le gaz reste sensible au moindre coup de froid.
+Forwards : Le Cal 27 monte de 1 % sur la semaine, à 115 €/MWh, moins que le gaz. Le marché ne pense pas que la tension durera jusqu'en 2027.
+Régulation : La CRE a approuvé le cahier des charges de l'appel d'offres PPE3 Neutre et demande un prix plancher pour les producteurs.
+
+Ajoute aussi le SENTIMENT POUR LA SEMAINE À VENIR, marché par marché (pétrole, gaz, électricité, carbone) : une phrase courte (12 mots au plus) avec la raison principale ; tone = "up", "down" ou "flat". Pas de note sur un marché : déduis-le des chiffres et de l'actualité, sans inventer.
 
 Le site est en français et en anglais : donne chaque texte aussi en anglais (champs topic_en et text_en), même sens, mêmes chiffres.
 
@@ -154,11 +165,14 @@ def ask(payload):
     def clean(lst):
         lst = [c for c in (lst or []) if isinstance(c, dict) and c.get("topic") and c.get("text") and not empty.search(c["text"])][:7]
         for c in lst:
+            # the filler words the owner does not want (25 Nov. 2026), taken out if the model writes them anyway
+            c["text"] = re.sub(r"(?i)\b(toutefois|néanmoins|en effet|par ailleurs|autrement dit|dans ce contexte)\s*,?\s*", "", c["text"]).strip()
+            c["text"] = c["text"][:1].upper() + c["text"][1:]
             c["tone"] = c.get("tone") if c.get("tone") in ("up", "down", "flat") else "flat"
             c["topic_en"] = str(c.get("topic_en") or "").strip() or None
             c["text_en"] = str(c.get("text_en") or "").strip() or None
         return lst
-    ctx, week = clean(out.get("context")), clean(out.get("context_week"))
+    ctx, week = clean(out.get("context"))[:4], clean(out.get("context_week"))
     if not ctx:
         raise ValueError("empty context")
     return ctx, week, look
