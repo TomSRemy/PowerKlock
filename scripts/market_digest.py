@@ -97,7 +97,7 @@ def news(days=4):
 
 
 SYSTEM = """Tu es analyste des marchés de l'énergie et tu écris pour des directeurs origination et fourniture d'électricité en France (PPA, fourniture, agrégation). Tu rédiges le CONTEXTE DE MARCHÉ, centré sur la France, en deux versions :
-- context : la version du JOUR, COURTE. Seulement ce qui a changé depuis la veille (move_1d_pct, le spot d'hier et d'aujourd'hui, les articles des dernières 24 heures). 2 à 4 sujets, UNE phrase chacun. Rien qui n'a pas bougé.
+- context : la version du JOUR, COURTE et ANALYTIQUE. Ce qui a changé depuis la veille, pourquoi, et ce que cela change pour un acheteur ou un producteur (couverture, PPA). Les chiffres sont déjà dans les graphiques : n'en donne que pour appuyer une explication. 2 à 4 sujets, 1 à 2 phrases chacun.
 - context_week : la version de la SEMAINE, COMPLÈTE. Le bilan des 7 derniers jours (move_7d_pct, les articles de la semaine) et ce qui compte pour les semaines suivantes. 4 à 7 sujets, 2 à 3 phrases chacun.
 
 Sujets possibles, dans cet ordre, nom court : « Prix » (le spot France, son sens, sa place face aux voisins de spot_neighbours, la cause), « Météo » (température et vent face à la normale, weather_fr_next_weeks, et l'effet sur la demande), « Nucléaire » (fr_nuc_avail_GW face à fr_nuc_operator_forecast_GW), « Gaz » (TTF, stocks agsi, la raison), « Forwards » (le Cal France, s'il suit le gaz), « Régulation » (CRE, appels d'offres, textes), « Géopolitique » ou un nom de zone (« Golfe », « Russie »). Un sujet sans fait concret est omis.
@@ -110,11 +110,10 @@ Style, à respecter strictement :
 - Écris avec tes propres mots : ne cite aucune source, aucun média, aucun fournisseur.
 - tone = "up" si le sujet pousse les prix à la hausse, "down" à la baisse, "flat" sinon.
 
-Exemple de version du JOUR (le niveau attendu) :
-Prix : Le spot France monte de 4 % sur la veille, à 255 €/MWh, plus cher que l'Allemagne (246 €).
-Météo : Le froid s'installe et le vent reste faible : la consommation monte et il faut brûler plus de gaz.
-Gaz : Le TTF prend 3 % sur la journée, à 91 €/MWh.
-Forwards : Le Cal 27 suit à peine (+0,4 %, 115 €/MWh) : le marché ne voit pas la tension durer.
+Exemple de version du JOUR (le niveau attendu : de l'analyse, pas les chiffres que les graphiques montrent déjà) :
+Prix : La hausse continue et la France passe au-dessus de l'Allemagne. Le gaz seul ne l'explique pas : le froid et le vent faible font appeler des centrales de pointe plus chères. Le vent ne reviendra pas avant le 10 décembre, ce niveau devrait donc tenir.
+Couverture : Le Cal 27 ne suit pas, le marché voit une tension de court terme. Pour un acheteur, c'est l'hiver qui coûte cher : décembre se traite au-dessus de ce que les fondamentaux justifient.
+À surveiller : les 3,8 GW de nucléaire qu'EDF attend encore. Leur retour est le principal facteur de baisse d'ici Noël.
 
 Exemple de version de la SEMAINE (le niveau attendu) :
 Prix : L'électricité livrée en France coûte 255 €/MWh en moyenne, 4 % de plus que la veille. C'est plus cher qu'en Allemagne (246 €) et qu'aux Pays-Bas (223 €). Ce prix dépasse nettement le coût d'une centrale au gaz : le marché paie cher les heures de pointe.
@@ -195,8 +194,17 @@ def run(notes=None):
         payload["notes"].append({"date": mt.get("date"), "kind": "daily energy report, tone score only (> 0 leans to rising prices, < 0 to easing)",
                                  "gas_tone": mt.get("gas"), "power_tone": mt.get("power")})
     ctx, week, look = ask(payload)
+    # the context Claude wrote this morning (the scheduled writer, docs in config/market_context_task.md) is kept: this
+    # model only fills in the week-ahead calls then
+    cur = load("market_digest.json") or {}
+    if cur.get("engine") == "claude" and cur.get("asof") == today.isoformat() and cur.get("context"):
+        ctx, week = cur["context"], cur.get("context_week") or cur["context"]
+        look = cur.get("outlook") or look
+        engine = "claude"
+    else:
+        engine = ENGINE
     json.dump({"updated": datetime.now(timezone.utc).isoformat(timespec="seconds"), "asof": today.isoformat(),
-               "notes": len(payload["notes"]), "engine": ENGINE, "context": ctx, "context_week": week or ctx, "outlook": look}, open(OUT, "w"), ensure_ascii=False, indent=1)
+               "notes": len(payload["notes"]), "engine": engine, "context": ctx, "context_week": week or ctx, "outlook": look}, open(OUT, "w"), ensure_ascii=False, indent=1)
     remember(today.isoformat(), look)
     print("digest:", [c["topic"] for c in ctx])
 

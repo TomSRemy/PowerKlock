@@ -1264,7 +1264,18 @@ def main():
         print(f"{pid}: {len(out)} stories, AI text for {len(by)}")
     edition["brief"] = edition["brief_en"] = None
     edition["brief_links"] = []
-    if use_ai and edition["profiles"]:
+    # the market context Claude wrote this morning (config/market_context_task.md) is the brief when it is today's: short and
+    # analytical for 7 O'Klock, complete for PowerBrunch (the owner, 25 Nov. 2026); the models below only when it is missing
+    try:
+        _md = json.load(open(os.path.join(ROOT, "data", "market_digest.json")))
+    except (OSError, ValueError):
+        _md = {}
+    if _md.get("engine") == "claude" and _md.get("asof") == edition["date"]:
+        edition["brief"], edition["brief_en"] = brief_from_context(edition["date"], weekly=weekly)
+        if edition["brief"]:
+            edition["brief_auto"] = "claude"
+            print("brief: the market context written by Claude this morning")
+    if use_ai and edition["profiles"] and not edition["brief"]:
         # Qwen3 first when it answers, then Llama 4 Scout, the most faithful in the tests of 24 Nov. 2026, and two other free
         # models as a backup when Workers AI refuses one; a text that fails the checks (figures, direction, hollow lines) is
         # written again by the next one
