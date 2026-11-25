@@ -388,21 +388,10 @@ def journal(today, E, ed, wk, mine):
         if sec_of(h) not in order:
             order.append(sec_of(h))
     rest = [h for k in order for h in st[1:] if sec_of(h) == k]
-    def bubbles(tags, n=3):   # the article's subjects as bubbles, as on the site (the owner, 25 Nov. 2026)
-        t = set(tags or [])
-        out = [pill(lab, bg, fg) for k, lab, bg, fg in THEMES if k in t][:n]
-        if 'fr' in t:
-            out.append(pill('France', '#EEF2FB', '#1F3F8A'))
-        return '<span style="display:inline-block;margin-right:4px;margin-bottom:4px">' + '</span><span style="display:inline-block;margin-right:4px;margin-bottom:4px">'.join(out) + '</span>' if out else ''
     for j, h in enumerate(rest):
-        if j == 0 or sec_of(rest[j - 1]) != sec_of(h):
-            # a clear section heading on its own band (the owner, 25 Nov. 2026)
-            n_sec = sum(1 for x in rest if sec_of(x) == sec_of(h))
-            body.append(f'<tr><td bgcolor="#F4F6F5" style="background:#F4F6F5;padding:12px 22px;border-top:3px solid #0B7A62;border-bottom:1px solid #EBEBEB">'
-                        f'<p style="{f};margin:0;font-size:15px;font-weight:700;letter-spacing:.3px;color:#121212">{SEC[sec_of(h)]}'
-                        f' <span style="font-weight:500;color:#6B6B6B;font-size:13px">· {n_sec} article{"s" if n_sec > 1 else ""}</span></p></td></tr>')
-        bb = bubbles(h.get('tags'))
-        body.append(row((f'<div style="margin:0 0 6px">{bb}</div>' if bb else '') +
+        sec_head = kick(SEC[sec_of(h)], '#0B7A62') if j == 0 or sec_of(rest[j - 1]) != sec_of(h) else ''
+        lab, col = theme_of(h.get('tags'))
+        body.append(row(sec_head + (f'<p style="{f};margin:0 0 4px;font-size:12px;font-weight:700;color:{col}">{lab}</p>' if lab else '') +
                         f'<p style="{serif};margin:0 0 6px;font-size:19px;line-height:1.28;font-weight:700">{a(h["link"], h["title"])}</p>' +
                         (f'<p style="{f};margin:0 0 8px;font-size:15px;line-height:1.5;color:#383838"><b style="{green}">À retenir.</b> {esc(keep(h))}</p>' if keep(h) else '') +
                         f'<p style="{f};margin:0;font-size:12.5px;color:#6B6B6B">{esc(" · ".join(h["sources"][:3]))}</p>' + report(h) + free(h)))
