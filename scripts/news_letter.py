@@ -706,15 +706,21 @@ def expert_brief(day):
                     FR.append(f"Les années {' et '.join(ys[1:])} bougent beaucoup moins."); EN.append(f"{' and '.join(ys[1:])} move much less.")
                 else:
                     FR.append(f"Les années {' et '.join(ys[1:])} suivent."); EN.append(f"{' and '.join(ys[1:])} follow.")
-        a7, b7 = rows[-7:], rows[-14:-7]
+        rw = [r for r in ((sm.get("zones") or {}).get("FR") or []) if r.get("avg") is not None and (r.get("d") or r.get("date") or "") <= day]
+        a7, b7 = rw[-7:], rw[-14:-7]
         if len(a7) and len(b7):
+            # as js/market-brief.js: the week at ±5 %, then the last three days when they move by 25 % or more
             m, mb = sum(r["avg"] for r in a7) / len(a7), sum(r["avg"] for r in b7) / len(b7)
-            if m < mb * 0.9:
-                FR.append("Le spot recule sur la semaine."); EN.append("Spot eases over the week.")
-            elif m > mb * 1.1:
-                FR.append("Le spot monte sur la semaine."); EN.append("Spot rises over the week.")
+            wp = (m / mb - 1) * 100
+            l3 = (rw[-1]["avg"] / rw[-4]["avg"] - 1) * 100 if len(rw) > 3 and rw[-4]["avg"] else None
+            d3f = "" if l3 is None or abs(l3) < 25 else (", en forte hausse depuis trois jours" if l3 > 0 else ", en forte baisse depuis trois jours")
+            d3e = "" if l3 is None or abs(l3) < 25 else (", sharply up over the last three days" if l3 > 0 else ", sharply down over the last three days")
+            if wp < -5:
+                FR.append(f"Le spot recule sur la semaine ({sg(wp, 0)} %){d3f}."); EN.append(f"Spot eases over the week ({sge(wp, 0)} %){d3e}.")
+            elif wp > 5:
+                FR.append(f"Le spot monte sur la semaine ({sg(wp, 0)} %){d3f}."); EN.append(f"Spot rises over the week ({sge(wp, 0)} %){d3e}.")
             else:
-                FR.append("Le spot reste stable sur la semaine."); EN.append("Spot holds over the week.")
+                FR.append(f"Le spot reste stable sur la semaine{d3f}."); EN.append(f"Spot holds over the week{d3e}.")
     # weather, the next 4 weeks against normal (js/morning.js)
     wx = load(ROOT, "data", "weather_outlook.json") or {}
     F = ((wx.get("countries") or {}).get("FR") or {}).get("series") or {}
