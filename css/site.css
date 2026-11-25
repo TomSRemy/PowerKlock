@@ -5009,3 +5009,6 @@ html.pk-app #pk-app { font-family: 'Inter', sans-serif; }
 .nl-listen.on { background: rgba(20, 211, 169, .22); }
 .nl-listen-cue { animation: nl-cue 1.2s ease-in-out 4; }
 @keyframes nl-cue { 50% { box-shadow: 0 0 0 6px rgba(20, 211, 169, .25); } }
+
+/* Newsletter page: the subject pill by the outlet (js/news.js, as the e-mail) */
+.nl-src-pill { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
