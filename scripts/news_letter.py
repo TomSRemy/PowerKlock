@@ -33,8 +33,19 @@ import news_charts   # noqa: E402
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, "data", "newsletter.json")             # 7 O'Klock, every weekday at 7:00
 OUT_WEEK = os.path.join(ROOT, "data", "newsletter_week.json")   # PowerBrunch, Monday at 10:00: the week before
+# what the last editions carried (links, titles, brief): an article is never in two editions of 7 O'Klock, and a brief does not
+# repeat yesterday's (the owner, 25 Nov. 2026); 10 days kept
+HIST = os.path.join(ROOT, "data", "newsletter_history.json")
+PREV_BRIEF = ""
 PROFILES = os.path.join(ROOT, "config", "news_profiles.json")
 MODEL = "@cf/qwen/qwen3-30b-a3b-fp8"
+BORING = re.compile(r"(?i)customer information|adjustment of the .* calendar|\bwebinaire?s?\b|\bwebinar\b|\bportrait\b|le p[èe]re de\b|\bH/F\b|\bCDI\b|offre d.emploi|\balternance\b|black friday|\bbon plan\b|\bpromo(tion)?s?\b|\bpodcast\b|\brecrute\b|\bnomm[ée]e?\b|\bappoints?\b|\bjoins? .* as\b|"
+                    r"\blance (en europe |sur le march[ée] )?(une|un|sa|son) (nouvelle |nouveau )?(batterie|onduleur|gamme|offre|produit|application)|\blaunch(es)? (a|its) new\b|\bstarts? .* production\b|\bpartenariat commercial\b")
+# far from the French and European market (title-based: an outlet's country says little), unless geopolitics or gas moves it
+FARAWAY = re.compile(r"(?i)alg[ée]ri|p[ée]rou|\bperu\b|\bchil[ei]|br[ée]sil|brazil|\binde\b|\bindia|\bchin[ae]\b|chinese|australi|japon|japan|afrique|africa|maroc|morocco|"
+                     r"arabie|saudi|texas|californi|congr[èe]s am[ée]ricain|\bcanad|mexi|cor[ée]e|korea|vietnam|indon[ée]si|philippin|[ée]gypt|kenya|nigeria")
+# a headline that teases instead of telling (« Ce chantier titanesque va… », « Cette future raffinerie… »)
+TEASER = re.compile(r"(?i)^(ce|cette|ces)\s+\w+(\s+\w+)?\s+(va|vont|pourrait|veut|sera)\b|^(ce|cette)\s+(future?|nouvel(le)?)\b|\bvoici\b|ce que l.on sait|vous ne devinerez")
 MIN_SCORE = 3.0     # a story below this is off the reader's subjects (e.g. an offshore-wind contract for a lawyer)
 # « À retenir » must be a fact from the article: a generic line (« Impact sur les prix », « Intérêt pour les PPA ») is dropped
 GENERIC = re.compile(r"(?i)^\s*(l.|un |une |des |les |le |la )?(impacts?|int[ée]r[êe]ts?|enjeux?|opportunit[ée]s?|cons[ée]quences?|effets?|nouvel(le)?s?|"
@@ -93,6 +104,12 @@ def score(i, prof, now):
         s -= 2.5
     fr = "fr" in tags or "FR" in (i.get("countries") or [])
     s += prof.get("france", 1.0) if fr else -prof.get("foreign", 0.0)     # France first, as much as the profile asks
+    if BORING.search(i.get("title", "")):
+        s -= 3.0        # a product launch, an operator's notice, an appointment: rarely what a market reader needs
+    if FARAWAY.search(i.get("title", "")) and not ({"geopolitics", "gas"} & set(subj) or "major" in tags):
+        s -= 2.5        # far from the French and European market
+    if TEASER.search(i.get("title", "")):
+        s -= 2.0
     if "major" in tags:
         s += 4.0        # a major yearly publication (IEA World Energy Outlook, RTE Bilan prévisionnel…): it leads
     s += 1.1 * math.log2(1 + len(i.get("other_sources") or []))     # covered by many outlets: the story of the day (5 outlets: +2.6)
@@ -248,7 +265,11 @@ BRIEF = """Tu écris « Le point du matin » de PowerKlock : l'analyse du march�
 senior qui parle à des directeurs du secteur. Un seul paragraphe, 4 phrases, 90 mots au plus, simple à lire : un enchaînement de causes, pas un relevé ; ton clair et posé,
 sans liste ni titre. Pas d'actualité générale : la page la donne juste en dessous. Le contexte géopolitique vient des
 actualités de marché reçues : dis ce qui se passe et en quoi cela touche le gaz, donc l'électricité.
-Tu reçois : les marchés du matin (dont le spot du jour et le Cal 27, contrat de l'an prochain), les fondamentaux France
+Tu reçois d'abord « conclusions_du_jour » : notre analyse, calculée à partir des données. C'est le fond du texte : garde
+ces conclusions, dans cet ordre, sans en inverser aucune (si la France couvre sa consommation et exporte, son prix suit ses
+voisins : n'écris jamais alors que les centrales au gaz françaises fixent le prix) ; tu les relies et les rends fluides,
+tu peux en laisser une de côté, tu n'en ajoutes pas. Le reste sert à les comprendre.
+Tu reçois aussi : les marchés du matin (dont le spot du jour et le Cal 27, contrat de l'an prochain), les fondamentaux France
 (consommation, demande résiduelle face à la veille), l'indice PowerKlock (couverture bas-carbone, exportations, coût du MWh
 d'une centrale au gaz, température face à la normale), les lectures de « Ce qui a bougé et pourquoi » (Cal, nucléaire, gaz,
 carbone), notre contexte de marché (nucléaire, météo, géopolitique), les tendances
@@ -284,8 +305,9 @@ def brief_system():
     """the prompt, with the model text of config/brief_example.json (written by hand, editable) as the tone to follow"""
     try:
         ex = json.load(open(os.path.join(ROOT, "config", "brief_example.json")))
-        example = (f"Le modèle à suivre, écrit à la main sur les données du {ex.get('date')} (le ton, la façon de relier les causes ; "
-                   f"pas ses faits ni ses chiffres : écris avec ceux du jour) : « {ex['fr']} »")
+        # the tone only, described: quoted (whole, then its first sentence) the model copied it every morning (25 Nov. 2026)
+        example = ("Le ton à suivre : un analyste qui parle à un directeur, phrases courtes qui enchaînent cause et effet, aucune "
+                   "formule toute faite. Ouvre sur le fait du jour le plus parlant, pas sur la météo par habitude.") if ex.get("fr") else ""
     except (OSError, ValueError, KeyError):
         example = ""
     return BRIEF.replace("{example}", example)
@@ -471,6 +493,438 @@ def trends_only(f):
             if v.get("évolution") and k in ("consommation", "demande_résiduelle")}
 
 
+def fr_num(v, d=1):
+    """1 234,5 in French"""
+    t = f"{v:,.{d}f}".replace(",", "\u202f").replace(".", ",")
+    return t
+
+
+def key_facts(edition):
+    """the day's analysis as conclusions computed from the data (the owner, 25 Nov. 2026: the brief copied its model text and
+    said the opposite of the data): one sentence each, French and English, the most telling first. The AI writes the brief
+    from these only; when it fails the checks, they are the brief."""
+    f = []
+    M = edition.get("markets") or []
+    sp = next((r for r in M if r["label"][0].startswith("Spot France")), None)
+    if sp:
+        mv = sp.get("pct")
+        trend_fr = "" if not isinstance(mv, (int, float)) or abs(mv) < 1 else (f", en hausse de {fr_num(abs(mv), 0)} % sur la veille" if mv > 0 else f", en baisse de {fr_num(abs(mv), 0)} % sur la veille")
+        trend_en = "" if not isinstance(mv, (int, float)) or abs(mv) < 1 else (f", up {abs(mv):.0f} % on the day before" if mv > 0 else f", down {abs(mv):.0f} % on the day before")
+        fr, en = f"Le spot France ressort à {fr_num(sp['value'], 0)} €/MWh pour aujourd’hui{trend_fr}.", f"The French spot is {sp['value']:.0f} €/MWh for today{trend_en}."
+        # where France stands among its neighbours, the same delivery day (data/history/daily/<D>.json): a fact, not a guess
+        try:
+            Z = json.load(open(os.path.join(ROOT, "data", "history", "daily", edition["date"] + ".json"))).get("zones") or {}
+        except (OSError, ValueError):
+            Z = {}
+        NB = [("DE_LU", "l’Allemagne", "Germany"), ("BE", "la Belgique", "Belgium"), ("NL", "les Pays-Bas", "the Netherlands"),
+              ("IT_NORD", "l’Italie du Nord", "northern Italy"), ("ES", "l’Espagne", "Spain"), ("CH", "la Suisse", "Switzerland")]
+        nb = [(fz, ez, Z[z]["avg"]) for z, fz, ez in NB if isinstance((Z.get(z) or {}).get("avg"), (int, float))]
+        lo = sorted([x for x in nb if x[2] < sp["value"] - 2], key=lambda x: x[2])[-3:]
+        hi = sorted([x for x in nb if x[2] > sp["value"] + 2], key=lambda x: -x[2])[-3:]
+        lst = lambda xs, k: " et ".join(", ".join(f"{x[k]} ({fr_num(x[2], 0) if k == 0 else f'{x[2]:.0f}'} €)" for x in xs).rsplit(", ", 1)) if xs else ""  # noqa: E731
+        lsten = lambda xs: " and ".join(", ".join(f"{x[1]} ({x[2]:.0f} €)" for x in xs).rsplit(", ", 1))  # noqa: E731
+        if lo and hi:
+            fr += f" C’est plus cher que {lst(lo, 0)}, moins que {lst(hi, 0)}."
+            en += f" That is above {lsten(lo)}, below {lsten(hi)}."
+        elif lo:
+            fr += f" La France est la zone la plus chère du voisinage, devant {lst(lo, 0)}."
+            en += f" France is the dearest zone around, above {lsten(lo)}."
+        elif hi:
+            fr += f" La France est la zone la moins chère du voisinage, sous {lst(hi, 0)}."
+            en += f" France is the cheapest zone around, below {lsten(hi)}."
+        cost = (pk_index(edition["date"]) or {}).get("coût_MWh_centrale_gaz")
+        if isinstance(cost, (int, float)):
+            gap = sp["value"] - cost
+            if gap > 15:
+                fr += f" Le prix dépasse de {fr_num(gap, 0)} € le coût de production d’une centrale au gaz ({fr_num(cost, 0)} €/MWh) : le système est tendu, avec des heures de pointe payées bien au-delà du gaz."
+                en += f" The price is {gap:.0f} € above a gas plant's production cost ({cost:.0f} €/MWh): the system is tight, with peak hours paid well above gas."
+            elif gap >= -15:
+                fr += f" Le prix est au niveau du coût de production d’une centrale au gaz ({fr_num(cost, 0)} €/MWh) : c’est le gaz qui fixe le prix."
+                en += f" The price is at a gas plant's production cost ({cost:.0f} €/MWh): gas sets the price."
+            else:
+                fr += f" Le prix reste sous le coût de production d’une centrale au gaz ({fr_num(cost, 0)} €/MWh) : le nucléaire et les renouvelables fixent le prix une bonne partie de la journée."
+                en += f" The price stays below a gas plant's production cost ({cost:.0f} €/MWh): nuclear and renewables set the price much of the day."
+        f.append(("spot", fr, en))
+    ix = pk_index(edition["date"])
+    fu = trends_only(fundamentals(edition["date"])) or {}
+    cv = ix.get("couverture_bas_carbone")
+    temp = ix.get("température_7_jours_vs_normale")
+    cons = (fu.get("consommation") or {}).get("évolution")
+    rd = (fu.get("demande_résiduelle") or {}).get("évolution")
+    # the reasons in words (the figures stay on the tiles and in Expert: a brief of few figures, the owner's wish)
+    cold = temp and "en dessous" in temp
+    up = lambda v: v and "hausse" in v  # noqa: E731
+    if cold and up(cons):
+        why_fr = "Le froid fait monter la consommation" + (" et ce qu’il reste à couvrir une fois l’éolien et le solaire déduits" if up(rd) else "") + "."
+        why_en = "The cold lifts consumption" + (" and what is left to cover once wind and solar are taken off" if up(rd) else "") + "."
+    elif temp and not cold and cons and not up(cons):
+        why_fr, why_en = "La douceur fait reculer la consommation.", "Mild weather brings consumption down."
+    elif up(rd):
+        why_fr, why_en = "Il reste davantage à couvrir une fois l’éolien et le solaire déduits.", "More is left to cover once wind and solar are taken off."
+    else:
+        why_fr = why_en = ""
+    if cv:
+        # the coverage is of the day before (the last complete day of generation data): said as such, and without saying
+        # who sets the price, which the spot sentence does from the prices themselves
+        pct, prev, ex = cv["pct"], cv.get("veille_pct"), cv.get("exports_GW") or 0
+        was_fr = f", contre {prev} % la veille" if prev is not None and prev != pct else ""
+        was_en = f", against {prev} % the day before" if prev is not None and prev != pct else ""
+        if pct >= 100:
+            fr = f"Hier, la production bas-carbone couvrait encore la consommation française ({pct} %{was_fr})" + (f" et la France exportait {fr_num(ex)} GW." if ex >= 0.5 else ".")
+            en = f"Yesterday low-carbon output still covered French consumption ({pct} %{was_en})" + (f" and France exported {ex:.1f} GW." if ex >= 0.5 else ".")
+        else:
+            fr = f"Hier, la production bas-carbone ne couvrait plus la consommation française ({pct} %{was_fr}) : le complément est venu du gaz et des importations."
+            en = f"Yesterday low-carbon output no longer covered French consumption ({pct} %{was_en}): gas and imports made up the rest."
+        f.append(("coverage", (why_fr + " " if why_fr else "") + fr, (why_en + " " if why_en else "") + en))
+    W = what_moved()
+    g = W.get("gaz") or {}
+    if g.get("TTF_€") is not None:
+        w = g.get("sur_7_jours_pct")
+        st = g.get("stocks_UE_pts_vs_an_dernier")
+        fr = "Le gaz " + (f"{'prend' if w > 0 else 'perd'} {fr_num(abs(w), 0)} % en une semaine" if isinstance(w, (int, float)) and abs(w) >= 1 else "reste stable sur la semaine")
+        fr += (f", avec des stocks européens {'plus bas' if st < 0 else 'plus hauts'} qu’il y a un an." if isinstance(st, (int, float)) and abs(st) >= 2 else ".")
+        en = f"TTF gas is at {g['TTF_€']} €/MWh" + (f", {'up' if w > 0 else 'down'} {abs(w):.1f} % over seven days" if isinstance(w, (int, float)) and abs(w) >= 1 else "")
+        en += (f", with European storage {abs(st):.1f} points {'below' if st < 0 else 'above'} a year ago." if isinstance(st, (int, float)) and abs(st) >= 2 else ".")
+        f.append(("gas", fr, en))
+    nu = W.get("nucléaire") or {}
+    if nu.get("disponible_GW") is not None:
+        below = nu.get("sous_la_prévision_de_l_exploitant_GW")
+        fr = f"Le nucléaire disponible atteint {fr_num(nu['disponible_GW'])} GW" + (f", {fr_num(below)} GW sous la prévision de l’exploitant" if isinstance(below, (int, float)) and below >= 1 else "") + "."
+        en = f"Available nuclear is {nu['disponible_GW']:.1f} GW" + (f", {below:.1f} GW below the operator's forecast" if isinstance(below, (int, float)) and below >= 1 else "") + "."
+        f.append(("nuclear", fr, en))
+    c = W.get("cal") or {}
+    if c.get("variation_7_jours_€") is not None:
+        d = c["variation_7_jours_€"]
+        cal = next((r for r in M if r["label"][0].startswith("Cal ")), None)
+        lvl_fr = f" à {fr_num(cal['value'], 0)} €/MWh" if cal else ""
+        lvl_en = f" at {cal['value']:.0f} €/MWh" if cal else ""
+        mv_fr = (f"{'gagne' if d > 0 else 'perd'} {fr_num(abs(d))} € sur la semaine") if abs(d) >= 0.5 else "bouge à peine sur la semaine"
+        mv_en = (f"{'gains' if d > 0 else 'loses'} {abs(d):.1f} € over the week") if abs(d) >= 0.5 else "barely moves over the week"
+        fr, en = f"Le {c['contrat']}{lvl_fr} {mv_fr}.", f"{c['contrat']}{lvl_en} {mv_en}."
+        if cal and sp and sp["value"] >= 1.8 * cal["value"]:
+            fr = fr[:-1] + ", moitié moins que le spot : le marché ne reporte pas la tension d’aujourd’hui sur l’an prochain."
+            en = en[:-1] + ", half the spot: the market does not carry today's tightness into next year."
+        f.append(("cal", fr, en))
+    for x in structural(edition["date"]) or []:
+        if "hydraul" in x.get("sujet", ""):
+            fr = "À surveiller : des réservoirs hydrauliques au plus bas pour la saison, donc moins de flexibilité pour les pointes d’hiver."
+            f.append(("hydro", fr.replace(" ,", ","), "To watch: hydro reservoirs are well below normal, a record low for the season; less flexibility for winter peaks."))
+    return f
+
+
+def brief_from_facts(facts):
+    """the brief written straight from the computed conclusions (no AI): the spot and why, gas, the year ahead, the signal"""
+    order = ["spot", "coverage", "gas", "cal", "hydro"]
+    pick = [x for k in order for x in facts if x[0] == k]
+    return " ".join(x[1] for x in pick), " ".join(x[2] for x in pick)
+
+
+def expert_brief(day):
+    """the brief as the Expert view writes it (js/market-brief.js and js/morning.js, the same computed sentences, ported
+    here so the newsletter says what the site says; the owner, 25 Nov. 2026): the spot, power (Cal against gas alone),
+    weather over 4 weeks, nuclear, gas, carbon. Only figures: the AI-written context and week-ahead notes are left out."""
+    H = os.path.join(ROOT, "data", "history")
+    def load(*a):
+        try:
+            return json.load(open(os.path.join(*a)))
+        except (OSError, ValueError):
+            return None
+    cs = load(H, "commodities_series.json") or {}
+    S = cs.get("series") or {}
+    P = lambda k: [tuple(x) for x in (S.get(k) or {}).get("points") or [] if x[1] is not None]  # noqa: E731
+    def back(pts, n):
+        if not pts:
+            return None
+        k = (date.fromisoformat(pts[-1][0]) - timedelta(days=n)).isoformat()
+        v = None
+        for d, x in pts:
+            if d <= k:
+                v = x
+            else:
+                break
+        return v
+    def wk(pts):
+        b = back(pts, 7)
+        return (pts[-1][1] / b - 1) * 100 if pts and b else None
+    def pos60(pts):
+        if not pts:
+            return None, None
+        k = (date.fromisoformat(pts[-1][0]) - timedelta(days=60)).isoformat()
+        v = [x for d, x in pts if d >= k]
+        if len(v) < 10:
+            return None, None
+        x, lo, hi = v[-1], min(v), max(v)
+        r = (x - lo) / ((hi - lo) or 1)
+        if x >= hi - 1e-9:
+            return "au plus haut sur 60 jours", "at a 60-day high"
+        if x <= lo + 1e-9:
+            return "au plus bas sur 60 jours", "at a 60-day low"
+        if r > 0.85:
+            return "près du plus haut sur 60 jours", "near its 60-day high"
+        if r < 0.15:
+            return "près du plus bas sur 60 jours", "near its 60-day low"
+        return None, None
+    n = lambda v, d=1: fr_num(v, d)  # noqa: E731
+    sg = lambda v, d=1: ("+" if v >= 0 else "−") + fr_num(abs(v), d)  # noqa: E731
+    sge = lambda v, d=1: ("+" if v >= 0 else "−") + f"{abs(v):.{d}f}"  # noqa: E731
+    FR, EN = [], []
+    # the spot of the day, and its week
+    dl = load(H, "daily", day + ".json") or {}
+    sp = ((dl.get("zones") or {}).get("FR") or {}).get("avg")
+    sm = load(H, "summary_fr.json") or load(H, "summary.json") or {}
+    rows = [r for r in ((sm.get("zones") or {}).get("FR") or []) if r.get("avg") is not None and (r.get("d") or r.get("date") or "") < day]
+    if isinstance(sp, (int, float)):
+        prev = rows[-1]["avg"] if rows else None
+        mv = (sp / prev - 1) * 100 if prev else None
+        FR.append(f"Spot France à {n(sp, 0)} €/MWh pour aujourd’hui" + (f" ({sg(mv, 0)} % sur la veille)." if mv is not None and abs(mv) >= 1 else "."))
+        EN.append(f"France spot at {sp:.0f} €/MWh for today" + (f" ({sge(mv, 0)} % on the day before)." if mv is not None and abs(mv) >= 1 else "."))
+    # power: the next calendar year against what gas alone would add, the two following years, the spot's direction
+    ch = load(H, "fr_market_calchain.json") or {}
+    yrs = (ch.get("FR") or {}).get("years") or {}
+    ys = sorted(yrs)[:3]
+    if ys:
+        pts = lambda y: [(d, v) for d, v in zip(yrs[y]["dates"], yrs[y]["values"]) if v is not None]  # noqa: E731
+        p1 = pts(ys[0])
+        w0 = back(p1, 7)
+        dFR = p1[-1][1] - w0 if p1 and w0 is not None else None
+        ty = ((cs.get("calYears") or {}).get("ttf") or {}).get(ys[0])
+        tP = [(d, v) for d, v in zip(ty["dates"], ty["values"]) if v is not None] if ty else []
+        gas = (tP[-1][1] - back(tP, 7)) * 2 if tP and back(tP, 7) is not None else None
+        if gas is not None and dFR is not None:
+            if abs(dFR - gas) < 1:
+                r_fr, r_en = "le mouvement français vient du gaz.", "the French move comes from gas."
+            elif dFR > gas:
+                r_fr, r_en = "la France monte plus que le gaz seul (nucléaire, demande).", "France rises more than gas alone (nuclear, demand)."
+            else:
+                r_fr, r_en = "la France monte moins que le gaz seul (nucléaire et demande détendus).", "France rises less than gas alone (nuclear and demand relaxed)."
+            FR.append(f"Sur le Cal {ys[0]} ({n(p1[-1][1], 0)} €/MWh), le gaz seul pèserait ≈ {sg(gas)} € sur la semaine : {r_fr}")
+            EN.append(f"On Cal {ys[0]} ({p1[-1][1]:.0f} €/MWh), gas alone would weigh ≈ {sge(gas)} € on the week: {r_en}")
+        if len(ys) > 1:
+            w1, wl = wk(p1), [x for x in (wk(pts(y)) for y in ys[1:]) if x is not None]
+            if wl and w1 is not None:
+                if max(abs(x) for x in wl) < abs(w1) / 2:
+                    FR.append(f"Les années {' et '.join(ys[1:])} bougent beaucoup moins."); EN.append(f"{' and '.join(ys[1:])} move much less.")
+                else:
+                    FR.append(f"Les années {' et '.join(ys[1:])} suivent."); EN.append(f"{' and '.join(ys[1:])} follow.")
+        rw = [r for r in ((sm.get("zones") or {}).get("FR") or []) if r.get("avg") is not None and (r.get("d") or r.get("date") or "") <= day]
+        a7, b7 = rw[-7:], rw[-14:-7]
+        if len(a7) and len(b7):
+            # as js/market-brief.js: the week at ±5 %, then the last three days when they move by 25 % or more
+            m, mb = sum(r["avg"] for r in a7) / len(a7), sum(r["avg"] for r in b7) / len(b7)
+            wp = (m / mb - 1) * 100
+            l3 = (rw[-1]["avg"] / rw[-4]["avg"] - 1) * 100 if len(rw) > 3 and rw[-4]["avg"] else None
+            d3f = "" if l3 is None or abs(l3) < 25 else (", en forte hausse depuis trois jours" if l3 > 0 else ", en forte baisse depuis trois jours")
+            d3e = "" if l3 is None or abs(l3) < 25 else (", sharply up over the last three days" if l3 > 0 else ", sharply down over the last three days")
+            if wp < -5:
+                FR.append(f"Le spot recule sur la semaine ({sg(wp, 0)} %){d3f}."); EN.append(f"Spot eases over the week ({sge(wp, 0)} %){d3e}.")
+            elif wp > 5:
+                FR.append(f"Le spot monte sur la semaine ({sg(wp, 0)} %){d3f}."); EN.append(f"Spot rises over the week ({sge(wp, 0)} %){d3e}.")
+            else:
+                FR.append(f"Le spot reste stable sur la semaine{d3f}."); EN.append(f"Spot holds over the week{d3e}.")
+    # weather, the next 4 weeks against normal (js/morning.js)
+    wx = load(ROOT, "data", "weather_outlook.json") or {}
+    F = ((wx.get("countries") or {}).get("FR") or {}).get("series") or {}
+    if F.get("temp"):
+        days, today = F["temp"]["days"], wx.get("today") or day
+        i0 = next((i for i, d in enumerate(days) if d > today), -1)
+        weeks = []
+        for w in range(4):
+            if i0 < 0:
+                break
+            ix = [i for i in range(len(days)) if i0 + w * 7 <= i < i0 + (w + 1) * 7]
+            if not ix:
+                break
+            def avg(k, f):
+                v = [F[k][f][i] for i in ix if F.get(k) and F[k].get(f) and i < len(F[k][f]) and F[k][f][i] is not None]
+                return sum(v) / len(v) if v else None
+            t, tn, wm, wn = avg("temp", "mean"), avg("temp", "normal"), avg("wind", "mean"), avg("wind", "normal")
+            weeks.append({"dT": t - tn if t is not None and tn is not None else None, "wind": (wm / wn - 1) * 100 if wm is not None and wn else None})
+        cold = sum(1 for w in weeks if w["dT"] is not None and w["dT"] < -1)
+        calm = sum(1 for w in weeks if w["wind"] is not None and w["wind"] < -10)
+        windy = sum(1 for w in weeks if w["wind"] is not None and w["wind"] > 10)
+        if cold or calm:
+            k = max(cold, calm)
+            FR.append(("Plus froid" if cold else "Moins de vent") + (" et moins de vent" if cold and calm else "") + f" que la normale sur {k} semaine{'s' if k > 1 else ''} : plus de gaz brûlé, des prix en hausse.")
+            EN.append(("Colder" if cold else "Calmer") + (" and calmer" if cold and calm else "") + f" than normal in {k} week{'s' if k > 1 else ''}: more gas burnt, higher prices.")
+        elif windy:
+            FR.append(f"Plus de vent que la normale sur {windy} semaine{'s' if windy > 1 else ''} : des prix plus bas, plus d’heures négatives à midi.")
+            EN.append(f"Windier than normal in {windy} week{'s' if windy > 1 else ''}: lower prices, more negative hours at midday.")
+    # French nuclear: available, against the operator's forecast
+    nu, nf = P("fr_nuc_avail"), P("fr_nuc_avail_fc")
+    if nu:
+        nl = nu[-1][1]
+        w, yb = back(nu, 7), back(nu, 365)
+        fr = f"Nucléaire disponible {n(nl / 1000)} GW" + (f" ({sg((nl - w) / 1000)} GW sur la semaine" + (f", {sg((nl - yb) / 1000)} GW sur un an)" if yb is not None else ")") if w is not None else "") + "."
+        en = f"Nuclear available {nl / 1000:.1f} GW" + (f" ({sge((nl - w) / 1000)} GW on the week" + (f", {sge((nl - yb) / 1000)} GW on a year)" if yb is not None else ")") if w is not None else "") + "."
+        if nf:
+            gap, f1 = nl - nf[-1][1], nf[-1][1] / 1000
+            if abs(gap) < 1000:
+                fr += f" En ligne avec la prévision de l’exploitant ({n(f1)} GW)."; en += f" In line with the operator's forecast ({f1:.1f} GW)."
+            elif gap < 0:
+                fr += f" {n(-gap / 1000)} GW sous la prévision de l’exploitant ({n(f1)} GW) : plus de gaz appelé, un soutien aux prix."
+                en += f" {-gap / 1000:.1f} GW below the operator's forecast ({f1:.1f} GW): more gas called, a support for prices."
+            else:
+                fr += f" {n(gap / 1000)} GW au-dessus de la prévision de l’exploitant ({n(f1)} GW) : moins de gaz appelé, des prix détendus."
+                en += f" {gap / 1000:.1f} GW above the operator's forecast ({f1:.1f} GW): less gas called, softer prices."
+        FR.append(fr); EN.append(en)
+    # gas: TTF against its 60 days, EU storage against a year ago
+    ttf, ag = P("ttf"), P("agsi")
+    if ttf:
+        pf, pe = pos60(ttf)
+        mv = wk(ttf)
+        fr = f"Gaz TTF à {n(ttf[-1][1], 0)} €/MWh" + (f" ({sg(mv)} % sur 7 jours)" if mv is not None else "") + (f", {pf}" if pf else "") + "."
+        en = f"TTF gas at {ttf[-1][1]:.0f} €/MWh" + (f" ({sge(mv)} % on 7 days)" if mv is not None else "") + (f", {pe}" if pe else "") + "."
+        ly = back(ag, 365) if ag else None
+        if ag and ly is not None:
+            d = ag[-1][1] - ly
+            fr += f" Stocks UE {sg(d)} pts sur un an" + (" : moins de marge pour l’hiver, un soutien aux prix." if d < 0 else " : marge confortable pour l’hiver.")
+            en += f" EU storage {sge(d)} pts on a year" + (": less margin for winter, a support for prices." if d < 0 else ": comfortable margin for winter.")
+        FR.append(fr); EN.append(en)
+    # carbon: what the week's EUA move does to a gas plant's cost
+    eua = P("eua")
+    if eua:
+        b = back(eua, 7)
+        d = eua[-1][1] - (b if b is not None else eua[-1][1])
+        if abs(d) >= 0.5:
+            FR.append(f"Carbone : {sg(0.37 * d)} € sur le coût d’une centrale gaz sur la semaine (EUA à {n(eua[-1][1])} €/t).")
+            EN.append(f"Carbon: {sge(0.37 * d)} € on a gas plant's cost over the week (EUA at {eua[-1][1]:.1f} €/t).")
+    return " ".join(FR), " ".join(EN)
+
+
+def prices_line(day):
+    """the day's prices in one sentence (what the market context does not give): spot, Cal, gas, carbon"""
+    H = os.path.join(ROOT, "data", "history")
+    def load(*a):
+        try:
+            return json.load(open(os.path.join(*a)))
+        except (OSError, ValueError):
+            return None
+    fr, en = [], []
+    sp = (((load(H, "daily", day + ".json") or {}).get("zones") or {}).get("FR") or {}).get("avg")
+    rows = [r for r in (((load(H, "summary_fr.json") or {}).get("zones") or {}).get("FR") or []) if r.get("avg") is not None and (r.get("d") or "") < day]
+    if isinstance(sp, (int, float)):
+        mv = (sp / rows[-1]["avg"] - 1) * 100 if rows else None
+        fr.append(f"spot France {fr_num(sp, 0)} €/MWh" + (f" ({'+' if mv >= 0 else '−'}{fr_num(abs(mv), 0)} % sur la veille)" if mv is not None and abs(mv) >= 1 else ""))
+        en.append(f"France spot {sp:.0f} €/MWh" + (f" ({'+' if mv >= 0 else '−'}{abs(mv):.0f} % on the day before)" if mv is not None and abs(mv) >= 1 else ""))
+    yrs = ((load(H, "fr_market_calchain.json") or {}).get("FR") or {}).get("years") or {}
+    if yrs:
+        y = sorted(yrs)[0]
+        v = [x for x in yrs[y]["values"] if x is not None]
+        if v:
+            fr.append(f"Cal {y[2:]} {fr_num(v[-1], 0)} €/MWh"); en.append(f"Cal {y[2:]} {v[-1]:.0f} €/MWh")
+    S = (load(H, "commodities_series.json") or {}).get("series") or {}
+    for k, lf, le, u in (("ttf", "gaz TTF", "TTF gas", "€/MWh"), ("eua", "CO₂", "CO₂", "€/t")):
+        pts = [x for x in (S.get(k) or {}).get("points") or [] if x[1] is not None]
+        if pts:
+            k7 = (date.fromisoformat(pts[-1][0]) - timedelta(days=7)).isoformat()
+            old = [x for d, x in pts if d <= k7]
+            mv = (pts[-1][1] / old[-1] - 1) * 100 if old else None
+            fr.append(f"{lf} {fr_num(pts[-1][1], 0)} {u}" + (f" ({'+' if mv >= 0 else '−'}{fr_num(abs(mv), 0)} % sur 7 jours)" if mv is not None and abs(mv) >= 1 else ""))
+            en.append(f"{le} {pts[-1][1]:.0f} {u}" + (f" ({'+' if mv >= 0 else '−'}{abs(mv):.0f} % on 7 days)" if mv is not None and abs(mv) >= 1 else ""))
+    if not fr:
+        return "", ""
+    return "Les prix du jour : " + ", ".join(fr) + ".", "Today's prices: " + ", ".join(en) + "."
+
+
+# the sections of the newsletter's articles, as « Ce qui fait bouger le marché » on the site (the owner, 25 Nov. 2026)
+SECTIONS = ["regulation", "markets", "nuclear_grid", "deals", "projects", "supply"]
+
+
+def section_of(tags):
+    t = set(tags or [])
+    if t & {"regulation", "support", "official"}:
+        return "regulation"
+    if t & {"deal"}:
+        return "deals"
+    if t & {"build"}:
+        return "projects"
+    if t & {"gas", "markets", "geopolitics", "carbon"}:
+        return "markets"
+    if t & {"renewables"}:
+        return "projects"
+    return "supply"
+
+
+def claude_articles(day, weekly, items):
+    """the articles Claude chose this morning (data/newsletter_brief.json › articles / articles_week), as stories: the
+    title, link and outlets from data/news.json, Claude's short description (« what ») and neutral impact (« for_you »)"""
+    try:
+        nb = json.load(open(os.path.join(ROOT, "data", "newsletter_brief.json")))
+    except (OSError, ValueError):
+        return []
+    if nb.get("asof") != day:
+        return []
+    by = {i.get("link"): i for i in items}
+    out = []
+    for a in nb.get("articles_week" if weekly else "articles") or []:
+        i = by.get(a.get("link")) if isinstance(a, dict) else None
+        if not i or not a.get("what"):
+            continue        # only articles of the feed, never a link the model made up
+        tags = (i.get("tags") or []) + (["fr"] if "FR" in (i.get("countries") or []) and "fr" not in (i.get("tags") or []) else [])
+        out.append({"id": sid(i), "title": i["title"], "link": i["link"], "tags": tags,
+                    "section": a.get("section") if a.get("section") in SECTIONS else section_of(tags),
+                    "sources": [i["source"]] + [o["source"] for o in i.get("other_sources") or []],
+                    "free": [{"source": o["source"], "link": o["link"]} for o in i.get("free") or []] or None,
+                    "report_link": i.get("report_link"), "report_name": i.get("report_name"),
+                    "what": clip(a.get("what"), 360), "what_en": clip(a.get("what_en"), 360) or None,
+                    "for_you": clip(a.get("impact"), 260) or None, "for_you_en": clip(a.get("impact_en"), 260) or None})
+    return out
+
+
+def claude_brief(day, weekly=False):
+    """the newsletter brief Claude wrote this morning (data/newsletter_brief.json: {asof, daily, weekly}, each a list of
+    {topic, topic_en, text, text_en}), « Prix : … Couverture : … » as one paragraph, when it is of the edition's day"""
+    try:
+        nb = json.load(open(os.path.join(ROOT, "data", "newsletter_brief.json")))
+    except (OSError, ValueError):
+        return "", ""
+    if nb.get("asof") != day:
+        return "", ""
+    items = [c for c in (nb.get("weekly" if weekly else "daily") or []) if isinstance(c, dict) and c.get("text")]
+    # one paragraph per topic (the mail and the site split the brief on blank lines)
+    fr = "\n\n".join((f"{c['topic']} : " if c.get("topic") else "") + c["text"].strip() for c in items)
+    en = "\n\n".join((f"{c.get('topic_en') or c.get('topic')}: " if (c.get("topic_en") or c.get("topic")) else "") + (c.get("text_en") or c["text"]).strip() for c in items)
+    return fr, en
+
+
+def brief_from_context(day, abroad=False, weekly=False):
+    """the brief taken from the site's market context (data/market_digest.json, the Expert view), when it is from the
+    day of the edition or the day before: the same text the site shows, numbers rounded as one says them"""
+    try:
+        md = json.load(open(os.path.join(ROOT, "data", "market_digest.json")))
+        if (date.fromisoformat(day) - date.fromisoformat(md["asof"])).days > 1:
+            return "", ""
+    except (OSError, ValueError, KeyError, TypeError):
+        return "", ""
+    def tidy(t, fr):
+        # 47001,18 MW -> 47,0 GW: a capacity is read in GW
+        def big(m):
+            v = float(m.group(1).replace("\u202f", "").replace(" ", "").replace(",", ".") if fr else m.group(1).replace(",", ""))
+            g = {"MW": ("GW", 1e3), "MWh": ("GWh", 1e3), "GWh": ("TWh", 1e3)}.get(m.group(2))
+            if g and v >= 1000:
+                v, unit = v / g[1], g[0]
+            else:
+                unit = m.group(2)
+            t = f"{v:.1f}" if v < 100 else f"{v:,.0f}"
+            return (t.replace(",", "\u202f").replace(".", ",") if fr else t) + " " + unit
+        num = r"(\d[\d\u202f ]{3,}(?:,\d+)?|\d{4,}(?:,\d+)?)" if fr else r"(\d[\d,]{3,}(?:\.\d+)?)"
+        return re.sub(num + r"\s?(MW|GW|MWh|GWh|TWh)\b", big, (t or "").strip())
+    items = [c for c in (md.get("context_week") if weekly else None) or md.get("context") or [] if not abroad or (c.get("topic_en") or c.get("topic") or "").lower() != "france"]
+    # as the Expert view shows it: « France : … Golfe : … »
+    fr = " ".join(f"{c.get('topic')} : " * bool(c.get("topic")) + tidy(c.get("text"), True) for c in items if c.get("text"))
+    en = " ".join(f"{c.get('topic_en') or c.get('topic')}: " * bool(c.get("topic_en") or c.get("topic")) + tidy(c.get("text_en") or c.get("text"), False) for c in items if c.get("text_en") or c.get("text"))
+    return fr, en
+
+
+def overlap(a, b, n=5):
+    """the share of a's five-word runs that are in b: a text that copies its model or yesterday's"""
+    w = lambda t: re.findall(r"\w+", (t or "").lower())  # noqa: E731
+    A, B = w(a), w(b)
+    ga = {tuple(A[i:i + n]) for i in range(len(A) - n + 1)}
+    gb = {tuple(B[i:i + n]) for i in range(len(B) - n + 1)}
+    return len(ga & gb) / len(ga) if ga else 0.0
+
+
 def ask_brief(edition, model=None, items=None):
     """« Le point du matin »: the markets with their reasons (our market context of the evening before) and the day's news"""
     try:
@@ -494,7 +948,8 @@ def ask_brief(edition, model=None, items=None):
            and PRICE_NEWS.search(i["title"]) and not {"official", "research"} & set(i.get("tags") or []) and (age_h(i, now) or 1e9) <= 36]
     mkt = sorted(mkt, key=lambda i: -(i.get("impact") or 0))[:5]
     news = [{"id": f"n{k + 1}", "titre": i["title"], "extrait": clip(i.get("snippet"), 300), "média": i["source"]} for k, i in enumerate(mkt)]
-    payload = {"marchés": mk, "fondamentaux_france": trends_only(fundamentals(edition["date"])), "indice_powerklock": pk_index(edition["date"]), "ce_qui_a_bougé": what_moved(), "signaux_structurants": structural(edition["date"]), "contexte": ctx, "tendances_semaine": trend, "actualités_marché": news, "météo": " · ".join(filter(None, [(w.get("label") or [""])[0], (w.get("sub") or [""])[0]]))}
+    facts = key_facts(edition)
+    payload = {"conclusions_du_jour": [x[1] for x in facts], "marchés": mk, "fondamentaux_france": trends_only(fundamentals(edition["date"])), "indice_powerklock": pk_index(edition["date"]), "ce_qui_a_bougé": what_moved(), "signaux_structurants": structural(edition["date"]), "contexte": ctx, "tendances_semaine": trend, "actualités_marché": news, "météo": " · ".join(filter(None, [(w.get("label") or [""])[0], (w.get("sub") or [""])[0]]))}
     msg = {"max_tokens": 900, "system": brief_system(), "messages": [{"role": "user", "content": json.dumps(payload, ensure_ascii=False)}],
            "model": model or os.environ.get("NEWS_MODEL") or MODEL}
     req = urllib.request.Request(PROXY, data=json.dumps(msg).encode(), headers={"Content-Type": "application/json", "User-Agent": "PowerKlock-newsletter"})
@@ -517,8 +972,21 @@ def ask_brief(edition, model=None, items=None):
     if payload.get("fondamentaux_france"):                                                  # consumption and residual demand always said
         hollow = hollow or not (re.search(r"(?i)consommation", b or "") and re.search(r"(?i)demande r[ée]siduelle", b or ""))
     hollow = hollow or not re.search(r"(?i)\bcal", b or "")                                  # the year ahead says whether the move lasts
+    # its own words: not the model text's, not yesterday's (the owner, 25 Nov. 2026: the same text every morning)
+    try:
+        ex = json.load(open(os.path.join(ROOT, "config", "brief_example.json"))).get("fr", "")
+    except (OSError, ValueError):
+        ex = ""
+    hollow = hollow or overlap(b, ex) > 0.12 or overlap(b, PREV_BRIEF) > 0.25
+    # the coverage verdict, never the opposite of the data: France covering itself and exporting is not « gas plants set the price »
+    cv = next((x for x in facts if x[0] == "coverage"), None)
+    if cv and "couvre encore" in cv[1]:
+        hollow = hollow or not re.search(r"(?i)voisin|export", b or "") or re.search(r"(?i)centrales au gaz (françaises )?(qui )?fixent|appellent davantage de centrales", b or "")
+    elif cv:
+        hollow = hollow or not re.search(r"(?i)centrales? au gaz", b or "")
     if not b or many or hollow or not numbers_ok(b, given) or not direction_ok(b, edition.get("markets") or []):
-        raise ValueError(f"brief rejected: {b[:120]!r}")   # a figure that was not given: better no brief
+        why = [k for k, v in (("empty", not b), ("figures", many), ("hollow", hollow), ("numbers", b and not numbers_ok(b, given)), ("direction", b and not direction_ok(b, edition.get("markets") or []))) if v]
+        raise ValueError(f"brief rejected ({', '.join(why)}): {b!r}")   # a figure that was not given: better no brief
     used = [mkt[int(x[1:]) - 1] for x in out.get("sources") or [] if isinstance(x, str) and re.fullmatch(r"n[1-5]", x) and int(x[1:]) <= len(mkt)]
     links = [{"title": i["title"], "source": i["source"], "link": i["link"]} for i in dict((i["link"], i) for i in used).values()][:3]
     return b, (be if be and numbers_ok(be, given) else None), links
@@ -720,6 +1188,18 @@ def main():
         return 0
     profiles = (load(PROFILES, {}) or {}).get("profiles") or {}
     items = (load(os.path.join(ROOT, "data", "news.json"), {}) or {}).get("items") or []
+    # the earlier editions (not today's, rebuilt): their articles stay out of this one; the brief must not repeat theirs
+    global PREV_BRIEF
+    hist = load(HIST, {}) or {}
+    past = {d: v for d, v in (hist.get("days") or {}).items() if d < today.isoformat() and d >= (today - timedelta(days=10)).isoformat()}
+    if not weekly:
+        seen_links = {l for v in past.values() for l in v.get("links") or []}
+        seen_titles = [t for v in past.values() for t in v.get("titles") or []]
+        fresh = lambda i: i.get("link") not in seen_links and not any(similar(i.get("title", ""), t) for t in seen_titles)  # noqa: E731
+        before = len(items)
+        items = [i for i in items if fresh(i)]
+        print(f"{before - len(items)} articles already in an earlier edition, left out")
+        PREV_BRIEF = (past[max(past)].get("brief") or "") if past else ""
     cons = (load(os.path.join(ROOT, "data", "consultations.json"), {}) or {}).get("items") or []
     events = (load(os.path.join(ROOT, "data", "events.json"), {}) or {}).get("items") or []
     monday = today.weekday() == 0
@@ -744,6 +1224,8 @@ def main():
     week = iso(today - timedelta(days=today.weekday()))
     de = (dg.get("weekly") if (dg.get("weekly") or {}).get("week") == week else None) if weekly else dg.get("daily") if (dg.get("daily") or {}).get("date") == t else None
     digest = {"weekly": de is dg.get("weekly"), "items": [{k: x.get(k) for k in ("text", "text_en", "title", "link", "sources")} for x in (de or {}).get("items") or []]} if de else None
+    if digest and not weekly:
+        digest["items"] = [x for x in digest["items"] if fresh(x)]   # an essential already given yesterday is not given again
     # the main articles: the highest impact of the last 24 hours (72 on Monday), one per outlet, one per event
     top, srcs = [], set()
     for i in sorted([i for i in items if (age_h(i, now) or 1e9) <= (7 * 24 if weekly else 72 if monday else 24) and "official" not in (i.get("tags") or []) and energy(i)],
@@ -786,12 +1268,12 @@ def main():
     charts = {}
     ctx_cache = {}
     pin_link, pin_note = pinned(now) or (None, None)
-    pin = next((i for i in items if i.get("link") == pin_link), None) if pin_link else None
+    pin = next((i for i in items if i.get("link") == pin_link), None) if pin_link else None   # items without the earlier editions' articles: a pin leads one edition only
     if pin and pin_note and len(pin.get("snippet") or "") < 40:
         pin = dict(pin, snippet=pin_note)       # the admin's line under a pinned title (paid papers give none)
     edition["pinned"] = pin_link if pin else None
     for pid, prof in profiles.items():
-        stories = pick(items, prof, now, hours, 5 if weekly else 3)
+        stories = pick(items, prof, now, hours, 8)   # more stories, more subjects (the owner, 25 Nov. 2026)
         if pin:     # the admin's pinned story leads every profile's edition
             stories = [pin] + [i for i in stories if i.get("link") != pin["link"]][:len(stories) - 1 if stories else 0]
         gen = {}
@@ -844,12 +1326,32 @@ def main():
                     news_charts.draw(spec, os.path.join(news_charts.IMG, f"{t}_{key}.png"))
                     charts[key] = {"img": f"newsletter_img/{t}_{key}.png", "title": spec["title"], "src": spec["src"], "page": spec["page"]}
                 hero = charts[key]
+        cl = claude_articles(edition["date"], weekly, items)
+        if cl:
+            # the articles Claude chose this morning (config/market_context_task.md): every section, a short description
+            # and a neutral impact under each (the owner, 25 Nov. 2026); every profile gets them, each reader's order follows
+            # their subjects (scripts/morning_mail.py › tailor)
+            out = cl
         edition["profiles"][pid] = {"hero_chart": hero, "name": prof["name"], "short": prof["short"], "order": prof["order"], "headline": clip(gen.get("headline"), 300) or None, "headline_en": clip(gen.get("headline_en"), 300) or None,
                                     "stories": out, "ai": bool(by)}
         print(f"{pid}: {len(out)} stories, AI text for {len(by)}")
     edition["brief"] = edition["brief_en"] = None
     edition["brief_links"] = []
-    if use_ai and edition["profiles"]:
+    # the brief Claude wrote this morning (config/market_context_task.md, data/newsletter_brief.json) when it is today's:
+    # short and analytical for 7 O'Klock, complete for PowerBrunch (the owner, 25 Nov. 2026); the models below only when
+    # it is missing. The Expert view's context (data/market_digest.json) is not touched.
+    nb = claude_brief(edition["date"], weekly)
+    if nb[0]:
+        edition["brief"], edition["brief_en"] = nb
+        edition["brief_auto"] = "claude"
+        print("brief: written by Claude this morning")
+    if not edition["brief"]:
+        # then the Expert view's market context of the day (data/market_digest.json), before the free models (the owner, 25 Nov. 2026)
+        cfr, cen = brief_from_context(edition["date"], weekly=weekly)
+        if cfr:
+            edition["brief"], edition["brief_en"], edition["brief_auto"] = cfr, cen, "context"
+            print("brief: the Expert view's market context")
+    if use_ai and edition["profiles"] and not edition["brief"]:
         # Qwen3 first when it answers, then Llama 4 Scout, the most faithful in the tests of 24 Nov. 2026, and two other free
         # models as a backup when Workers AI refuses one; a text that fails the checks (figures, direction, hollow lines) is
         # written again by the next one
@@ -861,8 +1363,28 @@ def main():
                 break
             except Exception as e:
                 print(f"brief not written, attempt {attempt} ({str(e)[:160]})")
+    if not edition["brief"]:
+        # no AI text passed the checks: the brief is the Expert view's market context, as the site shows it (the owner,
+        # 25 Nov. 2026), then the day's prices it leaves out (spot, Cal, gas, carbon), from our figures; the Expert view's
+        # computed text when the context is missing or more than a day old
+        cfr, cen = brief_from_context(edition["date"], weekly=weekly)
+        if cfr:
+            # the tiles of the e-mail give the prices: the context alone, short for the day, complete for the week
+            edition["brief"], edition["brief_en"] = cfr, cen
+        else:
+            edition["brief"], edition["brief_en"] = expert_brief(edition["date"])
+        if not edition["brief"]:
+            edition["brief"], edition["brief_en"] = brief_from_facts(key_facts(edition))
+        edition["brief_auto"] = True
+        print("brief written from the market context and the day's prices")
     with open(out_path, "w") as f:
         json.dump(edition, f, ensure_ascii=False, indent=1)
+    if not weekly:
+        carried = [s_ for p_ in edition["profiles"].values() for s_ in p_.get("stories") or []] + (edition.get("top") or []) + ((edition.get("digest") or {}).get("items") or [])
+        days = {d: v for d, v in (hist.get("days") or {}).items() if d >= (today - timedelta(days=10)).isoformat()}
+        days[today.isoformat()] = {"links": sorted({x.get("link") for x in carried if x.get("link")}), "titles": sorted({x.get("title") for x in carried if x.get("title")}), "brief": edition.get("brief") or ""}
+        with open(HIST, "w") as f:
+            json.dump({"_about": "links, titles and brief of the last 10 editions of 7 O'Klock (scripts/news_letter.py): never twice the same article", "days": days}, f, ensure_ascii=False, indent=1)
     return 0
 
 

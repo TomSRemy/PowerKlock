@@ -199,7 +199,7 @@ def render_letter(today, E, pid, mine=None, exclude=(), interests=(), france=Fal
                 stories.append(dict(st, short=E['profiles'][p]['short'][0]))
     ed['stories'] = stories
     if interests or france:     # ticked subjects or France first: the reader's own choice among every profile's stories
-        ed['stories'] = tailor(E, pids, interests, france, 5 if E.get('weekly') else 3)
+        ed['stories'] = tailor(E, pids, interests, france, 14 if E.get('weekly') else 10)   # several subjects, not two articles (the owner, 25 Nov. 2026)
         seen = {st['link'] for st in ed['stories']}
     if interests or len(pids) > 1:
         ed['name'] = ['Vos sujets', 'Your subjects']
@@ -259,6 +259,15 @@ def outlook(html):
     return BG.sub(lambda m: f'<{m[1]} bgcolor="{m[4]}"{m[2]}style="{m[3]}background:{m[4]}', html)
 
 
+def tile_label(t):
+    """a tile's label on one line in every mail client (the owner, 25 Nov. 2026: tiles of unequal sizes): short words,
+    the same meaning (« Spot France aujourd'hui » → « Spot France auj. », « Garanties d'origine 2027 » → « GO 2027 »)"""
+    for a, b in (("aujourd'hui", "auj."), ("aujourd’hui", "auj."), ("Garanties d'origine", "GO"), ("Garanties d’origine", "GO"),
+                 ("Pointe − base", "Pointe−base")):
+        t = t.replace(a, b)
+    return t[:22]
+
+
 def journal(today, E, ed, wk, mine):
     """7 O'Klock and PowerBrunch « façon journal » (approved 19 Nov. 2026), a black band at the top and the stories on white (24 Nov.), the price tiles, the lead
     story with its chart, the figure of the day (or the week's chart on Monday), the other stories, in brief, the days
@@ -303,7 +312,7 @@ def journal(today, E, ed, wk, mine):
         h = 84 if any(x.get("sub") for x in E["markets"]) else 70
         cells.append(f'<td width="33%" style="padding:3px;vertical-align:top"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate"><tr>'
                      f'<td height="{h}" style="background:#0a0e13;border-radius:10px;padding:9px 11px;vertical-align:top">'
-                     f'<div style="{f};font-size:11.5px;line-height:15px;color:#B8C9D9"><a href="{href}" style="color:#B8C9D9;text-decoration:none">{esc(r["label"][0])}</a></div>'
+                     f'<div style="{f};font-size:11.5px;line-height:15px;color:#B8C9D9;white-space:nowrap;overflow:hidden"><a href="{href}" style="color:#B8C9D9;text-decoration:none">{esc(tile_label(r["label"][0]))}</a></div>'
                      f'<div style="{mono};font-size:18px;line-height:24px;font-weight:700;color:#FFFFFF;margin:2px 0"><a href="{href}" style="color:#FFFFFF;text-decoration:none">{val}</a></div>'
                      f'<div style="{f};font-size:11px;line-height:15px;color:#7A93AB">{sub} <span style="{mono};font-size:11.5px;color:{col};white-space:nowrap">{ch}</span></div></td></tr></table></td>')
     tiles = ''.join('<tr>' + ''.join(cells[i:i + 3]) + '<td></td>' * (3 - len(cells[i:i + 3])) + '</tr>' for i in range(0, len(cells), 3))
@@ -316,7 +325,7 @@ def journal(today, E, ed, wk, mine):
             f'<p style="{f};margin:3px 0 0;font-size:13.5px;color:#6B6B6B">{SUB[wk]}{" · semaine du " + frday(today - timedelta(days=7)) if wk else ""}</p></td>{wx}</tr></table>'
             f'<table role="presentation" width="100%" style="border-collapse:collapse;table-layout:fixed">{tiles}</table>'
             f'<p style="{f};font-size:11px;color:#8A8A8A;margin:6px 0 0">Sources : {esc(srcs)}. {"Variation sur la semaine" if wk else "Variation sur la séance précédente"}. Chaque tuile ouvre sa page sur le site.</p>'
-            + (f'<p style="{f};margin:14px 0 0;font-size:15.5px;line-height:1.6;color:#121212"><b style="{green}">Le point du matin.</b> {brief_sep.join(esc(x) for x in re.split(r"\n\s*\n", E["brief"]))} <a href="{SITE}#today" style="{green};font-size:13.5px;white-space:nowrap">Le détail par marché →</a></p>'
+            + (f'<p style="{f};margin:14px 0 0;font-size:15.5px;line-height:1.6;color:#121212"><b style="{green}">Le point du matin.</b> {brief_sep.join(re.sub(r"^([A-ZÀ-Ü][^:.]{1,28}) :", r"<b>\1 :</b>", esc(x)) for x in re.split(r"\n\s*\n", E["brief"]))} <a href="{SITE}#today" style="{green};font-size:13.5px;white-space:nowrap">Le détail par marché →</a></p>'
                + (f'<p style="{f};margin:6px 0 0;font-size:12.5px;color:#6B6B6B">À lire : ' + ' · '.join(f'<a href="{esc(x["link"])}" style="color:#6B6B6B">{esc(x["source"])}</a>' for x in E.get('brief_links') or []) + '</p>' if E.get('brief_links') else '')
                if E.get('brief') else '')
             + '</td></tr>')
@@ -336,6 +345,8 @@ def journal(today, E, ed, wk, mine):
 
     def keep(h):     # « À retenir »: the story's summary, then its concrete fact when it adds one
         w, y = (h.get('what') or '').strip(), (h.get('for_you') or '').strip()
+        if h.get('section'):
+            return w        # chosen by Claude: the short description alone (no « Impact » line: the owner, 25 Nov. 2026)
         if GENERIC.search(y) or len(y.split()) < 4 or y.lower()[:40] in w.lower():
             y = ''     # a generic line (« Intérêt pour les PPA ») adds nothing
         return (w + ((' ' if w[-1:] in '.!?…' else '. ') + y if y else '')) if w else y
@@ -350,22 +361,42 @@ def journal(today, E, ed, wk, mine):
         ch = None   # no chart any more (the owner's choice, 23 Nov. 2026)
         chart = (f'<div style="margin:12px 0;padding:10px;border:1px solid #EBEBEB;border-radius:10px"><p style="{f};margin:0 0 6px;font-size:12.5px;font-weight:600;color:#383838">{esc(ch["title"])}</p>{img(ch["img"], ch["title"])}'
                  f'<p style="{f};margin:6px 0 0;font-size:11.5px;color:#6B6B6B">Source : {esc(ch["src"])} · <a href="{SITE}#{esc(ch["page"])}" style="{green}">voir sur PowerKlock</a></p></div>') if ch else ''
-        body.append(row(kick(('Le sujet de la semaine' if wk else 'À la une') + (f' · <span style="color:{col}">{lab}</span>' if lab else '')) +
-                        f'<p style="{serif};margin:0 0 8px;font-size:25px;line-height:1.22;font-weight:700">{a(h["link"], h["title"])}</p>' +
-                        chart + (f'<p style="{f};margin:{12 if chart else 4}px 0 0;font-size:16px;line-height:1.55;color:#121212;border-left:3px solid #0B7A62;padding-left:12px"><b style="{green}">À retenir.</b> {esc(keep(h))}</p>' if keep(h) else '') +
-                        f'<p style="{f};margin:10px 0 0;font-size:12.5px;color:#6B6B6B">{esc(" · ".join(h["sources"][:3]))} · <a href="{esc(h["link"])}" style="{green};font-weight:600">Lire l\'article</a></p>' + report(h) + free(h)))
+        # as Veille › Top stories on the site (a large title, the kicker in the subject's colour) on a pale green band, « À
+        # retenir » in a white framed box (the owner, 25 Nov. 2026)
+        body.append(row(kick(('Le sujet de la semaine' if wk else 'À la une') + (f' · {lab}' if lab else ''), col or '#0B7A62') +
+                        f'<p style="{serif};margin:0 0 10px;font-size:32px;line-height:1.16;font-weight:700">{a(h["link"], h["title"])}</p>' +
+                        chart + (f'<table role="presentation" width="100%" style="border-collapse:collapse;margin:{12 if chart else 6}px 0 0"><tr><td bgcolor="#FFFFFF" style="background:#FFFFFF;border-left:4px solid #0B7A62;border-radius:0 8px 8px 0;padding:12px 14px"><p style="{f};margin:0;font-size:16.5px;line-height:1.55;color:#121212"><b style="{green}">À retenir.</b> {esc(keep(h))}</p></td></tr></table>' if keep(h) else '') +
+                        f'<p style="{f};margin:10px 0 0;font-size:12.5px;color:#6B6B6B">{esc(" · ".join(h["sources"][:3]))} · <a href="{esc(h["link"])}" style="{green};font-weight:600">Lire l\'article</a></p>' + report(h) + free(h), '#EEF7F3'))
     # ── the figure of the day ──
     fig = E.get('figure')
     if fig and not wk:
         body.append(row(f'<table role="presentation" style="border-collapse:collapse"><tr><td style="{mono};font-size:34px;font-weight:700;color:{"#0B7A62" if fig["dir"] == "dn" else "#B8322D"};padding-right:16px;white-space:nowrap;vertical-align:middle">{esc(fig["value"])}</td>'
                         f'<td style="vertical-align:middle">{kick("Le chiffre du jour")}<p style="{f};margin:0;font-size:15px;line-height:1.45">{esc(fig["text"])}</p></td></tr></table>'))
     # ── the other stories ──
+    # the other stories by section (the owner, 25 Nov. 2026), the sections in the order of the reader's subjects (the
+    # stories come sorted by them): a section heading, then its articles
+    SEC = {'regulation': 'Régulation et appels d’offres', 'markets': 'Marchés, gaz et géopolitique', 'nuclear_grid': 'Nucléaire et réseau',
+           'deals': 'Transactions et contrats', 'projects': 'Projets et nouvelles capacités', 'supply': 'Fourniture et consommation'}
+    def sec_of(h):
+        if h.get('section') in SEC:
+            return h['section']
+        t = set(h.get('tags') or [])
+        return ('regulation' if t & {'regulation', 'support', 'official'} else 'deals' if 'deal' in t else 'projects' if t & {'build', 'renewables'}
+                else 'markets' if t & {'gas', 'markets', 'geopolitics', 'carbon'} else 'supply')
+    order = []
     for h in st[1:]:
-        lab, col = theme_of(h.get('tags'))
-        body.append(row((f'<p style="{f};margin:0 0 4px;font-size:12px;font-weight:700;color:{col}">{lab}</p>' if lab else '') +
+        if sec_of(h) not in order:
+            order.append(sec_of(h))
+    rest = [h for k in order for h in st[1:] if sec_of(h) == k]
+    for j, h in enumerate(rest):
+        # the section's name once, as the site's headings (small capitals, a thin rule), and one subject pill by the outlet
+        # instead of a second coloured label above the title (the owner, 25 Nov. 2026: two labels read badly)
+        sec_head = (f'<p style="{f};margin:{0 if j == 0 else 6}px 0 12px;padding-bottom:6px;border-bottom:1px solid #D9D9D9;font-size:12px;font-weight:700;letter-spacing:1.2px;'
+                    f'text-transform:uppercase;color:#383838">{SEC[sec_of(h)]}</p>') if j == 0 or sec_of(rest[j - 1]) != sec_of(h) else ''
+        body.append(row(sec_head +
                         f'<p style="{serif};margin:0 0 6px;font-size:19px;line-height:1.28;font-weight:700">{a(h["link"], h["title"])}</p>' +
                         (f'<p style="{f};margin:0 0 8px;font-size:15px;line-height:1.5;color:#383838"><b style="{green}">À retenir.</b> {esc(keep(h))}</p>' if keep(h) else '') +
-                        f'<p style="{f};margin:0;font-size:12.5px;color:#6B6B6B">{esc(" · ".join(h["sources"][:3]))}</p>' + report(h) + free(h)))
+                        f'<p style="{f};margin:0;font-size:12.5px;color:#6B6B6B">{theme_pill(h.get("tags"))}{" " if theme_pill(h.get("tags")) else ""}{esc(" · ".join(h["sources"][:3]))}</p>' + report(h) + free(h)))
     # ── your keywords ──
     if mine:
         body.append(row(kick('Vos mots-clés') + ''.join(f'<p style="{f};margin:0;padding:7px 0;border-bottom:1px solid #F2F2F2;font-size:14.5px;line-height:1.4">{a(o["link"], o["title"])} <span style="color:#6B6B6B;font-size:12px">· {esc(o["source"])}</span></p>' for o in mine)))

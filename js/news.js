@@ -341,7 +341,7 @@ function _nlInterests() {
 // rule as the e-mail (scripts/morning_mail.py › tailor): +3 per subject, the profile's rank as a tie-break, France first
 // when asked, the admin's pinned story first; n stories, each once
 function _nlMine(E) {
-  const P = (E && E.profiles) || {}, { interests, france } = _nlInterests(), n = E && E.weekly ? 5 : 3, seen = new Set(), pool = [];
+  const P = (E && E.profiles) || {}, { interests, france } = _nlInterests(), n = E && E.weekly ? 14 : 10, seen = new Set(), pool = [];
   Object.keys(P).forEach(p => (P[p].stories || []).forEach((st, k) => {
     if (!st || seen.has(st.link)) return; seen.add(st.link);
     const tags = st.tags || [];

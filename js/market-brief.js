@@ -176,7 +176,13 @@
         if (wl.length && w1 != null) parts.push(Math.max(...wl.map(Math.abs)) < Math.abs(w1) / 2 ? T(`Les années ${ys.slice(1).join(' et ')} bougent beaucoup moins.`, `${ys.slice(1).join(' and ')} move much less.`) : T(`Les années ${ys.slice(1).join(' et ')} suivent.`, `${ys.slice(1).join(' and ')} follow.`)); }
       const sp = ((sum && sum.zones && sum.zones.FR) || []).filter(r => r.avg != null), a7 = sp.slice(-7), b7 = sp.slice(-14, -7);
       if (a7.length && b7.length) { const m = a7.reduce((x, r) => x + r.avg, 0) / a7.length, mb = b7.reduce((x, r) => x + r.avg, 0) / b7.length;
-        parts.push(m < mb * 0.9 ? T('Le spot recule sur la semaine.', 'Spot eases over the week.') : m > mb * 1.1 ? T('Le spot monte sur la semaine.', 'Spot rises over the week.') : T('Le spot reste stable sur la semaine.', 'Spot holds over the week.')); }
+        // the week (7-day average against the 7 days before: ±5 %), then the last three days when they move hard (±25 %),
+        // so a sharp rise is not hidden in a « stable » week (the owner, 25 Nov. 2026)
+        const wp = (m / mb - 1) * 100, l3 = sp.length > 3 ? (sp[sp.length - 1].avg / sp[sp.length - 4].avg - 1) * 100 : null;
+        const d3 = l3 == null || Math.abs(l3) < 25 ? '' : l3 > 0 ? T(', en forte hausse depuis trois jours', ', sharply up over the last three days') : T(', en forte baisse depuis trois jours', ', sharply down over the last three days');
+        parts.push(wp < -5 ? T(`Le spot recule sur la semaine (${s1(wp, 0)} %)${d3}.`, `Spot eases over the week (${s1(wp, 0)} %)${d3}.`)
+          : wp > 5 ? T(`Le spot monte sur la semaine (${s1(wp, 0)} %)${d3}.`, `Spot rises over the week (${s1(wp, 0)} %)${d3}.`)
+          : T(`Le spot reste stable sur la semaine${d3}.`, `Spot holds over the week${d3}.`)); }
       R.push([T('Électricité', 'Power'), look('power', nt.cal, wk(p1)), parts.join(' '), `${n1(l[1])} €<small>Cal ${String(ys[0]).slice(2)} · ${s1(wk(p1))} % ${T('sur 7 j', 'on 7 d')}</small>`]);
     }
     // French nuclear: available now, against the operator's forecast, a week and a year ago (less nuclear = more gas called)
