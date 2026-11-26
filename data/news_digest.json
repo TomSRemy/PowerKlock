@@ -1,58 +1,58 @@
 {
  "daily": {
-  "date": "2026-11-26",
-  "updated": "2026-11-25T23:05:58+00:00",
+  "date": "2026-11-27",
+  "updated": "2026-11-26T23:06:06+00:00",
   "engine": "proxy",
   "items": [
    {
-    "id": "osdansuneforgequelesetat",
-    "text": "La France investit dans une forge nucléaire : les producteurs d'électricité pourront réduire leur dépendance aux fournisseurs étrangers",
-    "text_en": "France invests in a nuclear forge: electricity producers can reduce dependence on foreign suppliers",
-    "title": "Nucléaire : la France veut investir un milliard d’euros dans une forge que les États-Unis pourraient lui envier",
-    "link": "https://wattselse.com/veille/article/4676/nucleaire-la-france-veut-investir-un-milliard-deuros-dans-une-forge-que-les-etat",
+    "id": "nergyauctionvolumeto15gw",
+    "text": "La France triple la capacité de son appel d'offres en énergies renouvelables : les producteurs bénéficieront de conditions plus favorables.",
+    "text_en": "France triples renewable energy auction volume: producers will benefit from more favorable conditions.",
+    "title": "France triples planned renewable energy auction volume to 1.5 GW",
+    "link": "https://www.pv-magazine.com/2026/11/26/france-triples-planned-renewable-energy-auction-volume-to-1-5-gw/",
     "sources": [
-     "Watts Else"
+     "pv magazine"
     ]
    },
    {
-    "id": "zilxfvoup5v1o5tjqwlvcoc5",
-    "text": "L'arrêté du 10 novembre 2026 définit les critères pour le taux réduit de TVA aux équipements photovoltaïques : les installateurs et les consommateurs seront impactés",
-    "text_en": "The November 10, 2026 decree defines the criteria for the reduced VAT rate on photovoltaic equipment: installers and consumers will be affected",
-    "title": "Solaire : l'arrêté du 10 novembre 2026 redéfinit les critères d'application du taux réduit de TVA aux équipements photovoltaïques d'une puissance inférieure ou égale à 9 kWc installés dans les logements",
-    "link": "https://news.google.com/rss/articles/CBMiWEFVX3lxTE1SVHdFMW5naWFFZWptZ3lLVnFGOTFmaGxudDJmbVBwT2V4SWpsZmxMaDZfN2lfX1E4U25LN0hCZ2Q2MUkxd0EycDZILXFvOUp5V1o5TjQwLVc?oc=5",
+    "id": "es225mwclashgourwindfarm",
+    "text": "Statkraft acquiert le parc éolien de Clash Gour : l'entreprise renforce sa position sur le marché de l'énergie renouvelable.",
+    "text_en": "Statkraft acquires Clash Gour wind farm: the company strengthens its position in the renewable energy market.",
+    "title": "Statkraft acquires 225MW Clash Gour wind farm",
+    "link": "https://www.renews.biz/onshore-wind/statkraft-acquires-225mw-clash-gour-wind-farm/",
     "sources": [
-     "Cabinet Gossement AVOCATS",
-     "Gossement Avocats"
+     "reNEWS"
     ]
    },
    {
-    "id": "tttzqcv91ulhjrvn5m1hroc5",
-    "text": "EDF Hydro Méditerranée investit 700 millions d’euros dans la chaîne Durance-Verdon : les capacités de production d'électricité renouvelable augmenteront",
-    "text_en": "EDF Hydro Méditerranée invests 700 million euros in the Durance-Verdon chain: renewable electricity production capacities will increase",
-    "title": "EDF Hydro Méditerranée injectera 700 millions d’euros dans la chaîne Durance-Verdon d’ici 2035 - https://horticulture-abadie-pyrenees.com/",
-    "link": "https://news.google.com/rss/articles/CBMibkFVX3lxTFBXN1U5TkRRQTlnTWFmZFlBd3ljZHVkcFdMQll4VkxlWUNyMzdIUXR6LWtUeElzWEJjcndsU0QzVEJJVGVkUWNsbkx6WnR0R25oWkFZU19HZnBUTVhwNS0tTTZQcV91UlhjRVN5M1hR?oc=5",
+    "id": "durkg4rwt2x1k2d0xqq1moc5",
+    "text": "EDF définit les contrats nucléaires CAPN après la fin de l’Arenh : les règles de marché évoluent.",
+    "text_en": "EDF defines nuclear contracts CAPN after the end of Arenh: market rules evolve.",
+    "title": "EDF : les contrats nucléaires CAPN après la fin de l’Arenh",
+    "link": "https://news.google.com/rss/articles/CBMizAFBVV95cUxQZ2FlLTJVWk4yWHl3cTQtVXA2ak85cnV5dmptdUhUSjgwbnJrTk9XSHhPdS1uU0E5MGVKSzBXMlVoYUJsOEJoWkl5THcwVVBLZFpjbHdTVlRPYWhqbThzMG1VQ3RrZE5TU1g1NDRxU0RsWEZxelJONUFlY29RRWE0RTBXaWRpcWFfRktnUTdJakUxT2tZM2loYXNhN044ZnFFbEMwSV9NSWw4aU5VWTNfSE9fV3BmWEpfU2hWeTdURkg4RWt2X1k2d0xqQ1M?oc=5",
     "sources": [
-     "horticulture-abadie-pyrenees.com"
+     "Le nouvel Économiste"
     ]
    },
    {
-    "id": "jsmdrwnhyutu1qmwtbtnnoc5",
-    "text": "RTE relève ses prévisions de consommation électrique à l’horizon 2050 : les producteurs et les gestionnaires de réseaux devront s'adapter",
-    "text_en": "RTE increases its electricity consumption forecasts by 2050: producers and network managers will have to adapt",
-    "title": "RTE devrait relever de 26 % ses prévisions de consommation électrique à l’horizon 2050",
-    "link": "https://news.google.com/rss/articles/CBMisgFBVV95cUxOVVBTdm9hZ19ISW56dDJMYkk0ZWZnNEVFREtSMXBMRV9lcHNlYk5jVnBTcVJEdzJ6eGxaSFBvS3RsekxoWnA1ZFFhaXBBdTRmaUM1WVBfYUVsUzRLRkpfUW95RUlWeGFBNlNfaDdudjBYVGhMZVBZWGxtZVlTdVItYkdGbXB0Q1VfbVNac0prWDNQLTU4SE9BOGtyMjgwNjhGMGdjSmdRWnhYUTU1QmwtbTNn?oc=5",
+    "id": "0rkewzlsm5xc1rkwwwyzwoc5",
+    "text": "Wood remporte le contrat de conception pour l'oléoduc d'hydrogène vert entre l'Espagne et la France : le projet avance.",
+    "text_en": "Wood wins contract for Spain-France green hydrogen pipeline: the project moves forward.",
+    "title": "Wood wins FEED contract for Spain-France green hydrogen pipeline",
+    "link": "https://news.google.com/rss/articles/CBMipwFBVV95cUxNd1phbks3RktzcXBJV0hDOXJhVkdHajloR1pGS04xYjNlNGgtLTdSNWFubVlOd3JqWlQzeUFzbUtCOVo4QkdOYnV3WGxwaVVmTVBPZlpuVGJSUkhOY3ZUdXlwTjNFeEJvbHMzUC1XbnBNbkR6RzRMV2FmRjZsX19kY1E4YjhOLTg3WGFKc0xMbUhTNG1RY1h6a0RkeWZlSm5Xc1RkWWwyZw?oc=5",
     "sources": [
-     "Tecsol Quotidien"
+     "Renewables Now",
+     "Energy Monitor"
     ]
    },
    {
-    "id": "tockagedelectricitegeant",
-    "text": "EDF veut creuser un tunnel pour transformer un barrage en système de stockage d’électricité géant : les capacités de stockage d'électricité seront améliorées",
-    "text_en": "EDF wants to dig a tunnel to transform a dam into a giant electricity storage system: electricity storage capacities will be improved",
-    "title": "Ce tunnel de 17 km qu’EDF veut creuser pour transformer un barrage en système de stockage d’électricité géant",
-    "link": "https://www.revolution-energetique.com/actus/ce-tunnel-de-17-km-quedf-veut-creuser-pour-transformer-un-barrage-en-systeme-de-stockage-delectricite-geant/",
+    "id": "vv5v0tzt1pvvtfpelrqcwoc5",
+    "text": "La France porte à 1,5 GW le volume prévu de son enchère sur les énergies renouvelables : les enchères seront plus compétitives.",
+    "text_en": "France increases the planned volume of its renewable energy auction to 1.5 GW: auctions will be more competitive.",
+    "title": "La France porte à 1,5 GW le volume prévu de son enchère sur les énergies renouvelables",
+    "link": "https://news.google.com/rss/articles/CBMimwFBVV95cUxOeG5JWXE5U1k2Y2xGNmFrbVp2ZTJXZ1BkLVFDMzBjajJjcUQ4YnFMVDQ5WkQwN3J5WEFRdFUydzZPWWRFd1U1dHhNclNzNW1sWTNHTVFRbGxjdnNBUXZwVzlpbEJtdHpidXBaSzdJWGhDcHRicTZpbmFNM3FyR2cwSXUwZ3FsQzlOUy1rdVV5V0tzT1pvVTFPelRqcw?oc=5",
     "sources": [
-     "Révolution Énergétique"
+     "IndexBox"
     ]
    }
   ]
