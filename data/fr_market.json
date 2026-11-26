@@ -1,5 +1,5 @@
 {
- "lastUpdate": "2026-11-26T06:31:09.098939+00:00",
+ "lastUpdate": "2026-11-26T07:08:12.103024+00:00",
  "spot": {
   "value": 289.44,
   "unit": "EUR/MWh",
@@ -316,10 +316,10 @@
      "contract": "UK Q1 27 base",
      "marketId": 189670,
      "unit": "GBP/MWh",
-     "value": 178.84,
+     "value": 178.85,
      "date": "2026-11-25",
      "varD1Pct": -3.95,
-     "varW1Pct": 7.88
+     "varW1Pct": 7.89
     },
     {
      "tenor": "Q+2",
@@ -349,7 +349,7 @@
      "value": 120.28,
      "date": "2026-11-25",
      "varD1Pct": -3.58,
-     "varW1Pct": 2.46
+     "varW1Pct": 2.45
     },
     {
      "tenor": "S+2",
@@ -376,10 +376,10 @@
      "contract": "UK Cal 2028 base",
      "marketId": 189467,
      "unit": "GBP/MWh",
-     "value": 83.35,
+     "value": 83.34,
      "date": "2026-11-25",
-     "varD1Pct": -1.55,
-     "varW1Pct": -0.37
+     "varD1Pct": -1.56,
+     "varW1Pct": -0.38
     },
     {
      "tenor": "Y+3",
