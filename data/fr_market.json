@@ -1,5 +1,5 @@
 {
- "lastUpdate": "2026-11-26T09:31:13.426992+00:00",
+ "lastUpdate": "2026-11-26T10:01:18.452931+00:00",
  "spot": {
   "value": 289.44,
   "unit": "EUR/MWh",
@@ -133,8 +133,8 @@
  },
  "generationMixDate": "2026-11-23",
  "marketInsightsTone": {
-  "gas": -1,
-  "power": -1,
+  "gas": 0,
+  "power": 1,
   "date": "2026-11-26"
  },
  "countries": {

@@ -1,8 +1,8 @@
 {
  "date": "2026-11-26",
  "marketInsightsTone": {
-  "gas": -1,
-  "power": -1,
+  "gas": 0,
+  "power": 1,
   "date": "2026-11-26"
  },
  "countries": {
