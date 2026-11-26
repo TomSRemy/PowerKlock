@@ -230,6 +230,14 @@ async function db(env, fn, token, body = {}) {
 //    The answer is a short French sentence the shortcut shows as its notification.
 const linkedinAuthor = url => { const m = url.match(/linkedin\.com\/(?:posts|in)\/([a-z0-9-]+?)(?:-[0-9a-z]*\d[0-9a-z]*)?(?:_|\/|$)/i);
   return m ? m[1].split('-').filter(w => !/\d/.test(w)).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : ''; };
+async function unshorten(u) {
+  try {
+    const r = await fetch(u, { redirect: 'manual', headers: { 'User-Agent': 'Mozilla/5.0 (PowerKlock share)' } });
+    const loc = r.headers.get('Location');
+    const page = loc || await r.text();   // lnkd.in answers a redirect, or a small page that names the address
+    return (String(page).match(/https:\/\/([a-z]+\.)?linkedin\.com\/[^\s"'<>]+/i) || [])[0] || null;
+  } catch { return null; }
+}
 async function share(req, env) {
   const text = (msg, status = 200) => new Response(msg, { status, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
   if (req.method !== 'POST') return text('Envoyez le post avec POST.', 405);
@@ -239,7 +247,11 @@ async function share(req, env) {
   const raw = await req.text();
   try { body = JSON.parse(raw); } catch { body = { url: raw }; }   // JSON {url, note}, or the shared text alone
   const all = [body.url, body.text, body.input].filter(Boolean).map(String).join(' ');
-  const url = (all.match(/https:\/\/([a-z]+\.)?linkedin\.com\/[^\s"'<>]+/i) || [])[0];
+  let url = (all.match(/(?:https?:\/\/)?([a-z]+\.)?linkedin\.com\/[^\s"'<>]+/i) || [])[0];
+  // the LinkedIn app often shares a short link (lnkd.in/…): follow it to the post's own address
+  const short = !url && (all.match(/(?:https?:\/\/)?lnkd\.in\/[A-Za-z0-9_-]+/i) || [])[0];
+  if (short) url = await unshorten(short.replace(/^(?!https?:)/, 'https://'));
+  if (url && !/^https:/i.test(url)) url = 'https://' + url.replace(/^http:\/\//i, '');
   if (!url) return text('Pas de lien LinkedIn dans ce partage.', 400);
   const r = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/share_post`, {
     method: 'POST', headers: { apikey: env.SUPABASE_KEY, Authorization: `Bearer ${env.SUPABASE_KEY}`, 'Content-Type': 'application/json' },
