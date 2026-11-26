@@ -16,7 +16,7 @@
      "utc": ["30 6 * * *", "7 7 * * *", "43 8 * * *", "30 9 * * *", "0 10 * * *", "19 10 * * *", "53 12 * * *", "37 15 * * *", "23 17 * * *"]},
     {"workflow": "fetch_forecast.yml", "pass_cron": true, "why": "solar, wind and load forecasts; 06:13 also scores the last 30 days",
      "utc": ["13 6 * * *", "43 6 * * *", "7,37 7-11 * * *", "41 16 * * *", "47 19 * * *"]},
-    {"workflow": "fetch_rte.yml", "why": "RTE: previous day complete, PP1 signals (09:30 Paris), evening and PP2 signals",
+    {"workflow": "fetch_rte.yml", "why": "RTE: previous day complete, PP day signals (the day before), evening",
      "utc": ["10 6 * * *", "50 8 * * *", "10 18 * * *"]},
     {"workflow": "fetch_jao.yml", "why": "Core flow-based limits, after JAO publishes the next day's coupling",
      "utc": ["47 12 * * *"]},

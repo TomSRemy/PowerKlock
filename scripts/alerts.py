@@ -11,7 +11,7 @@ Rule kinds
               price in one of `zones`
   base_above  daily baseload above `threshold` €/MWh
   base_below  daily baseload below `threshold` €/MWh
-  pp1, pp2    RTE signals a PP1 / PP2 peak-period day (France, data/rte_pp.json)
+  pp          RTE signals a PP peak day (France, data/rte_pp.json; PP1 and PP2 until 31 Oct. 2026)
   ppa_move    the PPA benchmark (solar or wind) moved by `threshold` €/MWh or more over 7 days
               (data/history/ppa_benchmark.json)
   corr_break  a watched pair's correlation moved by `threshold` or more between the last year and
@@ -43,6 +43,9 @@ from zoneinfo import ZoneInfo
 import psycopg
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# every alert kind this script sends; the same list as the two forms (js/alerts.js, js/onboarding.js) and the database
+# check (warehouse/migrations): tests/test_consistency.py fails when one of them differs
+KINDS = ('neg_price', 'base_above', 'base_below', 'pp', 'cal_move', 'cal_above', 'cal_below', 'ppa_move', 'corr_break')
 DAILY = os.path.join(ROOT, 'data', 'history', 'daily')
 PARIS = ZoneInfo('Europe/Paris')
 SITE = 'https://powerklock.com/'
@@ -179,11 +182,10 @@ def evaluate(rules, days):
             kind = r['kind']
             if kind in ('cal_move', 'cal_above', 'cal_below', 'ppa_move', 'corr_break'):
                 continue
-            if kind in ('pp1', 'pp2'):
+            if kind == 'pp':
                 e = pp.get(d.isoformat())
-                if e and e.get(kind):
-                    label = 'PP1' if kind == 'pp1' else 'PP2'
-                    out.append((r, d, 'FR', f'{fmt_day(d)} is a {label} day (RTE peak-period signal).'))
+                if e and (e.get('pp') or e.get('pp1') or e.get('pp2')):
+                    out.append((r, d, 'FR', f'{fmt_day(d)} is a PP day (RTE peak-period signal).'))
                 continue
             for z in r['zones'] or []:
                 st = zone_stats(zones, z)

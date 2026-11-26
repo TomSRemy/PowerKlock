@@ -16,21 +16,20 @@
     neg_price: [T('Prix négatifs', 'Negative prices'), T('Prix spot négatif, compté au quart d’heure.', 'Negative spot price, counted by the quarter-hour.')],
     base_above: [T('Prix base au-dessus de', 'Baseload above'), T('La moyenne du jour dépasse un prix.', 'The day’s average above a price.')],
     base_below: [T('Prix base en dessous de', 'Baseload below'), T('La moyenne du jour passe sous un prix.', 'The day’s average below a price.')],
-    pp1: [T('Jour PP1 (France)', 'PP1 day (France)'), T('RTE annonce un jour de pointe PP1, la veille vers 9 h 30.', 'RTE signals a PP1 peak day, the day before about 09:30.')],
-    pp2: [T('Jour PP2 (France)', 'PP2 day (France)'), T('RTE annonce un jour PP2, la veille à 9 h 30 ou 19 h.', 'RTE signals a PP2 day, the day before at 09:30 or 19:00.')],
+    pp: [T('Jour PP (France)', 'PP day (France)'), T('RTE annonce un jour de pointe PP, la veille (mécanisme de capacité, depuis le 1er novembre 2026).', 'RTE signals a PP peak day, the day before (capacity mechanism, since 1 November 2026).')],
     cal_move: [T('Cal : fort mouvement', 'Cal: big move'), T('Un contrat annuel bouge fortement en une séance ou en une semaine.', 'An annual contract moves sharply in a session or a week.')],
     cal_above: [T('Cal : au-dessus d’un prix', 'Cal: above a price'), T('Un contrat annuel clôture au-dessus d’un prix.', 'An annual contract settles above a price.')],
     cal_below: [T('Cal : en dessous d’un prix', 'Cal: below a price'), T('Un contrat annuel clôture en dessous d’un prix.', 'An annual contract settles below a price.')],
     ppa_move: [T('Référence PPA : mouvement sur 7 jours', 'PPA benchmark: 7-day move'), T('La référence PPA solaire ou éolien bouge fortement en une semaine.', 'The solar or wind PPA benchmark moves sharply in a week.')],
     corr_break: [T('Rupture de corrélation', 'Correlation break'), T('Deux marchés suivis (Cal FR / TTF, Cal FR / Cal DE…) ne bougent plus ensemble comme d’habitude.', 'Two watched markets (Cal FR / TTF, Cal FR / Cal DE…) stop moving together as usual.')],
   };
-  const GROUPS = [[T('Prix spot', 'Spot prices'), ['neg_price', 'base_above', 'base_below']], [T('Jours de pointe RTE', 'RTE peak days'), ['pp1', 'pp2']],
+  const GROUPS = [[T('Prix spot', 'Spot prices'), ['neg_price', 'base_above', 'base_below']], [T('Jours de pointe RTE', 'RTE peak days'), ['pp']],
     [T('Forwards annuels (Cal)', 'Annual forwards (Cal)'), ['cal_move', 'cal_above', 'cal_below']], [T('PPA et corrélations', 'PPA and correlations'), ['ppa_move', 'corr_break']]];
   const CAL_C = [['FR', '🇫🇷', T('France', 'France')], ['DE', '🇩🇪', T('Allemagne', 'Germany')], ['NL', '🇳🇱', T('Pays-Bas', 'Netherlands')], ['UK', '🇬🇧', T('Royaume-Uni', 'United Kingdom')]];
-  const DEF = { neg_price: { zones: ['FR'], min_hours: 0.25 }, base_above: { zones: ['FR'], threshold: 150 }, base_below: { zones: ['FR'], threshold: 20 }, pp1: {}, pp2: {},
+  const DEF = { neg_price: { zones: ['FR'], min_hours: 0.25 }, base_above: { zones: ['FR'], threshold: 150 }, base_below: { zones: ['FR'], threshold: 20 }, pp: {},
     cal_move: { threshold: 3, params: { country: 'FR', cal: 1, period: '1d', unit: 'eur' } }, cal_above: { threshold: 130, params: { country: 'FR', cal: 1 } },
     cal_below: { threshold: 80, params: { country: 'FR', cal: 1 } }, ppa_move: { threshold: 3 }, corr_break: { threshold: 0.3 } };
-  const PROPOSED = ['neg_price', 'pp1', 'pp2'];
+  const PROPOSED = ['neg_price', 'pp'];
   const zones = () => { const Z = (typeof ZONES !== 'undefined' && ZONES.length ? ZONES : [{ code: 'FR', name: 'France', flag: '🇫🇷' }]).slice();
     return Z.sort((a, b) => (a.code === 'FR' ? -1 : b.code === 'FR' ? 1 : zn(a).localeCompare(zn(b)))); };
   const isCal = k => /^cal_/.test(k);
@@ -82,7 +81,7 @@
     else if (a.kind === 'ppa_move') h = `<div class="ob-sub">${T('Seuil (hausse ou baisse)', 'Threshold (up or down)')}</div>${num(i, 'threshold', a.threshold, 0.5, '€/MWh')}`;
     else if (a.kind === 'corr_break') h = `<div class="ob-sub">${T('Écart de corrélation', 'Gap in correlation')}</div>${num(i, 'threshold', a.threshold, 0.05, '')}<div class="ob-hint">${T('De 0 à 2 : 0,3 signale un vrai changement de comportement.', 'From 0 to 2: 0.3 flags a real change of behaviour.')}</div>`;
     return h + `<details class="ob-more"${a.email_to ? ' open' : ''}><summary>${T('Envoyer à une autre adresse', 'Send to another address')}</summary><input class="ob-in" type="email" data-to="${i}" value="${esc(a.email_to)}" placeholder="adresse@exemple.fr"></details>
-      ${a.kind === 'pp1' || a.kind === 'pp2' ? '' : `<button type="button" class="ob-addal" data-add="${i}">+ ${T('Ajouter une autre alerte de ce type', 'Add another alert of this kind')}</button>`}`;
+      ${a.kind === 'pp' ? '' : `<button type="button" class="ob-addal" data-add="${i}">+ ${T('Ajouter une autre alerte de ce type', 'Add another alert of this kind')}</button>`}`;
   }
   const alertCard = (a, i) => `<div class="ob-al${a.on ? ' on' : ''}"><div class="ob-row"><div><b>${AL[a.kind][0]}</b><small>${AL[a.kind][1]}</small></div>${sw('a' + i, a.on)}</div><div class="ob-opts">${a.on ? alertOpts(a, i) : ''}</div></div>`;
 
@@ -222,7 +221,7 @@
       // alerts: a rule already saved is updated (off = paused, never deleted here); a new one turned on is added
       for (const a of S.alerts) {
         const f = { kind: a.kind, active: !!a.on, zones: isCal(a.kind) ? [(a.params || {}).country || 'FR'] : ['neg_price', 'base_above', 'base_below'].includes(a.kind) ? a.zones : ['FR'],
-          min_hours: a.kind === 'neg_price' ? Math.max(0.25, +a.min_hours || 0.25) : null, threshold: ['pp1', 'pp2', 'neg_price'].includes(a.kind) ? null : +a.threshold,
+          min_hours: a.kind === 'neg_price' ? Math.max(0.25, +a.min_hours || 0.25) : null, threshold: ['pp', 'neg_price'].includes(a.kind) ? null : +a.threshold,
           params: isCal(a.kind) ? a.params : {}, email: true, email_to: a.email_to && a.email_to.toLowerCase() !== own ? a.email_to : null };
         if (a.id) { r = await cl.from('alert_rule').update(f).eq('id', a.id); if (r.error) throw r.error; }
         else if (a.on) { r = await cl.from('alert_rule').insert(f).select('id').single(); if (r.error) throw r.error; a.id = r.data.id; }
