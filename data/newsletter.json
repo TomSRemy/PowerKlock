@@ -1,6 +1,6 @@
 {
  "date": "2026-11-26",
- "updated": "2026-11-25T23:06:10+00:00",
+ "updated": "2026-11-26T06:00:58+00:00",
  "engine": "proxy",
  "monday": false,
  "weekly": false,
@@ -92,6 +92,30 @@
  ],
  "official": [
   {
+   "title": "Décision n° 22-38-25 du 4 novembre 2026 du comité de règlement des différends et des sanctions de la Commission de régulation de l'énergie sur une demande de règlement d'un différend qui oppose M. et Mme L. à la société…",
+   "link": "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000055145113",
+   "source": "Journal officiel",
+   "date": "2026-11-26T00:00:00+00:00",
+   "tags": [
+    "fr",
+    "regulation",
+    "official",
+    "geopolitics"
+   ]
+  },
+  {
+   "title": "Décision nos 32-38-25 et 37-38-26 du 18 novembre 2026 du comité de règlement des différends et des sanctions de la Commission de régulation de l'énergie sur une demande de règlement d'un différend, assortie d'une…",
+   "link": "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000055145130",
+   "source": "Journal officiel",
+   "date": "2026-11-26T00:00:00+00:00",
+   "tags": [
+    "fr",
+    "regulation",
+    "official",
+    "geopolitics"
+   ]
+  },
+  {
    "title": "Arrêté du 10 novembre 2026 fixant les critères applicables à la livraison et à l'installation, dans les logements, des équipements de production d'électricité utilisant l'énergie radiative du soleil, d'une puissance…",
    "link": "https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000055137223",
    "source": "Journal officiel",
@@ -113,19 +137,38 @@
     "regulation",
     "official"
    ]
+  }
+ ],
+ "pubs": [
+  {
+   "title": "Executive summary - World Energy Outlook 2026",
+   "link": "https://news.google.com/rss/articles/CBMie0FVX3lxTE83dzR3Z1piODFrZl91c1FoQkh3S1RkS1NRSUhOUmNGdGs5M0tNZ3J6MGVUcnBWZUJmXy1fN2VuTWp2U2pFQ3FRSWF0cWFhdEdHbVVqU0FZX2wzVTFFUnptMm80bjVmOURCVG9fN3pJX24xUkxlNkFueEN5WQ?oc=5",
+   "source": "IEA - International Energy Agency",
+   "date": "2026-11-26T04:13:09+00:00",
+   "tags": [
+    "power",
+    "markets",
+    "watch",
+    "report",
+    "major",
+    "fr",
+    "gas",
+    "geopolitics"
+   ]
   },
   {
-   "title": "Décision (PESC) 2026/2615 du Conseil du 23 novembre 2026 concernant le soutien de l’Union aux activités de la commission préparatoire de l’Organisation du traité d’interdiction complète des essais nucléaires (OTICE)…",
-   "link": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32026D2615",
-   "source": "EUR-Lex",
-   "date": "2026-11-23T12:00:00+00:00",
+   "title": "LFI et l’énergie : objectifs ambitieux, moyens absents",
+   "link": "https://news.google.com/rss/articles/CBMipAFBVV95cUxOdUVpMl9NeEhCZDVDMXdjT3BNUkVSemhldXYxMFBfMVdlY096YUJqQzBOYjRlZHFFVkNMUW0yeE8taTVnT0FjV2VZd1g0LXRaM21UNGxCQVlLNnR3N0hOOUVKUUhJMXRRUk5UWVpJM25feHc3Wl9LTGVSazVCanBXY1d6OWFLLUxOS1FNUXNCdDY2TnI0d1lpckhtR2YzOWpuVDlQUw?oc=5",
+   "source": "tnova.fr",
+   "date": "2026-11-26T04:00:00+00:00",
    "tags": [
-    "regulation",
-    "official"
+    "fr",
+    "report",
+    "power",
+    "watch"
    ]
   }
  ],
- "pubs": [],
  "cons": [
   {
    "title": "Projet d’arrêté portant la création de la fiche d’opération standardisée IND-UT-142, du référentiel de contrôle et de la bonification associés",
@@ -217,18 +260,6 @@
    ]
   },
   {
-   "title": "Nucléaire : la France veut investir un milliard d’euros dans une forge que les États-Unis pourraient lui envier",
-   "link": "https://wattselse.com/veille/article/4676/nucleaire-la-france-veut-investir-un-milliard-deuros-dans-une-forge-que-les-etat",
-   "source": "Watts Else",
-   "date": "2026-11-25T05:20:00+00:00",
-   "n": 1,
-   "tags": [
-    "fr",
-    "power",
-    "regulation"
-   ]
-  },
-  {
    "title": "Entrion Wind secures French monopile trial",
    "link": "https://www.renews.biz/uncategorized/entrion-wind-secures-french-monopile-trial/",
    "source": "reNEWS",
@@ -266,15 +297,29 @@
    ]
   },
   {
-   "title": "Ingénieur Gestion de Projets Nucléaire H/F ASSYSTEM Chusclan, , France CDI",
-   "link": "https://news.google.com/rss/articles/CBMizwFBVV95cUxPOHBZTlB0aUNicm4wdTFRY3hGVzg4SU5xS3d6bmtweFlKS1BFTDZCLTE5M3NOSVUtdjBKNjNNcWRxZEwwdzE5YU43TmdOLWZ4c2FVSkpyVHZtOFBqay1KS0lzZlhRNXVHVEVMNVlpbWJZNWZWTUoyWjZZMXV5b0pNQVJyTjlmZTBtVS1CaXpXbWpjSGlYeXY5cWt2aV9RblBXbTVZR1lYRlhfemx4M0thQndidmdZS2l6X0pkX1BNZlItaE9aWjhHMDdvWTdrQjA?oc=5",
+   "title": "Chef de Projet nucléaire H/F ASSYSTEM Tours, Centre-Val de Loire, France CDI",
+   "link": "https://news.google.com/rss/articles/CBMivAFBVV95cUxOVVFCVFRRRWk2VnpUTmpJZnkzYm5wZXJaQWZvWlNlSmdpLWYxRjluLVZoQ3ZzVTF1b3VwcEJXXzFsYlIwVzRVamFqY3NWTnlFTkx2NEVIMW5STkNweTY1TVBIX09lN1YtWmw2djhZYUlqam8zdTdEQmFRTXJjUTZ3SkEtQVVEYzRadVpULTlOVTY0djh6bjY5STBBQU1LSFNFVklSSzNmV29pQlJnQ3JZTzhQM1BJb3hfZTNTbQ?oc=5",
    "source": "L'Usine Nouvelle",
-   "date": "2026-11-25T00:48:29+00:00",
+   "date": "2026-11-26T00:49:51+00:00",
    "n": 1,
    "tags": [
     "fr",
     "power",
     "watch"
+   ]
+  },
+  {
+   "title": "Prix négatifs de l'électricité : un levier pour le stockage",
+   "link": "https://news.google.com/rss/articles/CBMiogFBVV95cUxNMUZrYk1kR0ZpWWtwSmtOVllfdkVhUlFJVHliZmlmcGVYSktWT2NSbFBmeTJwWEtZVmZjYkpfb0VSUFIzTWg1T2dBTUxPMzMxSHFlTWVHSkprREphVmlsb0RwY0FxZEdoWEp0QzVEcjRjaVhWOHFubGhMQVY5d3U4M3U2Ujg5ZHRvcXlOemVoN0t3d1VDeGZVSUFkMEtJQnBBeEE?oc=5",
+   "source": "Dosya Haber",
+   "date": "2026-11-25T11:10:00+00:00",
+   "n": 2,
+   "tags": [
+    "markets",
+    "fr",
+    "watch",
+    "support",
+    "power"
    ]
   }
  ],
@@ -300,8 +345,8 @@
     "agenda",
     "post"
    ],
-   "headline": "Actualité énergétique du jour",
-   "headline_en": "Today's energy news",
+   "headline": "L'UFE propose une solution alternative aux échelonnements, le gouvernement veut supprimer les contrats solaires S6 et S10",
+   "headline_en": "UFE proposes alternative to scheduling, government wants to cancel S6 and S10 solar contracts",
    "stories": [
     {
      "id": "nementsarrete16avril2026",
@@ -320,8 +365,8 @@
      "free": null,
      "report_link": null,
      "report_name": null,
-     "what": "L'UFE partage l'objectif de maîtriser les arrêts et redémarrages des installations de production d'électricité",
-     "what_en": "UFE shares the goal of controlling the shutdowns and restarts of electricity production facilities",
+     "what": "En préambule, l’UFE partage l’objectif de mieux maîtriser les arrêts et redémarrages (A/R) volontaires des installations de production d’électricité, qui résultent des volumes d’électricité vendus sur les différents marchés journalier et…",
+     "what_en": null,
      "for_you": null,
      "for_you_en": null
     },
@@ -349,6 +394,35 @@
      "for_you_en": null
     },
     {
+     "id": "ovoltaiquess6ets10439765",
+     "title": "Le gouvernement compte supprimer les contrats d’achat photovoltaïques « S6 » et « S10 »",
+     "link": "https://www.greenunivers.com/2026/11/le-gouvernement-compte-supprimer-les-contrats-dachat-photovoltaiques-s6-et-s10-439765/",
+     "tags": [
+      "fr",
+      "power",
+      "support",
+      "renewables",
+      "regulation",
+      "watch"
+     ],
+     "sources": [
+      "GreenUnivers",
+      "Tecsol Quotidien"
+     ],
+     "free": [
+      {
+       "source": "Tecsol Quotidien",
+       "link": "https://news.google.com/rss/articles/CBMiswFBVV95cUxQaXhOZHpFZW5FWWpLWlg3VndDVGVpd01wWTdFRDVGcnp2SXl5eTFYdjVqRXNaSmJmUVlYanpBUmg5Um9MQjlIdEVtMVpPbjVZS2pHS01YaGVHTFRGZlVPSjFaX2pILU90cVVsU0c3Z1pqcU1Xc1BrcHAwWlJFZWZsemhnSHAzbF9jUlIySFRMQXFMV0VnbDcxWWR2UmQ0clZILXJHemI0Wm10Rk9JWVRYQVUyVQ?oc=5"
+      }
+     ],
+     "report_link": null,
+     "report_name": null,
+     "what": "Une proposition radicale. Parce qu’il n’arrive pas juridiquement à modifier les contrats solaires dits « S6 » et « S10 », le gouvernement propose désormais de les supprimer. Ces contrats, signés entre 2006 et 2010, garantissent un tarif de…",
+     "what_en": null,
+     "for_you": null,
+     "for_you_en": null
+    },
+    {
      "id": "memesoutienquaunucleaire",
      "title": "Niclas Broman, directeur de Skyborn Suède, demande des CfD pour l’éolien en mer et le même soutien qu’au nucléaire",
      "link": "https://www.energiesdelamer.eu/2026/11/25/niclas-broman-directeur-de-skyborn-suede-demande-des-cfd-pour-leolien-en-mer-et-le-meme-soutien-quau-nucleaire/",
@@ -365,27 +439,6 @@
      "report_link": null,
      "report_name": null,
      "what": "25/11/2026 – energiesdelamer.eu. Niclas Broman souhaite que le prochain gouvernement suédois accorde à l’éolien offshore le même soutien qu’au nucléaire avant l’expiration des permis. En juillet 2026, le gouvernement suédois […]",
-     "what_en": null,
-     "for_you": null,
-     "for_you_en": null
-    },
-    {
-     "id": "ovoltaiquess6ets10439765",
-     "title": "Le gouvernement compte supprimer les contrats d’achat photovoltaïques « S6 » et « S10 »",
-     "link": "https://www.greenunivers.com/2026/11/le-gouvernement-compte-supprimer-les-contrats-dachat-photovoltaiques-s6-et-s10-439765/",
-     "tags": [
-      "fr",
-      "power",
-      "support",
-      "renewables"
-     ],
-     "sources": [
-      "GreenUnivers"
-     ],
-     "free": null,
-     "report_link": null,
-     "report_name": null,
-     "what": "Une proposition radicale. Parce qu’il n’arrive pas juridiquement à modifier les contrats solaires dits « S6 » et « S10 », le gouvernement propose désormais de les supprimer. Ces contrats, signés entre 2006 et 2010, garantissent un tarif de…",
      "what_en": null,
      "for_you": null,
      "for_you_en": null
@@ -408,10 +461,11 @@
      "free": null,
      "report_link": null,
      "report_name": null,
-     "what": null,
-     "what_en": null,
+     "what": "Le financement d'une centrale à gaz peut influencer le marché énergétique.",
+     "what_en": "Financing a gas plant can impact the energy market.",
      "for_you": null,
-     "for_you_en": null
+     "for_you_en": null,
+     "ctx": true
     },
     {
      "id": "athtrapsolarpvdevelopers",
@@ -429,51 +483,7 @@
      "report_link": null,
      "report_name": null,
      "what": "Réformes réglementaires en Pologne créent des difficultés pour les développeurs solaires",
-     "what_en": "Regulatory reforms in Poland create difficulties for solar developers",
-     "for_you": null,
-     "for_you_en": null
-    },
-    {
-     "id": "planassofrmairessolaires",
-     "title": "Le solaire vu par 100 maires",
-     "link": "https://www.enerplan.asso.fr/maires-solaires/",
-     "tags": [
-      "fr",
-      "regulation",
-      "power",
-      "assoc",
-      "renewables"
-     ],
-     "sources": [
-      "Enerplan"
-     ],
-     "free": null,
-     "report_link": null,
-     "report_name": null,
-     "what": "100 maires partagent leur expérience sur le solaire",
-     "what_en": "100 mayors share their experience on solar energy",
-     "for_you": null,
-     "for_you_en": null
-    },
-    {
-     "id": "q0m012dwq0cwhjnu1jbdaoc5",
-     "title": "Prix du gaz : +5,8 % en décembre, les conseils de Guillaume Faure",
-     "link": "https://news.google.com/rss/articles/CBMizAFBVV95cUxOUmhjUXUtSTE0bS1zd1N2Mk1qY2xGRWpySXhzZW40QTVzLVJuSkwxNG43S3ptWUNJbFkxVzFJWVZyU0JvZ2pLd3ZKbEo4LTdpMmR4WGdGV3Y4aDl6SFVXWVhGYXE5OXB3OVpJcjAwbVcyb2R6WjFDNHphNnVRWG9UZ05wNF9JNkFUNzdnbkpKMmpyNEdkeVFUT2U0T2JKWXZVNDNicWtSWWhGeW9YZ2ZCM0FVX2ZGYkN6NXFnMUQ0M012dWQ0cWhjNU1jbDA?oc=5",
-     "tags": [
-      "fr",
-      "regulation",
-      "watch",
-      "gas",
-      "markets"
-     ],
-     "sources": [
-      "Presse Agence"
-     ],
-     "free": null,
-     "report_link": null,
-     "report_name": null,
-     "what": null,
-     "what_en": null,
+     "what_en": "Polish regulatory reforms create difficulties for solar developers",
      "for_you": null,
      "for_you_en": null
     }
@@ -502,7 +512,7 @@
     "post"
    ],
    "headline": "L'UFE propose une solution alternative aux échelonnements de l'arrêté du 16 avril 2026",
-   "headline_en": "UFE proposes alternative solution to the April 16, 2026 decree's staggered schedule",
+   "headline_en": "UFE proposes alternative to April 16, 2026 decree's scheduling",
    "stories": [
     {
      "id": "nementsarrete16avril2026",
@@ -522,7 +532,7 @@
      "report_link": null,
      "report_name": null,
      "what": "L'UFE partage l'objectif de maîtriser les arrêts et redémarrages des installations de production d'électricité. L'UFE souligne la nécessité de caractériser le besoin résiduel de RTE.",
-     "what_en": "UFE shares the goal of controlling the shutdowns and restarts of electricity production facilities. UFE emphasizes the need to characterize RTE's residual needs.",
+     "what_en": "UFE shares the goal of controlling electricity production plant shutdowns and restarts. UFE highlights the need to characterize RTE's residual needs.",
      "for_you": null,
      "for_you_en": null
     }
@@ -550,8 +560,8 @@
     "agenda",
     "post"
    ],
-   "headline": "Nouvelles règles pour les équipements photovoltaïques",
-   "headline_en": "New rules for photovoltaic equipment",
+   "headline": "Nouvelles règles pour les équipements solaires",
+   "headline_en": "New rules for solar equipment",
    "stories": [
     {
      "id": "vdegzvsufkmetjqnbbeeeoc5",
@@ -577,6 +587,35 @@
      "for_you_en": null
     },
     {
+     "id": "ovoltaiquess6ets10439765",
+     "title": "Le gouvernement compte supprimer les contrats d’achat photovoltaïques « S6 » et « S10 »",
+     "link": "https://www.greenunivers.com/2026/11/le-gouvernement-compte-supprimer-les-contrats-dachat-photovoltaiques-s6-et-s10-439765/",
+     "tags": [
+      "fr",
+      "power",
+      "support",
+      "renewables",
+      "regulation",
+      "watch"
+     ],
+     "sources": [
+      "GreenUnivers",
+      "Tecsol Quotidien"
+     ],
+     "free": [
+      {
+       "source": "Tecsol Quotidien",
+       "link": "https://news.google.com/rss/articles/CBMiswFBVV95cUxQaXhOZHpFZW5FWWpLWlg3VndDVGVpd01wWTdFRDVGcnp2SXl5eTFYdjVqRXNaSmJmUVlYanpBUmg5Um9MQjlIdEVtMVpPbjVZS2pHS01YaGVHTFRGZlVPSjFaX2pILU90cVVsU0c3Z1pqcU1Xc1BrcHAwWlJFZWZsemhnSHAzbF9jUlIySFRMQXFMV0VnbDcxWWR2UmQ0clZILXJHemI0Wm10Rk9JWVRYQVUyVQ?oc=5"
+      }
+     ],
+     "report_link": null,
+     "report_name": null,
+     "what": "Une proposition radicale. Parce qu’il n’arrive pas juridiquement à modifier les contrats solaires dits « S6 » et « S10 », le gouvernement propose désormais de les supprimer. Ces contrats, signés entre 2006 et 2010, garantissent un tarif de…",
+     "what_en": null,
+     "for_you": null,
+     "for_you_en": null
+    },
+    {
      "id": "zilxfvoup5v1o5tjqwlvcoc5",
      "title": "Solaire : l'arrêté du 10 novembre 2026 redéfinit les critères d'application du taux réduit de TVA aux équipements photovoltaïques d'une puissance inférieure ou égale à 9 kWc installés dans les logements",
      "link": "https://news.google.com/rss/articles/CBMiWEFVX3lxTE1SVHdFMW5naWFFZWptZ3lLVnFGOTFmaGxudDJmbVBwT2V4SWpsZmxMaDZfN2lfX1E4U25LN0hCZ2Q2MUkxd0EycDZILXFvOUp5V1o5TjQwLVc?oc=5",
@@ -594,8 +633,8 @@
      "free": null,
      "report_link": null,
      "report_name": null,
-     "what": "Arrêté du 10 novembre 2026 définit critères pour TVA réduite",
-     "what_en": "November 10, 2026 decree defines criteria for reduced VAT",
+     "what": "Nouveaux critères pour les équipements solaires",
+     "what_en": "New criteria for solar equipment",
      "for_you": null,
      "for_you_en": null
     },
@@ -621,27 +660,6 @@
      "for_you_en": null
     },
     {
-     "id": "ovoltaiquess6ets10439765",
-     "title": "Le gouvernement compte supprimer les contrats d’achat photovoltaïques « S6 » et « S10 »",
-     "link": "https://www.greenunivers.com/2026/11/le-gouvernement-compte-supprimer-les-contrats-dachat-photovoltaiques-s6-et-s10-439765/",
-     "tags": [
-      "fr",
-      "power",
-      "support",
-      "renewables"
-     ],
-     "sources": [
-      "GreenUnivers"
-     ],
-     "free": null,
-     "report_link": null,
-     "report_name": null,
-     "what": "Une proposition radicale. Parce qu’il n’arrive pas juridiquement à modifier les contrats solaires dits « S6 » et « S10 », le gouvernement propose désormais de les supprimer. Ces contrats, signés entre 2006 et 2010, garantissent un tarif de…",
-     "what_en": null,
-     "for_you": null,
-     "for_you_en": null
-    },
-    {
      "id": "zyxv0zoukxfs3hbt1hnzwoc5",
      "title": "TotalEnergies Mirny wind to FC",
      "link": "https://news.google.com/rss/articles/CBMickFVX3lxTE9mVkl5a3laNlBZMzhSOC12dkRzeEdSUnB5M2dodW82ZElQWk9kNHZNMk5VSWhBU3p1Z2dwbmJGODV4c1V2RmpOR3p0MVJZYklDY1pBLUcwOUFUNEZ0QXg4d1NrTzYxV0ZOUkxfS3hBT1hnZw?oc=5",
@@ -659,8 +677,8 @@
      "free": null,
      "report_link": null,
      "report_name": null,
-     "what": "TotalEnergies utilise l'énergie éolienne pour produire de l'hydrogène",
-     "what_en": "TotalEnergies uses wind energy to produce hydrogen",
+     "what": "Un projet éolien est associé à une technologie de production d'hydrogène.",
+     "what_en": "A wind project is linked to hydrogen production technology.",
      "for_you": null,
      "for_you_en": null,
      "ctx": true
@@ -681,10 +699,10 @@
      "free": null,
      "report_link": null,
      "report_name": null,
-     "what": "Entrion Wind teste technologie de fondation",
-     "what_en": "Entrion Wind tests foundation technology",
-     "for_you": "Essais à 100 mètres de profondeur",
-     "for_you_en": "Trials at 100 meters depth"
+     "what": "Essais de fondations pour l'éolien en mer",
+     "what_en": "Trials for offshore wind foundations",
+     "for_you": null,
+     "for_you_en": null
     },
     {
      "id": "tockagedelectricitegeant",
@@ -723,10 +741,11 @@
      "free": null,
      "report_link": null,
      "report_name": null,
-     "what": null,
-     "what_en": null,
+     "what": "L'augmentation du prix du gaz peut impacter les coûts de production d'électricité.",
+     "what_en": "The increase in gas prices can impact electricity production costs.",
      "for_you": null,
-     "for_you_en": null
+     "for_you_en": null,
+     "ctx": true
     }
    ],
    "ai": true
@@ -752,8 +771,8 @@
     "agenda",
     "post"
    ],
-   "headline": "Nouvelles énergétiques : stockage, PPA, éoliennes",
-   "headline_en": "Energy news: storage, PPA, wind farms",
+   "headline": "Nouvelles du jour en énergie",
+   "headline_en": "Today's energy news",
    "stories": [
     {
      "id": "vdegzvsufkmetjqnbbeeeoc5",
@@ -818,30 +837,8 @@
      "free": null,
      "report_link": null,
      "report_name": null,
-     "what": null,
-     "what_en": null,
-     "for_you": null,
-     "for_you_en": null
-    },
-    {
-     "id": "dvntvhmwzwcklzu052d1eoc5",
-     "title": "Appel d'offre, contrat d'achat : le gouvernement veut faire évoluer le soutien au solaire",
-     "link": "https://news.google.com/rss/articles/CBMinwFBVV95cUxQRlBMbUU3eXUxZ21CYmp2MVFIWlBCNTkxdzBqejFlZFd4MjZIOTRnZm1XdXhheHdyZVpsdUJzVU9JSGVRZ2k0U1VJREhxOTY4N2oteEJ0U2JIUS1LM0lyQnhQb3poMHlJWl9vTmFxOFJIVktBTzNaTEkyS0IzdngxSDJHTUpQdWMtVW9CT0gyNmdVNTVHMWZwcklZU052d1E?oc=5",
-     "tags": [
-      "fr",
-      "regulation",
-      "watch",
-      "support",
-      "renewables"
-     ],
-     "sources": [
-      "Batiactu"
-     ],
-     "free": null,
-     "report_link": null,
-     "report_name": null,
-     "what": "L'évolution du soutien au solaire impacte les producteurs et les consommateurs d'électricité",
-     "what_en": "The evolution of solar support affects electricity producers and consumers",
+     "what": "Le financement d'une centrale à gaz peut influencer le marché énergétique.",
+     "what_en": "Financing a gas plant can impact the energy market.",
      "for_you": null,
      "for_you_en": null,
      "ctx": true
@@ -864,8 +861,8 @@
      "free": null,
      "report_link": null,
      "report_name": null,
-     "what": "Inauguration de ferme éolienne en Roumanie",
-     "what_en": "Inauguration of wind farm in Romania",
+     "what": "Inauguration de la ferme éolienne Green Breeze",
+     "what_en": "Inauguration of Green Breeze wind farm",
      "for_you": null,
      "for_you_en": null
     },
@@ -886,8 +883,37 @@
      "free": null,
      "report_link": null,
      "report_name": null,
-     "what": "Projet de stockage d'énergie aux États-Unis",
-     "what_en": "Energy storage project in the US",
+     "what": "Début des travaux pour le projet solaire et de stockage d'énergie",
+     "what_en": "Start of construction for solar and energy storage project",
+     "for_you": null,
+     "for_you_en": null
+    },
+    {
+     "id": "ovoltaiquess6ets10439765",
+     "title": "Le gouvernement compte supprimer les contrats d’achat photovoltaïques « S6 » et « S10 »",
+     "link": "https://www.greenunivers.com/2026/11/le-gouvernement-compte-supprimer-les-contrats-dachat-photovoltaiques-s6-et-s10-439765/",
+     "tags": [
+      "fr",
+      "power",
+      "support",
+      "renewables",
+      "regulation",
+      "watch"
+     ],
+     "sources": [
+      "GreenUnivers",
+      "Tecsol Quotidien"
+     ],
+     "free": [
+      {
+       "source": "Tecsol Quotidien",
+       "link": "https://news.google.com/rss/articles/CBMiswFBVV95cUxQaXhOZHpFZW5FWWpLWlg3VndDVGVpd01wWTdFRDVGcnp2SXl5eTFYdjVqRXNaSmJmUVlYanpBUmg5Um9MQjlIdEVtMVpPbjVZS2pHS01YaGVHTFRGZlVPSjFaX2pILU90cVVsU0c3Z1pqcU1Xc1BrcHAwWlJFZWZsemhnSHAzbF9jUlIySFRMQXFMV0VnbDcxWWR2UmQ0clZILXJHemI0Wm10Rk9JWVRYQVUyVQ?oc=5"
+      }
+     ],
+     "report_link": null,
+     "report_name": null,
+     "what": "Une proposition radicale. Parce qu’il n’arrive pas juridiquement à modifier les contrats solaires dits « S6 » et « S10 », le gouvernement propose désormais de les supprimer. Ces contrats, signés entre 2006 et 2010, garantissent un tarif de…",
+     "what_en": null,
      "for_you": null,
      "for_you_en": null
     },
@@ -907,28 +933,28 @@
      "free": null,
      "report_link": null,
      "report_name": null,
-     "what": "Financement de projet solaire flottant au Kirghizistan",
-     "what_en": "Financing of floating solar project in Kyrgyzstan",
+     "what": "Financement du projet de centrale photovoltaïque flottante",
+     "what_en": "Financing of floating PV power plant project",
      "for_you": null,
      "for_you_en": null
     },
     {
-     "id": "tockagedelectricitegeant",
-     "title": "Ce tunnel de 17 km qu’EDF veut creuser pour transformer un barrage en système de stockage d’électricité géant",
-     "link": "https://www.revolution-energetique.com/actus/ce-tunnel-de-17-km-quedf-veut-creuser-pour-transformer-un-barrage-en-systeme-de-stockage-delectricite-geant/",
+     "id": "ttpscarbonpulsecom575547",
+     "title": "UPDATE – Q4 WCI auction sells out at discount to futures, along expectations to reach over two-year high",
+     "link": "https://carbon-pulse.com/575547/",
      "tags": [
-      "fr",
-      "power",
-      "renewables"
+      "carbon",
+      "deal",
+      "markets"
      ],
      "sources": [
-      "Révolution Énergétique"
+      "Carbon Pulse"
      ],
      "free": null,
      "report_link": null,
      "report_name": null,
-     "what": "Dans l’Aveyron, EDF veut relier le lac de Pareloup à l’usine hydroélectrique du Pouget par une galerie de 17 km. Une enveloppe de près d’un […] L’article Ce tunnel de 17 km qu’EDF veut creuser pour transformer un barrage en système de…",
-     "what_en": null,
+     "what": "Vente aux enchères du carbone",
+     "what_en": "Carbon auction sale",
      "for_you": null,
      "for_you_en": null
     }
@@ -956,8 +982,8 @@
     "agenda",
     "post"
    ],
-   "headline": "Prix négatifs, éolien offshore, nucléaire et gaz",
-   "headline_en": "Negative prices, offshore wind, nuclear and gas",
+   "headline": "Prix négatifs, gaz, nucléaire, éolien",
+   "headline_en": "Negative prices, gas, nuclear, wind",
    "stories": [
     {
      "id": "vdegzvsufkmetjqnbbeeeoc5",
@@ -999,10 +1025,11 @@
      "free": null,
      "report_link": null,
      "report_name": null,
-     "what": null,
-     "what_en": null,
+     "what": "L'augmentation du prix du gaz peut impacter les coûts de production d'électricité.",
+     "what_en": "The increase in gas prices can impact electricity production costs.",
      "for_you": null,
-     "for_you_en": null
+     "for_you_en": null,
+     "ctx": true
     },
     {
      "id": "memesoutienquaunucleaire",
@@ -1041,8 +1068,8 @@
      "free": null,
      "report_link": null,
      "report_name": null,
-     "what": "La future forge de Framatome nécessitera un raccordement électrique haute tension",
-     "what_en": "Framatome's future forge will require a high-voltage electrical connection",
+     "what": "Un raccordement électrique de haute tension est nécessaire pour la future forge de Framatome.",
+     "what_en": "A high-voltage electrical connection is required for Framatome's future forge.",
      "for_you": null,
      "for_you_en": null,
      "ctx": true
@@ -1070,6 +1097,26 @@
      "for_you_en": null
     },
     {
+     "id": "oruxxvf9hq1nfvtbnnk5joc5",
+     "title": "Ingénieur Etudes Confirmé en Ventilation Nucléaire F/H ORANO Montigny-le-Bretonneux",
+     "link": "https://news.google.com/rss/articles/CBMi3wFBVV95cUxQaTh2bnNxWk1FZmg3bW1kVGZrbjlrUjBZdzBNVHIteTZvODVlRWNJUmtJMDJUQVhIWmtsRkxvbTFSS28zbXFhWU55NHJvNnhYVXIwTEU1OWJld3E1TDZJMFR5WnpOb0FXZXhjanhEQmtZeFFPVDh2dTI2WUhEdjlITW5fX1Jvdk1SX1E3T1lWY1F6SDdfUE13eUo0bEYwM3pWSk0za3Z6emlodkxiVUlmNFdjcnY1NzZlQXB3SWNkMWlnc3FTaXhhaTZ4ZWZtQlRORUxXVF9hQ1NFVTBNNk5J?oc=5",
+     "tags": [
+      "fr",
+      "power",
+      "watch"
+     ],
+     "sources": [
+      "L'Usine Nouvelle"
+     ],
+     "free": null,
+     "report_link": null,
+     "report_name": null,
+     "what": null,
+     "what_en": null,
+     "for_you": null,
+     "for_you_en": null
+    },
+    {
      "id": "ates99mwromanianwindfarm",
      "title": "Nala inaugurates 99MW Romanian wind farm",
      "link": "https://www.renews.biz/onshore-wind/nala-inaugurates-99mw-romanian-wind-farm/",
@@ -1087,41 +1134,19 @@
      "free": null,
      "report_link": null,
      "report_name": null,
-     "what": "Nala inaugure un parc éolien de 99MW en Roumanie",
-     "what_en": "Nala inaugurates a 99MW wind farm in Romania",
+     "what": "Nala inaugure un parc éolien en Roumanie",
+     "what_en": "Nala inaugurates wind farm in Romania",
      "for_you": null,
      "for_you_en": null
     },
     {
-     "id": "mh3etdksllwrnd4neq4uqoc5",
-     "title": "TAQA boucle le financement de Taweelah C, centrale à gaz de 2,11 Md$",
-     "link": "https://news.google.com/rss/articles/CBMikgFBVV95cUxNcVRKRGVNN1lLRkczY255d3BxMmdJVElHcE5feDFicndaTjhyMHlSanVEUzdvRndGX216T1NaV3doQmcwempqYUZtWlJkU1Jici1Ya29xRUdJRmU4UUNFSmptTHVXZmJMeFRyaUVTS0dNd29oS0dkSHpUSHRrVHRDLVc2Qmh3eTdkSllwRnd4NEQ4UQ?oc=5",
-     "tags": [
-      "markets",
-      "fr",
-      "watch",
-      "deal",
-      "gas",
-      "power"
-     ],
-     "sources": [
-      "energynews.pro"
-     ],
-     "free": null,
-     "report_link": null,
-     "report_name": null,
-     "what": null,
-     "what_en": null,
-     "for_you": null,
-     "for_you_en": null
-    },
-    {
-     "id": "ttpscarbonpulsecom575331",
-     "title": "Euro Markets: EUAs weaken amid options selling, weak energy and drop in speculator length",
-     "link": "https://carbon-pulse.com/575331/",
+     "id": "ttpscarbonpulsecom575547",
+     "title": "UPDATE – Q4 WCI auction sells out at discount to futures, along expectations to reach over two-year high",
+     "link": "https://carbon-pulse.com/575547/",
      "tags": [
       "carbon",
-      "deal"
+      "deal",
+      "markets"
      ],
      "sources": [
       "Carbon Pulse"
@@ -1129,8 +1154,8 @@
      "free": null,
      "report_link": null,
      "report_name": null,
-     "what": "EUA prices drifted lower on Wednesday amid a general weakness across energy markets and a sell-off after the November options expiry, while the weekly Commitment of Traders data showing investment funds last week made the biggest single…",
-     "what_en": null,
+     "what": "Vente aux enchères de droits d'émission",
+     "what_en": "Carbon credit auction",
      "for_you": null,
      "for_you_en": null
     }
@@ -1158,9 +1183,38 @@
     "agenda",
     "post"
    ],
-   "headline": "Prix négatifs, suppression de contrats solaires, investissement nucléaire",
-   "headline_en": "Negative prices, solar contract cancellation, nuclear investment",
+   "headline": "Suppression des contrats solaires S6 et S10, investissement dans une forge nucléaire",
+   "headline_en": "Cancellation of S6 and S10 solar contracts, investment in a nuclear forge",
    "stories": [
+    {
+     "id": "ovoltaiquess6ets10439765",
+     "title": "Le gouvernement compte supprimer les contrats d’achat photovoltaïques « S6 » et « S10 »",
+     "link": "https://www.greenunivers.com/2026/11/le-gouvernement-compte-supprimer-les-contrats-dachat-photovoltaiques-s6-et-s10-439765/",
+     "tags": [
+      "fr",
+      "power",
+      "support",
+      "renewables",
+      "regulation",
+      "watch"
+     ],
+     "sources": [
+      "GreenUnivers",
+      "Tecsol Quotidien"
+     ],
+     "free": [
+      {
+       "source": "Tecsol Quotidien",
+       "link": "https://news.google.com/rss/articles/CBMiswFBVV95cUxQaXhOZHpFZW5FWWpLWlg3VndDVGVpd01wWTdFRDVGcnp2SXl5eTFYdjVqRXNaSmJmUVlYanpBUmg5Um9MQjlIdEVtMVpPbjVZS2pHS01YaGVHTFRGZlVPSjFaX2pILU90cVVsU0c3Z1pqcU1Xc1BrcHAwWlJFZWZsemhnSHAzbF9jUlIySFRMQXFMV0VnbDcxWWR2UmQ0clZILXJHemI0Wm10Rk9JWVRYQVUyVQ?oc=5"
+      }
+     ],
+     "report_link": null,
+     "report_name": null,
+     "what": "Une proposition radicale. Parce qu’il n’arrive pas juridiquement à modifier les contrats solaires dits « S6 » et « S10 », le gouvernement propose désormais de les supprimer. Ces contrats, signés entre 2006 et 2010, garantissent un tarif de…",
+     "what_en": null,
+     "for_you": null,
+     "for_you_en": null
+    },
     {
      "id": "vdegzvsufkmetjqnbbeeeoc5",
      "title": "Prix négatifs de l'électricité : un levier pour le stockage",
@@ -1201,29 +1255,8 @@
      "free": null,
      "report_link": null,
      "report_name": null,
-     "what": "L'UFE partage l'objectif de maîtriser les arrêts et redémarrages des installations de production d'électricité.",
-     "what_en": "UFE shares the goal of controlling the shutdowns and restarts of electricity production facilities.",
-     "for_you": null,
-     "for_you_en": null
-    },
-    {
-     "id": "ovoltaiquess6ets10439765",
-     "title": "Le gouvernement compte supprimer les contrats d’achat photovoltaïques « S6 » et « S10 »",
-     "link": "https://www.greenunivers.com/2026/11/le-gouvernement-compte-supprimer-les-contrats-dachat-photovoltaiques-s6-et-s10-439765/",
-     "tags": [
-      "fr",
-      "power",
-      "support",
-      "renewables"
-     ],
-     "sources": [
-      "GreenUnivers"
-     ],
-     "free": null,
-     "report_link": null,
-     "report_name": null,
-     "what": "Une proposition radicale. Parce qu’il n’arrive pas juridiquement à modifier les contrats solaires dits « S6 » et « S10 », le gouvernement propose désormais de les supprimer. Ces contrats, signés entre 2006 et 2010, garantissent un tarif de…",
-     "what_en": null,
+     "what": "L'UFE partage l'objectif de maîtriser les arrêts et redémarrages des installations de production d'électricité",
+     "what_en": "UFE shares the goal of controlling the shutdowns and restarts of power generation facilities",
      "for_you": null,
      "for_you_en": null
     },
@@ -1242,8 +1275,8 @@
      "free": null,
      "report_link": null,
      "report_name": null,
-     "what": "Framatome envisage d'investir plus d'un milliard d'euros dans sa forge.",
-     "what_en": "Framatome plans to invest over one billion euros in its forge.",
+     "what": "Framatome envisage d'investir plus d'un milliard d'euros dans sa future forge Forge+",
+     "what_en": "Framatome plans to invest over one billion euros in its future Forge+ facility",
      "for_you": null,
      "for_you_en": null
     },
@@ -1265,10 +1298,11 @@
      "free": null,
      "report_link": null,
      "report_name": null,
-     "what": null,
-     "what_en": null,
+     "what": "Le financement d'une centrale à gaz peut influencer le marché énergétique.",
+     "what_en": "Financing a gas plant can impact the energy market.",
      "for_you": null,
-     "for_you_en": null
+     "for_you_en": null,
+     "ctx": true
     },
     {
      "id": "memesoutienquaunucleaire",
@@ -1308,10 +1342,11 @@
      "free": null,
      "report_link": null,
      "report_name": null,
-     "what": null,
-     "what_en": null,
+     "what": "L'augmentation du prix du gaz peut impacter les coûts de production d'électricité.",
+     "what_en": "The increase in gas prices can impact electricity production costs.",
      "for_you": null,
-     "for_you_en": null
+     "for_you_en": null,
+     "ctx": true
     },
     {
      "id": "acityforreactorinternals",
@@ -1328,8 +1363,8 @@
      "free": null,
      "report_link": null,
      "report_name": null,
-     "what": "Framatome a inauguré un nouvel atelier pour la fabrication de composants de réacteurs nucléaires.",
-     "what_en": "Framatome has inaugurated a new workshop for the manufacture of nuclear reactor components.",
+     "what": "Framatome a inauguré un nouvel atelier pour la fabrication et l'assemblage de composants internes de réacteurs nucléaires",
+     "what_en": "Framatome has inaugurated a new workshop for the manufacturing and assembly of nuclear reactor internals",
      "for_you": null,
      "for_you_en": null
     }
