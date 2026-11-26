@@ -913,9 +913,15 @@ def brief_from_context(day, abroad=False, weekly=False):
         num = r"(\d[\d\u202f ]{3,}(?:,\d+)?|\d{4,}(?:,\d+)?)" if fr else r"(\d[\d,]{3,}(?:\.\d+)?)"
         return re.sub(num + r"\s?(MW|GW|MWh|GWh|TWh)\b", big, (t or "").strip())
     items = [c for c in (md.get("context_week") if weekly else None) or md.get("context") or [] if not abroad or (c.get("topic_en") or c.get("topic") or "").lower() != "france"]
-    # as the Expert view shows it: « France : … Golfe : … »
-    fr = " ".join(f"{c.get('topic')} : " * bool(c.get("topic")) + tidy(c.get("text"), True) for c in items if c.get("text"))
-    en = " ".join(f"{c.get('topic_en') or c.get('topic')}: " * bool(c.get("topic_en") or c.get("topic")) + tidy(c.get("text_en") or c.get("text"), False) for c in items if c.get("text_en") or c.get("text"))
+    # « France : … Norvège : … » inside one paragraph read badly (the owner, 26 Nov. 2026): the daily is one flowing text
+    # without the topic names, as Claude's (each text names its subject); the weekly keeps them, one paragraph per topic
+    # (the mail and the site split the brief on blank lines and set the topic in bold)
+    if not weekly:
+        fr = " ".join(tidy(c.get("text"), True) for c in items if c.get("text"))
+        en = " ".join(tidy(c.get("text_en") or c.get("text"), False) for c in items if c.get("text_en") or c.get("text"))
+        return fr, en
+    fr = "\n\n".join(f"{c.get('topic')} : " * bool(c.get("topic")) + tidy(c.get("text"), True) for c in items if c.get("text"))
+    en = "\n\n".join(f"{c.get('topic_en') or c.get('topic')}: " * bool(c.get("topic_en") or c.get("topic")) + tidy(c.get("text_en") or c.get("text"), False) for c in items if c.get("text_en") or c.get("text"))
     return fr, en
 
 
