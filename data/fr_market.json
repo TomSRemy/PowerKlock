@@ -1,5 +1,5 @@
 {
- "lastUpdate": "2026-11-26T07:08:12.103024+00:00",
+ "lastUpdate": "2026-11-26T08:44:06.961004+00:00",
  "spot": {
   "value": 289.44,
   "unit": "EUR/MWh",
@@ -316,10 +316,10 @@
      "contract": "UK Q1 27 base",
      "marketId": 189670,
      "unit": "GBP/MWh",
-     "value": 178.85,
+     "value": 178.84,
      "date": "2026-11-25",
      "varD1Pct": -3.95,
-     "varW1Pct": 7.89
+     "varW1Pct": 7.88
     },
     {
      "tenor": "Q+2",
@@ -349,7 +349,7 @@
      "value": 120.28,
      "date": "2026-11-25",
      "varD1Pct": -3.58,
-     "varW1Pct": 2.45
+     "varW1Pct": 2.46
     },
     {
      "tenor": "S+2",
@@ -376,10 +376,10 @@
      "contract": "UK Cal 2028 base",
      "marketId": 189467,
      "unit": "GBP/MWh",
-     "value": 83.34,
+     "value": 83.35,
      "date": "2026-11-25",
-     "varD1Pct": -1.56,
-     "varW1Pct": -0.38
+     "varD1Pct": -1.55,
+     "varW1Pct": -0.37
     },
     {
      "tenor": "Y+3",
@@ -396,15 +396,15 @@
    "nuclearCapacity": null,
    "nuclearCapacityDate": null,
    "generationMix": {
-    "gas": 17.93,
-    "wind": 16.28,
-    "solar": 0.75,
-    "nuclear": 5.13,
-    "hydro": 0.29,
-    "biomass": 3.11,
-    "other": 1.22
+    "gas": 17.8,
+    "wind": 12.48,
+    "solar": 1.47,
+    "nuclear": 5.08,
+    "hydro": 0.48,
+    "biomass": 2.91,
+    "other": 1.56
    },
-   "generationMixDate": "2026-11-24"
+   "generationMixDate": "2026-11-25"
   },
   "DE": {
    "label": "Germany",
