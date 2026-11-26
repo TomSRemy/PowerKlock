@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
-"""PP1 / PP2 peak-period days (French capacity mechanism) from RTE's Signal API.
+"""PP peak days (French capacity mechanism) from RTE's Signal API.
 
-RTE signals PP1 days the day before at about 09:30 and PP2-only days at
-about 19:00 (Paris), November to March. The API needs a free RTE Data
+Since 1 November 2026 (reformed capacity mechanism) RTE signals a single kind of
+peak day, the PP day, the day before (November to March); until then it signalled
+PP1 and PP2 days. Either signal is read as a PP day. The API needs a free RTE Data
 Portal account (data.rte-france.com) subscribed to the "Signal" API; its
 client id and secret go in the GitHub secrets RTE_CLIENT_ID and
 RTE_CLIENT_SECRET. Without them the script does nothing.
 
 Writes data/rte_pp.json:
-  {"updated", "source", "days": {"YYYY-MM-DD": {"pp1": bool, "pp2": bool}}}
+  {"updated", "source", "days": {"YYYY-MM-DD": {"pp": true}}}
 The raw API answer of the last call is kept in data/rte_pp_raw.json so the
 parser can be checked against the live format.
 """
@@ -82,7 +83,7 @@ def call(tok, start, end):
 
 
 def parse(obj, days):
-    """Walk the answer: any object carrying a date and a PP1/PP2 indication."""
+    """Walk the answer: any object carrying a date and a PP indication (PP, or PP1 / PP2 before Nov. 2026)."""
     if isinstance(obj, list):
         for x in obj:
             parse(x, days)
@@ -97,12 +98,9 @@ def parse(obj, days):
             break
     flat = {k.lower(): v for k, v in obj.items() if not isinstance(v, (dict, list))}
     if d:
-        pp1 = bool(flat.get('pp1')) or 'PP1' in str(flat.get('signal_type', '')).upper() or '"PP1"' in text
-        pp2 = bool(flat.get('pp2')) or 'PP2' in str(flat.get('signal_type', '')).upper() or '"PP2"' in text or pp1
-        if pp1 or pp2:
-            e = days.setdefault(d, {'pp1': False, 'pp2': False})
-            e['pp1'] |= pp1
-            e['pp2'] |= pp2
+        kind = ' '.join(str(flat.get(k, '')) for k in ('signal_type', 'type', 'signal', 'value')).upper()
+        if any(flat.get(k) is True for k in ('pp', 'pp1', 'pp2')) or re.search(r'\bPP[12]?\b', kind) or re.search(r'"PP[12]?"', text):
+            days[d] = {'pp': True}
     for v in obj.values():
         if isinstance(v, (dict, list)):
             parse(v, days)
@@ -124,14 +122,14 @@ def main():
         json.dump(ans, f, indent=1)
     old = {}
     if os.path.exists(OUT):
-        with open(OUT) as f:
-            old = json.load(f).get('days', {})
+        with open(OUT) as f:   # days kept from PP1 / PP2 (before Nov. 2026) count as PP days
+            old = {d: {'pp': True} for d, e in json.load(f).get('days', {}).items() if e.get('pp') or e.get('pp1') or e.get('pp2')}
     days = {}
     parse(ans, days)
     old.update(days)
     with open(OUT, 'w') as f:
         json.dump({'updated': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'), 'checked': datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'),
-                   'source': 'RTE Data Portal, Signal API (PP1 / PP2 peak-period days)',
+                   'source': 'RTE Data Portal, Signal API (PP peak days)',
                    'days': dict(sorted(old.items()))}, f, separators=(',', ':'))
     print(f'rte_pp.json: {len(days)} signalled days in the last call, {len(old)} in total')
     return 0

@@ -4,7 +4,7 @@ name: Fetch RTE (éCO2mix France, M0 reference prices)
 # - éCO2mix national generation, load and exchanges, Paris quarter-hours
 #   → data/history/rte/YYYY-MM.json + fr_daily.json (scripts/fetch_rte_eco2mix.py).
 #   The site reads today and the two previous days live from ODRÉ.
-# - PP1 / PP2 peak-period days (RTE Data Portal Signal API, secrets
+# - PP peak days (PP1 / PP2 until Oct. 2026; RTE Data Portal Signal API, secrets
 #   RTE_CLIENT_ID / RTE_CLIENT_SECRET) → data/rte_pp.json.
 # - wind & solar curves of the complément de rémunération, weighted by the
 #   France day-ahead history → data/m0.json (scripts/fetch_rte_m0.py).
@@ -70,7 +70,7 @@ jobs:
         run: pip install -q openpyxl==3.1.5 pypdf==6.21.2 && python scripts/fetch_eex_residual_mix.py || echo "::warning::EEX residual mix not read"
       - name: Yearly review (Bilan page)
         run: python scripts/build_bilan.py || echo "::warning::bilan not rebuilt"
-      - name: PP1 / PP2 signals (needs an RTE Data Portal account)
+      - name: PP day signals (needs an RTE Data Portal account)
         env:
           RTE_CLIENT_ID: ${{ secrets.RTE_CLIENT_ID }}
           RTE_CLIENT_SECRET: ${{ secrets.RTE_CLIENT_SECRET }}

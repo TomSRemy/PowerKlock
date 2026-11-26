@@ -2,6 +2,9 @@
   1. France's daily average for today and yesterday: same value on Today (spot cards), Day-ahead (table) and the
      data file (the published average, which counts the repeated hour of a 25-hour day)
   2. the home page (Today, Expert view) downloads less than 20 MB on first load
+  3. the same lists everywhere: alert kinds in both forms (js/alerts.js, js/onboarding.js), the sender
+     (scripts/alerts.py) and the database check (latest migration); news subjects in the site (js/news.js) and the
+     database check. A kind or subject added in one place only fails here, before it reaches members.
 Serves the repository itself, like test_site_logic.py.   python3 tests/test_consistency.py"""
 import functools
 import http.server
@@ -36,7 +39,42 @@ def num(s):
     return float(m.group(0).replace(' ', '').replace(' ', '').replace(',', '.')) if m else None
 
 
+def last_check(name):
+    """The values allowed by a database check, from the last migration that (re)defines it."""
+    vals = None
+    for f in sorted(os.listdir(os.path.join(ROOT, 'warehouse', 'migrations'))):
+        s = open(os.path.join(ROOT, 'warehouse', 'migrations', f)).read()
+        for m in re.finditer(r'add constraint ' + name + r'\b(.*?);', s, re.S):
+            vals = set(re.findall(r"'(\w+)'", m.group(1)))
+    return vals or set()
+
+
+def block_keys(path, start, pat):
+    s = open(os.path.join(ROOT, path)).read()
+    i = s.index(start)
+    return set(re.findall(pat, s[i:s.index('\n  };', i) if '{' in start else s.index('\n];', i)]))
+
+
+def same_lists():
+    al = {
+        'js/alerts.js': block_keys('js/alerts.js', 'const KINDS = {', r'\n    (\w+): \{ label'),
+        'js/onboarding.js': block_keys('js/onboarding.js', 'const AL = {', r'\n    (\w+): \[T\('),
+        'scripts/alerts.py': set(re.findall(r"'(\w+)'", re.search(r'^KINDS = \((.*?)\)', open(os.path.join(ROOT, 'scripts', 'alerts.py')).read(), re.M).group(1))),
+        'database (alert_rule_kind_check)': last_check('alert_rule_kind_check'),
+    }
+    subj = {'js/news.js': block_keys('js/news.js', 'const PK_INTERESTS = [', r"\['([a-z_]+)', '"),   # group names start with a capital
+            'database (news_profile_interests_check)': last_check('news_profile_interests_check')}
+    for what, d in (('alert kinds', al), ('news subjects', subj)):
+        ref = set().union(*d.values())
+        bad = {k: sorted(ref - v) for k, v in d.items() if ref - v}
+        if bad or not all(d.values()):
+            fails.append(f'{what} differ: missing ' + '; '.join(f'{k}: {v}' for k, v in bad.items()))
+        else:
+            print(f'ok   {what}: the same {len(ref)} everywhere ({", ".join(d)})')
+
+
 def main():
+    same_lists()
     srv = serve()
     base = f'http://127.0.0.1:{PORT}/index.html'
     paris = datetime.now(ZoneInfo('Europe/Paris')).date()

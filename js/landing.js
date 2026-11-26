@@ -59,7 +59,7 @@ window.pkLandingStart = function () {
     lead3: ['Prix PPA de référence solaire et éolien, M0 estimée du mois avant sa publication par la CRE, taux de capture, et un premier benchmark pour vos batteries (BESS). Des chiffres prêts pour la négociation.', 'Solar and wind PPA benchmarks, this month\'s estimated M0 before the CRE publishes it, capture rates, and a first benchmark for your batteries (BESS). Figures you can take into a negotiation.'],
     open3: ['Ouvrir les outils', 'Open tools'],
     k4: ['Mes tableaux de bord', 'My dashboards'], g4: ['Votre dashboard.', 'Your dashboard.'],
-    lead4: ['Composez votre dashboard, réglez vos alertes (prix négatifs, seuils de prix, jours PP1 et PP2, forwards Cal, référence PPA) et recevez chaque matin à 7\u00a0h la veille des sujets que vous suivez. Vous arrivez au bureau déjà briefé.', 'Build your dashboard, set your alerts (negative prices, price thresholds, PP1 and PP2 days, Cal forwards, PPA benchmark) and get the news on the subjects you follow every morning at 7\u00a0am. You walk into the office already briefed.'],
+    lead4: ['Composez votre dashboard, réglez vos alertes (prix négatifs, seuils de prix, jours PP, forwards Cal, référence PPA) et recevez chaque matin à 7\u00a0h la veille des sujets que vous suivez. Vous arrivez au bureau déjà briefé.', 'Build your dashboard, set your alerts (negative prices, price thresholds, PP days, Cal forwards, PPA benchmark) and get the news on the subjects you follow every morning at 7\u00a0am. You walk into the office already briefed.'],
     open4: ['Créer mon tableau de bord', 'Build my dashboard'],
     hint: ['Faites défiler : la courbe change de forme', 'Scroll: the curve changes shape'],
     lead1b: ['', ''],

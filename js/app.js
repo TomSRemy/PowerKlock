@@ -123,8 +123,8 @@
     const W = wx && wx.countries && wx.countries.FR && wx.countries.FR.series && wx.countries.FR.series.temp;
     if (W && W.days) { const k = W.days.map((d, i) => d >= paris() && W.mean[i] != null && W.normal[i] != null ? W.mean[i] - W.normal[i] : null).filter(x => x != null).slice(0, 14);
       if (k.length) { const a = k.reduce((x, y) => x + y, 0) / k.length; tiles.push([T('Températures, 2 semaines', 'Temperatures, 2 weeks'), (a > 0 ? '+' : '−') + nf(Math.abs(a), 1) + ' °C', a < -0.5 ? T('plus froid que la normale', 'colder than normal') : a > 0.5 ? T('plus doux que la normale', 'milder than normal') : T('proche de la normale', 'close to normal'), a < -0.5 ? 'up' : a > 0.5 ? 'dn' : '']); } }
-    const P = pp && pp.days ? Object.keys(pp.days).filter(d => d >= paris() && (pp.days[d].pp1 || pp.days[d].pp2)).sort() : [];
-    if (P.length) tiles.push([T('Jour de pointe RTE', 'RTE peak day'), pp.days[P[0]].pp1 ? 'PP1' : 'PP2', dayName(P[0]), 'up']);
+    const P = pp && pp.days ? Object.keys(pp.days).filter(d => d >= paris() && (pp.days[d].pp || pp.days[d].pp1 || pp.days[d].pp2)).sort() : [];
+    if (P.length) tiles.push([T('Jour de pointe RTE', 'RTE peak day'), 'PP', dayName(P[0]), 'up']);
     if (tiles.length) out.push(sec(T('À surveiller', 'To watch'), `<div class="pa-tiles">${tiles.map(([l, v, s, c]) => `<div class="pa-tile pa-${c === 'up' ? 'up' : c === 'dn' ? 'down' : 'flat'}"><span>${l}</span><b>${v}</b><small class="${c}">${esc(s)}</small></div>`).join('')}</div>${src(T('Prévisions PowerKlock (prix, heures négatives, nucléaire), Open-Meteo (températures), RTE (jours de pointe).', 'PowerKlock forecasts (prices, negative hours, nuclear), Open-Meteo (temperatures), RTE (peak days).'))}`));
     // what moved and why (data/market_digest.json, the analyst notes of the Expert view)
     const ctx = md && md.context || [];

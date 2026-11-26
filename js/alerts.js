@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════════════════════════════
-// ALERTS — negative prices, PP1 / PP2 days, baseload thresholds.
+// ALERTS — negative prices, RTE PP days, baseload thresholds.
 // A bell in the top bar: alerts triggered for today and tomorrow, and the
 // user's rules (create, pause, delete). Signed-in users keep their rules in
 // Supabase (public.alert_rule, owner-only) and receive e-mails from the
@@ -11,14 +11,13 @@
   'use strict';
   const LS = 'pk-alerts-v1';
   // grouped in the panel's list: spot prices, RTE peak days, annual forwards, PPA and correlations
-  const GROUPS = [['Spot prices', ['neg_price', 'base_above', 'base_below']], ['RTE peak days (France)', ['pp1', 'pp2']],
+  const GROUPS = [['Spot prices', ['neg_price', 'base_above', 'base_below']], ['RTE peak days (France)', ['pp']],
     ['Annual forwards (Cal)', ['cal_move', 'cal_above', 'cal_below']], ['PPA and correlations', ['ppa_move', 'corr_break']]];
   const KINDS = {
     neg_price: { label: 'Negative prices', help: 'Negative day-ahead prices in one of the zones, counted by the quarter-hour: 0.25 h means a single negative quarter-hour.' },
     base_above: { label: 'Baseload above', help: 'The day’s average (baseload) above a price.' },
     base_below: { label: 'Baseload below', help: 'The day’s average (baseload) below a price.' },
-    pp1: { label: 'PP1 day', help: 'RTE signals a PP1 peak-period day (the day before, about 09:30).' },
-    pp2: { label: 'PP2 day', help: 'RTE signals a PP2 peak-period day (the day before, 09:30 or 19:00).' },
+    pp: { label: 'PP day (France)', help: 'RTE signals a PP peak day the day before (capacity mechanism: one PP signal instead of PP1 and PP2 since November 2026).' },
     cal_move: { label: 'Cal: big move', help: 'An annual contract moves by more than a threshold in one session or in a week, up or down.' },
     cal_above: { label: 'Cal: above a price', help: 'An annual contract settles above a price.' },
     cal_below: { label: 'Cal: below a price', help: 'An annual contract settles below a price.' },
@@ -108,8 +107,8 @@
       const zones = await getDay(d);
       rules.filter(r => r.active !== false).forEach(r => {
         if (isCal(r.kind) || r.kind === 'ppa_move' || r.kind === 'corr_break') return;
-        if (r.kind === 'pp1' || r.kind === 'pp2') {
-          const e = pp[d]; if (e && e[r.kind]) out.push({ d, z: 'FR', kind: r.kind, text: fmtDay(d) + ' is a ' + r.kind.toUpperCase() + ' day (RTE peak-period signal)' });
+        if (r.kind === 'pp') {
+          const e = pp[d]; if (e && (e.pp || e.pp1 || e.pp2)) out.push({ d, z: 'FR', kind: r.kind, text: fmtDay(d) + ' is a PP day (RTE peak-period signal)' });
           return;
         }
         (r.zones || []).forEach(z => {
@@ -179,7 +178,7 @@
   function ruleText(r) {
     const k = KINDS[r.kind] || { label: r.kind }, p = r.params || {};
     const cc = CAL_C.find(x => x[0] === (p.country || (r.zones || [])[0])) || CAL_C[0];
-    const zs = r.kind === 'pp1' || r.kind === 'pp2' || r.kind === 'ppa_move' ? 'France' : isCal(r.kind) ? `${calName(cc[0])} · Cal+${p.cal || 1}` : r.kind === 'corr_break' ? 'Watched pairs' : (r.zones || []).map(z => flagOf(z) + ' ' + zoneName(z)).join(', ');
+    const zs = r.kind === 'pp' || r.kind === 'ppa_move' ? 'France' : isCal(r.kind) ? `${calName(cc[0])} · Cal+${p.cal || 1}` : r.kind === 'corr_break' ? 'Watched pairs' : (r.zones || []).map(z => flagOf(z) + ' ' + zoneName(z)).join(', ');
     const cond = r.kind === 'neg_price' ? ` · ≥ ${r.min_hours || 0.25} h` : r.kind.startsWith('base_') ? ` · ${r.threshold} €/MWh`
       : r.kind === 'cal_move' ? ` · ±${r.threshold} ${p.unit === 'pct' ? '%' : calUnit(cc[0])} ${p.period === '1w' ? L('sur une semaine', 'over a week') : L('en une séance', 'in one session')}`
       : r.kind === 'cal_above' || r.kind === 'cal_below' ? ` · ${r.threshold} ${calUnit(cc[0])}` : r.kind === 'ppa_move' ? ` · ±${r.threshold} €/MWh` : r.kind === 'corr_break' ? ` · gap ≥ ${r.threshold}` : '';
@@ -221,7 +220,7 @@
     const si = $('#pk-al-signin'); if (si) si.addEventListener('click', e => { e.preventDefault(); close(); if (window.PKDash && PKDash.openAccount) PKDash.openAccount(); });
     const sync = () => {
       const k = $('#pk-al-kind').value, cal = isCal(k);
-      $('#pk-al-help').textContent = KINDS[k].help + (k.startsWith('pp') ? ' PP data need the RTE account to be connected.' : '');
+      $('#pk-al-help').textContent = KINDS[k].help;
       $('#pk-al-zones-wrap').style.display = noZones(k) ? 'none' : '';
       $('#pk-al-cal-wrap').style.display = cal ? '' : 'none';
       $('#pk-al-per-wrap').style.display = $('#pk-al-unit-wrap').style.display = k === 'cal_move' ? '' : 'none';
@@ -295,7 +294,7 @@
   .pk-al-sec{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);font-weight:600;margin-top:4px}
   .pk-al-hit{display:flex;gap:8px;align-items:flex-start;font-size:12.5px;color:var(--text2);padding:6px 0;border-bottom:1px solid var(--border)}
   .pk-al-hit b{color:var(--text)}
-  .pk-al-dot{width:8px;height:8px;border-radius:50%;margin-top:5px;flex:none;background:#60A5FA} .pk-al-dot.pp1,.pk-al-dot.pp2{background:#ED6965} .pk-al-dot.base_above{background:#F97316} .pk-al-dot.base_below{background:#14D3A9} .pk-al-dot.cal_move,.pk-al-dot.cal_above,.pk-al-dot.cal_below{background:#C4A57B} .pk-al-cal{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .pk-al-dot{width:8px;height:8px;border-radius:50%;margin-top:5px;flex:none;background:#60A5FA} .pk-al-dot.pp{background:#ED6965} .pk-al-dot.base_above{background:#F97316} .pk-al-dot.base_below{background:#14D3A9} .pk-al-dot.cal_move,.pk-al-dot.cal_above,.pk-al-dot.cal_below{background:#C4A57B} .pk-al-cal{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .pk-al-empty{font-size:12px;color:var(--text3)}
   .pk-al-rule{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)}
   .pk-al-rule.off{opacity:.5}
