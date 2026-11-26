@@ -1,9 +1,9 @@
 {
- "lastUpdate": "2026-11-26T10:01:18.452931+00:00",
+ "lastUpdate": "2026-11-26T12:54:13.437634+00:00",
  "spot": {
-  "value": 289.44,
+  "value": 299.05,
   "unit": "EUR/MWh",
-  "date": "2026-11-25"
+  "date": "2026-11-26"
  },
  "forwardCurve": [
   {
@@ -142,9 +142,9 @@
    "label": "France",
    "currency": "EUR",
    "spot": {
-    "value": 289.44,
+    "value": 299.05,
     "unit": "EUR/MWh",
-    "date": "2026-11-25"
+    "date": "2026-11-26"
    },
    "forwardCurve": [
     {
@@ -278,9 +278,9 @@
    "label": "United Kingdom",
    "currency": "GBP",
    "spot": {
-    "value": 206.73,
+    "value": 230.54,
     "unit": "GBP/MWh",
-    "date": "2026-11-25"
+    "date": "2026-11-26"
    },
    "forwardCurve": [
     {
@@ -412,9 +412,9 @@
    "label": "Germany",
    "currency": "EUR",
    "spot": {
-    "value": 291.77,
+    "value": 301.83,
     "unit": "EUR/MWh",
-    "date": "2026-11-25"
+    "date": "2026-11-26"
    },
    "forwardCurve": [
     {
@@ -546,9 +546,9 @@
    "label": "Netherlands",
    "currency": "EUR",
    "spot": {
-    "value": 288.52,
+    "value": 297.04,
     "unit": "EUR/MWh",
-    "date": "2026-11-25"
+    "date": "2026-11-26"
    },
    "forwardCurve": [
     {

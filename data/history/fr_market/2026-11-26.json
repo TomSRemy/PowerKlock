@@ -10,7 +10,17 @@
    "nuclearCapacity": {
     "actualMW": 46088.75,
     "forecastMW": 52650
-   }
+   },
+   "spot": 299.05
+  },
+  "UK": {
+   "spot": 230.54
+  },
+  "DE": {
+   "spot": 301.83
+  },
+  "NL": {
+   "spot": 297.04
   }
  }
 }
