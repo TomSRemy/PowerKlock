@@ -913,9 +913,15 @@ def brief_from_context(day, abroad=False, weekly=False):
         num = r"(\d[\d\u202f ]{3,}(?:,\d+)?|\d{4,}(?:,\d+)?)" if fr else r"(\d[\d,]{3,}(?:\.\d+)?)"
         return re.sub(num + r"\s?(MW|GW|MWh|GWh|TWh)\b", big, (t or "").strip())
     items = [c for c in (md.get("context_week") if weekly else None) or md.get("context") or [] if not abroad or (c.get("topic_en") or c.get("topic") or "").lower() != "france"]
-    # as the Expert view shows it: « France : … Golfe : … »
-    fr = " ".join(f"{c.get('topic')} : " * bool(c.get("topic")) + tidy(c.get("text"), True) for c in items if c.get("text"))
-    en = " ".join(f"{c.get('topic_en') or c.get('topic')}: " * bool(c.get("topic_en") or c.get("topic")) + tidy(c.get("text_en") or c.get("text"), False) for c in items if c.get("text_en") or c.get("text"))
+    # « France : … Norvège : … » inside one paragraph read badly (the owner, 26 Nov. 2026): the daily is one flowing text
+    # without the topic names, as Claude's (each text names its subject); the weekly keeps them, one paragraph per topic
+    # (the mail and the site split the brief on blank lines and set the topic in bold)
+    if not weekly:
+        fr = " ".join(tidy(c.get("text"), True) for c in items if c.get("text"))
+        en = " ".join(tidy(c.get("text_en") or c.get("text"), False) for c in items if c.get("text_en") or c.get("text"))
+        return fr, en
+    fr = "\n\n".join(f"{c.get('topic')} : " * bool(c.get("topic")) + tidy(c.get("text"), True) for c in items if c.get("text"))
+    en = "\n\n".join(f"{c.get('topic_en') or c.get('topic')}: " * bool(c.get("topic_en") or c.get("topic")) + tidy(c.get("text_en") or c.get("text"), False) for c in items if c.get("text_en") or c.get("text"))
     return fr, en
 
 
@@ -1251,7 +1257,12 @@ def main():
     edition["weather"] = weather(today)
     soon = sorted([{"date": c["deadline"], "kind": "cons", "title": c["title"], "link": c["link"], "source": c.get("source")} for c in cons
                    if c.get("deadline") and t <= c["deadline"] <= iso(today + timedelta(days=7 if not weekly else 14))]
-                  + [{"date": e["date"], "kind": "event", "title": (e.get("title") or [""])[0], "title_en": (e.get("title") or ["", ""])[-1], "link": None, "source": None}
+                  # an event with its one-line explanation and its source (data/events.json › text, source): « Arrêt aux prix
+                  # négatifs dès 5 MW » alone meant nothing to a reader who does not follow it (the owner, 26 Nov. 2026)
+                  + [{"date": e["date"], "kind": "event", "title": (e.get("title") or [""])[0], "title_en": (e.get("title") or ["", ""])[-1],
+                      "text": (e.get("text") or [""])[0], "text_en": (e.get("text") or ["", ""])[-1],
+                      "link": (e.get("source") or [None, None])[-1] if str((e.get("source") or [None, None])[-1] or "").startswith("http") else None,
+                      "source": (e.get("source") or [None])[0]}
                      for e in events if t <= (e.get("date") or "") <= iso(today + timedelta(days=14 if not weekly else 21))], key=lambda x: x["date"])[:6]
     edition["week_ahead"] = soon
     prune_images()

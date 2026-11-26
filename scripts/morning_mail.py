@@ -307,11 +307,18 @@ def journal(today, E, ed, wk, mine):
         else:
             ch = '' if r.get('pct') is None else ('▲ +' if c > 0 else '▼ −' if c < 0 else '') + n(abs(r['pct']), 1) + ' %'
         val = n(r['value'], 0 if r.get('hours') and float(r['value']).is_integer() else 1 if r.get('hours') else 2) + (' h' if r.get('hours') else '')
+        # against what (the owner, 26 Nov. 2026: « augmentation : dire vs quoi »): the day before for the day's prices, the
+        # previous session for the forwards and gas, the previous quote for the guarantees of origin, the week on Monday
+        lab0 = r['label'][0]
+        vs = ('sur 7 j' if wk else 'vs veille' if r.get('hours') or re.search(r"aujourd|Spot|Pointe", lab0) else
+              'vs cotation préc.' if re.search(r"Garanties|GO ", lab0) else 'vs séance préc.')
+        if ch:     # on its own line in every tile, so the six tiles keep the same layout
+            ch += f'<br><span style="color:#7A93AB;font-size:10.5px">{vs}</span>'
         sub = esc(r['sub'][0]) if r.get('sub') else '' if r.get('hours') else esc(r['unit'])
         # Outlook (Word) ignores display:block, padding and background on a link: the tile is a cell of its own, its
         # background given twice (bgcolor for Outlook, style for the others), each line its own link
         href = f'{SITE}#{esc(r.get("page") or "today")}'
-        h = 84 if any(x.get("sub") for x in E["markets"]) else 70
+        h = 98 if any(x.get("sub") for x in E["markets"]) else 86
         cells.append(f'<td width="33%" style="padding:3px;vertical-align:top"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate"><tr>'
                      f'<td height="{h}" style="background:#0a0e13;border-radius:10px;padding:9px 11px;vertical-align:top">'
                      f'<div style="{f};font-size:11.5px;line-height:15px;color:#B8C9D9;white-space:nowrap;overflow:hidden"><a href="{href}" style="color:#B8C9D9;text-decoration:none">{esc(tile_label(r["label"][0]))}</a></div>'
@@ -326,7 +333,7 @@ def journal(today, E, ed, wk, mine):
             f'<table role="presentation" width="100%" style="border-collapse:collapse;margin:8px 0 12px"><tr><td style="vertical-align:bottom"><p style="{serif};margin:0;font-size:32px;font-weight:700;color:#121212">{TITLE[wk]}</p>'
             f'<p style="{f};margin:3px 0 0;font-size:13.5px;color:#6B6B6B">{SUB[wk]}{" · semaine du " + frday(today - timedelta(days=7)) if wk else ""}</p></td>{wx}</tr></table>'
             f'<table role="presentation" width="100%" style="border-collapse:collapse;table-layout:fixed">{tiles}</table>'
-            f'<p style="{f};font-size:11px;color:#8A8A8A;margin:6px 0 0">Sources : {esc(srcs)}. {"Variation sur la semaine" if wk else "Variation sur la séance précédente"}. Chaque tuile ouvre sa page sur le site.</p>'
+            f'<p style="{f};font-size:11px;color:#8A8A8A;margin:6px 0 0">Sources : {esc(srcs)}. {"Variation sur la semaine" if wk else "Variation indiquée dans chaque tuile"}. Chaque tuile ouvre sa page sur le site.</p>'
             + (f'<p style="{f};margin:14px 0 0;font-size:15.5px;line-height:1.6;color:#121212"><b style="{green}">Le point du matin.</b> {brief_sep.join(re.sub(r"^([A-ZÀ-Ü][^:.]{1,28}) :", r"<b>\1 :</b>", esc(x)) for x in re.split(r"\n\s*\n", E["brief"]))} <a href="{SITE}#today" style="{green};font-size:13.5px;white-space:nowrap">Le détail par marché →</a></p>'
                + (f'<p style="{f};margin:6px 0 0;font-size:12.5px;color:#6B6B6B">À lire : ' + ' · '.join(f'<a href="{esc(x["link"])}" style="color:#6B6B6B">{esc(x["source"])}</a>' for x in E.get('brief_links') or []) + '</p>' if E.get('brief_links') else '')
                if E.get('brief') else '')
@@ -421,7 +428,8 @@ def journal(today, E, ed, wk, mine):
             colr = '#B8322D' if x['kind'] == 'cons' and left <= 2 else '#0B7A62' if x['kind'] == 'event' else '#121212'
             label = ('Fin de consultation : ' if x['kind'] == 'cons' else '') + x['title']
             t_ = a(x['link'], label) if x.get('link') else esc(label)
-            return f'<tr><td style="{f};padding:5px 12px 5px 0;font-size:14px;font-weight:700;color:{colr};white-space:nowrap;vertical-align:top">{jours[dd.weekday()]} {dd.day}</td><td style="{f};padding:5px 0;font-size:14.5px;line-height:1.4">{t_}</td></tr>'
+            why = f'<br><span style="font-size:13px;color:#6B6B6B">{esc(x["text"])}</span>' if x.get('text') else ''   # what it means, for a reader who does not follow it
+            return f'<tr><td style="{f};padding:5px 12px 5px 0;font-size:14px;font-weight:700;color:{colr};white-space:nowrap;vertical-align:top">{jours[dd.weekday()]} {dd.day}</td><td style="{f};padding:5px 0;font-size:14.5px;line-height:1.4">{t_}{why}</td></tr>'
         body.append(row(kick('La semaine qui vient' if wk else 'Cette semaine') + '<table role="presentation" style="border-collapse:collapse">' + ''.join(wl(x) for x in wa) + '</table>', '#F7F7F5'))
     # ── PowerBrunch: this day in past years ──
     od = E.get('on_this_day')
@@ -562,7 +570,8 @@ def brunch(today, E, st, mine, keep, report, free, img, imgs):
             dd = date.fromisoformat(x['date'])
             label = ('Fin de consultation : ' if x['kind'] == 'cons' else '') + x['title']
             return (f'<tr><td style="{f};padding:6px 12px 6px 0;border-bottom:1px solid #F2F2F2;font-size:14px;font-weight:700;color:#B8322D;white-space:nowrap;vertical-align:top">{jours[dd.weekday()]} {dd.day}</td>'
-                    f'<td style="{f};padding:6px 0;border-bottom:1px solid #F2F2F2;font-size:14.5px;line-height:1.4">{a(x["link"], label) if x.get("link") else esc(label)}</td></tr>')
+                    f'<td style="{f};padding:6px 0;border-bottom:1px solid #F2F2F2;font-size:14.5px;line-height:1.4">{a(x["link"], label) if x.get("link") else esc(label)}'
+                    + (f'<br><span style="font-size:13px;color:#6B6B6B">{esc(x["text"])}</span>' if x.get('text') else '') + '</td></tr>')
         body.append(row(kick('La semaine à venir') + '<table role="presentation" width="100%" style="border-collapse:collapse">' + ''.join(wl_(x) for x in wa) + '</table>'))
     # ── one block per theme: the brief's analysis, then its articles ──
     ana = {}
