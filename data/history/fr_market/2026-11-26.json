@@ -4,5 +4,13 @@
   "gas": -1,
   "power": -1,
   "date": "2026-11-26"
+ },
+ "countries": {
+  "FR": {
+   "nuclearCapacity": {
+    "actualMW": 46088.75,
+    "forecastMW": 52650
+   }
+  }
  }
 }
