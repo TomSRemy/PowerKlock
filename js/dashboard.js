@@ -1076,9 +1076,10 @@
             <button type="submit" class="pk-btn-ghost">Set password</button></form>
           <div class="pkd-msg" id="pkd-pw-msg" role="status">${hint ? esc(hint) : ''}</div>
           <div id="pkd-mcp"></div>
+          <div id="pkd-share"></div>
           <div id="pkd-admin"></div>
           <details class="pkd-del"><summary>Delete my account</summary>
-            <p class="pkd-p">Your account and everything it holds are erased for good: dashboards, alerts, newsletter settings, keywords, the connector for Claude. This cannot be undone.</p>
+            <p class="pkd-p">Your account and everything it holds are erased for good: dashboards, alerts, newsletter settings, keywords, the connector for Claude, the send key. This cannot be undone.</p>
             <button type="button" class="pkd-del-go" id="pkd-del-go">Delete my account for good</button>
             <div class="pkd-msg" id="pkd-del-msg" role="status"></div></details>
           <div class="pkd-form-foot"><button type="button" class="pk-btn-ghost" data-close>Close</button><button type="button" class="pk-btn-primary" id="pkd-out">Sign out</button></div></div>`, root => {
@@ -1109,6 +1110,7 @@
         if (hint) setTimeout(() => root.querySelector('#pkd-pw').focus(), 30);
         adminAccounts(root.querySelector('#pkd-admin'));
         mcpConnector(root.querySelector('#pkd-mcp'));
+        shareKey(root.querySelector('#pkd-share'));
       });
       return;
     }
@@ -1223,7 +1225,7 @@
         <p class="pkd-p">Add PowerKlock to your own Claude (paid plan): Claude then reads the site's prices, forwards, reservoirs, guarantees of origin, news, official texts and consultations, and queries the SQL warehouse (full history), answering with their sources. Read only, 400 calls a day.</p>
         ${link ? `<div class="pkd-mcp-link"><input type="text" readonly value="${esc(link)}" aria-label="Your personal link"><button type="button" class="pk-btn-primary" id="pkd-mcp-copy">Copy</button></div>
           <p class="pkd-p pkd-mcp-warn">Personal link: shown only now, keep it to yourself. A new link cancels this one.</p>`
-        : st && st.active ? `<p class="pkd-p">Your link is active since ${esc(String(st.created_at || '').slice(0, 10))}.</p>` : ''}
+        : st && st.active ? `<p class="pkd-p"><span>Your link is active since</span> <b>${esc(new Date(st.created_at).toLocaleDateString(document.documentElement.lang === 'en' ? 'en-GB' : 'fr-FR'))}</b></p>` : ''}
         <div class="pkd-mcp-b"><button type="button" class="pk-btn-ghost" id="pkd-mcp-new">${st && st.active ? 'Make a new link' : 'Make my link'}</button>${st && st.active ? '<button type="button" class="pk-btn-ghost" id="pkd-mcp-del">Remove my link</button>' : ''}</div>
         <div class="pkd-msg" id="pkd-mcp-msg" role="status"></div>${how(!!link)}</div>`;
       const msg = host.querySelector('#pkd-mcp-msg');
@@ -1237,6 +1239,48 @@
       const del = host.querySelector('#pkd-mcp-del'); if (del) del.addEventListener('click', async () => {
         if (!window.confirm('Remove your link? Claude will no longer reach PowerKlock.')) return;
         const { error: e } = await cl.rpc('mcp_revoke'); if (e) { msg.textContent = 'Not removed: ' + e.message; return; }
+        st.active = false; draw(null);
+      });
+    };
+    draw(null);
+  }
+
+  // The send key (warehouse migration 044, workers/ask › POST /share): a LinkedIn post sent from the phone's share sheet
+  // lands in News › LinkedIn posts without leaving LinkedIn. Made by the database, shown once, only its fingerprint kept;
+  // it can only add a LinkedIn post in its owner's name (50 a day). A new key replaces the old one.
+  const SHARE_URL = 'https://powerklock-ask.tom-s-remy.workers.dev/share';
+  async function shareKey(host) {
+    const A = window.PKAccount, cl = A.client && A.client();
+    if (!host || !cl) return;
+    const { data: st, error } = await cl.rpc('share_key_status');
+    if (error) return;   // not approved yet, or the database is not ready
+    const how = open => `<details class="pkd-mcp-guide"${open ? ' open' : ''}><summary>How to set up the iPhone shortcut</summary><ol class="pkd-mcp-how">
+      <li>In the Shortcuts app: + › name it « Send to PowerKlock ».</li>
+      <li>Add the action « Ask for input »: question « A note? ».</li>
+      <li><span>Add the action « Get contents of URL » with this address:</span> <code>${SHARE_URL}</code></li>
+      <li>Show more › Method POST › Headers: Authorization = Bearer followed by a space and your key › Request body JSON: url = Shortcut input, note = Provided input.</li>
+      <li>Add the action « Show notification » with the result of « Get contents of URL » (it reads « Added to PowerKlock ✓ »).</li>
+      <li>At the top, touch « Nowhere » › tick Share sheet. OK.</li>
+      <li>In LinkedIn: Share › Share via… › Send to PowerKlock. You stay in LinkedIn.</li></ol></details>`;
+    const draw = key => {
+      host.innerHTML = `<div class="pkd-mcp"><div class="pkd-acc-t">Send LinkedIn posts from your phone</div>
+        <p class="pkd-p">A personal key for a phone shortcut: a LinkedIn post shared to PowerKlock lands in News › LinkedIn posts, without leaving LinkedIn. The key can only add a post in your name, 50 a day.</p>
+        ${key ? `<div class="pkd-mcp-link"><input type="text" readonly value="${esc(key)}" aria-label="Your send key"><button type="button" class="pk-btn-primary" id="pkd-share-copy">Copy</button></div>
+          <p class="pkd-p pkd-mcp-warn">Personal key: shown only now, keep it to yourself. A new key cancels this one.</p>`
+        : st && st.active ? `<p class="pkd-p"><span>Your key is active since</span> <b>${esc(new Date(st.created_at).toLocaleDateString(document.documentElement.lang === 'en' ? 'en-GB' : 'fr-FR'))}</b></p>` : ''}
+        <div class="pkd-mcp-b"><button type="button" class="pk-btn-ghost" id="pkd-share-new">${st && st.active ? 'Make a new key' : 'Make my send key'}</button>${st && st.active ? '<button type="button" class="pk-btn-ghost" id="pkd-share-del">Remove my key</button>' : ''}</div>
+        <div class="pkd-msg" id="pkd-share-msg" role="status"></div>${how(!!key)}</div>`;
+      const msg = host.querySelector('#pkd-share-msg');
+      const cp = host.querySelector('#pkd-share-copy'); if (cp) cp.addEventListener('click', () => { const i = host.querySelector('.pkd-mcp-link input'); i.select(); (navigator.clipboard ? navigator.clipboard.writeText(i.value) : Promise.reject()).then(() => { msg.textContent = 'Copied.'; }).catch(() => { document.execCommand('copy'); msg.textContent = 'Copied.'; }); });
+      host.querySelector('#pkd-share-new').addEventListener('click', async () => {
+        if (st && st.active && !window.confirm(window.PKI18n ? PKI18n.tr('A new key cancels the current one in your shortcut. Go on?') : 'A new key cancels the current one in your shortcut. Go on?')) return;
+        const { data: t, error: e } = await cl.rpc('share_key_new');
+        if (e || !t) { msg.textContent = 'Not made: ' + ((e && e.message) || 'try again'); return; }
+        st.active = true; st.created_at = new Date().toISOString(); draw(t);
+      });
+      const del = host.querySelector('#pkd-share-del'); if (del) del.addEventListener('click', async () => {
+        if (!window.confirm(window.PKI18n ? PKI18n.tr('Remove your key? Your shortcut will no longer send posts.') : 'Remove your key? Your shortcut will no longer send posts.')) return;
+        const { error: e } = await cl.rpc('share_key_revoke'); if (e) { msg.textContent = 'Not removed: ' + e.message; return; }
         st.active = false; draw(null);
       });
     };

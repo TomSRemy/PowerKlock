@@ -8,6 +8,7 @@
 //    the model goes from the most precise to the lightest as the day's questions add up, so the free daily
 //    allocation lasts (the newsletter keeps its share).
 // Nothing is stored: the question and the answer live in the reader's page only.
+// It also receives, on POST /share, a LinkedIn post sent from the phone's share sheet (see share() below).
 
 const MODELS = [   // [questions of the day already answered, model]: the first whose threshold is not reached
   [30, '@cf/meta/llama-4-scout-17b-16e-instruct'],
@@ -221,9 +222,39 @@ async function db(env, fn, token, body = {}) {
   return r.ok ? r.json() : { ok: false, reason: r.status === 401 ? 'signed out' : 'database ' + r.status };
 }
 
+// ── POST /share: a LinkedIn post sent from the phone's share sheet without leaving LinkedIn (the owner, 26 Nov. 2026;
+//    warehouse migration 044). The shortcut sends the post's link (alone, or inside the text LinkedIn shares) and a
+//    note, with the reader's personal send key as « Authorization: Bearer pks_… ». public.share_post() checks the key
+//    (an approved account, 50 posts a day), keeps only a LinkedIn link without its tracking part, and adds it to News ›
+//    LinkedIn posts in the key owner's name: the link, the author read from the link, the note; never the post's text.
+//    The answer is a short French sentence the shortcut shows as its notification.
+const linkedinAuthor = url => { const m = url.match(/linkedin\.com\/(?:posts|in)\/([a-z0-9-]+?)(?:-[0-9a-z]*\d[0-9a-z]*)?(?:_|\/|$)/i);
+  return m ? m[1].split('-').filter(w => !/\d/.test(w)).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : ''; };
+async function share(req, env) {
+  const text = (msg, status = 200) => new Response(msg, { status, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
+  if (req.method !== 'POST') return text('Envoyez le post avec POST.', 405);
+  const key = (req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '').trim();
+  if (!/^pks_[0-9a-f]{48}$/.test(key)) return text('Clé d’envoi manquante ou mal copiée : recopiez-la depuis Mon compte.', 401);
+  let body = {};
+  const raw = await req.text();
+  try { body = JSON.parse(raw); } catch { body = { url: raw }; }   // JSON {url, note}, or the shared text alone
+  const all = [body.url, body.text, body.input].filter(Boolean).map(String).join(' ');
+  const url = (all.match(/https:\/\/([a-z]+\.)?linkedin\.com\/[^\s"'<>]+/i) || [])[0];
+  if (!url) return text('Pas de lien LinkedIn dans ce partage.', 400);
+  const r = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/share_post`, {
+    method: 'POST', headers: { apikey: env.SUPABASE_KEY, Authorization: `Bearer ${env.SUPABASE_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ p_key: key, p_url: url, p_author: linkedinAuthor(url) || null, p_note: String(body.note || '').slice(0, 200) || null }) });
+  const j = r.ok ? await r.json() : { ok: false, reason: 'database ' + r.status };
+  if (j.ok) return text(j.already ? 'Déjà dans PowerKlock ✓' : 'Ajouté à PowerKlock ✓');
+  const why = { 'unknown key': 'Clé d’envoi inconnue : elle a peut-être été remplacée. Recopiez-la depuis Mon compte.', 'not approved': 'Votre compte attend validation.',
+    quota: '50 posts envoyés aujourd’hui : la suite demain.', 'not a linkedin link': 'Ce n’est pas un lien LinkedIn.' }[j.reason];
+  return text(why || 'Pas enregistré pour l’instant : réessayez plus tard.', j.reason === 'quota' ? 429 : 400);
+}
+
 export default {
   async fetch(req, env) {
     if (req.method === 'OPTIONS') return new Response(null, { headers: cors(req) });
+    if (new URL(req.url).pathname === '/share') return share(req, env);
     const token = (req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '');
     if (!token) return reply(req, { error: 'signed out' }, 401);
     if (req.method === 'GET') return reply(req, await db(env, 'ask_left', token));   // the questions left today, for the counter
