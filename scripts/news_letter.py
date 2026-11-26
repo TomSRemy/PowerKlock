@@ -1257,7 +1257,12 @@ def main():
     edition["weather"] = weather(today)
     soon = sorted([{"date": c["deadline"], "kind": "cons", "title": c["title"], "link": c["link"], "source": c.get("source")} for c in cons
                    if c.get("deadline") and t <= c["deadline"] <= iso(today + timedelta(days=7 if not weekly else 14))]
-                  + [{"date": e["date"], "kind": "event", "title": (e.get("title") or [""])[0], "title_en": (e.get("title") or ["", ""])[-1], "link": None, "source": None}
+                  # an event with its one-line explanation and its source (data/events.json › text, source): « Arrêt aux prix
+                  # négatifs dès 5 MW » alone meant nothing to a reader who does not follow it (the owner, 26 Nov. 2026)
+                  + [{"date": e["date"], "kind": "event", "title": (e.get("title") or [""])[0], "title_en": (e.get("title") or ["", ""])[-1],
+                      "text": (e.get("text") or [""])[0], "text_en": (e.get("text") or ["", ""])[-1],
+                      "link": (e.get("source") or [None, None])[-1] if str((e.get("source") or [None, None])[-1] or "").startswith("http") else None,
+                      "source": (e.get("source") or [None])[0]}
                      for e in events if t <= (e.get("date") or "") <= iso(today + timedelta(days=14 if not weekly else 21))], key=lambda x: x["date"])[:6]
     edition["week_ahead"] = soon
     prune_images()
