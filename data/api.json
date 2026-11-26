@@ -1,6 +1,6 @@
 {
  "name": "PowerKlock data API",
- "updated": "2026-11-26T05:56:55Z",
+ "updated": "2026-11-26T11:59:53Z",
  "usage": "Plain HTTPS GET, JSON, no key. Cite the source of each dataset. Times are Paris delivery days unless stated.",
  "datasets": [
   {
@@ -97,7 +97,7 @@
    "content": "Every day since 2015: average output by source, consumption min / max, CO₂, baseload and wind / solar / nuclear capture prices.",
    "refresh": "daily",
    "source": "RTE éCO2mix × ENTSO-E",
-   "sizeKB": 1313
+   "sizeKB": 1314
   },
   {
    "url": "https://tomsremy.github.io/PowerKlock/data/history/fr_capture.json",
