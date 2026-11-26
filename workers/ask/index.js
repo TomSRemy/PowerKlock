@@ -252,7 +252,8 @@ async function share(req, env) {
   const short = !url && (all.match(/(?:https?:\/\/)?lnkd\.in\/[A-Za-z0-9_-]+/i) || [])[0];
   if (short) url = await unshorten(short.replace(/^(?!https?:)/, 'https://'));
   if (url && !/^https:/i.test(url)) url = 'https://' + url.replace(/^http:\/\//i, '');
-  if (!url) return text('Pas de lien LinkedIn dans ce partage.', 400);
+  // what arrived, in the message, so a failed share says what the phone sent (its first 90 characters, no key)
+  if (!url) return text(`Pas de lien LinkedIn dans ce partage (reçu : « ${all.replace(/\s+/g, ' ').trim().slice(0, 90) || 'rien'} »).`, 400);
   const r = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/share_post`, {
     method: 'POST', headers: { apikey: env.SUPABASE_KEY, Authorization: `Bearer ${env.SUPABASE_KEY}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({ p_key: key, p_url: url, p_author: linkedinAuthor(url) || null, p_note: String(body.note || '').slice(0, 200) || null }) });
