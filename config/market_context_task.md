@@ -83,7 +83,7 @@ first): add yesterday's, drop the oldest.
   "text": ["<1 or 2 paragraphs>"], "chart": "<a catalogue id or null>"}, {"key": "forwards_gas", "kicker": "Terme et gaz", ...},
   {"key": "co2_oil", "kicker": "CO₂ et pétrole", ...}], "desks": {"title": "...", "theses": [{"desk": "Opéra Énergie",
   "date": "YYYY-MM-DD", "lean": "up|down|flat", "text": "<its thesis in one sentence, in our words>"}], "reading":
-  "<our reading of the desks against the week>"}, "you": {"buyers": "...", "producers": "..."}, "watch": [{"label":
+  "<our reading of the desks against the week>"}, "watch": [{"label":
   "<a day or a subject>", "text": "..."}], "facts": [{"label": "...", "text": "..."}]}` (3 facts, 2 to 4 watch items).
   - Charts: read `data/brunch_charts.json` (the catalogue: id and what each shows) and `data/brunch_charts_used.json`
     (the ids of the last editions). Give 2 or 3 sections a chart that shows what their text talks about: a text about
@@ -92,9 +92,14 @@ first): add yesterday's, drop the oldest.
     show the breadth of the site: not last week's ids unless they are the week's subject. A chart id only from the catalogue.
   - Desks: read `data/desk_views.json` (each desk's latest note: date, link, section headlines, the lean of its words).
     Name the desks (ENGIE, Opéra Énergie, TotalEnergies, ElCom, Axpo); give each thesis in one sentence of our own words,
-    never the note's sentences; `lean` is the desk's expected direction for power or gas. Never grade a desk (no « vu
-    juste », « s'est trompé »): say in `reading` which reading the week supports and what remains open, as our analysis.
+    never the note's sentences; `lean` is the desk's expected direction for power or gas. In `reading`, say by name which
+    desks' reading the week bore out and which argument stays open (the owner, 27 Nov. 2026: « la baisse a donné raison à
+    TotalEnergies et ENGIE ; le rebond de vendredi rappelle l'argument d'Opéra et d'Axpo »): factual and neutral, never
+    « raté », « s'est trompé » or a score.
   - Figures: every figure from the site's files (as for the daily); the week is Monday to Sunday before the edition.
+  - No advice to the reader (the owner, 27 Nov. 2026: « intrusif »): never « vous devriez », « étalez vos achats », no
+    buyers' or producers' box. When the week has a practical consequence, say it once in `lead` or a section as a
+    reading of the market (« le niveau du Cal-27 dépend désormais surtout de la météo »), never as a recommendation.
 - Geopolitics: an event with a large effect on prices (gas or oil supply, a strait, a pipeline, sanctions, a conflict
   that moves TTF or Brent) is always in the daily the day it appears or changes, first if it is the day's main move; a
   geopolitical topic without an effect on prices is left out.

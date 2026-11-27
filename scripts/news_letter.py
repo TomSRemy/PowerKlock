@@ -1232,8 +1232,7 @@ def build_brunch(today, wb):
             theses.append({"desk": clip(x["desk"], 40), "date": x.get("date") or v.get("date"), "link": v.get("link"),
                            "lean": x.get("lean") if x.get("lean") in ("up", "down", "flat") else None, "text": txt(x["text"], 300)})
     out["desks"] = {"title": txt(dk.get("title"), 200), "theses": theses[:6], "reading": txt(dk.get("reading"), 800)} if theses else None
-    you = b.get("you") if isinstance(b.get("you"), dict) else {}
-    out["you"] = {"buyers": txt(you.get("buyers"), 500), "producers": txt(you.get("producers"), 500)} if you.get("buyers") or you.get("producers") else None
+    out["you"] = None      # no advice box (the owner, 27 Nov. 2026: « intrusif »)
     out["watch"] = [{"label": clip(x.get("label") or "", 60), "text": txt(x.get("text"), 300)} for x in (b.get("watch") or [])[:5] if isinstance(x, dict) and x.get("text")]
     out["facts"] = [{"label": clip(x.get("label") or "", 60), "text": txt(x.get("text"), 300)} for x in (b.get("facts") or [])[:3] if isinstance(x, dict) and x.get("text")]
     out["figures"] = week_figures(today)

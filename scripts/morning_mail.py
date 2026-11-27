@@ -571,7 +571,7 @@ def brunch_v2(today, E, img, imgs):
                      + f'<br>{esc(x["text"])}</p></td></tr></table>' for x in dk['theses'])
         body.append(row(kick('Ce que disent les desks') + h3(dk.get('title')) + th
                         + (f'<p style="{f};margin:6px 0 0;font-size:15px;line-height:1.6;color:#2A2A2A"><b>Notre lecture :</b> {esc(dk["reading"])}</p>' if dk.get('reading') else '')
-                        + f'<p style="{f};font-size:11px;color:#8A8A8A;margin:8px 0 0">Thèses résumées avec nos mots ; le texte des notes n’est pas reproduit. Le trait indique le sens attendu (rouge : hausse, vert : baisse).</p>'))
+                        + f'<p style="{f};font-size:11px;color:#8A8A8A;margin:8px 0 0">D’après les analyses publiques des desks, résumées avec nos mots ; le texte des notes n’est pas reproduit. Le trait indique le sens attendu (rouge : hausse, vert : baisse).</p>'))
     you = B.get('you')
     if you:
         cell = lambda t, x: f'<td width="50%" style="vertical-align:top;padding:4px"><div style="background:#F6F8F7;border-radius:8px;padding:12px 14px;{f};font-size:14.5px;line-height:1.55;color:#383838"><b style="display:block;color:#121212;margin-bottom:4px">{t}</b>{esc(x)}</div></td>'  # noqa: E731
