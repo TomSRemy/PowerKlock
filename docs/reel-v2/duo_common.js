@@ -23,11 +23,17 @@ const POL = D.q.map((v, i) => pol(i, v));
 const rnd = (i, s) => { const v = Math.sin(i * 127.1 + s * 311.7) * 43758.5453; return v - Math.floor(v); };
 const io3 = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
 function fly(i, A, Z, tau, P, s) {
-  // the home page's cloud (js/landing.js, cloud): the dots leave in order with a 22 % stagger, cubic in-out, each on a
-  // gentle arc across its path (28 % of the distance at most, nil at both ends), the side and depth of the arc its own
-  const k = DOWN || s !== 1 ? i : 95 - i, f = seg(tau, 0, P), d = (k / 95) * .22, e = io3(Math.min(1, Math.max(0, (f - d) / (1 - .22))));
-  const dx = Z[0] - A[0], dy = Z[1] - A[1], arc = Math.sin(e * Math.PI) * (rnd(i, 0) - .5) * .28;
-  return [A[0] + dx * e - dy * arc, A[1] + dy * e + dx * arc, e];
+  // the home page's cloud (js/landing.js, cloud), loosened: the dots still leave roughly in order (22 % stagger), but each
+  // with a little delay and a speed of its own, an arc of its own that bends once or twice, a soft drift while in the air,
+  // and a light overshoot when it lands, so the cloud breathes instead of marching. At rest a dot is at its exact price.
+  const k = DOWN || s !== 1 ? i : 95 - i, f = seg(tau, 0, P);
+  const d = (k / 95) * .2 + rnd(i, s + 7) * .08, len = .62 + .1 * rnd(i, s + 8), t = Math.min(1, Math.max(0, (f - d) / len));
+  const c1 = .9 + .5 * rnd(i, s + 9), c3 = c1 + 1;
+  const u = (t - .5) * 2, ee = t < .5 ? io3(t) : .5 + .5 * (1 + c3 * Math.pow(u - 1, 3) + c1 * Math.pow(u - 1, 2));   // cubic in, then a soft ease-out-back
+  const dx = Z[0] - A[0], dy = Z[1] - A[1], free = Math.sin(Math.min(1, t) * Math.PI);
+  const arc = free * (rnd(i, 0) - .5) * .34 + Math.sin(t * 2 * Math.PI) * (rnd(i, s + 3) - .5) * .1;
+  const w = 18 + 14 * rnd(i, s + 4), jx = free * Math.sin(tau / (190 + 90 * rnd(i, s + 5)) + i) * w, jy = free * Math.cos(tau / (230 + 110 * rnd(i, s + 6)) + 2 * i) * w;
+  return [A[0] + dx * ee - dy * arc + jx, A[1] + dy * ee + dx * arc + jy, Math.min(1, ee)];
 }
 // the passage from reel 1 to reel 2 is ONE flight of 2.5 s, from the curve to the clock of the next frame: reel 1 shows it leaving, reel 2 arriving
 const PASS = 2500, passage = (i, tau) => fly(i, HOME[i], [POL[i][0] + DIRV[0], POL[i][1] + DIRV[1]], tau, PASS, 1);
