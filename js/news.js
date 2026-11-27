@@ -314,11 +314,14 @@ function _askDraw() {
     const src = (x.sources || []).filter(s => s.used || !(x.sources || []).some(t => t.used));
     const body = x.wait ? `<div class="ask-a ask-wait"><span class="spinner"></span> ${_newsT('Je cherche dans le site…', 'Searching the site…')}</div>`
       : x.err ? `<div class="ask-no">${_newsEsc(x.err)}</div>`
-      : x.none || !x.answer ? `<div class="ask-no">${_newsT('Rien sur ce sujet dans les contenus du site des 45 derniers jours. Essayez d’autres mots, ou le fil En continu.', 'Nothing on this in the site’s content of the last 45 days. Try other words, or the Live feed.')}</div>`
+      : x.none || !x.answer ? ((x.also || []).length ? '' : `<div class="ask-no">${_newsT('Rien sur ce sujet dans les contenus du site des 45 derniers jours. Essayez d’autres mots, ou le fil En continu.', 'Nothing on this in the site’s content of the last 45 days. Try other words, or the Live feed.')}</div>`)
       : `<div class="ask-a">${_newsEsc(x.answer).replace(/\[(\d+)\]/g, '<sup>$1</sup>')}</div>
         <div class="ask-src">${src.map(s => `<a href="${_newsEsc(s.link)}" target="_blank" rel="noopener noreferrer"><b>${s.n}</b><span>${_newsEsc(s.title)}<small>${_newsEsc(s.source)}${s.date ? ' · ' + _newsEsc(s.date) : ''} · ${_newsEsc(s.kind)}</small></span></a>`).join('')}</div>
         <div class="ask-m">${_newsT('Réponse écrite à partir des sources ci-dessus seulement', 'Answer written from the sources above only')} · ${_newsT('modèle', 'model')} ${_newsEsc(x.model || '')} · <a href="${_newsEsc(_askClaude(x))}" target="_blank" rel="noopener noreferrer">${_newsT('Approfondir dans Claude', 'Go further in Claude')} ↗</a></div>`;
-    return `<div class="ask-qa"><div class="ask-q">${_newsEsc(x.q)}</div>${body}</div>`;
+    // articles of an outlet that refuses AI use (AleaSoft): found by the search, shown as links, never read by the model
+    const also = !x.wait && !x.err && (x.also || []).length ? `<div class="ask-also"><div class="ask-m">${_newsT('Aussi dans le fil (non lus par l’IA, à la demande de l’éditeur)', 'Also in the feed (not read by the AI, at the publisher’s request)')}</div>
+        <div class="ask-src">${x.also.map(s => `<a href="${_newsEsc(s.link)}" target="_blank" rel="noopener noreferrer"><b>↗</b><span>${_newsEsc(s.title)}<small>${_newsEsc(s.source)}${s.date ? ' · ' + _newsEsc(s.date) : ''}</small></span></a>`).join('')}</div></div>` : '';
+    return `<div class="ask-qa"><div class="ask-q">${_newsEsc(x.q)}</div>${body}${also}</div>`;
   }).join('');
 }
 async function _askGo(q) {
