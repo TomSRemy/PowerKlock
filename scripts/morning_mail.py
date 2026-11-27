@@ -311,8 +311,9 @@ def journal(today, E, ed, wk, mine):
         # against what (the owner, 26 Nov. 2026: « augmentation : dire vs quoi »): the day before for the day's prices, the
         # previous session for the forwards and gas, the previous quote for the guarantees of origin, the week on Monday
         lab0 = r['label'][0]
+        # short enough to stay on one line in a phone's tile (the owner, 27 Nov. 2026)
         vs = ('sur 7 j' if wk else 'vs veille' if r.get('hours') or re.search(r"aujourd|Spot|Pointe", lab0) else
-              'vs cotation préc.' if re.search(r"Garanties|GO ", lab0) else 'vs séance préc.')
+              'vs cotation' if re.search(r"Garanties|GO ", lab0) else 'vs séance')
         # the unit, the change and « vs … » each on a line of its own in every tile (the owner, 27 Nov. 2026: on a phone
         # the change sat beside the unit in some tiles and under it in others, and « vs cotation préc. », kept on one
         # line, pushed the last tile out of the band)
@@ -327,7 +328,7 @@ def journal(today, E, ed, wk, mine):
                      f'<div style="{mono};font-size:18px;line-height:24px;font-weight:700;color:#FFFFFF;margin:2px 0"><a href="{href}" style="color:#FFFFFF;text-decoration:none">{val}</a></div>'
                      f'<div style="{f};font-size:11px;line-height:15px;color:#7A93AB">{sub or "&nbsp;"}</div>'
                      + (f'<div style="{mono};font-size:11.5px;line-height:16px;color:{col};white-space:nowrap">{ch}</div>'
-                        f'<div style="{f};font-size:10.5px;line-height:14px;color:#7A93AB">{vs}</div>' if ch else '')
+                        f'<div style="{f};font-size:10.5px;line-height:14px;color:#7A93AB;white-space:nowrap">{vs}</div>' if ch else '')
                      + '</td></tr></table></td>')
     tiles = ''.join('<tr>' + ''.join(cells[i:i + 3]) + '<td></td>' * (3 - len(cells[i:i + 3])) + '</tr>' for i in range(0, len(cells), 3))
     srcs = ', '.join(sorted({r.get('src') for r in E.get('markets') or [] if r.get('src')}))
@@ -657,14 +658,35 @@ def mine_for(kw, exclude, monday):
 LIGHT_ONLY = re.compile(r'background:(#[0-9A-Fa-f]{6})(?!;background-image)')
 
 
+RESP_FS = re.compile(r'<(\w+)((?:(?!class=)[^>])*?)\sstyle="([^"]*?font-size:(\d+(?:\.\d+)?)px[^"]*)"')
+
+
+def responsive(html):
+    """the text follows the screen (the owner, 27 Nov. 2026): every element with a font size gets a class fsN, and on a
+    phone (≤ 480 px) the large sizes shrink most (titles), the body text a little, the small print not at all. Apple
+    Mail, iOS Mail and the Gmail apps read a <style> in the head; elsewhere the sizes stay as written"""
+    sizes = set()
+    def tag(m):
+        sizes.add(m[4])
+        return f'<{m[1]}{m[2]} class="fs{m[4].replace(".", "_")}" style="{m[3]}"'
+    html = RESP_FS.sub(tag, html)
+    def small(v):
+        v = float(v)
+        return round(v * (0.82 if v >= 24 else 0.9 if v >= 17 else 0.95 if v >= 14 else 1), 1)
+    rules = ''.join(f'.fs{v.replace(".", "_")}{{font-size:{small(v)}px!important;line-height:1.35!important}}' if float(v) >= 24 else
+                    f'.fs{v.replace(".", "_")}{{font-size:{small(v)}px!important}}' for v in sorted(sizes, key=float) if small(v) != float(v))
+    return html, f'<style>@media screen and (max-width:480px){{{rules}}}</style>'
+
+
 def light_only(html):
     """the mail as a whole document that asks to stay in its own colours (the owner, 25 Nov. 2026: a reader in dark mode
     saw the colours inverted): Apple Mail, iOS Mail and Outlook read the color-scheme meta; the Gmail apps do not, but
     they leave a background-image alone, so every coloured background is given again as a plain gradient"""
     html = LIGHT_ONLY.sub(lambda m: f'background:{m[1]};background-image:linear-gradient({m[1]},{m[1]})', html)
+    html, css = responsive(html)
     return ('<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
             '<meta name="color-scheme" content="light only"><meta name="supported-color-schemes" content="light only">'
-            '<style>:root{color-scheme:light only;supported-color-schemes:light only}</style></head>'
+            f'<style>:root{{color-scheme:light only;supported-color-schemes:light only}}</style>{css}</head>'
             f'<body style="margin:0;padding:0;background:#F1F1EF">{html}</body></html>')
 
 
@@ -711,7 +733,8 @@ def web_copy(html):
     for rel in re.findall(r'<!--img:([^>]+)-->', html):
         web = os.path.normpath(os.path.join('data', rel)).replace(os.sep, '/')
         html = html.replace(f'src="cid:{esc(os.path.basename(rel))}"', f'src="{web}"')
-    return re.sub(r'<!--img:[^>]+-->', '', html)
+    html, css = responsive(re.sub(r'<!--img:[^>]+-->', '', html))
+    return '<meta name="viewport" content="width=device-width,initial-scale=1">' + css + html
 
 
 def html_only(today, weekly):
