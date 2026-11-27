@@ -1,6 +1,6 @@
 # Newsletter brief: written by Claude every morning
 
-A scheduled Claude task (claude.ai, the owner's account) writes `data/newsletter_brief.json` every day at 06:17 Paris,
+A scheduled Claude task (claude.ai, the owner's account) writes `data/newsletter_brief.json` every day at 05:47 Paris,
 before the newsletter (07:00). The owner asked for it on 25 Nov. 2026: the free models of the site write vague French and
 wrong causes. It is « Le point du matin » of the newsletter: `daily` for 7 O'Klock, `weekly` for PowerBrunch on Monday
 (scripts/news_letter.py › claude_brief). The Expert view (data/market_digest.json) is not touched: the owner likes it as it is.
@@ -34,7 +34,7 @@ subjects found only on the web: the owner adds the searches the news job lacks.
 ## The Expert view feeds the brief (the owner, 25 Nov. 2026)
 Today › Expert is the first source of the brief, not only a check: start from what it shows the same morning (its
 computed sentences, its market context, its week-ahead calls), keep its readings, and add what the newsletter brings:
-why it moves, what changed since yesterday, what it means for a buyer or a producer. The other files below complete it.
+why it moves, what changed since yesterday, how the market reads it. The other files below complete it.
 
 ## Never against the Expert view
 The newsletter and Today › Expert are read by the same people: the brief never says the opposite of what the Expert
@@ -55,8 +55,10 @@ rather than contradict it, and say why in your final message so the owner can fi
 `{"topic", "topic_en", "text", "text_en"}`; `history` keeps the `daily` of the last 10 days (`{"asof", "daily"}`, newest
 first): add yesterday's, drop the oldest.
 
-- `daily`: short and analytical. What changed since yesterday, why, and what it means for a buyer or a producer
-  (hedging, PPA). The tiles and charts already give the figures: a number only to support an explanation. 2 to 4 topics,
+- `daily`: a market analyst's reading (the owner, 27 Nov. 2026): what moved, which driver moved it (weather, wind,
+  nuclear, gas, carbon, a neighbour, a regulation), whether the curve confirms it (spot against month-ahead and Cal, the
+  shape of the curve) and what comes next. One line of reasoning from the first sentence to the last; no advice to a
+  buyer or a producer (« pour un acheteur… », « se couvrir coûte… »): the reader draws it. The tiles and charts already give the figures: a number only to support an explanation. 2 to 4 topics,
   1 to 2 sentences each, about 90 words in all (French). The newsletter shows the daily as **one flowing text,
   without the topic names** (the owner, 25 Nov. 2026): write each topic's text so that it follows from the one before,
   as a single paragraph read from start to end; `topic` stays in the file for the order only. This is a guide, not a cap: good French comes first. A
@@ -80,8 +82,10 @@ Not the same text every day (the owner, 25 Nov. 2026):
   reversal, a date that moved): then say what changed (« le vent revient plus tôt que prévu », « EDF repousse… »).
 - No fixed list of topics: pick the 2 or 3 things that matter most today. The topics of the example are not a template;
   a quiet day can be 2 topics, a day with a CRE decision or a reversal starts with it.
-- Vary the angle: one day the buyer's hedging, another the producer's capture price, the negative hours, a neighbour, the
-  month ahead, a regulation's effect on PPAs. Lead with the surprise of the day, not with the spot by habit.
+- Vary the angle: one day the curve, another the producers' capture price, the negative hours, a neighbour, the month
+  ahead, a fuel, a regulation's effect on prices. Lead with the surprise of the day, not with the spot by habit.
+- Every sentence must follow from the one before: no topic that drops in without a link (the owner, 27 Nov. 2026:
+  « tombe comme un cheveu sur la soupe »). A sentence the reasoning does not need is cut.
 - Do not reuse a sentence of the example or of `history` word for word.
 - A day with little change says so in one line and gives the one thing to watch.
 
@@ -135,6 +139,11 @@ watch so it is caught from then on, every day, not only this morning.
    watch's improvement log; when the same gap comes back after a fix, say it in the final message.
 If the news run would end after 06:55 Paris, publish the brief without that article and keep the fix: tomorrow's
 watch catches it.
+
+## Tools for the checks
+The session's container may be new: when `scripts/check_before_push.sh` stops on a missing module, install them with
+`pip install -q "playwright==1.63.0" scipy "matplotlib==3.9.2"` (Playwright 1.63 matches the browser already in
+`/opt/pw-browsers`) and run it again. Never push a config file with the checks failing.
 
 ## How to publish
 Write `data/newsletter_brief.json` on `main` (one commit, message `data: newsletter brief <date> (Claude)`). The only
