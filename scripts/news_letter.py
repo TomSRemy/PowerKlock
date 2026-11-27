@@ -46,6 +46,9 @@ FARAWAY = re.compile(r"(?i)alg[ée]ri|p[ée]rou|\bperu\b|\bchil[ei]|br[ée]sil|b
                      r"arabie|saudi|texas|californi|congr[èe]s am[ée]ricain|\bcanad|mexi|cor[ée]e|korea|vietnam|indon[ée]si|philippin|[ée]gypt|kenya|nigeria")
 # a headline that teases instead of telling (« Ce chantier titanesque va… », « Cette future raffinerie… »)
 TEASER = re.compile(r"(?i)^(ce|cette|ces)\s+\w+(\s+\w+)?\s+(va|vont|pourrait|veut|sera)\b|^(ce|cette)\s+(future?|nouvel(le)?)\b|\bvoici\b|ce que l.on sait|vous ne devinerez")
+# a job advert (« Ingénieur Études … F/H ORANO », « Chef de projet nucléaire H/F … CDI », 26 Nov. 2026 edition): never a story,
+# whatever its score, in the profiles' stories and in « En bref »
+JOB_AD = re.compile(r"(?i)\b[HF]\s?/\s?[HF]\b|\((?:h/f|f/h|m/f|m/w/d|f/m/d)\)|\bCDI\b|\bCDD\b|offre d.emploi|\bnous recrutons\b|\bwe.re hiring\b|\bstage de fin d.[ée]tudes\b")
 MIN_SCORE = 3.0     # a story below this is off the reader's subjects (e.g. an offshore-wind contract for a lawyer)
 # « À retenir » must be a fact from the article: a generic line (« Impact sur les prix », « Intérêt pour les PPA ») is dropped
 GENERIC = re.compile(r"(?i)^\s*(l.|un |une |des |les |le |la )?(impacts?|int[ée]r[êe]ts?|enjeux?|opportunit[ée]s?|cons[ée]quences?|effets?|nouvel(le)?s?|"
@@ -118,7 +121,8 @@ def score(i, prof, now):
 
 
 def pick(items, prof, now, hours, n=3):
-    cands = [i for i in items if (age_h(i, now) or 1e9) <= hours and not {"official", "research"} & set(i.get("tags") or []) and energy(i)]   # texts and papers have their own sections
+    cands = [i for i in items if (age_h(i, now) or 1e9) <= hours and not {"official", "research"} & set(i.get("tags") or []) and energy(i)   # texts and papers have their own sections
+             and not JOB_AD.search(i.get("title", ""))]
     cands.sort(key=lambda i: -score(i, prof, now))
     out, seen_src = [], set()
     for i in cands:
@@ -1393,7 +1397,8 @@ def main():
         digest["items"] = [x for x in digest["items"] if fresh(x)]   # an essential already given yesterday is not given again
     # the main articles: the highest impact of the last 24 hours (72 on Monday), one per outlet, one per event
     top, srcs = [], set()
-    for i in sorted([i for i in items if (age_h(i, now) or 1e9) <= (7 * 24 if weekly else 72 if monday else 24) and "official" not in (i.get("tags") or []) and energy(i)],
+    for i in sorted([i for i in items if (age_h(i, now) or 1e9) <= (7 * 24 if weekly else 72 if monday else 24) and "official" not in (i.get("tags") or []) and energy(i)
+                     and not JOB_AD.search(i.get("title", ""))],
                     key=lambda i: -((i.get("impact") or 0) + focus(i))):
         if i["source"] in srcs or any(similar(i["title"], o["title"]) for o in top):
             continue
