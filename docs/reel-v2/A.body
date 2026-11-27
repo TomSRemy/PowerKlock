@@ -1,0 +1,62 @@
+<style>
+#num{left:65px;top:520px;transform-origin:0 0;white-space:nowrap;color:var(--rise);font:800 340px/1 var(--mono);letter-spacing:-.04em}
+#num small{font:700 64px/1 var(--mono);letter-spacing:0;color:var(--text2);margin-left:18px}
+#sub{left:65px;top:910px;width:885px}
+#sub b{display:block;font:800 92px/1.05 var(--sans);letter-spacing:-.02em}
+#sub span{display:block;margin-top:26px;font:600 46px/1.2 var(--sans);color:var(--text2)}
+#tag{left:65px;top:496px;width:885px;font:600 38px/1.2 var(--sans);color:var(--text2)}
+#chart{left:0;top:580px}
+#end{left:65px;top:1220px;width:885px;display:flex;align-items:center;gap:34px}
+#end b{font:800 150px/1 var(--mono);color:var(--mark);letter-spacing:-.04em}
+#end span{font:600 40px/1.2 var(--sans);color:var(--text)}
+#end span em{font-style:normal;color:var(--text3);display:block;font:500 30px/1.3 var(--mono);margin-top:10px}
+</style>
+<div class="kick" id="kick"></div>
+<div id="num"></div>
+<div id="sub"></div>
+<div id="tag"></div>
+<svg id="chart" width="1080" height="620" viewBox="0 0 1080 620"></svg>
+<div id="end"></div>
+<script>
+__COMMON__
+const X0 = 65, X1 = 930, Y0 = 40, Y1 = 520, all = D.q.concat(D.y.q || []), lo = Math.min(...all) * .92, hi = Math.max(...all) * 1.04;
+const px = i => X0 + (X1 - X0) * i / 95, py = v => Y1 - (Y1 - Y0) * (v - lo) / (hi - lo);
+const P = D.q.map((v, i) => [px(i), py(v)]), PY = (D.y.q || []).map((v, i) => [px(i), py(v)]);
+$('kick').textContent = T('France · prix spot · ', 'France · spot price · ') + dLong(D.d);
+$('num').innerHTML = fmt(D.max, 0) + '<small>€/MWh</small>';
+const since = D.sinceMax[1] ? T('plus haut depuis le ' + dShort(D.sinceMax[1]), 'highest since ' + dShort(D.sinceMax[1])) : T('record de la période', 'a record');
+$('sub').innerHTML = '<b>' + T('ce matin à ' + hm(iMax), 'this morning at ' + hm(iMax)) + '</b><span>' + T('Le quart d’heure le ', 'The quarter-hour: ') + since + '</span>';
+$('tag').textContent = T('à ' + hm(iMax) + ' · ', 'at ' + hm(iMax) + ' · ') + since;
+const ratio = D.max / D.min;
+$('end').innerHTML = '<b>×' + fmt(ratio, 1) + '</b><span>' + T('entre le creux et la pointe du même jour', 'between the low and the peak of the same day') + '<em>' + fmt(D.min, 0) + ' € ' + T('à ', 'at ') + hm(iMin) + ' → ' + fmt(D.max, 0) + ' € ' + T('à ', 'at ') + hm(iMax) + '</em></span>';
+const ax = [0, 24, 48, 72, 95].map((i, k) => '<text x="' + px(i) + '" y="' + (Y1 + 50) + '" font-size="28" text-anchor="' + (k === 0 ? 'start' : k === 4 ? 'end' : 'middle') + '">' + (k === 4 ? (EN ? '24:00' : '24' + NB + 'h') : hm(i)) + '</text>').join('');
+$('chart').innerHTML = '<line x1="' + X0 + '" x2="' + X1 + '" y1="' + Y1 + '" y2="' + Y1 + '" stroke="var(--line)" stroke-width="2"/>' + ax +
+  '<g id="gy"><polyline points="' + PY.map(p => p.join(',')).join(' ') + '" fill="none" stroke="var(--text3)" stroke-width="3" stroke-dasharray="4 9" stroke-linejoin="round"/>' +
+  (PY.length ? '<text x="' + (X0 + 6) + '" y="' + (PY[0][1] + 44) + '" font-size="28">' + T('hier', 'yesterday') + '</text>' : '') + '</g>' +
+  '<g id="gavg"><line x1="' + X0 + '" x2="' + X1 + '" y1="' + py(D.avg) + '" y2="' + py(D.avg) + '" stroke="var(--text2)" stroke-width="2" stroke-dasharray="14 10"/>' +
+  '<text x="' + X0 + '" y="' + (py(D.avg) - 14) + '" font-size="28" style="fill:var(--text2)">' + T('moy. ', 'avg ') + fmt(D.avg, 0) + ' €</text></g>' +
+  '<polyline id="ln" fill="none" stroke="var(--text)" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/>' +
+  '<circle id="tip" r="11" fill="var(--text)"/>' +
+  '<g id="pk"><circle id="pkr" cx="' + P[iMax][0] + '" cy="' + P[iMax][1] + '" r="26" fill="none" stroke="var(--rise)" stroke-width="4"/><circle cx="' + P[iMax][0] + '" cy="' + P[iMax][1] + '" r="14" fill="var(--rise)"/>' +
+  '<text x="' + (P[iMax][0] + 34) + '" y="' + (P[iMax][1] + 6) + '" font-size="46" font-weight="800" style="fill:var(--rise)">' + fmt(D.max, 0) + ' €</text></g>' +
+  '<g id="lw"><circle cx="' + P[iMin][0] + '" cy="' + P[iMin][1] + '" r="14" fill="var(--fall)"/>' +
+  '<text x="' + (P[iMin][0] - 26) + '" y="' + (P[iMin][1] + 16) + '" font-size="40" font-weight="800" text-anchor="end" style="fill:var(--fall)">' + fmt(D.min, 0) + ' €</text></g>';
+// 15 s: hook 0-2.8, proof 2.8-10 (the day draws itself), punchline 10-13.6, back to the hook 13.6-15
+loop(15000, t => {
+  const big = t < 7500 ? 1 - io(seg(t, 2800, 3600)) : io(seg(t, 13800, 14700));     // 1 = the number fills the frame
+  const s = .40 + .60 * big, beat = 1 + .012 * Math.sin(t / 1500 * Math.PI * 2);
+  $('num').style.transform = 'translateY(' + (-190 * (1 - big)) + 'px) scale(' + s * (big > .99 ? beat : 1) + ')';
+  $('sub').style.opacity = t < 7500 ? 1 - seg(t, 2700, 3100) : seg(t, 14300, 14800);
+  const body = t < 7500 ? seg(t, 3300, 3900) : 1 - seg(t, 13500, 14000);
+  $('tag').style.opacity = body; $('chart').style.opacity = body;
+  const f = io(seg(t, 3900, 9000)), pt = part(P, f);
+  $('ln').setAttribute('points', pt.pts); $('tip').setAttribute('cx', pt.tip[0]); $('tip').setAttribute('cy', pt.tip[1]);
+  $('tip').style.opacity = f > 0 && f < 1 ? 1 : 0;
+  $('gy').style.opacity = seg(t, 3500, 4100) * .9; $('gavg').style.opacity = seg(t, 9000, 9500);
+  const reached = f * 95 >= iMax; $('pk').style.opacity = reached ? 1 : 0;
+  $('pkr').setAttribute('r', 22 + 22 * ((t % 1500) / 1500)); $('pkr').style.opacity = 1 - (t % 1500) / 1500;
+  $('lw').style.opacity = f * 95 >= iMin - .01 && f >= 1 ? 1 : 0;
+  const e = t < 12000 ? eo(seg(t, 10000, 10600)) : 1 - seg(t, 13400, 13900);
+  $('end').style.opacity = e; $('end').style.transform = 'translateY(' + (30 * (1 - Math.min(1, e))) + 'px)';
+});
+</script>

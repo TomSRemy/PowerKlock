@@ -1,0 +1,58 @@
+<style>
+#ttl{left:65px;top:340px;width:885px}
+#ttl b{display:block;font:800 88px/1 var(--sans);letter-spacing:-.02em;white-space:nowrap}
+#ttl b i{font-style:normal;color:var(--rise);font-family:var(--mono);letter-spacing:-.04em}
+#ttl span{display:block;margin-top:20px;font:600 40px/1.2 var(--sans);color:var(--text2)}
+#rad{left:0;top:500px}
+svg text.rl{paint-order:stroke;stroke:var(--bg);stroke-width:10px;fill:var(--text2)}
+#leg{left:65px;top:1386px;width:885px;font:700 28px/1 var(--mono);color:var(--text2);display:flex;gap:38px;white-space:nowrap}
+#leg i{display:inline-block;width:44px;height:0;border-top:5px solid var(--mark);vertical-align:middle;margin-right:12px}
+#leg i.p{border-top:3px solid var(--text3)}
+</style>
+<div class="kick" id="kick"></div><div id="ttl"></div>
+<svg id="rad" width="1080" height="880" viewBox="0 0 1080 880"></svg>
+<div id="leg"></div>
+<script>
+__COMMON__
+const CX = 500, CY = 440, R0 = 100, R1 = 380, hi = Math.max(D.max, ...D.q30.map(q => Math.max(...q)));
+const rr = v => R0 + (R1 - R0) * Math.max(0, v) / hi;
+const pol = (i, v) => { const a = i / 96 * Math.PI * 2; return [CX + rr(v) * Math.sin(a), CY - rr(v) * Math.cos(a)]; };
+const P = D.q.map((v, i) => pol(i, v)), PP = D.q30.map(q => q.map((v, i) => pol(i, v))), N = PP.length, dates = D.d30.slice(-N);
+$('kick').textContent = T('France · 24 h de spot · ', 'France · 24 h of spot · ') + dLong(D.d);
+$('ttl').innerHTML = '<b><i>' + fmt(D.max, 0) + ' €</i> ' + T('à ' + hm(iMax), 'at ' + hm(iMax)) + '</b><span id="sub"></span>';
+$('leg').innerHTML = '<span><i></i>' + T('aujourd’hui', 'today') + '</span><span><i class="p"></i>' + T('les 30 jours d’avant', 'the 30 days before') + '</span>';
+const rings = [100, 200, 300, 400].filter(v => v <= hi * 1.05);
+$('rad').innerHTML = rings.map(v => '<circle cx="' + CX + '" cy="' + CY + '" r="' + rr(v) + '" fill="none" stroke="var(--line)" stroke-width="2"/>' +
+    (v % 200 ? '' : '<text class="rl" x="' + (CX - rr(v) * .7071) + '" y="' + (CY - rr(v) * .7071 + 8) + '" font-size="24" text-anchor="middle">' + v + ' €</text>')).join('') +
+  [0, 6, 12, 18].map(h => { const a = h / 24 * Math.PI * 2, x = CX + (R1 + 40) * Math.sin(a), y = CY - (R1 + 40) * Math.cos(a) + 11;
+    return '<line x1="' + (CX + R0 * Math.sin(a)) + '" y1="' + (CY - R0 * Math.cos(a)) + '" x2="' + (CX + R1 * Math.sin(a)) + '" y2="' + (CY - R1 * Math.cos(a)) + '" stroke="var(--line)" stroke-width="2"/>' +
+      '<text x="' + x + '" y="' + y + '" font-size="30" font-weight="700" text-anchor="middle">' + (h + NB + 'h') + '</text>'; }).join('') +
+  '<g id="past">' + PP.map(() => '<polyline fill="none" stroke="var(--text3)" stroke-width="1.5" stroke-linejoin="round"/>').join('') + '</g>' +
+  '<line id="hand" x1="' + CX + '" y1="' + CY + '" stroke="var(--mark)" stroke-width="2" stroke-dasharray="4 8"/>' +
+  '<polyline id="ln" fill="none" stroke="var(--mark)" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/><circle id="tip" r="10" fill="var(--mark)"/>' +
+  '<g id="pk"><circle id="pkr" cx="' + P[iMax][0] + '" cy="' + P[iMax][1] + '" fill="none" stroke="var(--rise)" stroke-width="4"/><circle cx="' + P[iMax][0] + '" cy="' + P[iMax][1] + '" r="14" fill="var(--rise)"/></g>' +
+  '<text id="c1" x="' + CX + '" y="' + (CY - 34) + '" font-size="28" font-weight="700" text-anchor="middle"></text>' +
+  '<text id="c2" x="' + CX + '" y="' + (CY + 30) + '" font-size="70" font-weight="800" text-anchor="middle" style="fill:var(--text)"></text>' +
+  '<text x="' + CX + '" y="' + (CY + 66) + '" font-size="24" text-anchor="middle">€/MWh</text>';
+const past = [...$('past').children];
+const sinceTxt = D.sinceMax[1] ? T('Le prix le plus haut depuis le ' + dShort(D.sinceMax[1]), 'The highest price since ' + dShort(D.sinceMax[1])) : '';
+// 16 s: the finished clock 0-1.6 (hook and cover), it clears 1.6-2.4, 30 days wind up 2.4-7.4, today 7.4-12.4, the peak 12.4-16
+loop(16000, t => {
+  const clear = t >= 1600 && t < 2400 ? 1 - seg(t, 1600, 2300) : 1;
+  const p = t < 2400 ? N : seg(t, 2400, 7400) * N;                 // past days drawn so far
+  past.forEach((el, k) => { const f = clamp(p - k); el.setAttribute('points', f > 0 ? part(PP[k], f).pts : '');
+    const age = p - k; el.style.opacity = (t < 2400 ? .3 * clear : age < 1.2 ? .95 : Math.max(.3, .95 - (age - 1.2) * .5)); });
+  const f = t < 2400 ? 1 : io(seg(t, 7400, 12400)), pt = part(P, f), live = t >= 7400 && t < 12400;
+  $('ln').setAttribute('points', f > 0 ? pt.pts : ''); $('ln').style.opacity = t < 2400 ? clear : 1;
+  $('tip').setAttribute('cx', pt.tip[0]); $('tip').setAttribute('cy', pt.tip[1]); $('tip').style.opacity = live ? 1 : 0;
+  const a = f * 95 / 96 * Math.PI * 2; $('hand').setAttribute('x2', CX + R1 * Math.sin(a)); $('hand').setAttribute('y2', CY - R1 * Math.cos(a)); $('hand').style.opacity = live ? .8 : 0;
+  const peak = (t < 2400 ? clear : f * 95 >= iMax ? 1 : 0); $('pk').style.opacity = peak;
+  const ph = (t % 1000) / 1000; $('pkr').setAttribute('r', 16 + 30 * ph); $('pkr').style.opacity = 1 - ph;
+  let c1, c2, sub;
+  if (t >= 2400 && t < 7400) { const k = Math.min(N - 1, Math.floor(p)); c1 = dShort(dates[k].d); c2 = fmt(dates[k].avg, 0); sub = T('D’abord les 30 jours précédents…', 'First, the 30 days before…'); }
+  else if (live) { const v = D.q[pt.i] + (D.q[pt.j] - D.q[pt.i]) * pt.u; c1 = hm(pt.i); c2 = fmt(v, 0); sub = T('…puis aujourd’hui, par quart d’heure', '…then today, every 15 minutes'); }
+  else { c1 = T('pointe ', 'peak ') + hm(iMax); c2 = fmt(D.max, 0); sub = sinceTxt; }
+  $('c1').textContent = c1.toUpperCase(); $('c2').textContent = c2; $('c2').style.fill = live || (t >= 2400 && t < 7400) ? 'var(--text)' : 'var(--rise)';
+  if ($('sub').textContent !== sub) $('sub').textContent = sub;
+});
+</script>

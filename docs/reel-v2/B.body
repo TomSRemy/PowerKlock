@@ -1,0 +1,54 @@
+<style>
+#mast{left:65px;top:284px;display:flex;align-items:center;gap:22px;white-space:nowrap}
+#mast b{background:var(--mark);color:var(--ink);font:800 34px/1 var(--mono);letter-spacing:.06em;padding:14px 18px;text-transform:uppercase}
+#mast span{font:700 30px/1 var(--mono);letter-spacing:.1em;color:var(--text3);text-transform:uppercase}
+#lab{left:65px;top:384px;font:600 42px/1 var(--sans);color:var(--text2)}
+#num{left:52px;top:440px;white-space:nowrap;font:800 390px/1 var(--mono);letter-spacing:-.05em;color:var(--text)}
+#num small{font:800 150px/1 var(--mono);letter-spacing:-.03em;color:var(--text2)}
+#unit{left:65px;top:806px;font:700 44px/1 var(--mono);color:var(--text3)}
+#blk{left:65px;top:880px;width:885px;height:150px;display:flex;align-items:center;justify-content:space-between;padding:0 30px;color:var(--ink)}
+#blk b{font:800 100px/1 var(--mono);letter-spacing:-.04em;white-space:nowrap}
+#blk b i{font-style:normal;display:inline-block;margin-right:14px}
+#blk span{font:800 38px/1.15 var(--mono);text-align:right}
+#rows{left:65px;top:1058px;width:885px}
+.row{position:relative;height:58px;margin-bottom:8px}
+.row i{position:absolute;left:0;top:0;height:100%;background:var(--bg3);border-left:6px solid var(--text3);transform-origin:0 0}
+.row.me i{background:#243447;border-left-color:var(--text)}
+.row label,.row b,.row em{position:absolute;top:50%;transform:translateY(-50%);font:700 34px/1 var(--mono);white-space:nowrap}
+.row label{left:24px;color:var(--text2)} .row.me label{color:var(--text)}
+.row b{right:190px;color:var(--text)} .row em{right:8px;font-style:normal}
+#spark{left:0;top:1272px}
+</style>
+<div id="mast"></div><div id="lab"></div><div id="num"></div><div id="unit"></div><div id="blk"></div><div id="rows"></div>
+<svg id="spark" width="1080" height="160" viewBox="0 0 1080 160"></svg>
+<script>
+__COMMON__
+const dv = D.avg - D.y.avg, up = dv >= 0, col = up ? 'var(--rise)' : 'var(--fall)', d30 = D.avg / D.avg30 - 1;
+$('mast').innerHTML = '<b>' + T('Le chiffre du jour', 'Figure of the day') + '</b><span>' + dLong(D.d) + '</span>';
+$('lab').textContent = T('Électricité France · prix spot moyen', 'French power · average spot price');
+const s = fmt(D.avg, 1), cut = s.length - 2;
+$('num').innerHTML = s.slice(0, cut) + '<small>' + s.slice(cut) + '</small>';
+$('unit').textContent = T('€/MWh · livraison aujourd’hui', '€/MWh · delivered today');
+$('blk').style.background = col;
+$('blk').innerHTML = '<b><i id="arr">' + (up ? '▲' : '▼') + '</i>' + sgn(dv, 1) + ' €</b><span>' + T('vs hier', 'vs yesterday') + '<br>' + sgn(dv / D.y.avg * 100, 1) + NB + '%</span>';
+const mx = Math.max(D.avg, D.y.avg, D.avg30), R = [[T('Aujourd’hui', 'Today'), D.avg, null, 'me'], [T('Hier', 'Yesterday'), D.y.avg, D.avg / D.y.avg - 1, ''], [T('Moy. 30 j', '30-d avg'), D.avg30, d30, '']];
+$('rows').innerHTML = R.map(r => '<div class="row ' + r[3] + '"><i style="width:' + (r[1] / mx * 62).toFixed(1) + '%"></i><label>' + r[0] + '</label><b>' + fmt(r[1], 1) + '</b>' +
+  (r[2] == null ? '' : '<em style="color:' + (r[2] >= 0 ? 'var(--rise)' : 'var(--fall)') + '">' + sgn(r[2] * 100, 0) + NB + '%</em>') + '</div>').join('');
+const S = D.d30.map(x => x.avg).concat([D.avg]), lo = Math.min(...S), hi = Math.max(...S), X0 = 65, X1 = 930;
+const P = S.map((v, i) => [X0 + (X1 - X0) * i / (S.length - 1), 146 - 96 * (v - lo) / (hi - lo)]), ya = 146 - 96 * (D.avg30 - lo) / (hi - lo);
+$('spark').innerHTML = '<text x="' + X0 + '" y="22" font-size="26">' + T('30 derniers jours · moyenne en pointillés', 'Last 30 days · dashed: average') + '</text>' +
+  '<line x1="' + X0 + '" x2="' + X1 + '" y1="' + ya + '" y2="' + ya + '" stroke="var(--text3)" stroke-width="2" stroke-dasharray="10 8"/>' +
+  '<polyline id="ln" fill="none" stroke="var(--text)" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/><circle id="dot" r="12" fill="' + col + '"/><circle id="ring" r="12" fill="none" stroke="' + col + '" stroke-width="3"/>';
+const rows = [...document.querySelectorAll('.row')];
+// 12 s, same template every day: the figure and its direction are there from frame 0, the rest builds then clears
+loop(12000, t => {
+  const out = 1 - seg(t, 11000, 11700);
+  $('arr').style.transform = 'translateY(' + (up ? -1 : 1) * 7 * Math.sin(t / 1500 * Math.PI * 2) + 'px)';
+  rows.forEach((r, k) => { const a = eo(seg(t, 700 + k * 450, 1500 + k * 450)); r.style.opacity = Math.min(a * 2, 1) * out; r.firstChild.style.transform = 'scaleX(' + a + ')'; });
+  const f = io(seg(t, 3200, 6800)), pt = part(P, f);
+  $('spark').style.opacity = seg(t, 2800, 3200) * out;
+  $('ln').setAttribute('points', pt.pts);
+  ['dot', 'ring'].forEach(id => { $(id).setAttribute('cx', pt.tip[0]); $(id).setAttribute('cy', pt.tip[1]); });
+  const ph = (t % 1500) / 1500; $('ring').setAttribute('r', 12 + 26 * ph); $('ring').style.opacity = f >= 1 ? 1 - ph : 0;
+});
+</script>

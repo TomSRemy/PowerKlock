@@ -1,0 +1,19 @@
+:root{--bg:#0a0e13;--bg2:#0f1419;--bg3:#151c24;--line:#243447;--text:#ffffff;--text2:#B8C9D9;--text3:#7A93AB;
+  --rise:#ED6965;--fall:#14D3A9;--mark:#FFFD82;--ink:#0a0e13;
+  --mono:"JetBrains Mono",ui-monospace,monospace;--sans:Inter,system-ui,sans-serif}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);overflow:hidden}
+#stage{position:absolute;left:50%;top:50%;width:1080px;height:1920px;margin:-960px 0 0 -540px;background:var(--bg);overflow:hidden;transform:scale(var(--s,1))}
+#stage>*{position:absolute}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.kick{left:65px;top:286px;font:700 30px/1 var(--mono);letter-spacing:.12em;color:var(--text3);text-transform:uppercase;white-space:nowrap}
+.foot{left:65px;top:1440px;width:885px}
+.foot b{display:block;font:800 34px/1 var(--sans);color:var(--text);letter-spacing:-.01em}
+.foot b i{font-style:normal;color:var(--mark)}
+.foot span{display:block;margin-top:10px;font:500 23px/1.2 var(--mono);color:var(--text3)}
+svg{overflow:visible}
+svg text{font-family:var(--mono);fill:var(--text3)}
+/* Instagram safe zones, shown with ?safe or the presentation page's switch: top 14 %, bottom 20 %, right 12 % */
+.safe{inset:0;display:none;pointer-events:none;z-index:9}
+.safe i{position:absolute;background:rgba(237,105,101,.22);outline:2px dashed rgba(237,105,101,.8)}
+#stage.showsafe .safe{display:block}
