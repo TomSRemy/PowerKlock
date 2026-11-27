@@ -99,9 +99,16 @@ Example of a day (25 Nov. 2026), for the level of analysis and the flow only (no
 
 ## The articles (the owner, 25 Nov. 2026)
 Also write `articles` (every day) and, on Monday, `articles_week`: the newsletter's articles, chosen in `data/news.json`.
-- Daily: 10 to 12 articles of the last 36 hours (84 on Monday); weekly: 14 to 18 of the last 7 days. Cover several
-  subjects: every section that has something useful gets 1 to 3 articles. Never an article already sent: leave out the
-  links of `data/newsletter_history.json` (the editions of the last 10 days) and titles about the same event.
+- Daily: 10 to 12 articles published since the last edition sent (`data/newsletter_sent.json` › `daily`, sent at
+  07:00 Paris that day; on Monday since Friday's), up to now; weekly: 14 to 18 of the last 7 days. Look at every article
+  of that window. Cover several subjects: every section that has something useful gets 1 to 3 articles. Leave out only
+  the articles already sent (the owner, 27 Nov. 2026): the links of the editions of `data/newsletter_history.json` up to
+  the last day sent, and another article on a step already told. The edition built in the night for the site (today's
+  key in the history) is not sent: its articles may be chosen. A new step of a story already sent (an amendment filed,
+  a decision) is new.
+- An article found only on the web (see above) and worth the newsletter is not in `data/news.json`, so it cannot be
+  chosen: add the search or feed that brings it to `config/news_sources.json` (a press search in the same form as the
+  others), push it, and wait for the next news run (it starts on a push of that file) before choosing.
 - `section`, one of: `regulation` (CRE, ministries, Brussels, tenders, support schemes), `markets` (prices, gas,
   geopolitics, carbon), `nuclear_grid` (EDF's fleet, RTE, networks, interconnections), `deals` (PPAs, acquisitions,
   contracts), `projects` (new capacity, storage, renewables), `supply` (suppliers, tariffs, consumers, industry).
