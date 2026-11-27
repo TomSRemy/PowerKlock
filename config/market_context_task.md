@@ -1,6 +1,6 @@
 # Newsletter brief: written by Claude every morning
 
-A scheduled Claude task (claude.ai, the owner's account) writes `data/newsletter_brief.json` every day at 06:17 Paris,
+A scheduled Claude task (claude.ai, the owner's account) writes `data/newsletter_brief.json` every day at 05:47 Paris,
 before the newsletter (07:00). The owner asked for it on 25 Nov. 2026: the free models of the site write vague French and
 wrong causes. It is « Le point du matin » of the newsletter: `daily` for 7 O'Klock, `weekly` for PowerBrunch on Monday
 (scripts/news_letter.py › claude_brief). The Expert view (data/market_digest.json) is not touched: the owner likes it as it is.
@@ -34,7 +34,7 @@ subjects found only on the web: the owner adds the searches the news job lacks.
 ## The Expert view feeds the brief (the owner, 25 Nov. 2026)
 Today › Expert is the first source of the brief, not only a check: start from what it shows the same morning (its
 computed sentences, its market context, its week-ahead calls), keep its readings, and add what the newsletter brings:
-why it moves, what changed since yesterday, what it means for a buyer or a producer. The other files below complete it.
+why it moves, what changed since yesterday, how the market reads it. The other files below complete it.
 
 ## Never against the Expert view
 The newsletter and Today › Expert are read by the same people: the brief never says the opposite of what the Expert
@@ -51,12 +51,14 @@ rather than contradict it, and say why in your final message so the owner can fi
 7-day averages, and a three-day rise inside it is not a contradiction once the horizon is written.
 
 ## What to write
-`{"asof": "<today, Paris>", "written": "<ISO time>", "daily": [...], "weekly": [...], "history": [...], "articles": [...], "articles_week": [...]}`, each item
+`{"asof": "<today, Paris>", "written": "<ISO time>", "daily": [...], "weekly": [...], "history": [...], "articles": [...], "articles_week": [...], "links": [...], "links_week": [...]}`, each item
 `{"topic", "topic_en", "text", "text_en"}`; `history` keeps the `daily` of the last 10 days (`{"asof", "daily"}`, newest
 first): add yesterday's, drop the oldest.
 
-- `daily`: short and analytical. What changed since yesterday, why, and what it means for a buyer or a producer
-  (hedging, PPA). The tiles and charts already give the figures: a number only to support an explanation. 2 to 4 topics,
+- `daily`: a market analyst's reading (the owner, 27 Nov. 2026): what moved, which driver moved it (weather, wind,
+  nuclear, gas, carbon, a neighbour, a regulation), whether the curve confirms it (spot against month-ahead and Cal, the
+  shape of the curve) and what comes next. One line of reasoning from the first sentence to the last; no advice to a
+  buyer or a producer (« pour un acheteur… », « se couvrir coûte… »): the reader draws it. The tiles and charts already give the figures: a number only to support an explanation. 2 to 4 topics,
   1 to 2 sentences each, about 90 words in all (French). The newsletter shows the daily as **one flowing text,
   without the topic names** (the owner, 25 Nov. 2026): write each topic's text so that it follows from the one before,
   as a single paragraph read from start to end; `topic` stays in the file for the order only. This is a guide, not a cap: good French comes first. A
@@ -103,22 +105,40 @@ Not the same text every day (the owner, 25 Nov. 2026):
   reversal, a date that moved): then say what changed (« le vent revient plus tôt que prévu », « EDF repousse… »).
 - No fixed list of topics: pick the 2 or 3 things that matter most today. The topics of the example are not a template;
   a quiet day can be 2 topics, a day with a CRE decision or a reversal starts with it.
-- Vary the angle: one day the buyer's hedging, another the producer's capture price, the negative hours, a neighbour, the
-  month ahead, a regulation's effect on PPAs. Lead with the surprise of the day, not with the spot by habit.
+- Vary the angle: one day the curve, another the producers' capture price, the negative hours, a neighbour, the month
+  ahead, a fuel, a regulation's effect on prices. Lead with the surprise of the day, not with the spot by habit.
+- Every sentence must follow from the one before: no topic that drops in without a link (the owner, 27 Nov. 2026:
+  « tombe comme un cheveu sur la soupe »). A sentence the reasoning does not need is cut.
 - Do not reuse a sentence of the example or of `history` word for word.
 - A day with little change says so in one line and gives the one thing to watch.
 
 Style (the owner's rules): simple French sentences, one idea each; no filler words (toutefois, néanmoins, en effet, par
 ailleurs, autrement dit, dans ce contexte); a cause only when the figures or the news give it; never contradict the
-figures; prices in €/MWh without decimals, capacity in GW with one decimal, moves in % without decimals; no source or
-outlet named, nothing copied.
+figures; every price with its full unit, every time (the owner, 27 Nov. 2026): spot, forwards (month, quarter, Cal),
+gas and spreads in €/MWh, carbon in €/t, Brent in $/bbl, never « 115 € » alone; no decimals; capacity in GW with one
+decimal, moves in % without decimals; no source or outlet named, nothing copied.
 
-Example of a day (25 Nov. 2026), for the level of analysis and the flow only (not a template), as the reader sees it:
-> Le spot français monte à 255 €/MWh (+4 %) et dépasse l'Allemagne (246 €). À ce niveau, le prix est bien au-dessus
-> du coût d'une centrale gaz : le marché est tendu aux heures de pointe. En cause, le froid, qui tire la consommation,
-> et un vent faible qui ne reviendra que vers le 10 décembre. Le gaz a pris 9 % en une semaine avec des stocks
-> européens sous l'an dernier. Le Cal 27 ne suit pas : le marché ne voit pas cette tension durer. À surveiller, les
-> 3,8 GW de nucléaire qu'EDF attend encore, principal facteur de baisse à court terme.
+Register (the owner, 27 Nov. 2026): « naturel pro ». Complete, sober sentences, as in a professional market note;
+a technical term is explained in passing when needed. No familiar turns (« n'y est pour rien », « prochain test »,
+« le marché parie »), no journalistic effects, no exclamation.
+
+Example of a day (27 Nov. 2026, validated by the owner), for the reasoning, the register and the flow only (not a
+template), as the reader sees it:
+> Le spot français s'établit à 299 €/MWh pour ce vendredi, en hausse de 3 % sur la veille et pour la cinquième séance
+> consécutive ; il était à 60 €/MWh le 19 novembre. Cette hausse ne vient pas du gaz, qui a reculé de 5 % lors de la
+> dernière séance. Elle tient au système électrique : des températures nettement sous les normales, une production
+> éolienne environ deux fois plus faible qu'en temps normal et un parc nucléaire disponible à 46,1 GW, soit 6,6 GW de
+> moins que la prévision de l'exploitant. Les prix à terme ne suivent pas ce niveau : le contrat décembre cote
+> 208 €/MWh, environ 90 €/MWh sous le spot, et le Cal 27 recule de 2 %, à 115 €/MWh. Le marché considère donc cette tension
+> comme passagère. Les attaques de navires dans le détroit d'Ormuz font monter le pétrole, sans effet sur le gaz
+> européen. Le prochain point d'attention est le retour du froid à partir du 6 décembre, avec un vent qui devrait
+> rester faible jusque vers le 9.
+
+## « À lire » under the brief (the owner, 27 Nov. 2026)
+`links` (and `links_week` on Monday): 0 to 3 links of `data/news.json` (exactly as there) that the text relies on, when
+they help the reader go further (the Hormuz attacks, a CRE decision, an outage); the mail and the site show them under
+the brief as « À lire : outlet · outlet ». None on a day the text rests on the figures alone. They may also be among
+`articles`.
 
 ## The articles (the owner, 25 Nov. 2026)
 Also write `articles` (every day) and, on Monday, `articles_week`: the newsletter's articles, chosen in `data/news.json`.
@@ -132,6 +152,8 @@ Also write `articles` (every day) and, on Monday, `articles_week`: the newslette
 - An article found only on the web (see above) and worth the newsletter is not in `data/news.json`, so it cannot be
   chosen yet: the watch must learn to catch it (see « The watch learns every morning » below), then choose it once the
   news run has brought it.
+- Never an item marked `"noai": true` in `data/news.json` (its outlet refuses AI use): neither in `articles` nor in
+  `links`, and its title is not read for the brief.
 - `section`, one of: `regulation` (CRE, ministries, Brussels, tenders, support schemes), `markets` (prices, gas,
   geopolitics, carbon), `nuclear_grid` (EDF's fleet, RTE, networks, interconnections), `deals` (PPAs, acquisitions,
   contracts), `projects` (new capacity, storage, renewables), `supply` (suppliers, tariffs, consumers, industry).
@@ -158,6 +180,11 @@ watch so it is caught from then on, every day, not only this morning.
    watch's improvement log; when the same gap comes back after a fix, say it in the final message.
 If the news run would end after 06:55 Paris, publish the brief without that article and keep the fix: tomorrow's
 watch catches it.
+
+## Tools for the checks
+The session's container may be new: when `scripts/check_before_push.sh` stops on a missing module, install them with
+`pip install -q "playwright==1.63.0" scipy scikit-learn "matplotlib==3.9.2"` (Playwright 1.63 matches the browser already in
+`/opt/pw-browsers`) and run it again. Never push a config file with the checks failing.
 
 ## How to publish
 Write `data/newsletter_brief.json` on `main` (one commit, message `data: newsletter brief <date> (Claude)`). The only
