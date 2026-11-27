@@ -164,7 +164,7 @@ def main():
     force = "--force" in sys.argv
     now = datetime.now(timezone.utc)
     today = now.astimezone(PARIS).date()
-    items = (load(NEWS, {}) or {}).get("items") or []
+    items = [i for i in (load(NEWS, {}) or {}).get("items") or [] if not i.get("noai")]   # AleaSoft refuses AI use
     out = load(OUT, {}) or {}
     changed = False
     if today.weekday() < 5 and (force or (out.get("daily") or {}).get("date") != today.isoformat()):

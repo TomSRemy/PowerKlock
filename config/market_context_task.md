@@ -15,7 +15,7 @@ wrong causes. It is « Le point du matin » of the newsletter: `daily` for 7 O'K
 - `data/history/fr_market_calchain.json`: `FR.years` (Cal prices by day).
 - `data/history/fr_forward_monthly.json`: month-ahead forwards.
 - `data/weather_outlook.json`: `countries.FR.series` temp / wind / solar, `mean` against `normal`, by day.
-- `data/news.json`: the news of the last days (titles and summaries), for regulation and geopolitics.
+- `data/news.json`: the news of the last days (titles and summaries), for regulation and geopolitics. Leave out every item marked `"noai": true` (an outlet whose robots.txt refuses AI use, such as AleaSoft): never read, cite or choose it.
 - `data/newsletter.json` › `markets`: the tiles of the day.
 
 ## When the site has no news on a subject: search the web (the owner, 27 Nov. 2026)

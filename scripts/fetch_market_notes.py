@@ -7,7 +7,10 @@ from the team mailbox over IMAP, with the same app password as the GO prices (sc
 parsed into sections and upserted.
 Opéra Énergie « Notes d'analyse » (weekly, free on opera-energie.com): the note's page is found in the media sitemap
 (robots.txt allows it), its PDF is read (pdfplumber) and cut into the same sections (Contexte, électricité, gaz,
-carbone, pétrole). Third-party text: it stays in the database, readable by signed-in
+carbone, pétrole).
+TotalEnergies « Point Marché Hebdo », ElCom « Rapport de marché » (weekly PDFs) and Axpo « European Energy Markets
+Monthly » (a monthly article), found by scripts/market_sources.py, are read the same way: their commentary only, cut
+into sections, without the tables and chart labels. Third-party text: it stays in the database, readable by signed-in
 users, never in the public repository.
 
 Env  GO_GMAIL_USER, GO_GMAIL_APP_PASSWORD (IMAP), SUPABASE_DB_URL (database)
@@ -166,6 +169,140 @@ def from_opera(days=21):
     return notes
 
 
+# ── The other web commentaries (scripts/market_sources.py): their prose, cut into sections ──
+def _clean(ln):
+    """a chart's axis values printed at the start or end of a line of text (« 95 Dans l’ensemble… », « …légèrement 350 »)"""
+    while True:
+        n = re.sub(r"^\d{2,4}\s+(?=[A-ZÀ-Ý])|\s+(?:[3-9]\d|\d{3,4})$", "", ln).strip()   # a day of the month (≤ 31) stays
+        if n == ln:
+            return ln
+        ln = n
+
+
+def _prose(ln):
+    words = re.findall(r"[A-Za-zÀ-ÖØ-öø-ÿ’']{2,}", ln)
+    return len(words) >= 5 and sum(c.isdigit() for c in ln) < 0.25 * len(ln)
+
+
+def _sentences(t):
+    return [x.strip()[:600] for x in re.split(r"(?<=[.!?])\s+(?=[A-ZÀ-ÖØ-Ý«])", re.sub(r"\s+", " ", t).strip()) if len(x.strip()) > 25]
+
+
+def prose_sections(text, heads, noise, default="Contexte"):
+    """sections from a commentary's text: a line matching one of heads [(regex, name)] opens a section; prose lines
+    (several words, few figures) fill it; a line matching noise (disclaimer, sources, chart titles) is skipped"""
+    out, cur = [], {"name": default, "buf": []}
+    def close():
+        ss = _sentences(" ".join(cur["buf"]))
+        if ss:
+            out.append({"name": cur["name"], "headline": ss[0][:220], "points": ss[1:7]})
+    for raw in text.split("\n"):
+        ln = _clean(raw.strip())
+        if not ln:
+            continue
+        hit = next((name for rx, name in heads if re.search(rx, ln, re.I)), None)
+        if hit:
+            close()
+            cur = {"name": hit, "buf": []}
+            continue
+        if re.search(noise, ln, re.I) or not _prose(ln):
+            continue
+        cur["buf"].append(ln)
+    close()
+    # a heading met twice (a section split by a page break) is merged
+    merged = {}
+    for x in out:
+        if x["name"] in merged:
+            merged[x["name"]]["points"] = (merged[x["name"]]["points"] + [x["headline"]] + x["points"])[:8]
+        else:
+            merged[x["name"]] = x
+    return list(merged.values())
+
+
+TE_HEADS = [(r"^Actualit[ée] [ée]conomique", "Contexte"), (r"^Actualit[ée] du march[ée] du gaz", "Gaz"),
+            (r"^Actualit[ée] du march[ée] de l.[ée]lectricit[ée]", "Électricité"), (r"^Brent Ice Spot.*:\s*$|^Brent Ice Spot \(\$/b\) :", "Pétrole"),
+            (r"^CO2\s*\(€/t\)\s*:|^EUA Spot CO2", "Carbone"), (r"^Point focus", "Point focus")]
+TE_NOISE = r"Moyenne prix spot|Produit Maturit|@totalenergies|^\d{1,2}-[A-Za-z]{3}-\d{2}|([a-zéû]+\.?-\d{2}\s*){3,}|Informations g[ée]n[ée]rales sur l.[ée]tat|recommandations\.|d[ée]cline toute responsabilit|reproduction totale|^des poursuites|^Source|^Evolution des|^Indicateurs|^Market Access|^Point March[ée] Hebdo"
+ELCOM_HEADS = []
+ELCOM_NOISE = r"^(Base, Peak|Variable Kosten|Verwendete Parameter|Ausgleichsenergiepreis f[üu]r den Fall|Anzahl Stunden|Gestrichelte|Dunkelblau|NTC Werte|Energiegehalt|Zone, in der|Terminmarktdarstellung|F[üu]r jeden Liefermonat|Lieferung durchgehend|Absch[äa]tzung|Brennstoffpreise und|Grenzpreis|Emissionsfaktoren|Prix de l.[ée]nergie de r[ée]glage pour|Nombre d.heures|Ligne en pointill|Bleu fonc|Les valeurs NTC|Contenu [ée]nerg|Zone dans laquelle|Repr[ée]sentation du march|Pour chaque mois|Livraison en continu|Estimation des co[uû]ts)"
+
+
+ELCOM_BAL = re.compile(r"Unausgeglichenheit|Regelzone|Ausgleichsenergie|\bSRE\b|\bTRE\b|Redispatch|d[ée]s[ée]quilibre|zone de r[ée]glage|[ée]nergie de r[ée]glage", re.I)
+ELCOM_FWD = re.compile(r"Terminmarkt|Frontmonat|Frontquartal|Frontjahr|Settlement|march[ée] à terme|mois front|ann[ée]e front", re.I)
+ELCOM_SPOT = re.compile(r"Spotpreis|prix spot", re.I)
+
+
+def elcom_sections(text):
+    """ElCom's report: its commentary (spot, balancing, forwards) among pages of figures and a glossary. The long lines of
+    prose are joined, then each sentence goes to spot, balancing or forwards, following the last one named"""
+    lines = [ln.strip() for ln in text.split("\n")]
+    prose = " ".join(ln for ln in lines if len(ln) >= 70 and _prose(ln) and not re.search(ELCOM_NOISE, ln, re.I))
+    out, state = {}, "Spot"
+    for x in _sentences(prose):
+        state = "Équilibrage" if ELCOM_BAL.search(x) else "Marché à terme" if ELCOM_FWD.search(x) else "Spot" if ELCOM_SPOT.search(x) else state
+        sec = out.setdefault(state, {"name": state, "headline": "", "points": []})
+        if not sec["headline"]:
+            sec["headline"] = x[:220]
+        elif len(sec["points"]) < 8:
+            sec["points"].append(x)
+    return [out[k] for k in ("Spot", "Équilibrage", "Marché à terme") if k in out]
+
+
+def _axpo_name(p):
+    t = p.lower()
+    return ("Gas" if re.search(r"\bgas\b|\bttf\b|\blng\b", t[:200]) else "Coal & oil" if re.search(r"\bcoal\b|\bbrent\b|\boil\b", t[:200])
+            else "Macro" if re.search(r"macro|gdp|inflation|pmi", t[:200]) else "Outlook" if re.search(r"looking ahead|outlook|next week", t[:200])
+            else "Power" if re.search(r"power|electricity|hydro|nuclear|wind|solar", t[:200]) else "Context")
+
+
+def axpo_sections(page):
+    body = re.sub(r"(?is)<(script|style|nav|header|footer)[^>]*>.*?</\1>", " ", page)
+    ps = [re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]+>", "", x))).strip() for x in re.findall(r"(?is)<p[^>]*>(.*?)</p>", body)]
+    out = {}
+    for p in ps:
+        if p.startswith("This document is for information purposes"):
+            break
+        ss = _sentences(p)
+        if len(p) < 120 or not ss:
+            continue
+        name = _axpo_name(p)
+        if name in out:
+            out[name]["points"] = (out[name]["points"] + ss)[:8]
+        else:
+            out[name] = {"name": name, "headline": ss[0][:220], "points": ss[1:7]}
+    return list(out.values())
+
+
+def _pdf_text(url):
+    import io
+    import pdfplumber
+    import requests
+    from market_sources import UA
+    with pdfplumber.open(io.BytesIO(requests.get(url, headers=UA, timeout=60).content)) as d:
+        return "\n".join(p.extract_text(x_tolerance=1) or "" for p in d.pages)
+
+
+def from_web_sources():
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import market_sources as ms
+    notes = []
+    for name, finder, read in (("TotalEnergies Point Marché Hebdo", ms.totalenergies_issues, lambda i: prose_sections(_pdf_text(i["pdf"]), TE_HEADS, TE_NOISE)),
+                               ("ElCom Rapport de marché", ms.elcom_issues, lambda i: elcom_sections(_pdf_text(i["pdf"]))),
+                               ("Axpo European Energy Markets Monthly", ms.axpo_issues, lambda i: axpo_sections(i["page"]))):
+        try:
+            for i in finder():
+                try:
+                    notes.append({"source": name, "note_date": i["date"], "subject": i["title"] or name, "received_at": None, "sections": read(i)})
+                except Exception as e:
+                    print(name, "issue failed:", i["url"], str(e)[:120])
+        except Exception as e:
+            print(name, "failed:", str(e)[:160])
+    return notes
+
+
+WEB_SOURCES = ["Opéra Énergie Notes d’analyse", "TotalEnergies Point Marché Hebdo", "ElCom Rapport de marché", "Axpo European Energy Markets Monthly"]
+
+
 def main():
     if os.environ.get("NOTES_FILE"):
         raw = open(os.environ["NOTES_FILE"], "rb").read()
@@ -177,6 +314,7 @@ def main():
             notes += from_opera()
         except Exception as e:
             print("Opéra notes failed:", str(e)[:160])
+        notes += from_web_sources()
         notes.sort(key=lambda n: n["note_date"])
     print(f"{len(notes)} notes:", [(n["note_date"], len(n["sections"])) for n in notes])
     if os.environ.get("NOTES_DRY_RUN") or os.environ.get("NOTES_FILE"):
@@ -196,7 +334,7 @@ def main():
     # a public trace without any of the notes' text: dates and section counts, to check the run
     st = {"updated": __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat(timespec="seconds"),
           "notes": [{"source": n["source"], "date": n["note_date"], "sections": [x["name"] for x in n["sections"]]} for n in notes if n["sections"]][-16:],
-          "unparsed": {name: sum(1 for n in notes if n["source"] == name and not n["sections"]) for name in [x["name"] for x in SOURCES] + ["Opéra Énergie Notes d’analyse"]}}
+          "unparsed": {name: sum(1 for n in notes if n["source"] == name and not n["sections"]) for name in [x["name"] for x in SOURCES] + WEB_SOURCES}}
     open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "market_notes_status.json"), "w").write(json.dumps(st, ensure_ascii=False))
     print("written")
     # the week's context in French, centred on France, written from these notes (own words, no source named)

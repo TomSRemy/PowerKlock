@@ -57,6 +57,8 @@ def news():
     now = datetime.now(timezone.utc)
     keep = []
     for n in it:
+        if n.get("noai"):          # an outlet that refuses AI use (AleaSoft) stays out of the AI's reading
+            continue
         try:
             age = now - datetime.fromisoformat(str(n.get("date")).replace("Z", "+00:00"))
         except (TypeError, ValueError):
@@ -127,13 +129,19 @@ def ask(payload):
 
 
 def run(notes=None):
-    """notes: the e-mailed notes just read ([{note_date, sections:[{name, headline, points}]}]), newest last"""
+    """notes: the notes just read ([{source, note_date, sections:[{name, headline, points}]}]), newest last"""
     today = datetime.now(timezone.utc).date()
     payload = {"today": today.isoformat(), "market_figures": facts(), "news_last_days": news(), "notes": []}
-    for n in (notes or [])[-1:]:
+    # the latest note of each source of the last 10 days (ENGIE by e-mail; Opéra Énergie, TotalEnergies, ElCom weekly;
+    # Axpo monthly, 35 days): several desks' views of the same week
+    latest = {}
+    for n in notes or []:
+        latest[n.get("source", "")] = n                     # newest last
+    for src, n in latest.items():
         try:
-            if today - datetime.fromisoformat(n["note_date"]).date() <= timedelta(days=10):
-                payload["notes"].append({"date": n["note_date"], "kind": "weekly market note", "sections": n["sections"]})
+            age = (today - datetime.fromisoformat(n["note_date"]).date()).days
+            if age <= (35 if "Monthly" in src else 10):
+                payload["notes"].append({"date": n["note_date"], "kind": "monthly market note" if "Monthly" in src else "weekly market note", "sections": n["sections"]})
         except (KeyError, TypeError, ValueError):
             pass
     fm = load("fr_market.json") or {}

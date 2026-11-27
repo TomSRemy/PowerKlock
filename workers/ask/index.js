@@ -56,10 +56,13 @@ const TOPIC_WORDS = { support: 'soutien renouvelables complement remuneration ob
   renewables: 'renouvelables solaire eolien', markets: 'marche prix', gas: 'gaz', power: 'electricite', carbon: 'carbone co2', deal: 'transaction acquisition', build: 'projet mise en service' };
 
 // the site's content as passages: [{title, text, source, date, link, kind, topics}]
-export function passages(news, cons, letter, digest) {
+export const NOAI_SOURCE = /^AleaSoft\b/i;
+export function passages(news, cons, letter, digest, keepNoai = false) {
   const out = [];
-  for (const i of (news && news.items) || []) {
-    out.push({ title: i.title, text: i.snippet || '', source: i.source, date: (i.date || '').slice(0, 10), link: i.link,
+  // an outlet that refuses AI use in its robots.txt (AleaSoft: item marked noai) is never given to a model: left out, or
+  // (keepNoai, Ask's search) kept with noai so it shows as a plain link beside the answer
+  for (const i of ((news && news.items) || []).filter(i => keepNoai || (!i.noai && !NOAI_SOURCE.test(i.source || '')))) {
+    out.push({ noai: !!(i.noai || NOAI_SOURCE.test(i.source || '')), title: i.title, text: i.snippet || '', source: i.source, date: (i.date || '').slice(0, 10), link: i.link,
       kind: (i.tags || []).includes('official') ? 'texte officiel' : (i.tags || []).includes('research') ? 'publication scientifique' : (i.tags || []).includes('report') ? 'rapport' : 'article',
       topics: i.topics || [], extra: (i.other_sources || []).map(o => o.source).join(', ') });
   }
@@ -328,12 +331,15 @@ export default {
     } catch { /* the files alone */ }
     const seen = new Set(((news && news.items) || []).map(i => i.link));
     const all = { items: ((news && news.items) || []).concat(archive.filter(i => !seen.has(i.link))) };
-    const docs = passages(all, cons, letter, digest);
+    const docs = passages(all, cons, letter, digest, true);
     // 2. the passages the model's plan points to, else those holding the question's own words
-    let found = plan ? planSearch(plan, docs, plan.summary ? 25 : 10) : [];
-    if (!found.length) found = search(q, docs);
-    // a question the site has nothing on costs no question and no AI
-    if (!found.length) return reply(req, { answer: null, sources: [], none: true });
+    let hits = plan ? planSearch(plan, docs, plan.summary ? 25 : 10) : [];
+    if (!hits.length) hits = search(q, docs);
+    // the articles of an outlet that refuses AI use (noai) are listed as links, never read by the model
+    const also = hits.filter(d => d.noai).slice(0, 5).map(d => ({ title: d.title, source: d.source, date: d.date, link: d.link, kind: d.kind }));
+    const found = hits.filter(d => !d.noai);
+    // a question the site has nothing on (for the model) costs no question and no AI
+    if (!found.length) return reply(req, { answer: null, sources: [], also, none: true });
     const take = await db(env, 'ask_take', token);
     if (!take.ok) return reply(req, { error: take.reason || 'refused', left: take.left }, take.reason === 'quota' || take.reason === 'day' ? 429 : 403);
     const m = model((take.total || 1) - 1);
@@ -351,6 +357,6 @@ export default {
     }
     if (!used.length && answer) used = [...answer.matchAll(/\[(\d+)\]/g)].map(x => +x[1]).filter(n => n >= 1 && n <= found.length);
     const sources = found.map((d, k) => ({ n: k + 1, title: d.title, source: d.source, date: d.date, link: d.link, kind: d.kind, topics: d.topics, used: used.includes(k + 1) }));
-    return reply(req, { answer, sources, model: m.split('/').pop(), left: take.left });
+    return reply(req, { answer, sources, also, model: m.split('/').pop(), left: take.left });
   },
 };

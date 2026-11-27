@@ -753,6 +753,95 @@ def opera_news(now, max_pages=6):
     return items
 
 
+# Kpler (commodity analytics): its blog feed, gas, LNG, power and carbon posts only (most are about crude and freight).
+# The feed's title joins the page title and the headline (« EU carbon CTA selling hits… Largest one-day Trend CTA… |
+# Kpler - Nov 17 »): the headline is the part that matches the link's words.
+KPLER_FEED = "https://www.kpler.com/blog/rss.xml"
+KPLER_KEEP = re.compile(r"\b(ttf|lng|gas|natural gas|power|electricity|carbon|eua|coal|nuclear|wind|solar|batter(y|ies))\b", re.I)
+
+
+def _kpler_title(title, link):
+    t = re.sub(r"\s*\|\s*Kpler\b.*$", "", html.unescape(title)).strip()
+    slug = [w for w in re.split(r"[^a-z0-9]+", link.rstrip("/").rsplit("/", 1)[-1].lower()) if w]
+    toks = t.split()
+    for i in range(1, len(toks) // 2 + 1):          # the headline twice, the first time cut
+        if i >= 3 and toks[i:2 * i] == toks[:i]:
+            return " ".join(toks[i:])
+    for i in range(len(toks)):
+        words = [w for w in re.split(r"[^a-z0-9]+", " ".join(toks[i:]).lower()) if w]
+        if words and slug and words[:len(slug)] == slug[:len(words)] and len(words) >= min(4, len(slug)):
+            return " ".join(toks[i:])
+    return t
+
+
+def kpler_news(now, days=21):
+    r = requests.get(KPLER_FEED, headers=UA, timeout=40)
+    r.raise_for_status()
+    items = []
+    for it in re.findall(r"(?s)<item>(.*?)</item>", r.text):
+        g = lambda tag: html.unescape((re.search(rf"(?s)<{tag}>(.*?)</{tag}>", it) or [None, ""])[1]).strip()
+        title, link, d = g("title"), g("link"), parse_date(g("pubDate"))
+        if not (title and link and d) or (now - d).days > days or not KPLER_KEEP.search(title):
+            continue
+        items.append({"title": clean(_kpler_title(title, link), 220), "link": link, "date": d, "snippet": ""})
+    return items
+
+
+ALEASOFT_INDEX = "https://aleasoft.com/sitemap_index.xml"
+ALEASOFT_CACHE = Path("data/news_aleasoft.json")
+# AleaSoft (forecasting for European power markets): its robots.txt closes its feeds to every script and refuses AI
+# crawlers, but lets other readers see its pages and points to its sitemap. The French version of each recent article
+# is found in the post sitemaps and read once for its title; its items are marked noai: shown in the feed, never given
+# to the AI that writes the brief, the newsletter, the week's context or Ask's answers.
+
+
+def aleasoft_news(now, days=14, max_pages=10):
+    try:
+        cache = json.loads(ALEASOFT_CACHE.read_text())
+    except (OSError, ValueError):
+        cache = {}
+    idx = requests.get(ALEASOFT_INDEX, headers=BROWSER_UA, timeout=30)
+    idx.raise_for_status()
+    maps = re.findall(r"<loc>(https://aleasoft\.com/post-sitemap\d*\.xml)</loc>", idx.text)
+    maps.sort(key=lambda u: int((re.search(r"(\d+)\.xml$", u) or [0, "1"])[1]))
+    since = (now - timedelta(days=days)).isoformat()
+    recent = []
+    for sm in maps[-2:]:                                   # the newest posts are in the last sitemaps
+        t = requests.get(sm, headers=BROWSER_UA, timeout=30).text
+        for u in re.findall(r"(?s)<url>(.*?)</url>", t):         # each entry lists its language versions before its date
+            loc, mod = re.search(r"<loc>([^<]+)</loc>", u), re.search(r"<lastmod>([^<]+)</lastmod>", u)
+            if loc and mod and loc.group(1).startswith("https://aleasoft.com/fr/") and mod.group(1) >= since:
+                recent.append((mod.group(1), loc.group(1)))
+    items, fetched = [], 0
+    for mod, loc in sorted(recent, reverse=True):
+        c = cache.get(loc)
+        if not c and fetched < max_pages:
+            fetched += 1
+            time.sleep(1)
+            try:
+                page = requests.get(loc, headers=BROWSER_UA, timeout=30).text
+                title = html.unescape((re.search(r'og:title" content="([^"]+)"', page) or [None, ""])[1]).split(" - AleaSoft")[0].split(" | AleaSoft")[0].strip()
+                pub = (re.search(r'article:published_time" content="([^"]+)"', page) or [None, mod])[1]
+                c = cache[loc] = {"title": title, "date": pub}
+            except requests.RequestException:
+                continue
+        if c and c.get("title") and not re.match(r"Newsletter semaine", c["title"], re.I):   # their newsletter's own pages
+            items.append({"title": clean(c["title"], 220), "link": loc, "date": parse_date(c["date"]), "snippet": ""})
+    ALEASOFT_CACHE.write_text(json.dumps({k: v for k, v in cache.items() if any(k == x[1] for x in recent)}, ensure_ascii=False, separators=(",", ":")))
+    return items
+
+
+# TotalEnergies « Point Marché Hebdo », ElCom « Rapport de marché », Axpo « European Energy Markets Monthly »: found by
+# scripts/market_sources.py (dated PDF, report page, sitemap); the title and link go into the feed, their text into the
+# market notes (scripts/fetch_market_notes.py)
+def _market_source(finder, prefix=""):
+    def news(now):
+        import market_sources
+        return [{"title": clean(prefix + (i["title"] or ""), 220), "link": i["url"], "date": parse_date(i["date"] + "T09:00:00+00:00"), "snippet": ""}
+                for i in getattr(market_sources, finder)()]
+    return news
+
+
 # ── Research: recent papers on power markets from open scholarly APIs (OpenAlex, arXiv, HAL), titles and links only,
 # plus the paper alerts received by e-mail (Academia.edu…) in the team mailbox ──
 # a paper is kept when its title speaks of a market (prices, contracts, auctions, market design…) AND of power
@@ -875,7 +964,12 @@ def mail_alerts(now, cfg):
 
 PUBLISHERS = {"rte": ("RTE", "rte", rte_news, ["fr", "power", "markets"]), "eex": ("EEX", "eex", eex_news, ["markets"]),
               "modo": ("Modo Energy", "modo", modo_news, ["power", "markets"]),
-              "opera": ("Opéra Énergie", "opera", opera_news, ["fr", "power", "gas", "markets"])}
+              "opera": ("Opéra Énergie", "opera", opera_news, ["fr", "power", "gas", "markets"]),
+              "totalenergies": ("TotalEnergies Entreprises", "totalenergies", _market_source("totalenergies_issues"), ["fr", "power", "gas", "markets"]),
+              "elcom": ("ElCom", "elcom", _market_source("elcom_issues"), ["power", "markets"]),
+              "axpo": ("Axpo", "axpo", _market_source("axpo_issues", "European Energy Markets Monthly : "), ["power", "gas", "markets"]),
+              "kpler": ("Kpler", "kpler", kpler_news, ["gas", "markets"]),
+              "aleasoft": ("AleaSoft", "aleasoft", aleasoft_news, ["power", "markets"], {"noai": True})}
 
 
 OFFICIAL = {"jorf": ("Journal officiel", jorf, ["fr", "regulation", "official"]), "eurlex": ("EUR-Lex", eurlex, ["regulation", "official"])}
@@ -1078,9 +1172,9 @@ def main():
             status.append({"name": f"recherche : {name}", "kind": "research", "ok": True, "n": n})
         except Exception as e:
             status.append({"name": f"recherche : {name}", "kind": "research", "ok": False, "error": str(e)[:120]})
-    for key, (name, cls, fn, tags) in PUBLISHERS.items():
+    for key, (name, cls, fn, tags, *extra) in PUBLISHERS.items():
         try:
-            n = add_items(out, fn(now), {"name": name, "cls": cls, "tags": tags}, now, 20)
+            n = add_items(out, fn(now), {"name": name, "cls": cls, "tags": tags}, now, 20, extra[0] if extra else None)
             status.append({"name": name, "kind": "page", "ok": True, "n": n})
         except Exception as e:
             status.append({"name": name, "kind": "page", "ok": False, "error": str(e)[:120]})

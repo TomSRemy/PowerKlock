@@ -1,4 +1,4 @@
-name: Market notes (ENGIE by e-mail, Opéra Énergie weekly note)
+name: Market notes (ENGIE by e-mail; Opéra Énergie, TotalEnergies, ElCom, Axpo on the web)
 
 # Reads the market notes received in the team mailbox (same IMAP app password as
 # the GO prices) and stores them in Supabase (public.market_note, warehouse
@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ['scripts/fetch_market_notes.py', 'scripts/market_digest.py', '.github/workflows/fetch_market_notes.yml']
+    paths: ['scripts/fetch_market_notes.py', 'scripts/market_sources.py', 'scripts/market_digest.py', '.github/workflows/fetch_market_notes.yml']
 
 jobs:
   notes:

@@ -82,8 +82,8 @@
     try { const fm = await get('fr_market.json'), mt = fm && fm.marketInsightsTone, d = (mt && mt.date || '').slice(0, 10);
       if (mt && d && Date.now() - Date.parse(d) < 10 * 864e5) { if (typeof mt.gas === 'number') out.ttf.push(mt.gas); if (typeof mt.power === 'number') out.cal.push(mt.power); } } catch (_) {}
     try { const cl = window.PKAccount && PKAccount.user && PKAccount.client && PKAccount.client();
-      if (cl) { // the latest note of each source (ENGIE by e-mail, Opéra Énergie's weekly note) of the last 10 days
-        const r = await cl.from('market_note').select('source, note_date, sections').order('note_date', { ascending: false }).limit(8), seen = new Set();
+      if (cl) { // the latest note of each source (ENGIE by e-mail; Opéra Énergie, TotalEnergies, ElCom, Axpo on the web) of the last 10 days
+        const r = await cl.from('market_note').select('source, note_date, sections').order('note_date', { ascending: false }).limit(24), seen = new Set();
         (r.data || []).forEach(n => { if (seen.has(n.source) || Date.now() - Date.parse(n.note_date) >= 10 * 864e5) return; seen.add(n.source);
           (n.sections || []).forEach(x => add(x.name, (x.headline || '') + ' ' + (x.points || []).join(' '))); }); } } catch (_) {}
     return out;
