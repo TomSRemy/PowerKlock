@@ -210,6 +210,9 @@ If the owner has not answered by the next morning's run, do the recommended opti
 answer, proceed »), in its own commit after the brief, with `scripts/check_before_push.sh` passing, and say it in the
 message. Still left waiting, whatever the delay: removing a feature, a secret, a paid source, a change of the storage
 or of the data pipeline's structure (CLAUDE.md › How to work).
+Never proposed nor changed by this task: the Expert view (Today › Expert: `data/market_digest.json`, `js/market-brief.js`
+and the sentences of `scripts/news_letter.py` › `expert_brief`); the owner, 27 Nov. 2026: « ne touche pas la vue experte ».
+When the brief disagrees with it, leave the point out of the brief, as said above.
 
 When a price of the site is compared with the press, compare closing prices of the same contract and the same day
 (27 Nov. 2026: the site's Brent is the settlement of the front month; a press quote taken during the session differs).

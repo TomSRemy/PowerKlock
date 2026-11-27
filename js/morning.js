@@ -805,8 +805,8 @@ function _mrnQuick(k, el) {
     (sM ? _mT(' ; demain ', '; tomorrow ') + B(_mN(sM.base, 1) + ' €') : k.fc && k.fc.price ? _mT(' ; demain prévu ≈ ', '; tomorrow forecast ≈ ') + _mN(_mrnMean(k.fc.price), 0) + ' €' : '') + '.']);
   const c = k.cals[0], ty = k.cs && k.cs.calYears && k.cs.calYears.ttf && c && k.cs.calYears.ttf[c.y];
   if (c && ty) { const tP = ty.dates.map((d, i) => [d, ty.values[i]]), dT = _mrnLast(tP)[1] - _mrnBack(tP, 7), dF = _mrnLast(c.pts)[1] - _mrnBack(c.pts, 7);
-    L.push([_mT('Forwards', 'Forwards'), (Math.abs(dF - 2 * dT) < 1 ? _mT('le Cal ' + c.y + ' suit le gaz', 'Cal ' + c.y + ' follows gas') : dF > 2 * dT ? _mT('le Cal ' + c.y + ' est plus ferme que le gaz', 'Cal ' + c.y + ' is firmer than gas') : _mT('le Cal ' + c.y + ' est plus faible que le gaz', 'Cal ' + c.y + ' is weaker than gas')) +
-      _mT(' : sur la semaine, le gaz livré en ' + c.y + ' l’aurait fait ' + (dT >= 0 ? 'monter' : 'baisser') + ' d’environ ', ': over the week, ' + c.y + ' gas alone would have moved it ' + (dT >= 0 ? 'up' : 'down') + ' by about ') + B(_mN(Math.abs(2 * dT), 1) + ' €/MWh') + '.']); }
+    L.push([_mT('Forwards', 'Forwards'), (Math.abs(dF - 2 * dT) < 1 ? _mT('le Cal ' + c.y + ' suit le gaz', 'Cal ' + c.y + ' follows gas') : dF > 2 * dT ? _mT('le Cal ' + c.y + ' monte plus que le gaz', 'Cal ' + c.y + ' rises more than gas') : _mT('le Cal ' + c.y + ' monte moins que le gaz', 'Cal ' + c.y + ' rises less than gas')) +
+      _mT(' : le gaz seul pèserait ', ': gas alone would weigh ') + B('≈ ' + _mS(2 * dT, 1) + ' €') + _mT(' sur la semaine.', ' on the week.')]); }
   const st = _mrnLast(k.P('agsi')), ly = st && _mrnBack(k.P('agsi'), 365);
   if (st && ly != null) L.push([_mT('Gaz', 'Gas'), _mT('stocks UE ', 'EU storage ') + B(_mS(st[1] - ly, 1) + ' pts') + _mT(' sur un an', ' on a year') + (st[1] < ly ? _mT(' : peu de marge avant l’hiver.', ': little margin before winter.') : '.')]);
   const br = k.P('brent'), v60 = br.filter(p => p[0] >= _mrnAdd(_mrnLast(br)[0], -60)).map(p => p[1]), lb = _mrnLast(br);

@@ -694,15 +694,11 @@ def expert_brief(day):
             if abs(dFR - gas) < 1:
                 r_fr, r_en = "le mouvement français vient du gaz.", "the French move comes from gas."
             elif dFR > gas:
-                r_fr, r_en = "la France est plus ferme que le gaz (nucléaire, demande).", "France is firmer than gas (nuclear, demand)."
+                r_fr, r_en = "la France monte plus que le gaz seul (nucléaire, demande).", "France rises more than gas alone (nuclear, demand)."
             else:
-                r_fr, r_en = "la France est plus faible que le gaz (nucléaire et demande détendus).", "France is weaker than gas (nuclear and demand relaxed)."
-            # the gas of the Cal's own year (not today's gas), and both moves with their unit, so a gas rise on the day and a
-            # fall of next year's gas do not read as a contradiction (the owner, 27 Nov. 2026)
-            FR.append(f"Sur la semaine, le Cal {ys[0]} ({n(p1[-1][1], 0)} €/MWh) {'gagne' if dFR >= 0 else 'perd'} {n(abs(dFR), 1)} €/MWh ; "
-                      f"le gaz livré en {ys[0]} l’aurait fait {'monter' if gas >= 0 else 'baisser'} d’environ {n(abs(gas), 1)} €/MWh à lui seul : {r_fr}")
-            EN.append(f"Over the week, Cal {ys[0]} ({p1[-1][1]:.0f} €/MWh) {'gains' if dFR >= 0 else 'loses'} {abs(dFR):.1f} €/MWh; "
-                      f"{ys[0]} gas alone would have moved it {'up' if gas >= 0 else 'down'} by about {abs(gas):.1f} €/MWh: {r_en}")
+                r_fr, r_en = "la France monte moins que le gaz seul (nucléaire et demande détendus).", "France rises less than gas alone (nuclear and demand relaxed)."
+            FR.append(f"Sur le Cal {ys[0]} ({n(p1[-1][1], 0)} €/MWh), le gaz seul pèserait ≈ {sg(gas)} € sur la semaine : {r_fr}")
+            EN.append(f"On Cal {ys[0]} ({p1[-1][1]:.0f} €/MWh), gas alone would weigh ≈ {sge(gas)} € on the week: {r_en}")
         if len(ys) > 1:
             w1, wl = wk(p1), [x for x in (wk(pts(y)) for y in ys[1:]) if x is not None]
             if wl and w1 is not None:
