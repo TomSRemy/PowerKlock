@@ -1,0 +1,125 @@
+{
+ "updated": "2026-11-27T07:37:30+00:00",
+ "about": "The latest market note of each desk: date, link, the headline of each section (never the text), and the direction its words lean to per market (up, down, flat). PowerBrunch says each thesis in its own words.",
+ "desks": [
+  {
+   "desk": "TotalEnergies",
+   "date": "2026-11-24",
+   "link": "https://www.totalenergies.fr/fileadmin/Digital/Entreprises/Flash_info_hebdo/261124-flash-info-hebdo.pdf",
+   "title": "Point Marché Hebdo du 24 nov. 2026",
+   "headlines": [
+    {
+     "section": "Contexte",
+     "headline": "Le TTF a baissé en raison de prévisions météorologiques plus douces en Europe et la reprise des flux norvégiens."
+    },
+    {
+     "section": "Pétrole",
+     "headline": "Les cours du pétrole ont reculé sur la semaine, malgré le Brent maintien d’une prime de risque géopolitique au Moyen- Orient."
+    },
+    {
+     "section": "Carbone",
+     "headline": "Dans l’ensemble, le contrat de référence décembre 2026 a reculé de 7,1 % par rapport à la semaine précédente."
+    },
+    {
+     "section": "Gaz",
+     "headline": "Le TTF Day-Ahead est passé de 84,75 €/MWh le 17 novembre à 88,03 €/MWh le 24 novembre, soit une hausse d’environ 3,9 % sur la semaine glissante."
+    },
+    {
+     "section": "Électricité",
+     "headline": "Le Baseload Cal-27 français est passé de 113,43 €/MWh le 17 novembre à 114,60 €/MWh le 24 novembre, soit une hausse d’environ 1 % sur la semaine glissante."
+    },
+    {
+     "section": "Point focus",
+     "headline": "RTE prévoit de relever à 810 TWh sa prévision de consommation d’électricité en France à l’horizon 2050, soit 26% de plus que dans sa projection d’il y a cinq ans, ont indiqué deux sources à Montel."
+    }
+   ],
+   "lean": {
+    "oil": "flat",
+    "co2": "down",
+    "gas": "up",
+    "power": "up"
+   }
+  },
+  {
+   "desk": "ElCom",
+   "date": "2026-11-24",
+   "link": "https://www.elcom.admin.ch/dam/fr/sd-web/a72WuGD7VbBP/Marktbericht%20vom%2024-11-2026.pdf",
+   "title": "Rapport de marché du 24 nov. 2026",
+   "headlines": [
+    {
+     "section": "Spot",
+     "headline": "Der durchschnittliche Schweizer Spotpreis sank gegenüber der Vorwoche um 16% auf 225 EUR/MWh."
+    },
+    {
+     "section": "Équilibrage",
+     "headline": "Die durchschnittliche absolute Unausgeglichenheit der Regelzone sank um 10% auf 48 MW."
+    },
+    {
+     "section": "Marché à terme",
+     "headline": "Der Schweizer Frontmonat legte um 4.8% zu, das Frontquartal um 4.5% und das Frontjahr um 1.6%."
+    }
+   ],
+   "lean": {
+    "power": "up"
+   }
+  },
+  {
+   "desk": "Opéra Énergie",
+   "date": "2026-11-23",
+   "link": "https://opera-energie.com/media/notes-analyse-prix-electricite-gaz-23-novembre-2026/",
+   "title": "Les prix reculent, les risques demeurent",
+   "headlines": [
+    {
+     "section": "Contexte",
+     "headline": "Les prix reculent, les risques demeurent"
+    },
+    {
+     "section": "Marché de l’électricité",
+     "headline": "L’électricité recule, mais reste sensible à la météo"
+    },
+    {
+     "section": "Marché du gaz",
+     "headline": "Une détente fragile sur le marché du gaz"
+    },
+    {
+     "section": "Marché du carbone",
+     "headline": "La production éolienne fait pression sur le carbone"
+    },
+    {
+     "section": "Marché du pétrole",
+     "headline": "Le pétrole poursuit son recul"
+    }
+   ],
+   "lean": {
+    "power": "down",
+    "gas": "down",
+    "co2": "down",
+    "oil": "down"
+   }
+  },
+  {
+   "desk": "Axpo",
+   "date": "2026-11-06",
+   "link": "https://www.axpo.com/se/en/newsroom/magazine/energy-market/european-energy-prices-head-into-winter-at-post-2022-highs---axp.html",
+   "title": "European energy prices head into winter at post-2022 highs",
+   "headlines": [
+    {
+     "section": "Power",
+     "headline": "The winter pressure we flagged in October has arrived early."
+    },
+    {
+     "section": "Gas",
+     "headline": "On the gas front, European benchmark TTF spot prices averaged 87 euros per megawatt-hour (EUR/MWh) in October, up 12 EUR/MWh on the month, and breached 100 EUR/MWh at month end for the first time since December 2022."
+    },
+    {
+     "section": "Macro",
+     "headline": "On the macro front, economists and purchasing manager surveys (PMI) continue to suggest a slight acceleration of GDP growth in Europe in 2027, which could support energy consumption."
+    }
+   ],
+   "lean": {
+    "power": "flat",
+    "gas": "up"
+   }
+  }
+ ]
+}

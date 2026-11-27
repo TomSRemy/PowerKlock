@@ -57,9 +57,9 @@ jobs:
       - name: Which edition
         id: ed
         run: |
-          # a scheduled run sends the edition once a day: 7 O'Klock from 07:00 Tuesday to Friday, PowerBrunch from 08:00 on
-          # Monday instead of 7 O'Klock (the owner, 25 Nov. 2026), in Paris, if not sent yet; after 12:00 an edition still
-          # late is written for the site but not mailed
+          # a scheduled run sends each edition once a day: 7 O'Klock from 07:00 Monday to Friday, PowerBrunch from 08:00 on
+          # Monday as well (the owner, 27 Nov. 2026: PowerBrunch becomes the week's market analysis, 7 O'Klock keeps the
+          # articles), in Paris, if not sent yet; after 12:00 an edition still late is written for the site but not mailed
           H=$((10#$(TZ=Europe/Paris date +%H))); D=$(TZ=Europe/Paris date +%F); W=$(TZ=Europe/Paris date +%u)
           SENT_D=$(python3 -c "import json;print((json.load(open('data/newsletter_sent.json')) if __import__('os').path.exists('data/newsletter_sent.json') else {}).get('daily',''))")
           SENT_W=$(python3 -c "import json;print((json.load(open('data/newsletter_sent.json')) if __import__('os').path.exists('data/newsletter_sent.json') else {}).get('weekly',''))")
@@ -67,7 +67,7 @@ jobs:
           if [ "${{ inputs.night }}" = "true" ] || [ "${{ inputs.cron }}" = "5 0 * * *" ]; then M=daily; MAIL=no   # Top stories change at midnight (the owner, 25 Nov. 2026); the 07:00 run rebuilds and sends
           elif [ "${{ github.event_name }}" = "schedule" ] || [ "${{ inputs.auto }}" = "true" ]; then
             if [ "$W" = "1" ] && [ "$H" -ge 8 ] && [ "$SENT_W" != "$D" ]; then M=weekly; [ "$H" -ge 12 ] && MAIL=no
-            elif [ "$W" -ge 2 ] && [ "$W" -le 5 ] && [ "$H" -ge 7 ] && [ "$SENT_D" != "$D" ]; then M=daily; [ "$H" -ge 12 ] && MAIL=no
+            elif [ "$W" -ge 1 ] && [ "$W" -le 5 ] && [ "$H" -ge 7 ] && [ "$SENT_D" != "$D" ]; then M=daily; [ "$H" -ge 12 ] && MAIL=no
             else echo "Nothing to do: before 07:00 in Paris, or today's edition already sent"; fi
           elif [ "${{ inputs.edition }}" = "PowerBrunch" ]; then M=weekly
           else M=daily; fi
@@ -91,7 +91,7 @@ jobs:
           if [ "${{ inputs.preview }}" = "true" ]; then echo "Preview: nothing committed."; exit 0; fi
           git config user.name "PowerDesk Bot"
           git config user.email "bot@powerdesk.local"
-          git add -A data/news_digest.json data/newsletter.json data/newsletter_week.json data/newsletter_history.json data/newsletter_mail.html data/newsletter_week_mail.html data/newsletter_img 2>/dev/null || true
+          git add -A data/news_digest.json data/newsletter.json data/newsletter_week.json data/newsletter_history.json data/newsletter_mail.html data/newsletter_week_mail.html data/newsletter_img data/brunch_charts.json data/brunch_charts_used.json 2>/dev/null || true
           if git diff --staged --quiet; then echo "No new edition."; exit 0; fi
           git commit -q -m "data: newsletter $(TZ=Europe/Paris date +%F)"
           for i in 1 2 3 4 5; do git pull -q --rebase -X theirs origin main && git push -q && exit 0; git rebase --abort 2>/dev/null || true; sleep 5; done

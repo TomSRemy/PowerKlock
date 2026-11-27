@@ -163,7 +163,7 @@ def from_opera(days=21):
             day = f"{pdf.group(2)}-{pdf.group(4)}-{pdf.group(3)}"   # OE_NA_A4_2311.pdf in uploads/2026/11 → 2026-11-23
             with pdfplumber.open(io.BytesIO(requests.get(pdf.group(1), headers=BROWSER_UA, timeout=60).content)) as d:
                 text = "\n".join(p.extract_text() or "" for p in d.pages)
-            notes.append({"source": "Opéra Énergie Notes d’analyse", "note_date": day, "subject": title or "Notes d’analyse", "received_at": mod, "sections": opera_parse(text)})
+            notes.append({"source": "Opéra Énergie Notes d’analyse", "note_date": day, "subject": title or "Notes d’analyse", "received_at": mod, "sections": opera_parse(text), "url": loc})
         except Exception as e:
             print("Opéra note failed:", loc, str(e)[:120])
     return notes
@@ -292,12 +292,59 @@ def from_web_sources():
         try:
             for i in finder():
                 try:
-                    notes.append({"source": name, "note_date": i["date"], "subject": i["title"] or name, "received_at": None, "sections": read(i)})
+                    notes.append({"source": name, "note_date": i["date"], "subject": i["title"] or name, "received_at": None, "sections": read(i), "url": i["url"]})
                 except Exception as e:
                     print(name, "issue failed:", i["url"], str(e)[:120])
         except Exception as e:
             print(name, "failed:", str(e)[:160])
     return notes
+
+
+# ── data/desk_views.json, for PowerBrunch's « Ce que disent les desks » (the owner, 27 Nov. 2026: the desks are named,
+# their thesis said in our words, never graded one by one): the latest note of each source, its date and link, each
+# section's headline only (as a title, never the note's text) and the direction its words lean to, per market ──
+DESK_NAME = {"ENGIE Energy Market News": "ENGIE", "Opéra Énergie Notes d’analyse": "Opéra Énergie", "TotalEnergies Point Marché Hebdo": "TotalEnergies",
+             "ElCom Rapport de marché": "ElCom", "Axpo European Energy Markets Monthly": "Axpo"}
+UPW = re.compile(r"\b(tight\w*|tense|tension\w*|ris(e|es|ing)|higher|increas\w*|support\w*|firm\w*|bullish|pressure\w*|spik\w*|jump\w*|surg\w*|climb\w*|strong\w*|"
+                 r"hausse|haussi\w*|tendu\w*|progress\w*|rebond\w*|grimp\w*|flamb\w*|envol\w*|redress\w*|soutien\w*|soutenu\w*|stieg\w*|legte|zu(ge)?nahm\w*|h[öo]her)\b", re.I)
+DNW = re.compile(r"\b(eas(e|es|ed|ing)|fall\w*|fell|lower\w*|declin\w*|drop\w*|bearish|weak\w*|loosen\w*|relief|soft\w*|calm\w*|ample|down\w*|"
+                 r"baisse|baissi\w*|recul\w*|repli\w*|d[ée]tente|d[ée]tend\w*|chut\w*|accalmie|reflu\w*|exc[ée]dent\w*|abondan\w*|sank|sinken\w*|r[üu]ckgang|gingen)\b", re.I)
+
+
+def _market(name):
+    n = name.lower()
+    return ("power" if re.search(r"electric|lectricit|power|spot|terme|termin", n) else "gas" if re.search(r"\bgas\b|gaz", n)
+            else "co2" if re.search(r"co2|co₂|carbon", n) else "oil" if re.search(r"oil|p[ée]trole|brent", n) else "context")
+
+
+def desk_views(notes):
+    today = __import__("datetime").date.today()
+    latest = {}
+    for n in notes:
+        if n.get("sections") and n["source"] in DESK_NAME:
+            latest[n["source"]] = n                       # notes are sorted by date: the newest stays
+    out = []
+    for src, n in latest.items():
+        try:
+            age = (today - __import__("datetime").date.fromisoformat(n["note_date"])).days
+        except ValueError:
+            continue
+        if age > (35 if "Monthly" in src else 10):
+            continue
+        views = {}
+        for x in n["sections"]:
+            txt = (x.get("headline") or "") + " " + " ".join(x.get("points") or [])
+            t = len(UPW.findall(txt)) - len(DNW.findall(txt))
+            m = _market(x.get("name") or "")
+            views[m] = views.get(m, 0) + t
+        out.append({"desk": DESK_NAME[src], "date": n["note_date"], "link": n.get("url"), "title": n.get("subject"),
+                    "headlines": [{"section": x.get("name"), "headline": (x.get("headline") or "")[:220]} for x in n["sections"]],
+                    "lean": {m: ("up" if v > 0 else "down" if v < 0 else "flat") for m, v in views.items() if m != "context"}})
+    path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "desk_views.json")
+    with open(path, "w") as fh:
+        json.dump({"updated": __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat(timespec="seconds"),
+                   "about": "The latest market note of each desk: date, link, the headline of each section (never the text), and the direction its words lean to per market (up, down, flat). PowerBrunch says each thesis in its own words.",
+                   "desks": sorted(out, key=lambda d: d["date"], reverse=True)}, fh, ensure_ascii=False, indent=1)
 
 
 WEB_SOURCES = ["Opéra Énergie Notes d’analyse", "TotalEnergies Point Marché Hebdo", "ElCom Rapport de marché", "Axpo European Energy Markets Monthly"]
@@ -336,6 +383,7 @@ def main():
           "notes": [{"source": n["source"], "date": n["note_date"], "sections": [x["name"] for x in n["sections"]]} for n in notes if n["sections"]][-16:],
           "unparsed": {name: sum(1 for n in notes if n["source"] == name and not n["sections"]) for name in [x["name"] for x in SOURCES] + WEB_SOURCES}}
     open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "market_notes_status.json"), "w").write(json.dumps(st, ensure_ascii=False))
+    desk_views(notes)
     print("written")
     # the week's context in French, centred on France, written from these notes (own words, no source named)
     try:

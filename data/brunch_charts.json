@@ -1,0 +1,69 @@
+{
+ "about": "PowerBrunch's charts (scripts/news_charts.py › CATALOGUE). Pick 2 or 3 ids that show what the week's analysis talks about; not the same as last week's unless it is the week's subject.",
+ "charts": [
+  {
+   "id": "spot_wind",
+   "shows": "Spot France par jour et production éolienne : quand le vent fait le prix"
+  },
+  {
+   "id": "spot_nuclear",
+   "shows": "Spot France par jour et production nucléaire : disponibilité du parc, arrêts, redémarrages"
+  },
+  {
+   "id": "spot_load",
+   "shows": "Spot France par jour et consommation : froid, chaleur, demande"
+  },
+  {
+   "id": "spot_solar",
+   "shows": "Spot France par jour et production solaire : printemps, été, heures négatives"
+  },
+  {
+   "id": "spot_zones",
+   "shows": "Spot base France, Allemagne, Espagne, Italie Nord : écarts entre pays, couplage, interconnexions"
+  },
+  {
+   "id": "cal_gas",
+   "shows": "Cal de l'année suivante en France et TTF sur 3 mois : le terme suit-il le gaz ?"
+  },
+  {
+   "id": "gas_storage",
+   "shows": "Remplissage des stockages de gaz européens : sécurité de l'hiver"
+  },
+  {
+   "id": "ttf",
+   "shows": "Gaz TTF day-ahead sur 3 mois"
+  },
+  {
+   "id": "eua",
+   "shows": "Quota de CO₂ EUA sur 3 mois : politique climatique, ventes des fonds"
+  },
+  {
+   "id": "brent",
+   "shows": "Pétrole Brent sur 3 mois : géopolitique, offre mondiale"
+  },
+  {
+   "id": "nuc_avail",
+   "shows": "Nucléaire disponible face à la prévision d'EDF : écarts, arrêts imprévus"
+  },
+  {
+   "id": "neg_hours",
+   "shows": "Heures à 0 € ou moins par jour sur 30 jours : solaire, éolien, arrêt aux prix négatifs"
+  },
+  {
+   "id": "go",
+   "shows": "Prix des garanties d'origine de l'année suivante sur 6 mois"
+  },
+  {
+   "id": "ppa",
+   "shows": "Benchmark PPA France solaire et éolien sur 3 mois"
+  },
+  {
+   "id": "m0",
+   "shows": "M0 solaire et éolien publiés par la CRE sur 12 mois : compléments de rémunération"
+  },
+  {
+   "id": "capture",
+   "shows": "Taux de capture solaire et éolien sur 12 mois : cannibalisation"
+  }
+ ]
+}

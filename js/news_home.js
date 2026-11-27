@@ -217,7 +217,7 @@ function _nhCustomise() {
       ${PK_INTERESTS.map(([gf, ge, list]) => `<div class="nh-g">${_newsT(gf, ge)}</div><div class="nh-chips">${list.map(([k, fr, en]) => `<button type="button" class="nh-chip${ints.includes(k) ? ' on' : ''}" data-int="${k}">${ints.includes(k) ? '✓ ' : ''}${_newsT(fr, en)}</button>`).join('')}</div>`).join('')}
       <div class="nh-k">${_newsT('Mes mots-clés', 'My keywords')}</div><div id="nh-kw-slot"></div>
       ${signed ? `<div class="nh-k">${_newsT('Recevoir par e-mail', 'Receive by e-mail')}</div>
-      <label class="nh-cb"><input type="checkbox" id="nh-md"${mailD ? ' checked' : ''}> 7 O’Klock ${_newsT('(du mardi au vendredi, 7 h)', '(Tuesday to Friday, 7:00)')}</label>
+      <label class="nh-cb"><input type="checkbox" id="nh-md"${mailD ? ' checked' : ''}> 7 O’Klock ${_newsT('(du lundi au vendredi, 7 h)', '(Monday to Friday, 7:00)')}</label>
       <label class="nh-cb"><input type="checkbox" id="nh-mw"${mailW ? ' checked' : ''}> PowerBrunch ${_newsT('(le lundi, 10 h)', '(Monday, 10:00)')}</label>
       <label class="nh-to"><span>${_newsT('Adresse de réception', 'Delivery address')}</span><input type="email" id="nh-to" class="fuel-select" maxlength="200" value="${_newsEsc(mailTo)}" placeholder="${_newsEsc(acct)}"><small>${_newsT('Vide : l’adresse de votre compte', 'Empty: your account’s address')}</small></label>` : ''}
       <div class="nh-k">${_newsT('Rubriques de ma page À la une', 'Sections of my Top stories page')}</div>
