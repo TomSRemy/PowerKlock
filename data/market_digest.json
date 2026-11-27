@@ -1,44 +1,51 @@
 {
- "updated": "2026-11-27T05:50:24+00:00",
+ "updated": "2026-11-27T06:24:48+00:00",
  "asof": "2026-11-27",
- "notes": 2,
+ "notes": 6,
  "engine": "proxy",
  "context": [
   {
    "topic": "France",
    "topic_en": "France",
-   "text": "La disponibilité nucléaire en France est de 46088,75 MW, en baisse de 1,9% sur 7 jours. Cela pousse les prix à la hausse.",
-   "text_en": "Nuclear availability in France is 46088.75 MW, down 1.9% over 7 days. This pushes prices up.",
+   "text": "La disponibilité du parc nucléaire français est en baisse de 1,9% sur 7 jours, à 46088,75 MW, et la consommation d'électricité augmente, ce qui pourrait renforcer le recours aux centrales conventionnelles et inverser la dynamique des prix. Le prix spot moyen de l'électricité en France est de 299,1 €/MWh",
+   "text_en": "French nuclear power availability is down 1.9% over 7 days, to 46088.75 MW, and electricity consumption is increasing, which could strengthen the use of conventional power plants and reverse the price dynamics. The average spot price of electricity in France is 299.1 €/MWh",
    "tone": "up"
   },
   {
    "topic": "Golfe",
    "topic_en": "Gulf",
-   "text": "Les incidents dans le détroit d'Ormuz font craindre des perturbations de l'approvisionnement en pétrole. Cela pousse les prix à la hausse.",
-   "text_en": "Incidents in the Strait of Hormuz are raising fears of oil supply disruptions. This pushes prices up.",
+   "text": "Les tensions géopolitiques au Moyen-Orient, avec des attaques contre des tankers dans le détroit d'Ormuz, font craindre une perturbation de l'approvisionnement en pétrole et poussent les prix à la hausse. Le Brent est à 94,61 $/b",
+   "text_en": "Geopolitical tensions in the Middle East, with attacks on tankers in the Strait of Hormuz, are raising fears of a disruption to oil supplies and pushing prices up. Brent is at $94.61/b",
+   "tone": "up"
+  },
+  {
+   "topic": "Norvège",
+   "topic_en": "Norway",
+   "text": "La production de gaz norvégien a dépassé les prévisions officielles de 1,8% en octobre, mais les approvisionnements norvégiens ont été ponctuellement réduits par plusieurs opérations de maintenance, ce qui soutient les prix du gaz. Le TTF est à 87,78 €/MWh",
+   "text_en": "Norwegian gas production exceeded official forecasts by 1.8% in October, but Norwegian supplies were temporarily reduced by several maintenance operations, which supports gas prices. The TTF is at €87.78/MWh",
    "tone": "up"
   }
  ],
  "outlook": {
   "oil": {
    "tone": "up",
-   "text": "Les prix du pétrole devraient continuer à augmenter en raison des risques d'approvisionnement.",
-   "text_en": "Oil prices are expected to continue rising due to supply risks."
+   "text": "Les tensions géopolitiques au Moyen-Orient devraient continuer à soutenir les prix du pétrole",
+   "text_en": "Geopolitical tensions in the Middle East are expected to continue to support oil prices"
   },
   "gas": {
    "tone": "up",
-   "text": "Les prix du gaz devraient rester sous pression en raison de la météo froide et des niveaux de stockage bas.",
-   "text_en": "Gas prices are expected to remain under pressure due to cold weather and low storage levels."
+   "text": "Les approvisionnements norvégiens réduits et les températures plus froides devraient maintenir la pression sur les prix du gaz",
+   "text_en": "Reduced Norwegian supplies and colder temperatures are expected to maintain pressure on gas prices"
   },
   "power": {
    "tone": "flat",
-   "text": "Les prix de l'électricité devraient rester stables.",
-   "text_en": "Power prices are expected to remain stable."
+   "text": "La consommation d'électricité en France devrait rester stable",
+   "text_en": "Electricity consumption in France is expected to remain stable"
   },
   "carbon": {
    "tone": "flat",
-   "text": "Les prix du carbone devraient rester stables.",
-   "text_en": "Carbon prices are expected to remain stable."
+   "text": "Les prix des quotas de CO₂ devraient rester stables",
+   "text_en": "CO2 allowance prices are expected to remain stable"
   }
  }
 }
