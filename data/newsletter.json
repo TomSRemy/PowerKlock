@@ -1,6 +1,6 @@
 {
  "date": "2026-11-27",
- "updated": "2026-11-26T23:06:22+00:00",
+ "updated": "2026-11-27T06:01:02+00:00",
  "engine": "proxy",
  "monday": false,
  "weekly": false,
@@ -104,8 +104,22 @@
     "report",
     "major",
     "fr",
-    "gas",
-    "geopolitics"
+    "geopolitics",
+    "gas"
+   ]
+  },
+  {
+   "title": "Électricité : de nouvelles offres hybrides dès 2028, quelles économies pour les consommateurs ?",
+   "link": "https://news.google.com/rss/articles/CBMi1wFBVV95cUxQX2xLdlh3R2FsSXFpVllkQnU4d2VwQnpSbm1idXk1QmFrMEhSNXBGdE51aXI0QnFLWVo2eVVxYWNmYkhVTzBVM3ZYNUJ2ckprMUxUM0gtVVZUbm1BeGtOc2JhaVpqUkdpVVdCemxNT3JtbkMycDJxZ0hBZWJUdEhiSThiMndZMFoxb3lIajhfVVlHVGV6TWtteWNjaFBPXy1GU3dSanJQWDFQNDZjSU5Vck5XaUFYSG1BWFM3bVYxRWtJcGRBV2FLamRqUXc4UzNrYlNlTjhzQQ?oc=5",
+   "source": "Choisir.com",
+   "date": "2026-11-26T14:03:10+00:00",
+   "tags": [
+    "fr",
+    "report",
+    "markets",
+    "regulation",
+    "watch",
+    "power"
    ]
   },
   {
@@ -131,6 +145,17 @@
     "report",
     "power",
     "watch"
+   ]
+  },
+  {
+   "title": "Hiver 2026-2027 : le système électrique français aborde la saison froide avec confiance",
+   "link": "https://www.rte-france.com/actualites/2026-11-18-hiver-2026-2027",
+   "source": "RTE",
+   "date": "2026-11-25T16:58:00+00:00",
+   "tags": [
+    "fr",
+    "power",
+    "markets"
    ]
   }
  ],
@@ -211,7 +236,22 @@
  },
  "top": [
   {
-   "title": "EDF : les contrats nucléaires CAPN après la fin de l’Arenh",
+   "title": "20ème édition du Forum EnerGaïa : le climax annuel des EnR en France",
+   "link": "https://news.google.com/rss/articles/CBMimwFBVV95cUxQTEJWUXpSVzQ2ZTN0VUlUMlZDNDdtTlhlSW9hTkFhc0diVnIwTVg3RGdGSXMxUl9vTm52NXpTLWRZbm5FYmluSG5zMVJRbHM2ekZhUU91cGVtbjc5bnl4cXJuNzc1ZHFnUUlMT0ZGQ2dkUzRucTgxSDQtMlBlOWNsbEd3OHNRYkdtUDYwT0JNQWZKUEFPZWRjTjRISQ?oc=5",
+   "source": "Tecsol Quotidien",
+   "date": "2026-11-26T18:00:47+00:00",
+   "n": 1,
+   "tags": [
+    "fr",
+    "regulation",
+    "power",
+    "assoc",
+    "watch",
+    "renewables"
+   ]
+  },
+  {
+   "title": "Après l’Arenh, EDF multiplie les contrats d’accès à son nucléaire",
    "link": "https://news.google.com/rss/articles/CBMizAFBVV95cUxQZ2FlLTJVWk4yWHl3cTQtVXA2ak85cnV5dmptdUhUSjgwbnJrTk9XSHhPdS1uU0E5MGVKSzBXMlVoYUJsOEJoWkl5THcwVVBLZFpjbHdTVlRPYWhqbThzMG1VQ3RrZE5TU1g1NDRxU0RsWEZxelJONUFlY29RRWE0RTBXaWRpcWFfRktnUTdJakUxT2tZM2loYXNhN044ZnFFbEMwSV9NSWw4aU5VWTNfSE9fV3BmWEpfU2hWeTdURkg4RWt2X1k2d0xqQ1M?oc=5",
    "source": "Le nouvel Économiste",
    "date": "2026-11-26T13:42:58+00:00",
@@ -251,19 +291,6 @@
    ]
   },
   {
-   "title": "Wood wins FEED contract for Spain-France green hydrogen pipeline",
-   "link": "https://news.google.com/rss/articles/CBMipwFBVV95cUxNd1phbks3RktzcXBJV0hDOXJhVkdHajloR1pGS04xYjNlNGgtLTdSNWFubVlOd3JqWlQzeUFzbUtCOVo4QkdOYnV3WGxwaVVmTVBPZlpuVGJSUkhOY3ZUdXlwTjNFeEJvbHMzUC1XbnBNbkR6RzRMV2FmRjZsX19kY1E4YjhOLTg3WGFKc0xMbUhTNG1RY1h6a0RkeWZlSm5Xc1RkWWwyZw?oc=5",
-   "source": "Renewables Now",
-   "date": "2026-11-26T13:34:47+00:00",
-   "n": 2,
-   "tags": [
-    "renewables",
-    "watch",
-    "gas",
-    "power"
-   ]
-  },
-  {
    "title": "La filière éolienne en France poursuit sa croissance au troisième trimestre",
    "link": "https://news.google.com/rss/articles/CBMikAFBVV95cUxPQkE2b3JRbGs3LWZlempTWG5CU3Utcy13dkFkeHZ2Z08zQnlQOV9KQUh6Z01PbGRsUl9Qb2dpSVluczZ6RDFkNDJMcWRlZDRFakdXb2tGSVR4OFd5WGNCUG05SE1XUXJibWVodndIV0kwb3NCbTNPaTRHTGRpb3hzTGRpclpSV3dYTE1XRzZLU1g?oc=5",
    "source": "Traders Union",
@@ -278,16 +305,15 @@
    ]
   },
   {
-   "title": "Raccordements, stockage, pompes à chaleur… : les coulisses du Salon des maires 2026",
-   "link": "https://www.greenunivers.com/2026/11/raccordements-stockage-pompes-a-chaleur-les-coulisses-du-salon-des-maires-2026-439517/",
-   "source": "GreenUnivers",
-   "date": "2026-11-26T16:39:34+00:00",
+   "title": "Fusion nucléaire : la France a un plan jusqu’en 2035… mais pas d’argent",
+   "link": "https://www.revolution-energetique.com/actus/fusion-nucleaire-la-france-a-un-plan-jusquen-2035-mais-pas-dargent/",
+   "source": "Révolution Énergétique",
+   "date": "2026-11-26T06:07:42+00:00",
    "n": 1,
    "tags": [
     "fr",
     "power",
-    "build",
-    "renewables"
+    "deal"
    ]
   }
  ],
@@ -313,75 +339,9 @@
     "agenda",
     "post"
    ],
-   "headline": "Nouveau programme de CEE pour sortir du gaz",
+   "headline": "Nouveau programme CEE pour sortir du gaz",
    "headline_en": "New CEE program to exit gas",
    "stories": [
-    {
-     "id": "triquesortiegaz48854php4",
-     "title": "Un nouveau programme de CEE aide les ménages à sortir du gaz",
-     "link": "https://www.actu-environnement.com/ae/news/projet-arrete-cee-programme-maison-electrique-sortie-gaz-48854.php4",
-     "tags": [
-      "fr",
-      "power",
-      "gas",
-      "regulation"
-     ],
-     "sources": [
-      "Actu-Environnement"
-     ],
-     "free": null,
-     "report_link": null,
-     "report_name": null,
-     "what": "Un projet d'arrêté crée le programme Maison électrique",
-     "what_en": "A draft decree creates the Electric Home program",
-     "for_you": "Aide de 1 000 euros maximum par logement",
-     "for_you_en": "Up to 1,000 euros aid per dwelling"
-    },
-    {
-     "id": "ourlebiomethanecse439844",
-     "title": "La résiliation des obligations d’achat bientôt clarifiée pour le biométhane [CSE]",
-     "link": "https://www.greenunivers.com/2026/11/la-resiliation-des-obligations-dachat-bientot-clarifiee-pour-le-biomethane-cse-439844/",
-     "tags": [
-      "fr",
-      "power",
-      "support",
-      "gas",
-      "regulation"
-     ],
-     "sources": [
-      "GreenUnivers"
-     ],
-     "free": null,
-     "report_link": null,
-     "report_name": null,
-     "what": "Un projet d'arrêté clarifie les conditions de résiliation",
-     "what_en": "A draft decree clarifies the conditions for termination",
-     "for_you": null,
-     "for_you_en": null
-    },
-    {
-     "id": "durkg4rwt2x1k2d0xqq1moc5",
-     "title": "EDF : les contrats nucléaires CAPN après la fin de l’Arenh",
-     "link": "https://news.google.com/rss/articles/CBMizAFBVV95cUxQZ2FlLTJVWk4yWHl3cTQtVXA2ak85cnV5dmptdUhUSjgwbnJrTk9XSHhPdS1uU0E5MGVKSzBXMlVoYUJsOEJoWkl5THcwVVBLZFpjbHdTVlRPYWhqbThzMG1VQ3RrZE5TU1g1NDRxU0RsWEZxelJONUFlY29RRWE0RTBXaWRpcWFfRktnUTdJakUxT2tZM2loYXNhN044ZnFFbEMwSV9NSWw4aU5VWTNfSE9fV3BmWEpfU2hWeTdURkg4RWt2X1k2d0xqQ1M?oc=5",
-     "tags": [
-      "fr",
-      "markets",
-      "watch",
-      "regulation",
-      "power"
-     ],
-     "sources": [
-      "Le nouvel Économiste"
-     ],
-     "free": null,
-     "report_link": null,
-     "report_name": null,
-     "what": "Les contrats CAPN concernent la vente de l'électricité nucléaire.",
-     "what_en": "The CAPN contracts relate to the sale of nuclear electricity.",
-     "for_you": null,
-     "for_you_en": null,
-     "ctx": true
-    },
     {
      "id": "nergyauctionvolumeto15gw",
      "title": "France triples planned renewable energy auction volume to 1.5 GW",
@@ -393,107 +353,125 @@
       "renewables",
       "fr"
      ],
+     "section": "regulation",
      "sources": [
       "pv magazine"
      ],
      "free": null,
      "report_link": null,
      "report_name": null,
-     "what": "La France triple le volume de l'appel d'offres",
-     "what_en": "France triples the auction volume",
+     "what": "La France porte de 500 MW à 1,5 GW son prochain appel d'offres renouvelable neutre, ouvert à toutes les technologies, avec un prix de référence en base commun.",
+     "what_en": "France raises its next technology-neutral renewable tender from 500 MW to 1.5 GW, open to all technologies, with a common baseload reference price.",
      "for_you": null,
      "for_you_en": null
     },
     {
-     "id": "2jobxbytunvvw5wexg3qqoc5",
-     "title": "PPE3 : miser sur l’éolien et le solaire est une erreur stratégique pour la France",
-     "link": "https://news.google.com/rss/articles/CBMiwgFBVV95cUxOVFlicUktTGJ4bGxDb09EQlZLNW1xaFJ6cmVVNEx6ZUJDQ1ZUVzNycnpMbjNHc1pMOHRlZ2ZPQWg5QVpqcmM5eEJoaVk5VDVweVl5LVJOYjJRLVZ0cWhlZDZSeDJSLWxmaDVMc0EtZ0s2dDc4MFZiM0JMaHNtUS16UDlvbHE2MVdySmhjQTkzbXEzVVY0dlpsTUs1QThjM19sY1N2ei1RY2Y1MzRmdWlETHNkZ2JobXBYTUNVVW5weXg3QQ?oc=5",
+     "id": "verainetecommeprixapayer",
+     "title": "EPR2 : le partage de souveraineté comme prix à payer",
+     "link": "https://www.connaissancedesenergies.org/tribune-actualite-energies/epr2-le-partage-de-souverainete-comme-prix-a-payer",
      "tags": [
       "fr",
-      "regulation",
-      "watch",
-      "renewables"
+      "build",
+      "power"
      ],
+     "section": "regulation",
      "sources": [
-      "European Scientist"
+      "Connaissance des Énergies"
      ],
      "free": null,
      "report_link": null,
      "report_name": null,
-     "what": "La stratégie énergétique est remise en question.",
-     "what_en": "The energy strategy is being questioned.",
-     "for_you": null,
-     "for_you_en": null,
-     "ctx": true
-    },
-    {
-     "id": "0rkewzlsm5xc1rkwwwyzwoc5",
-     "title": "Wood wins FEED contract for Spain-France green hydrogen pipeline",
-     "link": "https://news.google.com/rss/articles/CBMipwFBVV95cUxNd1phbks3RktzcXBJV0hDOXJhVkdHajloR1pGS04xYjNlNGgtLTdSNWFubVlOd3JqWlQzeUFzbUtCOVo4QkdOYnV3WGxwaVVmTVBPZlpuVGJSUkhOY3ZUdXlwTjNFeEJvbHMzUC1XbnBNbkR6RzRMV2FmRjZsX19kY1E4YjhOLTg3WGFKc0xMbUhTNG1RY1h6a0RkeWZlSm5Xc1RkWWwyZw?oc=5",
-     "tags": [
-      "renewables",
-      "watch",
-      "gas",
-      "power",
-      "fr"
-     ],
-     "sources": [
-      "Renewables Now",
-      "Energy Monitor"
-     ],
-     "free": null,
-     "report_link": null,
-     "report_name": null,
-     "what": "Wood remporte un contrat pour un pipeline d'hydrogène",
-     "what_en": "Wood wins a contract for a hydrogen pipeline",
+     "what": "Pour autoriser l'aide publique aux six futurs réacteurs EPR2, Bruxelles réclamerait deux contreparties à la France, dont l'ouverture à d'autres fournisseurs.",
+     "what_en": "To approve state aid for the six planned EPR2 reactors, Brussels is said to ask France for two concessions, including opening up to other suppliers.",
      "for_you": null,
      "for_you_en": null
     },
     {
-     "id": "hes2gwoffshorewindtender",
-     "title": "Netherlands launches 2GW offshore wind tender",
-     "link": "https://www.windpowermonthly.com/article/1976225/netherlands-launches-2gw-offshore-wind-tender",
-     "tags": [
-      "power",
-      "regulation",
-      "renewables"
-     ],
-     "sources": [
-      "Windpower Monthly",
-      "reNEWS"
-     ],
-     "free": [
-      {
-       "source": "reNEWS",
-       "link": "https://www.renews.biz/offshore-wind/netherlands-opens-2gw-offshore-wind-tender/"
-      }
-     ],
-     "report_link": null,
-     "report_name": null,
-     "what": "Les Pays-Bas lancent un appel d'offres pour 2GW",
-     "what_en": "Netherlands launches 2GW offshore wind tender",
-     "for_you": null,
-     "for_you_en": null
-    },
-    {
-     "id": "ureselectriquesauxbatter",
-     "title": "Écoscore : la France risque-t-elle d’encourager les voitures électriques aux batteries plus gourmandes en ressources ?",
-     "link": "https://wattselse.com/veille/article/4682/ecoscore-la-france-risque-t-elle-dencourager-les-voitures-electriques-aux-batter",
+     "id": "aveclesraffineriesrusses",
+     "title": "Sanctions énergétiques : comment l’UE coupe ses liens avec les raffineries russes",
+     "link": "https://wattselse.com/veille/article/4678/sanctions-energetiques-comment-lue-coupe-ses-liens-avec-les-raffineries-russes",
      "tags": [
       "fr",
       "power",
       "regulation",
+      "geopolitics"
+     ],
+     "section": "regulation",
+     "sources": [
+      "Watts Else"
+     ],
+     "free": null,
+     "report_link": null,
+     "report_name": null,
+     "what": "Des sanctions européennes viseraient pour la première fois les installations électriques d'un pays tiers, dans le cadre de la rupture avec les raffineries russes.",
+     "what_en": "EU sanctions would for the first time target a third country's power installations, as part of cutting links with Russian refineries.",
+     "for_you": null,
+     "for_you_en": null
+    },
+    {
+     "id": "t4etnwbuxhtxdfahfasgcoc5",
+     "title": "Supply fears lift global oil prices after Strait of Hormuz incidents",
+     "link": "https://news.google.com/rss/articles/CBMitgFBVV95cUxOMF9yaHJYdHRRcWppOUxnUzQtUVZpT2dSSWF2V24wclFENEg1anBRMEc3eWRQRFZLSDR0YmdTcUMyUWRhd3JJZDBUVkdmdXBpR1RJclg1OHRUTmpjblhZMUczbENTemVLOUFpRjEtclVzZlNrQjB4VTFFdmRtY05RaTZtQmZrN3NiUkc3VEtZWV9YWkc5MUFFX09VLWF0R3pldnZ6OTF1ZHNWaEhCZlpBMnF3U1Bad9IBwwFBVV95cUxQaUwtM2RpS0FMLXBoNENDZ0gxSXcyWWY1al81Rld3c2ZkUUlxMTdkb0xKLWw4S1Q4SlpHaklWUXpyRnMtWDVsNGh6Z0J2SXdOVjFfRTFzc0VfaC1WZ0VoelZRQl9NZU9aaG1ZZFgxSTVsckdRUmhrXzFaWkNmcTdhVzh4M2tPbkRqUFJCbDZIYWhGYk9CT1hGY001a3RCNlluUFJyLU1PNjA5OU0wOE1SUnU4Skt4eTNWbUxhTXdFaHFaSGc?oc=5",
+     "tags": [
+      "markets",
+      "geopolitics",
       "watch"
      ],
+     "section": "markets",
      "sources": [
-      "Watts Else",
-      "L'Energeek"
+      "Baird Maritime",
+      "Markets.com"
      ],
      "free": null,
      "report_link": null,
      "report_name": null,
-     "what": "Le barème transforme un paramètre commercial — l’autonomie homologuée en kilomètres — en critère environnemental déterminant pour l’accès aux aides, alors que ce paramètre n’est pas un indicateur de sobriété énergétique ni de frugalité en…",
-     "what_en": null,
+     "what": "Les incidents dans le détroit d'Ormuz ravivent les craintes sur l'offre et font monter les prix mondiaux du pétrole.",
+     "what_en": "Incidents in the Strait of Hormuz revive supply fears and lift global oil prices.",
+     "for_you": null,
+     "for_you_en": null
+    },
+    {
+     "id": "ttpscarbonpulsecom573431",
+     "title": "Greens see window for December EU ETS deal in European Parliament",
+     "link": "https://carbon-pulse.com/573431/",
+     "tags": [
+      "carbon",
+      "deal",
+      "markets",
+      "renewables"
+     ],
+     "section": "markets",
+     "sources": [
+      "Carbon Pulse"
+     ],
+     "free": null,
+     "report_link": null,
+     "report_name": null,
+     "what": "Un accord du Parlement européen sur le marché du carbone (ETS) pourrait être trouvé d'ici quelques semaines, en décembre, selon les Verts.",
+     "what_en": "A European Parliament deal on the carbon market (ETS) could be reached within weeks, in December, according to the Greens.",
+     "for_you": null,
+     "for_you_en": null
+    },
+    {
+     "id": "durkg4rwt2x1k2d0xqq1moc5",
+     "title": "Après l’Arenh, EDF multiplie les contrats d’accès à son nucléaire",
+     "link": "https://news.google.com/rss/articles/CBMizAFBVV95cUxQZ2FlLTJVWk4yWHl3cTQtVXA2ak85cnV5dmptdUhUSjgwbnJrTk9XSHhPdS1uU0E5MGVKSzBXMlVoYUJsOEJoWkl5THcwVVBLZFpjbHdTVlRPYWhqbThzMG1VQ3RrZE5TU1g1NDRxU0RsWEZxelJONUFlY29RRWE0RTBXaWRpcWFfRktnUTdJakUxT2tZM2loYXNhN044ZnFFbEMwSV9NSWw4aU5VWTNfSE9fV3BmWEpfU2hWeTdURkg4RWt2X1k2d0xqQ1M?oc=5",
+     "tags": [
+      "fr",
+      "markets",
+      "watch",
+      "regulation",
+      "power"
+     ],
+     "section": "supply",
+     "sources": [
+      "Le nouvel Économiste"
+     ],
+     "free": null,
+     "report_link": null,
+     "report_name": null,
+     "what": "Après la fin de l'Arenh, EDF multiplie les contrats d'accès à sa production nucléaire avec les industriels.",
+     "what_en": "After the end of ARENH, EDF is signing more contracts giving access to its nuclear output.",
      "for_you": null,
      "for_you_en": null
     }
@@ -521,49 +499,139 @@
     "markets",
     "post"
    ],
-   "headline": "Clarification des obligations d'achat pour le biométhane et aide pour sortir du gaz",
-   "headline_en": "Clarification of biomethane purchase obligations and aid to exit gas",
+   "headline": "Nouveau programme CEE pour aider les ménages à sortir du gaz",
+   "headline_en": "New CEE program to help households exit gas",
    "stories": [
     {
-     "id": "ourlebiomethanecse439844",
-     "title": "La résiliation des obligations d’achat bientôt clarifiée pour le biométhane [CSE]",
-     "link": "https://www.greenunivers.com/2026/11/la-resiliation-des-obligations-dachat-bientot-clarifiee-pour-le-biomethane-cse-439844/",
+     "id": "nergyauctionvolumeto15gw",
+     "title": "France triples planned renewable energy auction volume to 1.5 GW",
+     "link": "https://www.pv-magazine.com/2026/11/26/france-triples-planned-renewable-energy-auction-volume-to-1-5-gw/",
      "tags": [
-      "fr",
       "power",
-      "support",
-      "gas",
-      "regulation"
+      "regulation",
+      "markets",
+      "renewables",
+      "fr"
      ],
+     "section": "regulation",
      "sources": [
-      "GreenUnivers"
+      "pv magazine"
      ],
      "free": null,
      "report_link": null,
      "report_name": null,
-     "what": "Un projet d'arrêté prévoit de clarifier les conditions de résiliation des obligations d'achat du biométhane. Le gouvernement veut lever les ambiguïtés sur l'arrêt anticipé des contrats.",
-     "what_en": "A draft decree aims to clarify the conditions for terminating biomethane purchase obligations. The government wants to remove ambiguities about early contract termination.",
+     "what": "La France porte de 500 MW à 1,5 GW son prochain appel d'offres renouvelable neutre, ouvert à toutes les technologies, avec un prix de référence en base commun.",
+     "what_en": "France raises its next technology-neutral renewable tender from 500 MW to 1.5 GW, open to all technologies, with a common baseload reference price.",
      "for_you": null,
      "for_you_en": null
     },
     {
-     "id": "triquesortiegaz48854php4",
-     "title": "Un nouveau programme de CEE aide les ménages à sortir du gaz",
-     "link": "https://www.actu-environnement.com/ae/news/projet-arrete-cee-programme-maison-electrique-sortie-gaz-48854.php4",
+     "id": "verainetecommeprixapayer",
+     "title": "EPR2 : le partage de souveraineté comme prix à payer",
+     "link": "https://www.connaissancedesenergies.org/tribune-actualite-energies/epr2-le-partage-de-souverainete-comme-prix-a-payer",
      "tags": [
       "fr",
-      "power",
-      "gas",
-      "regulation"
+      "build",
+      "power"
      ],
+     "section": "regulation",
      "sources": [
-      "Actu-Environnement"
+      "Connaissance des Énergies"
      ],
      "free": null,
      "report_link": null,
      "report_name": null,
-     "what": "Un projet d'arrêté crée le programme « Maison électrique » pour aider les ménages à sortir du gaz. L'aide peut aller jusqu'à 1 000 euros par logement.",
-     "what_en": "A draft decree creates the 'Maison électrique' program to help households exit gas. The aid can go up to 1,000 euros per dwelling.",
+     "what": "Pour autoriser l'aide publique aux six futurs réacteurs EPR2, Bruxelles réclamerait deux contreparties à la France, dont l'ouverture à d'autres fournisseurs.",
+     "what_en": "To approve state aid for the six planned EPR2 reactors, Brussels is said to ask France for two concessions, including opening up to other suppliers.",
+     "for_you": null,
+     "for_you_en": null
+    },
+    {
+     "id": "aveclesraffineriesrusses",
+     "title": "Sanctions énergétiques : comment l’UE coupe ses liens avec les raffineries russes",
+     "link": "https://wattselse.com/veille/article/4678/sanctions-energetiques-comment-lue-coupe-ses-liens-avec-les-raffineries-russes",
+     "tags": [
+      "fr",
+      "power",
+      "regulation",
+      "geopolitics"
+     ],
+     "section": "regulation",
+     "sources": [
+      "Watts Else"
+     ],
+     "free": null,
+     "report_link": null,
+     "report_name": null,
+     "what": "Des sanctions européennes viseraient pour la première fois les installations électriques d'un pays tiers, dans le cadre de la rupture avec les raffineries russes.",
+     "what_en": "EU sanctions would for the first time target a third country's power installations, as part of cutting links with Russian refineries.",
+     "for_you": null,
+     "for_you_en": null
+    },
+    {
+     "id": "t4etnwbuxhtxdfahfasgcoc5",
+     "title": "Supply fears lift global oil prices after Strait of Hormuz incidents",
+     "link": "https://news.google.com/rss/articles/CBMitgFBVV95cUxOMF9yaHJYdHRRcWppOUxnUzQtUVZpT2dSSWF2V24wclFENEg1anBRMEc3eWRQRFZLSDR0YmdTcUMyUWRhd3JJZDBUVkdmdXBpR1RJclg1OHRUTmpjblhZMUczbENTemVLOUFpRjEtclVzZlNrQjB4VTFFdmRtY05RaTZtQmZrN3NiUkc3VEtZWV9YWkc5MUFFX09VLWF0R3pldnZ6OTF1ZHNWaEhCZlpBMnF3U1Bad9IBwwFBVV95cUxQaUwtM2RpS0FMLXBoNENDZ0gxSXcyWWY1al81Rld3c2ZkUUlxMTdkb0xKLWw4S1Q4SlpHaklWUXpyRnMtWDVsNGh6Z0J2SXdOVjFfRTFzc0VfaC1WZ0VoelZRQl9NZU9aaG1ZZFgxSTVsckdRUmhrXzFaWkNmcTdhVzh4M2tPbkRqUFJCbDZIYWhGYk9CT1hGY001a3RCNlluUFJyLU1PNjA5OU0wOE1SUnU4Skt4eTNWbUxhTXdFaHFaSGc?oc=5",
+     "tags": [
+      "markets",
+      "geopolitics",
+      "watch"
+     ],
+     "section": "markets",
+     "sources": [
+      "Baird Maritime",
+      "Markets.com"
+     ],
+     "free": null,
+     "report_link": null,
+     "report_name": null,
+     "what": "Les incidents dans le détroit d'Ormuz ravivent les craintes sur l'offre et font monter les prix mondiaux du pétrole.",
+     "what_en": "Incidents in the Strait of Hormuz revive supply fears and lift global oil prices.",
+     "for_you": null,
+     "for_you_en": null
+    },
+    {
+     "id": "ttpscarbonpulsecom573431",
+     "title": "Greens see window for December EU ETS deal in European Parliament",
+     "link": "https://carbon-pulse.com/573431/",
+     "tags": [
+      "carbon",
+      "deal",
+      "markets",
+      "renewables"
+     ],
+     "section": "markets",
+     "sources": [
+      "Carbon Pulse"
+     ],
+     "free": null,
+     "report_link": null,
+     "report_name": null,
+     "what": "Un accord du Parlement européen sur le marché du carbone (ETS) pourrait être trouvé d'ici quelques semaines, en décembre, selon les Verts.",
+     "what_en": "A European Parliament deal on the carbon market (ETS) could be reached within weeks, in December, according to the Greens.",
+     "for_you": null,
+     "for_you_en": null
+    },
+    {
+     "id": "durkg4rwt2x1k2d0xqq1moc5",
+     "title": "Après l’Arenh, EDF multiplie les contrats d’accès à son nucléaire",
+     "link": "https://news.google.com/rss/articles/CBMizAFBVV95cUxQZ2FlLTJVWk4yWHl3cTQtVXA2ak85cnV5dmptdUhUSjgwbnJrTk9XSHhPdS1uU0E5MGVKSzBXMlVoYUJsOEJoWkl5THcwVVBLZFpjbHdTVlRPYWhqbThzMG1VQ3RrZE5TU1g1NDRxU0RsWEZxelJONUFlY29RRWE0RTBXaWRpcWFfRktnUTdJakUxT2tZM2loYXNhN044ZnFFbEMwSV9NSWw4aU5VWTNfSE9fV3BmWEpfU2hWeTdURkg4RWt2X1k2d0xqQ1M?oc=5",
+     "tags": [
+      "fr",
+      "markets",
+      "watch",
+      "regulation",
+      "power"
+     ],
+     "section": "supply",
+     "sources": [
+      "Le nouvel Économiste"
+     ],
+     "free": null,
+     "report_link": null,
+     "report_name": null,
+     "what": "Après la fin de l'Arenh, EDF multiplie les contrats d'accès à sa production nucléaire avec les industriels.",
+     "what_en": "After the end of ARENH, EDF is signing more contracts giving access to its nuclear output.",
      "for_you": null,
      "for_you_en": null
     }
@@ -591,31 +659,9 @@
     "agenda",
     "post"
    ],
-   "headline": "France triple son appel d'offres énergies renouvelables",
-   "headline_en": "France triples renewable energy auction volume",
+   "headline": "France triple sa capacité d'enchère énergétique renouvelable",
+   "headline_en": "France triples renewable energy auction capacity",
    "stories": [
-    {
-     "id": "a3quszdhg2dti4tvlou1eoc5",
-     "title": "Qair signe un PPA à long terme avec Holcim en Pologne",
-     "link": "https://news.google.com/rss/articles/CBMiigFBVV95cUxPWU1mUDBuMkZtb1lYN1l3Tml0WDFHQTdDWFhKVUpyMHZicFRCRFN3S21tYUlFU0hYYkRPS1F4V000ODAwMFFYTDlibTUwbUt0eF9YYUxsdDFMNzRjZjZoSHJ1Y3JJR2VvQVU5bV9qQ3dZV045Qzc2WTUyR3A3QUszdHg2dTI4TVloU1E?oc=5",
-     "tags": [
-      "markets",
-      "fr",
-      "watch",
-      "renewables"
-     ],
-     "sources": [
-      "Tecsol Quotidien"
-     ],
-     "free": null,
-     "report_link": null,
-     "report_name": null,
-     "what": "Un producteur signe un contrat à long terme pour la vente d'électricité.",
-     "what_en": "A producer signs a long-term contract for the sale of electricity.",
-     "for_you": null,
-     "for_you_en": null,
-     "ctx": true
-    },
     {
      "id": "nergyauctionvolumeto15gw",
      "title": "France triples planned renewable energy auction volume to 1.5 GW",
@@ -627,67 +673,108 @@
       "renewables",
       "fr"
      ],
+     "section": "regulation",
      "sources": [
       "pv magazine"
      ],
      "free": null,
      "report_link": null,
      "report_name": null,
-     "what": "La France augmente son appel d'offres énergies renouvelables",
-     "what_en": "France increases renewable energy auction volume",
+     "what": "La France porte de 500 MW à 1,5 GW son prochain appel d'offres renouvelable neutre, ouvert à toutes les technologies, avec un prix de référence en base commun.",
+     "what_en": "France raises its next technology-neutral renewable tender from 500 MW to 1.5 GW, open to all technologies, with a common baseload reference price.",
      "for_you": null,
      "for_you_en": null
     },
     {
-     "id": "0rkewzlsm5xc1rkwwwyzwoc5",
-     "title": "Wood wins FEED contract for Spain-France green hydrogen pipeline",
-     "link": "https://news.google.com/rss/articles/CBMipwFBVV95cUxNd1phbks3RktzcXBJV0hDOXJhVkdHajloR1pGS04xYjNlNGgtLTdSNWFubVlOd3JqWlQzeUFzbUtCOVo4QkdOYnV3WGxwaVVmTVBPZlpuVGJSUkhOY3ZUdXlwTjNFeEJvbHMzUC1XbnBNbkR6RzRMV2FmRjZsX19kY1E4YjhOLTg3WGFKc0xMbUhTNG1RY1h6a0RkeWZlSm5Xc1RkWWwyZw?oc=5",
+     "id": "verainetecommeprixapayer",
+     "title": "EPR2 : le partage de souveraineté comme prix à payer",
+     "link": "https://www.connaissancedesenergies.org/tribune-actualite-energies/epr2-le-partage-de-souverainete-comme-prix-a-payer",
      "tags": [
-      "renewables",
-      "watch",
-      "gas",
-      "power",
-      "fr"
+      "fr",
+      "build",
+      "power"
      ],
+     "section": "regulation",
      "sources": [
-      "Renewables Now",
-      "Energy Monitor"
+      "Connaissance des Énergies"
      ],
      "free": null,
      "report_link": null,
      "report_name": null,
-     "what": "Wood remporte un contrat pour un pipeline d'hydrogène vert",
-     "what_en": "Wood wins contract for green hydrogen pipeline",
+     "what": "Pour autoriser l'aide publique aux six futurs réacteurs EPR2, Bruxelles réclamerait deux contreparties à la France, dont l'ouverture à d'autres fournisseurs.",
+     "what_en": "To approve state aid for the six planned EPR2 reactors, Brussels is said to ask France for two concessions, including opening up to other suppliers.",
      "for_you": null,
      "for_you_en": null
     },
     {
-     "id": "hzwanflswtdtllfc0ppwaoc5",
-     "title": "C&I : évole énergies associe fourniture d'électricité, production photovoltaïque et financement",
-     "link": "https://news.google.com/rss/articles/CBMiyAFBVV95cUxOTWNQSGJwblVHM05hN295andSUThHSGRDQzJSOGNKTWtleEtJSzVuXzBZel9GVFZDQjFRTlhKenA4MlByMDFUV243eXFXWXJMLWlrX0lVRDhPWmlRcGJpTXdJSzgweDlDdnJnMjdub3d0aUVpdV9Oel9tWmtjc1VPdVotLVVWRnpMeU9TQ0dkVm9tN1JMN25JX085eVp2OHhtS3RJV0dlUWpTZnJUU094NGRvMklLNVFEeHZWanFLSWtDTllfc0ppWA?oc=5",
+     "id": "aveclesraffineriesrusses",
+     "title": "Sanctions énergétiques : comment l’UE coupe ses liens avec les raffineries russes",
+     "link": "https://wattselse.com/veille/article/4678/sanctions-energetiques-comment-lue-coupe-ses-liens-avec-les-raffineries-russes",
+     "tags": [
+      "fr",
+      "power",
+      "regulation",
+      "geopolitics"
+     ],
+     "section": "regulation",
+     "sources": [
+      "Watts Else"
+     ],
+     "free": null,
+     "report_link": null,
+     "report_name": null,
+     "what": "Des sanctions européennes viseraient pour la première fois les installations électriques d'un pays tiers, dans le cadre de la rupture avec les raffineries russes.",
+     "what_en": "EU sanctions would for the first time target a third country's power installations, as part of cutting links with Russian refineries.",
+     "for_you": null,
+     "for_you_en": null
+    },
+    {
+     "id": "t4etnwbuxhtxdfahfasgcoc5",
+     "title": "Supply fears lift global oil prices after Strait of Hormuz incidents",
+     "link": "https://news.google.com/rss/articles/CBMitgFBVV95cUxOMF9yaHJYdHRRcWppOUxnUzQtUVZpT2dSSWF2V24wclFENEg1anBRMEc3eWRQRFZLSDR0YmdTcUMyUWRhd3JJZDBUVkdmdXBpR1RJclg1OHRUTmpjblhZMUczbENTemVLOUFpRjEtclVzZlNrQjB4VTFFdmRtY05RaTZtQmZrN3NiUkc3VEtZWV9YWkc5MUFFX09VLWF0R3pldnZ6OTF1ZHNWaEhCZlpBMnF3U1Bad9IBwwFBVV95cUxQaUwtM2RpS0FMLXBoNENDZ0gxSXcyWWY1al81Rld3c2ZkUUlxMTdkb0xKLWw4S1Q4SlpHaklWUXpyRnMtWDVsNGh6Z0J2SXdOVjFfRTFzc0VfaC1WZ0VoelZRQl9NZU9aaG1ZZFgxSTVsckdRUmhrXzFaWkNmcTdhVzh4M2tPbkRqUFJCbDZIYWhGYk9CT1hGY001a3RCNlluUFJyLU1PNjA5OU0wOE1SUnU4Skt4eTNWbUxhTXdFaHFaSGc?oc=5",
      "tags": [
       "markets",
-      "fr",
-      "watch",
-      "deal",
-      "power",
-      "renewables"
+      "geopolitics",
+      "watch"
      ],
+     "section": "markets",
      "sources": [
-      "pv magazine France"
+      "Baird Maritime",
+      "Markets.com"
      ],
      "free": null,
      "report_link": null,
      "report_name": null,
-     "what": "Un fournisseur propose un pack incluant électricité, production solaire et financement.",
-     "what_en": "A supplier offers a package including electricity, solar production and financing.",
+     "what": "Les incidents dans le détroit d'Ormuz ravivent les craintes sur l'offre et font monter les prix mondiaux du pétrole.",
+     "what_en": "Incidents in the Strait of Hormuz revive supply fears and lift global oil prices.",
      "for_you": null,
-     "for_you_en": null,
-     "ctx": true
+     "for_you_en": null
+    },
+    {
+     "id": "ttpscarbonpulsecom573431",
+     "title": "Greens see window for December EU ETS deal in European Parliament",
+     "link": "https://carbon-pulse.com/573431/",
+     "tags": [
+      "carbon",
+      "deal",
+      "markets",
+      "renewables"
+     ],
+     "section": "markets",
+     "sources": [
+      "Carbon Pulse"
+     ],
+     "free": null,
+     "report_link": null,
+     "report_name": null,
+     "what": "Un accord du Parlement européen sur le marché du carbone (ETS) pourrait être trouvé d'ici quelques semaines, en décembre, selon les Verts.",
+     "what_en": "A European Parliament deal on the carbon market (ETS) could be reached within weeks, in December, according to the Greens.",
+     "for_you": null,
+     "for_you_en": null
     },
     {
      "id": "durkg4rwt2x1k2d0xqq1moc5",
-     "title": "EDF : les contrats nucléaires CAPN après la fin de l’Arenh",
+     "title": "Après l’Arenh, EDF multiplie les contrats d’accès à son nucléaire",
      "link": "https://news.google.com/rss/articles/CBMizAFBVV95cUxQZ2FlLTJVWk4yWHl3cTQtVXA2ak85cnV5dmptdUhUSjgwbnJrTk9XSHhPdS1uU0E5MGVKSzBXMlVoYUJsOEJoWkl5THcwVVBLZFpjbHdTVlRPYWhqbThzMG1VQ3RrZE5TU1g1NDRxU0RsWEZxelJONUFlY29RRWE0RTBXaWRpcWFfRktnUTdJakUxT2tZM2loYXNhN044ZnFFbEMwSV9NSWw4aU5VWTNfSE9fV3BmWEpfU2hWeTdURkg4RWt2X1k2d0xqQ1M?oc=5",
      "tags": [
       "fr",
@@ -696,80 +783,15 @@
       "regulation",
       "power"
      ],
+     "section": "supply",
      "sources": [
       "Le nouvel Économiste"
      ],
      "free": null,
      "report_link": null,
      "report_name": null,
-     "what": "Les contrats CAPN concernent la vente de l'électricité nucléaire.",
-     "what_en": "The CAPN contracts relate to the sale of nuclear electricity.",
-     "for_you": null,
-     "for_you_en": null,
-     "ctx": true
-    },
-    {
-     "id": "3vkvpqxjhvw8zzu0xmvfnoc5",
-     "title": "Akuo Energy wins Kosovo's first wind auction",
-     "link": "https://news.google.com/rss/articles/CBMiggFBVV95cUxQLUw1SnlTQlJyOHJKWnlvX3pwZUVBcF94NjBqUHFCVURYZ1diSEh2ZmZYdS0xcHV5SUxUcnR2Rmhqc0cwc3RFbFVtZzJuTnV3cjNSRUpQS09NX2FObm5FNDJCXzJWX05TTU50d0FrMVFPTks3VkVpQXJhVW8zZU0xMVFn?oc=5",
-     "tags": [
-      "markets",
-      "fr",
-      "watch",
-      "renewables"
-     ],
-     "sources": [
-      "SeeNews",
-      "Renewables Now"
-     ],
-     "free": null,
-     "report_link": null,
-     "report_name": null,
-     "what": "Akuo Energy remporte le premier appel d'offres éolien au Kosovo",
-     "what_en": "Akuo Energy wins Kosovo's first wind auction",
-     "for_you": null,
-     "for_you_en": null
-    },
-    {
-     "id": "2jobxbytunvvw5wexg3qqoc5",
-     "title": "PPE3 : miser sur l’éolien et le solaire est une erreur stratégique pour la France",
-     "link": "https://news.google.com/rss/articles/CBMiwgFBVV95cUxOVFlicUktTGJ4bGxDb09EQlZLNW1xaFJ6cmVVNEx6ZUJDQ1ZUVzNycnpMbjNHc1pMOHRlZ2ZPQWg5QVpqcmM5eEJoaVk5VDVweVl5LVJOYjJRLVZ0cWhlZDZSeDJSLWxmaDVMc0EtZ0s2dDc4MFZiM0JMaHNtUS16UDlvbHE2MVdySmhjQTkzbXEzVVY0dlpsTUs1QThjM19sY1N2ei1RY2Y1MzRmdWlETHNkZ2JobXBYTUNVVW5weXg3QQ?oc=5",
-     "tags": [
-      "fr",
-      "regulation",
-      "watch",
-      "renewables"
-     ],
-     "sources": [
-      "European Scientist"
-     ],
-     "free": null,
-     "report_link": null,
-     "report_name": null,
-     "what": "La stratégie énergétique est remise en question.",
-     "what_en": "The energy strategy is being questioned.",
-     "for_you": null,
-     "for_you_en": null,
-     "ctx": true
-    },
-    {
-     "id": "salondesmaires2026439517",
-     "title": "Raccordements, stockage, pompes à chaleur… : les coulisses du Salon des maires 2026",
-     "link": "https://www.greenunivers.com/2026/11/raccordements-stockage-pompes-a-chaleur-les-coulisses-du-salon-des-maires-2026-439517/",
-     "tags": [
-      "fr",
-      "power",
-      "build",
-      "renewables"
-     ],
-     "sources": [
-      "GreenUnivers"
-     ],
-     "free": null,
-     "report_link": null,
-     "report_name": null,
-     "what": "Le Salon des maires 2026 accueille des producteurs d'énergies renouvelables",
-     "what_en": "The 2026 Mayors' Fair hosts renewable energy producers",
+     "what": "Après la fin de l'Arenh, EDF multiplie les contrats d'accès à sa production nucléaire avec les industriels.",
+     "what_en": "After the end of ARENH, EDF is signing more contracts giving access to its nuclear output.",
      "for_you": null,
      "for_you_en": null
     }
@@ -797,93 +819,94 @@
     "agenda",
     "post"
    ],
-   "headline": "Qair signe un PPA solaire avec Holcim Polska",
-   "headline_en": "Qair inks solar PPA with Holcim Polska",
+   "headline": "Nouvelles énergies et stockage",
+   "headline_en": "New energy and storage news",
    "stories": [
     {
-     "id": "solarppawithholcimpolska",
-     "title": "Qair inks solar PPA with Holcim Polska",
-     "link": "https://www.renews.biz/solar/qair-inks-solar-ppa-with-holcim-polska/",
+     "id": "nergyauctionvolumeto15gw",
+     "title": "France triples planned renewable energy auction volume to 1.5 GW",
+     "link": "https://www.pv-magazine.com/2026/11/26/france-triples-planned-renewable-energy-auction-volume-to-1-5-gw/",
      "tags": [
       "power",
-      "renewables",
+      "regulation",
       "markets",
+      "renewables",
+      "fr"
+     ],
+     "section": "regulation",
+     "sources": [
+      "pv magazine"
+     ],
+     "free": null,
+     "report_link": null,
+     "report_name": null,
+     "what": "La France porte de 500 MW à 1,5 GW son prochain appel d'offres renouvelable neutre, ouvert à toutes les technologies, avec un prix de référence en base commun.",
+     "what_en": "France raises its next technology-neutral renewable tender from 500 MW to 1.5 GW, open to all technologies, with a common baseload reference price.",
+     "for_you": null,
+     "for_you_en": null
+    },
+    {
+     "id": "verainetecommeprixapayer",
+     "title": "EPR2 : le partage de souveraineté comme prix à payer",
+     "link": "https://www.connaissancedesenergies.org/tribune-actualite-energies/epr2-le-partage-de-souverainete-comme-prix-a-payer",
+     "tags": [
+      "fr",
+      "build",
+      "power"
+     ],
+     "section": "regulation",
+     "sources": [
+      "Connaissance des Énergies"
+     ],
+     "free": null,
+     "report_link": null,
+     "report_name": null,
+     "what": "Pour autoriser l'aide publique aux six futurs réacteurs EPR2, Bruxelles réclamerait deux contreparties à la France, dont l'ouverture à d'autres fournisseurs.",
+     "what_en": "To approve state aid for the six planned EPR2 reactors, Brussels is said to ask France for two concessions, including opening up to other suppliers.",
+     "for_you": null,
+     "for_you_en": null
+    },
+    {
+     "id": "aveclesraffineriesrusses",
+     "title": "Sanctions énergétiques : comment l’UE coupe ses liens avec les raffineries russes",
+     "link": "https://wattselse.com/veille/article/4678/sanctions-energetiques-comment-lue-coupe-ses-liens-avec-les-raffineries-russes",
+     "tags": [
+      "fr",
+      "power",
+      "regulation",
+      "geopolitics"
+     ],
+     "section": "regulation",
+     "sources": [
+      "Watts Else"
+     ],
+     "free": null,
+     "report_link": null,
+     "report_name": null,
+     "what": "Des sanctions européennes viseraient pour la première fois les installations électriques d'un pays tiers, dans le cadre de la rupture avec les raffineries russes.",
+     "what_en": "EU sanctions would for the first time target a third country's power installations, as part of cutting links with Russian refineries.",
+     "for_you": null,
+     "for_you_en": null
+    },
+    {
+     "id": "t4etnwbuxhtxdfahfasgcoc5",
+     "title": "Supply fears lift global oil prices after Strait of Hormuz incidents",
+     "link": "https://news.google.com/rss/articles/CBMitgFBVV95cUxOMF9yaHJYdHRRcWppOUxnUzQtUVZpT2dSSWF2V24wclFENEg1anBRMEc3eWRQRFZLSDR0YmdTcUMyUWRhd3JJZDBUVkdmdXBpR1RJclg1OHRUTmpjblhZMUczbENTemVLOUFpRjEtclVzZlNrQjB4VTFFdmRtY05RaTZtQmZrN3NiUkc3VEtZWV9YWkc5MUFFX09VLWF0R3pldnZ6OTF1ZHNWaEhCZlpBMnF3U1Bad9IBwwFBVV95cUxQaUwtM2RpS0FMLXBoNENDZ0gxSXcyWWY1al81Rld3c2ZkUUlxMTdkb0xKLWw4S1Q4SlpHaklWUXpyRnMtWDVsNGh6Z0J2SXdOVjFfRTFzc0VfaC1WZ0VoelZRQl9NZU9aaG1ZZFgxSTVsckdRUmhrXzFaWkNmcTdhVzh4M2tPbkRqUFJCbDZIYWhGYk9CT1hGY001a3RCNlluUFJyLU1PNjA5OU0wOE1SUnU4Skt4eTNWbUxhTXdFaHFaSGc?oc=5",
+     "tags": [
+      "markets",
+      "geopolitics",
       "watch"
      ],
+     "section": "markets",
      "sources": [
-      "reNEWS",
-      "Renewables Now"
+      "Baird Maritime",
+      "Markets.com"
      ],
      "free": null,
      "report_link": null,
      "report_name": null,
-     "what": "Qair signe un PPA solaire avec Holcim Polska pour 18 GWh d'électricité par an",
-     "what_en": "Qair inks solar PPA with Holcim Polska for 18 GWh of electricity per year",
-     "for_you": null,
-     "for_you_en": null
-    },
-    {
-     "id": "hzwanflswtdtllfc0ppwaoc5",
-     "title": "C&I : évole énergies associe fourniture d'électricité, production photovoltaïque et financement",
-     "link": "https://news.google.com/rss/articles/CBMiyAFBVV95cUxOTWNQSGJwblVHM05hN295andSUThHSGRDQzJSOGNKTWtleEtJSzVuXzBZel9GVFZDQjFRTlhKenA4MlByMDFUV243eXFXWXJMLWlrX0lVRDhPWmlRcGJpTXdJSzgweDlDdnJnMjdub3d0aUVpdV9Oel9tWmtjc1VPdVotLVVWRnpMeU9TQ0dkVm9tN1JMN25JX085eVp2OHhtS3RJV0dlUWpTZnJUU094NGRvMklLNVFEeHZWanFLSWtDTllfc0ppWA?oc=5",
-     "tags": [
-      "markets",
-      "fr",
-      "watch",
-      "deal",
-      "power",
-      "renewables"
-     ],
-     "sources": [
-      "pv magazine France"
-     ],
-     "free": null,
-     "report_link": null,
-     "report_name": null,
-     "what": "Un fournisseur propose un pack incluant électricité, production solaire et financement.",
-     "what_en": "A supplier offers a package including electricity, solar production and financing.",
-     "for_you": null,
-     "for_you_en": null,
-     "ctx": true
-    },
-    {
-     "id": "usquen2035maispasdargent",
-     "title": "Fusion nucléaire : la France a un plan jusqu’en 2035… mais pas d’argent",
-     "link": "https://www.revolution-energetique.com/actus/fusion-nucleaire-la-france-a-un-plan-jusquen-2035-mais-pas-dargent/",
-     "tags": [
-      "fr",
-      "power",
-      "deal"
-     ],
-     "sources": [
-      "Révolution Énergétique"
-     ],
-     "free": null,
-     "report_link": null,
-     "report_name": null,
-     "what": "La France vise à maîtriser les technologies de fusion nucléaire d'ici 2035",
-     "what_en": "France aims to master nuclear fusion technologies by 2035",
-     "for_you": null,
-     "for_you_en": null
-    },
-    {
-     "id": "salondesmaires2026439517",
-     "title": "Raccordements, stockage, pompes à chaleur… : les coulisses du Salon des maires 2026",
-     "link": "https://www.greenunivers.com/2026/11/raccordements-stockage-pompes-a-chaleur-les-coulisses-du-salon-des-maires-2026-439517/",
-     "tags": [
-      "fr",
-      "power",
-      "build",
-      "renewables"
-     ],
-     "sources": [
-      "GreenUnivers"
-     ],
-     "free": null,
-     "report_link": null,
-     "report_name": null,
-     "what": "Producteurs et constructeurs de centrales d'énergie renouvelables présents au Salon des maires 2026",
-     "what_en": "Renewable energy producers and constructors present at the 2026 Mayors' Fair",
+     "what": "Les incidents dans le détroit d'Ormuz ravivent les craintes sur l'offre et font monter les prix mondiaux du pétrole.",
+     "what_en": "Incidents in the Strait of Hormuz revive supply fears and lift global oil prices.",
      "for_you": null,
      "for_you_en": null
     },
@@ -897,80 +920,38 @@
       "markets",
       "renewables"
      ],
+     "section": "markets",
      "sources": [
       "Carbon Pulse"
      ],
      "free": null,
      "report_link": null,
      "report_name": null,
-     "what": "Un accord sur le système d'échange de quotas d'émission de l'UE pourrait être conclu en décembre",
-     "what_en": "A deal on the EU's Emissions Trading System could be reached in December",
+     "what": "Un accord du Parlement européen sur le marché du carbone (ETS) pourrait être trouvé d'ici quelques semaines, en décembre, selon les Verts.",
+     "what_en": "A European Parliament deal on the carbon market (ETS) could be reached within weeks, in December, according to the Greens.",
      "for_you": null,
      "for_you_en": null
     },
     {
-     "id": "hwt0znd3bmy3lnamtfbjqoc5",
-     "title": "Une première mondiale pour ces deux entreprises américaines qui viennent de signer un contrat pour de l'électricité produite dans l'espace",
-     "link": "https://news.google.com/rss/articles/CBMi_wFBVV95cUxNZExtbl9PcUNmRWU5M3g1cHlLaHkwY3ppR1RpNlVsNUFqb3R0TW5XRUlRck0tT3JtdTltQ1daV2tpX2VLcTJ3VnY5c0FGSVRkMjdHaXdxRm8xR0lDdFFrVjFmbHE2SXF3ZzZlQ1QycDdIUU04ZTdWNW81eHV6UnBFeHJtN09mU3huZXJyVmM3SDRGekpHZmxrMjVzUzItWTUwb1l4bVRoOW1Ea1lTUXNjRU80WXlyVWlMWXhaSHB2V0M0M01pcUpnRkg5X3FraXM1YXVhcENoUHBFVnFtWktBQ1E2RXpINElnWlJkRW1wSHhwT0Znd3BMY3lNamtFbjQ?oc=5",
+     "id": "durkg4rwt2x1k2d0xqq1moc5",
+     "title": "Après l’Arenh, EDF multiplie les contrats d’accès à son nucléaire",
+     "link": "https://news.google.com/rss/articles/CBMizAFBVV95cUxQZ2FlLTJVWk4yWHl3cTQtVXA2ak85cnV5dmptdUhUSjgwbnJrTk9XSHhPdS1uU0E5MGVKSzBXMlVoYUJsOEJoWkl5THcwVVBLZFpjbHdTVlRPYWhqbThzMG1VQ3RrZE5TU1g1NDRxU0RsWEZxelJONUFlY29RRWE0RTBXaWRpcWFfRktnUTdJakUxT2tZM2loYXNhN044ZnFFbEMwSV9NSWw4aU5VWTNfSE9fV3BmWEpfU2hWeTdURkg4RWt2X1k2d0xqQ1M?oc=5",
      "tags": [
-      "markets",
       "fr",
+      "markets",
       "watch",
+      "regulation",
       "power"
      ],
+     "section": "supply",
      "sources": [
-      "Media24.fr"
+      "Le nouvel Économiste"
      ],
      "free": null,
      "report_link": null,
      "report_name": null,
-     "what": "Cela montre une tendance vers l'innovation dans la production d'électricité.",
-     "what_en": "This shows a trend towards innovation in electricity production.",
-     "for_you": null,
-     "for_you_en": null,
-     "ctx": true
-    },
-    {
-     "id": "riyjnlwvuxvvjnqunvsxcoc5",
-     "title": "Sierra Leone : un partenariat pour raccorder les infrastructures télécoms au réseau électrique",
-     "link": "https://news.google.com/rss/articles/CBMi6gFBVV95cUxOZGRvSHgtdjNYVzFfT3FibGpVLTVuQ3Z5aGdHNFZJOV9WTTl1N2txZElkR2h2dUxqSEN5a1EyZ3lRUzVUYk1oX2NNOUhvUlJHYmZWelY0OGFXRjZGcHBfT09XWU1fNGV1RnRZbVpyN0dhZ0hzdFlSY1VEdmtWMGwwVUJRSmFTV21mSWlndVFid2ZhNENKYklHb3E4bjBJS25EYmJxejlULUpHYW5rcU1xOTRKQjVIbENZMnJWN0E5N1dLWWw1OTl0UGhjVjhHT3lTdnhPWXRoRXE4SzRIYjNLWVUxVVJnQUNVSXc?oc=5",
-     "tags": [
-      "fr",
-      "power",
-      "watch",
-      "build"
-     ],
-     "sources": [
-      "AGENCE ECOFIN"
-     ],
-     "free": null,
-     "report_link": null,
-     "report_name": null,
-     "what": "Cela illustre l'importance des infrastructures électriques pour d'autres secteurs.",
-     "what_en": "This illustrates the importance of electrical infrastructure for other sectors.",
-     "for_you": null,
-     "for_you_en": null,
-     "ctx": true
-    },
-    {
-     "id": "nergyauctionvolumeto15gw",
-     "title": "France triples planned renewable energy auction volume to 1.5 GW",
-     "link": "https://www.pv-magazine.com/2026/11/26/france-triples-planned-renewable-energy-auction-volume-to-1-5-gw/",
-     "tags": [
-      "power",
-      "regulation",
-      "markets",
-      "renewables",
-      "fr"
-     ],
-     "sources": [
-      "pv magazine"
-     ],
-     "free": null,
-     "report_link": null,
-     "report_name": null,
-     "what": "La France triple la capacité de son prochain appel d'offres pour les énergies renouvelables à 1,5 GW",
-     "what_en": "France triples the capacity of its upcoming renewable energy auction to 1.5 GW",
+     "what": "Après la fin de l'Arenh, EDF multiplie les contrats d'accès à sa production nucléaire avec les industriels.",
+     "what_en": "After the end of ARENH, EDF is signing more contracts giving access to its nuclear output.",
      "for_you": null,
      "for_you_en": null
     }
@@ -998,94 +979,9 @@
     "agenda",
     "post"
    ],
-   "headline": "Marchés de l'électricité et du gaz en Europe",
-   "headline_en": "European electricity and gas markets",
+   "headline": "Prix spot à 25 ans, EDF multiplie les contrats nucléaires",
+   "headline_en": "Spot price turns 25, EDF increases nuclear contracts",
    "stories": [
-    {
-     "id": "pufvrymjuoxlyzmliduxjoc5",
-     "title": "Le « prix spot » de l'électricité a 25 ans : 996 MWh échangés le 1er jour, tout le marché suspendu à lui depuis 2022",
-     "link": "https://news.google.com/rss/articles/CBMiuwFBVV95cUxPSlNvb1dUcThrY010U3l0eHB2QmlLYng2TmVYLWdyNkFVaUxxZXZnV3FyS3A5a0duclNLMHdsZzMwbEJPMnBCYlVnNExoMUxsZkk2UDl5cjFPajA2TDNVYjBKY1FiRkNVcjg2M3A2SUpFU3lOQkF3c0ZsM3FzaVBuTlNGOUEwampYOHR1OXVHVFF1Z3VadVFWTEItellzY2pDQ3dLV3NvQXRJdENpUFVrYmJUOXlyZmlidUxj?oc=5",
-     "tags": [
-      "markets",
-      "fr",
-      "watch",
-      "power"
-     ],
-     "sources": [
-      "JeChange"
-     ],
-     "free": null,
-     "report_link": null,
-     "report_name": null,
-     "what": "Le prix spot influence les transactions énergétiques",
-     "what_en": "The spot price influences energy transactions",
-     "for_you": null,
-     "for_you_en": null,
-     "ctx": true
-    },
-    {
-     "id": "solarppawithholcimpolska",
-     "title": "Qair inks solar PPA with Holcim Polska",
-     "link": "https://www.renews.biz/solar/qair-inks-solar-ppa-with-holcim-polska/",
-     "tags": [
-      "power",
-      "renewables",
-      "markets",
-      "watch"
-     ],
-     "sources": [
-      "reNEWS",
-      "Renewables Now"
-     ],
-     "free": null,
-     "report_link": null,
-     "report_name": null,
-     "what": "Qair signe un contrat de vente d'électricité avec Holcim Polska. 18 GWh par an.",
-     "what_en": "Qair signs a power purchase agreement with Holcim Polska. 18 GWh per year.",
-     "for_you": null,
-     "for_you_en": null
-    },
-    {
-     "id": "ricitymarketppabatteries",
-     "title": "The growth of photovoltaics in Poland is transforming the electricity market and the value of PPAs and batteries",
-     "link": "https://aleasoft.com/photovoltaics-poland-electricity-market-ppa-batteries/?utm_source=rss&utm_medium=rss&utm_campaign=photovoltaics-poland-electricity-market-ppa-batteries",
-     "tags": [
-      "power",
-      "markets",
-      "support",
-      "renewables"
-     ],
-     "sources": [
-      "AleaSoft"
-     ],
-     "free": null,
-     "report_link": null,
-     "report_name": null,
-     "what": "La croissance de la photovoltaïque en Pologne transforme le marché de l'électricité.",
-     "what_en": "The growth of photovoltaics in Poland is transforming the electricity market.",
-     "for_you": null,
-     "for_you_en": null
-    },
-    {
-     "id": "usquen2035maispasdargent",
-     "title": "Fusion nucléaire : la France a un plan jusqu’en 2035… mais pas d’argent",
-     "link": "https://www.revolution-energetique.com/actus/fusion-nucleaire-la-france-a-un-plan-jusquen-2035-mais-pas-dargent/",
-     "tags": [
-      "fr",
-      "power",
-      "deal"
-     ],
-     "sources": [
-      "Révolution Énergétique"
-     ],
-     "free": null,
-     "report_link": null,
-     "report_name": null,
-     "what": "Le gouvernement a présenté le 16 novembre sa stratégie pour la fusion nucléaire, avec l’objectif de maîtriser d’ici 2035 les technologies d’une centrale pilote européenne, […] L’article Fusion nucléaire : la France a un plan jusqu’en 2035……",
-     "what_en": null,
-     "for_you": null,
-     "for_you_en": null
-    },
     {
      "id": "nergyauctionvolumeto15gw",
      "title": "France triples planned renewable energy auction volume to 1.5 GW",
@@ -1097,79 +993,125 @@
       "renewables",
       "fr"
      ],
+     "section": "regulation",
      "sources": [
       "pv magazine"
      ],
      "free": null,
      "report_link": null,
      "report_name": null,
-     "what": "La France triple le volume de son prochain appel d'offres pour les énergies renouvelables.",
-     "what_en": "France triples the volume of its next renewable energy auction.",
+     "what": "La France porte de 500 MW à 1,5 GW son prochain appel d'offres renouvelable neutre, ouvert à toutes les technologies, avec un prix de référence en base commun.",
+     "what_en": "France raises its next technology-neutral renewable tender from 500 MW to 1.5 GW, open to all technologies, with a common baseload reference price.",
      "for_you": null,
      "for_you_en": null
     },
     {
-     "id": "ttpscarbonpulsecom575871",
-     "title": "EU publishes 2027 calendar for Swiss ETS registry transfers",
-     "link": "https://carbon-pulse.com/575871/",
+     "id": "verainetecommeprixapayer",
+     "title": "EPR2 : le partage de souveraineté comme prix à payer",
+     "link": "https://www.connaissancedesenergies.org/tribune-actualite-energies/epr2-le-partage-de-souverainete-comme-prix-a-payer",
+     "tags": [
+      "fr",
+      "build",
+      "power"
+     ],
+     "section": "regulation",
+     "sources": [
+      "Connaissance des Énergies"
+     ],
+     "free": null,
+     "report_link": null,
+     "report_name": null,
+     "what": "Pour autoriser l'aide publique aux six futurs réacteurs EPR2, Bruxelles réclamerait deux contreparties à la France, dont l'ouverture à d'autres fournisseurs.",
+     "what_en": "To approve state aid for the six planned EPR2 reactors, Brussels is said to ask France for two concessions, including opening up to other suppliers.",
+     "for_you": null,
+     "for_you_en": null
+    },
+    {
+     "id": "aveclesraffineriesrusses",
+     "title": "Sanctions énergétiques : comment l’UE coupe ses liens avec les raffineries russes",
+     "link": "https://wattselse.com/veille/article/4678/sanctions-energetiques-comment-lue-coupe-ses-liens-avec-les-raffineries-russes",
+     "tags": [
+      "fr",
+      "power",
+      "regulation",
+      "geopolitics"
+     ],
+     "section": "regulation",
+     "sources": [
+      "Watts Else"
+     ],
+     "free": null,
+     "report_link": null,
+     "report_name": null,
+     "what": "Des sanctions européennes viseraient pour la première fois les installations électriques d'un pays tiers, dans le cadre de la rupture avec les raffineries russes.",
+     "what_en": "EU sanctions would for the first time target a third country's power installations, as part of cutting links with Russian refineries.",
+     "for_you": null,
+     "for_you_en": null
+    },
+    {
+     "id": "t4etnwbuxhtxdfahfasgcoc5",
+     "title": "Supply fears lift global oil prices after Strait of Hormuz incidents",
+     "link": "https://news.google.com/rss/articles/CBMitgFBVV95cUxOMF9yaHJYdHRRcWppOUxnUzQtUVZpT2dSSWF2V24wclFENEg1anBRMEc3eWRQRFZLSDR0YmdTcUMyUWRhd3JJZDBUVkdmdXBpR1RJclg1OHRUTmpjblhZMUczbENTemVLOUFpRjEtclVzZlNrQjB4VTFFdmRtY05RaTZtQmZrN3NiUkc3VEtZWV9YWkc5MUFFX09VLWF0R3pldnZ6OTF1ZHNWaEhCZlpBMnF3U1Bad9IBwwFBVV95cUxQaUwtM2RpS0FMLXBoNENDZ0gxSXcyWWY1al81Rld3c2ZkUUlxMTdkb0xKLWw4S1Q4SlpHaklWUXpyRnMtWDVsNGh6Z0J2SXdOVjFfRTFzc0VfaC1WZ0VoelZRQl9NZU9aaG1ZZFgxSTVsckdRUmhrXzFaWkNmcTdhVzh4M2tPbkRqUFJCbDZIYWhGYk9CT1hGY001a3RCNlluUFJyLU1PNjA5OU0wOE1SUnU4Skt4eTNWbUxhTXdFaHFaSGc?oc=5",
+     "tags": [
+      "markets",
+      "geopolitics",
+      "watch"
+     ],
+     "section": "markets",
+     "sources": [
+      "Baird Maritime",
+      "Markets.com"
+     ],
+     "free": null,
+     "report_link": null,
+     "report_name": null,
+     "what": "Les incidents dans le détroit d'Ormuz ravivent les craintes sur l'offre et font monter les prix mondiaux du pétrole.",
+     "what_en": "Incidents in the Strait of Hormuz revive supply fears and lift global oil prices.",
+     "for_you": null,
+     "for_you_en": null
+    },
+    {
+     "id": "ttpscarbonpulsecom573431",
+     "title": "Greens see window for December EU ETS deal in European Parliament",
+     "link": "https://carbon-pulse.com/573431/",
      "tags": [
       "carbon",
-      "regulation",
-      "markets"
+      "deal",
+      "markets",
+      "renewables"
      ],
+     "section": "markets",
      "sources": [
       "Carbon Pulse"
      ],
      "free": null,
      "report_link": null,
      "report_name": null,
-     "what": "L'UE publie le calendrier 2027 pour les transferts de droits entre l'UE et la Suisse.",
-     "what_en": "The EU publishes the 2027 calendar for allowance transfers between the EU and Switzerland.",
+     "what": "Un accord du Parlement européen sur le marché du carbone (ETS) pourrait être trouvé d'ici quelques semaines, en décembre, selon les Verts.",
+     "what_en": "A European Parliament deal on the carbon market (ETS) could be reached within weeks, in December, according to the Greens.",
      "for_you": null,
      "for_you_en": null
     },
     {
-     "id": "0rkewzlsm5xc1rkwwwyzwoc5",
-     "title": "Wood wins FEED contract for Spain-France green hydrogen pipeline",
-     "link": "https://news.google.com/rss/articles/CBMipwFBVV95cUxNd1phbks3RktzcXBJV0hDOXJhVkdHajloR1pGS04xYjNlNGgtLTdSNWFubVlOd3JqWlQzeUFzbUtCOVo4QkdOYnV3WGxwaVVmTVBPZlpuVGJSUkhOY3ZUdXlwTjNFeEJvbHMzUC1XbnBNbkR6RzRMV2FmRjZsX19kY1E4YjhOLTg3WGFKc0xMbUhTNG1RY1h6a0RkeWZlSm5Xc1RkWWwyZw?oc=5",
-     "tags": [
-      "renewables",
-      "watch",
-      "gas",
-      "power",
-      "fr"
-     ],
-     "sources": [
-      "Renewables Now",
-      "Energy Monitor"
-     ],
-     "free": null,
-     "report_link": null,
-     "report_name": null,
-     "what": "Wood remporte un contrat pour la conception d'un pipeline d'hydrogène vert entre l'Espagne et la France.",
-     "what_en": "Wood wins a contract for the design of a green hydrogen pipeline between Spain and France.",
-     "for_you": null,
-     "for_you_en": null
-    },
-    {
-     "id": "ureselectriquesauxbatter",
-     "title": "Écoscore : la France risque-t-elle d’encourager les voitures électriques aux batteries plus gourmandes en ressources ?",
-     "link": "https://wattselse.com/veille/article/4682/ecoscore-la-france-risque-t-elle-dencourager-les-voitures-electriques-aux-batter",
+     "id": "durkg4rwt2x1k2d0xqq1moc5",
+     "title": "Après l’Arenh, EDF multiplie les contrats d’accès à son nucléaire",
+     "link": "https://news.google.com/rss/articles/CBMizAFBVV95cUxQZ2FlLTJVWk4yWHl3cTQtVXA2ak85cnV5dmptdUhUSjgwbnJrTk9XSHhPdS1uU0E5MGVKSzBXMlVoYUJsOEJoWkl5THcwVVBLZFpjbHdTVlRPYWhqbThzMG1VQ3RrZE5TU1g1NDRxU0RsWEZxelJONUFlY29RRWE0RTBXaWRpcWFfRktnUTdJakUxT2tZM2loYXNhN044ZnFFbEMwSV9NSWw4aU5VWTNfSE9fV3BmWEpfU2hWeTdURkg4RWt2X1k2d0xqQ1M?oc=5",
      "tags": [
       "fr",
-      "power",
+      "markets",
+      "watch",
       "regulation",
-      "watch"
+      "power"
      ],
+     "section": "supply",
      "sources": [
-      "Watts Else",
-      "L'Energeek"
+      "Le nouvel Économiste"
      ],
      "free": null,
      "report_link": null,
      "report_name": null,
-     "what": "Le barème transforme un paramètre commercial — l’autonomie homologuée en kilomètres — en critère environnemental déterminant pour l’accès aux aides, alors que ce paramètre n’est pas un indicateur de sobriété énergétique ni de frugalité en…",
-     "what_en": null,
+     "what": "Après la fin de l'Arenh, EDF multiplie les contrats d'accès à sa production nucléaire avec les industriels.",
+     "what_en": "After the end of ARENH, EDF is signing more contracts giving access to its nuclear output.",
      "for_you": null,
      "for_you_en": null
     }
@@ -1197,31 +1139,9 @@
     "agenda",
     "post"
    ],
-   "headline": "France triple les enchères d'énergie renouvelable",
-   "headline_en": "France triples renewable energy auctions",
+   "headline": "Baisse des prix de l'énergie, nouvelles réglementations",
+   "headline_en": "Energy price drop, new regulations",
    "stories": [
-    {
-     "id": "hwt0znd3bmy3lnamtfbjqoc5",
-     "title": "Une première mondiale pour ces deux entreprises américaines qui viennent de signer un contrat pour de l'électricité produite dans l'espace",
-     "link": "https://news.google.com/rss/articles/CBMi_wFBVV95cUxNZExtbl9PcUNmRWU5M3g1cHlLaHkwY3ppR1RpNlVsNUFqb3R0TW5XRUlRck0tT3JtdTltQ1daV2tpX2VLcTJ3VnY5c0FGSVRkMjdHaXdxRm8xR0lDdFFrVjFmbHE2SXF3ZzZlQ1QycDdIUU04ZTdWNW81eHV6UnBFeHJtN09mU3huZXJyVmM3SDRGekpHZmxrMjVzUzItWTUwb1l4bVRoOW1Ea1lTUXNjRU80WXlyVWlMWXhaSHB2V0M0M01pcUpnRkg5X3FraXM1YXVhcENoUHBFVnFtWktBQ1E2RXpINElnWlJkRW1wSHhwT0Znd3BMY3lNamtFbjQ?oc=5",
-     "tags": [
-      "markets",
-      "fr",
-      "watch",
-      "power"
-     ],
-     "sources": [
-      "Media24.fr"
-     ],
-     "free": null,
-     "report_link": null,
-     "report_name": null,
-     "what": "Cela montre une tendance vers l'innovation dans la production d'électricité.",
-     "what_en": "This shows a trend towards innovation in electricity production.",
-     "for_you": null,
-     "for_you_en": null,
-     "ctx": true
-    },
     {
      "id": "nergyauctionvolumeto15gw",
      "title": "France triples planned renewable energy auction volume to 1.5 GW",
@@ -1233,20 +1153,108 @@
       "renewables",
       "fr"
      ],
+     "section": "regulation",
      "sources": [
       "pv magazine"
      ],
      "free": null,
      "report_link": null,
      "report_name": null,
-     "what": "La France augmente la capacité de son enchère d'énergie renouvelable à 1,5 GW",
-     "what_en": "France increases renewable energy auction capacity to 1.5 GW",
+     "what": "La France porte de 500 MW à 1,5 GW son prochain appel d'offres renouvelable neutre, ouvert à toutes les technologies, avec un prix de référence en base commun.",
+     "what_en": "France raises its next technology-neutral renewable tender from 500 MW to 1.5 GW, open to all technologies, with a common baseload reference price.",
+     "for_you": null,
+     "for_you_en": null
+    },
+    {
+     "id": "verainetecommeprixapayer",
+     "title": "EPR2 : le partage de souveraineté comme prix à payer",
+     "link": "https://www.connaissancedesenergies.org/tribune-actualite-energies/epr2-le-partage-de-souverainete-comme-prix-a-payer",
+     "tags": [
+      "fr",
+      "build",
+      "power"
+     ],
+     "section": "regulation",
+     "sources": [
+      "Connaissance des Énergies"
+     ],
+     "free": null,
+     "report_link": null,
+     "report_name": null,
+     "what": "Pour autoriser l'aide publique aux six futurs réacteurs EPR2, Bruxelles réclamerait deux contreparties à la France, dont l'ouverture à d'autres fournisseurs.",
+     "what_en": "To approve state aid for the six planned EPR2 reactors, Brussels is said to ask France for two concessions, including opening up to other suppliers.",
+     "for_you": null,
+     "for_you_en": null
+    },
+    {
+     "id": "aveclesraffineriesrusses",
+     "title": "Sanctions énergétiques : comment l’UE coupe ses liens avec les raffineries russes",
+     "link": "https://wattselse.com/veille/article/4678/sanctions-energetiques-comment-lue-coupe-ses-liens-avec-les-raffineries-russes",
+     "tags": [
+      "fr",
+      "power",
+      "regulation",
+      "geopolitics"
+     ],
+     "section": "regulation",
+     "sources": [
+      "Watts Else"
+     ],
+     "free": null,
+     "report_link": null,
+     "report_name": null,
+     "what": "Des sanctions européennes viseraient pour la première fois les installations électriques d'un pays tiers, dans le cadre de la rupture avec les raffineries russes.",
+     "what_en": "EU sanctions would for the first time target a third country's power installations, as part of cutting links with Russian refineries.",
+     "for_you": null,
+     "for_you_en": null
+    },
+    {
+     "id": "t4etnwbuxhtxdfahfasgcoc5",
+     "title": "Supply fears lift global oil prices after Strait of Hormuz incidents",
+     "link": "https://news.google.com/rss/articles/CBMitgFBVV95cUxOMF9yaHJYdHRRcWppOUxnUzQtUVZpT2dSSWF2V24wclFENEg1anBRMEc3eWRQRFZLSDR0YmdTcUMyUWRhd3JJZDBUVkdmdXBpR1RJclg1OHRUTmpjblhZMUczbENTemVLOUFpRjEtclVzZlNrQjB4VTFFdmRtY05RaTZtQmZrN3NiUkc3VEtZWV9YWkc5MUFFX09VLWF0R3pldnZ6OTF1ZHNWaEhCZlpBMnF3U1Bad9IBwwFBVV95cUxQaUwtM2RpS0FMLXBoNENDZ0gxSXcyWWY1al81Rld3c2ZkUUlxMTdkb0xKLWw4S1Q4SlpHaklWUXpyRnMtWDVsNGh6Z0J2SXdOVjFfRTFzc0VfaC1WZ0VoelZRQl9NZU9aaG1ZZFgxSTVsckdRUmhrXzFaWkNmcTdhVzh4M2tPbkRqUFJCbDZIYWhGYk9CT1hGY001a3RCNlluUFJyLU1PNjA5OU0wOE1SUnU4Skt4eTNWbUxhTXdFaHFaSGc?oc=5",
+     "tags": [
+      "markets",
+      "geopolitics",
+      "watch"
+     ],
+     "section": "markets",
+     "sources": [
+      "Baird Maritime",
+      "Markets.com"
+     ],
+     "free": null,
+     "report_link": null,
+     "report_name": null,
+     "what": "Les incidents dans le détroit d'Ormuz ravivent les craintes sur l'offre et font monter les prix mondiaux du pétrole.",
+     "what_en": "Incidents in the Strait of Hormuz revive supply fears and lift global oil prices.",
+     "for_you": null,
+     "for_you_en": null
+    },
+    {
+     "id": "ttpscarbonpulsecom573431",
+     "title": "Greens see window for December EU ETS deal in European Parliament",
+     "link": "https://carbon-pulse.com/573431/",
+     "tags": [
+      "carbon",
+      "deal",
+      "markets",
+      "renewables"
+     ],
+     "section": "markets",
+     "sources": [
+      "Carbon Pulse"
+     ],
+     "free": null,
+     "report_link": null,
+     "report_name": null,
+     "what": "Un accord du Parlement européen sur le marché du carbone (ETS) pourrait être trouvé d'ici quelques semaines, en décembre, selon les Verts.",
+     "what_en": "A European Parliament deal on the carbon market (ETS) could be reached within weeks, in December, according to the Greens.",
      "for_you": null,
      "for_you_en": null
     },
     {
      "id": "durkg4rwt2x1k2d0xqq1moc5",
-     "title": "EDF : les contrats nucléaires CAPN après la fin de l’Arenh",
+     "title": "Après l’Arenh, EDF multiplie les contrats d’accès à son nucléaire",
      "link": "https://news.google.com/rss/articles/CBMizAFBVV95cUxQZ2FlLTJVWk4yWHl3cTQtVXA2ak85cnV5dmptdUhUSjgwbnJrTk9XSHhPdS1uU0E5MGVKSzBXMlVoYUJsOEJoWkl5THcwVVBLZFpjbHdTVlRPYWhqbThzMG1VQ3RrZE5TU1g1NDRxU0RsWEZxelJONUFlY29RRWE0RTBXaWRpcWFfRktnUTdJakUxT2tZM2loYXNhN044ZnFFbEMwSV9NSWw4aU5VWTNfSE9fV3BmWEpfU2hWeTdURkg4RWt2X1k2d0xqQ1M?oc=5",
      "tags": [
       "fr",
@@ -1255,123 +1263,15 @@
       "regulation",
       "power"
      ],
+     "section": "supply",
      "sources": [
       "Le nouvel Économiste"
      ],
      "free": null,
      "report_link": null,
      "report_name": null,
-     "what": "Les contrats CAPN concernent la vente de l'électricité nucléaire.",
-     "what_en": "The CAPN contracts relate to the sale of nuclear electricity.",
-     "for_you": null,
-     "for_you_en": null,
-     "ctx": true
-    },
-    {
-     "id": "0rkewzlsm5xc1rkwwwyzwoc5",
-     "title": "Wood wins FEED contract for Spain-France green hydrogen pipeline",
-     "link": "https://news.google.com/rss/articles/CBMipwFBVV95cUxNd1phbks3RktzcXBJV0hDOXJhVkdHajloR1pGS04xYjNlNGgtLTdSNWFubVlOd3JqWlQzeUFzbUtCOVo4QkdOYnV3WGxwaVVmTVBPZlpuVGJSUkhOY3ZUdXlwTjNFeEJvbHMzUC1XbnBNbkR6RzRMV2FmRjZsX19kY1E4YjhOLTg3WGFKc0xMbUhTNG1RY1h6a0RkeWZlSm5Xc1RkWWwyZw?oc=5",
-     "tags": [
-      "renewables",
-      "watch",
-      "gas",
-      "power",
-      "fr"
-     ],
-     "sources": [
-      "Renewables Now",
-      "Energy Monitor"
-     ],
-     "free": null,
-     "report_link": null,
-     "report_name": null,
-     "what": "Wood remporte un contrat pour un pipeline d'hydrogène vert entre l'Espagne et la France",
-     "what_en": "Wood wins contract for green hydrogen pipeline between Spain and France",
-     "for_you": null,
-     "for_you_en": null
-    },
-    {
-     "id": "ureselectriquesauxbatter",
-     "title": "Écoscore : la France risque-t-elle d’encourager les voitures électriques aux batteries plus gourmandes en ressources ?",
-     "link": "https://wattselse.com/veille/article/4682/ecoscore-la-france-risque-t-elle-dencourager-les-voitures-electriques-aux-batter",
-     "tags": [
-      "fr",
-      "power",
-      "regulation",
-      "watch"
-     ],
-     "sources": [
-      "Watts Else",
-      "L'Energeek"
-     ],
-     "free": null,
-     "report_link": null,
-     "report_name": null,
-     "what": "Le barème transforme un paramètre commercial — l’autonomie homologuée en kilomètres — en critère environnemental déterminant pour l’accès aux aides, alors que ce paramètre n’est pas un indicateur de sobriété énergétique ni de frugalité en…",
-     "what_en": null,
-     "for_you": null,
-     "for_you_en": null
-    },
-    {
-     "id": "iteunebaissedeuxrealites",
-     "title": "Gaz et électricité : une baisse, deux réalités",
-     "link": "https://lenergeek.com/2026/11/26/gaz-et-electricite-une-baisse-deux-realites/",
-     "tags": [
-      "fr",
-      "power",
-      "gas"
-     ],
-     "sources": [
-      "L'EnerGeek"
-     ],
-     "free": null,
-     "report_link": null,
-     "report_name": null,
-     "what": "Les marchés de l'énergie connaissent un retournement notable après plusieurs mois de hausse",
-     "what_en": "Energy markets experience a significant turnaround after several months of growth",
-     "for_you": "15,5% de baisse du contrat gazier pour livraison en 2027",
-     "for_you_en": "15.5% drop in gas contract for 2027 delivery"
-    },
-    {
-     "id": "pufvrymjuoxlyzmliduxjoc5",
-     "title": "Le « prix spot » de l'électricité a 25 ans : 996 MWh échangés le 1er jour, tout le marché suspendu à lui depuis 2022",
-     "link": "https://news.google.com/rss/articles/CBMiuwFBVV95cUxPSlNvb1dUcThrY010U3l0eHB2QmlLYng2TmVYLWdyNkFVaUxxZXZnV3FyS3A5a0duclNLMHdsZzMwbEJPMnBCYlVnNExoMUxsZkk2UDl5cjFPajA2TDNVYjBKY1FiRkNVcjg2M3A2SUpFU3lOQkF3c0ZsM3FzaVBuTlNGOUEwampYOHR1OXVHVFF1Z3VadVFWTEItellzY2pDQ3dLV3NvQXRJdENpUFVrYmJUOXlyZmlidUxj?oc=5",
-     "tags": [
-      "markets",
-      "fr",
-      "watch",
-      "power"
-     ],
-     "sources": [
-      "JeChange"
-     ],
-     "free": null,
-     "report_link": null,
-     "report_name": null,
-     "what": "Le prix spot influence les transactions énergétiques",
-     "what_en": "The spot price influences energy transactions",
-     "for_you": null,
-     "for_you_en": null,
-     "ctx": true
-    },
-    {
-     "id": "salondesmaires2026439517",
-     "title": "Raccordements, stockage, pompes à chaleur… : les coulisses du Salon des maires 2026",
-     "link": "https://www.greenunivers.com/2026/11/raccordements-stockage-pompes-a-chaleur-les-coulisses-du-salon-des-maires-2026-439517/",
-     "tags": [
-      "fr",
-      "power",
-      "build",
-      "renewables"
-     ],
-     "sources": [
-      "GreenUnivers"
-     ],
-     "free": null,
-     "report_link": null,
-     "report_name": null,
-     "what": "Le Salon des maires 2026 présente des solutions pour les collectivités locales",
-     "what_en": "The 2026 Mayors' Convention presents solutions for local authorities",
+     "what": "Après la fin de l'Arenh, EDF multiplie les contrats d'accès à sa production nucléaire avec les industriels.",
+     "what_en": "After the end of ARENH, EDF is signing more contracts giving access to its nuclear output.",
      "for_you": null,
      "for_you_en": null
     }
@@ -1411,8 +1311,8 @@
   }
  ],
  "pinned": null,
- "brief": "La disponibilité nucléaire en France est en baisse, avec 46,1 GW disponibles, soit une diminution de 1,9% en 7 jours. Cela pousse les prix à la hausse. De nouvelles attaques contre des navires dans le détroit d'Ormuz ont ravivé les craintes sur les approvisionnements en pétrole et la navigation maritime, faisant rebondir les prix. Les niveaux de stockage de gaz relativement bas et les développements dans les approvisionnements en GNL norvégien sont sous surveillance en cette période hivernale.",
- "brief_en": "Nuclear availability in France is decreasing, with 46.1 GW available, a 1.9% decrease in 7 days. This pushes prices up. New attacks on ships in the Strait of Hormuz have reignited fears over oil supplies and maritime traffic, causing prices to rebound. Relatively low gas storage levels and developments in Norwegian LNG supplies are being closely watched during this winter period.",
+ "brief": "Le spot français atteint 299 €/MWh pour ce vendredi (+3 % sur la veille), cinq fois son niveau du 19 novembre. Il monte alors que le gaz a reculé de 5 % sur la dernière séance : le froid, le vent faible et un nucléaire disponible à 46,1 GW, 6,6 GW sous la prévision de l'exploitant, tirent les prix. Les échéances ne suivent pas : décembre se traite à 208 €/MWh et le Cal 27 cède 2 % sur la dernière séance, à 115 €. Pour un acheteur encore ouvert sur décembre, se couvrir coûte environ 90 € de moins par MWh que le spot du jour. Côté pétrole, les attaques de navires dans le détroit d'Ormuz font remonter le Brent, sans entraîner le gaz européen. À surveiller : un répit sur les températures du 29 novembre au 4 décembre, puis le retour du froid dès le 6, avec un vent sous la normale jusque vers le 9 décembre.",
+ "brief_en": "French spot reaches 299 €/MWh for this Friday (+3% on the day before), five times its level of 19 November. It rises while gas fell 5% in the last session: cold, weak wind and nuclear availability of 46.1 GW, 6.6 GW below the operator's forecast, are pulling prices up. Forwards do not follow: December trades at 208 €/MWh and Cal 27 lost 2% in the last session, at 115 €. For a buyer still open on December, hedging costs about 90 € per MWh less than today's spot. On oil, attacks on ships in the Strait of Hormuz lift Brent, without dragging European gas along. To watch: a break in the cold from 29 November to 4 December, then colder again from the 6th, with wind below normal until around 9 December.",
  "brief_links": [],
- "brief_auto": "context"
+ "brief_auto": "claude"
 }
