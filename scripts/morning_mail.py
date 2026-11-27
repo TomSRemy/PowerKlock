@@ -312,7 +312,8 @@ def journal(today, E, ed, wk, mine):
         # previous session for the forwards and gas, the previous quote for the guarantees of origin, the week on Monday
         lab0 = r['label'][0]
         # short enough to stay on one line in a phone's tile (the owner, 27 Nov. 2026)
-        vs = ('sur 7 j' if wk else 'vs veille' if r.get('hours') or re.search(r"aujourd|Spot|Pointe", lab0) else
+        # « vs J-1 », « vs J-7 »: the days between the value and the one it is compared with (the owner, 27 Nov. 2026)
+        vs = ('sur 7 j' if wk else f'vs J-{r["ref_days"]}' if r.get('ref_days') else 'vs veille' if r.get('hours') or re.search(r"aujourd|Spot|Pointe", lab0) else
               'vs cotation' if re.search(r"Garanties|GO ", lab0) else 'vs séance')
         # the unit, the change and « vs … » each on a line of its own in every tile (the owner, 27 Nov. 2026: on a phone
         # the change sat beside the unit in some tiles and under it in others, and « vs cotation préc. », kept on one
