@@ -129,6 +129,8 @@ Also write `articles` (every day) and, on Monday, `articles_week`: the newslette
 - An article found only on the web (see above) and worth the newsletter is not in `data/news.json`, so it cannot be
   chosen yet: the watch must learn to catch it (see « The watch learns every morning » below), then choose it once the
   news run has brought it.
+- Never an item marked `"noai": true` in `data/news.json` (its outlet refuses AI use): neither in `articles` nor in
+  `links`, and its title is not read for the brief.
 - `section`, one of: `regulation` (CRE, ministries, Brussels, tenders, support schemes), `markets` (prices, gas,
   geopolitics, carbon), `nuclear_grid` (EDF's fleet, RTE, networks, interconnections), `deals` (PPAs, acquisitions,
   contracts), `projects` (new capacity, storage, renewables), `supply` (suppliers, tariffs, consumers, industry).
