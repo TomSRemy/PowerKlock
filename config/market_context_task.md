@@ -107,8 +107,8 @@ Also write `articles` (every day) and, on Monday, `articles_week`: the newslette
   key in the history) is not sent: its articles may be chosen. A new step of a story already sent (an amendment filed,
   a decision) is new.
 - An article found only on the web (see above) and worth the newsletter is not in `data/news.json`, so it cannot be
-  chosen: add the search or feed that brings it to `config/news_sources.json` (a press search in the same form as the
-  others), push it, and wait for the next news run (it starts on a push of that file) before choosing.
+  chosen yet: the watch must learn to catch it (see « The watch learns every morning » below), then choose it once the
+  news run has brought it.
 - `section`, one of: `regulation` (CRE, ministries, Brussels, tenders, support schemes), `markets` (prices, gas,
   geopolitics, carbon), `nuclear_grid` (EDF's fleet, RTE, networks, interconnections), `deals` (PPAs, acquisitions,
   contracts), `projects` (new capacity, storage, renewables), `supply` (suppliers, tariffs, consumers, industry).
@@ -119,6 +119,24 @@ Also write `articles` (every day) and, on Monday, `articles_week`: the newslette
   analysis, no opinion, no « impact » line (the owner, 25 Nov. 2026). Use only the title and the public summary of
   news.json: never the text of a paid article.
 
+## The watch learns every morning (the owner, 27 Nov. 2026)
+Each interesting article or subject found on the web and missing from `data/news.json` is a gap of the watch: fix the
+watch so it is caught from then on, every day, not only this morning.
+1. Find why it is missing: no search on that subject, an outlet the watch does not read, or a `require` filter that
+   rejects its title (`config/news_sources.json`; `scripts/fetch_news.py` › `add_items`).
+2. Fix it in `config/news_sources.json`: add a press search in the same form as the others (`q`, `tags`, `lang`), a
+   public RSS feed of the outlet (free, robots.txt allowing it), or widen the `require` filter of that outlet. Prefer a
+   search on the subject (« Ormuz pétrole navires ») to one on the exact title. Never a paid source, never LinkedIn.
+3. Push that file alone (message `News: the watch now catches <subject> (Claude)`): the push starts a news run (about
+   10 minutes). Check in the new `data/news.json` that the article is there, then choose it.
+4. A gap that needs a change of `scripts/fetch_news.py` (a new kind of source, a scoring that buries the subject) is
+   not pushed: describe it in the final message for the owner.
+5. Add a line to `config/news_gaps.md` (date, subject, the article missed, the cause, the fix, caught: yes/no), the
+   watch's improvement log; when the same gap comes back after a fix, say it in the final message.
+If the news run would end after 06:55 Paris, publish the brief without that article and keep the fix: tomorrow's
+watch catches it.
+
 ## How to publish
-Write that one file on `main` (one commit, message `data: newsletter brief <date> (Claude)`), nothing else. If a figure
-is missing or a file is late, write without that topic; never invent a figure.
+Write `data/newsletter_brief.json` on `main` (one commit, message `data: newsletter brief <date> (Claude)`). The only
+other files the task may change are `config/news_sources.json` and `config/news_gaps.md` (above). If a figure is
+missing or a file is late, write without that topic; never invent a figure.
