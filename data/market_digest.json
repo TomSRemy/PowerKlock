@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-27T06:24:48+00:00",
+ "updated": "2026-11-27T06:32:01+00:00",
  "asof": "2026-11-27",
  "notes": 6,
  "engine": "proxy",
@@ -7,45 +7,45 @@
   {
    "topic": "France",
    "topic_en": "France",
-   "text": "La disponibilité du parc nucléaire français est en baisse de 1,9% sur 7 jours, à 46088,75 MW, et la consommation d'électricité augmente, ce qui pourrait renforcer le recours aux centrales conventionnelles et inverser la dynamique des prix. Le prix spot moyen de l'électricité en France est de 299,1 €/MWh",
-   "text_en": "French nuclear power availability is down 1.9% over 7 days, to 46088.75 MW, and electricity consumption is increasing, which could strengthen the use of conventional power plants and reverse the price dynamics. The average spot price of electricity in France is 299.1 €/MWh",
+   "text": "La disponibilité du parc nucléaire français est en baisse de 1,9% sur 7 jours, à 46088,75 MW, et la consommation d'électricité augmente. Cela pousse les prix à la hausse.",
+   "text_en": "French nuclear power availability is down 1.9% over 7 days, to 46088.75 MW, and electricity consumption is increasing. This drives prices up.",
    "tone": "up"
   },
   {
    "topic": "Golfe",
    "topic_en": "Gulf",
-   "text": "Les tensions géopolitiques au Moyen-Orient, avec des attaques contre des tankers dans le détroit d'Ormuz, font craindre une perturbation de l'approvisionnement en pétrole et poussent les prix à la hausse. Le Brent est à 94,61 $/b",
-   "text_en": "Geopolitical tensions in the Middle East, with attacks on tankers in the Strait of Hormuz, are raising fears of a disruption to oil supplies and pushing prices up. Brent is at $94.61/b",
+   "text": "Les attaques contre les tankers dans le détroit d'Ormuz font craindre une pénurie d'approvisionnement et renforcent les prix du pétrole.",
+   "text_en": "Attacks on tankers in the Strait of Hormuz are raising concerns about supply shortages and boosting oil prices.",
    "tone": "up"
   },
   {
    "topic": "Norvège",
    "topic_en": "Norway",
-   "text": "La production de gaz norvégien a dépassé les prévisions officielles de 1,8% en octobre, mais les approvisionnements norvégiens ont été ponctuellement réduits par plusieurs opérations de maintenance, ce qui soutient les prix du gaz. Le TTF est à 87,78 €/MWh",
-   "text_en": "Norwegian gas production exceeded official forecasts by 1.8% in October, but Norwegian supplies were temporarily reduced by several maintenance operations, which supports gas prices. The TTF is at €87.78/MWh",
-   "tone": "up"
+   "text": "La production de gaz norvégienne est en hausse de 1% par rapport à l'année précédente, mais les approvisionnements sont ponctuellement réduits par des opérations de maintenance.",
+   "text_en": "Norwegian gas production is up 1% year-over-year, but supplies are temporarily reduced by maintenance operations.",
+   "tone": "flat"
   }
  ],
  "outlook": {
   "oil": {
    "tone": "up",
-   "text": "Les tensions géopolitiques au Moyen-Orient devraient continuer à soutenir les prix du pétrole",
-   "text_en": "Geopolitical tensions in the Middle East are expected to continue to support oil prices"
+   "text": "Brent à 97$",
+   "text_en": "Brent at $97"
   },
   "gas": {
    "tone": "up",
-   "text": "Les approvisionnements norvégiens réduits et les températures plus froides devraient maintenir la pression sur les prix du gaz",
-   "text_en": "Reduced Norwegian supplies and colder temperatures are expected to maintain pressure on gas prices"
+   "text": "TTF à 90€",
+   "text_en": "TTF at 90€"
   },
   "power": {
-   "tone": "flat",
-   "text": "La consommation d'électricité en France devrait rester stable",
-   "text_en": "Electricity consumption in France is expected to remain stable"
+   "tone": "up",
+   "text": "Cal 27 à 115€",
+   "text_en": "Cal 27 at 115€"
   },
   "carbon": {
    "tone": "flat",
-   "text": "Les prix des quotas de CO₂ devraient rester stables",
-   "text_en": "CO2 allowance prices are expected to remain stable"
+   "text": "EUA à 82€",
+   "text_en": "EUA at 82€"
   }
  }
 }
