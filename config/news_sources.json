@@ -115,7 +115,7 @@
         "fr",
         "power"
       ],
-      "require": "électri|electricit|photovolta|solaire|éolien|eolien|offshore|nucléaire|nucleaire|\\bedf\\b|engie|totalenergies|\\brte\\b|\\bcre\\b|enedis|hydrogène|batterie|stockage|renouvelable|tarif|fournisseur|pompe à chaleur|\\bppa\\b|énergie|energie|réseau électrique|gaz"
+      "require": "électri|electricit|photovolta|solaire|éolien|eolien|offshore|nucléaire|nucleaire|\\bedf\\b|engie|totalenergies|\\brte\\b|\\bcre\\b|enedis|hydrogène|batterie|stockage|renouvelable|tarif|fournisseur|pompe à chaleur|\\bppa\\b|énergie|energie|réseau électrique|gaz|\\bgaz\\b|gnl|pétrol|petrol|brent|ormuz|opep"
     },
     {
       "name": "Enerzine",
@@ -125,7 +125,7 @@
         "fr",
         "power"
       ],
-      "require": "électri|electricit|photovolta|solaire|éolien|eolien|offshore|nucléaire|nucleaire|\\bedf\\b|engie|totalenergies|\\brte\\b|\\bcre\\b|enedis|hydrogène|batterie|stockage|renouvelable|tarif|fournisseur|pompe à chaleur|\\bppa\\b|énergie|energie|réseau électrique|gaz"
+      "require": "électri|electricit|photovolta|solaire|éolien|eolien|offshore|nucléaire|nucleaire|\\bedf\\b|engie|totalenergies|\\brte\\b|\\bcre\\b|enedis|hydrogène|batterie|stockage|renouvelable|tarif|fournisseur|pompe à chaleur|\\bppa\\b|énergie|energie|réseau électrique|gaz|\\bgaz\\b|gnl|pétrol|petrol|brent|ormuz|opep"
     },
     {
       "name": "SER",
@@ -163,7 +163,7 @@
       "tags": [
         "fr"
       ],
-      "require": "électri|electricit|photovolta|solaire|éolien|eolien|offshore|nucléaire|nucleaire|\\bedf\\b|engie|totalenergies|\\brte\\b|\\bcre\\b|enedis|hydrogène|batterie|stockage|renouvelable|tarif|fournisseur|pompe à chaleur|\\bppa\\b|énergie|energie|réseau électrique|gaz"
+      "require": "électri|electricit|photovolta|solaire|éolien|eolien|offshore|nucléaire|nucleaire|\\bedf\\b|engie|totalenergies|\\brte\\b|\\bcre\\b|enedis|hydrogène|batterie|stockage|renouvelable|tarif|fournisseur|pompe à chaleur|\\bppa\\b|énergie|energie|réseau électrique|gaz|\\bgaz\\b|gnl|pétrol|petrol|brent|ormuz|opep"
     },
     {
       "name": "GEM Energy Analytics",
@@ -396,7 +396,7 @@
         "regulation",
         "power"
       ],
-      "require": "électri|electricit|photovolta|solaire|éolien|eolien|offshore|nucléaire|nucleaire|\\bedf\\b|engie|totalenergies|\\brte\\b|\\bcre\\b|enedis|hydrogène|batterie|stockage|renouvelable|pompe à chaleur|\\bppa\\b|énergie|energie|réseau électrique|gaz|agrivolta|biogaz|biométhane|biomethane|méthanis|ombrière|ombriere|hydroélectri|géotherm|chaleur renouvelable|\\bcee\\b|certificats d.économies"
+      "require": "électri|electricit|photovolta|solaire|éolien|eolien|offshore|nucléaire|nucleaire|\\bedf\\b|engie|totalenergies|\\brte\\b|\\bcre\\b|enedis|hydrogène|batterie|stockage|renouvelable|pompe à chaleur|\\bppa\\b|énergie|energie|réseau électrique|gaz|agrivolta|biogaz|biométhane|biomethane|méthanis|ombrière|ombriere|hydroélectri|géotherm|chaleur renouvelable|\\bcee\\b|certificats d.économies|\\bgaz\\b|gnl|pétrol|petrol|brent|ormuz|opep"
     },
     {
       "name": "ACER",
@@ -444,7 +444,7 @@
         "fr",
         "power"
       ],
-      "require": "électri|electricit|photovolta|solaire|éolien|eolien|offshore|nucléaire|nucleaire|\\bedf\\b|engie|totalenergies|\\brte\\b|\\bcre\\b|enedis|hydrogène|batterie|stockage|renouvelable|pompe à chaleur|\\bppa\\b|énergie|energie|réseau électrique|gaz"
+      "require": "électri|electricit|photovolta|solaire|éolien|eolien|offshore|nucléaire|nucleaire|\\bedf\\b|engie|totalenergies|\\brte\\b|\\bcre\\b|enedis|hydrogène|batterie|stockage|renouvelable|pompe à chaleur|\\bppa\\b|énergie|energie|réseau électrique|gaz|\\bgaz\\b|gnl|pétrol|petrol|brent|ormuz|opep"
     },
     {
       "name": "La Tribune",
@@ -453,7 +453,7 @@
       "tags": [
         "fr"
       ],
-      "require": "électri|electricit|photovolta|solaire|éolien|eolien|offshore|nucléaire|nucleaire|\\bedf\\b|engie|totalenergies|\\brte\\b|\\bcre\\b|enedis|hydrogène|batterie|stockage|renouvelable|pompe à chaleur|\\bppa\\b|énergie|energie|réseau électrique|gaz"
+      "require": "électri|electricit|photovolta|solaire|éolien|eolien|offshore|nucléaire|nucleaire|\\bedf\\b|engie|totalenergies|\\brte\\b|\\bcre\\b|enedis|hydrogène|batterie|stockage|renouvelable|pompe à chaleur|\\bppa\\b|énergie|energie|réseau électrique|gaz|\\bgaz\\b|gnl|pétrol|petrol|brent|ormuz|opep"
     },
     {
       "name": "Energy Live News",
@@ -472,7 +472,7 @@
         "fr",
         "power"
       ],
-      "require": "électri|electricit|photovolta|solaire|éolien|eolien|offshore|nucléaire|nucleaire|\\bedf\\b|engie|totalenergies|\\brte\\b|\\bcre\\b|enedis|hydrogène|batterie|stockage|renouvelable|pompe à chaleur|\\bppa\\b|énergie|energie|réseau électrique|gaz"
+      "require": "électri|electricit|photovolta|solaire|éolien|eolien|offshore|nucléaire|nucleaire|\\bedf\\b|engie|totalenergies|\\brte\\b|\\bcre\\b|enedis|hydrogène|batterie|stockage|renouvelable|pompe à chaleur|\\bppa\\b|énergie|energie|réseau électrique|gaz|\\bgaz\\b|gnl|pétrol|petrol|brent|ormuz|opep"
     },
     {
       "name": "Énergies de la mer",
@@ -499,7 +499,7 @@
       "tags": [
         "fr"
       ],
-      "require": "électri|electricit|photovolta|solaire|éolien|eolien|offshore|nucléaire|nucleaire|\\bedf\\b|engie|totalenergies|\\brte\\b|\\bcre\\b|enedis|hydrogène|batterie|stockage|renouvelable|pompe à chaleur|\\bppa\\b|énergie|energie|réseau électrique|gaz"
+      "require": "électri|electricit|photovolta|solaire|éolien|eolien|offshore|nucléaire|nucleaire|\\bedf\\b|engie|totalenergies|\\brte\\b|\\bcre\\b|enedis|hydrogène|batterie|stockage|renouvelable|pompe à chaleur|\\bppa\\b|énergie|energie|réseau électrique|gaz|\\bgaz\\b|gnl|pétrol|petrol|brent|ormuz|opep"
     },
     {
       "name": "SFEN",
@@ -1055,6 +1055,77 @@
       ],
       "lang": "fr",
       "require": "électri|electricit|photovolta|solaire|éolien|eolien|offshore|nucléaire|nucleaire|\\bedf\\b|engie|totalenergies|\\brte\\b|\\bcre\\b|enedis|hydrogène|batterie|stockage|renouvelable|pompe à chaleur|\\bppa\\b|énergie|energie|réseau électrique|gaz"
+    },
+    {
+      "q": "Ormuz pétrole navires",
+      "tags": [
+        "markets",
+        "geopolitics"
+      ],
+      "lang": "fr"
+    },
+    {
+      "q": "Hormuz tanker oil",
+      "tags": [
+        "markets",
+        "geopolitics"
+      ],
+      "lang": "en"
+    },
+    {
+      "q": "\"mer Rouge\" navires pétrole OR gaz",
+      "tags": [
+        "markets",
+        "geopolitics"
+      ],
+      "lang": "fr"
+    },
+    {
+      "q": "Brent crude oil prices",
+      "tags": [
+        "markets"
+      ],
+      "lang": "en"
+    },
+    {
+      "q": "prix du gaz TTF",
+      "tags": [
+        "markets",
+        "gas"
+      ],
+      "lang": "fr"
+    },
+    {
+      "q": "TTF gas prices Europe",
+      "tags": [
+        "markets",
+        "gas"
+      ],
+      "lang": "en"
+    },
+    {
+      "q": "GNL Europe approvisionnement",
+      "tags": [
+        "markets",
+        "gas"
+      ],
+      "lang": "fr"
+    },
+    {
+      "q": "Norway gas outage OR maintenance Europe",
+      "tags": [
+        "markets",
+        "gas"
+      ],
+      "lang": "en"
+    },
+    {
+      "q": "sanctions Russie énergie gaz OR pétrole",
+      "tags": [
+        "markets",
+        "geopolitics"
+      ],
+      "lang": "fr"
     }
   ],
   "mail_alerts": [
