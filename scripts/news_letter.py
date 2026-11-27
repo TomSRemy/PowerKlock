@@ -1369,6 +1369,14 @@ def main():
     if nb[0]:
         edition["brief"], edition["brief_en"] = nb
         edition["brief_auto"] = "claude"
+        # « À lire » under the brief (the owner, 27 Nov. 2026): up to 3 articles of data/news.json that the text relies on,
+        # chosen by Claude (newsletter_brief.json › links); a link the feed does not have is left out
+        try:
+            by = {i.get("link"): i for i in items}
+            lk = (json.load(open(os.path.join(ROOT, "data", "newsletter_brief.json"))).get("links_week" if weekly else "links") or [])
+            edition["brief_links"] = [{"title": by[l]["title"], "source": by[l]["source"], "link": l} for l in dict.fromkeys(lk) if l in by][:3]
+        except (OSError, ValueError, AttributeError, TypeError):
+            pass
         print("brief: written by Claude this morning")
     if not edition["brief"]:
         # then the Expert view's market context of the day (data/market_digest.json), before the free models (the owner, 25 Nov. 2026)

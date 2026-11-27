@@ -51,7 +51,7 @@ rather than contradict it, and say why in your final message so the owner can fi
 7-day averages, and a three-day rise inside it is not a contradiction once the horizon is written.
 
 ## What to write
-`{"asof": "<today, Paris>", "written": "<ISO time>", "daily": [...], "weekly": [...], "history": [...], "articles": [...], "articles_week": [...]}`, each item
+`{"asof": "<today, Paris>", "written": "<ISO time>", "daily": [...], "weekly": [...], "history": [...], "articles": [...], "articles_week": [...], "links": [...], "links_week": [...]}`, each item
 `{"topic", "topic_en", "text", "text_en"}`; `history` keeps the `daily` of the last 10 days (`{"asof", "daily"}`, newest
 first): add yesterday's, drop the oldest.
 
@@ -91,8 +91,9 @@ Not the same text every day (the owner, 25 Nov. 2026):
 
 Style (the owner's rules): simple French sentences, one idea each; no filler words (toutefois, néanmoins, en effet, par
 ailleurs, autrement dit, dans ce contexte); a cause only when the figures or the news give it; never contradict the
-figures; prices in €/MWh without decimals, capacity in GW with one decimal, moves in % without decimals; no source or
-outlet named, nothing copied.
+figures; every price with its full unit, every time (the owner, 27 Nov. 2026): spot, forwards (month, quarter, Cal),
+gas and spreads in €/MWh, carbon in €/t, Brent in $/bbl, never « 115 € » alone; no decimals; capacity in GW with one
+decimal, moves in % without decimals; no source or outlet named, nothing copied.
 
 Register (the owner, 27 Nov. 2026): « naturel pro ». Complete, sober sentences, as in a professional market note;
 a technical term is explained in passing when needed. No familiar turns (« n'y est pour rien », « prochain test »,
@@ -101,14 +102,20 @@ a technical term is explained in passing when needed. No familiar turns (« n'y 
 Example of a day (27 Nov. 2026, validated by the owner), for the reasoning, the register and the flow only (not a
 template), as the reader sees it:
 > Le spot français s'établit à 299 €/MWh pour ce vendredi, en hausse de 3 % sur la veille et pour la cinquième séance
-> consécutive ; il était à 60 € le 19 novembre. Cette hausse ne vient pas du gaz, qui a reculé de 5 % lors de la
+> consécutive ; il était à 60 €/MWh le 19 novembre. Cette hausse ne vient pas du gaz, qui a reculé de 5 % lors de la
 > dernière séance. Elle tient au système électrique : des températures nettement sous les normales, une production
 > éolienne environ deux fois plus faible qu'en temps normal et un parc nucléaire disponible à 46,1 GW, soit 6,6 GW de
 > moins que la prévision de l'exploitant. Les prix à terme ne suivent pas ce niveau : le contrat décembre cote
-> 208 €/MWh, environ 90 € sous le spot, et le Cal 27 recule de 2 %, à 115 €. Le marché considère donc cette tension
+> 208 €/MWh, environ 90 €/MWh sous le spot, et le Cal 27 recule de 2 %, à 115 €/MWh. Le marché considère donc cette tension
 > comme passagère. Les attaques de navires dans le détroit d'Ormuz font monter le pétrole, sans effet sur le gaz
 > européen. Le prochain point d'attention est le retour du froid à partir du 6 décembre, avec un vent qui devrait
 > rester faible jusque vers le 9.
+
+## « À lire » under the brief (the owner, 27 Nov. 2026)
+`links` (and `links_week` on Monday): 0 to 3 links of `data/news.json` (exactly as there) that the text relies on, when
+they help the reader go further (the Hormuz attacks, a CRE decision, an outage); the mail and the site show them under
+the brief as « À lire : outlet · outlet ». None on a day the text rests on the figures alone. They may also be among
+`articles`.
 
 ## The articles (the owner, 25 Nov. 2026)
 Also write `articles` (every day) and, on Monday, `articles_week`: the newsletter's articles, chosen in `data/news.json`.
@@ -151,7 +158,7 @@ watch catches it.
 
 ## Tools for the checks
 The session's container may be new: when `scripts/check_before_push.sh` stops on a missing module, install them with
-`pip install -q "playwright==1.63.0" scipy "matplotlib==3.9.2"` (Playwright 1.63 matches the browser already in
+`pip install -q "playwright==1.63.0" scipy scikit-learn "matplotlib==3.9.2"` (Playwright 1.63 matches the browser already in
 `/opt/pw-browsers`) and run it again. Never push a config file with the checks failing.
 
 ## How to publish
