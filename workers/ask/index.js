@@ -301,9 +301,9 @@ async function share(req, env) {
   const plus = info.desc ? (info.image ? ' avec son texte et son image' : ' avec son texte') : '';
   // what the phone sent, in a few words, so a share that lacks the text says why (the owner, 27 Nov. 2026)
   const pg = String(body.page || '');
-  const why = info.desc ? '' : !pg ? ' · page non reçue' : /<meta/i.test(pg) ? ' · page sans texte public' : /authwall|login|signup|se connecter|s’identifier/i.test(pg) ? ' · LinkedIn demande une connexion' : ` · page reçue sans balises (${Math.round(pg.length / 1024)} Ko)`;
+  const diag = info.desc ? '' : !pg ? ' · page non reçue' : /<meta/i.test(pg) ? ' · page sans texte public' : /authwall|login|signup|se connecter|s’identifier/i.test(pg) ? ' · LinkedIn demande une connexion' : ` · page reçue sans balises (${Math.round(pg.length / 1024)} Ko)`;
   const nt = note ? '' : ' · pas de commentaire';
-  if (j.ok) return text(j.already ? `Déjà dans PowerKlock ✓${j.updated ? ' (complété)' : ''}${why}${nt}` : `Ajouté à PowerKlock${plus} ✓${why}${nt}`);
+  if (j.ok) return text(j.already ? `Déjà dans PowerKlock ✓${j.updated ? ' (complété)' : ''}${diag}${nt}` : `Ajouté à PowerKlock${plus} ✓${diag}${nt}`);
   const why = { 'unknown key': 'Clé d’envoi inconnue : elle a peut-être été remplacée. Recopiez-la depuis Mon compte.', 'not approved': 'Votre compte attend validation.',
     quota: '50 posts envoyés aujourd’hui : la suite demain.', 'not a linkedin link': 'Ce n’est pas un lien LinkedIn.' }[j.reason];
   return text(why || 'Pas enregistré pour l’instant : réessayez plus tard.', j.reason === 'quota' ? 429 : 400);
