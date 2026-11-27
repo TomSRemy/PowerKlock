@@ -787,8 +787,8 @@ const _newsOpen = e => {
 document.addEventListener('click', _newsOpen, true);
 document.addEventListener('keydown', _newsOpen, true);
 
-// ── Posts to read: LinkedIn posts pasted by the team (public.news_post, warehouse migration 023). Only the link, the
-// author and a note are kept; votes go to public.news_vote like the articles' and pick the week's best for Monday's digest.
+// ── Posts to read: LinkedIn posts pasted by the team (public.news_post, warehouse migrations 023 and 045). The link, the
+// author, a note and, for a post sent from the phone, its public description (what LinkedIn gives link previews); votes go to public.news_vote like the articles' and pick the week's best for Monday's digest.
 let _newsPosts = [];
 const _newsAuthorOf = url => { const m = url.match(/linkedin\.com\/(?:posts|in)\/([a-z0-9-]+?)(?:-[0-9a-z]*\d[0-9a-z]*)?(?:_|\/|$)/i);
   return m ? m[1].split('-').filter(w => !/\d/.test(w)).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : ''; };
@@ -800,7 +800,7 @@ async function renderNewsPosts() {
   await A.ready();
   if (!A.user) { off(_newsT('Connectez-vous pour lire et partager les posts LinkedIn de l’équipe.', 'Sign in to read and share the team’s LinkedIn posts.')); return; }
   const cl = A.client();
-  const { data, error } = await cl.from('news_post').select('id, url, author, note, added_by, created_at').order('created_at', { ascending: false }).limit(40);
+  const { data, error } = await cl.from('news_post').select('id, url, author, note, description, added_by, created_at').order('created_at', { ascending: false }).limit(40);
   if (error) { sec.hidden = true; return; }
   sec.hidden = false; _newsPosts = data || [];
   const ago = d => formatTimeAgo(new Date(d));
@@ -817,6 +817,7 @@ async function renderNewsPosts() {
     </details>
     <div class="news-posts">${_newsPosts.length ? _newsPosts.map(p => `<div class="news-post">
       <a href="${_newsEsc(p.url)}" target="_blank" rel="noopener noreferrer"><b>${_newsEsc(p.author || 'LinkedIn')}</b>${p.note ? `<span>${_newsEsc(p.note)}</span>` : ''}</a>
+      ${p.description ? `<p class="news-post-d" title="${_newsEsc(p.description)}">${_newsEsc(p.description)}</p>` : ''}
       <div class="news-post-f"><span class="news-time">${ago(p.created_at)}</span><div class="news-vote" data-link="${_newsEsc(p.url)}">${_newsVoteBtns(p.url)}</div>${p.added_by === A.user.id ? `<button type="button" class="pk-btn-ghost" data-pdel="${p.id}">✕</button>` : ''}</div></div>`).join('')
       : `<div class="news-src-help">${_newsT('Aucun post pour l’instant : collez le lien d’un post LinkedIn qui vaut la lecture.', 'No post yet: paste the link of a LinkedIn post worth reading.')}</div>`}</div>`;
   const url = document.getElementById('news-post-url'), au = document.getElementById('news-post-author'), msg = document.getElementById('news-post-msg');

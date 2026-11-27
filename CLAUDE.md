@@ -25,7 +25,8 @@ Actions jobs that write JSON into `data/`. These rules come from the owner; foll
   Energy-Charts, CRE open data, EEX…), or official files republished in the same form every year (parsed by a job
   each year). Official pages republished in the same form (CRE, ministry consultations…) may be read when they have
   no feed. Paywalled press and sites that forbid automated collection (LinkedIn): titles, links and the page's public
-  summary (its description) only, never the article's text; a site whose robots.txt or server refuses scripts is not read. Free only: no paid API.
+  summary (its description) only, never the article's text; a site whose robots.txt or server refuses scripts is not read. Exception: a LinkedIn post the owner sends from
+  their phone, which opens the page while sharing (like a link preview), may give its public description; the server never opens LinkedIn. Free only: no paid API.
 - Every figure shown is traceable: the source is named under the chart, and Methodology describes the calculation.
 - Dates are **delivery days in Paris time** (`data/history/daily/<D>.json` = prices for delivery day D). A 25-hour
   day keeps 96 quarter-hours in its series: use the published daily average (`avg`), never the mean of the series.
