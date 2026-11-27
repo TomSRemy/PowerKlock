@@ -238,14 +238,39 @@ async function unshorten(u) {
     return (String(page).match(/https:\/\/([a-z]+\.)?linkedin\.com\/[^\s"'<>]+/i) || [])[0] || null;
   } catch { return null; }
 }
+// the page's public description (what LinkedIn gives link previews), from the page the owner's phone opened while
+// sharing: og:description, else twitter:description, else description. Nothing else of the page is kept.
+const ENT = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' };
+const unent = t => String(t).replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (m, e) => e[0] === '#' ? String.fromCodePoint(parseInt(e[1] === 'x' || e[1] === 'X' ? e.slice(2) : e.slice(1), e[1] === 'x' || e[1] === 'X' ? 16 : 10)) : (ENT[e.toLowerCase()] ?? m));
+function metaOf(html, names) {
+  for (const n of names) {
+    const tag = (String(html).match(new RegExp(`<meta[^>]+(?:property|name)=["']${n}["'][^>]*>`, 'i')) || [])[0];
+    const v = tag && (tag.match(/content=(["'])([\s\S]*?)\1/i) || [])[2];
+    if (v && v.trim()) return unent(v).replace(/\s+/g, ' ').trim();
+  }
+  return '';
+}
+function pageInfo(html) {
+  if (!/<meta/i.test(String(html || ''))) return { desc: '', author: '' };
+  const desc = metaOf(html, ['og:description', 'twitter:description', 'description']).slice(0, 1500);
+  // « Nicolas Paris on LinkedIn: … » / « … sur LinkedIn : … » / « Title | Author | LinkedIn »
+  const t = metaOf(html, ['og:title', 'twitter:title']);
+  const author = ((t.match(/^(.{2,80}?)\s+(?:on|sur)\s+LinkedIn\s*:/i) || [])[1] || (t.match(/\|\s*([^|]{2,80}?)\s*\|\s*LinkedIn\s*$/i) || [])[1] || '').trim();
+  return { desc, author };
+}
 async function share(req, env) {
   const text = (msg, status = 200) => new Response(msg, { status, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
   if (req.method !== 'POST') return text('Envoyez le post avec POST.', 405);
   const key = (req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '').trim();
   if (!/^pks_[0-9a-f]{48}$/.test(key)) return text('Clé d’envoi manquante ou mal copiée : recopiez-la depuis Mon compte.', 401);
+  // JSON {url, note, page}, a form (url, note, page as a file: the iPhone shortcut), or the shared text alone
   let body = {};
-  const raw = await req.text();
-  try { body = JSON.parse(raw); } catch { body = { url: raw }; }   // JSON {url, note}, or the shared text alone
+  if (/multipart\/form-data|x-www-form-urlencoded/i.test(req.headers.get('Content-Type') || '')) {
+    try { const f = await req.formData(); for (const [k, v] of f.entries()) body[k] = typeof v === 'string' ? v : await v.text(); } catch { body = {}; }
+  } else {
+    const raw = await req.text();
+    try { body = JSON.parse(raw); } catch { body = { url: raw }; }
+  }
   const all = [body.url, body.text, body.input].filter(Boolean).map(String).join(' ');
   let url = (all.match(/(?:https?:\/\/)?([a-z]+\.)?linkedin\.com\/[^\s"'<>]+/i) || [])[0];
   // the LinkedIn app often shares a short link (lnkd.in/…): follow it to the post's own address
@@ -254,11 +279,16 @@ async function share(req, env) {
   if (url && !/^https:/i.test(url)) url = 'https://' + url.replace(/^http:\/\//i, '');
   // what arrived, in the message, so a failed share says what the phone sent (its first 90 characters, no key)
   if (!url) return text(`Pas de lien LinkedIn dans ce partage (reçu : « ${all.replace(/\s+/g, ' ').trim().slice(0, 90) || 'rien'} »).`, 400);
+  // a shortcut field left as typed words (« Saisie fournie », « Entrée de raccourci ») instead of its variable is no note
+  let note = String(body.note || '').trim();
+  if (/^(saisie fournie|entrée de raccourci|provided input|shortcut input|texte demandé|ask for input)$/i.test(note)) note = '';
+  const info = pageInfo(body.page || (/<meta/i.test(all) ? all : ''));
   const r = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/share_post`, {
     method: 'POST', headers: { apikey: env.SUPABASE_KEY, Authorization: `Bearer ${env.SUPABASE_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ p_key: key, p_url: url, p_author: linkedinAuthor(url) || null, p_note: String(body.note || '').slice(0, 200) || null }) });
+    body: JSON.stringify({ p_key: key, p_url: url, p_author: info.author || linkedinAuthor(url) || null, p_note: note.slice(0, 200) || null, p_desc: info.desc || null }) });
   const j = r.ok ? await r.json() : { ok: false, reason: 'database ' + r.status };
-  if (j.ok) return text(j.already ? 'Déjà dans PowerKlock ✓' : 'Ajouté à PowerKlock ✓');
+  const plus = info.desc ? ' avec son texte' : '';
+  if (j.ok) return text(j.already ? `Déjà dans PowerKlock ✓${j.updated ? ' (texte ajouté)' : ''}` : `Ajouté à PowerKlock${plus} ✓`);
   const why = { 'unknown key': 'Clé d’envoi inconnue : elle a peut-être été remplacée. Recopiez-la depuis Mon compte.', 'not approved': 'Votre compte attend validation.',
     quota: '50 posts envoyés aujourd’hui : la suite demain.', 'not a linkedin link': 'Ce n’est pas un lien LinkedIn.' }[j.reason];
   return text(why || 'Pas enregistré pour l’instant : réessayez plus tard.', j.reason === 'quota' ? 429 : 400);

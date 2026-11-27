@@ -4138,6 +4138,7 @@ html:not(.pk-public) #pk-gate { display: none; }
 .news-post a b { font-size: 13px; }
 .news-post a span { font-size: 12.5px; color: var(--text2); }
 .news-post a:hover b { color: var(--accent); }
+.news-post-d { margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--text2); display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden; white-space: pre-line; }
 .news-post-f { display: flex; align-items: center; gap: 8px; margin-top: auto; }
 .news-post-f .news-vote { margin: 0; }
 .news-post-how { margin-top: 8px; font-size: 12.5px; color: var(--text2); }
@@ -4994,6 +4995,7 @@ html.pk-app #ask-drawer { z-index: 10003; }
 .pa-post b { display: block; margin-bottom: 8px; }
 .pa-in { width: 100%; box-sizing: border-box; padding: 11px 12px; border-radius: 8px; border: 1px solid var(--border2); background: var(--bg); color: var(--text); font: 16px 'Inter', sans-serif; margin-bottom: 8px; }
 .pa-pn { margin: 3px 0 0; font-size: 13.5px; color: var(--text2); font-weight: 400; }
+.pa-pd { margin: 4px 0 0; font-size: 13px; line-height: 1.45; color: var(--text2); font-weight: 400; display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden; white-space: pre-line; }
 /* the app in PowerKlock's own look: the site's KPI cards (coloured left edge: up red, down green), section titles and tabs */
 html.pk-app #pk-app { font-family: 'Inter', sans-serif; }
 .pa-h { font-family: 'Outfit', 'Inter', sans-serif; font-size: 24px; letter-spacing: -.01em; }
