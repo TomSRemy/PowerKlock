@@ -27,7 +27,7 @@ from datetime import date, datetime, timedelta, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from morning_mail import load as dload, spot   # noqa: E402
-from news_digest import PARIS, PROXY, energy, focus, sid, similar, top_posts   # noqa: E402
+from news_digest import COMMON, PARIS, PROXY, energy, focus, sid, similar, top_posts   # noqa: E402
 import news_charts   # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -85,6 +85,25 @@ def age_h(i, now):
         return (now - datetime.fromisoformat(i["date"])).total_seconds() / 3600
     except (KeyError, TypeError, ValueError):
         return None
+
+
+def already_told(title, past_title):
+    """a title that tells again a story of an earlier edition: close wording (character 4-5-grams, as « similar »), or three
+    distinctive words in common that are half of the shorter title. « similar » alone (two words in common, made to pair
+    two titles of the same morning) threw out a third of the fresh articles against ten days of titles: « Statkraft
+    acquires 225MW Clash Gour wind farm » for « Nala inaugurates 99MW Romanian wind farm », the S06-S10 amendment for
+    « 109 000 coupures de gaz » (« plus », « 000 »); 27 Nov. 2026: 44 of 124 articles left out, 4 with this rule"""
+    from sklearn.feature_extraction.text import TfidfVectorizer
+    from sklearn.metrics.pairwise import cosine_similarity
+    a, b = (title or "").lower(), (past_title or "").lower()
+    if not a.strip() or not b.strip():
+        return False
+    if a == b or cosine_similarity(TfidfVectorizer(analyzer="char_wb", ngram_range=(4, 5)).fit_transform([a, b]))[0, 1] >= 0.3:
+        return True
+    w = lambda t: {x for x in re.findall(r"[a-z0-9à-ÿ]+", t) if len(x) > 3 and not x.isdigit() and x not in COMMON}  # noqa: E731
+    wa, wb = w(a), w(b)
+    k = len(wa & wb)
+    return k >= 3 and k >= 0.5 * min(len(wa), len(wb))
 
 
 def kw_hits(i, prof):
@@ -1364,13 +1383,19 @@ def main():
     if not weekly:
         seen_links = {l for v in past.values() for l in v.get("links") or []}
         seen_titles = [t for v in past.values() for t in v.get("titles") or []]
-        fresh = lambda i: i.get("link") not in seen_links and not any(similar(i.get("title", ""), t) for t in seen_titles)  # noqa: E731
+        fresh = lambda i: i.get("link") not in seen_links and not any(already_told(i.get("title", ""), t) for t in seen_titles)  # noqa: E731
         before = len(items)
+        # the articles the morning task chose (claude_articles) are held back by their link only: the task reads the
+        # history and may choose a new step of a story already told (config/market_context_task.md: « an amendment filed,
+        # a decision »), which a title rule cannot tell from a repeat
+        items_by_link = [i for i in items if i.get("link") not in seen_links]
         items = [i for i in items if fresh(i)]
         print(f"{before - len(items)} articles already in an earlier edition, left out")
         PREV_BRIEF = (past[max(past)].get("brief") or "") if past else ""
     cons = (load(os.path.join(ROOT, "data", "consultations.json"), {}) or {}).get("items") or []
     events = (load(os.path.join(ROOT, "data", "events.json"), {}) or {}).get("items") or []
+    if weekly:
+        items_by_link = items
     monday = today.weekday() == 0
     # 7 O'Klock: the last 36 hours (84 on Monday); PowerBrunch: the week before, larger
     hours = 7 * 24 + 12 if weekly else 84 if monday else 36
@@ -1501,7 +1526,7 @@ def main():
                     news_charts.draw(spec, os.path.join(news_charts.IMG, f"{t}_{key}.png"))
                     charts[key] = {"img": f"newsletter_img/{t}_{key}.png", "title": spec["title"], "src": spec["src"], "page": spec["page"]}
                 hero = charts[key]
-        cl = claude_articles(edition["date"], weekly, items)
+        cl = claude_articles(edition["date"], weekly, items_by_link)
         if cl:
             # the articles Claude chose this morning (config/market_context_task.md): every section, a short description
             # and a neutral impact under each (the owner, 25 Nov. 2026); every profile gets them, each reader's order follows
