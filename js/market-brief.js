@@ -70,17 +70,22 @@
   // scored by its fetch job with these same word lists (scripts/fetch_fr_market.py, tone_score: data/fr_market.json
   // marketInsightsTone), which keeps no text; the e-mailed note is scored here
   const UPW = /\b(tight\w*|tense|tension\w*|ris(e|es|ing)|higher|increas\w*|support\w*|firm\w*|bullish|pressure\w*|spik\w*|jump\w*|surg\w*|climb\w*|strong\w*|gain\w*|deteriorat\w*|disrupt\w*|risk\w*)\b/gi;
+  // the French notes (Opéra Énergie): the same idea in French
+  const UPF = /(hausse|haussi\w*|tensions?|tendu\w*|progress\w*|rebond\w*|grimp\w*|flamb\w*|bondi\w*|envol\w*|risques?|perturbation\w*|fragil\w*)/gi;
   const DNW = /\b(eas(e|es|ed|ing)|fall\w*|fell|lower\w*|declin\w*|drop\w*|bearish|weak\w*|loosen\w*|relief|soft\w*|improv\w*|calm\w*|resilient|ample|comfortable|down\w*)\b/gi;
-  const tone = t => (String(t).match(UPW) || []).length - (String(t).match(DNW) || []).length;
+  const DNF = /(baisse|baissi\w*|recul\w*|repli\w*|détente|détend\w*|chut\w*|accalmie|reflu\w*|excédent\w*|abondan\w*|amélior\w*)/gi;
+  const tone = t => (String(t).match(UPW) || []).length + (String(t).match(UPF) || []).length - (String(t).match(DNW) || []).length - (String(t).match(DNF) || []).length;
   async function notes() {
     const out = { ctx: [], brent: [], ttf: [], eua: [], cal: [] }, add = (name, txt) => {
-      const n = String(name).toLowerCase(), k = /context|macro|geopol/.test(n) ? 'ctx' : /oil|brent/.test(n) ? 'brent' : /gas/.test(n) ? 'ttf' : /co2|co₂|carbon/.test(n) ? 'eua' : /electric|power/.test(n) ? 'cal' : null;
+      const n = String(name).toLowerCase(), k = /context|macro|geopol/.test(n) ? 'ctx' : /oil|brent|pétrole|petrole/.test(n) ? 'brent' : /gas|gaz/.test(n) ? 'ttf' : /co2|co₂|carbon/.test(n) ? 'eua' : /electric|power|lectricit/.test(n) ? 'cal' : null;
       if (k && txt) out[k].push(tone(txt)); };
     try { const fm = await get('fr_market.json'), mt = fm && fm.marketInsightsTone, d = (mt && mt.date || '').slice(0, 10);
       if (mt && d && Date.now() - Date.parse(d) < 10 * 864e5) { if (typeof mt.gas === 'number') out.ttf.push(mt.gas); if (typeof mt.power === 'number') out.cal.push(mt.power); } } catch (_) {}
     try { const cl = window.PKAccount && PKAccount.user && PKAccount.client && PKAccount.client();
-      if (cl) { const r = await cl.from('market_note').select('note_date, sections').order('note_date', { ascending: false }).limit(1), n = r.data && r.data[0];
-        if (n && Date.now() - Date.parse(n.note_date) < 10 * 864e5) (n.sections || []).forEach(x => add(x.name, (x.headline || '') + ' ' + (x.points || []).join(' '))); } } catch (_) {}
+      if (cl) { // the latest note of each source (ENGIE by e-mail, Opéra Énergie's weekly note) of the last 10 days
+        const r = await cl.from('market_note').select('source, note_date, sections').order('note_date', { ascending: false }).limit(8), seen = new Set();
+        (r.data || []).forEach(n => { if (seen.has(n.source) || Date.now() - Date.parse(n.note_date) >= 10 * 864e5) return; seen.add(n.source);
+          (n.sections || []).forEach(x => add(x.name, (x.headline || '') + ' ' + (x.points || []).join(' '))); }); } } catch (_) {}
     return out;
   }
   // the right-hand column: what the notes said against what the price did

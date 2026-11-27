@@ -800,7 +800,7 @@ async function renderNewsPosts() {
   await A.ready();
   if (!A.user) { off(_newsT('Connectez-vous pour lire et partager les posts LinkedIn de l’équipe.', 'Sign in to read and share the team’s LinkedIn posts.')); return; }
   const cl = A.client();
-  const { data, error } = await cl.from('news_post').select('id, url, author, note, description, added_by, created_at').order('created_at', { ascending: false }).limit(40);
+  const { data, error } = await cl.from('news_post').select('id, url, author, note, description, image, added_by, created_at').order('created_at', { ascending: false }).limit(40);
   if (error) { sec.hidden = true; return; }
   sec.hidden = false; _newsPosts = data || [];
   const ago = d => formatTimeAgo(new Date(d));
@@ -817,7 +817,7 @@ async function renderNewsPosts() {
     </details>
     <div class="news-posts">${_newsPosts.length ? _newsPosts.map(p => `<div class="news-post">
       <a href="${_newsEsc(p.url)}" target="_blank" rel="noopener noreferrer"><b>${_newsEsc(p.author || 'LinkedIn')}</b>${p.note ? `<span>${_newsEsc(p.note)}</span>` : ''}</a>
-      ${p.description ? `<p class="news-post-d" title="${_newsEsc(p.description)}">${_newsEsc(p.description)}</p>` : ''}
+      ${p.image ? `<a class="news-post-img" href="${_newsEsc(p.url)}" target="_blank" rel="noopener noreferrer" tabindex="-1"><img src="${_newsEsc(p.image)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.remove()"></a>` : ''}      ${p.description ? `<p class="news-post-d" title="${_newsEsc(p.description)}">${_newsEsc(p.description)}</p>` : ''}
       <div class="news-post-f"><span class="news-time">${ago(p.created_at)}</span><div class="news-vote" data-link="${_newsEsc(p.url)}">${_newsVoteBtns(p.url)}</div>${p.added_by === A.user.id ? `<button type="button" class="pk-btn-ghost" data-pdel="${p.id}">✕</button>` : ''}</div></div>`).join('')
       : `<div class="news-src-help">${_newsT('Aucun post pour l’instant : collez le lien d’un post LinkedIn qui vaut la lecture.', 'No post yet: paste the link of a LinkedIn post worth reading.')}</div>`}</div>`;
   const url = document.getElementById('news-post-url'), au = document.getElementById('news-post-author'), msg = document.getElementById('news-post-msg');

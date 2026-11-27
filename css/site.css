@@ -974,6 +974,7 @@
   }
   .news-source.rte { color: #C4A57B; background: rgba(196,165,123,0.15); }
   .news-source.modo { color: #9B8CFF; background: rgba(155,140,255,0.15); }
+  .news-source.opera { color: #F2A65A; background: rgba(242,166,90,0.15); }
   .news-source.cre { color: #5FA8D3; background: rgba(95,168,211,0.12); }
   .news-source.entsoe { color: var(--accent); }
   .news-source.acer { color: #FBBF24; background: rgba(251,191,36,0.12); }
@@ -4138,6 +4139,8 @@ html:not(.pk-public) #pk-gate { display: none; }
 .news-post a b { font-size: 13px; }
 .news-post a span { font-size: 12.5px; color: var(--text2); }
 .news-post a:hover b { color: var(--accent); }
+.news-post .news-post-img { display: block; border-radius: 6px; overflow: hidden; aspect-ratio: 1.91 / 1; background: var(--bg2, rgba(255,255,255,.04)); }
+.news-post .news-post-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .news-post-d { margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--text2); display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden; white-space: pre-line; }
 .news-post-f { display: flex; align-items: center; gap: 8px; margin-top: auto; }
 .news-post-f .news-vote { margin: 0; }
@@ -4995,6 +4998,7 @@ html.pk-app #ask-drawer { z-index: 10003; }
 .pa-post b { display: block; margin-bottom: 8px; }
 .pa-in { width: 100%; box-sizing: border-box; padding: 11px 12px; border-radius: 8px; border: 1px solid var(--border2); background: var(--bg); color: var(--text); font: 16px 'Inter', sans-serif; margin-bottom: 8px; }
 .pa-pn { margin: 3px 0 0; font-size: 13.5px; color: var(--text2); font-weight: 400; }
+.pa-pimg { display: block; width: 100%; aspect-ratio: 1.91 / 1; object-fit: cover; border-radius: 8px; margin: 6px 0 2px; }
 .pa-pd { margin: 4px 0 0; font-size: 13px; line-height: 1.45; color: var(--text2); font-weight: 400; display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden; white-space: pre-line; }
 /* the app in PowerKlock's own look: the site's KPI cards (coloured left edge: up red, down green), section titles and tabs */
 html.pk-app #pk-app { font-family: 'Inter', sans-serif; }

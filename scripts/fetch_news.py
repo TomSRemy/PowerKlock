@@ -708,6 +708,51 @@ def modo_news(now, days=21, max_pages=12):
     return items
 
 
+OPERA_INDEX = "https://opera-energie.com/sitemap_index.xml"
+OPERA_CACHE = Path("data/news_opera.json")
+# Opéra Énergie (energy broker for businesses): its weekly « Notes d'analyse » on French power and gas prices, a page
+# each Monday with the analysis as a PDF. robots.txt allows the sitemap and the pages (only its feeds are closed to
+# scripts); the title and link go into the feed, the note itself into the market notes (scripts/fetch_market_notes.py).
+
+
+def opera_notes(days=21):
+    """[(lastmod, url)] of the recent weekly notes, from the media sitemaps"""
+    idx = requests.get(OPERA_INDEX, headers=BROWSER_UA, timeout=30)
+    idx.raise_for_status()
+    since = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat()
+    out = []
+    for sm in re.findall(r"<loc>(https://opera-energie\.com/opera_media-sitemap\d*\.xml)</loc>", idx.text):
+        t = requests.get(sm, headers=BROWSER_UA, timeout=30).text
+        for loc, mod in re.findall(r"<loc>(https://opera-energie\.com/media/notes-analyse-prix-[^<]+)</loc>\s*<lastmod>([^<]+)</lastmod>", t):
+            if mod >= since:
+                out.append((mod, loc))
+    return sorted(out, reverse=True)
+
+
+def opera_news(now, max_pages=6):
+    """Opéra Énergie's weekly notes: title (the page's og:title) and link; the page is read once (data/news_opera.json)"""
+    try:
+        cache = json.loads(OPERA_CACHE.read_text())
+    except (OSError, ValueError):
+        cache = {}
+    recent, items, fetched = opera_notes(), [], 0
+    for mod, loc in recent:
+        c = cache.get(loc)
+        if not c and fetched < max_pages:
+            fetched += 1
+            time.sleep(1)
+            try:
+                page = requests.get(loc, headers=BROWSER_UA, timeout=30).text
+                title = html.unescape((re.search(r'og:title" content="([^"]+)"', page) or [None, ""])[1]).split(" - Opéra")[0].strip()
+                c = cache[loc] = {"title": f"Note d’analyse hebdo : {title}" if title else "", "date": mod}
+            except requests.RequestException:
+                continue
+        if c and c.get("title"):
+            items.append({"title": clean(c["title"], 220), "link": loc, "date": parse_date(c["date"]), "snippet": ""})
+    OPERA_CACHE.write_text(json.dumps({k: v for k, v in cache.items() if any(k == x[1] for x in recent)}, ensure_ascii=False, separators=(",", ":")))
+    return items
+
+
 # ── Research: recent papers on power markets from open scholarly APIs (OpenAlex, arXiv, HAL), titles and links only,
 # plus the paper alerts received by e-mail (Academia.edu…) in the team mailbox ──
 # a paper is kept when its title speaks of a market (prices, contracts, auctions, market design…) AND of power
@@ -829,7 +874,8 @@ def mail_alerts(now, cfg):
 
 
 PUBLISHERS = {"rte": ("RTE", "rte", rte_news, ["fr", "power", "markets"]), "eex": ("EEX", "eex", eex_news, ["markets"]),
-              "modo": ("Modo Energy", "modo", modo_news, ["power", "markets"])}
+              "modo": ("Modo Energy", "modo", modo_news, ["power", "markets"]),
+              "opera": ("Opéra Énergie", "opera", opera_news, ["fr", "power", "gas", "markets"])}
 
 
 OFFICIAL = {"jorf": ("Journal officiel", jorf, ["fr", "regulation", "official"]), "eurlex": ("EUR-Lex", eurlex, ["regulation", "official"])}
