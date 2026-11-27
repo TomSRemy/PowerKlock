@@ -18,6 +18,19 @@ wrong causes. It is « Le point du matin » of the newsletter: `daily` for 7 O'K
 - `data/news.json`: the news of the last days (titles and summaries), for regulation and geopolitics.
 - `data/newsletter.json` › `markets`: the tiles of the day.
 
+## When the site has no news on a subject: search the web (the owner, 27 Nov. 2026)
+The site's news (`data/news.json`) misses subjects, geopolitics above all (27 Nov. 2026: the Strait of Hormuz attacks
+were in the Expert view, from the e-mailed market notes, but in none of the site's news). Search the web every morning:
+- always: the geopolitics that move gas, oil or power (Hormuz, Red Sea, Russia and Ukraine, Norway, LNG, sanctions),
+  for the last 48 hours;
+- each time the Expert view, a price move or a market note names an event that `data/news.json` does not have;
+- for a cause the figures alone do not give (a gas jump, an outage, a regulation date).
+Keep a fact only when two reputable outlets (press agencies, the business press, an official body) give it, and with
+its date. Web figures never replace the site's: prices, forwards, storage and nuclear come from the files above; when the
+web gives another level, keep the site's and leave the web's out (say it in your final message). Name no source in the
+brief; the web is never used for `articles`, which stay chosen in `data/news.json`. In the final message, list the
+subjects found only on the web: the owner adds the searches the news job lacks.
+
 ## The Expert view feeds the brief (the owner, 25 Nov. 2026)
 Today › Expert is the first source of the brief, not only a check: start from what it shows the same morning (its
 computed sentences, its market context, its week-ahead calls), keep its readings, and add what the newsletter brings:
