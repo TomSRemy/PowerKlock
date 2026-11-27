@@ -112,7 +112,7 @@
     (k.cals || []).slice(0, 2).forEach((c, i) => { const l = last(c.pts); if (!l) return; const b = back(c.pts, 7), d = b != null ? l[1] - b : null;
       let sent = T(`Un MWh livré toute l’année ${c.y}, acheté aujourd’hui. C’est le prix auquel entreprises et fournisseurs se couvrent ; il suit surtout le gaz de l’an prochain.`, `A MWh delivered all through ${c.y}, bought today. It is the price companies and suppliers hedge at; it follows next year’s gas above all.`);
       const ty = i === 0 && k.cs && k.cs.calYears && k.cs.calYears.ttf && k.cs.calYears.ttf[c.y];
-      if (ty) { const tP = ty.dates.map((x, j) => [x, ty.values[j]]), tb = back(tP, 7), tl2 = last(tP); if (tb != null && tl2) sent += ' ' + T(`Le gaz seul pèserait ${B('≈ ' + S(2 * (tl2[1] - tb), 1) + ' €')} sur la semaine.`, `Gas alone would weigh ${B('≈ ' + S(2 * (tl2[1] - tb), 1) + ' €')} on the week.`); }
+      if (ty) { const tP = ty.dates.map((x, j) => [x, ty.values[j]]), tb = back(tP, 7), tl2 = last(tP); if (tb != null && tl2) { const g = 2 * (tl2[1] - tb); sent += ' ' + T(`Sur la semaine, le gaz livré en ${c.y} l’aurait fait ${g >= 0 ? 'monter' : 'baisser'} d’environ ${B(N(Math.abs(g), 1) + ' €/MWh')} à lui seul.`, `Over the week, ${c.y} gas alone would have moved it ${g >= 0 ? 'up' : 'down'} by about ${B(N(Math.abs(g), 1) + ' €/MWh')}.`); } }
       fc.push(card('Cal ' + c.y + ' · France', N(l[1], 1), '€/MWh', d == null ? '' : S(d, 1) + ' € ' + T('sur 7 jours', 'over 7 days'), tone(d, 0.3), sent, since(c.pts, 60), null, AX60)); });
     if (fc.length) out.push({ id: 'fwd', name: T('Forwards', 'Forwards'), icon: 'fwd', cards: fc });
     // why it moves: the market notes' points (France first), one card each, right after the prices

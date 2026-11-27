@@ -163,6 +163,18 @@ The session's container may be new: when `scripts/check_before_push.sh` stops on
 `pip install -q "playwright==1.63.0" scipy scikit-learn "matplotlib==3.9.2"` (Playwright 1.63 matches the browser already in
 `/opt/pw-browsers`) and run it again. Never push a config file with the checks failing.
 
+## « À valider » at the end of each final message (the owner, 27 Nov. 2026)
+End every final message with a numbered list « À valider » (in French): each point the owner has to decide (a figure
+that disagrees with another source, a site sentence to fix, a fix of the watch that needs `scripts/fetch_news.py`, a
+change the task did not make on its own), with the option recommended first. Empty list: write « À valider : rien ».
+If the owner has not answered by the next morning's run, do the recommended option of yesterday's points (« if I don't
+answer, proceed »), in its own commit after the brief, with `scripts/check_before_push.sh` passing, and say it in the
+message. Still left waiting, whatever the delay: removing a feature, a secret, a paid source, a change of the storage
+or of the data pipeline's structure (CLAUDE.md › How to work).
+
+When a price of the site is compared with the press, compare closing prices of the same contract and the same day
+(27 Nov. 2026: the site's Brent is the settlement of the front month; a press quote taken during the session differs).
+
 ## How to publish
 Write `data/newsletter_brief.json` on `main` (one commit, message `data: newsletter brief <date> (Claude)`). The only
 other files the task may change are `config/news_sources.json` and `config/news_gaps.md` (above). If a figure is
