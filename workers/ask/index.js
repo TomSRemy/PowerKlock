@@ -231,8 +231,13 @@ async function db(env, fn, token, body = {}) {
 //    (an approved account, 50 posts a day), keeps only a LinkedIn link without its tracking part, and adds it to News ›
 //    LinkedIn posts in the key owner's name: the link, the author read from the link, the note; never the post's text.
 //    The answer is a short French sentence the shortcut shows as its notification.
-const linkedinAuthor = url => { const m = url.match(/linkedin\.com\/(?:posts|in)\/([a-z0-9-]+?)(?:-[0-9a-z]*\d[0-9a-z]*)?(?:_|\/|$)/i);
-  return m ? m[1].split('-').filter(w => !/\d/.test(w)).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : ''; };
+// the author from a post's address: /posts/<member>_<title>-activity-… (a company's post, /posts/<title>-ugcPost-…, has no
+// member part: no name guessed); accents arrive encoded (« cl%C3%A9ment »)
+const linkedinAuthor = url => {
+  let u = url; try { u = decodeURIComponent(url); } catch { /* as it is */ }
+  const m = u.match(/linkedin\.com\/posts\/([^_/?#]+)_/i) || u.match(/linkedin\.com\/in\/([^/?#]+)/i);
+  return m ? m[1].split('-').filter(w => w && !/\d/.test(w)).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ').slice(0, 80) : '';
+};
 async function unshorten(u) {
   try {
     const r = await fetch(u, { redirect: 'manual', headers: { 'User-Agent': 'Mozilla/5.0 (PowerKlock share)' } });
@@ -294,7 +299,11 @@ async function share(req, env) {
     body: JSON.stringify({ p_key: key, p_url: url, p_author: info.author || linkedinAuthor(url) || null, p_note: note.slice(0, 200) || null, p_desc: info.desc || null, p_image: info.image || null }) });
   const j = r.ok ? await r.json() : { ok: false, reason: 'database ' + r.status };
   const plus = info.desc ? (info.image ? ' avec son texte et son image' : ' avec son texte') : '';
-  if (j.ok) return text(j.already ? `Déjà dans PowerKlock ✓${j.updated ? ' (complété)' : ''}` : `Ajouté à PowerKlock${plus} ✓`);
+  // what the phone sent, in a few words, so a share that lacks the text says why (the owner, 27 Nov. 2026)
+  const pg = String(body.page || '');
+  const diag = info.desc ? '' : !pg ? ' · page non reçue' : /<meta/i.test(pg) ? ' · page sans texte public' : /authwall|login|signup|se connecter|s’identifier/i.test(pg) ? ' · LinkedIn demande une connexion' : ` · page reçue sans balises (${Math.round(pg.length / 1024)} Ko)`;
+  const nt = note ? '' : ' · pas de commentaire';
+  if (j.ok) return text(j.already ? `Déjà dans PowerKlock ✓${j.updated ? ' (complété)' : ''}${diag}${nt}` : `Ajouté à PowerKlock${plus} ✓${diag}${nt}`);
   const why = { 'unknown key': 'Clé d’envoi inconnue : elle a peut-être été remplacée. Recopiez-la depuis Mon compte.', 'not approved': 'Votre compte attend validation.',
     quota: '50 posts envoyés aujourd’hui : la suite demain.', 'not a linkedin link': 'Ce n’est pas un lien LinkedIn.' }[j.reason];
   return text(why || 'Pas enregistré pour l’instant : réessayez plus tard.', j.reason === 'quota' ? 429 : 400);

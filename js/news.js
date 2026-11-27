@@ -793,8 +793,10 @@ document.addEventListener('keydown', _newsOpen, true);
 // ── Posts to read: LinkedIn posts pasted by the team (public.news_post, warehouse migrations 023 and 045). The link, the
 // author, a note and, for a post sent from the phone, its public description (what LinkedIn gives link previews); votes go to public.news_vote like the articles' and pick the week's best for Monday's digest.
 let _newsPosts = [];
-const _newsAuthorOf = url => { const m = url.match(/linkedin\.com\/(?:posts|in)\/([a-z0-9-]+?)(?:-[0-9a-z]*\d[0-9a-z]*)?(?:_|\/|$)/i);
-  return m ? m[1].split('-').filter(w => !/\d/.test(w)).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : ''; };
+const _newsAuthorOf = url => {   // /posts/<member>_<title>… (a company's post has no member part); accents arrive encoded
+  let u = url; try { u = decodeURIComponent(url); } catch (_) { /* as it is */ }
+  const m = u.match(/linkedin\.com\/posts\/([^_/?#]+)_/i) || u.match(/linkedin\.com\/in\/([^/?#]+)/i);
+  return m ? m[1].split('-').filter(w => w && !/\d/.test(w)).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ').slice(0, 80) : ''; };
 async function renderNewsPosts() {
   const sec = document.getElementById('hs-news-posts'), host = document.getElementById('news-posts'); if (!sec || !host) return;
   const A = window.PKAccount;
