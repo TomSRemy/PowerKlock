@@ -110,12 +110,11 @@ const POL = D.q.map((v, i) => pol(i, v));
 const rnd = (i, s) => { const v = Math.sin(i * 127.1 + s * 311.7) * 43758.5453; return v - Math.floor(v); };
 const io3 = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
 function fly(i, A, Z, tau, P, s) {
-  const d = rnd(i, s) * .42 * P, dur = P * (.46 + .12 * rnd(i, s + 1)), e = io3(seg(tau, d, d + dur));
-  const dx = Z[0] - A[0], dy = Z[1] - A[1], L = Math.hypot(dx, dy) || 1, free = Math.sin(e * Math.PI);
-  const arc = free * (rnd(i, s + 2) - .5) * 1150 + Math.sin(e * 2 * Math.PI) * (rnd(i, s + 3) - .5) * 520;
-  const f1 = 140 + 160 * rnd(i, s + 4), f2 = 230 + 220 * rnd(i, s + 5), amp = 40 + 50 * rnd(i, s + 6);   // each dot wanders at its own pace and reach
-  const jx = free * (Math.sin(tau / f1 + i * 1.7 + s) * amp + Math.sin(tau / f2 + i * .9) * amp * .6), jy = free * (Math.cos(tau / (f1 * 1.13) + i * 2.3 + s) * amp + Math.sin(tau / (f2 * .87) + i * 1.3) * amp * .6);
-  return [A[0] + dx * e - dy / L * arc + jx, A[1] + dy * e + dx / L * arc + jy, e];
+  // the home page's cloud (js/landing.js, cloud): the dots leave in order with a 22 % stagger, cubic in-out, each on a
+  // gentle arc across its path (28 % of the distance at most, nil at both ends), the side and depth of the arc its own
+  const k = DOWN || s !== 1 ? i : 95 - i, f = seg(tau, 0, P), d = (k / 95) * .22, e = io3(Math.min(1, Math.max(0, (f - d) / (1 - .22))));
+  const dx = Z[0] - A[0], dy = Z[1] - A[1], arc = Math.sin(e * Math.PI) * (rnd(i, 0) - .5) * .28;
+  return [A[0] + dx * e - dy * arc, A[1] + dy * e + dx * arc, e];
 }
 // the passage from reel 1 to reel 2 is ONE flight of 2.5 s, from the curve to the clock of the next frame: reel 1 shows it leaving, reel 2 arriving
 const PASS = 2500, passage = (i, tau) => fly(i, HOME[i], [POL[i][0] + DIRV[0], POL[i][1] + DIRV[1]], tau, PASS, 1);
