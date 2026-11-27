@@ -553,6 +553,20 @@ def brunch_v2(today, E, img, imgs):
             f'<p style="{f};margin:4px 0 0;font-size:13.5px;color:#9FB0C0">L’analyse de marché de la semaine · {span}</p></td></tr>')
     body = [row(f'<p style="{f};font-size:11px;font-weight:700;letter-spacing:1px;color:{green};margin:0 0 6px;text-transform:uppercase">Notre lecture de la semaine</p>'
                 f'<p style="{serif};margin:0 0 12px;font-size:25px;line-height:1.22;font-weight:700;color:#121212">{esc(B["title"])}</p>' + ''.join(par(x) for x in B['lead']))]
+    # ── the figure of the week (the owner, 27 Nov. 2026: « le chiffre de la semaine a disparu »): the week's largest move
+    #    among the spot, the Cal, gas, carbon and oil, computed by the site, on the dark tile ──
+    WHAT = {'spot_fr': ('du spot France en moyenne sur la semaine', '€/MWh'), 'cal1': ('du Cal de l’année prochaine sur la semaine', '€/MWh'),
+            'ttf': ('du gaz TTF sur la semaine', '€/MWh'), 'eua': ('du quota de CO₂ sur la semaine', '€/t'), 'brent': ('du Brent sur la semaine', '$/b')}
+    cand = [R[k] for k in WHAT if R.get(k) and R[k].get('pct') is not None]
+    if cand:
+        r = max(cand, key=lambda x: abs(x['pct']))
+        up = r['pct'] > 0
+        col = '#ED6965' if up else '#14D3A9'
+        lab, u = WHAT[r['key']]
+        body.append(row(f'<table role="presentation" width="100%" style="border-collapse:collapse"><tr><td bgcolor="#0a0e13" style="background:#0a0e13;border-radius:10px;padding:16px 18px">'
+                        f'<table role="presentation" style="border-collapse:collapse"><tr><td style="{mono};font-size:36px;font-weight:700;color:{col};padding-right:18px;white-space:nowrap;vertical-align:middle">{"+" if up else "−"}{abs(r["pct"]):.0f} %</td>'
+                        f'<td style="{f};font-size:14.5px;line-height:1.5;color:#E8EEF4;vertical-align:middle"><b>Le chiffre de la semaine.</b> La {"hausse" if up else "baisse"} {lab}, '
+                        f'de {num(r["prev"])} à {num(r["value"])} {u}.</td></tr></table></td></tr></table>'))
     for sec in B.get('sections') or []:
         inner = kick(sec.get('kicker') or '') + h3(sec.get('title'))
         ch = sec.get('chart')
