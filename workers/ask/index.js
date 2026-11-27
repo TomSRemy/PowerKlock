@@ -56,9 +56,11 @@ const TOPIC_WORDS = { support: 'soutien renouvelables complement remuneration ob
   renewables: 'renouvelables solaire eolien', markets: 'marche prix', gas: 'gaz', power: 'electricite', carbon: 'carbone co2', deal: 'transaction acquisition', build: 'projet mise en service' };
 
 // the site's content as passages: [{title, text, source, date, link, kind, topics}]
+export const NOAI_SOURCE = /^AleaSoft\b/i;
 export function passages(news, cons, letter, digest) {
   const out = [];
-  for (const i of (news && news.items) || []) {
+  // an outlet that refuses AI use in its robots.txt (AleaSoft: item marked noai) stays out of every AI answer
+  for (const i of ((news && news.items) || []).filter(i => !i.noai && !NOAI_SOURCE.test(i.source || ''))) {
     out.push({ title: i.title, text: i.snippet || '', source: i.source, date: (i.date || '').slice(0, 10), link: i.link,
       kind: (i.tags || []).includes('official') ? 'texte officiel' : (i.tags || []).includes('research') ? 'publication scientifique' : (i.tags || []).includes('report') ? 'rapport' : 'article',
       topics: i.topics || [], extra: (i.other_sources || []).map(o => o.source).join(', ') });

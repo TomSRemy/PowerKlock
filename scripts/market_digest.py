@@ -57,6 +57,8 @@ def news():
     now = datetime.now(timezone.utc)
     keep = []
     for n in it:
+        if n.get("noai"):          # an outlet that refuses AI use (AleaSoft) stays out of the AI's reading
+            continue
         try:
             age = now - datetime.fromisoformat(str(n.get("date")).replace("Z", "+00:00"))
         except (TypeError, ValueError):

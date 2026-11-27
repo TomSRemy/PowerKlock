@@ -1196,7 +1196,7 @@ def main():
         print("today's edition exists")
         return 0
     profiles = (load(PROFILES, {}) or {}).get("profiles") or {}
-    items = (load(os.path.join(ROOT, "data", "news.json"), {}) or {}).get("items") or []
+    items = [i for i in (load(os.path.join(ROOT, "data", "news.json"), {}) or {}).get("items") or [] if not i.get("noai")]   # AleaSoft refuses AI use
     # the earlier editions (not today's, rebuilt): their articles stay out of this one; the brief must not repeat theirs
     global PREV_BRIEF
     hist = load(HIST, {}) or {}

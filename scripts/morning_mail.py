@@ -108,7 +108,7 @@ def build():
             lines.append(('LinkedIn · ' + (p.get('author') or '') + (' : ' + p['note'] if p.get('note') else ''), p.get('url') or SITE, 'post'))
     else:
         heading = 'Dans l’actualité'
-        news = sorted([i for i in ((load('news.json') or {}).get('items') or []) if (i.get('impact') or 0) >= 3], key=lambda i: -(i.get('impact') or 0))[:3]
+        news = sorted([i for i in ((load('news.json') or {}).get('items') or []) if (i.get('impact') or 0) >= 3 and not i.get('noai')], key=lambda i: -(i.get('impact') or 0))[:3]
         for i in news:
             lines.append((i.get('title') or '', i.get('link') or SITE, i.get('source') or ''))
     return today, rows, lines, heading
@@ -640,7 +640,7 @@ def mine_for(kw, exclude, monday):
     """the articles of the last 24 hours (72 on Monday) whose title or extract contains one of the reader's keywords"""
     if not kw:
         return []
-    items = (load('news.json') or {}).get('items') or []
+    items = [i for i in (load('news.json') or {}).get('items') or [] if not i.get('noai')]   # AleaSoft refuses AI use
     since = (datetime.now(PARIS) - timedelta(hours=72 if monday else 24)).isoformat()
     import unicodedata
     plain = lambda t: unicodedata.normalize('NFKD', (t or '').lower()).encode('ascii', 'ignore').decode()  # noqa: E731   accents left out: « echelonnement » finds « échelonnement »
