@@ -20,9 +20,10 @@ H = '''<!doctype html>
 </html>
 '''
 css, js, data = open('common.css').read(), open('common.js').read(), open('data.json').read()
-for k in 'ABC':
+duo = open('duo_common.js').read()
+for k in ['A', 'B', 'C', 'R1', 'R2']:
     body = open(k + '.body').read()
     # the styles go to the head, the scenes and the script stay in the stage (the script after it would be cleaner, but the stage only reads its children by id)
-    html = H % (k, css, data, body.replace('__COMMON__', js))
+    html = H % (k, css, data, body.replace('__COMMON__', js).replace('__DUO__', duo))
     open(k + '.html', 'w').write(html)
     print(k, len(html))
