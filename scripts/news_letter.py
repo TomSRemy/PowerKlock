@@ -1031,11 +1031,7 @@ def go_y1():
     if not rows:
         return None
     prev = [r for r in rows if r["mail_date"] < rows[-1]["mail_date"]]
-    try:
-        days = (date.fromisoformat(rows[-1]["mail_date"][:10]) - date.fromisoformat(prev[-1]["mail_date"][:10])).days if prev else None
-    except ValueError:
-        days = None
-    return mid(rows[-1]), (mid(prev[-1]) if prev else None), rows[-1]["year"], days
+    return mid(rows[-1]), (mid(prev[-1]) if prev else None), rows[-1]["year"], rows[-1]["mail_date"][:10], (prev[-1]["mail_date"][:10] if prev else None)
 
 
 MOIS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"]
@@ -1060,20 +1056,18 @@ def markets(today, days=1):
     PPA benchmarks (over the week), the CRE's latest solar M0 (against the month before), guarantees of origin."""
     rows = []
 
-    def gap(a, b):
-        """the days between a value and the one it is compared with (« vs J-1 », « vs J-7 » on the tile)"""
-        try:
-            return (date.fromisoformat(str(a)[:10]) - date.fromisoformat(str(b)[:10])).days or None
-        except (TypeError, ValueError):
-            return None
+    # each tile says the dates it compares (« 24/11 vs 17/11 »): the values are not all of the same day (today's spot,
+    # yesterday's close, last week's GO quote), so « vs J-1 » would mislead (the owner, 27 Nov. 2026)
+    def iso(d):
+        return str(d)[:10] if d else None
 
-    def row(fr, en, value, unit, ref=None, src="", page="markets/spot", show="pct", ref_days=None):
+    def row(fr, en, value, unit, ref=None, src="", page="markets/spot", show="pct", d=None, ref_d=None):
         # show: pct = change in %; abs = change in the unit (a spread); h = change in hours (more hours at 0 € or below
         # is lower prices, shown green like a fall)
         rows.append({"label": [fr, en], "value": round(value, 1 if show == "h" else 2), "unit": unit, "page": page, "src": src,
                      "show": show, "hours": show == "h", "chg": None if ref is None else round(value - ref, 2),
                      "pct": None if (not ref or show != "pct") else round((value / ref - 1) * 100, 1),
-                     "ref_days": ref_days if ref is not None else None})
+                     "d": iso(d), "ref_d": iso(ref_d) if ref is not None else None})
     sp = {k: spot(today - timedelta(days=k)) for k in range(-1, 14)}   # -1 = tomorrow
     if days > 1:
         # PowerBrunch (chosen by the owner, 17 Nov. 2026): spot of the month so far, Cal+1, solar and wind PPAs, the
@@ -1087,25 +1081,25 @@ def markets(today, days=1):
         t, y, tm = sp.get(0), sp.get(1), sp.get(-1)
         fc = ((dload("neg_forecast.json") or {}).get("days") or {}).get((today + timedelta(days=1)).isoformat()) or {}
         if t:
-            row("Spot France aujourd'hui", "France spot today", t["base"], "€/MWh", y["base"] if y else None, "ENTSO-E", ref_days=1)
+            row("Spot France aujourd'hui", "France spot today", t["base"], "€/MWh", y["base"] if y else None, "ENTSO-E", d=today, ref_d=today - timedelta(days=1))
         if t:
-            row("Pointe − base aujourd'hui", "Peak − base today", t["peak"] - t["base"], "€/MWh", (y["peak"] - y["base"]) if y else None, "ENTSO-E", show="abs", ref_days=1)
+            row("Pointe − base aujourd'hui", "Peak − base today", t["peak"] - t["base"], "€/MWh", (y["peak"] - y["base"]) if y else None, "ENTSO-E", show="abs", d=today, ref_d=today - timedelta(days=1))
         if tm:
-            row("Heures ≤ 0 € demain", "Hours ≤ 0 € tomorrow", tm["neg"], "h", t["neg"] if t else None, "ENTSO-E", "markets/spot/negative", show="h", ref_days=1)
+            row("Heures ≤ 0 € demain", "Hours ≤ 0 € tomorrow", tm["neg"], "h", t["neg"] if t else None, "ENTSO-E", "markets/spot/negative", show="h", d=today + timedelta(days=1), ref_d=today)
         elif t:
-            row("Heures ≤ 0 € aujourd'hui", "Hours ≤ 0 € today", t["neg"], "h", y["neg"] if y else None, "ENTSO-E", "markets/spot/negative", show="h", ref_days=1)
+            row("Heures ≤ 0 € aujourd'hui", "Hours ≤ 0 € today", t["neg"], "h", y["neg"] if y else None, "ENTSO-E", "markets/spot/negative", show="h", d=today, ref_d=today - timedelta(days=1))
     ch = dload("history", "fr_market_calchain.json") or {}
     y1 = str(today.year + 1)
     cy = ((ch.get("FR") or {}).get("years") or {}).get(y1)
     if cy:
         a, b = back(list(zip(cy["dates"], cy["values"])), days)
         if a:
-            row(f"Cal {y1[2:]} France", f"Cal {y1[2:]} France", a[1], "€/MWh", b[1], "EEX", "markets/forwards", ref_days=gap(a[0], b[0]))
+            row(f"Cal {y1[2:]} France", f"Cal {y1[2:]} France", a[1], "€/MWh", b[1], "EEX", "markets/forwards", d=a[0], ref_d=b[0])
     cs = (dload("history", "commodities_series.json") or {}).get("series") or (dload("commodities.json") or {}).get("series") or {}
     if "peg" in cs:
         a, b = back(cs["peg"]["points"], days)
         if a:
-            row("Gaz PEG", "PEG gas", a[1], "€/MWh", b[1], "PowerKlock", "markets/fuels", ref_days=gap(a[0], b[0]))
+            row("Gaz PEG", "PEG gas", a[1], "€/MWh", b[1], "PowerKlock", "markets/fuels", d=a[0], ref_d=b[0])
     if days > 1:
         # one tile per technology: the PPA benchmark (change over the week)
         bm = (dload("history", "ppa_benchmark.json") or {}).get("days") or {}
@@ -1121,7 +1115,7 @@ def markets(today, days=1):
                 rows[-1]["sub"] = [f"M0 prévu {MOIS[int(mo[5:]) - 1]} : {fc[tech]:.2f} €".replace(".", ","), f"Forecast M0 {mo}: €{fc[tech]:.2f}"]
     go = go_y1()
     if go:
-        row("Garanties d'origine " + go[2], "Guarantees of origin " + go[2], go[0], "€/MWh", go[1], "Commerg", "markets/go", ref_days=go[3])
+        row("Garanties d'origine " + go[2], "Guarantees of origin " + go[2], go[0], "€/MWh", go[1], "Commerg", "markets/go", d=go[3], ref_d=go[4])
     return rows
 
 
