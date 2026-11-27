@@ -46,6 +46,9 @@ jobs:
         run: for f in workers/*/index.js; do node --input-type=module --check < "$f" || { echo "$f"; exit 1; }; done
       - name: Calculations
         run: pip install -q numpy==2.2.6 scipy==1.15.3 pyyaml==6.0.2 && python tests/test_calculations.py && python tests/test_prices_dst.py && python tests/test_bess_optim.py && python tests/test_scheduler.py
+      - name: Newsletter rules
+        # what is never a story, repeats, « À retenir », the brief's checks, units, the spot tile (scikit-learn and matplotlib as in morning_mail.yml)
+        run: pip install -q scikit-learn==1.6.1 matplotlib==3.9.2 && python tests/test_newsletter.py
       - name: Site logic
         run: python tests/test_site_logic.py && python tests/test_ppa_frozen.py && python tests/test_consistency.py
 
