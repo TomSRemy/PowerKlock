@@ -263,8 +263,9 @@ def outlook(html):
 
 def tile_label(t):
     """a tile's label on one line in every mail client (the owner, 25 Nov. 2026: tiles of unequal sizes): short words,
-    the same meaning (« Spot France aujourd'hui » → « Spot France auj. », « Garanties d'origine 2027 » → « GO 2027 »)"""
-    for a, b in (("aujourd'hui", "auj."), ("aujourd’hui", "auj."), ("Garanties d'origine", "GO"), ("Garanties d’origine", "GO"),
+    the same meaning (« Spot France aujourd'hui » → « Spot France », « Garanties d'origine 2027 » → « GO 2027 »)"""
+    # « aujourd'hui » is left out: the tile's « vs veille » line says it is today's price (27 Nov.: cut on a phone)
+    for a, b in ((" aujourd'hui", ""), (" aujourd’hui", ""), ("Garanties d'origine", "GO"), ("Garanties d’origine", "GO"),
                  ("Pointe − base", "Pointe−base")):
         t = t.replace(a, b)
     return t[:22]
@@ -312,18 +313,22 @@ def journal(today, E, ed, wk, mine):
         lab0 = r['label'][0]
         vs = ('sur 7 j' if wk else 'vs veille' if r.get('hours') or re.search(r"aujourd|Spot|Pointe", lab0) else
               'vs cotation préc.' if re.search(r"Garanties|GO ", lab0) else 'vs séance préc.')
-        if ch:     # on its own line in every tile, so the six tiles keep the same layout
-            ch += f'<br><span style="color:#7A93AB;font-size:10.5px">{vs}</span>'
+        # the unit, the change and « vs … » each on a line of its own in every tile (the owner, 27 Nov. 2026: on a phone
+        # the change sat beside the unit in some tiles and under it in others, and « vs cotation préc. », kept on one
+        # line, pushed the last tile out of the band)
         sub = esc(r['sub'][0]) if r.get('sub') else '' if r.get('hours') else esc(r['unit'])
         # Outlook (Word) ignores display:block, padding and background on a link: the tile is a cell of its own, its
         # background given twice (bgcolor for Outlook, style for the others), each line its own link
         href = f'{SITE}#{esc(r.get("page") or "today")}'
-        h = 98 if any(x.get("sub") for x in E["markets"]) else 86
-        cells.append(f'<td width="33%" style="padding:3px;vertical-align:top"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate"><tr>'
-                     f'<td height="{h}" style="background:#0a0e13;border-radius:10px;padding:9px 11px;vertical-align:top">'
-                     f'<div style="{f};font-size:11.5px;line-height:15px;color:#B8C9D9;white-space:nowrap;overflow:hidden"><a href="{href}" style="color:#B8C9D9;text-decoration:none">{esc(tile_label(r["label"][0]))}</a></div>'
+        h = 104 if any(x.get("sub") for x in E["markets"]) else 92
+        cells.append(f'<td width="33%" style="padding:3px;vertical-align:top"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate;table-layout:fixed"><tr>'
+                     f'<td height="{h}" style="background:#0a0e13;border-radius:10px;padding:9px 8px 9px 9px;vertical-align:top">'
+                     f'<div style="{f};font-size:11px;line-height:15px;color:#B8C9D9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><a href="{href}" style="color:#B8C9D9;text-decoration:none">{esc(tile_label(r["label"][0]))}</a></div>'
                      f'<div style="{mono};font-size:18px;line-height:24px;font-weight:700;color:#FFFFFF;margin:2px 0"><a href="{href}" style="color:#FFFFFF;text-decoration:none">{val}</a></div>'
-                     f'<div style="{f};font-size:11px;line-height:15px;color:#7A93AB">{sub} <span style="{mono};font-size:11.5px;color:{col};white-space:nowrap">{ch}</span></div></td></tr></table></td>')
+                     f'<div style="{f};font-size:11px;line-height:15px;color:#7A93AB">{sub or "&nbsp;"}</div>'
+                     + (f'<div style="{mono};font-size:11.5px;line-height:16px;color:{col};white-space:nowrap">{ch}</div>'
+                        f'<div style="{f};font-size:10.5px;line-height:14px;color:#7A93AB">{vs}</div>' if ch else '')
+                     + '</td></tr></table></td>')
     tiles = ''.join('<tr>' + ''.join(cells[i:i + 3]) + '<td></td>' * (3 - len(cells[i:i + 3])) + '</tr>' for i in range(0, len(cells), 3))
     srcs = ', '.join(sorted({r.get('src') for r in E.get('markets') or [] if r.get('src')}))
     brief_sep = f'</p><p style="{f};margin:10px 0 0;font-size:15.5px;line-height:1.6;color:#121212">'   # the brief's second paragraph
