@@ -4,7 +4,10 @@
 ENGIE "Energy Market News" (engie@e-news.engie.be): each note has a date, a subject and sections
 (Global context, Oil, Gas, Electricity, CO2…), each with a headline and a few points. The note is read
 from the team mailbox over IMAP, with the same app password as the GO prices (scripts/fetch_go_prices.py),
-parsed into sections and upserted. Third-party text: it stays in the database, readable by signed-in
+parsed into sections and upserted.
+Opéra Énergie « Notes d'analyse » (weekly, free on opera-energie.com): the note's page is found in the media sitemap
+(robots.txt allows it), its PDF is read (pdfplumber) and cut into the same sections (Contexte, électricité, gaz,
+carbone, pétrole). Third-party text: it stays in the database, readable by signed-in
 users, never in the public repository.
 
 Env  GO_GMAIL_USER, GO_GMAIL_APP_PASSWORD (IMAP), SUPABASE_DB_URL (database)
@@ -94,13 +97,87 @@ def from_imap():
     return notes
 
 
+# ── Opéra Énergie: the weekly note's PDF, cut into sections ──
+OPERA_SECTION = re.compile(r"^(Contexte|March[ée] d[eu] (?:l[’']|la |du )?\s*(?:[ée]lectricit[ée]|gaz|carbone|p[ée]trole|CO2|CO₂))\s*$", re.I)
+# chart labels, captions and figures of the right-hand column, cut from the text
+OPERA_NOISE = re.compile(r"-LAC$|^[)(]|^(Évolution|Evolution) des prix|^CAL Y\+|^Attention|^Contact|^Période du|^\(Sources|^XEE|^secruoS|^erbm|^\(évolution", re.I)
+OPERA_TAIL = re.compile(r"\s*(?:[-+]?\d[\d\s]*,\d+\s*(?:%|€/MWh|€/t)?|CAL-\d+|€/t|€/MWh|\$/baril)\s*$")
+MONTHS_FR = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"]
+
+
+def opera_parse(text):
+    """[{name, headline, points}] from the PDF's text: a section label, a headline (its first line and the lines that
+    continue it in lower case), then the commentary up to the first chart label"""
+    out, cur, body, state = [], None, [], None
+    def close():
+        if cur:
+            t = re.sub(r"\s+", " ", " ".join(body)).strip()
+            cur["points"] = [x.strip()[:600] for x in re.split(r"(?<=[.!?])\s+(?=[A-ZÀ-ÖØ-Ý«])", t) if len(x.strip()) > 25][:6]
+            if cur["headline"] or cur["points"]:
+                out.append(cur)
+    for raw in text.split("\n"):
+        ln = raw.strip()
+        while True:
+            n = OPERA_TAIL.sub("", ln).strip()
+            if n == ln:
+                break
+            ln = n
+        if not ln:
+            continue
+        m = OPERA_SECTION.match(ln)
+        if m:
+            close()
+            cur, body, state = {"name": m.group(1)[0].upper() + m.group(1)[1:], "headline": "", "points": []}, [], "head"
+            continue
+        if not cur or state == "done" or OPERA_NOISE.search(ln):
+            if cur and state == "body" and OPERA_NOISE.search(ln):
+                state = "done"
+            continue
+        if state == "head":
+            if not cur["headline"] or ln[0].islower():
+                cur["headline"] = (cur["headline"] + " " + ln).strip()
+                continue
+            state = "body"
+        body.append(ln)
+    close()
+    return out
+
+
+def from_opera(days=21):
+    import requests
+    import pdfplumber
+    import io
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from fetch_news import opera_notes, BROWSER_UA
+    notes = []
+    for mod, loc in opera_notes(days):  # read again each run: a note corrected later replaces the stored one
+        try:
+            page = requests.get(loc, headers=BROWSER_UA, timeout=30).text
+            title = html.unescape((re.search(r'og:title" content="([^"]+)"', page) or [None, ""])[1]).split(" - Opéra")[0].strip()
+            pdf = (re.search(r'href="(https://opera-energie\.com/wp-content/uploads/(\d{4})/\d{2}/[^"]+?(\d{2})(\d{2})\.pdf)"', page))
+            if not pdf:
+                print("no PDF on", loc); continue
+            day = f"{pdf.group(2)}-{pdf.group(4)}-{pdf.group(3)}"   # OE_NA_A4_2311.pdf in uploads/2026/11 → 2026-11-23
+            with pdfplumber.open(io.BytesIO(requests.get(pdf.group(1), headers=BROWSER_UA, timeout=60).content)) as d:
+                text = "\n".join(p.extract_text() or "" for p in d.pages)
+            notes.append({"source": "Opéra Énergie Notes d’analyse", "note_date": day, "subject": title or "Notes d’analyse", "received_at": mod, "sections": opera_parse(text)})
+        except Exception as e:
+            print("Opéra note failed:", loc, str(e)[:120])
+    return notes
+
+
 def main():
     if os.environ.get("NOTES_FILE"):
         raw = open(os.environ["NOTES_FILE"], "rb").read()
         lines = body_of(email_lib.message_from_bytes(raw)) if raw[:200].lower().find(b"content-type") >= 0 else html_to_lines(raw.decode("utf-8", "replace"))
         notes = [{"source": SOURCES[0]["name"], "note_date": "test", "subject": "test", "received_at": None, "sections": parse(lines, "test")}]
     else:
-        notes = from_imap()
+        notes = from_imap() if not os.environ.get("NOTES_WEB_ONLY") else []
+        try:
+            notes += from_opera()
+        except Exception as e:
+            print("Opéra notes failed:", str(e)[:160])
+        notes.sort(key=lambda n: n["note_date"])
     print(f"{len(notes)} notes:", [(n["note_date"], len(n["sections"])) for n in notes])
     if os.environ.get("NOTES_DRY_RUN") or os.environ.get("NOTES_FILE"):
         print(json.dumps(notes[-1:], ensure_ascii=False, indent=1)[:3000]); return
@@ -119,7 +196,7 @@ def main():
     # a public trace without any of the notes' text: dates and section counts, to check the run
     st = {"updated": __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat(timespec="seconds"),
           "notes": [{"source": n["source"], "date": n["note_date"], "sections": [x["name"] for x in n["sections"]]} for n in notes if n["sections"]][-16:],
-          "unparsed": {src["name"]: sum(1 for n in notes if n["source"] == src["name"] and not n["sections"]) for src in SOURCES}}
+          "unparsed": {name: sum(1 for n in notes if n["source"] == name and not n["sections"]) for name in [x["name"] for x in SOURCES] + ["Opéra Énergie Notes d’analyse"]}}
     open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "market_notes_status.json"), "w").write(json.dumps(st, ensure_ascii=False))
     print("written")
     # the week's context in French, centred on France, written from these notes (own words, no source named)

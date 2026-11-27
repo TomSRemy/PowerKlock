@@ -251,12 +251,15 @@ function metaOf(html, names) {
   return '';
 }
 function pageInfo(html) {
-  if (!/<meta/i.test(String(html || ''))) return { desc: '', author: '' };
+  if (!/<meta/i.test(String(html || ''))) return { desc: '', author: '', image: '' };
   const desc = metaOf(html, ['og:description', 'twitter:description', 'description']).slice(0, 1500);
   // « Nicolas Paris on LinkedIn: … » / « … sur LinkedIn : … » / « Title | Author | LinkedIn »
   const t = metaOf(html, ['og:title', 'twitter:title']);
   const author = ((t.match(/^(.{2,80}?)\s+(?:on|sur)\s+LinkedIn\s*:/i) || [])[1] || (t.match(/\|\s*([^|]{2,80}?)\s*\|\s*LinkedIn\s*$/i) || [])[1] || '').trim();
-  return { desc, author };
+  // the preview image's address (LinkedIn's media server only); the image itself is not copied
+  const img = metaOf(html, ['og:image', 'twitter:image']);
+  const image = /^https:\/\/(media|static)\.licdn\.com\//.test(img) && img.length <= 1000 ? img : '';
+  return { desc, author, image };
 }
 async function share(req, env) {
   const text = (msg, status = 200) => new Response(msg, { status, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
@@ -285,10 +288,10 @@ async function share(req, env) {
   const info = pageInfo(body.page || (/<meta/i.test(all) ? all : ''));
   const r = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/share_post`, {
     method: 'POST', headers: { apikey: env.SUPABASE_KEY, Authorization: `Bearer ${env.SUPABASE_KEY}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ p_key: key, p_url: url, p_author: info.author || linkedinAuthor(url) || null, p_note: note.slice(0, 200) || null, p_desc: info.desc || null }) });
+    body: JSON.stringify({ p_key: key, p_url: url, p_author: info.author || linkedinAuthor(url) || null, p_note: note.slice(0, 200) || null, p_desc: info.desc || null, p_image: info.image || null }) });
   const j = r.ok ? await r.json() : { ok: false, reason: 'database ' + r.status };
-  const plus = info.desc ? ' avec son texte' : '';
-  if (j.ok) return text(j.already ? `Déjà dans PowerKlock ✓${j.updated ? ' (texte ajouté)' : ''}` : `Ajouté à PowerKlock${plus} ✓`);
+  const plus = info.desc ? (info.image ? ' avec son texte et son image' : ' avec son texte') : '';
+  if (j.ok) return text(j.already ? `Déjà dans PowerKlock ✓${j.updated ? ' (complété)' : ''}` : `Ajouté à PowerKlock${plus} ✓`);
   const why = { 'unknown key': 'Clé d’envoi inconnue : elle a peut-être été remplacée. Recopiez-la depuis Mon compte.', 'not approved': 'Votre compte attend validation.',
     quota: '50 posts envoyés aujourd’hui : la suite demain.', 'not a linkedin link': 'Ce n’est pas un lien LinkedIn.' }[j.reason];
   return text(why || 'Pas enregistré pour l’instant : réessayez plus tard.', j.reason === 'quota' ? 429 : 400);
