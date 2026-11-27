@@ -23,20 +23,20 @@ const since = D.sinceMax[1] ? T('plus haut depuis le ' + dShort(D.sinceMax[1]), 
 $('sub').innerHTML = '<b>' + T('ce matin à ' + hm(iMax), 'this morning at ' + hm(iMax)) + '</b><span>' + T('Le quart d’heure le ', 'The quarter-hour: ') + since + '</span>';
 $('tag').textContent = T('à ' + hm(iMax) + ' · ', 'at ' + hm(iMax) + ' · ') + since;
 $('end').innerHTML = '<b>×' + fmt(D.max / D.min, 1) + '</b><span>' + T('entre le creux et la pointe du même jour', 'between the low and the peak of the same day') + '<em>' + fmt(D.min, 0) + ' € ' + T('à ', 'at ') + hm(iMin) + ' → ' + fmt(D.max, 0) + ' € ' + T('à ', 'at ') + hm(iMax) + '</em></span>';
-// 12 s: hook 0-2.2, the day draws itself 3.2-7, punchline 7.4-9.5, the line breaks into its 96 dots 9.3-10.2,
-// they leave for the next reel 10.2-11.8 while the figure comes back: the last frame is the first
-const TX = 10200; window.PK_TX = TX;
-const dots = t => HOME.map((h, i) => { const p = t < TX ? 0 : flight(i, t - TX); return [h[0] + DIRV[0] * p, h[1] + DIRV[1] * p, RAD[i] * eo(seg(t, 9300 + i * 6, 9600 + i * 6))]; });
+// 12 s: hook 0-2.2, the day draws itself 3.2-7, punchline 7.4-9, the line dissolves into its 96 dots 8.9-9.4,
+// each flies off on its own path to the next reel 9.3-11.8 while the figure comes back: the last frame is the first
+const TX = 9300; window.PK_TX = TX;
+const dots = t => HOME.map((h, i) => { const p = t < TX ? [h[0], h[1], 0] : passage(i, t - TX); return [p[0], p[1], RAD[i] * eo(seg(t, 8900 + rnd(i, 7) * 250, 9150 + rnd(i, 7) * 250)), p[2]]; });
 window.PK_DOTS = dots;
 loop(12000, t => {
   const big = t < 6000 ? 1 - io(seg(t, 2200, 2900)) : io(seg(t, 10700, 11600));
   $('num').style.transform = 'translateY(' + (-190 * (1 - big)) + 'px) scale(' + (.40 + .60 * big) * (big > .99 ? 1 + .012 * Math.sin(t / 1500 * Math.PI * 2) : 1) + ')';
   $('sub').style.opacity = t < 6000 ? 1 - seg(t, 2100, 2500) : seg(t, 11400, 11800);
-  $('tag').style.opacity = seg(t, 2700, 3200) * (1 - seg(t, 10000, 10500));
-  const e = eo(seg(t, 7400, 7900)) * (1 - seg(t, 9300, 9700));
+  $('tag').style.opacity = seg(t, 2700, 3200) * (1 - seg(t, 9700, 10200));
+  const e = eo(seg(t, 7400, 7900)) * (1 - seg(t, 8700, 9000));
   $('end').style.opacity = e; $('end').style.transform = 'translateY(' + (30 * (1 - e)) + 'px)';
   g.clearRect(0, 0, 1080, 1920);
-  const b = seg(t, 2700, 3200) * (1 - seg(t, 9500, 10100)), f = io(seg(t, 3200, 7000)), la = 1 - seg(t, 9400, 10000);
+  const b = seg(t, 2700, 3200) * (1 - seg(t, 9100, 9600)), f = io(seg(t, 3200, 7000)), la = 1 - seg(t, 9000, 9400);
   if (b > 0) {
     poly([[GX0, GY1], [GX1, GY1]], K.line, 2, b);
     [0, 24, 48, 72, 95].forEach((i, k) => txt(k === 4 ? (EN ? '24:00' : '24' + NB + 'h') : hm(i), gx(i), GY1 + 50, 28, K.text3, k === 0 ? 'left' : k === 4 ? 'right' : 'center', 500, b));
@@ -47,6 +47,6 @@ loop(12000, t => {
   if (f * 95 >= iMax) { const ph = (t % 1500) / 1500; ringc(HOME[iMax][0], HOME[iMax][1], 22 + 22 * ph, K.rise, 4, (1 - ph) * b); disc(HOME[iMax][0], HOME[iMax][1], 14, K.rise, la);
     txt(fmt(D.max, 0) + ' €', HOME[iMax][0] + 34, HOME[iMax][1] + 6, 46, K.rise, 'left', 800, b); }
   if (f >= 1) { disc(HOME[iMin][0], HOME[iMin][1], 14, K.fall, la * b); txt(fmt(D.min, 0) + ' €', HOME[iMin][0] - 26, HOME[iMin][1] + 16, 40, K.fall, 'right', 800, b); }
-  if (t >= 9300) dots(t).forEach((d, i) => disc(d[0], d[1], d[2], COL[i], 1));
+  if (t >= 8900) dots(t).forEach((d, i) => glow(d[0], d[1], d[2], i, d[3]));
 });
 </script>

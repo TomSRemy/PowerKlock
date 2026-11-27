@@ -13,47 +13,43 @@
 <script>
 __COMMON__
 __DUO__
-const CX = 500, CY = 940, R0 = 100, R1 = 380, hi = Math.max(D.max, ...D.q30.map(q => Math.max(...q)));
-const rr = v => R0 + (R1 - R0) * Math.max(0, v) / hi;
-const pol = (i, v) => { const a = i / 96 * Math.PI * 2; return [CX + rr(v) * Math.sin(a), CY - rr(v) * Math.cos(a)]; };
-const POL = D.q.map((v, i) => pol(i, v)), PP = D.q30.map(q => q.map((v, i) => pol(i, v)));
+const PP = D.q30.map(q => q.map((v, i) => pol(i, v))), hi = hi30;
 $('kick').textContent = T('L’horloge des prix · ', 'The price clock · ') + dLong(D.d);
 $('ttl').innerHTML = '<b><i>' + fmt(D.max, 0) + ' €</i> ' + T('à ' + hm(iMax), 'at ' + hm(iMax)) + '</b><span id="sub"></span>';
 $('leg').innerHTML = '<span><i></i>' + T('aujourd’hui', 'today') + '</span><span><i class="p"></i>' + T('les 30 jours d’avant', 'the 30 days before') + '</span>';
 const SUB = [T('Les 96 quarts d’heure du jour', 'The day’s 96 quarter-hours'), T('Minuit en haut, le prix en rayon', 'Midnight on top, price as radius'), T('Derrière : les 30 jours précédents', 'Behind: the 30 days before'),
   T('Le prix, quart d’heure par quart d’heure', 'The price, every 15 minutes'), D.sinceMax[1] ? T('Le prix le plus haut depuis le ' + dShort(D.sinceMax[1]), 'The highest price since ' + dShort(D.sinceMax[1])) : ''];
-// 13 s: the dots of reel 1 arrive 0-1.6 (same movement, same heights), wind into the day's circle 2-4.4, the 30 days behind 4.8-6.6,
-// the hand reads the day 6.4-9.2, the peak 9.2-10.2, the dots unwind 10.3-11.4 and leave 11.4-13 as they came
-const TX = 11400; window.PK_TX = TX;
-const dots = t => HOME.map((h, i) => { const p = t < 6000 ? flight(i, t) - 1 : flight(i, t - TX);
-  const w = t < 9000 ? io(seg(t, 2000 + i / 95 * 900, 3500 + i / 95 * 900)) : 1 - io(seg(t, 10300 + (95 - i) / 95 * 400, 11000 + (95 - i) / 95 * 400));
-  const c = seg(t, 4300, 4800) * (1 - seg(t, 10000, 10300));
-  return [mix(h[0] + DIRV[0] * p, POL[i][0], w), mix(h[1] + DIRV[1] * p, POL[i][1], w), RAD[i] * (i === iMax ? 1 : 1 - .55 * c)]; });
+// 13 s: the dots of reel 1 land one by one at their place in the clock 0-2.5 (the end of the same flight), the day's line joins them 2.6,
+// the 30 days behind 3.3-5, the hand reads the day 5.2-8.2, the peak 8.2-9.4, the dots fly back to the day's curve 9.5-11, then leave 11.1-13
+const TB = 9500, TX = 11100; window.PK_TX = TX;
+const dots = t => HOME.map((h, i) => { const c = seg(t, 2600, 3100) * (1 - seg(t, 9200, 9500));
+  const p = t < TB ? passage(i, t) : t < TX ? fly(i, POL[i], h, t - TB, TX - TB - 100, 11) : fly(i, h, [h[0] + DIRV[0], h[1] + DIRV[1]], t - TX, 1900, 21);
+  return [p[0] - (t < TB ? DIRV[0] : 0), p[1] - (t < TB ? DIRV[1] : 0), RAD[i] * (i === iMax ? 1 : 1 - .5 * c), t < TB ? p[2] : 1]; });
 window.PK_DOTS = dots;
 loop(13000, t => {
-  const gr = seg(t, 2200, 3000) * (1 - seg(t, 10200, 10700)), c = seg(t, 4300, 4800) * (1 - seg(t, 10000, 10300)), out = 1 - seg(t, 10000, 10400);
-  const sub = SUB[t < 2000 ? 0 : t < 4800 ? 1 : t < 6400 ? 2 : t < 9200 ? 3 : t < 10300 ? 4 : 0];
+  const gr = seg(t, 400, 1500) * (1 - seg(t, 9600, 10200)), c = seg(t, 2600, 3100) * (1 - seg(t, 9200, 9500)), out = 1 - seg(t, 9200, 9600);
+  const sub = SUB[t < 1800 ? 0 : t < 3300 ? 1 : t < 5200 ? 2 : t < 8200 ? 3 : t < 9600 ? 4 : 0];
   if ($('sub').textContent !== sub) $('sub').textContent = sub;
-  $('leg').style.opacity = seg(t, 4800, 5300) * out;
+  $('leg').style.opacity = seg(t, 3300, 3800) * out;
   g.clearRect(0, 0, 1080, 1920);
   if (gr > 0) {
     [100, 200, 300, 400].filter(v => v <= hi * 1.05).forEach(v => ringc(CX, CY, rr(v), K.line, 2, gr));
     [0, 6, 12, 18].forEach(h => { const a = h / 24 * Math.PI * 2; poly([[CX + R0 * Math.sin(a), CY - R0 * Math.cos(a)], [CX + R1 * Math.sin(a), CY - R1 * Math.cos(a)]], K.line, 2, gr);
       txt(h + NB + 'h', CX + (R1 + 40) * Math.sin(a), CY - (R1 + 40) * Math.cos(a) + 11, 30, K.text3, 'center', 700, gr); });
   }
-  PP.forEach((P, k) => poly(P, K.text3, 1.5, .3 * seg(t, 4800 + k * 50, 5100 + k * 50) * out));
+  PP.forEach((P, k) => poly(P, K.text3, 1.5, .3 * seg(t, 3300 + k * 50, 3600 + k * 50) * out));
   if (gr > 0) [200, 400].filter(v => v <= hi * 1.05).forEach(v => { const x = CX - rr(v) * .7071, y = CY - rr(v) * .7071 + 8;
     g.globalAlpha = gr; g.font = '500 24px ' + MONO; g.textAlign = 'center'; g.lineWidth = 10; g.strokeStyle = K.bg; g.strokeText(v + ' €', x, y); g.globalAlpha = 1; txt(v + ' €', x, y, 24, K.text2, 'center', 500, gr); });
   const d = dots(t);
   poly(d, K.mark, 6, c);
-  const live = t >= 6400 && t < 9200, f = seg(t, 6400, 9200);
+  const live = t >= 5200 && t < 8200, f = seg(t, 5200, 8200);
   if (live) { const x = f * 95, i = Math.floor(x), j = Math.min(95, i + 1), u = x - i, v = mix(D.q[i], D.q[j], u), a = x / 96 * Math.PI * 2, p = pol(x, v);
     poly([[CX, CY], [CX + R1 * Math.sin(a), CY - R1 * Math.cos(a)]], K.mark, 2, .8, [4, 8]); disc(p[0], p[1], 11, K.text, 1);
     txt(hm(i).toUpperCase(), CX, CY - 34, 28, K.text3, 'center', 700); txt(fmt(v, 0), CX, CY + 30, 70, K.text, 'center', 800); txt('€/MWh', CX, CY + 66, 24, K.text3, 'center');
-  } else if (gr > 0) { const pk = t >= 9200;
+  } else if (gr > 0) { const pk = t >= 8200;
     txt((pk ? T('pointe ', 'peak ') + hm(iMax) : T('moyenne', 'average')).toUpperCase(), CX, CY - 34, 28, K.text3, 'center', 700, gr);
     txt(fmt(pk ? D.max : D.avg, 0), CX, CY + 30, 70, pk ? K.rise : K.text, 'center', 800, gr); txt('€/MWh', CX, CY + 66, 24, K.text3, 'center', 500, gr); }
-  d.forEach((p, i) => disc(p[0], p[1], p[2], COL[i], 1));
-  if (t >= 9200 && t < 10200) { const ph = (t % 1000) / 1000; ringc(d[iMax][0], d[iMax][1], 16 + 30 * ph, K.rise, 4, 1 - ph); }
+  d.forEach((p, i) => glow(p[0], p[1], p[2], i, p[3]));
+  if (t >= 8200 && t < 9400) { const ph = (t % 1000) / 1000; ringc(d[iMax][0], d[iMax][1], 16 + 30 * ph, K.rise, 4, 1 - ph); }
 });
 </script>

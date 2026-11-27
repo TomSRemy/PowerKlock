@@ -97,17 +97,36 @@ const mix = (a, b, u) => a + (b - a) * u;
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const K = { text: css('--text'), text2: css('--text2'), text3: css('--text3'), line: css('--line'), rise: css('--rise'), fall: css('--fall'), mark: css('--mark'), bg: css('--bg') };
 // a dot's colour is its price (grey-blue low, yellow high), the day's peak is red and larger: nothing but the day's own values
-const COL = D.q.map((v, i) => { if (i === iMax) return K.rise; const u = (v - D.min) / (D.max - D.min);
-  return 'rgb(' + [mix(122, 255, u), mix(147, 253, u), mix(171, 130, u)].map(Math.round).join(',') + ')'; });
-const RAD = D.q.map((v, i) => i === iMax ? 13 : 7);
-// the passage is ONE movement of 1.6 s, the same function in both reels: reel 1 shows it leaving, reel 2 shows it arriving
-// (the dots nearest the exit leave first, each takes 1 s)
-const PASS = 1600, flight = (i, tau) => io(seg(tau, (95 - i) / 95 * 600, (95 - i) / 95 * 600 + 1000));
+const RGB = D.q.map((v, i) => { if (i === iMax) return [237, 105, 101]; const u = (v - D.min) / (D.max - D.min); return [mix(122, 255, u), mix(147, 253, u), mix(171, 130, u)]; });
+const RAD = D.q.map((v, i) => i === iMax ? 12 : 6.5);
+// where each quarter-hour rests in the price clock (midnight on top, price as radius)
+const CX = 500, CY = 940, R0 = 100, R1 = 380, hi30 = Math.max(D.max, ...D.q30.map(q => Math.max(...q)));
+const rr = v => R0 + (R1 - R0) * Math.max(0, v) / hi30;
+const pol = (i, v) => { const a = i / 96 * Math.PI * 2; return [CX + rr(v) * Math.sin(a), CY - rr(v) * Math.cos(a)]; };
+const POL = D.q.map((v, i) => pol(i, v));
+// free flight, as the dot cloud of the home page (js/landing.js) but looser: every dot has its own start, its own speed,
+// its own arc across the direct path (nil at both ends) and a small drift while it is loose. All of it is a fixed function of
+// the dot and of the time (same seed in both reels), so the two files show the same trajectories; at rest a dot is at its exact price.
+const rnd = (i, s) => { const v = Math.sin(i * 127.1 + s * 311.7) * 43758.5453; return v - Math.floor(v); };
+const io3 = x => x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+function fly(i, A, Z, tau, P, s) {
+  const d = rnd(i, s) * .42 * P, dur = P * (.46 + .12 * rnd(i, s + 1)), e = io3(seg(tau, d, d + dur));
+  const dx = Z[0] - A[0], dy = Z[1] - A[1], L = Math.hypot(dx, dy) || 1, free = Math.sin(e * Math.PI);
+  const arc = free * (rnd(i, s + 2) - .5) * 1150 + Math.sin(e * 2 * Math.PI) * (rnd(i, s + 3) - .5) * 520;
+  const f1 = 140 + 160 * rnd(i, s + 4), f2 = 230 + 220 * rnd(i, s + 5), amp = 40 + 50 * rnd(i, s + 6);   // each dot wanders at its own pace and reach
+  const jx = free * (Math.sin(tau / f1 + i * 1.7 + s) * amp + Math.sin(tau / f2 + i * .9) * amp * .6), jy = free * (Math.cos(tau / (f1 * 1.13) + i * 2.3 + s) * amp + Math.sin(tau / (f2 * .87) + i * 1.3) * amp * .6);
+  return [A[0] + dx * e - dy / L * arc + jx, A[1] + dy * e + dx / L * arc + jy, e];
+}
+// the passage from reel 1 to reel 2 is ONE flight of 2.5 s, from the curve to the clock of the next frame: reel 1 shows it leaving, reel 2 arriving
+const PASS = 2500, passage = (i, tau) => fly(i, HOME[i], [POL[i][0] + DIRV[0], POL[i][1] + DIRV[1]], tau, PASS, 1);
 const cv = $('cv'), g = cv.getContext('2d');
 const MONO = '"JetBrains Mono",ui-monospace,monospace';
 const txt = (s, x, y, size, col, al, w, a) => { g.globalAlpha = a == null ? 1 : a; g.font = (w || 500) + ' ' + size + 'px ' + MONO; g.fillStyle = col; g.textAlign = al || 'left'; g.fillText(s, x, y); g.globalAlpha = 1; };
 const poly = (P, col, w, a, dash) => { if (P.length < 2 || a <= 0) return; g.globalAlpha = a; g.strokeStyle = col; g.lineWidth = w; g.lineJoin = 'round'; g.lineCap = 'round'; g.setLineDash(dash || []);
   g.beginPath(); P.forEach((p, i) => i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1])); g.stroke(); g.setLineDash([]); g.globalAlpha = 1; };
+// a glowing dot: a halo and a core (the home page's 7 and 2.6 px, scaled to the 1080 px frame); white on the line, its price colour once loose
+const glow = (x, y, r, i, e) => { if (r <= 0) return; const c = RGB[i].map(v => Math.round(mix(255, v, Math.min(1, e * 2)))).join(',');
+  g.fillStyle = 'rgba(' + c + ',.14)'; g.beginPath(); g.arc(x, y, r * 2.7, 0, 7); g.fill(); g.fillStyle = 'rgb(' + c + ')'; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); };
 const disc = (x, y, r, col, a) => { if (r <= 0 || a <= 0) return; g.globalAlpha = a == null ? 1 : a; g.fillStyle = col; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); g.globalAlpha = 1; };
 const ringc = (x, y, r, col, w, a) => { if (a <= 0) return; g.globalAlpha = a; g.strokeStyle = col; g.lineWidth = w; g.beginPath(); g.arc(x, y, r, 0, 7); g.stroke(); g.globalAlpha = 1; };
 const cut = (P, f) => { const x = f * (P.length - 1), i = Math.min(P.length - 1, Math.floor(x)), u = x - i, j = Math.min(P.length - 1, i + 1);
@@ -120,20 +139,20 @@ const since = D.sinceMax[1] ? T('plus haut depuis le ' + dShort(D.sinceMax[1]), 
 $('sub').innerHTML = '<b>' + T('ce matin à ' + hm(iMax), 'this morning at ' + hm(iMax)) + '</b><span>' + T('Le quart d’heure le ', 'The quarter-hour: ') + since + '</span>';
 $('tag').textContent = T('à ' + hm(iMax) + ' · ', 'at ' + hm(iMax) + ' · ') + since;
 $('end').innerHTML = '<b>×' + fmt(D.max / D.min, 1) + '</b><span>' + T('entre le creux et la pointe du même jour', 'between the low and the peak of the same day') + '<em>' + fmt(D.min, 0) + ' € ' + T('à ', 'at ') + hm(iMin) + ' → ' + fmt(D.max, 0) + ' € ' + T('à ', 'at ') + hm(iMax) + '</em></span>';
-// 12 s: hook 0-2.2, the day draws itself 3.2-7, punchline 7.4-9.5, the line breaks into its 96 dots 9.3-10.2,
-// they leave for the next reel 10.2-11.8 while the figure comes back: the last frame is the first
-const TX = 10200; window.PK_TX = TX;
-const dots = t => HOME.map((h, i) => { const p = t < TX ? 0 : flight(i, t - TX); return [h[0] + DIRV[0] * p, h[1] + DIRV[1] * p, RAD[i] * eo(seg(t, 9300 + i * 6, 9600 + i * 6))]; });
+// 12 s: hook 0-2.2, the day draws itself 3.2-7, punchline 7.4-9, the line dissolves into its 96 dots 8.9-9.4,
+// each flies off on its own path to the next reel 9.3-11.8 while the figure comes back: the last frame is the first
+const TX = 9300; window.PK_TX = TX;
+const dots = t => HOME.map((h, i) => { const p = t < TX ? [h[0], h[1], 0] : passage(i, t - TX); return [p[0], p[1], RAD[i] * eo(seg(t, 8900 + rnd(i, 7) * 250, 9150 + rnd(i, 7) * 250)), p[2]]; });
 window.PK_DOTS = dots;
 loop(12000, t => {
   const big = t < 6000 ? 1 - io(seg(t, 2200, 2900)) : io(seg(t, 10700, 11600));
   $('num').style.transform = 'translateY(' + (-190 * (1 - big)) + 'px) scale(' + (.40 + .60 * big) * (big > .99 ? 1 + .012 * Math.sin(t / 1500 * Math.PI * 2) : 1) + ')';
   $('sub').style.opacity = t < 6000 ? 1 - seg(t, 2100, 2500) : seg(t, 11400, 11800);
-  $('tag').style.opacity = seg(t, 2700, 3200) * (1 - seg(t, 10000, 10500));
-  const e = eo(seg(t, 7400, 7900)) * (1 - seg(t, 9300, 9700));
+  $('tag').style.opacity = seg(t, 2700, 3200) * (1 - seg(t, 9700, 10200));
+  const e = eo(seg(t, 7400, 7900)) * (1 - seg(t, 8700, 9000));
   $('end').style.opacity = e; $('end').style.transform = 'translateY(' + (30 * (1 - e)) + 'px)';
   g.clearRect(0, 0, 1080, 1920);
-  const b = seg(t, 2700, 3200) * (1 - seg(t, 9500, 10100)), f = io(seg(t, 3200, 7000)), la = 1 - seg(t, 9400, 10000);
+  const b = seg(t, 2700, 3200) * (1 - seg(t, 9100, 9600)), f = io(seg(t, 3200, 7000)), la = 1 - seg(t, 9000, 9400);
   if (b > 0) {
     poly([[GX0, GY1], [GX1, GY1]], K.line, 2, b);
     [0, 24, 48, 72, 95].forEach((i, k) => txt(k === 4 ? (EN ? '24:00' : '24' + NB + 'h') : hm(i), gx(i), GY1 + 50, 28, K.text3, k === 0 ? 'left' : k === 4 ? 'right' : 'center', 500, b));
@@ -144,7 +163,7 @@ loop(12000, t => {
   if (f * 95 >= iMax) { const ph = (t % 1500) / 1500; ringc(HOME[iMax][0], HOME[iMax][1], 22 + 22 * ph, K.rise, 4, (1 - ph) * b); disc(HOME[iMax][0], HOME[iMax][1], 14, K.rise, la);
     txt(fmt(D.max, 0) + ' €', HOME[iMax][0] + 34, HOME[iMax][1] + 6, 46, K.rise, 'left', 800, b); }
   if (f >= 1) { disc(HOME[iMin][0], HOME[iMin][1], 14, K.fall, la * b); txt(fmt(D.min, 0) + ' €', HOME[iMin][0] - 26, HOME[iMin][1] + 16, 40, K.fall, 'right', 800, b); }
-  if (t >= 9300) dots(t).forEach((d, i) => disc(d[0], d[1], d[2], COL[i], 1));
+  if (t >= 8900) dots(t).forEach((d, i) => glow(d[0], d[1], d[2], i, d[3]));
 });
 </script>
 
