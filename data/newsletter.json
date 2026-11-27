@@ -1311,8 +1311,19 @@
   }
  ],
  "pinned": null,
- "brief": "Le spot français atteint 299 €/MWh pour ce vendredi (+3 % sur la veille), cinq fois son niveau du 19 novembre. Il monte alors que le gaz a reculé de 5 % sur la dernière séance : le froid, le vent faible et un nucléaire disponible à 46,1 GW, 6,6 GW sous la prévision de l'exploitant, tirent les prix. Les échéances ne suivent pas : décembre se traite à 208 €/MWh et le Cal 27 cède 2 % sur la dernière séance, à 115 €. Pour un acheteur encore ouvert sur décembre, se couvrir coûte environ 90 € de moins par MWh que le spot du jour. Côté pétrole, les attaques de navires dans le détroit d'Ormuz font remonter le Brent, sans entraîner le gaz européen. À surveiller : un répit sur les températures du 29 novembre au 4 décembre, puis le retour du froid dès le 6, avec un vent sous la normale jusque vers le 9 décembre.",
- "brief_en": "French spot reaches 299 €/MWh for this Friday (+3% on the day before), five times its level of 19 November. It rises while gas fell 5% in the last session: cold, weak wind and nuclear availability of 46.1 GW, 6.6 GW below the operator's forecast, are pulling prices up. Forwards do not follow: December trades at 208 €/MWh and Cal 27 lost 2% in the last session, at 115 €. For a buyer still open on December, hedging costs about 90 € per MWh less than today's spot. On oil, attacks on ships in the Strait of Hormuz lift Brent, without dragging European gas along. To watch: a break in the cold from 29 November to 4 December, then colder again from the 6th, with wind below normal until around 9 December.",
- "brief_links": [],
+ "brief": "Le spot français s'établit à 299 €/MWh pour ce vendredi, en hausse de 3 % sur la veille et pour la cinquième séance consécutive ; il était à 60 €/MWh le 19 novembre. Cette hausse ne vient pas du gaz, qui a reculé de 5 % lors de la dernière séance. Elle tient au système électrique : des températures nettement sous les normales, une production éolienne environ deux fois plus faible qu'en temps normal et un parc nucléaire disponible à 46,1 GW, soit 6,6 GW de moins que la prévision de l'exploitant. Les prix à terme ne suivent pas ce niveau : le contrat décembre cote 208 €/MWh, environ 90 €/MWh sous le spot, et le Cal 27 recule de 2 %, à 115 €/MWh. Le marché considère donc cette tension comme passagère. Les attaques de navires dans le détroit d'Ormuz font monter le pétrole, sans effet sur le gaz européen. Le prochain point d'attention est le retour du froid à partir du 6 décembre, avec un vent qui devrait rester faible jusque vers le 9.",
+ "brief_en": "The French spot settles at 299 €/MWh for this Friday, up 3% on the day before and for the fifth session in a row; it stood at 60 €/MWh on 19 November. The rise does not come from gas, which fell 5% in the last session. It comes from the power system: temperatures well below normal, wind output about half its usual level and nuclear availability of 46.1 GW, 6.6 GW below the operator's forecast. Forward prices do not follow this level: December trades at 208 €/MWh, about 90 €/MWh below the spot, and Cal 27 falls 2% to 115 €/MWh. The market therefore sees this tension as temporary. Ship attacks in the Strait of Hormuz lift oil, with no effect on European gas. The next point to watch is the return of the cold from 6 December, with wind expected to stay weak until around the 9th.",
+ "brief_links": [
+  {
+   "title": "Prix du pétrole aujourd’hui : le Brent progresse après de nouvelles attaques contre des pétroliers près d'Ormuz",
+   "source": "TradingView",
+   "link": "https://news.google.com/rss/articles/CBMiZkFVX3lxTE0xVjE0Zlp3bXpmVFUyaGM5XzVsQ0ZDRmdHU2lsV0lTMzIzZXUyTjlMUHVFei1YX0U3aUxZaUNUNW5WbnhLOTFaQktnNWhxbFoxSy1ZTmdtNXZGTDloX3RYS1dCYVVuZw?oc=5"
+  },
+  {
+   "title": "Hormuz Tanker Traffic Rises This Month Even as Attacks Increase",
+   "source": "gCaptain",
+   "link": "https://news.google.com/rss/articles/CBMijgFBVV95cUxORzBRNXhRdXM2TWotc2FXNHRZeTdDcURpWGlWNzk1a0pIVF8xRXpFSF9WOGdVTFVNRUxlQTNCT21Na1ZmU1FrcmlvRlpxcEpzM3lRSnJ3N0pFZjhtT0JITEhpMHIxMU9GelBuampNdEN5VHlfNUFMcVo4Zk42SnlUZVBNVV8tR1pOVm1wdWFR?oc=5"
+  }
+ ],
  "brief_auto": "claude"
 }
