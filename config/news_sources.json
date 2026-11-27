@@ -1117,6 +1117,86 @@
         "geopolitics"
       ],
       "lang": "fr"
+    },
+    {
+      "q": "site:cnbc.com oil OR gas OR Hormuz OR OPEC OR LNG",
+      "tags": [
+        "markets",
+        "geopolitics"
+      ],
+      "lang": "en"
+    },
+    {
+      "q": "site:aljazeera.com oil OR gas OR Hormuz OR LNG OR energy",
+      "tags": [
+        "markets",
+        "geopolitics"
+      ],
+      "lang": "en"
+    },
+    {
+      "q": "site:gcaptain.com Hormuz OR tanker OR LNG OR \"Red Sea\"",
+      "tags": [
+        "markets",
+        "geopolitics",
+        "gas"
+      ],
+      "lang": "en"
+    },
+    {
+      "q": "site:rivieramm.com LNG OR tanker OR Hormuz",
+      "tags": [
+        "markets",
+        "gas"
+      ],
+      "lang": "en"
+    },
+    {
+      "q": "site:marinelink.com oil OR LNG OR Hormuz OR tanker",
+      "tags": [
+        "markets",
+        "geopolitics"
+      ],
+      "lang": "en"
+    },
+    {
+      "q": "site:bairdmaritime.com Hormuz OR tanker OR LNG",
+      "tags": [
+        "markets",
+        "geopolitics"
+      ],
+      "lang": "en"
+    },
+    {
+      "q": "site:oilprice.com Hormuz OR LNG OR Brent OR \"natural gas\" OR Europe",
+      "tags": [
+        "markets",
+        "gas"
+      ],
+      "lang": "en"
+    },
+    {
+      "q": "site:brecorder.com oil prices OR Brent OR LNG",
+      "tags": [
+        "markets"
+      ],
+      "lang": "en"
+    },
+    {
+      "q": "site:tradingeconomics.com Brent OR \"natural gas\" OR TTF OR \"carbon\"",
+      "tags": [
+        "markets",
+        "gas"
+      ],
+      "lang": "en"
+    },
+    {
+      "q": "site:connaissancedesenergies.org/afp pétrole OR gaz OR électricité OR Ormuz",
+      "tags": [
+        "markets",
+        "fr"
+      ],
+      "lang": "fr"
     }
   ],
   "mail_alerts": [

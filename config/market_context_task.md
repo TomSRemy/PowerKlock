@@ -142,6 +142,10 @@ Also write `articles` (every day) and, on Monday, `articles_week`: the newslette
   news.json: never the text of a paid article.
 
 ## The watch learns every morning (the owner, 27 Nov. 2026)
+Every outlet used on the web for the brief joins the watch the same morning (the owner, 27 Nov. 2026: « si utilisé,
+c'est que c'est intéressant, donc dans la base »): a press search `site:<domain>` on the subjects it was used for (as the
+others in `config/news_sources.json`; titles and links only), unless it is paid-only or refuses automated reading. List
+them in the final message.
 Each interesting article or subject found on the web and missing from `data/news.json` is a gap of the watch: fix the
 watch so it is caught from then on, every day, not only this morning.
 1. Find why it is missing: no search on that subject, an outlet the watch does not read, or a `require` filter that
