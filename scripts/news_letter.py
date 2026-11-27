@@ -53,6 +53,13 @@ MIN_SCORE = 3.0     # a story below this is off the reader's subjects (e.g. an o
 # « À retenir » must be a fact from the article: a generic line (« Impact sur les prix », « Intérêt pour les PPA ») is dropped
 GENERIC = re.compile(r"(?i)^\s*(l.|un |une |des |les |le |la )?(impacts?|int[ée]r[êe]ts?|enjeux?|opportunit[ée]s?|cons[ée]quences?|effets?|nouvel(le)?s?|"
                      r"analyser|[ée]tudier|pr[ée]voir|surveiller|suivre|[àa] suivre|anticiper|v[ée]rifier|attention|implications?|potentiel)\b")
+# « À retenir » is a fact, never an instruction to the reader (19 Nov. 2026 edition: « Suggérez à vos clients d’opter pour
+# des contrats à long terme », « Adaptez vos positions », « Surveillez les disponibilités nucléaires »): the owner wants
+# an analysis the reader draws their own conclusions from
+ADVICE = re.compile(r"(?i)^\s*(surveillez|suivez|adaptez|ajustez|sugg[ée]rez|informez|encouragez|orientez|explorez|[ée]valuez|v[ée]rifiez|anticipez|pr[ée]voyez|"
+                    r"privil[ée]giez|pensez|profitez|monitor|track|watch|adjust|consider|explore|encourage|advise)\b|\bvos (clients|positions|strat[ée]gies|contrats|n[ée]gociations)\b|"
+                    r"\byour (clients|positions|strateg(y|ies)|contracts)\b")
+HOLLOW_HEAD = re.compile(r"(?i)^\s*(nouvelles? (du jour|de l|des? |en )|actualit[ée]s?|l.actualit[ée]|le point|point sur|march[ée]s? de l.[ée]nergie\s*:|prix (de l.[ée]nergie|[ée]nerg[ée]tiques)\b)")
 EMPTY = re.compile(r"(?i)(aucune information|pas d.information|non (précisé|indiqué|disponible)|sans (détail|précision)s? supplémentaire)")
 
 SYSTEM = """Tu écris la newsletter du matin de PowerKlock pour ce lecteur : {reader}.
@@ -65,11 +72,18 @@ Réponds en JSON seulement :
 
 Un élément par sujet reçu, dans l'ordre reçu. N'invente rien : seulement ce que disent les titres et extraits, et ce qui en
 découle directement. Aucun chiffre absent des extraits. Ne cite pas de média.
+N'explique jamais un sigle ou une abréviation que l'extrait n'explique pas (« FC » dans un titre de financement n'est pas une
+pile à combustible) : reprends-le tel quel. Ne dis jamais qu'un prix monte ou baisse si le titre ou l'extrait ne le dit pas.
+Si l'extrait est vide, "what" reste vide : ne paraphrase pas le titre, ne devine pas la suite.
+"headline" nomme le fait le plus important des sujets reçus (qui fait quoi), jamais une formule (« Nouvelles du jour »,
+« Actualité de l'énergie », « Prix de l'énergie en hausse ») ni une liste de mots.
 "what" résume l'article : ce qui se passe, qui, où, combien, quand. Ne répète pas le titre, apporte ce qu'il ne dit pas.
+Tout en français dans les champs français (traduis l'extrait s'il est en anglais).
 "for_you" (« À retenir ») est LE fait concret qu'un professionnel retient de l'article : un chiffre, une décision, une date,
 un montant, un volume, qui fait quoi (« 56 MW pour Vattenfall en Allemagne, mise en service fin 2027 »). Jamais une
 formule générale (« impact sur les prix », « intérêt pour les PPA », « nouvelle opportunité », « à suivre », « analyser… »),
-jamais un conseil. S'il n'y a pas de fait concret dans l'extrait, laisse "for_you" vide."""
+jamais un conseil ni une consigne au lecteur (« surveillez », « adaptez vos positions », « suggérez à vos clients ») : le
+lecteur tire lui-même ses conclusions. S'il n'y a pas de fait concret dans l'extrait, laisse "for_you" vide."""
 
 
 def load(path, default=None):
@@ -279,7 +293,7 @@ def ask_context(items, model=None):
 def takeaway(t, title, what):
     """« À retenir »: a concrete fact of the article, or nothing (not a generic line, not the title or summary again)"""
     t = clip(t, 260)
-    if not t or EMPTY.search(t) or GENERIC.search(t) or len(t.split()) < 4 or adds_nothing(t, title + " " + (what or "")):
+    if not t or EMPTY.search(t) or GENERIC.search(t) or ADVICE.search(t) or len(t.split()) < 4 or adds_nothing(t, title + " " + (what or "")):
         return None
     return t
 
@@ -1532,7 +1546,13 @@ def main():
             # and a neutral impact under each (the owner, 25 Nov. 2026); every profile gets them, each reader's order follows
             # their subjects (scripts/morning_mail.py › tailor)
             out = cl
-        edition["profiles"][pid] = {"hero_chart": hero, "name": prof["name"], "short": prof["short"], "order": prof["order"], "headline": clip(gen.get("headline"), 300) or None, "headline_en": clip(gen.get("headline_en"), 300) or None,
+            # the model's headline was written from the stories they replace (27 Nov. 2026: « Baisse des prix de l'énergie »
+            # above articles that said nothing of the kind, the spot at 299 €/MWh): no headline rather than another edition's
+            gen = dict(gen, headline=None, headline_en=None)
+        hl = clip(gen.get("headline"), 300) or None
+        if hl and (len(hl.split()) < 4 or HOLLOW_HEAD.search(hl)):
+            hl = None           # « Nouvelles du jour en énergie », « Actualité des contrats et du stockage »: says nothing
+        edition["profiles"][pid] = {"hero_chart": hero, "name": prof["name"], "short": prof["short"], "order": prof["order"], "headline": hl, "headline_en": (clip(gen.get("headline_en"), 300) or None) if hl else None,
                                     "stories": out, "ai": bool(by)}
         print(f"{pid}: {len(out)} stories, AI text for {len(by)}")
     edition["brief"] = edition["brief_en"] = None
