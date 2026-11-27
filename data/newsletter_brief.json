@@ -31,6 +31,18 @@
   "history": [],
   "articles": [
     {
+      "link": "https://news.google.com/rss/articles/CBMizwFBVV95cUxPUlNtX2NLQ29sb290VVpCYzNuUnEzaG93TTNxTjRrV0hWNlpueXQtbWRMcEhlTlNpWFBZV2NHRXZRMVRianpBWEpzYWJObUNUNVk0QnhCRl94M0xpbWN5amhhYUxTRmxzemdsU09jQUFEbHRrbmlmZjhRLVNCU2paVWJwY01Ua1UzOGtmNzJOWHdjOHBlWDBtV0I5VkpwdVlGcVlxREFLNWluNHExcVZpNm5jTUswcS1YaWxFT0tzLWVGR0ZSa0lOZU41NXpPdEE?oc=5",
+      "section": "regulation",
+      "what": "Le gouvernement a déposé au Sénat son amendement qui met fin aux anciens contrats d'achat solaires S06 et S10 : plus de 222 000 contrats photovoltaïques sont concernés.",
+      "what_en": "The government filed its Senate amendment ending the old S06 and S10 solar feed-in contracts: more than 222,000 PV contracts are concerned."
+    },
+    {
+      "link": "https://www.pv-magazine.com/2026/11/26/france-triples-planned-renewable-energy-auction-volume-to-1-5-gw/",
+      "section": "regulation",
+      "what": "La France porte de 500 MW à 1,5 GW son prochain appel d'offres renouvelable neutre, ouvert à toutes les technologies, avec un prix de référence en base commun.",
+      "what_en": "France raises its next technology-neutral renewable tender from 500 MW to 1.5 GW, open to all technologies, with a common baseload reference price."
+    },
+    {
       "link": "https://www.connaissancedesenergies.org/tribune-actualite-energies/epr2-le-partage-de-souverainete-comme-prix-a-payer",
       "section": "regulation",
       "what": "Pour autoriser l'aide publique aux six futurs réacteurs EPR2, Bruxelles réclamerait deux contreparties à la France, dont l'ouverture à d'autres fournisseurs.",
@@ -43,16 +55,16 @@
       "what_en": "EU sanctions would for the first time target a third country's power installations, as part of cutting links with Russian refineries."
     },
     {
-      "link": "https://www.latribune.fr/article/entreprises-finance/energie-environnement/64707385339740/le-terminal-methanier-de-fos-cavaou-pilier-du-gnl-prepare-sa-mutation-en-attendant-le-declin-du-gaz",
+      "link": "https://news.google.com/rss/articles/CBMitgFBVV95cUxOMF9yaHJYdHRRcWppOUxnUzQtUVZpT2dSSWF2V24wclFENEg1anBRMEc3eWRQRFZLSDR0YmdTcUMyUWRhd3JJZDBUVkdmdXBpR1RJclg1OHRUTmpjblhZMUczbENTemVLOUFpRjEtclVzZlNrQjB4VTFFdmRtY05RaTZtQmZrN3NiUkc3VEtZWV9YWkc5MUFFX09VLWF0R3pldnZ6OTF1ZHNWaEhCZlpBMnF3U1Bad9IBwwFBVV95cUxQaUwtM2RpS0FMLXBoNENDZ0gxSXcyWWY1al81Rld3c2ZkUUlxMTdkb0xKLWw4S1Q4SlpHaklWUXpyRnMtWDVsNGh6Z0J2SXdOVjFfRTFzc0VfaC1WZ0VoelZRQl9NZU9aaG1ZZFgxSTVsckdRUmhrXzFaWkNmcTdhVzh4M2tPbkRqUFJCbDZIYWhGYk9CT1hGY001a3RCNlluUFJyLU1PNjA5OU0wOE1SUnU4Skt4eTNWbUxhTXdFaHFaSGc?oc=5",
       "section": "markets",
-      "what": "Le terminal méthanier de Fos Cavaou, maillon clé de l'approvisionnement français depuis la guerre en Ukraine, vit au rythme des cargaisons de GNL, surtout américaines.",
-      "what_en": "The Fos Cavaou LNG terminal, a key link in French supply since the war in Ukraine, runs to the rhythm of LNG cargoes, mostly from the United States."
+      "what": "Les incidents dans le détroit d'Ormuz ravivent les craintes sur l'offre et font monter les prix mondiaux du pétrole.",
+      "what_en": "Incidents in the Strait of Hormuz revive supply fears and lift global oil prices."
     },
     {
-      "link": "https://carbon-pulse.com/575741/",
+      "link": "https://carbon-pulse.com/573431/",
       "section": "markets",
-      "what": "Le prix du carbone européen a progressé jeudi matin et conservé ses gains l'après-midi, avec le retour des spéculateurs sur le marché.",
-      "what_en": "European carbon prices rose on Thursday morning and kept their gains through the afternoon, with speculators seen returning to the market."
+      "what": "Un accord du Parlement européen sur le marché du carbone (ETS) pourrait être trouvé d'ici quelques semaines, en décembre, selon les Verts.",
+      "what_en": "A European Parliament deal on the carbon market (ETS) could be reached within weeks, in December, according to the Greens."
     },
     {
       "link": "https://lenergeek.com/2026/11/26/flamanville-3-asnr-autorisation-24-novembre-2026/",
@@ -61,10 +73,10 @@
       "what_en": "On 24 November, the ASNR approved a change to the operating conditions of the Flamanville EPR, which is in a planned outage, without allowing it to restart."
     },
     {
-      "link": "https://www.renews.biz/other-news/gb-grid-margin-notices-hit-record-levels/",
-      "section": "nuclear_grid",
-      "what": "Les alertes de marge du réseau britannique atteignent un record : des contraintes de transport rendent indisponibles d'importants volumes d'éolien.",
-      "what_en": "Great Britain's grid margin notices hit a record, as transmission constraints leave large volumes of wind generation unavailable."
+      "link": "https://news.google.com/rss/articles/CBMizAFBVV95cUxQZ2FlLTJVWk4yWHl3cTQtVXA2ak85cnV5dmptdUhUSjgwbnJrTk9XSHhPdS1uU0E5MGVKSzBXMlVoYUJsOEJoWkl5THcwVVBLZFpjbHdTVlRPYWhqbThzMG1VQ3RrZE5TU1g1NDRxU0RsWEZxelJONUFlY29RRWE0RTBXaWRpcWFfRktnUTdJakUxT2tZM2loYXNhN044ZnFFbEMwSV9NSWw4aU5VWTNfSE9fV3BmWEpfU2hWeTdURkg4RWt2X1k2d0xqQ1M?oc=5",
+      "section": "supply",
+      "what": "Après la fin de l'Arenh, EDF multiplie les contrats d'accès à sa production nucléaire avec les industriels.",
+      "what_en": "After the end of ARENH, EDF is signing more contracts giving access to its nuclear output."
     },
     {
       "link": "https://www.renews.biz/onshore-wind/statkraft-acquires-225mw-clash-gour-wind-farm/",
@@ -79,28 +91,16 @@
       "what_en": "SmartestEnergy signs two 20-year PPAs for the Norfolk Vanguard offshore wind projects, off East Anglia."
     },
     {
-      "link": "https://www.renews.biz/other-news/energy-storage/zelestra-and-statkraft-ink-700-mwh-deal/",
+      "link": "https://news.google.com/rss/articles/CBMilAFBVV95cUxQX1FZaHRET2dpVER1c25QX1VEQlJjME51XzZNdklSNkhxWTVXTk92RENpQ0Zoa21YUWNHTUtoZVk3MEFkNkVBX0JuVHdaeC1ueEVuWFBhdWlCdmZFUF9jQjZnT1ZfcXg2eFRMcDVKLUxKS1pyN1pkQ3ZWTjJZZDN4WnFhdDlWdUdlTUVMdnY0TjA2UUNW?oc=5",
       "section": "deals",
-      "what": "Zelestra et Statkraft signent un contrat de tolling de huit ans sur un stockage de 175 MW (700 MWh) en Italie.",
-      "what_en": "Zelestra and Statkraft sign an eight-year tolling agreement for a 175 MW (700 MWh) storage project in Italy."
+      "what": "Qair fournira à Holcim Polska 18 GWh d'électricité solaire par an pendant 10 ans.",
+      "what_en": "Qair will supply Holcim Polska with 18 GWh of solar power a year for 10 years."
     },
     {
-      "link": "https://www.pv-magazine.com/2026/11/26/spain-could-reach-10-gw-of-batteries-by-2030-but-bankability-remains-the-major-challenge/",
+      "link": "https://news.google.com/rss/articles/CBMi2AFBVV95cUxQRVV1RXctS1dpSUZqdVNGcDhXRU5DRjVkWDRyTnZUZWE3Y1NHUjhUaEY0ZklINGJPblY3UGhLbG1uYVlXeFdKNFlxWG5QQTZGVmd6REpBLU40OVQ1Uy1oX3RhNTE0a045eXI2SGppOVE2akhaS0ZrRWIxTzNLZnd3TU1KOEY3QUxzNkdZQjVxV21oSEFMQkhobmdQa1dKeHZUQ0Fqd1VrY2M2Rmg3dUNPa1RvTFpmYUhpalRlbWpwMXF3YnBURnRnY2hudExKRVJBQlFPNjRNaTU?oc=5",
       "section": "projects",
-      "what": "L'Espagne pourrait atteindre 10 GW de batteries en 2030, mais le financement des projets reste le principal obstacle.",
-      "what_en": "Spain could reach 10 GW of batteries by 2030, but project bankability remains the main hurdle."
-    },
-    {
-      "link": "https://www.pv-tech.org/eu-chinese-inverter-ban-could-cut-eastern-european-pv-deployments-by-6-says-woodmac/",
-      "section": "projects",
-      "what": "Selon Wood Mackenzie, les restrictions européennes sur les onduleurs chinois pourraient réduire de 6 % les installations solaires dans la moitié du continent.",
-      "what_en": "According to Wood Mackenzie, EU restrictions on Chinese inverters could cut solar deployments in half of the continent by 6%."
-    },
-    {
-      "link": "https://wattselse.com/veille/article/4679/industrie-lenergie-coute-bien-plus-cher-aux-entreprises-italiennes-quaux-francai",
-      "section": "supply",
-      "what": "L'énergie pèse bien plus lourd dans les coûts de production des industriels italiens que dans ceux des français.",
-      "what_en": "Energy weighs far more on the production costs of Italian manufacturers than on those of French ones."
+      "what": "Les batteries de stockage dégagent des revenus exceptionnels, selon une analyse publiée par La Plateforme Verte.",
+      "what_en": "Battery storage is earning exceptional revenues, according to an analysis published by La Plateforme Verte."
     }
   ],
   "articles_week": []
