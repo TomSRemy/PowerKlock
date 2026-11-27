@@ -94,12 +94,21 @@ ailleurs, autrement dit, dans ce contexte); a cause only when the figures or the
 figures; prices in €/MWh without decimals, capacity in GW with one decimal, moves in % without decimals; no source or
 outlet named, nothing copied.
 
-Example of a day (25 Nov. 2026), for the level of analysis and the flow only (not a template), as the reader sees it:
-> Le spot français monte à 255 €/MWh (+4 %) et dépasse l'Allemagne (246 €). À ce niveau, le prix est bien au-dessus
-> du coût d'une centrale gaz : le marché est tendu aux heures de pointe. En cause, le froid, qui tire la consommation,
-> et un vent faible qui ne reviendra que vers le 10 décembre. Le gaz a pris 9 % en une semaine avec des stocks
-> européens sous l'an dernier. Le Cal 27 ne suit pas : le marché ne voit pas cette tension durer. À surveiller, les
-> 3,8 GW de nucléaire qu'EDF attend encore, principal facteur de baisse à court terme.
+Register (the owner, 27 Nov. 2026): « naturel pro ». Complete, sober sentences, as in a professional market note;
+a technical term is explained in passing when needed. No familiar turns (« n'y est pour rien », « prochain test »,
+« le marché parie »), no journalistic effects, no exclamation.
+
+Example of a day (27 Nov. 2026, validated by the owner), for the reasoning, the register and the flow only (not a
+template), as the reader sees it:
+> Le spot français s'établit à 299 €/MWh pour ce vendredi, en hausse de 3 % sur la veille et pour la cinquième séance
+> consécutive ; il était à 60 € le 19 novembre. Cette hausse ne vient pas du gaz, qui a reculé de 5 % lors de la
+> dernière séance. Elle tient au système électrique : des températures nettement sous les normales, une production
+> éolienne environ deux fois plus faible qu'en temps normal et un parc nucléaire disponible à 46,1 GW, soit 6,6 GW de
+> moins que la prévision de l'exploitant. Les prix à terme ne suivent pas ce niveau : le contrat décembre cote
+> 208 €/MWh, environ 90 € sous le spot, et le Cal 27 recule de 2 %, à 115 €. Le marché considère donc cette tension
+> comme passagère. Les attaques de navires dans le détroit d'Ormuz font monter le pétrole, sans effet sur le gaz
+> européen. Le prochain point d'attention est le retour du froid à partir du 6 décembre, avec un vent qui devrait
+> rester faible jusque vers le 9.
 
 ## The articles (the owner, 25 Nov. 2026)
 Also write `articles` (every day) and, on Monday, `articles_week`: the newsletter's articles, chosen in `data/news.json`.
