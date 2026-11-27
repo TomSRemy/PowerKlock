@@ -53,13 +53,17 @@ def frday(d):
 
 def spot(d):
     j = load('history', 'daily', d.isoformat() + '.json')
-    h = (((j or {}).get('zones') or {}).get('FR') or {}).get('hourly')
+    z = ((j or {}).get('zones') or {}).get('FR') or {}
+    h = z.get('hourly')
     if not isinstance(h, list) or not h:
         return None
     v = [x for x in h if x is not None]
     k = max(1, len(h) // 24)
     hourly = [sum(x for x in h[i * k:(i + 1) * k] if x is not None) / max(1, len([x for x in h[i * k:(i + 1) * k] if x is not None])) for i in range(24)]
-    return {'base': sum(v) / len(v), 'peak': sum(hourly[8:20]) / 12, 'min': min(v), 'max': max(v), 'neg': sum(1 for x in hourly if x <= 0)}
+    # the published daily average, never the mean of the series (CLAUDE.md › Data): a 25-hour day keeps 96 quarter-hours,
+    # so their mean is not the day's price (25 Oct. 2026: 26.32 against 25.34 published)
+    avg = z.get('avg')
+    return {'base': avg if isinstance(avg, (int, float)) else sum(v) / len(v), 'peak': sum(hourly[8:20]) / 12, 'min': min(v), 'max': max(v), 'neg': sum(1 for x in hourly if x <= 0)}
 
 
 def last_two(points):
