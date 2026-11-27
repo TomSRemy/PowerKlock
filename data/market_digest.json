@@ -1,5 +1,5 @@
 {
- "updated": "2026-11-27T08:07:23+00:00",
+ "updated": "2026-11-27T16:32:23+00:00",
  "asof": "2026-11-27",
  "notes": 6,
  "engine": "proxy",
@@ -7,45 +7,45 @@
   {
    "topic": "France",
    "topic_en": "France",
-   "text": "La disponibilité du parc nucléaire français est en baisse de 1,9% sur 7 jours, à 46088,75 MW, ce qui pousse les prix à la hausse. La consommation d'électricité en France devrait augmenter de 26% d'ici 2050, selon RTE.",
-   "text_en": "French nuclear power plant availability is down 1.9% over 7 days, to 46088.75 MW, which pushes prices up. France's electricity consumption is expected to increase by 26% by 2050, according to RTE.",
+   "text": "La disponibilité du parc nucléaire français est en baisse, ce qui pousse les prix à la hausse. La consommation d'électricité en France devrait augmenter de 26% d'ici 2050.",
+   "text_en": "French nuclear power plant availability is decreasing, pushing prices up. France's electricity consumption is expected to increase by 26% by 2050.",
    "tone": "up"
   },
   {
    "topic": "Golfe",
    "topic_en": "Gulf",
-   "text": "Les attaques contre les navires dans le détroit d'Ormuz font craindre une pénurie de pétrole et poussent les prix à la hausse.",
-   "text_en": "Attacks on ships in the Strait of Hormuz are raising fears of an oil shortage and pushing prices up.",
+   "text": "Les tensions géopolitiques dans le Golfe ont repris, faisant craindre une perturbation de l'approvisionnement en pétrole et en gaz.",
+   "text_en": "Geopolitical tensions in the Gulf have resumed, raising concerns about a disruption in oil and gas supplies.",
    "tone": "up"
   },
   {
    "topic": "Norvège",
    "topic_en": "Norway",
-   "text": "La production de gaz norvégienne a augmenté de 1% en octobre, mais les approvisionnements sont toujours fragiles en raison de maintenance et d'arrêts de production.",
-   "text_en": "Norwegian gas production increased by 1% in October, but supplies are still fragile due to maintenance and production outages.",
-   "tone": "flat"
+   "text": "Les approvisionnements norvégiens de gaz naturel ont augmenté, ce qui a contribué à la baisse des prix du gaz en Europe.",
+   "text_en": "Norwegian natural gas supplies have increased, contributing to the decline in European gas prices.",
+   "tone": "down"
   }
  ],
  "outlook": {
   "oil": {
    "tone": "up",
-   "text": "La hausse des prix du pétrole devrait se poursuivre en raison des tensions géopolitiques",
-   "text_en": "Oil price increase is expected to continue due to geopolitical tensions"
+   "text": "Les prix du pétrole devraient augmenter en raison des tensions géopolitiques dans le Golfe.",
+   "text_en": "Oil prices are expected to rise due to geopolitical tensions in the Gulf."
   },
   "gas": {
-   "tone": "up",
-   "text": "Les prix du gaz devraient augmenter en raison de la demande accrue pour le chauffage",
-   "text_en": "Gas prices are expected to rise due to increased demand for heating"
+   "tone": "down",
+   "text": "Les prix du gaz devraient baisser en raison de l'augmentation des approvisionnements norvégiens.",
+   "text_en": "Gas prices are expected to fall due to increased Norwegian supplies."
   },
   "power": {
    "tone": "up",
-   "text": "Les prix de l'électricité devraient augmenter en raison de la consommation accrue et de la disponibilité nucléaire réduite",
-   "text_en": "Electricity prices are expected to rise due to increased consumption and reduced nuclear availability"
+   "text": "Les prix de l'électricité devraient augmenter en raison de la baisse de la disponibilité du parc nucléaire français.",
+   "text_en": "Electricity prices are expected to rise due to the decrease in French nuclear power plant availability."
   },
   "carbon": {
    "tone": "flat",
-   "text": "Les prix du carbone devraient rester stables en raison de la production éolienne accrue",
-   "text_en": "Carbon prices are expected to remain stable due to increased wind power production"
+   "text": "Les prix des quotas de carbone devraient rester stables.",
+   "text_en": "Carbon allowance prices are expected to remain stable."
   }
  }
 }
