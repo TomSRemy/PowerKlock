@@ -37,9 +37,10 @@ YEARS = list(range(2016, date.today().year))
 TARGETS = [y for y in YEARS if y >= 2019]
 
 
-def load():
+def load(years=None):
+    """hourly rows of the given years (default: the complete years, YEARS); scripts/ppa_bench.py also reads the running year"""
     rows = []
-    for y in YEARS:
+    for y in (YEARS if years is None else years):
         D = json.load(open(os.path.join(ROOT, 'data', 'history', 'fr_hourly', f'{y}.json')))['days']
         for d, v in sorted(D.items()):
             if not all(v.get(k) for k in 'plswn'):
