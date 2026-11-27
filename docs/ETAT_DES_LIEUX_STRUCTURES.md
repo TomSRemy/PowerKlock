@@ -385,3 +385,33 @@ La vue 7b (Day-ahead › Historique) a été mesurée à part : elle partage l'a
   ne relevait aucun débordement après correctifs.
 - Les notes de 1 à 5 sont un outil de tri, pas une vérité : elles servent à classer les chantiers, pas à comparer
   deux pages à 0,2 point près.
+
+---
+
+## 7. Idées en réserve
+
+Idées discutées puis mises de côté. Elles ne sont pas abandonnées : on les reprend quand leur condition est remplie.
+
+### Dossiers de veille (26–27 nov. 2026)
+
+- **L'idée** : une entrée « Dossiers » dans la Veille. Un dossier suit un sujet dans le temps (exemples : Après
+  l'ARENH, Flexibilité et mécanisme de capacité, Soutien aux ENR : CfD et appels d'offres, Prix négatifs ; plus tard
+  PPE, Carbone EU ETS et CBAM). Une page par dossier :
+  - « L'essentiel », 5 à 10 lignes écrites à la main ;
+  - une chronologie qui mêle articles, textes officiels, consultations et événements ;
+  - les prochaines dates (`data/events.json`) ;
+  - les chiffres du site liés au sujet ;
+  - des études pour approfondir.
+- **Ce qui serait automatique** : chronologie, compteur de nouveautés, dates à venir, consultations, chiffres. Chaque
+  dossier serait défini par quelques lignes de configuration (mots-clés FR/EN, mots exclus, thèmes d'`events.json`,
+  pages liées) ; la tâche des actualités poserait l'étiquette à la collecte, pour que les archives la gardent (les
+  étiquettes actuelles, « power » ou « renewables », sont trop larges).
+- **Variante** : « Mes sujets », des sujets suivis définis par chaque membre connecté (stockés dans le compte).
+  Écartée tant qu'il y a très peu de comptes.
+- **Ce qui reste manuel** : « L'essentiel » (sa date affichée montre quand il vieillit), la vérification des dates
+  d'événements, le retrait des faux positifs. Option : un brouillon automatique « ce qui a changé », affiché comme tel.
+- **Pourquoi en réserve** : la valeur est réelle (relier un texte à son effet chiffré, montrer un jugement de marché,
+  nourrir PowerBrunch), mais elle dépend d'un « L'essentiel » tenu à jour chaque mois. Sans ce temps d'écriture, un
+  dossier n'est qu'un filtre du fil. La Veille n'avait qu'un visiteur extérieur sur un mois (23 oct.–25 nov.).
+- **Pour reprendre** : commencer par 2 dossiers, les relayer dans PowerBrunch, faire le bilan au bout de 2 mois
+  (visites, temps passé) et les retirer s'ils ne servent pas. Changement de collecte : à proposer en PR séparée.
