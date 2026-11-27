@@ -793,6 +793,15 @@ document.addEventListener('keydown', _newsOpen, true);
 // ── Posts to read: LinkedIn posts pasted by the team (public.news_post, warehouse migrations 023 and 045). The link, the
 // author, a note and, for a post sent from the phone, its public description (what LinkedIn gives link previews); votes go to public.news_vote like the articles' and pick the week's best for Monday's digest.
 let _newsPosts = [];
+// the words of a post's address, as its title when LinkedIn gave no text (« point-marche-hebdo » → « Point marche hebdo »)
+const _newsPostTitle = url => {
+  let u = url; try { u = decodeURIComponent(url); } catch (_) { /* as it is */ }
+  const m = u.match(/linkedin\.com\/posts\/(?:[^_/?#]+_)?([^/?#]+)/i);
+  if (!m) return '';
+  const w = m[1].replace(/-(activity|ugcpost|share)-[\s\S]*$/i, '').split('-').filter(x => x && !/\d{5,}/.test(x));   // the ids (5 digits or more) left out, years kept
+  const t = w.join(' ').trim();
+  return t ? t.charAt(0).toUpperCase() + t.slice(1) : '';
+};
 const _newsAuthorOf = url => {   // /posts/<member>_<title>… (a company's post has no member part); accents arrive encoded
   let u = url; try { u = decodeURIComponent(url); } catch (_) { /* as it is */ }
   const m = u.match(/linkedin\.com\/posts\/([^_/?#]+)_/i) || u.match(/linkedin\.com\/in\/([^/?#]+)/i);
@@ -821,7 +830,7 @@ async function renderNewsPosts() {
       <p><b>${_newsT('Ordinateur', 'Computer')}</b> · ${_newsT('glissez ce bouton dans la barre de favoris, puis cliquez dessus sur un post LinkedIn ouvert :', 'drag this button to the bookmarks bar, then click it on an open LinkedIn post:')} <a class="pk-btn-ghost news-post-bm" href="javascript:location.href='https://powerklock.com/?share='+encodeURIComponent(location.href)">→ PowerKlock</a></p>
     </details>
     <div class="news-posts">${_newsPosts.length ? _newsPosts.map(p => `<div class="news-post">
-      <a href="${_newsEsc(p.url)}" target="_blank" rel="noopener noreferrer"><b>${_newsEsc(p.author || 'LinkedIn')}</b>${p.note ? `<span>${_newsEsc(p.note)}</span>` : ''}</a>
+      <a href="${_newsEsc(p.url)}" target="_blank" rel="noopener noreferrer"><b>${_newsEsc(p.author || _newsAuthorOf(p.url) || 'LinkedIn')}</b>${_newsPostTitle(p.url) ? `<span class="news-post-t">${_newsEsc(_newsPostTitle(p.url))}</span>` : ''}${p.note ? `<span>${_newsEsc(p.note)}</span>` : ''}</a>
       ${p.image ? `<a class="news-post-img" href="${_newsEsc(p.url)}" target="_blank" rel="noopener noreferrer" tabindex="-1"><img src="${_newsEsc(p.image)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.remove()"></a>` : ''}      ${p.description ? `<p class="news-post-d" title="${_newsEsc(p.description)}">${_newsEsc(p.description)}</p>` : ''}
       <div class="news-post-f"><span class="news-time">${ago(p.created_at)}</span><div class="news-vote" data-link="${_newsEsc(p.url)}">${_newsVoteBtns(p.url)}</div>${p.added_by === A.user.id ? `<button type="button" class="pk-btn-ghost" data-pdel="${p.id}">✕</button>` : ''}</div></div>`).join('')
       : `<div class="news-src-help">${_newsT('Aucun post pour l’instant : collez le lien d’un post LinkedIn qui vaut la lecture.', 'No post yet: paste the link of a LinkedIn post worth reading.')}</div>`}</div>`;
@@ -1113,11 +1122,11 @@ function filterNews(tag, btn) {
   renderNews(newsData);
 }
 
-function formatTimeAgo(date) {
+function formatTimeAgo(date) {   // in the reader's language (27 Nov. 2026: « 33m ago » on the French site)
   const diff = (Date.now() - date) / 1000;
-  if (diff < 3600) return `${Math.floor(diff/60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff/3600)}h ago`;
-  return `${Math.floor(diff/86400)}d ago`;
+  if (diff < 3600) { const n = Math.max(1, Math.floor(diff / 60)); return _newsT(`il y a ${n} min`, `${n}m ago`); }
+  if (diff < 86400) { const n = Math.floor(diff / 3600); return _newsT(`il y a ${n} h`, `${n}h ago`); }
+  const n = Math.floor(diff / 86400); return _newsT(`il y a ${n} j`, `${n}d ago`);
 }
 
 // ════════════════════════════════════════════
