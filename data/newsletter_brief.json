@@ -1,0 +1,101 @@
+{
+  "asof": "2026-11-27",
+  "written": "2026-11-27T05:19:52+00:00",
+  "daily": [
+    {
+      "topic": "Spot",
+      "topic_en": "Spot",
+      "text": "Le spot français atteint 299 €/MWh pour ce vendredi (+3 % sur la veille), cinq fois son niveau du 19 novembre. Il monte alors que le gaz a reculé de 5 % sur la dernière séance : le froid, le vent faible et un nucléaire disponible à 46,1 GW, 6,6 GW sous la prévision de l'exploitant, tirent les prix.",
+      "text_en": "French spot reaches 299 €/MWh for this Friday (+3% on the day before), five times its level of 19 November. It rises while gas fell 5% in the last session: cold, weak wind and nuclear availability of 46.1 GW, 6.6 GW below the operator's forecast, are pulling prices up."
+    },
+    {
+      "topic": "Couverture",
+      "topic_en": "Hedging",
+      "text": "Les échéances ne suivent pas : décembre se traite à 208 €/MWh et le Cal 27 cède 2 % sur la dernière séance, à 115 €. Pour un acheteur encore ouvert sur décembre, se couvrir coûte environ 90 € de moins par MWh que le spot du jour.",
+      "text_en": "Forwards do not follow: December trades at 208 €/MWh and Cal 27 lost 2% in the last session, at 115 €. For a buyer still open on December, hedging costs about 90 € per MWh less than today's spot."
+    },
+    {
+      "topic": "Météo",
+      "topic_en": "Weather",
+      "text": "À surveiller : un répit sur les températures du 29 novembre au 4 décembre, puis le retour du froid dès le 6, avec un vent sous la normale jusque vers le 9 décembre.",
+      "text_en": "To watch: a break in the cold from 29 November to 4 December, then colder again from the 6th, with wind below normal until around 9 December."
+    }
+  ],
+  "weekly": [],
+  "history": [],
+  "articles": [
+    {
+      "link": "https://www.connaissancedesenergies.org/tribune-actualite-energies/epr2-le-partage-de-souverainete-comme-prix-a-payer",
+      "section": "regulation",
+      "what": "Pour autoriser l'aide publique aux six futurs réacteurs EPR2, Bruxelles réclamerait deux contreparties à la France, dont l'ouverture à d'autres fournisseurs.",
+      "what_en": "To approve state aid for the six planned EPR2 reactors, Brussels is said to ask France for two concessions, including opening up to other suppliers."
+    },
+    {
+      "link": "https://wattselse.com/veille/article/4678/sanctions-energetiques-comment-lue-coupe-ses-liens-avec-les-raffineries-russes",
+      "section": "regulation",
+      "what": "Des sanctions européennes viseraient pour la première fois les installations électriques d'un pays tiers, dans le cadre de la rupture avec les raffineries russes.",
+      "what_en": "EU sanctions would for the first time target a third country's power installations, as part of cutting links with Russian refineries."
+    },
+    {
+      "link": "https://www.latribune.fr/article/entreprises-finance/energie-environnement/64707385339740/le-terminal-methanier-de-fos-cavaou-pilier-du-gnl-prepare-sa-mutation-en-attendant-le-declin-du-gaz",
+      "section": "markets",
+      "what": "Le terminal méthanier de Fos Cavaou, maillon clé de l'approvisionnement français depuis la guerre en Ukraine, vit au rythme des cargaisons de GNL, surtout américaines.",
+      "what_en": "The Fos Cavaou LNG terminal, a key link in French supply since the war in Ukraine, runs to the rhythm of LNG cargoes, mostly from the United States."
+    },
+    {
+      "link": "https://carbon-pulse.com/575741/",
+      "section": "markets",
+      "what": "Le prix du carbone européen a progressé jeudi matin et conservé ses gains l'après-midi, avec le retour des spéculateurs sur le marché.",
+      "what_en": "European carbon prices rose on Thursday morning and kept their gains through the afternoon, with speculators seen returning to the market."
+    },
+    {
+      "link": "https://lenergeek.com/2026/11/26/flamanville-3-asnr-autorisation-24-novembre-2026/",
+      "section": "nuclear_grid",
+      "what": "Le 24 novembre, l'ASNR a autorisé une modification des conditions d'exploitation de l'EPR de Flamanville, à l'arrêt programmé, sans l'autoriser à redémarrer.",
+      "what_en": "On 24 November, the ASNR approved a change to the operating conditions of the Flamanville EPR, which is in a planned outage, without allowing it to restart."
+    },
+    {
+      "link": "https://www.renews.biz/other-news/gb-grid-margin-notices-hit-record-levels/",
+      "section": "nuclear_grid",
+      "what": "Les alertes de marge du réseau britannique atteignent un record : des contraintes de transport rendent indisponibles d'importants volumes d'éolien.",
+      "what_en": "Great Britain's grid margin notices hit a record, as transmission constraints leave large volumes of wind generation unavailable."
+    },
+    {
+      "link": "https://www.renews.biz/onshore-wind/statkraft-acquires-225mw-clash-gour-wind-farm/",
+      "section": "deals",
+      "what": "Statkraft rachète à EDF power solutions le parc éolien terrestre écossais de Clash Gour (225 MW), soutenu par un CfD.",
+      "what_en": "Statkraft buys the CfD-backed 225 MW Clash Gour onshore wind farm in Scotland from EDF power solutions."
+    },
+    {
+      "link": "https://www.energiesdelamer.eu/2026/11/26/smartestenergy-a-conclu-deux-accords-dachat-delectricite-ppa-de-20-ans-relatifs-aux-projets-eoliens-offshore-norfolk-vanguard-west-et-east-au-royaume-uni/",
+      "section": "deals",
+      "what": "SmartestEnergy signe deux PPA de 20 ans sur les projets éoliens en mer Norfolk Vanguard, au large de l'East Anglia.",
+      "what_en": "SmartestEnergy signs two 20-year PPAs for the Norfolk Vanguard offshore wind projects, off East Anglia."
+    },
+    {
+      "link": "https://www.renews.biz/other-news/energy-storage/zelestra-and-statkraft-ink-700-mwh-deal/",
+      "section": "deals",
+      "what": "Zelestra et Statkraft signent un contrat de tolling de huit ans sur un stockage de 175 MW (700 MWh) en Italie.",
+      "what_en": "Zelestra and Statkraft sign an eight-year tolling agreement for a 175 MW (700 MWh) storage project in Italy."
+    },
+    {
+      "link": "https://www.pv-magazine.com/2026/11/26/spain-could-reach-10-gw-of-batteries-by-2030-but-bankability-remains-the-major-challenge/",
+      "section": "projects",
+      "what": "L'Espagne pourrait atteindre 10 GW de batteries en 2030, mais le financement des projets reste le principal obstacle.",
+      "what_en": "Spain could reach 10 GW of batteries by 2030, but project bankability remains the main hurdle."
+    },
+    {
+      "link": "https://www.pv-tech.org/eu-chinese-inverter-ban-could-cut-eastern-european-pv-deployments-by-6-says-woodmac/",
+      "section": "projects",
+      "what": "Selon Wood Mackenzie, les restrictions européennes sur les onduleurs chinois pourraient réduire de 6 % les installations solaires dans la moitié du continent.",
+      "what_en": "According to Wood Mackenzie, EU restrictions on Chinese inverters could cut solar deployments in half of the continent by 6%."
+    },
+    {
+      "link": "https://wattselse.com/veille/article/4679/industrie-lenergie-coute-bien-plus-cher-aux-entreprises-italiennes-quaux-francai",
+      "section": "supply",
+      "what": "L'énergie pèse bien plus lourd dans les coûts de production des industriels italiens que dans ceux des français.",
+      "what_en": "Energy weighs far more on the production costs of Italian manufacturers than on those of French ones."
+    }
+  ],
+  "articles_week": []
+}
