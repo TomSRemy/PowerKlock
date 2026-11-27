@@ -27,6 +27,7 @@ D = os.path.join(ROOT, 'data')
 SITE = 'https://powerklock.com/'
 PARIS = ZoneInfo('Europe/Paris')
 DAYS = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche']
+MOIS_C = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.']
 MONTHS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre']
 
 
@@ -501,7 +502,111 @@ def spot_weeks(today):
     return sum(a) / len(a), sum(b) / len(b), end
 
 
+def brunch_v2(today, E, img, imgs):
+    """PowerBrunch v2 (the owner's mockup, 27 Nov. 2026): the week's market analysis like the desks' notes, written by the
+    morning task (newsletter_week.json › brunch), its charts from the catalogue, the week's figures computed by
+    scripts/news_letter.py › week_figures. Natural professional French; prices in €/MWh."""
+    B = E['brunch']
+    f = 'font-family:Inter,Arial,Helvetica,sans-serif'
+    serif = "font-family:Georgia,'Times New Roman',serif"
+    mono = 'font-family:Menlo,Consolas,monospace'
+    green = '#0B7A62'
+    kick = lambda t: f'<p style="{f};font-size:11px;font-weight:700;letter-spacing:1px;color:#383838;margin:0 0 10px;padding-bottom:6px;border-bottom:1px solid #D9D9D9;text-transform:uppercase">{esc(t)}</p>'  # noqa: E731
+    row = lambda inner, bg='#FFFFFF': f'<tr><td style="padding:20px 22px;border-bottom:1px solid #EBEBEB;background:{bg}">{inner}</td></tr>'  # noqa: E731
+    par = lambda t, size=15.5: f'<p style="{f};margin:0 0 10px;font-size:{size}px;line-height:1.62;color:#2A2A2A">{esc(t)}</p>'  # noqa: E731
+    h3 = lambda t: f'<p style="{serif};margin:0 0 8px;font-size:20px;line-height:1.25;font-weight:700;color:#121212">{esc(t)}</p>' if t else ''  # noqa: E731
+    FG = B.get('figures') or {}
+    R = {r['key']: r for r in FG.get('rows') or []}
+    try:
+        s1, e1 = date.fromisoformat(FG['from']), date.fromisoformat(FG['to'])
+    except (KeyError, ValueError):
+        e1 = today - timedelta(days=today.weekday() + 1)
+        s1 = e1 - timedelta(days=6)
+    span = f'du {s1.day}{"" if s1.month == e1.month else " " + MONTHS[s1.month - 1]} au {e1.day} {MONTHS[e1.month - 1]}'
+
+    def num(v, d=2):
+        return n(v, d)
+
+    def chg(r, unit_pct=True):
+        if r.get('pct') is None and r.get('chg') is None:
+            return ''
+        up = (r.get('chg') or 0) > 0
+        col = '#B8322D' if up else green if (r.get('chg') or 0) < 0 else '#6B6B6B'
+        t = (('+' if up else '−') + n(abs(r['pct']), 1) + ' %') if r.get('pct') is not None else (('+' if up else '−') + n(abs(r['chg']), 1) + ' pt')
+        return f' <span style="color:{col}">{t}</span>'
+    # the key figures under each section, computed (never the model's)
+    KF = {'power': ['spot_fr', 'peak_fr', 'neg_fr', 'spot_de'], 'forwards_gas': ['cal1', 'cal2', 'ttf', 'agsi'], 'co2_oil': ['eua', 'brent']}
+
+    def keyfigs(key):
+        cells = []
+        for k in KF.get(key) or []:
+            r = R.get(k)
+            if not r:
+                continue
+            v = (n(r['value'], 2).rstrip('0').rstrip(',') + ' h') if r['unit'] == 'h' else (n(r['value'], 1) + ' %') if r['unit'] == '%' else f'{num(r["value"])} {r["unit"]}'
+            cells.append(f'<span style="white-space:nowrap;margin-right:14px">{esc(r["label"])} <b style="{mono};color:#121212">{v}</b>{chg(r)}</span>')
+        return f'<p style="{f};margin:10px 0 0;font-size:12.5px;line-height:1.8;color:#6B6B6B">{"".join(cells)}</p>' if cells else ''
+    head = (f'<tr><td bgcolor="#0a0e13" style="padding:18px 22px 16px;background:#0a0e13;background-image:linear-gradient(135deg,#0a0e13 55%,#0d3b32);border-radius:12px 12px 0 0;border-bottom:3px solid #14D3A9">'
+            f'<p style="{f};margin:0;font-size:13px;color:#9FB0C0"><a href="{SITE}" style="text-decoration:none">{img("../assets/logo-header.png", "PowerKlock", 130).replace("display:block;width:100%;max-width:130px", "display:inline-block;width:130px;vertical-align:middle")}</a>'
+            f'<span style="vertical-align:middle;margin-left:8px">· {frday(today)}</span></p>'
+            f'<p style="{serif};margin:12px 0 0;font-size:34px;line-height:1.1;font-weight:700;color:#FFFFFF">Power<span style="color:#14D3A9">Brunch</span></p>'
+            f'<p style="{f};margin:4px 0 0;font-size:13.5px;color:#9FB0C0">L’analyse de marché de la semaine · {span}</p></td></tr>')
+    body = [row(f'<p style="{f};font-size:11px;font-weight:700;letter-spacing:1px;color:{green};margin:0 0 6px;text-transform:uppercase">Notre lecture de la semaine</p>'
+                f'<p style="{serif};margin:0 0 12px;font-size:25px;line-height:1.22;font-weight:700;color:#121212">{esc(B["title"])}</p>' + ''.join(par(x) for x in B['lead']))]
+    for sec in B.get('sections') or []:
+        inner = kick(sec.get('kicker') or '') + h3(sec.get('title'))
+        ch = sec.get('chart')
+        if ch:
+            inner += (f'<a href="{SITE}#{esc(ch["page"])}" style="text-decoration:none">{img(ch["img"], ch["title"])}</a>'
+                      f'<p style="{f};margin:4px 0 12px;font-size:11px;color:#8A8A8A">{esc(ch["title"])} · {esc(ch["src"])} · <a href="{SITE}#{esc(ch["page"])}" style="color:{green}">voir sur le site</a></p>')
+        inner += ''.join(par(x) for x in sec['text']) + keyfigs(sec.get('key'))
+        body.append(row(inner))
+    dk = B.get('desks')
+    if dk:
+        lean = {'up': '#B8322D', 'down': green, 'flat': '#BDBDBD'}
+        th = ''.join(f'<table role="presentation" width="100%" style="border-collapse:collapse;margin:0 0 10px"><tr><td style="border-left:3px solid {lean.get(x.get("lean"), "#D9D9D9")};padding:2px 0 2px 12px">'
+                     f'<p style="{f};margin:0;font-size:14.5px;line-height:1.5;color:#383838">'
+                     + (f'<a href="{esc(x["link"])}" style="color:#121212;font-weight:700;text-decoration:none">{esc(x["desk"])}</a>' if x.get('link') else f'<b style="color:#121212">{esc(x["desk"])}</b>')
+                     + (f' <span style="font-size:12px;color:#8A8A8A">· {int(x["date"][8:10])} {MOIS_C[int(x["date"][5:7]) - 1]}</span>' if x.get('date') else '')
+                     + f'<br>{esc(x["text"])}</p></td></tr></table>' for x in dk['theses'])
+        body.append(row(kick('Ce que disent les desks') + h3(dk.get('title')) + th
+                        + (f'<p style="{f};margin:6px 0 0;font-size:15px;line-height:1.6;color:#2A2A2A"><b>Notre lecture :</b> {esc(dk["reading"])}</p>' if dk.get('reading') else '')
+                        + f'<p style="{f};font-size:11px;color:#8A8A8A;margin:8px 0 0">Thèses résumées avec nos mots ; le texte des notes n’est pas reproduit. Le trait indique le sens attendu (rouge : hausse, vert : baisse).</p>'))
+    you = B.get('you')
+    if you:
+        cell = lambda t, x: f'<td width="50%" style="vertical-align:top;padding:4px"><div style="background:#F6F8F7;border-radius:8px;padding:12px 14px;{f};font-size:14.5px;line-height:1.55;color:#383838"><b style="display:block;color:#121212;margin-bottom:4px">{t}</b>{esc(x)}</div></td>'  # noqa: E731
+        body.append(row(kick('Ce que ça veut dire pour vous') + '<table role="presentation" width="100%" style="border-collapse:collapse;table-layout:fixed"><tr>'
+                        + (cell('Acheteurs', you['buyers']) if you.get('buyers') else '') + (cell('Producteurs', you['producers']) if you.get('producers') else '') + '</tr></table>'))
+    li = lambda xs: '<ul style="margin:0;padding-left:18px">' + ''.join(f'<li style="{f};font-size:15px;line-height:1.55;color:#383838;margin:0 0 6px">' + (f'<b style="color:#121212">{esc(x["label"])} :</b> ' if x.get('label') else '') + f'{esc(x["text"])}</li>' for x in xs) + '</ul>'  # noqa: E731
+    if B.get('watch'):
+        body.append(row(kick('À surveiller cette semaine') + li(B['watch'])))
+    rows = [r for r in FG.get('rows') or [] if r.get('prev') is not None]
+    if rows:
+        trs = ''.join(f'<tr><td style="{f};padding:6px 8px 6px 0;border-bottom:1px solid #F2F2F2;font-size:13.5px;color:#121212">{esc(r["label"])}{"" if r["unit"] == "€/MWh" else " (" + esc(r["unit"]) + ")"}</td>'
+                      f'<td style="{mono};padding:6px 8px;border-bottom:1px solid #F2F2F2;font-size:13px;text-align:right;white-space:nowrap">{num(r["value"])}</td>'
+                      f'<td style="{mono};padding:6px 8px;border-bottom:1px solid #F2F2F2;font-size:13px;text-align:right;white-space:nowrap;color:#6B6B6B">{num(r["prev"])}</td>'
+                      f'<td style="{mono};padding:6px 0 6px 8px;border-bottom:1px solid #F2F2F2;font-size:13px;text-align:right;white-space:nowrap">{chg(r)}</td></tr>' for r in rows)
+        th_ = lambda t, a='right': f'<td style="{f};font-size:11px;color:#8A8A8A;text-align:{a};padding-bottom:4px">{t}</td>'  # noqa: E731
+        body.append(row(kick('Les chiffres de la semaine') + f'<table role="presentation" width="100%" style="border-collapse:collapse"><tr>{th_("Marché", "left")}{th_("Semaine")}{th_("Préc.")}{th_("Var.")}</tr>{trs}</table>'
+                        + f'<p style="{f};font-size:11px;color:#8A8A8A;margin:6px 0 0">€/MWh sauf mention · ENTSO-E, EEX, ICE, GIE · spot : moyenne des 7 jours ; terme et combustibles : dernière clôture de chaque semaine.</p>'))
+    if B.get('facts'):
+        body.append(row(kick('Les faits de la semaine') + li(B['facts']) + f'<p style="{f};margin:8px 0 0;font-size:13.5px;color:#383838">Les articles de la semaine sont dans <b>7 O’Klock</b>, ce matin à 7 h.</p>'))
+    desks = ', '.join(x['desk'] for x in (dk or {}).get('theses') or [])
+    foot = (f'<tr><td style="padding:16px 22px 22px;background:#FFFFFF"><p style="{f};font-size:12px;color:#6B6B6B;line-height:1.6;margin:0;text-align:center">'
+            f'Analyse PowerKlock à partir de ses données (ENTSO-E, EEX, ICE, RTE, GIE)' + (f' et des notes de marché de {esc(desks)}' if desks else '') + '.<br>'
+            f'<a href="{SITE}#intel/news" style="color:{green}">Voir en ligne</a> · <a href="{SITE}#intel/news" style="color:{green}">Mes préférences</a> · <a href="{SITE}#intel/news" style="color:{green}">Se désabonner</a></p></td></tr>')
+    html = outlook('<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F1F1EF;border-collapse:collapse"><tr><td align="center" style="padding:16px 6px">'
+                   '<!--[if mso]><table role="presentation" width="680" align="center" cellpadding="0" cellspacing="0"><tr><td><![endif]-->'
+                   '<table role="presentation" width="100%" align="center" cellpadding="0" cellspacing="0" style="max-width:680px;margin:0 auto;border-collapse:collapse;table-layout:fixed;word-wrap:break-word;overflow-wrap:anywhere;background:#FFFFFF;border-radius:12px">'
+                   + head + ''.join(body) + foot + '</table><!--[if mso]></td></tr></table><![endif]--></td></tr></table>')
+    text = f'PowerBrunch · {span}\n\n{B["title"]}\n\n' + '\n\n'.join(B['lead']) + '\n\n' + '\n\n'.join(
+        (sec.get('title') or '') + '\n' + '\n'.join(sec['text']) for sec in B.get('sections') or []) + f'\n\n{SITE}#intel/news\n'
+    return f'PowerBrunch · {B["title"]}', text, html + ''.join(f'<!--img:{x}-->' for x in dict.fromkeys(imgs))
+
+
 def brunch(today, E, st, mine, keep, report, free, img, imgs):
+    if E.get('brunch'):          # the v2 analysis when the morning task wrote it; the v1 layout below otherwise
+        return brunch_v2(today, E, img, imgs)
     f = 'font-family:Inter,Arial,Helvetica,sans-serif'
     serif = "font-family:Georgia,'Times New Roman',serif"
     mono = 'font-family:Menlo,Consolas,monospace'

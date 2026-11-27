@@ -70,6 +70,29 @@ first): add yesterday's, drop the oldest.
   a headline of 8 to 14 words, e.g. « Le spot a fondu de moitié, mais l'hiver revient dès ce lundi »), `week_text` (one or
   two sentences under it), and `week_keys`: three `{"bold", "text"}`, the three things to remember of the week, `bold` a
   few words that say it (« Le spot divisé par deux »), `text` one sentence with the figure or the date.
+- On Monday also write `brunch`: PowerBrunch v2, the week's market analysis like the desks' notes (the owner's mockup,
+  27 Nov. 2026; scripts/news_letter.py › build_brunch, scripts/morning_mail.py › brunch_v2). Readers are buyers,
+  producers and decision makers, not traders: analysis first, figures only to support it (the tables are computed by
+  the site). Style « naturel pro »: clear professional French, full sentences, no slang, no filler; every price with its
+  unit: €/MWh for power and gas (spot and forwards alike, never « 114 € »), €/t for CO₂, $/b for Brent, GW for
+  capacity. Schema (French only):
+  `{"title": "<the week in one headline, 8 to 16 words>", "lead": ["<what happened and why>", "<the turn of the week>",
+  "<À retenir : what it means>"], "sections": [{"key": "power", "kicker": "Électricité France", "title": "...",
+  "text": ["<1 or 2 paragraphs>"], "chart": "<a catalogue id or null>"}, {"key": "forwards_gas", "kicker": "Terme et gaz", ...},
+  {"key": "co2_oil", "kicker": "CO₂ et pétrole", ...}], "desks": {"title": "...", "theses": [{"desk": "Opéra Énergie",
+  "date": "YYYY-MM-DD", "lean": "up|down|flat", "text": "<its thesis in one sentence, in our words>"}], "reading":
+  "<our reading of the desks against the week>"}, "you": {"buyers": "...", "producers": "..."}, "watch": [{"label":
+  "<a day or a subject>", "text": "..."}], "facts": [{"label": "...", "text": "..."}]}` (3 facts, 2 to 4 watch items).
+  - Charts: read `data/brunch_charts.json` (the catalogue: id and what each shows) and `data/brunch_charts_used.json`
+    (the ids of the last editions). Give 2 or 3 sections a chart that shows what their text talks about: a text about
+    the wind gets `spot_wind`, about nuclear `spot_nuclear` or `nuc_avail`, about the forwards and gas `cal_gas`, about
+    neighbours `spot_zones`, about carbon `eua`, about negative hours `neg_hours`… Change charts from week to week to
+    show the breadth of the site: not last week's ids unless they are the week's subject. A chart id only from the catalogue.
+  - Desks: read `data/desk_views.json` (each desk's latest note: date, link, section headlines, the lean of its words).
+    Name the desks (ENGIE, Opéra Énergie, TotalEnergies, ElCom, Axpo); give each thesis in one sentence of our own words,
+    never the note's sentences; `lean` is the desk's expected direction for power or gas. Never grade a desk (no « vu
+    juste », « s'est trompé »): say in `reading` which reading the week supports and what remains open, as our analysis.
+  - Figures: every figure from the site's files (as for the daily); the week is Monday to Sunday before the edition.
 - Geopolitics: an event with a large effect on prices (gas or oil supply, a strait, a pipeline, sanctions, a conflict
   that moves TTF or Brent) is always in the daily the day it appears or changes, first if it is the day's main move; a
   geopolitical topic without an effect on prices is left out.

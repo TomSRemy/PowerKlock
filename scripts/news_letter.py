@@ -1119,6 +1119,137 @@ def markets(today, days=1):
     return rows
 
 
+# ── PowerBrunch v2 (the owner's mockup, 27 Nov. 2026): a market analysis like the desks', written by the morning task
+# (newsletter_brief.json › brunch), with 2 or 3 charts it picks in the catalogue (scripts/news_charts.py) and the week's
+# figures computed here, never by the model ──
+def _week_bounds(today):
+    """Monday: the week before (Monday to Sunday); another day (a test edition): this week's Monday to yesterday"""
+    if today.weekday() == 0:
+        end = today - timedelta(days=1)
+        return end - timedelta(days=6), end
+    return today - timedelta(days=today.weekday()), today - timedelta(days=1)
+
+
+def _zone_week(start, end, zone, field="avg"):
+    v = []
+    d = start
+    while d <= end:
+        z = ((dload("history", "daily", d.isoformat() + ".json") or {}).get("zones") or {}).get(zone) or {}
+        if z.get(field) is not None:
+            v.append(z[field])
+        d += timedelta(days=1)
+    return v
+
+
+def _close_on(points, day):
+    """the last close on or before a day: (date, value) or None"""
+    p = [(str(d)[:10], v) for d, v in points if v is not None and str(d)[:10] <= day.isoformat()]
+    return p[-1] if p else None
+
+
+def week_figures(today):
+    """the week's figures (Monday to Sunday before the edition) against the week before: spot by zone (average of the
+    published daily averages), forwards and commodities (the last close of each week)"""
+    s1, e1 = _week_bounds(today)
+    s0, e0 = s1 - timedelta(days=7), e1 - timedelta(days=7)      # the same days a week earlier
+    rows = []
+
+    def add(key, label, unit, a, b, kind="pct"):
+        if a is None or b is None:
+            return
+        rows.append({"key": key, "label": label, "unit": unit, "value": round(a, 2), "prev": round(b, 2),
+                     "chg": round(a - b, 2), "pct": round((a / b - 1) * 100, 1) if b and kind == "pct" else None})
+    for key, label, zone in (("spot_fr", "Spot France base", "FR"), ("spot_de", "Spot Allemagne base", "DE_LU"), ("spot_es", "Spot Espagne base", "ES")):
+        a, b = _zone_week(s1, e1, zone), _zone_week(s0, e0, zone)
+        if len(a) >= 5 and len(b) >= 5:
+            add(key, label, "€/MWh", sum(a) / len(a), sum(b) / len(b))
+    pk = _zone_week(s1, e1, "FR", "peakAvg")
+    if len(pk) >= 5:
+        rows.append({"key": "peak_fr", "label": "Spot France pointe", "unit": "€/MWh", "value": round(sum(pk) / len(pk), 2)})
+    ng = _zone_week(s1, e1, "FR", "negH")
+    if ng:
+        rows.append({"key": "neg_fr", "label": "Heures à 0 € ou moins en France", "unit": "h", "value": round(sum(ng), 2)})
+    ch = ((dload("history", "fr_market_calchain.json") or {}).get("FR") or {}).get("years") or {}
+    for k, y in ((1, str(today.year + 1)), (2, str(today.year + 2))):
+        cy = ch.get(y)
+        if cy:
+            pts = list(zip(cy["dates"], cy["values"]))
+            a, b = _close_on(pts, e1), _close_on(pts, e0)
+            if a and b:
+                add(f"cal{k}", f"Cal-{y[2:]} France", "€/MWh", a[1], b[1])
+    cs = (dload("history", "commodities_series.json") or {}).get("series") or {}
+    for key, label, unit, kind in (("ttf", "Gaz TTF", "€/MWh", "pct"), ("peg", "Gaz PEG", "€/MWh", "pct"), ("eua", "CO₂ EUA", "€/t", "pct"),
+                                   ("brent", "Brent", "$/b", "pct"), ("agsi", "Stockages de gaz UE", "%", "pt")):
+        pts = (cs.get(key) or {}).get("points") or []
+        a, b = _close_on(pts, e1), _close_on(pts, e0)
+        if a and b:
+            add(key, label, unit, a[1], b[1], kind)
+    return {"from": s1.isoformat(), "to": e1.isoformat(), "rows": rows}
+
+
+EURO_BARE = re.compile(r"(?<!\d[\u202f\u00a0 ])(?<![\d,.])(\d{1,3}(?:,\d+)?)\s?€(?![/\w])")   # a price, not an amount (« 29 000 € »)
+
+
+def fix_units(t):
+    """« 114 € » → « 114 €/MWh » (the owner, 27 Nov. 2026: the unit of a power or gas price is €/MWh, never €); a carbon
+    price keeps €/t"""
+    def rep(m):
+        before = t[max(0, m.start() - 60):m.start()].lower()
+        last = lambda rx: max([x.end() for x in re.finditer(rx, before)] or [-1])  # noqa: E731   the nearest word decides
+        co2 = last(r"co₂|co2|quota|eua|carbone")
+        return m.group(1).rstrip() + (" €/t" if co2 > last(r"\bcal|spot|ttf|peg|gaz|[ée]lectricit|terme|base|pointe|prix|contrat|mois|trimestre") else " €/MWh")
+    return EURO_BARE.sub(rep, t or "")
+
+
+def build_brunch(today, wb):
+    """the morning task's analysis (wb › brunch), checked and cleaned, its charts drawn; None when it is missing"""
+    b = wb.get("brunch") if isinstance(wb.get("brunch"), dict) else None
+    if not b or not b.get("title") or not b.get("lead"):
+        return None
+    txt = lambda x, n=900: clip(fix_units(str(x or "")), n)  # noqa: E731
+    paras = lambda xs: [txt(x, 1200) for x in (xs if isinstance(xs, list) else [xs]) if x][:4]  # noqa: E731
+    out = {"title": txt(b["title"], 200), "lead": paras(b["lead"]), "sections": [], "charts_used": []}
+    t = today.isoformat()
+    for sec in (b.get("sections") or [])[:5]:
+        if not isinstance(sec, dict) or not sec.get("text"):
+            continue
+        item = {"key": sec.get("key") or "", "kicker": clip(sec.get("kicker") or "", 60), "title": txt(sec.get("title"), 200), "text": paras(sec["text"]), "chart": None}
+        cid = sec.get("chart")
+        if cid in news_charts.CATALOGUE and cid not in out["charts_used"]:
+            spec = news_charts.CATALOGUE[cid][1](today)
+            if spec:
+                path = os.path.join(news_charts.IMG, f"{t}_brunch_{cid}.png")
+                news_charts.draw2(spec, path)
+                item["chart"] = {"id": cid, "img": os.path.relpath(path, os.path.join(ROOT, "data")), "title": spec["title"], "src": spec["src"], "page": spec["page"]}
+                out["charts_used"].append(cid)
+        out["sections"].append(item)
+    dk = b.get("desks") if isinstance(b.get("desks"), dict) else {}
+    views = {d["desk"]: d for d in (dload("desk_views.json") or {}).get("desks") or []}
+    theses = []
+    for x in dk.get("theses") or []:
+        if isinstance(x, dict) and x.get("desk") and x.get("text"):
+            v = views.get(x["desk"]) or {}
+            theses.append({"desk": clip(x["desk"], 40), "date": x.get("date") or v.get("date"), "link": v.get("link"),
+                           "lean": x.get("lean") if x.get("lean") in ("up", "down", "flat") else None, "text": txt(x["text"], 300)})
+    out["desks"] = {"title": txt(dk.get("title"), 200), "theses": theses[:6], "reading": txt(dk.get("reading"), 800)} if theses else None
+    you = b.get("you") if isinstance(b.get("you"), dict) else {}
+    out["you"] = {"buyers": txt(you.get("buyers"), 500), "producers": txt(you.get("producers"), 500)} if you.get("buyers") or you.get("producers") else None
+    out["watch"] = [{"label": clip(x.get("label") or "", 60), "text": txt(x.get("text"), 300)} for x in (b.get("watch") or [])[:5] if isinstance(x, dict) and x.get("text")]
+    out["facts"] = [{"label": clip(x.get("label") or "", 60), "text": txt(x.get("text"), 300)} for x in (b.get("facts") or [])[:3] if isinstance(x, dict) and x.get("text")]
+    out["figures"] = week_figures(today)
+    # which charts each edition used: the morning task reads it to change charts from week to week
+    hist_p = os.path.join(ROOT, "data", "brunch_charts_used.json")
+    try:
+        hist = json.load(open(hist_p))
+    except (OSError, ValueError):
+        hist = {}
+    hist[t] = out["charts_used"]
+    with open(hist_p, "w") as fh:
+        json.dump(dict(sorted(hist.items())[-12:]), fh, ensure_ascii=False, indent=1)
+    news_charts.catalogue_file()
+    return out
+
+
 def pinned(now):
     """the story the admin put at the top in the last 36 hours (public.news_pin, warehouse migration 027), or None"""
     db = os.environ.get("SUPABASE_DB_URL")
@@ -1370,6 +1501,7 @@ def main():
                 if wb.get("week_title"):
                     edition["week_line"] = {"title": clip(wb["week_title"], 160), "text": clip(wb.get("week_text") or "", 400)}
                 edition["week_keys"] = [{"bold": clip(k.get("bold") or "", 80), "text": clip(k.get("text") or "", 300)} for k in (wb.get("week_keys") or [])[:3] if isinstance(k, dict) and k.get("text")]
+                edition["brunch"] = build_brunch(today, wb)
         except (OSError, ValueError):
             pass
     if nb[0]:

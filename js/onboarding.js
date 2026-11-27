@@ -98,7 +98,7 @@
     newsletter: () => `<h1>${T('Votre newsletter', 'Your newsletter')}</h1>
       <p class="ob-lead">${T('Un e-mail court, écrit à partir de vos sujets. Rien ne part sans votre accord.', 'A short e-mail, written from your subjects. Nothing is sent without your consent.')}</p>
       <div class="ob-row"><div><b translate="no">7 O’Klock</b><small>${T('Chaque matin de semaine à 7 h : les prix, le point du marché, l’essentiel de l’actualité.', 'Every weekday at 7:00: prices, the market brief, the day’s news.')}</small></div>${sw('daily', S.daily)}</div>
-      <div class="ob-row"><div><b translate="no">PowerBrunch</b><small>${T('Le lundi à 8 h, à la place de 7 O’Klock : la semaine écoulée en une page.', 'Monday at 08:00, instead of 7 O’Klock: last week on one page.')}</small></div>${sw('weekly', S.weekly)}</div>
+      <div class="ob-row"><div><b translate="no">PowerBrunch</b><small>${T('Le lundi à 8 h : l’analyse de marché de la semaine, avec graphiques.', 'Monday at 08:00: the week’s market analysis, with charts.')}</small></div>${sw('weekly', S.weekly)}</div>
       ${S.daily || S.weekly ? `<label class="ob-f">${T('Adresse de réception', 'Delivery address')}</label><input class="ob-in" type="email" id="ob-to" value="${esc(S.email_to)}" placeholder="${esc(window.PKAccount.user.email || '')}">
       <div class="ob-hint">${T('Vide : celle de votre compte. Une autre adresse (professionnelle par exemple) fonctionne aussi.', 'Empty: your account’s. Another address (a work one, say) works too.')}</div>` : ''}
       <label class="ob-f">${T('Mots-clés à suivre', 'Keywords to follow')} <span class="ob-mut">(${T('facultatif', 'optional')})</span></label>
