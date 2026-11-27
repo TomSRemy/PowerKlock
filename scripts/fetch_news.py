@@ -753,6 +753,51 @@ def opera_news(now, max_pages=6):
     return items
 
 
+# Kpler (commodity analytics): its blog feed, gas, LNG, power and carbon posts only (most are about crude and freight).
+# The feed's title joins the page title and the headline (« EU carbon CTA selling hits… Largest one-day Trend CTA… |
+# Kpler - Nov 17 »): the headline is the part that matches the link's words.
+KPLER_FEED = "https://www.kpler.com/blog/rss.xml"
+KPLER_KEEP = re.compile(r"\b(ttf|lng|gas|natural gas|power|electricity|carbon|eua|coal|nuclear|wind|solar|batter(y|ies))\b", re.I)
+
+
+def _kpler_title(title, link):
+    t = re.sub(r"\s*\|\s*Kpler\b.*$", "", html.unescape(title)).strip()
+    slug = [w for w in re.split(r"[^a-z0-9]+", link.rstrip("/").rsplit("/", 1)[-1].lower()) if w]
+    toks = t.split()
+    for i in range(1, len(toks) // 2 + 1):          # the headline twice, the first time cut
+        if i >= 3 and toks[i:2 * i] == toks[:i]:
+            return " ".join(toks[i:])
+    for i in range(len(toks)):
+        words = [w for w in re.split(r"[^a-z0-9]+", " ".join(toks[i:]).lower()) if w]
+        if words and slug and words[:len(slug)] == slug[:len(words)] and len(words) >= min(4, len(slug)):
+            return " ".join(toks[i:])
+    return t
+
+
+def kpler_news(now, days=21):
+    r = requests.get(KPLER_FEED, headers=UA, timeout=40)
+    r.raise_for_status()
+    items = []
+    for it in re.findall(r"(?s)<item>(.*?)</item>", r.text):
+        g = lambda tag: html.unescape((re.search(rf"(?s)<{tag}>(.*?)</{tag}>", it) or [None, ""])[1]).strip()
+        title, link, d = g("title"), g("link"), parse_date(g("pubDate"))
+        if not (title and link and d) or (now - d).days > days or not KPLER_KEEP.search(title):
+            continue
+        items.append({"title": clean(_kpler_title(title, link), 220), "link": link, "date": d, "snippet": ""})
+    return items
+
+
+# TotalEnergies « Point Marché Hebdo », ElCom « Rapport de marché », Axpo « European Energy Markets Monthly »: found by
+# scripts/market_sources.py (dated PDF, report page, sitemap); the title and link go into the feed, their text into the
+# market notes (scripts/fetch_market_notes.py)
+def _market_source(finder, prefix=""):
+    def news(now):
+        import market_sources
+        return [{"title": clean(prefix + (i["title"] or ""), 220), "link": i["url"], "date": parse_date(i["date"] + "T09:00:00+00:00"), "snippet": ""}
+                for i in getattr(market_sources, finder)()]
+    return news
+
+
 # ── Research: recent papers on power markets from open scholarly APIs (OpenAlex, arXiv, HAL), titles and links only,
 # plus the paper alerts received by e-mail (Academia.edu…) in the team mailbox ──
 # a paper is kept when its title speaks of a market (prices, contracts, auctions, market design…) AND of power
@@ -875,7 +920,11 @@ def mail_alerts(now, cfg):
 
 PUBLISHERS = {"rte": ("RTE", "rte", rte_news, ["fr", "power", "markets"]), "eex": ("EEX", "eex", eex_news, ["markets"]),
               "modo": ("Modo Energy", "modo", modo_news, ["power", "markets"]),
-              "opera": ("Opéra Énergie", "opera", opera_news, ["fr", "power", "gas", "markets"])}
+              "opera": ("Opéra Énergie", "opera", opera_news, ["fr", "power", "gas", "markets"]),
+              "totalenergies": ("TotalEnergies Entreprises", "totalenergies", _market_source("totalenergies_issues"), ["fr", "power", "gas", "markets"]),
+              "elcom": ("ElCom", "elcom", _market_source("elcom_issues"), ["power", "markets"]),
+              "axpo": ("Axpo", "axpo", _market_source("axpo_issues", "European Energy Markets Monthly : "), ["power", "gas", "markets"]),
+              "kpler": ("Kpler", "kpler", kpler_news, ["gas", "markets"])}
 
 
 OFFICIAL = {"jorf": ("Journal officiel", jorf, ["fr", "regulation", "official"]), "eurlex": ("EUR-Lex", eurlex, ["regulation", "official"])}
