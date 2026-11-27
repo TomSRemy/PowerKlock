@@ -538,21 +538,32 @@ def brunch_v2(today, E, img, imgs):
     KF = {'power': ['spot_fr', 'peak_fr', 'neg_fr', 'spot_de'], 'forwards_gas': ['cal1', 'cal2', 'ttf', 'agsi'], 'co2_oil': ['eua', 'brent']}
 
     def keyfigs(key):
+        """the section's key figures as small tiles, two per row (on every screen)"""
         cells = []
         for k in KF.get(key) or []:
             r = R.get(k)
             if not r:
                 continue
             v = (n(r['value'], 2).rstrip('0').rstrip(',') + ' h') if r['unit'] == 'h' else (n(r['value'], 1) + ' %') if r['unit'] == '%' else f'{num(r["value"])} {r["unit"]}'
-            cells.append(f'<span style="white-space:nowrap;margin-right:14px">{esc(r["label"])} <b style="{mono};color:#121212">{v}</b>{chg(r)}</span>')
-        return f'<p style="{f};margin:10px 0 0;font-size:12.5px;line-height:1.8;color:#6B6B6B">{"".join(cells)}</p>' if cells else ''
+            cells.append(f'<td width="50%" style="padding:4px;vertical-align:top"><div style="background:#F6F8F7;border-radius:8px;padding:8px 10px;{f};font-size:11.5px;line-height:1.35;color:#6B6B6B">{esc(r["label"])}'
+                         f'<div style="{mono};font-size:15px;font-weight:700;color:#121212;margin-top:2px">{v}</div><div style="{mono};font-size:12px">{chg(r) or "&nbsp;"}</div></div></td>')
+        if not cells:
+            return ''
+        trs = ''.join('<tr>' + ''.join(cells[i:i + 2]) + ('<td></td>' if len(cells[i:i + 2]) == 1 else '') + '</tr>' for i in range(0, len(cells), 2))
+        return f'<table role="presentation" width="100%" style="border-collapse:collapse;table-layout:fixed;margin:10px 0 0">{trs}</table>'
     head = (f'<tr><td bgcolor="#0a0e13" style="padding:18px 22px 16px;background:#0a0e13;background-image:linear-gradient(135deg,#0a0e13 55%,#0d3b32);border-radius:12px 12px 0 0;border-bottom:3px solid #14D3A9">'
             f'<p style="{f};margin:0;font-size:13px;color:#9FB0C0"><a href="{SITE}" style="text-decoration:none">{img("../assets/logo-header.png", "PowerKlock", 130).replace("display:block;width:100%;max-width:130px", "display:inline-block;width:130px;vertical-align:middle")}</a>'
             f'<span style="vertical-align:middle;margin-left:8px">· {frday(today)}</span></p>'
             f'<p style="{serif};margin:12px 0 0;font-size:34px;line-height:1.1;font-weight:700;color:#FFFFFF">Power<span style="color:#14D3A9">Brunch</span></p>'
             f'<p style="{f};margin:4px 0 0;font-size:13.5px;color:#9FB0C0">L’analyse de marché de la semaine · {span}</p></td></tr>')
+    def lead_p(x):
+        m = re.match(r'^\s*À retenir\s*[:.]\s*(.+)$', x, re.S)
+        if not m:
+            return par(x)
+        return (f'<table role="presentation" width="100%" style="border-collapse:collapse;margin:4px 0 0"><tr><td bgcolor="#F2F8F6" style="background:#F2F8F6;border-left:3px solid {green};border-radius:0 8px 8px 0;padding:10px 14px">'
+                f'<p style="{f};margin:0;font-size:15px;line-height:1.6;color:#2A2A2A"><b style="color:#121212">À retenir.</b> {esc(m[1][0].upper() + m[1][1:])}</p></td></tr></table>')
     body = [row(f'<p style="{f};font-size:11px;font-weight:700;letter-spacing:1px;color:{green};margin:0 0 6px;text-transform:uppercase">Notre lecture de la semaine</p>'
-                f'<p style="{serif};margin:0 0 12px;font-size:25px;line-height:1.22;font-weight:700;color:#121212">{esc(B["title"])}</p>' + ''.join(par(x) for x in B['lead']))]
+                f'<p style="{serif};margin:0 0 12px;font-size:25px;line-height:1.22;font-weight:700;color:#121212">{esc(B["title"])}</p>' + ''.join(lead_p(x) for x in B['lead']))]
     # ── the figure of the week (the owner, 27 Nov. 2026: « le chiffre de la semaine a disparu »): the week's largest move
     #    among the spot, the Cal, gas, carbon and oil, computed by the site, on the dark tile ──
     WHAT = {'spot_fr': ('du spot France en moyenne sur la semaine', '€/MWh'), 'cal1': ('du Cal de l’année prochaine sur la semaine', '€/MWh'),
@@ -564,7 +575,7 @@ def brunch_v2(today, E, img, imgs):
         col = '#ED6965' if up else '#14D3A9'
         lab, u = WHAT[r['key']]
         body.append(row(f'<table role="presentation" width="100%" style="border-collapse:collapse"><tr><td bgcolor="#0a0e13" style="background:#0a0e13;border-radius:10px;padding:16px 18px">'
-                        f'<table role="presentation" style="border-collapse:collapse"><tr><td style="{mono};font-size:36px;font-weight:700;color:{col};padding-right:18px;white-space:nowrap;vertical-align:middle">{"+" if up else "−"}{abs(r["pct"]):.0f} %</td>'
+                        f'<table role="presentation" style="border-collapse:collapse"><tr><td style="{mono};font-size:42px;font-weight:700;color:{col};padding-right:18px;white-space:nowrap;vertical-align:middle">{"+" if up else "−"}{abs(r["pct"]):.0f} %</td>'
                         f'<td style="{f};font-size:14.5px;line-height:1.5;color:#E8EEF4;vertical-align:middle"><b>Le chiffre de la semaine.</b> La {"hausse" if up else "baisse"} {lab}, '
                         f'de {num(r["prev"])} à {num(r["value"])} {u}.</td></tr></table></td></tr></table>'))
     for sec in B.get('sections') or []:
@@ -575,6 +586,28 @@ def brunch_v2(today, E, img, imgs):
                       f'<p style="{f};margin:4px 0 12px;font-size:11px;color:#8A8A8A">{esc(ch["title"])} · {esc(ch["src"])} · <a href="{SITE}#{esc(ch["page"])}" style="color:{green}">voir sur le site</a></p>')
         inner += ''.join(par(x) for x in sec['text']) + keyfigs(sec.get('key'))
         body.append(row(inner))
+    # ── decision marks: where the contracts stand in their three-month range (computed), what would move prices (written) ──
+    mk, RG = B.get('marks'), FG.get('ranges') or []
+    if mk or RG:
+        bars = ''
+        for g in RG:
+            pos = max(2, min(98, g['pos']))
+            bars += (f'<table role="presentation" width="100%" style="border-collapse:collapse;margin:6px 0 2px"><tr><td style="{f};font-size:13.5px;color:#121212">{esc(g["label"])}</td>'
+                     f'<td style="{mono};font-size:13.5px;font-weight:700;text-align:right;white-space:nowrap">{num(g["last"])} €/MWh</td></tr></table>'
+                     f'<table role="presentation" width="100%" style="border-collapse:collapse;table-layout:fixed"><tr>'
+                     f'<td width="{pos}%" height="8" bgcolor="#DDEFE9" style="background:#DDEFE9;border-radius:4px 0 0 4px;font-size:0;line-height:0">&nbsp;</td>'
+                     f'<td width="4" height="14" bgcolor="#121212" style="background:#121212;font-size:0;line-height:0">&nbsp;</td>'
+                     f'<td height="8" bgcolor="#F6D9D7" style="background:#F6D9D7;border-radius:0 4px 4px 0;font-size:0;line-height:0">&nbsp;</td></tr></table>'
+                     f'<table role="presentation" width="100%" style="border-collapse:collapse;margin:3px 0 12px"><tr><td style="{f};font-size:11px;color:#8A8A8A">bas 3 mois {num(g["min"])}</td>'
+                     f'<td style="{f};font-size:11px;color:#8A8A8A;text-align:center">moy. {num(g["avg"])}</td><td style="{f};font-size:11px;color:#8A8A8A;text-align:right">haut {num(g["max"])}</td></tr></table>')
+        ago = ' · '.join(f'{esc(g["label"])} il y a un an : {num(g["year_ago"])} €/MWh' for g in RG if g.get('year_ago') is not None)
+        sc = ''
+        if mk and (mk.get('up') or mk.get('down')):
+            cell = lambda t, x, bg, bd: f'<td width="50%" style="vertical-align:top;padding:4px"><div style="background:{bg};border-top:3px solid {bd};border-radius:8px;padding:10px 12px;{f};font-size:14px;line-height:1.5;color:#383838"><b style="display:block;color:#121212;margin-bottom:3px">{t}</b>{esc(x)}</div></td>'  # noqa: E731
+            sc = (f'<p style="{f};margin:10px 0 4px;font-size:14px;font-weight:700;color:#121212">Ce qui ferait bouger les prix</p><table role="presentation" width="100%" style="border-collapse:collapse;table-layout:fixed"><tr>'
+                  + (cell('À la hausse', mk['up'], '#FBEFEE', '#B8322D') if mk.get('up') else '') + (cell('À la baisse', mk['down'], '#EEF7F4', green) if mk.get('down') else '') + '</tr></table>')
+        body.append(row(kick('Repères pour décider') + h3((mk or {}).get('title')) + bars + ''.join(par(x) for x in (mk or {}).get('text') or []) + sc
+                        + f'<p style="{f};font-size:11px;color:#8A8A8A;margin:8px 0 0">Fourchettes : clôtures des trois derniers mois (EEX, ICE), trait noir au dernier cours' + (f' · {ago}' if ago else '') + '.</p>'))
     dk = B.get('desks')
     if dk:
         lean = {'up': '#B8322D', 'down': green, 'flat': '#BDBDBD'}
@@ -585,7 +618,7 @@ def brunch_v2(today, E, img, imgs):
                      + f'<br>{esc(x["text"])}</p></td></tr></table>' for x in dk['theses'])
         body.append(row(kick('Ce que disent les desks') + h3(dk.get('title')) + th
                         + (f'<p style="{f};margin:6px 0 0;font-size:15px;line-height:1.6;color:#2A2A2A"><b>Notre lecture :</b> {esc(dk["reading"])}</p>' if dk.get('reading') else '')
-                        + f'<p style="{f};font-size:11px;color:#8A8A8A;margin:8px 0 0">D’après les analyses publiques des desks, résumées avec nos mots ; le texte des notes n’est pas reproduit. Le trait indique le sens attendu (rouge : hausse, vert : baisse).</p>'))
+                        + f'<p style="{f};font-size:11px;color:#8A8A8A;margin:8px 0 0">Source : analyses publiques des desks · synthèse PowerKlock. Trait rouge : hausse attendue ; vert : baisse.</p>'))
     you = B.get('you')
     if you:
         cell = lambda t, x: f'<td width="50%" style="vertical-align:top;padding:4px"><div style="background:#F6F8F7;border-radius:8px;padding:12px 14px;{f};font-size:14.5px;line-height:1.55;color:#383838"><b style="display:block;color:#121212;margin-bottom:4px">{t}</b>{esc(x)}</div></td>'  # noqa: E731

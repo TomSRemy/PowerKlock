@@ -83,7 +83,9 @@ first): add yesterday's, drop the oldest.
   "text": ["<1 or 2 paragraphs>"], "chart": "<a catalogue id or null>"}, {"key": "forwards_gas", "kicker": "Terme et gaz", ...},
   {"key": "co2_oil", "kicker": "CO₂ et pétrole", ...}], "desks": {"title": "...", "theses": [{"desk": "Opéra Énergie",
   "date": "YYYY-MM-DD", "lean": "up|down|flat", "text": "<its thesis in one sentence, in our words>"}], "reading":
-  "<our reading of the desks against the week>"}, "watch": [{"label":
+  "<our reading of the desks against the week>"}, "marks": {"title": "<where prices stand>", "text": ["<1 paragraph:
+  the year-ahead contracts and gas against their three-month range and a year ago>"], "up": "<what would push prices up
+  (facts and dates)>", "down": "<what would push them down>"}, "watch": [{"label":
   "<a day or a subject>", "text": "..."}], "facts": [{"label": "...", "text": "..."}]}` (3 facts, 2 to 4 watch items).
   - Charts: read `data/brunch_charts.json` (the catalogue: id and what each shows) and `data/brunch_charts_used.json`
     (the ids of the last editions). Give 2 or 3 sections a chart that shows what their text talks about: a text about
@@ -97,6 +99,11 @@ first): add yesterday's, drop the oldest.
     TotalEnergies et ENGIE ; le rebond de vendredi rappelle l'argument d'Opéra et d'Axpo »): factual and neutral, never
     « raté », « s'est trompé » or a score.
   - Figures: every figure from the site's files (as for the daily); the week is Monday to Sunday before the edition.
+  - `marks` (« Repères pour décider », the owner, 27 Nov. 2026: help readers decide without telling them what to do):
+    the site draws each contract's three-month range (`week_figures` › ranges in scripts/news_letter.py: last, min, max,
+    average, a year ago; compute the same from the files); your text reads them (« aux trois quarts de sa fourchette »,
+    « deux fois son niveau d'il y a un an ») and `up` / `down` name the concrete drivers that would move prices (weather,
+    reactors, storage, LNG, dates), never a recommendation.
   - No advice to the reader (the owner, 27 Nov. 2026: « intrusif »): never « vous devriez », « étalez vos achats », no
     buyers' or producers' box. When the week has a practical consequence, say it once in `lead` or a section as a
     reading of the market (« le niveau du Cal-27 dépend désormais surtout de la météo »), never as a recommendation.

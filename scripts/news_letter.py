@@ -1184,7 +1184,24 @@ def week_figures(today):
         a, b = _close_on(pts, e1), _close_on(pts, e0)
         if a and b:
             add(key, label, unit, a[1], b[1], kind)
-    return {"from": s1.isoformat(), "to": e1.isoformat(), "rows": rows}
+    # decision marks (the owner, 27 Nov. 2026: an analysis that helps decide without telling what to do): where the year-ahead
+    # contracts and gas stand in their three-month range, and a year before
+    ranges = []
+
+    def rng(key, label, pts):
+        p = [(str(d)[:10], v) for d, v in pts if v is not None and str(d)[:10] <= e1.isoformat()]
+        w = [v for d, v in p if d >= (e1 - timedelta(days=92)).isoformat()]
+        ago = [v for d, v in p if d <= (e1 - timedelta(days=365)).isoformat()]
+        if len(w) >= 20:
+            lo, hi = min(w), max(w)
+            ranges.append({"key": key, "label": label, "last": round(w[-1], 2), "min": round(lo, 2), "max": round(hi, 2), "avg": round(sum(w) / len(w), 2),
+                           "pos": round((w[-1] - lo) / (hi - lo) * 100) if hi > lo else 50, "year_ago": round(ago[-1], 2) if ago else None})
+    for k, y in ((1, str(today.year + 1)), (2, str(today.year + 2))):
+        cy = ch.get(y)
+        if cy:
+            rng(f"cal{k}", f"Cal-{y[2:]} France", list(zip(cy["dates"], cy["values"])))
+    rng("ttf", "Gaz TTF", (cs.get("ttf") or {}).get("points") or [])
+    return {"from": s1.isoformat(), "to": e1.isoformat(), "rows": rows, "ranges": ranges}
 
 
 EURO_BARE = re.compile(r"(?<!\d[\u202f\u00a0 ])(?<![\d,.])(\d{1,3}(?:,\d+)?)\s?€(?![/\w])")   # a price, not an amount (« 29 000 € »)
@@ -1233,6 +1250,9 @@ def build_brunch(today, wb):
                            "lean": x.get("lean") if x.get("lean") in ("up", "down", "flat") else None, "text": txt(x["text"], 300)})
     out["desks"] = {"title": txt(dk.get("title"), 200), "theses": theses[:6], "reading": txt(dk.get("reading"), 800)} if theses else None
     out["you"] = None      # no advice box (the owner, 27 Nov. 2026: « intrusif »)
+    mk = b.get("marks") if isinstance(b.get("marks"), dict) else {}
+    out["marks"] = {"title": txt(mk.get("title"), 200), "text": paras(mk.get("text")) if mk.get("text") else [],
+                    "up": txt(mk.get("up"), 400), "down": txt(mk.get("down"), 400)} if mk.get("text") or mk.get("up") or mk.get("down") else None
     out["watch"] = [{"label": clip(x.get("label") or "", 60), "text": txt(x.get("text"), 300)} for x in (b.get("watch") or [])[:5] if isinstance(x, dict) and x.get("text")]
     out["facts"] = [{"label": clip(x.get("label") or "", 60), "text": txt(x.get("text"), 300)} for x in (b.get("facts") or [])[:3] if isinstance(x, dict) and x.get("text")]
     out["figures"] = week_figures(today)
