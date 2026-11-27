@@ -1,7 +1,31 @@
 {
- "updated": "2026-11-27T07:37:30+00:00",
+ "updated": "2026-11-27T08:07:02+00:00",
  "about": "The latest market note of each desk: date, link, the headline of each section (never the text), and the direction its words lean to per market (up, down, flat). PowerBrunch says each thesis in its own words.",
  "desks": [
+  {
+   "desk": "ENGIE",
+   "date": "2026-11-26",
+   "link": null,
+   "title": "Energy Market News 26/11/2026: weather and storage levels keep pressure on the gas markets",
+   "headlines": [
+    {
+     "section": "Global context",
+     "headline": "The drop in energy prices is boosting confidence in the United States"
+    },
+    {
+     "section": "Oil",
+     "headline": "Renewed geopolitical tensions halt the fall in prices"
+    },
+    {
+     "section": "Gas",
+     "headline": "Weather conditions and storage levels are keeping pressure on the markets"
+    }
+   ],
+   "lean": {
+    "oil": "down",
+    "gas": "up"
+   }
+  },
   {
    "desk": "TotalEnergies",
    "date": "2026-11-24",
