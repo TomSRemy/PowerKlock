@@ -1,46 +1,39 @@
 {
- "updated": "2026-11-26T16:31:08+00:00",
- "asof": "2026-11-26",
+ "updated": "2026-11-27T05:50:24+00:00",
+ "asof": "2026-11-27",
  "notes": 2,
  "engine": "proxy",
  "context": [
   {
    "topic": "France",
    "topic_en": "France",
-   "text": "La disponibilité nucléaire en France est en baisse, avec 46088,75 MW disponibles, soit une diminution de 1,9% en 7 jours. Cela pousse les prix à la hausse.",
-   "text_en": "Nuclear availability in France is decreasing, with 46088.75 MW available, a 1.9% decrease in 7 days. This pushes prices up.",
+   "text": "La disponibilité nucléaire en France est de 46088,75 MW, en baisse de 1,9% sur 7 jours. Cela pousse les prix à la hausse.",
+   "text_en": "Nuclear availability in France is 46088.75 MW, down 1.9% over 7 days. This pushes prices up.",
    "tone": "up"
   },
   {
    "topic": "Golfe",
    "topic_en": "Gulf",
-   "text": "De nouvelles attaques contre des navires dans le détroit d'Ormuz ont ravivé les craintes sur les approvisionnements en pétrole et la navigation maritime, faisant rebondir les prix.",
-   "text_en": "New attacks on ships in the Strait of Hormuz have reignited fears over oil supplies and maritime traffic, causing prices to rebound.",
+   "text": "Les incidents dans le détroit d'Ormuz font craindre des perturbations de l'approvisionnement en pétrole. Cela pousse les prix à la hausse.",
+   "text_en": "Incidents in the Strait of Hormuz are raising fears of oil supply disruptions. This pushes prices up.",
    "tone": "up"
-  },
-  {
-   "topic": "Norvège",
-   "topic_en": "Norway",
-   "text": "Les niveaux de stockage de gaz relativement bas et les développements dans les approvisionnements en GNL norvégien sont sous surveillance en cette période hivernale.",
-   "text_en": "Relatively low gas storage levels and developments in Norwegian LNG supplies are being closely watched during this winter period.",
-   "tone": "flat"
   }
  ],
  "outlook": {
   "oil": {
    "tone": "up",
-   "text": "Les prix du pétrole devraient continuer à augmenter en raison des tensions géopolitiques.",
-   "text_en": "Oil prices are expected to continue rising due to geopolitical tensions."
+   "text": "Les prix du pétrole devraient continuer à augmenter en raison des risques d'approvisionnement.",
+   "text_en": "Oil prices are expected to continue rising due to supply risks."
   },
   "gas": {
    "tone": "up",
-   "text": "Les prix du gaz devraient rester sous pression en raison des conditions météorologiques et des niveaux de stockage.",
-   "text_en": "Gas prices are expected to remain under pressure due to weather conditions and storage levels."
+   "text": "Les prix du gaz devraient rester sous pression en raison de la météo froide et des niveaux de stockage bas.",
+   "text_en": "Gas prices are expected to remain under pressure due to cold weather and low storage levels."
   },
   "power": {
-   "tone": "up",
-   "text": "Les prix de l'électricité devraient augmenter en raison de la baisse de disponibilité nucléaire en France.",
-   "text_en": "Power prices are expected to rise due to the decrease in nuclear availability in France."
+   "tone": "flat",
+   "text": "Les prix de l'électricité devraient rester stables.",
+   "text_en": "Power prices are expected to remain stable."
   },
   "carbon": {
    "tone": "flat",
