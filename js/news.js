@@ -319,7 +319,7 @@ function _askDraw() {
         <div class="ask-src">${src.map(s => `<a href="${_newsEsc(s.link)}" target="_blank" rel="noopener noreferrer"><b>${s.n}</b><span>${_newsEsc(s.title)}<small>${_newsEsc(s.source)}${s.date ? ' · ' + _newsEsc(s.date) : ''} · ${_newsEsc(s.kind)}</small></span></a>`).join('')}</div>
         <div class="ask-m">${_newsT('Réponse écrite à partir des sources ci-dessus seulement', 'Answer written from the sources above only')} · ${_newsT('modèle', 'model')} ${_newsEsc(x.model || '')} · <a href="${_newsEsc(_askClaude(x))}" target="_blank" rel="noopener noreferrer">${_newsT('Approfondir dans Claude', 'Go further in Claude')} ↗</a></div>`;
     // articles of an outlet that refuses AI use (AleaSoft): found by the search, shown as links, never read by the model
-    const also = !x.wait && !x.err && (x.also || []).length ? `<div class="ask-also"><div class="ask-m">${_newsT('Aussi dans le fil (non lus par l’IA, à la demande de l’éditeur)', 'Also in the feed (not read by the AI, at the publisher’s request)')}</div>
+    const also = !x.wait && !x.err && (x.also || []).length ? `<div class="ask-also"><div class="ask-m">${_newsT('Aussi dans le fil (non lus par l’IA : source non vérifiée, média d’État ou refus de l’éditeur)', 'Also in the feed (not read by the AI: unverified source, state outlet or the publisher’s refusal)')}</div>
         <div class="ask-src">${x.also.map(s => `<a href="${_newsEsc(s.link)}" target="_blank" rel="noopener noreferrer"><b>↗</b><span>${_newsEsc(s.title)}<small>${_newsEsc(s.source)}${s.date ? ' · ' + _newsEsc(s.date) : ''}</small></span></a>`).join('')}</div></div>` : '';
     return `<div class="ask-qa"><div class="ask-q">${_newsEsc(x.q)}</div>${body}${also}</div>`;
   }).join('');
@@ -792,6 +792,14 @@ document.addEventListener('keydown', _newsOpen, true);
 
 // ── Posts to read: LinkedIn posts pasted by the team (public.news_post, warehouse migrations 023 and 045). The link, the
 // author, a note and, for a post sent from the phone, its public description (what LinkedIn gives link previews); votes go to public.news_vote like the articles' and pick the week's best for Monday's digest.
+// a source's trust badge (the owner, 28 Nov. 2026): « média d'État » for a government or state outlet, « non vérifiée » for an
+// outlet that is neither followed nor recognised press (scripts/fetch_news.py › vet_sources); press and official: none
+function _newsTrust(item) {
+  const t = item && item.trust;
+  if (t === 'state') return `<span class="news-trust state" title="${_newsT('Média d’État ou agence gouvernementale : à recouper. Non lu par l’IA.', 'State outlet or government agency: cross-check. Not read by the AI.')}">${_newsT('média d’État', 'state media')}</span>`;
+  if (t === 'unverified') return `<span class="news-trust unv" title="${_newsT('Source non vérifiée (republication, site commercial ou inconnu) : à recouper. Non lue par l’IA.', 'Unverified source (republished, commercial or unknown site): cross-check. Not read by the AI.')}">${_newsT('non vérifiée', 'unverified')}</span>`;
+  return '';
+}
 let _newsPosts = [];
 // the words of a post's address, as its title when LinkedIn gave no text (« point-marche-hebdo » → « Point marche hebdo »)
 const _newsPostTitle = url => {
@@ -1029,7 +1037,7 @@ function renderNews(items) {
       return `<a class="news-row nf-row${mine ? ' mine' : ''}" href="${_newsEsc(link)}" target="_blank" rel="noopener noreferrer">
         <span class="nf-row-t" title="${_newsEsc(item.title)}">${mine ? '<span class="news-star">★</span>' : ''}${(item.tags || []).includes('official') ? `<span class="news-off">${_newsT('Texte officiel', 'Official text')}</span>` : ''}${_newsEsc(item.title)}</span>
         ${sum ? `<span class="nf-row-s">${_newsEsc(sum)}</span>` : ''}
-        <span class="nf-row-m"><span class="nf-row-src" title="${_newsEsc(item.source)}"><span class="nf-row-d">${ago} · </span><span class="nf-row-n">${_newsEsc(item.source)}${more ? ` +${more}` : ''}</span></span>${_newsPills(item)}${_newsPinBtn(item)}<span class="news-vote" data-link="${_newsEsc(item.link)}">${_newsVoteBtns(item.link)}</span></span>${_newsFree(item, 'news-free-row')}</a>`;
+        <span class="nf-row-m"><span class="nf-row-src" title="${_newsEsc(item.source)}"><span class="nf-row-d">${ago} · </span><span class="nf-row-n">${_newsEsc(item.source)}${more ? ` +${more}` : ''}</span></span>${_newsTrust(item)}${_newsPills(item)}${_newsPinBtn(item)}<span class="news-vote" data-link="${_newsEsc(item.link)}">${_newsVoteBtns(item.link)}</span></span>${_newsFree(item, 'news-free-row')}</a>`;
     }).join('');
     return;
   }
@@ -1040,7 +1048,7 @@ function renderNews(items) {
     const also = _newsCoverage(item);
     return `<a class="news-card${mine ? ' mine' : ''}" href="${_newsEsc(link)}" target="_blank" rel="noopener noreferrer">
       <div class="news-meta">
-        <span class="news-source ${_newsEsc(item.cls)}">${_newsEsc(item.source)}</span>
+        <span class="news-source ${_newsEsc(item.cls)}">${_newsEsc(item.source)}</span>${_newsTrust(item)}
         <span class="news-time" title="${_newsEsc(item.date.toLocaleString('en-GB', { timeZone: 'Europe/Paris' }))}">${formatTimeAgo(item.date)}</span>
       </div>
       <div class="news-title">${mine ? '<span class="news-star">★</span>' : ''}${(item.tags || []).includes('official') ? `<span class="news-off">${_newsT('Texte officiel', 'Official text')}</span>` : ''}${_newsEsc(item.title)}</div>

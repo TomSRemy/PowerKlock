@@ -1015,38 +1015,52 @@ VETTING = {"blocked": re.compile("$^")}   # the blocked outlets, also left out o
 
 
 def vet_sources(out, cfg):
-    """the press searches' outlets vetted (the owner, 28 Nov. 2026, config/news_sources.json › vetting): a blocked outlet
-    is never kept; an outlet found by a search that is neither a configured source nor trusted is kept only when a trusted
-    outlet covers the same story (after the grouping): that outlet then leads, the unknown one goes under it"""
+    """the press searches' outlets sorted (the owner, 28 Nov. 2026, config/news_sources.json › vetting): a blocked outlet
+    (off-topic, forum, social network) is never kept; every article gets a trust level, « official » (the official
+    texts), « press » (a configured feed or trusted press), « state » (a government or state outlet) or « unverified »
+    (anything else). State and unverified articles show with a badge and are marked noai: never given to an AI step.
+    When a press outlet covers the same story it leads, and a paid lead gives way to a free press outlet."""
     v = cfg.get("vetting") or {}
-    blocked = re.compile("|".join(v.get("blocked") or ["$^"]), re.I)
-    # trusted: the list, and every outlet the site already follows by its own feed (when one of its articles comes by a search)
+    rx = lambda key, extra=(): re.compile("|".join(list(v.get(key) or []) + list(extra)) or "$^", re.I)  # noqa: E731
+    blocked, state = rx("blocked"), rx("state")
     names = [re.escape(x["name"].lower()) for x in (cfg.get("feeds") or []) + (cfg.get("pages") or []) if x.get("name")]
-    trusted = re.compile("|".join((v.get("trusted") or []) + names or ["$^"]), re.I)
-    ok = lambda o: o.get("cls") not in ("search", "", None) or bool(trusted.search(o.get("source") or ""))  # noqa: E731
+    trusted = rx("trusted", names)
+
+    def level(o):
+        if "official" in (o.get("tags") or []) or o.get("cls") == "official":
+            return "official"
+        src = o.get("source") or ""
+        if state.search(src):
+            return "state"
+        if o.get("cls") not in ("search", "", None) or trusted.search(src):
+            return "press"
+        return "unverified"
+    press = lambda o: level(o) in ("official", "press")  # noqa: E731
     kept, dropped = [], 0
     for rec in out:
         others = [o for o in rec.get("other_sources") or [] if not blocked.search(o.get("source") or "")]
-        if blocked.search(rec.get("source") or "") or not ok(rec):
-            lead = next((o for o in others if ok(o)), None)
-            if not lead:
+        if blocked.search(rec.get("source") or "") or not press(rec):
+            lead = next((o for o in others if press(o)), None)
+            if lead:            # a press outlet of the same story leads; the title stays (it names the same event)
+                old = {"source": rec["source"], "link": rec["link"], "cls": rec.get("cls", "")}
+                others = [o for o in others if o is not lead] + ([] if blocked.search(rec.get("source") or "") else [old])
+                rec = dict(rec, source=lead["source"], link=lead["link"], cls=lead.get("cls") or "search")
+            elif blocked.search(rec.get("source") or ""):
                 dropped += 1
                 continue
-            # a trusted outlet of the same story leads; the title stays (it names the same event)
-            old = {"source": rec["source"], "link": rec["link"], "cls": rec.get("cls", "")}
-            others = [o for o in others if o is not lead] + ([] if blocked.search(rec.get("source") or "") else [old])
-            rec = dict(rec, source=lead["source"], link=lead["link"], cls=lead.get("cls") or "search")
-        # a paid lead gives way to a recognised free outlet of the same story (the owner, 28 Nov. 2026: recognised outlets
-        # are often paid): the reader lands on an article he can read; the paid one stays under « other sources »
         if PAYWALL.search(rec["source"] + " " + rec["link"]):
-            free = next((o for o in others if ok(o) and not PAYWALL.search(o["source"] + " " + o["link"])), None)
+            free = next((o for o in others if press(o) and not PAYWALL.search(o["source"] + " " + o["link"])), None)
             if free:
                 others = [o for o in others if o is not free] + [{"source": rec["source"], "link": rec["link"], "cls": rec.get("cls", "")}]
                 rec = dict(rec, source=free["source"], link=free["link"], cls=free.get("cls") or "search")
         rec["other_sources"] = others
+        rec["trust"] = level(rec)
+        if rec["trust"] in ("state", "unverified"):
+            rec["noai"] = True
         kept.append(rec)
     VETTING["blocked"] = blocked
-    print(f"  vetting: {dropped} article(s) of unvetted or blocked outlets left out")
+    n = __import__("collections").Counter(r["trust"] for r in kept)
+    print(f"  vetting: {dropped} article(s) of blocked outlets left out; trust levels {dict(n)}")
     return kept
 
 

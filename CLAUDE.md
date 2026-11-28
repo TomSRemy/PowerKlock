@@ -28,7 +28,9 @@ Actions jobs that write JSON into `data/`. These rules come from the owner; foll
   summary (its description) only, never the article's text; a site whose robots.txt or server refuses scripts is not read. Exception: a LinkedIn post the owner sends from
   their phone, which opens the page while sharing (like a link preview), may give its public description; the server never opens LinkedIn. A site whose robots.txt
   refuses AI crawlers but lets other readers see its pages (AleaSoft): titles and links only, from its pages or sitemap,
-  items marked `noai`, never given to an AI step (brief, newsletter, week's context, Ask, MCP). Free only: no paid API.
+  items marked `noai`, never given to an AI step (brief, newsletter, week's context, Ask, MCP). Press-search outlets get a
+  trust level (official, press, state, unverified: `config/news_sources.json` › vetting); state and unverified ones show a badge
+  and are `noai` too; only off-topic sites, forums and social networks are left out. Free only: no paid API.
 - Every figure shown is traceable: the source is named under the chart, and Methodology describes the calculation.
 - Dates are **delivery days in Paris time** (`data/history/daily/<D>.json` = prices for delivery day D). A 25-hour
   day keeps 96 quarter-hours in its series: use the published daily average (`avg`), never the mean of the series.
