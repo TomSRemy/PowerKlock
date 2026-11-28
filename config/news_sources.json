@@ -1208,7 +1208,7 @@
   ],
   "_mail_alerts_about": "Paper alerts and newsletters received in the team mailbox (GO_GMAIL_USER): sender (part of the address), and the pattern of the links to keep. Titles and links only.",
   "vetting": {
-    "_help": "Sources found by the press searches (Google News) are sorted (the owner, 28 Nov. 2026): « blocked » (off-topic sites, forums and social networks) are never kept; « state » outlets (government or state agencies) show with a « média d'État » badge, « activist » ones (militant or with a very marked political line) with « média engagé », « commercial » ones (comparison sites, brokers, stock-market and data vendors) with « commercial »; an outlet that is neither a configured feed, nor « trusted » press, nor « state » shows with a « non vérifiée » badge. Badged articles are visible but never given to an AI step (brief, newsletter, week's context, Ask, MCP); when a press outlet covers the same story it leads. Names are matched case-insensitively, as regular expressions.",
+    "_help": "Sources found by the press searches (Google News) are sorted (the owner, 28 Nov. 2026): « blocked » (off-topic sites, forums and social networks) are never kept; « state » outlets (government or state agencies) show with a « média d'État » badge, « activist » ones (militant or with a very marked political line) with « média engagé », « commercial » ones (comparison sites, brokers, stock-market and data vendors) with « commercial », « association » ones (associations, NGOs, think tanks and trade bodies, which speak for their members or a cause) with « association »; an outlet that is neither a configured feed, nor « trusted » press, nor « state » shows with a « non vérifiée » badge. Badged articles (association excepted) are visible but never given to an AI step (brief, newsletter, week's context, Ask, MCP); when a press outlet covers the same story it leads. Names are matched case-insensitively, as regular expressions.",
     "blocked": [
       "tennistemple",
       "média en 4-4-2",
@@ -1283,8 +1283,6 @@
       "connaissance des énergies",
       "energynews\\.pro",
       "greenunivers",
-      "enerplan",
-      "amorce",
       "banque des territoires",
       "caisse des dépôts",
       "\\bsdes\\b",
@@ -1374,7 +1372,8 @@
       "l'est républicain",
       "dernières nouvelles d'alsace",
       "midi libre",
-      "le télégramme"
+      "le télégramme",
+      "morningstar"
     ],
     "state": [
       "vietnam\\.vn",
@@ -1452,7 +1451,46 @@
       "startup fortune",
       "tradingnews",
       "quantum commodity",
-      "marketforces"
+      "marketforces",
+      "electricity maps"
+    ],
+    "association": [
+      "negawatt",
+      "négawatt",
+      "amorce",
+      "enerplan",
+      "\\bufe\\b",
+      "union française de l.électricité",
+      "syndicat des énergies renouvelables",
+      "\\bser\\b",
+      "france renouvelables",
+      "france gaz",
+      "france hydrogène",
+      "\\bgimelec\\b",
+      "\\buniden\\b",
+      "\\bcler\\b",
+      "\\bafiep\\b",
+      "négajoule",
+      "the shift project",
+      "shift project",
+      "solaire en france",
+      "france énergie éolienne",
+      "observ.er",
+      "\\bfedene\\b",
+      "\\buniclima\\b",
+      "\\bgreenpeace\\b",
+      "réseau action climat",
+      "\\bwwf\\b",
+      "les amis de la terre",
+      "\\bsfen\\b",
+      "voix du nucléaire",
+      "\\bt&e\\b",
+      "transport & environment",
+      "e3g",
+      "agora energiewende",
+      "\\bbeuc\\b",
+      "\\bclcv\\b",
+      "ufc-que choisir"
     ]
   }
 }

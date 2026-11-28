@@ -1023,8 +1023,8 @@ def vet_sources(out, cfg):
     When a press outlet covers the same story it leads, and a paid lead gives way to a free press outlet."""
     v = cfg.get("vetting") or {}
     rx = lambda key, extra=(): re.compile("|".join(list(v.get(key) or []) + list(extra)) or "$^", re.I)  # noqa: E731
-    blocked, state, activist, commercial = rx("blocked"), rx("state"), rx("activist"), rx("commercial")
-    names = [re.escape(x["name"].lower()) for x in (cfg.get("feeds") or []) + (cfg.get("pages") or []) if x.get("name")]
+    blocked, state, activist, commercial, assoc = rx("blocked"), rx("state"), rx("activist"), rx("commercial"), rx("association")
+    names = [r"(?<!\w)" + re.escape(x["name"].lower()) + r"(?!\w)" for x in (cfg.get("feeds") or []) + (cfg.get("pages") or []) if x.get("name")]
     trusted = rx("trusted", names)
 
     def level(o):
@@ -1037,10 +1037,12 @@ def vet_sources(out, cfg):
             return "activist"
         if commercial.search(src):
             return "commercial"
+        if assoc.search(src):
+            return "association"
         if o.get("cls") not in ("search", "", None) or trusted.search(src):
             return "press"
         return "unverified"
-    press = lambda o: level(o) in ("official", "press")  # noqa: E731
+    press = lambda o: level(o) in ("official", "press", "association")  # noqa: E731
     kept, dropped = [], 0
     for rec in out:
         others = [o for o in rec.get("other_sources") or [] if not blocked.search(o.get("source") or "")]
