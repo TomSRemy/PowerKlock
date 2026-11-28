@@ -1017,12 +1017,13 @@ VETTING = {"blocked": re.compile("$^")}   # the blocked outlets, also left out o
 def vet_sources(out, cfg):
     """the press searches' outlets sorted (the owner, 28 Nov. 2026, config/news_sources.json › vetting): a blocked outlet
     (off-topic, forum, social network) is never kept; every article gets a trust level, « official » (the official
-    texts), « press » (a configured feed or trusted press), « state » (a government or state outlet) or « unverified »
-    (anything else). State and unverified articles show with a badge and are marked noai: never given to an AI step.
+    texts), « press » (a configured feed or trusted press), « state » (a government or state outlet), « activist » (militant
+    or with a very marked political line), « commercial » (comparison sites, brokers, stock-market and data vendors) or
+    « unverified » (anything else). All but press and official show a badge and are noai: never given to an AI step.
     When a press outlet covers the same story it leads, and a paid lead gives way to a free press outlet."""
     v = cfg.get("vetting") or {}
     rx = lambda key, extra=(): re.compile("|".join(list(v.get(key) or []) + list(extra)) or "$^", re.I)  # noqa: E731
-    blocked, state = rx("blocked"), rx("state")
+    blocked, state, activist, commercial = rx("blocked"), rx("state"), rx("activist"), rx("commercial")
     names = [re.escape(x["name"].lower()) for x in (cfg.get("feeds") or []) + (cfg.get("pages") or []) if x.get("name")]
     trusted = rx("trusted", names)
 
@@ -1032,6 +1033,10 @@ def vet_sources(out, cfg):
         src = o.get("source") or ""
         if state.search(src):
             return "state"
+        if activist.search(src):
+            return "activist"
+        if commercial.search(src):
+            return "commercial"
         if o.get("cls") not in ("search", "", None) or trusted.search(src):
             return "press"
         return "unverified"
@@ -1055,7 +1060,7 @@ def vet_sources(out, cfg):
                 rec = dict(rec, source=free["source"], link=free["link"], cls=free.get("cls") or "search")
         rec["other_sources"] = others
         rec["trust"] = level(rec)
-        if rec["trust"] in ("state", "unverified"):
+        if rec["trust"] in ("state", "activist", "commercial", "unverified"):
             rec["noai"] = True
         kept.append(rec)
     VETTING["blocked"] = blocked

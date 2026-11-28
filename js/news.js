@@ -319,7 +319,7 @@ function _askDraw() {
         <div class="ask-src">${src.map(s => `<a href="${_newsEsc(s.link)}" target="_blank" rel="noopener noreferrer"><b>${s.n}</b><span>${_newsEsc(s.title)}<small>${_newsEsc(s.source)}${s.date ? ' · ' + _newsEsc(s.date) : ''} · ${_newsEsc(s.kind)}</small></span></a>`).join('')}</div>
         <div class="ask-m">${_newsT('Réponse écrite à partir des sources ci-dessus seulement', 'Answer written from the sources above only')} · ${_newsT('modèle', 'model')} ${_newsEsc(x.model || '')} · <a href="${_newsEsc(_askClaude(x))}" target="_blank" rel="noopener noreferrer">${_newsT('Approfondir dans Claude', 'Go further in Claude')} ↗</a></div>`;
     // articles of an outlet that refuses AI use (AleaSoft): found by the search, shown as links, never read by the model
-    const also = !x.wait && !x.err && (x.also || []).length ? `<div class="ask-also"><div class="ask-m">${_newsT('Aussi dans le fil (non lus par l’IA : source non vérifiée, média d’État ou refus de l’éditeur)', 'Also in the feed (not read by the AI: unverified source, state outlet or the publisher’s refusal)')}</div>
+    const also = !x.wait && !x.err && (x.also || []).length ? `<div class="ask-also"><div class="ask-m">${_newsT('Aussi dans le fil (non lus par l’IA : média d’État, engagé, commercial, non vérifié ou refus de l’éditeur)', 'Also in the feed (not read by the AI: state, activist, commercial or unverified outlet, or the publisher’s refusal)')}</div>
         <div class="ask-src">${x.also.map(s => `<a href="${_newsEsc(s.link)}" target="_blank" rel="noopener noreferrer"><b>↗</b><span>${_newsEsc(s.title)}<small>${_newsEsc(s.source)}${s.date ? ' · ' + _newsEsc(s.date) : ''}</small></span></a>`).join('')}</div></div>` : '';
     return `<div class="ask-qa"><div class="ask-q">${_newsEsc(x.q)}</div>${body}${also}</div>`;
   }).join('');
@@ -797,6 +797,8 @@ document.addEventListener('keydown', _newsOpen, true);
 function _newsTrust(item) {
   const t = item && item.trust;
   if (t === 'state') return `<span class="news-trust state" title="${_newsT('Média d’État ou agence gouvernementale : à recouper. Non lu par l’IA.', 'State outlet or government agency: cross-check. Not read by the AI.')}">${_newsT('média d’État', 'state media')}</span>`;
+  if (t === 'activist') return `<span class="news-trust act" title="${_newsT('Média militant ou à ligne politique très marquée : à recouper. Non lu par l’IA.', 'Activist outlet or one with a very marked political line: cross-check. Not read by the AI.')}">${_newsT('média engagé', 'activist outlet')}</span>`;
+  if (t === 'commercial') return `<span class="news-trust com" title="${_newsT('Site commercial (comparateur, courtier, site boursier ou vendeur de données) : son contenu sert aussi à vendre. Non lu par l’IA.', 'Commercial site (comparison site, broker, stock-market site or data vendor): its content also sells. Not read by the AI.')}">${_newsT('commercial', 'commercial')}</span>`;
   if (t === 'unverified') return `<span class="news-trust unv" title="${_newsT('Source non vérifiée (republication, site commercial ou inconnu) : à recouper. Non lue par l’IA.', 'Unverified source (republished, commercial or unknown site): cross-check. Not read by the AI.')}">${_newsT('non vérifiée', 'unverified')}</span>`;
   return '';
 }
