@@ -1,6 +1,6 @@
 {
  "name": "PowerKlock data API",
- "updated": "2026-11-28T14:37:35Z",
+ "updated": "2026-11-28T15:20:49Z",
  "usage": "Plain HTTPS GET, JSON, no key. Cite the source of each dataset. Times are Paris delivery days unless stated.",
  "datasets": [
   {
@@ -145,7 +145,7 @@
    "content": "Physical flows on French borders, latest days.",
    "refresh": "twice a day",
    "source": "ENTSO-E Transparency Platform",
-   "sizeKB": 0
+   "sizeKB": 1
   }
  ],
  "charts": {
