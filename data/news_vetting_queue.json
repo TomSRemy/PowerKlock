@@ -1,4 +1,173 @@
 {
- "updated": "2026-11-28T17:17:39+00:00",
- "outlets": []
+ "updated": "2026-11-28T17:31:27+00:00",
+ "outlets": [
+  {
+   "outlet": "Banglanews24",
+   "site": "en.banglanews24.com",
+   "n": 2,
+   "first_seen": "2026-11-28"
+  },
+  {
+   "outlet": "Actu.fr",
+   "site": "actu.fr",
+   "n": 1,
+   "first_seen": "2026-11-28"
+  },
+  {
+   "outlet": "Admirals",
+   "site": "admiralmarkets.com",
+   "n": 1,
+   "first_seen": "2026-11-28"
+  },
+  {
+   "outlet": "Agence Europe",
+   "site": "agenceurope.eu",
+   "n": 1,
+   "first_seen": "2026-11-28"
+  },
+  {
+   "outlet": "Around Prague",
+   "site": "aroundprague.cz",
+   "n": 1,
+   "first_seen": "2026-11-28"
+  },
+  {
+   "outlet": "Carenews",
+   "site": "carenews.com",
+   "n": 1,
+   "first_seen": "2026-11-28"
+  },
+  {
+   "outlet": "CleanTechnica",
+   "site": "cleantechnica.com",
+   "n": 1,
+   "first_seen": "2026-11-28"
+  },
+  {
+   "outlet": "ConsoGlobe",
+   "site": "consoglobe.com",
+   "n": 1,
+   "first_seen": "2026-11-28"
+  },
+  {
+   "outlet": "Global Advisory Experts",
+   "site": "globaladvisoryexperts.com",
+   "n": 1,
+   "first_seen": "2026-11-28"
+  },
+  {
+   "outlet": "globaloilshock.com",
+   "site": "globaloilshock.com",
+   "n": 1,
+   "first_seen": "2026-11-28"
+  },
+  {
+   "outlet": "lanouvellerepublique.fr",
+   "site": "lanouvellerepublique.fr",
+   "n": 1,
+   "first_seen": "2026-11-28"
+  },
+  {
+   "outlet": "LCP | Lane Clark & Peacock",
+   "site": "lcp.com",
+   "n": 1,
+   "first_seen": "2026-11-28"
+  },
+  {
+   "outlet": "Le Journal de Millau",
+   "site": "journaldemillau.fr",
+   "n": 1,
+   "first_seen": "2026-11-28"
+  },
+  {
+   "outlet": "Le Journal du Palais",
+   "site": "journal-du-palais.fr",
+   "n": 1,
+   "first_seen": "2026-11-28"
+  },
+  {
+   "outlet": "lecourriercauchois.fr",
+   "site": "lecourriercauchois.fr",
+   "n": 1,
+   "first_seen": "2026-11-28"
+  },
+  {
+   "outlet": "Namibia Economist",
+   "site": "economist.com.na",
+   "n": 1,
+   "first_seen": "2026-11-28"
+  },
+  {
+   "outlet": "National Herald",
+   "site": "nationalheraldindia.com",
+   "n": 1,
+   "first_seen": "2026-11-28"
+  },
+  {
+   "outlet": "Nord Littoral",
+   "site": "nordlittoral.fr",
+   "n": 1,
+   "first_seen": "2026-11-28"
+  },
+  {
+   "outlet": "Numerama",
+   "site": "numerama.com",
+   "n": 1,
+   "first_seen": "2026-11-28"
+  },
+  {
+   "outlet": "PUKmedia",
+   "site": "pukmedia.com",
+   "n": 1,
+   "first_seen": "2026-11-28"
+  },
+  {
+   "outlet": "Reda KOHEN",
+   "site": "kohenavocats.fr",
+   "n": 1,
+   "first_seen": "2026-11-28"
+  },
+  {
+   "outlet": "Rigzone",
+   "site": "rigzone.com",
+   "n": 1,
+   "first_seen": "2026-11-28"
+  },
+  {
+   "outlet": "StreetPress",
+   "site": "streetpress.com",
+   "n": 1,
+   "first_seen": "2026-11-28"
+  },
+  {
+   "outlet": "The Portugal News",
+   "site": "theportugalnews.com",
+   "n": 1,
+   "first_seen": "2026-11-28"
+  },
+  {
+   "outlet": "The Vibes",
+   "site": "thevibes.com",
+   "n": 1,
+   "first_seen": "2026-11-28"
+  },
+  {
+   "outlet": "Thoughts of Chairman Michael",
+   "site": "mliebreich.substack.com",
+   "n": 1,
+   "first_seen": "2026-11-28"
+  },
+  {
+   "outlet": "UA.NEWS",
+   "site": "ua.news",
+   "n": 1,
+   "first_seen": "2026-11-28"
+  },
+  {
+   "outlet": "Δημοκρατική της Ρόδου",
+   "site": "dimokratiki.gr",
+   "n": 1,
+   "first_seen": "2026-11-28"
+  }
+ ]
 }
