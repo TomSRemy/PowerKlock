@@ -1011,6 +1011,9 @@ def add_items(out, items, src, now, limit, extra=None):
     return kept
 
 
+VETTING = {"blocked": re.compile("$^")}   # the blocked outlets, also left out of the free alternatives
+
+
 def vet_sources(out, cfg):
     """the press searches' outlets vetted (the owner, 28 Nov. 2026, config/news_sources.json › vetting): a blocked outlet
     is never kept; an outlet found by a search that is neither a configured source nor trusted is kept only when a trusted
@@ -1033,8 +1036,16 @@ def vet_sources(out, cfg):
             old = {"source": rec["source"], "link": rec["link"], "cls": rec.get("cls", "")}
             others = [o for o in others if o is not lead] + ([] if blocked.search(rec.get("source") or "") else [old])
             rec = dict(rec, source=lead["source"], link=lead["link"], cls=lead.get("cls") or "search")
+        # a paid lead gives way to a recognised free outlet of the same story (the owner, 28 Nov. 2026: recognised outlets
+        # are often paid): the reader lands on an article he can read; the paid one stays under « other sources »
+        if PAYWALL.search(rec["source"] + " " + rec["link"]):
+            free = next((o for o in others if ok(o) and not PAYWALL.search(o["source"] + " " + o["link"])), None)
+            if free:
+                others = [o for o in others if o is not free] + [{"source": rec["source"], "link": rec["link"], "cls": rec.get("cls", "")}]
+                rec = dict(rec, source=free["source"], link=free["link"], cls=free.get("cls") or "search")
         rec["other_sources"] = others
         kept.append(rec)
+    VETTING["blocked"] = blocked
     print(f"  vetting: {dropped} article(s) of unvetted or blocked outlets left out")
     return kept
 
@@ -1085,7 +1096,8 @@ def cluster_stories(out, threshold=0.42):
 # Paid outlets: for each of their recent articles, the same story at outlets readable for free (titles and links only).
 # First the outlets already collected (the story groups), else one press search on the title's key words; a result must
 # share two key words with the title. Cached in data/news_free.json, so an article is searched again at most once after 12 h.
-PAYWALL = re.compile(r"greenunivers|montel|wind ?power ?monthly|les echos|lesechos|contexte|recharge ?news|rechargenews", re.I)
+PAYWALL = re.compile(r"greenunivers|montel|wind ?power ?monthly|les echos|lesechos|contexte|recharge ?news|rechargenews|carbon ?pulse|carbon-pulse|"
+                     r"financial times|\bft\.com|bloomberg|aef ?info|usine ?nouvelle|usinenouvelle", re.I)
 # words too common in energy news to tie two articles together, and words a search does not need
 GENERIC = set("wind power energy energie energetique solar solaire eolien eolienne eoliennes offshore france francais francaise french "
               "project projet projects projets prix price prices market marche marches electricite electricity says nouveau nouvelle "
@@ -1139,7 +1151,7 @@ def free_coverage(out, now):
                 try:
                     lang = "en" if re.search(r"montel|windpower", rec["source"], re.I) and not re.search(r"[éèàçù]", rec["title"]) else "fr"
                     for it in gnews(q, lang):
-                        if PAYWALL.search(it["domain"] + " " + it["link"]) or len(key & _norm_words(it["title"])) < 2:
+                        if PAYWALL.search(it["domain"] + " " + it["link"]) or VETTING["blocked"].search(it["domain"] or "") or len(key & _norm_words(it["title"])) < 2:
                             continue
                         if it["domain"] not in {r["source"] for r in res}:
                             res.append({"source": it["domain"], "link": it["link"], "title": it["title"]})
@@ -1147,7 +1159,7 @@ def free_coverage(out, now):
                     print(f"  free coverage: {q!r}: {str(e)[:80]}")
             c = {"at": now.isoformat(timespec="seconds"), "tries": c.get("tries", 0) + 1, "free": res[:3]}
             cache[rec["link"]] = c
-        found += [f for f in c.get("free") or [] if f["link"] not in {x["link"] for x in found}]
+        found += [f for f in c.get("free") or [] if f["link"] not in {x["link"] for x in found} and not VETTING["blocked"].search(f.get("source") or "")]
         if found:
             rec["free"] = found[:3]
     links = {r["link"] for r in out}
