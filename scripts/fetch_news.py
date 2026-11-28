@@ -469,8 +469,9 @@ def gnews(q, lang="fr"):
         title = clean(el.findtext("title"), 300)
         if name and title.endswith(" - " + name):      # Google appends " - Outlet" to every title
             title = title[: -len(name) - 3]
+        site = urlparse((src.get("url") or "") if src is not None else "").netloc.removeprefix("www.")
         items.append({"title": clean(title, 220), "link": (el.findtext("link") or "").strip(), "date": parse_date(el.findtext("pubDate")),
-                      "snippet": "", "domain": name or "Google News"})
+                      "snippet": "", "domain": name or "Google News", "site": site})
     return items
 
 
@@ -1003,6 +1004,8 @@ def add_items(out, items, src, now, limit, extra=None):
                # the article's own subjects, from its words only (not the outlet's), most telling first: the subject pills
                # and the sections of the News page
                "topics": sorted((t for t in found if t in TOPIC_ORDER), key=TOPIC_ORDER.index)}
+        if it.get("site"):
+            rec["site"] = it["site"]       # the outlet's web address (press searches), for the sorting of new outlets
         if extra:
             rec.update(extra)
         out.append(rec)
@@ -1014,23 +1017,79 @@ def add_items(out, items, src, now, limit, extra=None):
 VETTING = {"blocked": re.compile("$^")}   # the blocked outlets, also left out of the free alternatives
 
 
-def vet_sources(out, cfg):
+VETTING_AUTO = Path("data/news_vetting.json")          # outlets sorted by the morning task (Claude), by name and address only
+VETTING_QUEUE = Path("data/news_vetting_queue.json")   # unknown outlets waiting for it
+LEVELS = ("press", "state", "activist", "commercial", "association", "unverified")
+
+
+def vetting_verdicts(db):
+    """the level of each outlet sorted outside config/news_sources.json: the owner's choice on the site (public.news_vetting,
+    warehouse migration 047) first, then the morning task's (data/news_vetting.json). Keys are lower-case outlet names."""
+    auto = {}
+    try:
+        for name, v in (json.loads(VETTING_AUTO.read_text(encoding="utf-8")).get("outlets") or {}).items():
+            if v.get("level") in LEVELS:
+                auto[name.strip().lower()] = v["level"]
+    except (OSError, ValueError):
+        pass
+    owner = {}
+    if db:
+        try:
+            import psycopg
+            with psycopg.connect(db, connect_timeout=15) as conn, conn.cursor() as cur:
+                cur.execute("select outlet, level from public.news_vetting")
+                owner = {o.strip().lower(): lv for o, lv in cur.fetchall() if lv in LEVELS}
+        except Exception as e:   # the news must not depend on the database
+            print("  owner's source levels not read:", str(e)[:160])
+    return owner, auto
+
+
+def vetting_queue(kept, auto, owner, now):
+    """the outlets still unverified that neither the morning task nor the owner has sorted, with their address and the
+    number of articles: the morning task sorts them (name and address only: the articles are never given to it)"""
+    try:
+        prev = {x["outlet"].lower(): x for x in json.loads(VETTING_QUEUE.read_text(encoding="utf-8")).get("outlets") or []}
+    except (OSError, ValueError):
+        prev = {}
+    seen = {}
+    for rec in kept:
+        if rec.get("trust") != "unverified":
+            continue
+        k = rec["source"].strip().lower()
+        if not k or k in auto or k in owner:
+            continue
+        x = seen.setdefault(k, {"outlet": rec["source"].strip(), "site": rec.get("site") or "", "n": 0,
+                                "first_seen": (prev.get(k) or {}).get("first_seen") or now.date().isoformat()})
+        x["n"] += 1
+        x["site"] = x["site"] or rec.get("site") or ""
+    q = sorted(seen.values(), key=lambda x: (-x["n"], x["outlet"].lower()))
+    VETTING_QUEUE.write_text(json.dumps({"updated": now.isoformat(timespec="seconds"), "outlets": q}, ensure_ascii=False, indent=1) + "\n")
+    print(f"  vetting queue: {len(q)} unknown outlet(s) for the morning task")
+
+
+def vet_sources(out, cfg, verdicts=({}, {})):
     """the press searches' outlets sorted (the owner, 28 Nov. 2026, config/news_sources.json › vetting): a blocked outlet
     (off-topic, forum, social network) is never kept; every article gets a trust level, « official » (the official
     texts), « press » (a configured feed or trusted press), « state » (a government or state outlet), « activist » (militant
-    or with a very marked political line), « commercial » (comparison sites, brokers, stock-market and data vendors) or
-    « unverified » (anything else). All but press and official show a badge and are noai: never given to an AI step.
+    or with a very marked political line), « commercial » (comparison sites, brokers, stock-market and data vendors),
+    « association » (associations, NGOs, think tanks and trade bodies) or « unverified » (anything else). All but press
+    and official show a badge; all but these and association are noai: never given to an AI step. An outlet the owner
+    sorted on the site takes the owner's level; one in no list takes the morning task's (data/news_vetting.json).
     When a press outlet covers the same story it leads, and a paid lead gives way to a free press outlet."""
     v = cfg.get("vetting") or {}
     rx = lambda key, extra=(): re.compile("|".join(list(v.get(key) or []) + list(extra)) or "$^", re.I)  # noqa: E731
     blocked, state, activist, commercial, assoc = rx("blocked"), rx("state"), rx("activist"), rx("commercial"), rx("association")
     names = [r"(?<!\w)" + re.escape(x["name"].lower()) + r"(?!\w)" for x in (cfg.get("feeds") or []) + (cfg.get("pages") or []) if x.get("name")]
     trusted = rx("trusted", names)
+    owner, auto = verdicts
 
     def level(o):
         if "official" in (o.get("tags") or []) or o.get("cls") == "official":
             return "official"
         src = o.get("source") or ""
+        mine = owner.get(src.strip().lower())
+        if mine:
+            return mine
         if state.search(src):
             return "state"
         if activist.search(src):
@@ -1041,7 +1100,7 @@ def vet_sources(out, cfg):
             return "association"
         if o.get("cls") not in ("search", "", None) or trusted.search(src):
             return "press"
-        return "unverified"
+        return auto.get(src.strip().lower(), "unverified")
     press = lambda o: level(o) in ("official", "press", "association")  # noqa: E731
     kept, dropped = [], 0
     for rec in out:
@@ -1051,7 +1110,7 @@ def vet_sources(out, cfg):
             if lead:            # a press outlet of the same story leads; the title stays (it names the same event)
                 old = {"source": rec["source"], "link": rec["link"], "cls": rec.get("cls", "")}
                 others = [o for o in others if o is not lead] + ([] if blocked.search(rec.get("source") or "") else [old])
-                rec = dict(rec, source=lead["source"], link=lead["link"], cls=lead.get("cls") or "search")
+                rec = dict(rec, source=lead["source"], link=lead["link"], cls=lead.get("cls") or "search", site=lead.get("site") or "")
             elif blocked.search(rec.get("source") or ""):
                 dropped += 1
                 continue
@@ -1059,7 +1118,7 @@ def vet_sources(out, cfg):
             free = next((o for o in others if press(o) and not PAYWALL.search(o["source"] + " " + o["link"])), None)
             if free:
                 others = [o for o in others if o is not free] + [{"source": rec["source"], "link": rec["link"], "cls": rec.get("cls", "")}]
-                rec = dict(rec, source=free["source"], link=free["link"], cls=free.get("cls") or "search")
+                rec = dict(rec, source=free["source"], link=free["link"], cls=free.get("cls") or "search", site=free.get("site") or "")
         rec["other_sources"] = others
         rec["trust"] = level(rec)
         if rec["trust"] in ("state", "activist", "commercial", "unverified"):
@@ -1254,7 +1313,9 @@ def main():
         rec["impact"] = impact(rec, prefs)
         if {"official", "report"} & set(rec["tags"]):
             rec["theme"] = cons_theme(rec["title"])     # the same themes as the consultations (Official texts tab)
-    out = vet_sources(group_major(cluster_stories(out)), cfg)
+    verdicts = vetting_verdicts(os.environ.get("SUPABASE_DB_URL"))
+    out = vet_sources(group_major(cluster_stories(out)), cfg, verdicts)
+    vetting_queue(out, verdicts[1], verdicts[0], now)
     free_coverage(out, now)
     out.sort(key=lambda i: i["date"], reverse=True)
     OUT.parent.mkdir(parents=True, exist_ok=True)

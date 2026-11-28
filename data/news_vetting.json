@@ -1,0 +1,238 @@
+{
+ "updated": "2026-11-28",
+ "_help": "Outlets of the press searches in no list of config/news_sources.json › vetting, sorted by the morning task (Claude) from their name and address only, never their articles (config/market_context_task.md › Sorting new outlets). « unverified » means in doubt: it stays so. The owner's choice on the site (public.news_vetting) overrides these.",
+ "outlets": {
+  "Dosya Haber": {
+   "level": "unverified",
+   "why": {
+    "fr": "Site d'information turc peu connu.",
+    "en": "Little-known Turkish news site."
+   },
+   "date": "2026-11-28"
+  },
+  "Demócrata": {
+   "level": "unverified",
+   "why": {
+    "fr": "Site d'information peu connu, ligne et propriétaire non établis.",
+    "en": "Little-known news site, owner and line unclear."
+   },
+   "date": "2026-11-28"
+  },
+  "oEnergetice.cz": {
+   "level": "press",
+   "why": {
+    "fr": "Site tchèque spécialisé en énergie, reconnu dans le secteur.",
+    "en": "Czech specialised energy news site, known in the sector."
+   },
+   "date": "2026-11-28"
+  },
+  "Aurora Israel": {
+   "level": "unverified",
+   "why": {
+    "fr": "Média communautaire hispanophone, pas spécialisé.",
+    "en": "Spanish-language community outlet, not specialised."
+   },
+   "date": "2026-11-28"
+  },
+  "www.horizons.dz": {
+   "level": "state",
+   "why": {
+    "fr": "Horizons, quotidien public algérien.",
+    "en": "Horizons, Algerian state-owned daily."
+   },
+   "date": "2026-11-28"
+  },
+  "India News Network": {
+   "level": "unverified",
+   "why": {
+    "fr": "Agrégateur d'information peu connu.",
+    "en": "Little-known news aggregator."
+   },
+   "date": "2026-11-28"
+  },
+  "Rudaw": {
+   "level": "state",
+   "why": {
+    "fr": "Réseau kurde lié au gouvernement régional du Kurdistan.",
+    "en": "Kurdish network tied to the Kurdistan Regional Government."
+   },
+   "date": "2026-11-28"
+  },
+  "Daily Beirut": {
+   "level": "unverified",
+   "why": {
+    "fr": "Site d'information peu connu.",
+    "en": "Little-known news site."
+   },
+   "date": "2026-11-28"
+  },
+  "巴士的報": {
+   "level": "unverified",
+   "why": {
+    "fr": "Bastille Post (Hong Kong), presse populaire.",
+    "en": "Bastille Post (Hong Kong), popular press."
+   },
+   "date": "2026-11-28"
+  },
+  "Distribuzione Moderna": {
+   "level": "press",
+   "why": {
+    "fr": "Revue professionnelle italienne de la distribution.",
+    "en": "Italian retail trade magazine."
+   },
+   "date": "2026-11-28"
+  },
+  "Leconomiste Maghrebin": {
+   "level": "press",
+   "why": {
+    "fr": "Quotidien économique tunisien.",
+    "en": "Tunisian business daily."
+   },
+   "date": "2026-11-28"
+  },
+  "Environment+Energy Leader": {
+   "level": "press",
+   "why": {
+    "fr": "Presse professionnelle américaine énergie et environnement.",
+    "en": "US energy and environment trade publication."
+   },
+   "date": "2026-11-28"
+  },
+  "AGENCE ECOFIN": {
+   "level": "press",
+   "why": {
+    "fr": "Agence d'information économique sur l'Afrique.",
+    "en": "Economic news agency covering Africa."
+   },
+   "date": "2026-11-28"
+  },
+  "Business AM": {
+   "level": "press",
+   "why": {
+    "fr": "Site d'actualité économique belge.",
+    "en": "Belgian business news site."
+   },
+   "date": "2026-11-28"
+  },
+  "GeoBlackout": {
+   "level": "unverified",
+   "why": {
+    "fr": "Blog italien de géopolitique.",
+    "en": "Italian geopolitics blog."
+   },
+   "date": "2026-11-28"
+  },
+  "thefact.ng": {
+   "level": "unverified",
+   "why": {
+    "fr": "Site nigérian peu connu.",
+    "en": "Little-known Nigerian site."
+   },
+   "date": "2026-11-28"
+  },
+  "La Gazette France": {
+   "level": "unverified",
+   "why": {
+    "fr": "Site d'agrégation, rédaction non identifiée.",
+    "en": "Aggregator, newsroom not identified."
+   },
+   "date": "2026-11-28"
+  },
+  "DD News": {
+   "level": "state",
+   "why": {
+    "fr": "Doordarshan, audiovisuel public indien.",
+    "en": "Doordarshan, Indian public broadcaster."
+   },
+   "date": "2026-11-28"
+  },
+  "Bourse Inside": {
+   "level": "commercial",
+   "why": {
+    "fr": "Site boursier.",
+    "en": "Stock-market site."
+   },
+   "date": "2026-11-28"
+  },
+  "Construction BTP": {
+   "level": "unverified",
+   "why": {
+    "fr": "Site BTP, rédaction non identifiée.",
+    "en": "Construction site, newsroom not identified."
+   },
+   "date": "2026-11-28"
+  },
+  "RMC": {
+   "level": "press",
+   "why": {
+    "fr": "Radio française d'information (groupe RMC BFM).",
+    "en": "French news radio (RMC BFM group)."
+   },
+   "date": "2026-11-28"
+  },
+  "XPair": {
+   "level": "press",
+   "why": {
+    "fr": "Média professionnel français du génie climatique.",
+    "en": "French HVAC trade outlet."
+   },
+   "date": "2026-11-28"
+  },
+  "Computer Weekly": {
+   "level": "press",
+   "why": {
+    "fr": "Presse professionnelle informatique britannique.",
+    "en": "UK IT trade press."
+   },
+   "date": "2026-11-28"
+  },
+  "Wisevoter": {
+   "level": "unverified",
+   "why": {
+    "fr": "Site de classements et données, sans rédaction identifiée.",
+    "en": "Rankings and data site, no identified newsroom."
+   },
+   "date": "2026-11-28"
+  },
+  "Recyclage Récupération": {
+   "level": "press",
+   "why": {
+    "fr": "Revue professionnelle française du recyclage.",
+    "en": "French recycling trade magazine."
+   },
+   "date": "2026-11-28"
+  },
+  "Media24.fr": {
+   "level": "unverified",
+   "why": {
+    "fr": "Site d'information peu connu.",
+    "en": "Little-known news site."
+   },
+   "date": "2026-11-28"
+  },
+  "Prix du baril": {
+   "level": "commercial",
+   "why": {
+    "fr": "Site de cours du pétrole financé par la publicité.",
+    "en": "Oil-price site funded by ads."
+   },
+   "date": "2026-11-28"
+  },
+  "European Scientist": {
+   "level": "unverified",
+   "why": {
+    "fr": "Site d'opinion à ligne marquée, éditeur peu transparent.",
+    "en": "Opinion site with a marked line, publisher not transparent."
+   },
+   "date": "2026-11-28"
+  },
+  "Fondation Terra Nova": {
+   "level": "association",
+   "why": {
+    "fr": "Think tank français.",
+    "en": "French think tank."
+   },
+   "date": "2026-11-28"
+  }
+ }
+}
