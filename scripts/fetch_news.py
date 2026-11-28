@@ -1011,6 +1011,34 @@ def add_items(out, items, src, now, limit, extra=None):
     return kept
 
 
+def vet_sources(out, cfg):
+    """the press searches' outlets vetted (the owner, 28 Nov. 2026, config/news_sources.json › vetting): a blocked outlet
+    is never kept; an outlet found by a search that is neither a configured source nor trusted is kept only when a trusted
+    outlet covers the same story (after the grouping): that outlet then leads, the unknown one goes under it"""
+    v = cfg.get("vetting") or {}
+    blocked = re.compile("|".join(v.get("blocked") or ["$^"]), re.I)
+    # trusted: the list, and every outlet the site already follows by its own feed (when one of its articles comes by a search)
+    names = [re.escape(x["name"].lower()) for x in (cfg.get("feeds") or []) + (cfg.get("pages") or []) if x.get("name")]
+    trusted = re.compile("|".join((v.get("trusted") or []) + names or ["$^"]), re.I)
+    ok = lambda o: o.get("cls") not in ("search", "", None) or bool(trusted.search(o.get("source") or ""))  # noqa: E731
+    kept, dropped = [], 0
+    for rec in out:
+        others = [o for o in rec.get("other_sources") or [] if not blocked.search(o.get("source") or "")]
+        if blocked.search(rec.get("source") or "") or not ok(rec):
+            lead = next((o for o in others if ok(o)), None)
+            if not lead:
+                dropped += 1
+                continue
+            # a trusted outlet of the same story leads; the title stays (it names the same event)
+            old = {"source": rec["source"], "link": rec["link"], "cls": rec.get("cls", "")}
+            others = [o for o in others if o is not lead] + ([] if blocked.search(rec.get("source") or "") else [old])
+            rec = dict(rec, source=lead["source"], link=lead["link"], cls=lead.get("cls") or "search")
+        rec["other_sources"] = others
+        kept.append(rec)
+    print(f"  vetting: {dropped} article(s) of unvetted or blocked outlets left out")
+    return kept
+
+
 def cluster_stories(out, threshold=0.42):
     """Group records that cover the same story across outlets (published within 72 h of each other): titles compared by
     character 4–5-grams (TF-IDF cosine), which also pairs a French and an English title about the same event. The most
@@ -1193,7 +1221,7 @@ def main():
         rec["impact"] = impact(rec, prefs)
         if {"official", "report"} & set(rec["tags"]):
             rec["theme"] = cons_theme(rec["title"])     # the same themes as the consultations (Official texts tab)
-    out = group_major(cluster_stories(out))
+    out = vet_sources(group_major(cluster_stories(out)), cfg)
     free_coverage(out, now)
     out.sort(key=lambda i: i["date"], reverse=True)
     OUT.parent.mkdir(parents=True, exist_ok=True)
