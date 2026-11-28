@@ -979,6 +979,7 @@
   .news-trust.state { color: #E8A33D; background: rgba(232,163,61,0.14); border: 1px solid rgba(232,163,61,0.35); }
   .news-trust.act { color: #FF8A80; background: rgba(255,138,128,0.12); border: 1px solid rgba(255,138,128,0.4); }
   .news-trust.com { color: #7FD3E6; background: rgba(127,211,230,0.12); border: 1px solid rgba(127,211,230,0.4); }
+  .news-trust.asso { color: #8FD19E; background: rgba(143,209,158,0.12); border: 1px solid rgba(143,209,158,0.4); }
   .news-trust.unv { color: #B9A7FF; background: rgba(185,167,255,0.12); border: 1px dashed rgba(185,167,255,0.45); }
   .news-source.totalenergies { color: #FF6B6B; background: rgba(255,107,107,0.14); }
   .news-source.elcom { color: #E0E0E0; background: rgba(224,224,224,0.12); }
