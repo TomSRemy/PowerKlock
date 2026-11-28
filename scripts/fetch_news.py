@@ -1011,6 +1011,64 @@ def add_items(out, items, src, now, limit, extra=None):
     return kept
 
 
+VETTING = {"blocked": re.compile("$^")}   # the blocked outlets, also left out of the free alternatives
+
+
+def vet_sources(out, cfg):
+    """the press searches' outlets sorted (the owner, 28 Nov. 2026, config/news_sources.json › vetting): a blocked outlet
+    (off-topic, forum, social network) is never kept; every article gets a trust level, « official » (the official
+    texts), « press » (a configured feed or trusted press), « state » (a government or state outlet), « activist » (militant
+    or with a very marked political line), « commercial » (comparison sites, brokers, stock-market and data vendors) or
+    « unverified » (anything else). All but press and official show a badge and are noai: never given to an AI step.
+    When a press outlet covers the same story it leads, and a paid lead gives way to a free press outlet."""
+    v = cfg.get("vetting") or {}
+    rx = lambda key, extra=(): re.compile("|".join(list(v.get(key) or []) + list(extra)) or "$^", re.I)  # noqa: E731
+    blocked, state, activist, commercial = rx("blocked"), rx("state"), rx("activist"), rx("commercial")
+    names = [re.escape(x["name"].lower()) for x in (cfg.get("feeds") or []) + (cfg.get("pages") or []) if x.get("name")]
+    trusted = rx("trusted", names)
+
+    def level(o):
+        if "official" in (o.get("tags") or []) or o.get("cls") == "official":
+            return "official"
+        src = o.get("source") or ""
+        if state.search(src):
+            return "state"
+        if activist.search(src):
+            return "activist"
+        if commercial.search(src):
+            return "commercial"
+        if o.get("cls") not in ("search", "", None) or trusted.search(src):
+            return "press"
+        return "unverified"
+    press = lambda o: level(o) in ("official", "press")  # noqa: E731
+    kept, dropped = [], 0
+    for rec in out:
+        others = [o for o in rec.get("other_sources") or [] if not blocked.search(o.get("source") or "")]
+        if blocked.search(rec.get("source") or "") or not press(rec):
+            lead = next((o for o in others if press(o)), None)
+            if lead:            # a press outlet of the same story leads; the title stays (it names the same event)
+                old = {"source": rec["source"], "link": rec["link"], "cls": rec.get("cls", "")}
+                others = [o for o in others if o is not lead] + ([] if blocked.search(rec.get("source") or "") else [old])
+                rec = dict(rec, source=lead["source"], link=lead["link"], cls=lead.get("cls") or "search")
+            elif blocked.search(rec.get("source") or ""):
+                dropped += 1
+                continue
+        if PAYWALL.search(rec["source"] + " " + rec["link"]):
+            free = next((o for o in others if press(o) and not PAYWALL.search(o["source"] + " " + o["link"])), None)
+            if free:
+                others = [o for o in others if o is not free] + [{"source": rec["source"], "link": rec["link"], "cls": rec.get("cls", "")}]
+                rec = dict(rec, source=free["source"], link=free["link"], cls=free.get("cls") or "search")
+        rec["other_sources"] = others
+        rec["trust"] = level(rec)
+        if rec["trust"] in ("state", "activist", "commercial", "unverified"):
+            rec["noai"] = True
+        kept.append(rec)
+    VETTING["blocked"] = blocked
+    n = __import__("collections").Counter(r["trust"] for r in kept)
+    print(f"  vetting: {dropped} article(s) of blocked outlets left out; trust levels {dict(n)}")
+    return kept
+
+
 def cluster_stories(out, threshold=0.42):
     """Group records that cover the same story across outlets (published within 72 h of each other): titles compared by
     character 4–5-grams (TF-IDF cosine), which also pairs a French and an English title about the same event. The most
@@ -1057,7 +1115,8 @@ def cluster_stories(out, threshold=0.42):
 # Paid outlets: for each of their recent articles, the same story at outlets readable for free (titles and links only).
 # First the outlets already collected (the story groups), else one press search on the title's key words; a result must
 # share two key words with the title. Cached in data/news_free.json, so an article is searched again at most once after 12 h.
-PAYWALL = re.compile(r"greenunivers|montel|wind ?power ?monthly|les echos|lesechos|contexte|recharge ?news|rechargenews", re.I)
+PAYWALL = re.compile(r"greenunivers|montel|wind ?power ?monthly|les echos|lesechos|contexte|recharge ?news|rechargenews|carbon ?pulse|carbon-pulse|"
+                     r"financial times|\bft\.com|bloomberg|aef ?info|usine ?nouvelle|usinenouvelle", re.I)
 # words too common in energy news to tie two articles together, and words a search does not need
 GENERIC = set("wind power energy energie energetique solar solaire eolien eolienne eoliennes offshore france francais francaise french "
               "project projet projects projets prix price prices market marche marches electricite electricity says nouveau nouvelle "
@@ -1111,7 +1170,7 @@ def free_coverage(out, now):
                 try:
                     lang = "en" if re.search(r"montel|windpower", rec["source"], re.I) and not re.search(r"[éèàçù]", rec["title"]) else "fr"
                     for it in gnews(q, lang):
-                        if PAYWALL.search(it["domain"] + " " + it["link"]) or len(key & _norm_words(it["title"])) < 2:
+                        if PAYWALL.search(it["domain"] + " " + it["link"]) or VETTING["blocked"].search(it["domain"] or "") or len(key & _norm_words(it["title"])) < 2:
                             continue
                         if it["domain"] not in {r["source"] for r in res}:
                             res.append({"source": it["domain"], "link": it["link"], "title": it["title"]})
@@ -1119,7 +1178,7 @@ def free_coverage(out, now):
                     print(f"  free coverage: {q!r}: {str(e)[:80]}")
             c = {"at": now.isoformat(timespec="seconds"), "tries": c.get("tries", 0) + 1, "free": res[:3]}
             cache[rec["link"]] = c
-        found += [f for f in c.get("free") or [] if f["link"] not in {x["link"] for x in found}]
+        found += [f for f in c.get("free") or [] if f["link"] not in {x["link"] for x in found} and not VETTING["blocked"].search(f.get("source") or "")]
         if found:
             rec["free"] = found[:3]
     links = {r["link"] for r in out}
@@ -1193,7 +1252,7 @@ def main():
         rec["impact"] = impact(rec, prefs)
         if {"official", "report"} & set(rec["tags"]):
             rec["theme"] = cons_theme(rec["title"])     # the same themes as the consultations (Official texts tab)
-    out = group_major(cluster_stories(out))
+    out = vet_sources(group_major(cluster_stories(out)), cfg)
     free_coverage(out, now)
     out.sort(key=lambda i: i["date"], reverse=True)
     OUT.parent.mkdir(parents=True, exist_ok=True)

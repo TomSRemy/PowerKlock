@@ -239,13 +239,21 @@ window.pkLandingStart = function () {
   }
 
   // 4 · dashboard tiles, from the site's catalogue (js/widgets.js, js/widgets-kpi.js)
-  function buildTiles() {
+  // the border France exports most to (Italy most days); nothing when the flows miss (28 Nov. 2026: a day without the
+// Italian border crashed the whole page)
+function flowTop(flows) {
+  const it = (flows || []).find(f => f.partner && f.partner.startsWith('IT')), top = it && it.net < 0 ? it : [...(flows || [])].sort((a, b) => a.net - b.net)[0];
+  if (!top || !(top.net < 0)) return '';
+  const name = top.partner.split('·').pop().trim();
+  return `<span class="d" style="color:var(--fg2)">${it === top ? tr('vers l\'Italie', 'to Italy') : tr('vers', 'to') + ' ' + name} ${fmt(-top.net / 1000, 1)} GW</span>`;
+}
+function buildTiles() {
     const ttf = D.ttf[D.ttf.length - 1], nuc = D.nuc[D.nuc.length - 1];
     $('#tiles').innerHTML = [
       `<div class="tile kpi"><div class="t"><span>Day-ahead base</span><span>FR</span></div><b class="kv">${fmt(T.avg)}</b><small>€/MWh · ${dayS(T.date)}</small><span class="d" style="color:${chg > 0 ? 'var(--up)' : 'var(--down)'}">${chg > 0 ? '▲' : '▼'} ${sgn(chg)} ${tr('vs J−1', 'vs D−1')}</span></div>`,
       `<div class="tile kpi"><div class="t"><span>TTF day-ahead</span><span>${dayS(ttf[0])}</span></div><b class="kv">${fmt(ttf[1])}</b><small>€/MWh</small><span class="d" style="color:var(--fg2)">EUA ${fmt(D.eua[1])} €/t</span></div>`,
       `<div class="tile kpi hide-s"><div class="t"><span>${tr('Nucléaire dispo.', 'Nuclear avail.')}</span><span>FR</span></div><b class="kv">${fmt(nuc[1] / 1000, 1)}</b><small>GW · ${dayS(nuc[0])}</small><span class="d" style="color:var(--fg2)">${tr('sur 30 j', 'over 30 d')} ${sgn((nuc[1] - D.nuc[0][1]) / 1000, 1)} GW</span></div>`,
-      `<div class="tile kpi hide-s"><div class="t"><span>${tr('Exports nets', 'Net exports')}</span><span>FR</span></div><b class="kv">${fmt(-netFR / 1000, 1)}</b><small>GW · ${D.flows.length} ${tr('frontières', 'borders')}</small><span class="d" style="color:var(--fg2)">${tr('vers l\'Italie', 'to Italy')} ${fmt(-D.flows.find(f => f.partner.startsWith('IT')).net / 1000, 1)} GW</span></div>`,
+      `<div class="tile kpi hide-s"><div class="t"><span>${tr('Exports nets', 'Net exports')}</span><span>FR</span></div><b class="kv">${fmt(-netFR / 1000, 1)}</b><small>GW · ${D.flows.length} ${tr('frontières', 'borders')}</small>${flowTop(D.flows)}</div>`,
       `<div class="tile w2"><div class="t"><span>${tr('Spot France · quart d\'heure', 'France spot · quarter-hour')}</span><span>${dayS(T.date)}</span></div><div class="c"><canvas id="t-spot"></canvas></div></div>`,
       `<div class="tile w2"><div class="t"><span>${tr('Mix France', 'France mix')}</span><span>${Math.round(100 * D.mix.nuclear / mixTot)} % ${tr('nucléaire', 'nuclear')}</span></div><div class="c"><canvas id="t-mix"></canvas></div></div>`,
       `<div class="tile w2 hide-s"><div class="t"><span>${tr('Heures négatives par mois', 'Negative hours by month')}</span><span>${T.date.slice(0, 4)}</span></div><div class="c"><canvas id="t-neg"></canvas></div></div>`,
