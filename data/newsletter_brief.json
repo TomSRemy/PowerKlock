@@ -1,6 +1,6 @@
 {
-  "asof": "2026-11-27",
-  "written": "2026-11-27T05:19:52+00:00",
+  "asof": "2026-11-28",
+  "written": "2026-11-28T08:03:03+00:00",
   "daily": [
     {
       "topic": "Spot",
@@ -33,7 +33,38 @@
       "text_en": "The next point to watch is the return of the cold from 6 December, with wind expected to stay weak until around the 9th."
     }
   ],
-  "weekly": [],
+  "weekly": [
+    {
+      "topic": "Prix",
+      "topic_en": "Prices",
+      "text": "Le spot français a atteint 255 €/MWh en moyenne du 23 au 28 novembre, contre 97 €/MWh la semaine précédente. Il a monté chaque jour jusqu'à 299 €/MWh vendredi, puis il est redescendu à 201 €/MWh samedi. L'Allemagne a suivi un niveau proche, à 254 €/MWh, et l'Espagne est restée en retrait, à 192 €/MWh. Aucune heure à prix nul ou négatif n'a été observée en France.",
+      "text_en": "The French spot averaged 255 €/MWh from 23 to 28 November, against 97 €/MWh the week before. It rose every day up to 299 €/MWh on Friday, then fell back to 201 €/MWh on Saturday. Germany followed at a close level, 254 €/MWh, and Spain stayed lower, at 192 €/MWh. No hour at a zero or negative price was seen in France."
+    },
+    {
+      "topic": "Système électrique",
+      "topic_en": "Power system",
+      "text": "La hausse est venue du système électrique et non du gaz. Les températures sont restées nettement sous les normales et la production éolienne a été faible, environ deux fois plus basse qu'en temps normal en fin de semaine. Le nucléaire disponible a oscillé entre 46,1 GW et 48,5 GW, alors que l'exploitant prévoyait 53,6 GW en fin de semaine : l'écart atteint environ 7 GW.",
+      "text_en": "The rise came from the power system, not from gas. Temperatures stayed well below normal and wind output was weak, about half its usual level at the end of the week. Available nuclear ranged between 46.1 GW and 48.5 GW, while the operator expected 53.6 GW at the end of the week: the gap reaches about 7 GW."
+    },
+    {
+      "topic": "Terme et gaz",
+      "topic_en": "Forwards and gas",
+      "text": "Les prix à terme sont restés presque stables : le Cal-27 termine à 115 €/MWh (+1 %) et le Cal-28 à 65 €/MWh (+4 %). Le contrat décembre cote 208 €/MWh, bien au-dessous du spot de la semaine. Le TTF a reculé de 4 %, à 85 €/MWh, et le PEG de 4 %, à 83 €/MWh, malgré des stockages européens tombés à 67,2 %.",
+      "text_en": "Forward prices stayed almost flat: Cal-27 ends at 115 €/MWh (+1%) and Cal-28 at 65 €/MWh (+4%). December trades at 208 €/MWh, well below the week's spot. TTF fell 4% to 85 €/MWh and PEG 4% to 83 €/MWh, although EU storage fell to 67.2%."
+    },
+    {
+      "topic": "Carbone et pétrole",
+      "topic_en": "Carbon and oil",
+      "text": "Le CO₂ a progressé de 4 %, à 84 €/t. Le Brent a pris 4 %, à 97 $/b, après de nouvelles attaques de navires dans le détroit d'Ormuz, sans effet visible sur le gaz européen.",
+      "text_en": "CO₂ rose 4% to 84 €/t. Brent gained 4% to 97 $/b after new ship attacks in the Strait of Hormuz, with no visible effect on European gas."
+    },
+    {
+      "topic": "Semaines à venir",
+      "topic_en": "Weeks ahead",
+      "text": "Les températures devraient se rapprocher des normales jusqu'au 4 décembre, puis le froid reviendrait à partir du 6, avec un vent sous la normale jusque vers le 9. Le retour des réacteurs attendus par l'exploitant reste le principal facteur de détente à court terme.",
+      "text_en": "Temperatures should move closer to normal until 4 December, then the cold would return from the 6th, with wind below normal until around the 9th. The return of the reactors the operator expects remains the main easing factor in the short term."
+    }
+  ],
   "history": [],
   "articles": [
     {
@@ -109,9 +140,228 @@
       "what_en": "Battery storage is earning exceptional revenues, according to an analysis published by La Plateforme Verte."
     }
   ],
-  "articles_week": [],
+  "articles_week": [
+    {
+      "link": "https://www.gossement-avocats.com/blog/solaire-le-gouvernement-propose-de-resilier-de-plein-droit-au-plus-tard-en-2027-les-contrats-dachat-s06-et-s10-amendement-n-ii-1168-au-projet-de-loi-de-finances-pour-2027/",
+      "section": "regulation",
+      "what": "Le Gouvernement a déposé le 26 novembre au Sénat l'amendement n° II-1168 au projet de loi de finances pour 2027, qui prévoit la résiliation de plein droit en 2027 d'anciens contrats d'achat solaires.",
+      "what_en": "On 26 November the government filed amendment II-1168 to the 2027 finance bill in the Senate, ending old solar feed-in contracts as of right in 2027."
+    },
+    {
+      "link": "https://lenergeek.com/2026/11/27/prix-energie-europe-prolongation-aides-juin-2027/",
+      "section": "regulation",
+      "what": "La Commission européenne a prolongé le 25 novembre, jusqu'au 30 juin 2027, les possibilités d'aides d'État aux entreprises touchées par les prix de l'énergie.",
+      "what_en": "On 25 November the European Commission extended until 30 June 2027 the state-aid options for companies hit by energy prices."
+    },
+    {
+      "link": "https://wattselse.com/veille/article/4698/electricite-pourquoi-le-versement-nucleaire-universel-pourrait-rester-a-zero-en",
+      "section": "regulation",
+      "what": "Le versement nucléaire universel, qui dépend de recettes nucléaires élevées, pourrait rester à zéro en 2027.",
+      "what_en": "The universal nuclear payment, which depends on high nuclear revenues, could stay at zero in 2027."
+    },
+    {
+      "link": "https://news.google.com/rss/articles/CBMisAFBVV95cUxPT05RbC1kZFlIZmtHOEV1aHp3XzZIUDRMbllaN3FzWEwzaTlBZHFBVmd3cDRPSUlocFVvNExhalhTenNPRHNVb3hlN2k2YndjaDZ6cUQtZGZDYXhfVENwYUc2VXhsMEtKV2hMR0xxNzdBeDNXVDM2ZThtVlJfc0dBdk9vWUt4cEpOdVFablRmbW55TFhBMlRUWFlRRFZyMDljWUdNVTBiR1ZMdkhTc0lWYw?oc=5",
+      "section": "markets",
+      "what": "Le prix du pétrole monte après des attaques contre des infrastructures du Golfe.",
+      "what_en": "Oil prices rise after attacks on Gulf infrastructure."
+    },
+    {
+      "link": "https://news.google.com/rss/articles/CBMi5wFBVV95cUxOckFRVEUydUJfVERjcTZTODhyRUZjaHpMQ2VJYjRrNGlOdTNLbmNzTDA3X3Z3NC1qd3o1TmNmRGxiNWFuS1dnR1VVQ19UdHBzX3U4UE15X0ZMV1RwOE5fOVVEajNPbjE4LUwtT2E0aEpxZ05STEJhU09wbGRyTmJ0MVBGOGVvT3YxTDVMMVVVVHh0T3N2N3M1bFZ1U2ZXUGpNa2szRHNHVlYtbDkxSTYxRUlvMlJDdHZkNkZvbmdPUlpNdXo5NVVyVGhHRXlmeUQ4bm9CbDNKQ1pnN0IyMzQwb01TOGxremc?oc=5",
+      "section": "markets",
+      "what": "Le pétrole recule avant la réunion de l'Opep+ de dimanche, qui doit préciser ses quotas.",
+      "what_en": "Oil falls ahead of Sunday's OPEC+ meeting, which is to set its quotas."
+    },
+    {
+      "link": "https://news.google.com/rss/articles/CBMivgFBVV95cUxQLUZkV29rRzlRSW15bHg1MVI0NmR5RGFUa0RXZXlBcEMwanh4b1VQWURxWE1oS2o5NFpZby1yTXpIb3VadXY0RWFzZEZqT3k5bkFZdGFBSVItS0l5OVF3ckJFa1ZPUDIyQWZyRVdRaDEyMjdkQTJNcjU1Rm9kaW5tYTlqR1J2Q3JRazVrcHJMbTBSSlV5STZrXzQ1VHZFb3NueWJyRFJ1dGF5UkNkMWhtSzFYeGw4S0dMd3lTbURB?oc=5",
+      "section": "markets",
+      "what": "Les prix du gaz européens restent dans une fourchette étroite, le marché pesant les tensions au Moyen-Orient.",
+      "what_en": "European gas prices stay in a narrow range as the market weighs Middle East tensions."
+    },
+    {
+      "link": "https://news.google.com/rss/articles/CBMi1gFBVV95cUxQS2xFTUhJTGlyNjJ5SFVXS21PLXE4T0tTTHpBaEl4LXc4bzR3eU9BWGZmai1YRVBCaW9mVFFzSllaYU14WlNMaG14RzViZks2dGFyM0tuTi1vZU44TGo4WnZGaklDNGQ2SjhyamFqQjU3UHhLaHMzNHNxSk9IRjJuVGVSYTZhekZyalVoQUMydHM5aldMU3ppUk9DS1dpYmFBdWZBV3dGb0NOOW1pUUFEam9qbDN0a3lPSGx6a2RUTW9vb0loM3ZfRmRTZ2xMcjI5Z3BxMVBn?oc=5",
+      "section": "markets",
+      "what": "Une analyse de la dépendance énergétique européenne, de l'Ukraine à Ormuz, et des moyens de la réduire.",
+      "what_en": "An analysis of Europe's energy dependence, from Ukraine to Hormuz, and of ways to reduce it."
+    },
+    {
+      "link": "https://news.google.com/rss/articles/CBMi1wFBVV95cUxQX2xLdlh3R2FsSXFpVllkQnU4d2VwQnpSbm1idXk1QmFrMEhSNXBGdE51aXI0QnFLWVo2eVVxYWNmYkhVTzBVM3ZYNUJ2ckprMUxUM0gtVVZUbm1BeGtOc2JhaVpqUkdpVVdCemxNT3JtbkMycDJxZ0hBZWJUdEhiSThiMndZMFoxb3lIajhfVVlHVGV6TWtteWNjaFBPXy1GU3dSanJQWDFQNDZjSU5Vck5XaUFYSG1BWFM3bVYxRWtJcGRBV2FLamRqUXc4UzNrYlNlTjhzQQ?oc=5",
+      "section": "supply",
+      "what": "De nouvelles offres d'électricité hybrides doivent arriver à partir de 2028 pour les consommateurs.",
+      "what_en": "New hybrid electricity offers are due for consumers from 2028."
+    },
+    {
+      "link": "https://news.google.com/rss/articles/CBMilgFBVV95cUxNSmJKT09DOHAyaU9Nc2c5RmNaV0NfeEJSVmI5VWw1ejE3STc5TlZOVS1Ba3hud29lTlVFMW1XWWhWU05FdDcwTkhiR2NwX3dJMEtoTDAyMFJqcWFHelh0VmNlVmhUOXdvTXpTUE52YzgtS1V5b0JZZmsxQjFLMWxHazFOREk5dmZQMHNJLW1nZjdzalZ3QWc?oc=5",
+      "section": "deals",
+      "what": "Une tribune sur les acquisitions dans le solaire et le stockage en Europe, qui se font projet par projet.",
+      "what_en": "An opinion piece on solar and storage M&A in Europe, done project by project."
+    },
+    {
+      "link": "https://news.google.com/rss/articles/CBMi0gFBVV95cUxQYV9kTWF4dG1Md0dVOGctWXp2VWg5ZnMycWRDenRMZFpHaGJGdDBER1JNNEJSVi1jZkxSYzd6dUxKT3ltckltVDJJWHV6SEhqSE11WWxqa2llS1VtcGg1RlB1bnBNaElFUmlCMFZ0MlNyYkFJdVNqaUNxODJqekcxLTRoeHRBWWhNVS1kenJfbG1zUUh6UVAtWGhOUzVtcHVFQjY1cFdLZmQtTEg0RXZVR3NlWEtfM25TM0RYdzVBR3dZUUlReGxwMnJXWENiQThFN1E?oc=5",
+      "section": "projects",
+      "what": "L'Italie attribue 16 GWh de capacités de stockage par batteries lors de son deuxième appel d'offres.",
+      "what_en": "Italy awards 16 GWh of battery storage capacity in its second auction."
+    },
+    {
+      "link": "https://wattselse.com/veille/article/4693/205-000-panneaux-solaires-pour-210-gwh-par-an-greenit-voit-grand-en-sicile",
+      "section": "projects",
+      "what": "GreenIT prévoit en Sicile une centrale de 131 MWc pour 210 GWh par an, environ sept fois la production de ses deux centrales du Piémont.",
+      "what_en": "GreenIT plans a 131 MWp plant in Sicily for 210 GWh a year, about seven times the output of its two Piedmont plants."
+    },
+    {
+      "link": "https://news.google.com/rss/articles/CBMiWkFVX3lxTE1RRmFaQVNYcDhyT09sSkx6SUtRc056RFdWXzJxQjh0WGNIenNrejc3Z1N4NUhkZFJMMzgtRFR1TjBDVkI4LThkYkd0R3g1eW9iTzI5TU53Xzk3QQ?oc=5",
+      "section": "projects",
+      "what": "La coentreprise de bp et Iberdrola met en service une usine d'hydrogène vert en Espagne.",
+      "what_en": "The bp and Iberdrola joint venture starts a green hydrogen plant in Spain."
+    },
+    {
+      "link": "https://news.google.com/rss/articles/CBMikgJBVV95cUxPd0J1VFpIc0RQRWJpN2xfZ09kNXJTam50WGNrQXhFYzM4MUhLeXFxN3JZT2pwTlp6bmp4WkM5NFZ5d1NpaExPM0xvNVpMV05xUjRxTEEtaXNqNGc0Z2wtdmRtS2NYdjU3ay1IQ09Yd3JPN3VpYnVzR18wQUNjWTA3aUVEYVhGb2dWcVRKdTlIQ0MxSVdoaDUtV3lWeXRZMUpONGE5STE4Tk9IaFpoUnFUc001MHc2RWFwa2FidGFxVXBvRmdYYW1URE5sQnhReDdILUF0bTZvTjhHVjFTQ0xIdElrT0JDbjkzTHVOQkNWbVZXMzYtS29lSnRBSWN3bEJqUUlhOFlsODMxWTQ4aUNlVUtn?oc=5",
+      "section": "projects",
+      "what": "Un parc éolien de 21,6 MW est mis en service à Romazières et Saleignes, en Charente-Maritime.",
+      "what_en": "A 21.6 MW wind farm starts operating at Romazières and Saleignes, in Charente-Maritime."
+    },
+    {
+      "link": "https://news.google.com/rss/articles/CBMiuAFBVV95cUxObmFsS2d4X21SaDR2dDdOWmFVOGFzUmFtN21QUTYzcktGVEVqS0ZHOXQwcXdIVTg5TWRxTUJZRnJCS3MtRTJMdzVqNGhONmxUVll2ZmdzM0ZPUnBnbFVWWEhRelZ0SlNhWXZyRDAyemJ0d1BNQU81c3ltVHFwUDJzM2hRbGU1R0I1c2FZcE9OQmVqZE5FWERBbU1EWWhWSDNWVUY1Rkc3S3diZDlxQTBINldKUEJ6T1V1?oc=5",
+      "section": "projects",
+      "what": "Une analyse de l'effet des restrictions européennes sur les onduleurs sur le développement du solaire et du stockage.",
+      "what_en": "An analysis of how EU inverter restrictions could slow solar and storage development."
+    }
+  ],
   "links": [
     "https://news.google.com/rss/articles/CBMiZkFVX3lxTE0xVjE0Zlp3bXpmVFUyaGM5XzVsQ0ZDRmdHU2lsV0lTMzIzZXUyTjlMUHVFei1YX0U3aUxZaUNUNW5WbnhLOTFaQktnNWhxbFoxSy1ZTmdtNXZGTDloX3RYS1dCYVVuZw?oc=5",
     "https://news.google.com/rss/articles/CBMijgFBVV95cUxORzBRNXhRdXM2TWotc2FXNHRZeTdDcURpWGlWNzk1a0pIVF8xRXpFSF9WOGdVTFVNRUxlQTNCT21Na1ZmU1FrcmlvRlpxcEpzM3lRSnJ3N0pFZjhtT0JITEhpMHIxMU9GelBuampNdEN5VHlfNUFMcVo4Zk42SnlUZVBNVV8tR1pOVm1wdWFR?oc=5"
+  ],
+  "week_title": "Le spot a plus que doublé sur la semaine, la courbe à terme reste presque immobile",
+  "week_text": "Le froid, un vent faible et un nucléaire en retard sur la prévision de l'exploitant ont porté le spot français à 255 €/MWh en moyenne, contre 97 €/MWh la semaine précédente. Le gaz a reculé et le Cal-27 n'a gagné que 1 %.",
+  "week_keys": [
+    {
+      "bold": "Le spot multiplié par 2,6",
+      "text": "Le spot français a atteint 255 €/MWh en moyenne du 23 au 28 novembre, avec un pic à 299 €/MWh vendredi, contre 97 €/MWh la semaine d'avant."
+    },
+    {
+      "bold": "Le gaz en baisse",
+      "text": "Le TTF a reculé de 4 % sur la semaine, à 85 €/MWh, alors que les stockages européens sont descendus à 67,2 %."
+    },
+    {
+      "bold": "Ormuz pousse le pétrole",
+      "text": "Le Brent a pris 4 %, à 97 $/b, après de nouvelles attaques de navires dans le détroit d'Ormuz."
+    }
+  ],
+  "brunch": {
+    "title": "Un spot à 255 €/MWh porté par le froid et le nucléaire, une courbe qui n'y croit pas",
+    "lead": [
+      "Le spot français a atteint 255 €/MWh en moyenne du 23 au 28 novembre, plus de deux fois et demie son niveau de la semaine précédente. Le froid, un vent faible et un parc nucléaire resté environ 7 GW sous la prévision de l'exploitant expliquent ce mouvement, alors que le gaz reculait.",
+      "Le tournant de la semaine est l'écart entre le spot et la courbe : le contrat décembre cote 208 €/MWh et le Cal-27 n'a gagné que 1 %, à 115 €/MWh. Le marché traite la tension comme une affaire de météo et de disponibilité, pas comme un changement de niveau durable.",
+      "À retenir : le niveau des prochaines semaines dépend surtout du retour des réacteurs et du vent, davantage que du gaz."
+    ],
+    "sections": [
+      {
+        "key": "power",
+        "kicker": "Électricité France",
+        "title": "Cinq hausses d'affilée, puis un premier repli samedi",
+        "text": [
+          "Le spot est passé de 240 €/MWh lundi à 299 €/MWh vendredi, avant de revenir à 201 €/MWh samedi. La pointe a coté 283 €/MWh en moyenne et aucune heure à prix nul ou négatif n'a été observée. L'Allemagne a évolué au même niveau, à 254 €/MWh en moyenne, tandis que l'Espagne est restée en retrait, à 192 €/MWh.",
+          "La cause est propre au système électrique : des températures nettement sous les normales, une production éolienne environ deux fois plus faible qu'en temps normal en fin de semaine et un nucléaire disponible entre 46,1 GW et 48,5 GW, pour une prévision de l'exploitant portée à 53,6 GW."
+        ],
+        "chart": "spot_wind"
+      },
+      {
+        "key": "forwards_gas",
+        "kicker": "Terme et gaz",
+        "title": "La courbe reste calme, le gaz recule",
+        "text": [
+          "Le Cal-27 termine la semaine à 115 €/MWh (+1 %) et le Cal-28 à 65 €/MWh (+4 %). Le contrat décembre, à 208 €/MWh, et janvier, à 213 €/MWh, restent nettement sous le spot de la semaine : la tension n'est pas reportée sur l'hiver entier.",
+          "Le TTF a reculé de 4 %, à 85 €/MWh, et le PEG de 4 %, à 83 €/MWh. Les stockages européens ont pourtant perdu 2 points en une semaine, à 67,2 %, un niveau inférieur à celui de l'an dernier."
+        ],
+        "chart": "cal_gas"
+      },
+      {
+        "key": "co2_oil",
+        "kicker": "CO₂ et pétrole",
+        "title": "Le pétrole réagit à Ormuz, le carbone se raffermit",
+        "text": [
+          "Le Brent a pris 4 %, à 97 $/b, après de nouvelles attaques de navires dans le détroit d'Ormuz. Le gaz européen n'a pas suivi ce mouvement. Le CO₂ a progressé de 4 %, à 84 €/t."
+        ],
+        "chart": "brent"
+      }
+    ],
+    "desks": {
+      "title": "Ce que disaient les analystes en début de semaine",
+      "theses": [
+        {
+          "desk": "TotalEnergies",
+          "date": "2026-11-24",
+          "lean": "up",
+          "text": "Le gaz et l'électricité restaient orientés à la hausse, malgré un TTF freiné par une météo plus douce et le retour des flux norvégiens."
+        },
+        {
+          "desk": "ENGIE",
+          "date": "2026-11-26",
+          "lean": "up",
+          "text": "La météo et le niveau des stockages maintenaient la pression sur le gaz, tandis que la géopolitique interrompait la baisse du pétrole."
+        },
+        {
+          "desk": "ElCom",
+          "date": "2026-11-24",
+          "lean": "up",
+          "text": "Les contrats à terme suisses progressaient, du mois suivant à l'année suivante, après une semaine de spot en repli."
+        },
+        {
+          "desk": "Opéra Énergie",
+          "date": "2026-11-23",
+          "lean": "down",
+          "text": "Les prix reculaient, mais l'électricité restait très sensible à la météo et la détente du gaz paraissait fragile."
+        },
+        {
+          "desk": "Axpo",
+          "date": "2026-11-06",
+          "lean": "flat",
+          "text": "La pression hivernale sur les prix européens arrivait plus tôt que prévu, avec un gaz déjà élevé en octobre."
+        }
+      ],
+      "reading": "La hausse du spot a donné raison à TotalEnergies, ENGIE et ElCom, qui voyaient l'électricité orientée à la hausse. Le recul du TTF sur la semaine va dans le sens d'Opéra Énergie sur le gaz, et sa remarque sur la sensibilité de l'électricité à la météo s'est pleinement vérifiée. L'argument d'Axpo sur un hiver tendu tôt dans la saison reste ouvert pour décembre."
+    },
+    "marks": {
+      "title": "Où en sont les prix",
+      "text": [
+        "Le Cal-27, à 115 €/MWh, se situe aux trois quarts de sa fourchette des trois derniers mois (71 à 128 €/MWh) et à plus de deux fois son niveau d'il y a un an (52 €/MWh). Le Cal-28, à 65 €/MWh, se tient aux deux tiers de sa fourchette (54 à 71 €/MWh). Le TTF, à 85 €/MWh, est au milieu de la sienne (66 à 105 €/MWh), mais à près de trois fois son niveau d'il y a un an (29 €/MWh)."
+      ],
+      "up": "Un froid plus durable après le 6 décembre, un vent qui reste faible, un retard supplémentaire des réacteurs attendus par l'exploitant, des stockages de gaz qui baissent plus vite, une perturbation des flux de GNL liée à Ormuz.",
+      "down": "Le retour des quelque 7 GW de nucléaire attendus par l'exploitant, un vent revenu vers la normale à partir du 9 décembre, des températures proches des normales jusqu'au 4 décembre."
+    },
+    "watch": [
+      {
+        "label": "Du 29 novembre au 4 décembre",
+        "text": "Des températures proches des normales, première occasion de détente pour le spot."
+      },
+      {
+        "label": "À partir du 6 décembre",
+        "text": "Le retour du froid, avec un vent sous la normale jusque vers le 9."
+      },
+      {
+        "label": "Nucléaire",
+        "text": "L'écart d'environ 7 GW entre la disponibilité et la prévision de l'exploitant."
+      },
+      {
+        "label": "Ormuz",
+        "text": "Les attaques de navires et leur effet éventuel sur les flux de GNL vers l'Europe."
+      }
+    ],
+    "facts": [
+      {
+        "label": "299 €/MWh",
+        "text": "Le spot français de vendredi 27 novembre, le plus haut de la semaine."
+      },
+      {
+        "label": "67,2 %",
+        "text": "Le remplissage des stockages de gaz européens au 25 novembre, en baisse de 2 points sur la semaine."
+      },
+      {
+        "label": "0 heure",
+        "text": "Aucune heure à prix nul ou négatif en France sur la semaine."
+      }
+    ]
+  },
+  "links_week": [
+    "https://news.google.com/rss/articles/CBMisAFBVV95cUxPT05RbC1kZFlIZmtHOEV1aHp3XzZIUDRMbllaN3FzWEwzaTlBZHFBVmd3cDRPSUlocFVvNExhalhTenNPRHNVb3hlN2k2YndjaDZ6cUQtZGZDYXhfVENwYUc2VXhsMEtKV2hMR0xxNzdBeDNXVDM2ZThtVlJfc0dBdk9vWUt4cEpOdVFablRmbW55TFhBMlRUWFlRRFZyMDljWUdNVTBiR1ZMdkhTc0lWYw?oc=5"
   ]
 }
