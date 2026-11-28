@@ -674,6 +674,7 @@ async function _newsLoadPins() {
     const [adm, pins] = await Promise.all([cl.rpc('is_news_admin'), cl.from('news_pin').select('link, pinned_at, note').gte('pinned_at', new Date(Date.now() - 36 * 3600e3).toISOString())]);
     _newsAdmin = !!(adm && adm.data);
     _newsLetterTab();
+    renderNewsVetting();
     _newsPins = new Set(((pins && pins.data) || []).map(r => r.link));
     _newsPinNotes = Object.fromEntries(((pins && pins.data) || []).filter(r => r.note).map(r => [r.link, r.note]));
   } catch (e) { console.warn('[news] pins not read:', e); }
@@ -935,6 +936,47 @@ function renderNewsSources() {
     `<div class="news-src-help"><b>Add a source for everyone</b>: use the form above (signed in). The sources of the team list stay in <a href="${edit}" target="_blank" rel="noopener">config/news_sources.json</a> on GitHub.<br>
     <b>Follow subjects for yourself</b>: type them in Top stories › Customise › My keywords; matching articles are starred and listed under ★ My keywords (kept in this browser only).<br>
     <b>Not possible</b>: LinkedIn (no public feed, and its terms forbid reading pages automatically) and subscription sites without a feed (Contexte, Montel): their articles still appear when the press search finds them. RTE has no news feed: its news come through the press search.</div>`);
+}
+
+// Outlets sorted automatically (the owner, 28 Nov. 2026): the morning task gives each new outlet of the press searches a
+// level from its name and address (data/news_vetting.json); the news admin sees them here and can change any of them
+// (public.news_vetting, warehouse migration 047), read first by the next news run. Admin only.
+const _NEWS_LEVELS = [['press', 'presse', 'press'], ['association', 'association', 'association'], ['commercial', 'commercial', 'commercial'],
+  ['state', 'média d’État', 'state media'], ['activist', 'média engagé', 'activist outlet'], ['unverified', 'non vérifiée', 'unverified']];
+async function renderNewsVetting() {
+  const host = document.getElementById('news-vetting'); if (!host) return;
+  if (!_newsAdmin) { host.innerHTML = ''; host.hidden = true; return; }
+  const A = window.PKAccount, cl = A.client();
+  let auto = {}, mine = [];
+  try { const r = await fetch('data/news_vetting.json', { cache: 'no-store' }); if (r.ok) auto = (await r.json()).outlets || {}; } catch (_) { /* none yet */ }
+  try { const r = await cl.from('news_vetting').select('outlet, level, set_at'); if (!r.error) mine = r.data || []; } catch (_) { /* table not there */ }
+  const own = Object.fromEntries(mine.map(r => [r.outlet.toLowerCase(), r]));
+  const names = [...new Set([...Object.keys(auto), ...mine.map(r => r.outlet)])]
+    .sort((a, b) => ((auto[b] || {}).date || '').localeCompare((auto[a] || {}).date || '') || a.localeCompare(b));
+  const lab = k => { const l = _NEWS_LEVELS.find(x => x[0] === k); return l ? _newsT(l[1], l[2]) : k; };
+  const rows = names.map(n => {
+    const a = auto[n] || {}, o = own[n.toLowerCase()], cur = o ? o.level : a.level;
+    const why = a.why ? _newsT(a.why.fr || a.why.en || '', a.why.en || a.why.fr || '') : '';
+    return `<tr><td>${_newsEsc(n)}${why ? `<div class="news-q">${_newsEsc(why)}</div>` : ''}</td>
+      <td>${a.level ? _newsEsc(lab(a.level)) : '–'}${a.date ? `<div class="news-q">${_newsEsc(a.date)}</div>` : ''}</td>
+      <td><select class="fuel-select news-vet-sel" data-outlet="${_newsEsc(n)}" aria-label="${_newsT('Niveau', 'Level')}">${_NEWS_LEVELS.map(l => `<option value="${l[0]}"${l[0] === cur ? ' selected' : ''}>${_newsT(l[1], l[2])}</option>`).join('')}</select>
+      ${o ? `<div class="news-q">${_newsT('votre choix', 'your choice')}</div>` : ''}</td></tr>`;
+  }).join('');
+  host.hidden = false;
+  host.innerHTML = `<div class="news-add"><div class="news-add-t">${_newsT('Sources classées automatiquement', 'Outlets sorted automatically')}</div>
+    <div class="news-add-msg">${_newsT('Chaque matin, la tâche Claude classe les nouvelles sources des recherches de presse d’après leur nom et leur adresse (jamais le texte des articles). En cas de doute, la source reste « non vérifiée ». Changez un niveau ici : votre choix s’applique à la prochaine mise à jour de la veille et n’est plus jamais modifié par la tâche.',
+      'Each morning, the Claude task sorts the new outlets of the press searches from their name and address (never the articles’ text). In doubt, an outlet stays « unverified ». Change a level here: your choice applies at the next news run and the task never changes it again.')}</div>
+    ${rows ? `<div style="overflow-x:auto"><table class="news-src-t"><thead><tr><th>${_newsT('Source', 'Outlet')}</th><th>${_newsT('Classement automatique', 'Automatic level')}</th><th>${_newsT('Niveau retenu', 'Level kept')}</th></tr></thead><tbody>${rows}</tbody></table></div>`
+      : `<div class="news-add-msg">${_newsT('Aucune source classée pour l’instant.', 'No outlet sorted yet.')}</div>`}
+    <div class="news-add-msg" id="news-vet-msg"></div></div>`;
+  host.querySelectorAll('.news-vet-sel').forEach(sel => sel.addEventListener('change', async () => {
+    const msg = document.getElementById('news-vet-msg'), outlet = sel.dataset.outlet;
+    const { error } = await cl.from('news_vetting').upsert({ outlet, level: sel.value, set_by: A.user.id, set_at: new Date().toISOString() });
+    msg.className = 'news-add-msg ' + (error ? 'ko' : 'ok');
+    msg.textContent = error ? _newsT('Non enregistré : ', 'Not saved: ') + error.message
+      : _newsT(`« ${outlet} » : ${lab(sel.value)}, appliqué à la prochaine mise à jour de la veille.`, `“${outlet}”: ${lab(sel.value)}, applied at the next news run.`);
+    if (!error) renderNewsVetting();
+  }));
 }
 
 // Add a source from the site: public.news_source (warehouse migration 012), read by

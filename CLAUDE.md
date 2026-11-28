@@ -30,7 +30,8 @@ Actions jobs that write JSON into `data/`. These rules come from the owner; foll
   refuses AI crawlers but lets other readers see its pages (AleaSoft): titles and links only, from its pages or sitemap,
   items marked `noai`, never given to an AI step (brief, newsletter, week's context, Ask, MCP). Press-search outlets get a
   trust level (official, press, state, activist, commercial, association, unverified: `config/news_sources.json` › vetting); all but press and official
-  show a badge, and all but these and association are `noai` too; only off-topic sites, forums and social networks are left out. Free only: no paid API.
+  show a badge, and all but these and association are `noai` too; new outlets are sorted each morning by the brief task
+  from name and address only (`data/news_vetting.json`), the owner's choice on the site (`news_vetting`) wins; only off-topic sites, forums and social networks are left out. Free only: no paid API.
 - Every figure shown is traceable: the source is named under the chart, and Methodology describes the calculation.
 - Dates are **delivery days in Paris time** (`data/history/daily/<D>.json` = prices for delivery day D). A 25-hour
   day keeps 96 quarter-hours in its series: use the published daily average (`avg`), never the mean of the series.

@@ -197,6 +197,23 @@ watch so it is caught from then on, every day, not only this morning.
 If the news run would end after 06:55 Paris, publish the brief without that article and keep the fix: tomorrow's
 watch catches it.
 
+## Sorting new outlets (the owner, 28 Nov. 2026)
+The press searches bring outlets that no list of `config/news_sources.json` › vetting knows: they show « non vérifiée »
+and stay out of the AI. Each morning, sort them:
+1. Read `data/news_vetting_queue.json` (outlet name, web address, number of articles). Read only these fields: never
+   open, read or quote the articles of these outlets (they are noai), and do not visit their sites.
+2. For each outlet, from what you know of it: `press` (a known newsroom: general, business or trade press, agency,
+   public-service broadcaster of a democracy), `state` (government-owned or -controlled outlet or agency), `activist`
+   (militant or with a very marked political line), `commercial` (comparison site, broker, stock-market or price site,
+   data vendor, content marketing), `association` (association, NGO, think tank, trade body), `unverified` (in doubt,
+   aggregator, unknown or machine-made site). **In doubt, `unverified`.** `press` only for an outlet you know: it is the
+   only level that lets its articles reach the AI.
+3. Add each one to `data/news_vetting.json` › `outlets`: `"<name exactly as in the queue>": {"level": …, "why": {"fr":
+   "<one short sentence>", "en": "<the same in English>"}, "date": "<today>"}`. Never change or remove an outlet already
+   there: the owner corrects them on the site (Veille › Sources), and the owner's choice wins.
+4. Commit it with the brief (or alone, message `News: new outlets sorted <date> (Claude)`); the next news run applies
+   the levels. List in the final message the outlets sorted `press`, `state` or `activist`.
+
 ## Tools for the checks
 The session's container may be new: when `scripts/check_before_push.sh` stops on a missing module, install them with
 `pip install -q "playwright==1.63.0" scipy scikit-learn "matplotlib==3.9.2"` (Playwright 1.63 matches the browser already in
@@ -219,5 +236,5 @@ When a price of the site is compared with the press, compare closing prices of t
 
 ## How to publish
 Write `data/newsletter_brief.json` on `main` (one commit, message `data: newsletter brief <date> (Claude)`). The only
-other files the task may change are `config/news_sources.json` and `config/news_gaps.md` (above). If a figure is
+other files the task may change are `config/news_sources.json`, `config/news_gaps.md` and `data/news_vetting.json` (above). If a figure is
 missing or a file is late, write without that topic; never invent a figure.
